@@ -1,4 +1,5 @@
 import { tokens } from "@galaxia/ui";
+import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { supabase } from "../src/lib/supabase";
@@ -24,6 +25,7 @@ interface ChatLine {
 }
 
 export default function VelaScreen() {
+  const params = useLocalSearchParams<{ threadId?: string | string[] }>();
   const { session } = useAuth();
   const [mode, setMode] = useState<VelaMode>("ask");
   const [scope, setScope] = useState<Scope>("person");
@@ -43,11 +45,22 @@ export default function VelaScreen() {
   ]);
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const initialThreadId = useMemo(() => {
+    const value = params.threadId;
+    if (Array.isArray(value)) return value[0] ?? null;
+    return value ?? null;
+  }, [params.threadId]);
 
   useEffect(() => {
     if (!session?.user.id) return;
     void fetchScopeData();
   }, [session?.user.id]);
+
+  useEffect(() => {
+    if (!session?.user.id || !initialThreadId) return;
+    setThreadId(initialThreadId);
+    void loadThreadHistory(initialThreadId);
+  }, [initialThreadId, session?.user.id]);
 
   const selectedSubject = useMemo(() => people.find((person) => person.id === subjectPersonId) ?? null, [people, subjectPersonId]);
   const selectedPair = useMemo(() => people.find((person) => person.id === pairPersonId) ?? null, [people, pairPersonId]);
@@ -72,6 +85,31 @@ export default function VelaScreen() {
     if (!subjectPersonId && allPeople[0]) setSubjectPersonId(allPeople[0].id);
     if (!pairPersonId && allPeople[1]) setPairPersonId(allPeople[1].id);
     if (!groupId && groupData?.[0]) setGroupId(groupData[0].id as string);
+  };
+
+  const loadThreadHistory = async (targetThreadId: string) => {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("sender, body")
+      .eq("thread_id", targetThreadId)
+      .order("created_at", { ascending: true })
+      .limit(80);
+    if (error) {
+      setStatus(error.message);
+      return;
+    }
+    const restored: ChatLine[] = [
+      {
+        role: "system",
+        text: "Resumed thread. Private by default; shared mode excludes private notes."
+      },
+      ...(data ?? []).map((row) => ({
+        role: row.sender === "vela" ? ("vela" as const) : ("user" as const),
+        text: row.body as string
+      }))
+    ];
+    setLines(restored);
+    setStatus("Thread restored.");
   };
 
   const functionUrl = useMemo(() => {

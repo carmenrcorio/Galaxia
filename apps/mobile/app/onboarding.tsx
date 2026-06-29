@@ -268,6 +268,11 @@ export default function OnboardingScreen() {
       <View style={{ height: 1, backgroundColor: tokens.colors.line, marginVertical: 6 }} />
 
       <Text style={{ color: tokens.colors.cream, fontSize: 24, fontWeight: "700" }}>Add people</Text>
+      <Link href="/groups" asChild>
+        <Pressable style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 10, paddingHorizontal: 12 }}>
+          <Text style={{ color: tokens.colors.cream, fontWeight: "700" }}>Go to groups/cohorts</Text>
+        </Pressable>
+      </Link>
       <TextInput
         value={personName}
         onChangeText={setPersonName}

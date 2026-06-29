@@ -6,6 +6,7 @@ import { Pressable, ScrollView, Switch, Text, TextInput, View } from "react-nati
 import { buildBirthInput, type BirthFormInput } from "../src/lib/birth";
 import { supabase } from "../src/lib/supabase";
 import { useAuth } from "../src/providers/auth-provider";
+import { useEntitlement } from "../src/providers/entitlement-provider";
 
 type Relation = "partner" | "child" | "parent" | "grandparent" | "sibling" | "friend" | "ancestor" | "self";
 
@@ -28,6 +29,7 @@ const baseInput: BirthFormInput = {
 
 export default function OnboardingScreen() {
   const { session } = useAuth();
+  const { tier, canAddPerson, peopleLimit } = useEntitlement();
   const [selfName, setSelfName] = useState("");
   const [selfInput, setSelfInput] = useState<BirthFormInput>(baseInput);
   const [personName, setPersonName] = useState("");
@@ -137,6 +139,10 @@ export default function OnboardingScreen() {
     setSavingPerson(true);
     setStatus(null);
     try {
+      if (!canAddPerson(people.length)) {
+        setStatus(`Free tier limit reached (${peopleLimit} people). Upgrade in settings for unlimited people.`);
+        return;
+      }
       await persistPerson({
         displayName: personName,
         relation: personRelation,
@@ -252,6 +258,9 @@ export default function OnboardingScreen() {
       </Text>
       <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>
         Add your own birth data at any precision. Year-only is first-class for ancestors and loosely known friends.
+      </Text>
+      <Text style={{ color: tokens.colors.goldSoft }}>
+        Plan: {tier === "plus" ? "Galaxia+" : "Free"} · {tier === "plus" ? "unlimited people" : `${peopleLimit} people max`}
       </Text>
       <TextInput
         value={selfName}

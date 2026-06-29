@@ -2,8 +2,10 @@ import { tokens } from "@galaxia/ui";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { cacheGet, cacheSet } from "../src/lib/cache";
 import { supabase } from "../src/lib/supabase";
 import { useAuth } from "../src/providers/auth-provider";
+import { useEntitlement } from "../src/providers/entitlement-provider";
 
 type VelaMode = "ask" | "shared";
 type Scope = "person" | "pair" | "group";
@@ -27,6 +29,7 @@ interface ChatLine {
 export default function VelaScreen() {
   const params = useLocalSearchParams<{ threadId?: string | string[] }>();
   const { session } = useAuth();
+  const { canUseSharedSpaces, canSendVelaMessage, recordVelaMessageSent, dailyVelaLimit, velaUsedToday, tier } = useEntitlement();
   const [mode, setMode] = useState<VelaMode>("ask");
   const [scope, setScope] = useState<Scope>("person");
   const [relationshipType, setRelationshipType] = useState("general");
@@ -73,6 +76,7 @@ export default function VelaScreen() {
   }, [scope, selectedSubject?.is_minor, selectedPair?.is_minor]);
 
   const sharedBlocked = mode === "shared" && minorInScope;
+  const dailyBlocked = !canSendVelaMessage();
 
   const fetchScopeData = async () => {
     const [{ data: peopleData }, { data: groupData }] = await Promise.all([
@@ -88,6 +92,12 @@ export default function VelaScreen() {
   };
 
   const loadThreadHistory = async (targetThreadId: string) => {
+    const cacheKey = `vela_thread:${targetThreadId}`;
+    const cached = await cacheGet<ChatLine[]>(cacheKey);
+    if (cached && cached.length > 0) {
+      setLines(cached);
+    }
+
     const { data, error } = await supabase
       .from("messages")
       .select("sender, body")
@@ -109,6 +119,7 @@ export default function VelaScreen() {
       }))
     ];
     setLines(restored);
+    await cacheSet(cacheKey, restored);
     setStatus("Thread restored.");
   };
 
@@ -146,6 +157,14 @@ export default function VelaScreen() {
 
   const sendMessage = async () => {
     if (sending || !functionUrl || !session?.access_token || !message.trim()) return;
+    if (dailyBlocked) {
+      setStatus(`Daily Vela limit reached (${dailyVelaLimit}) on Free plan. Upgrade to Galaxia+ for unlimited.`);
+      return;
+    }
+    if (mode === "shared" && !canUseSharedSpaces) {
+      setStatus("Shared spaces are available on Galaxia+.");
+      return;
+    }
     if (sharedBlocked) {
       setStatus("Shared mode is disabled when a minor is in scope. Switch to ask mode for parenting guidance.");
       return;
@@ -229,6 +248,10 @@ export default function VelaScreen() {
           });
         }
       }
+      await recordVelaMessageSent();
+      if (threadId) {
+        await cacheSet(`vela_thread:${threadId}`, lines);
+      }
     } catch (error) {
       const messageText = error instanceof Error ? error.message : "Network error talking to Vela.";
       setStatus(messageText);
@@ -248,6 +271,9 @@ export default function VelaScreen() {
       <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
         Warm astrologer + practical coach, grounded in computed facts only.
       </Text>
+      <Text style={{ color: tokens.colors.goldSoft }}>
+        Plan: {tier === "plus" ? "Galaxia+" : "Free"} · {tier === "plus" ? "unlimited Vela" : `${dailyVelaLimit - velaUsedToday} messages left today`}
+      </Text>
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Mode</Text>
@@ -263,6 +289,9 @@ export default function VelaScreen() {
             ? "Ask mode is private and can include your private notes."
             : "Shared mode is neutral for all participants. Consent is required."}
         </Text>
+        {mode === "shared" && !canUseSharedSpaces ? (
+          <Text style={{ color: tokens.colors.goldSoft }}>Shared mode requires Galaxia+.</Text>
+        ) : null}
       </View>
 
       <View style={cardStyle}>

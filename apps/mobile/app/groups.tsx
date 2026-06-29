@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { supabase } from "../src/lib/supabase";
 import { useAuth } from "../src/providers/auth-provider";
+import { useEntitlement } from "../src/providers/entitlement-provider";
 
 type GroupKind = "siblings" | "friends" | "family" | "group";
 
@@ -27,6 +28,7 @@ interface CohortState {
 
 export default function GroupsScreen() {
   const { session } = useAuth();
+  const { canUseGroups } = useEntitlement();
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -81,6 +83,10 @@ export default function GroupsScreen() {
   };
 
   const saveGroup = async () => {
+    if (!canUseGroups) {
+      setStatus("Groups are available on Galaxia+. Upgrade in settings.");
+      return;
+    }
     if (!session?.user.id) return;
     if (groupName.trim().length < 2) {
       setStatus("Give the group a name.");
@@ -132,6 +138,10 @@ export default function GroupsScreen() {
   };
 
   const buildOverlay = async () => {
+    if (!canUseGroups) {
+      setStatus("Groups are available on Galaxia+.");
+      return;
+    }
     if (selectedPersonIds.length < 3) {
       setStatus("Pick at least 3 people to build cohort overlay.");
       return;
@@ -190,6 +200,7 @@ export default function GroupsScreen() {
       <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
         Build sibling/friend/family sets and see shared sky + generational fault lines.
       </Text>
+      {!canUseGroups ? <Text style={{ color: tokens.colors.goldSoft }}>Galaxia+ required for groups/cohorts.</Text> : null}
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Saved groups</Text>

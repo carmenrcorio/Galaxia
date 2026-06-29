@@ -155,6 +155,11 @@ export default function HomeScreen() {
           <Text style={{ color: tokens.colors.cream, fontWeight: "700", textAlign: "center" }}>Open groups</Text>
         </Pressable>
       </Link>
+      <Link href="/vela" asChild>
+        <Pressable style={{ borderWidth: 1, borderColor: tokens.colors.line, borderRadius: 999, paddingVertical: 12 }}>
+          <Text style={{ color: tokens.colors.cream, fontWeight: "700", textAlign: "center" }}>Open Vela</Text>
+        </Pressable>
+      </Link>
       <Pressable
         onPress={signOut}
         style={{ borderWidth: 1, borderColor: tokens.colors.line, borderRadius: 999, paddingVertical: 12 }}

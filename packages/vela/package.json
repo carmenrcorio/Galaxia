@@ -8,13 +8,14 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "echo 'vela lint pending'",
-    "test": "echo 'vela tests pending'",
+    "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@galaxia/core": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.9"
   }
 }

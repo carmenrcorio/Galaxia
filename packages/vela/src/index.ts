@@ -42,8 +42,13 @@ export interface VelaContext {
     faultLines: { planet: string; groups: { sign: string; names: string[] }[] }[];
     members: string[];
   };
+  privateNotesDigest?: string[];
   history: { role: "user" | "vela"; text: string }[];
   userMessage: string;
+}
+
+export interface BuildVelaContextInput extends Omit<VelaContext, "privateNotesDigest"> {
+  privateNotes?: string[];
 }
 
 export const VELA_SYSTEM_PROMPT = `You are Vela, the guide inside Galaxia — a warm, perceptive astrologer and practical relationship coach.
@@ -53,6 +58,13 @@ In shared mode, stay neutral and never expose private notes.
 If someone is a minor, use parenting framing and never address the child directly.
 If risk-of-harm language appears, deprioritize astrology and encourage immediate real-world support.
 Keep answers short, specific, and warm. End with optional follow-up support and up to three suggested prompts.`;
+
+export function buildVelaContext(input: BuildVelaContextInput): VelaContext {
+  return {
+    ...input,
+    privateNotesDigest: input.mode === "ask" ? input.privateNotes?.slice(0, 5) : undefined
+  };
+}
 
 export function buildVelaPrompt(context: VelaContext): string {
   return JSON.stringify(
@@ -65,10 +77,18 @@ export function buildVelaPrompt(context: VelaContext): string {
       synastry: context.synastry,
       generationalRelation: context.generationalRelation,
       cohort: context.cohort,
+      privateNotesDigest: context.mode === "ask" ? context.privateNotesDigest : undefined,
       history: context.history,
       userMessage: context.userMessage
     },
     null,
     2
   );
+}
+
+const crisisPattern =
+  /\b(suicid(e|al)|kill myself|self harm|self-harm|hurt myself|end my life|want to die|homicid(e|al)|kill them|abuse)\b/i;
+
+export function detectCrisisLanguage(text: string): boolean {
+  return crisisPattern.test(text);
 }

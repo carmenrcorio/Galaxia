@@ -1,5 +1,6 @@
 import { computeNatalChart, type Precision } from "@galaxia/astro";
 import { tokens } from "@galaxia/ui";
+import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
 import { buildBirthInput, type BirthFormInput } from "../src/lib/birth";
@@ -310,21 +311,22 @@ export default function OnboardingScreen() {
           <Text style={{ color: tokens.colors.mist }}>No people yet. Start with yourself, then add your first relationship.</Text>
         ) : (
           people.map((person) => (
-            <View
-              key={person.id}
-              style={{
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: tokens.colors.line,
-                padding: 12,
-                backgroundColor: tokens.colors.ink3
-              }}
-            >
-              <Text style={{ color: tokens.colors.cream, fontWeight: "700" }}>{person.display_name}</Text>
-              <Text style={{ color: tokens.colors.mist }}>
-                {person.relation} · {person.birth_precision}
-              </Text>
-            </View>
+            <Link key={person.id} href={`/profile/${person.id}`} asChild>
+              <Pressable
+                style={{
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: tokens.colors.line,
+                  padding: 12,
+                  backgroundColor: tokens.colors.ink3
+                }}
+              >
+                <Text style={{ color: tokens.colors.cream, fontWeight: "700" }}>{person.display_name}</Text>
+                <Text style={{ color: tokens.colors.mist }}>
+                  {person.relation} · {person.birth_precision}
+                </Text>
+              </Pressable>
+            </Link>
           ))
         )}
       </View>

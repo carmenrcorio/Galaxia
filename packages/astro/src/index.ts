@@ -1,4 +1,4 @@
-import { GeoVector, Pluto, Uranus, Neptune } from "astronomy-engine";
+import { Body, EclipticLongitude } from "astronomy-engine";
 
 export type Precision = "exact" | "date" | "year";
 export type Planet = "uranus" | "neptune" | "pluto";
@@ -72,8 +72,8 @@ function longitudeToSign(lon: number): Sign {
 }
 
 function signFromDate(date: Date, planet: Planet): Sign {
-  const body = planet === "uranus" ? Uranus : planet === "neptune" ? Neptune : Pluto;
-  const lon = GeoVector(body, date, false).elon;
+  const body = planet === "uranus" ? Body.Uranus : planet === "neptune" ? Body.Neptune : Body.Pluto;
+  const lon = EclipticLongitude(body, date);
   return longitudeToSign(lon);
 }
 

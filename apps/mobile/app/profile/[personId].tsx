@@ -137,6 +137,11 @@ export default function PersonProfileScreen() {
       <Text style={{ color: tokens.colors.mist }}>
         {person.relation} · {person.birth_precision}
       </Text>
+      <Link href="/compare" asChild>
+        <Pressable style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 10, paddingHorizontal: 14 }}>
+          <Text style={{ color: tokens.colors.cream, fontWeight: "700" }}>Compare with someone</Text>
+        </Pressable>
+      </Link>
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Big Three</Text>

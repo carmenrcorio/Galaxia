@@ -1,4 +1,4 @@
-import { Body, EclipticLongitude, SiderealTime, SunPosition } from "astronomy-engine";
+import { Body, GeoVector, Ecliptic, EclipticGeoMoon, SiderealTime, SunPosition } from "astronomy-engine";
 
 export type Precision = "exact" | "date" | "year";
 export type HouseSystem = "placidus" | "whole";
@@ -165,15 +165,14 @@ function longitudeToSign(lon: number): Sign {
 }
 
 function bodyLongitude(body: BodyName, date: Date): number {
-  if (body === "sun") {
-    return normalizeZodiacLongitude(SunPosition(date).elon);
-  }
-  return normalizeZodiacLongitude(EclipticLongitude(BODY_MAP[body], date));
+  if (body === "sun") return normalizeZodiacLongitude(SunPosition(date).elon);
+  if (body === "moon") return normalizeZodiacLongitude(EclipticGeoMoon(date).lon);
+  return normalizeZodiacLongitude(Ecliptic(GeoVector(BODY_MAP[body], date, true)).elon);
 }
 
 function signFromDate(date: Date, planet: Planet): Sign {
   const body = planet === "uranus" ? Body.Uranus : planet === "neptune" ? Body.Neptune : Body.Pluto;
-  return longitudeToSign(EclipticLongitude(body, date));
+  return longitudeToSign(Ecliptic(GeoVector(body, date, true)).elon);
 }
 
 function getWorkingDate(birth: Birth): Date {

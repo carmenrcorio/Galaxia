@@ -1,4 +1,4 @@
-import { tokens } from "@galaxia/ui";
+import { tokens } from "../../lib/tokens";
 
 export default function AccountPage() {
   return (

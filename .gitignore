@@ -7,5 +7,4 @@ coverage
 .next
 .env
 .env.local
-pnpm-lock.yaml
 *.tsbuildinfo

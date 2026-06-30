@@ -1,4 +1,4 @@
-import { tokens } from "@galaxia/ui";
+import { tokens } from "../lib/tokens";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 

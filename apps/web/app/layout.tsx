@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { tokens } from "@galaxia/ui";
+import { tokens } from "../lib/tokens";
 import type { CSSProperties, ReactNode } from "react";
 
 export const metadata: Metadata = {

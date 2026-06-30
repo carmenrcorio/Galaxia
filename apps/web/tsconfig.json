@@ -1,6 +1,9 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
     "jsx": "preserve",
     "lib": [
       "dom",
@@ -15,7 +18,10 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "skipLibCheck": true,
+    "strict": false,
+    "esModuleInterop": true
   },
   "include": [
     "**/*.ts",

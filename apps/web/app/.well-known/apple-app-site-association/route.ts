@@ -5,7 +5,7 @@ export async function GET() {
       details: [
         {
           appID: process.env.IOS_APP_ID ?? "TEAMID.com.galaxia.app",
-          paths: ["/account/*", "/invite/*", "/r/*"]
+          paths: ["/account", "/account/*", "/invite/*", "/r/*"]
         }
       ]
     }

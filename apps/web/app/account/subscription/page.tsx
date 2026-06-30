@@ -1,12 +1,12 @@
 import { requireUser } from "../../../lib/supabase/require-user";
-import type { CSSProperties } from "react";
+import { publicEnv } from "../../../lib/env";
 
 export default async function SubscriptionPage() {
   const { supabase, user } = await requireUser("/account/subscription");
   const { data: profile } = await supabase.from("profiles").select("subscription_tier").eq("id", user.id).single();
   const tier = profile?.subscription_tier ?? "free";
-  const ios = process.env.NEXT_PUBLIC_IOS_APP_STORE_URL ?? "#";
-  const android = process.env.NEXT_PUBLIC_ANDROID_PLAY_URL ?? "#";
+  const ios = publicEnv.iosAppStoreUrl || publicEnv.testflightUrl;
+  const android = publicEnv.androidPlayUrl;
 
   return (
     <main className="container" style={{ padding: "56px 0", maxWidth: 820 }}>
@@ -15,37 +15,32 @@ export default async function SubscriptionPage() {
         Current plan: <strong style={{ color: "var(--cream)" }}>{tier === "plus" ? "Galaxia+" : "Free"}</strong>
       </p>
 
-      <section style={card}>
+      <section className="glass-card" style={{ marginTop: 16 }}>
         <h2 style={{ marginTop: 0 }}>Manage billing</h2>
         <p style={{ color: "var(--mist)" }}>
-          If your subscription was started via mobile stores, billing is managed in the App Store / Play Store.
+          Web reads your entitlement only. If your subscription started in mobile, billing is managed in the App Store
+          or Play Store.
         </p>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <a href={ios} style={button}>
-            Manage on App Store
-          </a>
-          <a href={android} style={button}>
-            Manage on Google Play
-          </a>
+          {ios ? (
+            <a href={ios} className="pill-link">
+              Manage on iOS
+            </a>
+          ) : (
+            <span className="pill-link">iOS billing link unavailable</span>
+          )}
+          {android ? (
+            <a href={android} className="pill-link">
+              Manage on Google Play
+            </a>
+          ) : (
+            <span className="pill-link">Google Play billing link unavailable</span>
+          )}
         </div>
+        <p className="muted" style={{ marginTop: 12 }}>
+          Signed in as {user.email}
+        </p>
       </section>
     </main>
   );
 }
-
-const card: CSSProperties = {
-  marginTop: 16,
-  border: "1px solid var(--line)",
-  background: "var(--ink2)",
-  borderRadius: 16,
-  padding: 18
-};
-
-const button: CSSProperties = {
-  borderRadius: 999,
-  border: "1px solid var(--line)",
-  background: "var(--ink3)",
-  color: "var(--cream)",
-  padding: "10px 16px",
-  fontWeight: 600
-};

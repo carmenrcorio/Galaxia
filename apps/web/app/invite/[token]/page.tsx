@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const invite = await getInviteByToken(token);
-  const siteUrl = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
+  const siteUrl = publicEnv.siteUrl || "";
   const deepLink = `${siteUrl}/invite/${token}`;
 
   if (!invite) {
@@ -26,8 +26,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     <main className="container" style={{ padding: "56px 0", maxWidth: 780 }}>
       <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 42 }}>You were invited to Galaxia</h1>
       <p style={{ color: "var(--mist)", lineHeight: 1.7 }}>
-        Relationship type: {invite.relationship_type ?? "shared space"} · status: {invite.status}. Open this invite in
-        the mobile app to continue into consented shared space.
+        {invite.inviter_name ?? "Someone you know"} invited you to a {invite.relationship_type ?? "shared"} space. Status: {invite.status}. Open this invite in the mobile app to continue.
       </p>
       <SmartAppBanner deepLink={deepLink} />
       <p style={{ color: "var(--mist2)", marginTop: 16 }}>

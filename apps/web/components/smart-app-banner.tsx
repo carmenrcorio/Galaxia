@@ -15,9 +15,10 @@ export function SmartAppBanner({ deepLink }: { deepLink: string }) {
   const isMobile = useMemo(() => detectMobile(ua), [ua]);
   if (!isMobile) return null;
 
-  const iosStore = process.env.NEXT_PUBLIC_IOS_APP_STORE_URL ?? "#";
-  const androidStore = process.env.NEXT_PUBLIC_ANDROID_PLAY_URL ?? "#";
+  const iosStore = process.env.NEXT_PUBLIC_IOS_APP_STORE_URL || process.env.NEXT_PUBLIC_TESTFLIGHT_URL || "";
+  const androidStore = process.env.NEXT_PUBLIC_ANDROID_PLAY_URL || "";
   const isIOS = /iphone|ipad|ipod/i.test(ua);
+  const fallback = isIOS ? iosStore : androidStore;
 
   return (
     <div
@@ -45,9 +46,13 @@ export function SmartAppBanner({ deepLink }: { deepLink: string }) {
       >
         Open in Galaxia
       </a>
-      <a href={isIOS ? iosStore : androidStore} style={{ color: "var(--gold-soft)" }}>
-        {isIOS ? "App Store" : "Google Play"}
-      </a>
+      {fallback ? (
+        <a href={fallback} style={{ color: "var(--gold-soft)" }}>
+          {isIOS ? "App Store / TestFlight" : "Google Play"}
+        </a>
+      ) : (
+        <span style={{ color: "var(--mist2)" }}>{isIOS ? "iOS coming soon" : "Android coming soon"}</span>
+      )}
     </div>
   );
 }

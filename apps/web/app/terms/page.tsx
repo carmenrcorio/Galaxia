@@ -10,6 +10,7 @@ export default function TermsPage() {
         <li>You are responsible for the accuracy of data you enter.</li>
         <li>Shared spaces require participant consent and may be revoked.</li>
         <li>Abusive use and attempts to bypass safety controls are prohibited.</li>
+        <li>Account and data deletion requests are supported through your account data page.</li>
       </ul>
     </main>
   );

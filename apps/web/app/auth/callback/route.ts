@@ -1,10 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import { publicEnv } from "../../../lib/env";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const tokenHash = requestUrl.searchParams.get("token_hash");
+  const type = requestUrl.searchParams.get("type");
   const next = requestUrl.searchParams.get("next") ?? "/account";
 
   let response = NextResponse.redirect(new URL(next, request.url));
@@ -23,6 +26,9 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     await supabase.auth.exchangeCodeForSession(code);
+  }
+  if (tokenHash && (type === "recovery" || type === "email")) {
+    await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as EmailOtpType });
   }
 
   return response;

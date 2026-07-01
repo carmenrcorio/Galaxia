@@ -1,37 +1,37 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { ConstellationHero } from "../components/constellation-hero";
-import { WaitlistForm } from "../components/waitlist-form";
+import { publicEnv } from "../lib/env";
 
 export default function MarketingPage() {
+  const siteUrl = publicEnv.siteUrl || "";
   return (
     <>
-      <header style={{ position: "sticky", top: 0, zIndex: 20, borderBottom: "1px solid var(--line)", background: "rgba(16,11,34,.9)", backdropFilter: "blur(8px)" }}>
-        <nav className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0" }}>
+      <header style={{ position: "sticky", top: 0, zIndex: 20, borderBottom: "1px solid var(--line)", background: "rgba(16,11,34,.86)", backdropFilter: "blur(8px)" }}>
+        <nav className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", gap: 16 }}>
           <div style={{ fontFamily: "var(--font-fraunces)", color: "var(--gold)", fontSize: 28 }}>Galaxia</div>
           <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
             <a href="#shift">Why Galaxia</a>
             <a href="#generations">Generations</a>
             <a href="#vela">Meet Vela</a>
             <a href="#trust">Privacy</a>
-            <a href="#join" style={{ background: "var(--gold)", color: "var(--ink)", borderRadius: 999, padding: "8px 14px", fontWeight: 700 }}>
-              Early access
-            </a>
+            <Link href="/login">Log in</Link>
+            <Link href="/download">Get the app</Link>
+            <Link href="/signup" className="pill-link pill-link--gold">Sign up</Link>
           </div>
         </nav>
       </header>
 
       <main className="container" style={{ padding: "40px 0 80px", display: "grid", gap: 56 }}>
-        <section style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 28, alignItems: "center" }}>
+        <section className="hero-grid">
           <div>
             <p style={eyebrow}>Galaxia Mea · my galaxy</p>
             <h1 style={heroTitle}>The night sky belongs to everyone. Yours doesn't.</h1>
             <p style={lede}>
-              Yours is small, and close, and the only one you'll ever steer your life by — the handful of people whose
-              light you actually live by. Galaxia is a place to understand them, and tend the bonds that hold a life
+              Yours is small, and close, and the only one you'll ever steer your life by — the handful of people whose light you actually live by — Galaxia is a place to understand them, and tend the bonds that hold a life
               together.
             </p>
-            <WaitlistForm source="hero" />
+            <HeroSignup />
             <p style={{ color: "var(--mist2)", marginTop: 8 }}>Mobile-first · iOS Android · private by design</p>
           </div>
           <ConstellationHero />
@@ -59,11 +59,19 @@ export default function MarketingPage() {
                 aspects, in language that finally makes sense. Depth for the astrology lover; clarity for everyone
                 else.
               </p>
-              <p style={mock}>
-                Your mom / Rosa · Cancer Sun · Pisces Moon · Cancer Rising · ♋ Sun Cancer · ♓ Moon Pisces · ♋ Rising
-                Cancer · ☽ Moon in Pisces — Emotional world · tender, absorbent · ♀ Venus in Gemini — How she loves ·
-                playful, talkative · ♂ Mars in Leo — Drive · warm, proud, generous.
-              </p>
+              <div style={mock}>
+                <p><strong>Your mom / Rosa</strong></p>
+                <p>Cancer Sun · Pisces Moon · Cancer Rising</p>
+                <p>♋ Sun Cancer · ♓ Moon Pisces · ♋ Rising Cancer</p>
+                <p>☽ Moon in Pisces — Emotional world · tender, absorbent</p>
+                <p>♀ Venus in Gemini — How she loves · playful, talkative</p>
+                <p>♂ Mars in Leo — Drive · warm, proud, generous</p>
+                <p style={{ marginTop: 10 }}><strong>Reading as: Partners</strong></p>
+                <p>Emotional ease / Effortless</p>
+                <p>Communication / Workable</p>
+                <p>Warmth / Easy &amp; warm</p>
+                <p>→ What Daniel needs from you — Lead with the feeling, not the verdict — Libra freezes when it feels judged, opens when it feels invited.</p>
+              </div>
             </article>
             <article style={card}>
               <h3 style={cardTitle}>02 — Understand — Understand what's between you.</h3>
@@ -81,9 +89,15 @@ export default function MarketingPage() {
                 both, without ever taking a side.
               </p>
               <p style={mock}>
-                Ask Vela · private · About Daniel · Why do we keep having the same fight? → Here's the root: you move
-                fast and say it out loud; Daniel goes quiet to keep the peace. Winning isn't the goal — naming the
-                pattern before you're in it is. Try: "we're doing the thing again, can we slow down?"
+                Ask Vela · private
+                <br />
+                About Daniel
+                <br />
+                Why do we keep having the same fight?
+                <br />
+                Here's the root: you move fast and say it out loud; Daniel goes quiet to keep the peace. Winning isn't
+                the goal — naming the pattern before you're in it is. Try: "we're doing the thing again, can we slow
+                down?"
               </p>
             </article>
           </div>
@@ -99,13 +113,18 @@ export default function MarketingPage() {
             whole circle: what you share, and where you quietly diverge.
           </p>
           <aside style={{ ...card, borderColor: "var(--teal)" }}>
-            <strong style={{ color: "var(--teal)" }}>It needs only a birth year.</strong> So the people you have the
-            least on — a grandmother, an old friend, the ones who came before — still take their place in your sky.
+            <strong style={{ color: "var(--teal)" }}>It needs only a birth year.</strong> So the people you have the least on — a grandmother, an old friend, the ones who came before — still take their place in your sky.
           </aside>
-          <p style={mock}>
-            Your group / The cousins · Shared sky: Uranus in Aquarius, Neptune in Capricorn, Pluto in Scorpio · Fault
-            line: youngest carries Pluto in Sagittarius — more restless and free, less guarded than the rest of you.
-          </p>
+          <div style={mock}>
+            <p><strong>Your group / The cousins</strong></p>
+            <p>S M N J +2</p>
+            <p><strong>Your shared sky</strong></p>
+            <p>♅ Uranus in Aquarius — The reformers, wired to question the rules</p>
+            <p>♆ Neptune in Capricorn — A pragmatic, build-it kind of dreaming</p>
+            <p>♇ Pluto in Scorpio — Intensity, loyalty, all-or-nothing depth</p>
+            <p><strong>Where you split / Fault line</strong></p>
+            <p>The youngest carries Pluto in Sagittarius — more restless and free, less guarded than the rest of you.</p>
+          </div>
         </section>
 
         <section id="vela">
@@ -117,12 +136,15 @@ export default function MarketingPage() {
             plain relationship sense. It never invents the chart, never takes a side in a shared space, and never
             breaches your privacy.
           </p>
-          <p style={mock}>
-            Vela · parenting guidance · She's 16 and shuts me out. What do I do? → Sofia's Capricorn Moon needs to
-            feel competent, not managed. She doesn't open up head-on — she opens up sideways, low-stakes. Drop the
-            face-to-face talk; sit beside her in the car and let silence do half the work. Want a gentle way to
-            start?
-          </p>
+          <div style={mock}>
+            <p>Vela · parenting guidance</p>
+            <p>She's 16 and shuts me out. What do I do?</p>
+            <p>
+              Sofia's Capricorn Moon needs to feel competent, not managed. She doesn't open up head-on — she opens up
+              sideways, low-stakes. Drop the face-to-face talk; sit beside her in the car and let silence do half the
+              work. Want a gentle way to start?
+            </p>
+          </div>
         </section>
 
         <section id="trust">
@@ -186,7 +208,9 @@ export default function MarketingPage() {
             The small, bright, irreplaceable galaxy that is yours.
           </h2>
           <div style={{ display: "grid", placeItems: "center" }}>
-            <WaitlistForm source="close" />
+            <Link href="/signup" className="pill-link pill-link--gold">
+              Sign up
+            </Link>
             <p style={{ color: "var(--mist2)" }}>Be among the first to map your galaxy.</p>
           </div>
         </section>
@@ -199,6 +223,7 @@ export default function MarketingPage() {
           <span style={{ display: "flex", gap: 10 }}>
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>
+            <a href={`${siteUrl}/account`}>Account</a>
           </span>
         </div>
       </footer>
@@ -271,3 +296,28 @@ const mock: CSSProperties = {
   background: "rgba(23,17,48,.6)",
   fontSize: 14
 };
+
+function HeroSignup() {
+  return (
+    <form action="/signup" method="GET" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+      <input
+        aria-label="Email address"
+        required
+        name="email"
+        type="email"
+        placeholder="you@example.com"
+        style={{
+          minWidth: 240,
+          borderRadius: 999,
+          border: "1px solid var(--line)",
+          background: "var(--ink2)",
+          color: "var(--cream)",
+          padding: "12px 16px"
+        }}
+      />
+      <button className="pill-link pill-link--gold" type="submit">
+        Sign up
+      </button>
+    </form>
+  );
+}

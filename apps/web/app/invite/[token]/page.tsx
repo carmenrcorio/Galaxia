@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const invite = await getInviteByToken(token);
-  const siteUrl = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
+  const siteUrl = publicEnv.siteUrl || "";
   const deepLink = `${siteUrl}/invite/${token}`;
 
   if (!invite) {

@@ -1,23 +1,28 @@
 import type { Metadata } from "next";
-import { tokens } from "../lib/tokens";
-import type { CSSProperties, ReactNode } from "react";
+import { Fraunces, Inter } from "next/font/google";
+import type { ReactNode } from "react";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Galaxia",
   description: "Astrologically-driven relationship intelligence"
 };
 
-const containerStyle: CSSProperties = {
-  minHeight: "100vh",
-  background: tokens.colors.ink,
-  color: tokens.colors.cream,
-  fontFamily: "Inter, sans-serif"
-};
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--font-fraunces"
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter"
+});
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body style={containerStyle}>{children}</body>
+      <body className={`${inter.variable} ${fraunces.variable}`}>{children}</body>
     </html>
   );
 }

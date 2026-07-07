@@ -1,7 +1,6 @@
 "use client";
 
 import { buildVelaContext, detectCrisisLanguage } from "@galaxia/vela";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { publicEnv } from "../../../lib/env";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
@@ -26,7 +25,6 @@ interface ChatLine {
 }
 
 export default function VelaPage() {
-  const searchParams = useSearchParams();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [mode, setMode] = useState<VelaMode>("ask");
   const [scope, setScope] = useState<Scope>("person");
@@ -44,11 +42,15 @@ export default function VelaPage() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [userName, setUserName] = useState("You");
 
-  const initialThreadId = searchParams.get("threadId");
+  const [initialThreadId, setInitialThreadId] = useState<string | null>(null);
   const selectedSubject = people.find((person) => person.id === subjectPersonId) ?? null;
   const selectedPair = people.find((person) => person.id === pairPersonId) ?? null;
   const minorInScope = scope === "person" ? selectedSubject?.is_minor ?? false : scope === "pair" ? Boolean(selectedSubject?.is_minor || selectedPair?.is_minor) : false;
   const sharedBlocked = mode === "shared" && minorInScope;
+
+  useEffect(() => {
+    setInitialThreadId(new URLSearchParams(window.location.search).get("threadId"));
+  }, []);
 
   useEffect(() => {
     const load = async () => {

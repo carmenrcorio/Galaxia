@@ -16,6 +16,7 @@
     "@galaxia/vela": "workspace:^",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
+    "astronomy-engine": "^2.1.19",
     "next": "^15.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

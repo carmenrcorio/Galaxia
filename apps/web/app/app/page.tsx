@@ -171,6 +171,16 @@ export default function AppHomePage() {
             );
           })}
         </svg>
+        {people.length > 0 ? (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+            {people.map((person) => (
+              <Link key={person.id} href={`/app/person/${person.id}`} className="pill-link">
+                {person.display_name}
+                {person.is_self ? " (you)" : ""}
+              </Link>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <section className="glass-card">

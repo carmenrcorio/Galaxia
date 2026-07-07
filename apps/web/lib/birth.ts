@@ -5,6 +5,7 @@ export interface BirthFormInput {
   date: string;
   time: string;
   year: string;
+  birthPlace?: string;
   lat?: string;
   lng?: string;
 }
@@ -15,7 +16,8 @@ function parseOptionalFloat(value?: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-export function buildBirthInput(input: BirthFormInput): { birth: Birth; birthDate: string; birthTime: string | null } {
+export function buildBirthInput(input: BirthFormInput): { birth: Birth; birthDate: string; birthTime: string | null; birthPlace: string | null } {
+  const normalizedPlace = input.birthPlace?.trim() ? input.birthPlace.trim() : null;
   if (input.precision === "year") {
     const year = Number(input.year);
     if (!Number.isInteger(year) || year < 1800 || year > 2200) {
@@ -29,7 +31,8 @@ export function buildBirthInput(input: BirthFormInput): { birth: Birth; birthDat
         lng: parseOptionalFloat(input.lng)
       },
       birthDate: `${year}-01-01`,
-      birthTime: null
+      birthTime: null,
+      birthPlace: normalizedPlace
     };
   }
 
@@ -50,6 +53,7 @@ export function buildBirthInput(input: BirthFormInput): { birth: Birth; birthDat
       lng: parseOptionalFloat(input.lng)
     },
     birthDate: input.date,
-    birthTime: input.precision === "exact" ? `${input.time}:00` : null
+    birthTime: input.precision === "exact" ? `${input.time}:00` : null,
+    birthPlace: normalizedPlace
   };
 }

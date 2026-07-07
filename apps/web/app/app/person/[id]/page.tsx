@@ -1,6 +1,6 @@
 "use client";
 
-import type { NatalChart } from "@galaxia/astro";
+import { computeSynastry, type NatalChart } from "@galaxia/astro";
 import { describeGenerationalArchetype } from "@galaxia/core";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -53,6 +53,22 @@ export default function PersonProfilePage() {
       },
       { fire: 0, earth: 0, air: 0, water: 0 }
     );
+  }, [chart]);
+
+  const natalAspects = useMemo(() => {
+    if (!chart) return [];
+    const dedupe = new Set<string>();
+    const aspects = computeSynastry(chart, chart).aspects
+      .filter((aspect) => aspect.from !== aspect.to)
+      .filter((aspect) => {
+        const key = [aspect.from, aspect.to].sort().join(":") + `:${aspect.type}`;
+        if (dedupe.has(key)) return false;
+        dedupe.add(key);
+        return true;
+      })
+      .sort((a, b) => a.orb - b.orb)
+      .slice(0, 14);
+    return aspects;
   }, [chart]);
 
   async function loadProfile(uid: string) {
@@ -140,6 +156,16 @@ export default function PersonProfilePage() {
         {chart.placements.map((placement) => (
           <p key={placement.body} className="muted">
             {placement.body.toUpperCase()} {placement.sign} {placement.degree.toFixed(1)}°{placement.house ? ` · House ${placement.house}` : ""}
+          </p>
+        ))}
+      </section>
+
+      <section className="glass-card">
+        <h2 style={{ marginTop: 0 }}>Aspects</h2>
+        {natalAspects.length === 0 ? <p className="muted">No major aspects found.</p> : null}
+        {natalAspects.map((aspect, idx) => (
+          <p key={`${aspect.from}-${aspect.to}-${aspect.type}-${idx}`} className="muted">
+            {aspect.from.toUpperCase()} {aspect.type} {aspect.to.toUpperCase()} · orb {aspect.orb.toFixed(1)}°
           </p>
         ))}
       </section>

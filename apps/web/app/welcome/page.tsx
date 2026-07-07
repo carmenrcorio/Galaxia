@@ -21,6 +21,7 @@ const baseInput: BirthFormInput = {
   date: "",
   time: "",
   year: "",
+  birthPlace: "",
   lat: "",
   lng: ""
 };
@@ -101,6 +102,7 @@ export default function WelcomePage() {
         is_minor: isMinor,
         birth_date: built.birthDate,
         birth_time: built.birthTime,
+        birth_place: built.birthPlace,
         birth_precision: input.precision,
         birth_lat: built.birth.lat,
         birth_lng: built.birth.lng
@@ -250,6 +252,7 @@ function BirthFields({ input, onChange }: { input: BirthFormInput; onChange: (ne
           ) : null}
         </>
       )}
+      <input className="field" value={input.birthPlace ?? ""} onChange={(event) => onChange({ ...input, birthPlace: event.target.value })} placeholder="Birth city (e.g. Buenos Aires)" />
       <input className="field" value={input.lat ?? ""} onChange={(event) => onChange({ ...input, lat: event.target.value })} placeholder="Latitude (optional)" />
       <input className="field" value={input.lng ?? ""} onChange={(event) => onChange({ ...input, lng: event.target.value })} placeholder="Longitude (optional)" />
     </div>

@@ -11,8 +11,6 @@ export async function GET() {
     }
   };
   return new Response(JSON.stringify(payload), {
-    headers: {
-      "Content-Type": "application/json"
-    }
+    headers: { "Content-Type": "application/json" }
   });
 }

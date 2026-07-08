@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       }
@@ -23,7 +23,8 @@ export async function middleware(request: NextRequest) {
     data: { user }
   } = await supabase.auth.getUser();
 
-  if (!user && request.nextUrl.pathname.startsWith("/account")) {
+  const guarded = request.nextUrl.pathname.startsWith("/app") || request.nextUrl.pathname.startsWith("/account") || request.nextUrl.pathname.startsWith("/welcome");
+  if (!user && guarded) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
@@ -34,5 +35,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/account/:path*"]
+  matcher: ["/app/:path*", "/account/:path*", "/welcome"]
 };

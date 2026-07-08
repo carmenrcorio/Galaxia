@@ -1,21 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "../lib/supabase/client";
+import { useMemo, useState } from "react";
 import { getSiteUrlFromRequestOrigin } from "../lib/env";
-
-function signupErrorMessage(message: string) {
-  const normalized = message.toLowerCase();
-  if (normalized.includes("already registered") || normalized.includes("already been registered")) {
-    return "That email is already registered. Log in instead.";
-  }
-  if (normalized.includes("password")) {
-    return "Choose a stronger password with at least 6 characters.";
-  }
-  return "We couldn't create your account. Please try again.";
-}
+import { createSupabaseBrowserClient } from "../lib/supabase/client";
 
 export function SignupForm({ initialEmail = "" }: { initialEmail?: string }) {
   const router = useRouter();
@@ -37,30 +26,27 @@ export function SignupForm({ initialEmail = "" }: { initialEmail?: string }) {
         emailRedirectTo: `${siteUrl}/auth/callback`
       }
     });
-
     if (signUpError) {
-      setError(signupErrorMessage(signUpError.message));
+      setError(signUpError.message.toLowerCase().includes("already") ? "That email is already registered. Log in instead." : signUpError.message);
       setStatus("idle");
       return;
     }
-
     if (data.session) {
-      router.push("/account");
+      router.push("/welcome");
       router.refresh();
       return;
     }
-
     setStatus("confirm");
   };
 
   return (
     <div className="glass-card" style={{ maxWidth: 460 }}>
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 10 }}>
-        <label className="label" htmlFor="signup-email">
+        <label className="muted" htmlFor="signup-email">
           Email
         </label>
         <input id="signup-email" className="field" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-        <label className="label" htmlFor="signup-password">
+        <label className="muted" htmlFor="signup-password">
           Password
         </label>
         <input id="signup-password" className="field" required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
@@ -70,11 +56,11 @@ export function SignupForm({ initialEmail = "" }: { initialEmail?: string }) {
       </form>
       {status === "confirm" ? <p className="success">Check your email to confirm your account.</p> : null}
       {error ? <p className="error">{error}</p> : null}
-      <p className="muted" style={{ marginTop: 10 }}>
+      <p className="muted">
         Already have an account? <Link href="/login">Log in</Link>
       </p>
       <p className="muted">
-        Prefer mobile first? <Link href="/download">Get the app</Link>
+        Want mobile? <Link href="/download">Get the app</Link>
       </p>
     </div>
   );

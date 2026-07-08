@@ -7,16 +7,6 @@ export const publicEnv = {
   testflightUrl: process.env.NEXT_PUBLIC_TESTFLIGHT_URL ?? ""
 };
 
-export const privateEnv = {
-  serviceRole: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
-  resendApiKey: process.env.RESEND_API_KEY ?? "",
-  stripeSecret: process.env.STRIPE_SECRET_KEY ?? ""
-};
-
-export function hasSupabaseClientEnv() {
-  return Boolean(publicEnv.supabaseUrl && publicEnv.supabaseAnonKey);
-}
-
 export function getSiteUrlFromRequestOrigin(origin?: string) {
   return publicEnv.siteUrl || origin || "";
 }

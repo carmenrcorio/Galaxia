@@ -3,6 +3,11 @@ import { Fraunces, Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
 
+export const metadata: Metadata = {
+  title: "Galaxia",
+  description: "Astrologically-driven relationship intelligence"
+};
+
 const fraunces = Fraunces({
   subsets: ["latin"],
   style: ["normal", "italic"],
@@ -13,11 +18,6 @@ const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter"
 });
-
-export const metadata: Metadata = {
-  title: "Galaxia",
-  description: "Astrologically-driven relationship intelligence"
-};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

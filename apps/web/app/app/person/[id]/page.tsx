@@ -6,7 +6,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { InitialAvatar } from "../../../../components/initial-avatar";
+import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { BODY_GLYPH, SIGN_GLYPH, signElement } from "../../../../lib/design";
+import { interpretBigThree, interpretPlacement } from "../../../../lib/interpretations";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 
 interface PersonRow {
@@ -14,6 +16,12 @@ interface PersonRow {
   display_name: string;
   relation: string;
   birth_precision: "exact" | "date" | "year";
+  is_minor: boolean;
+  birth_date?: string | null;
+  birth_time?: string | null;
+  birth_place?: string | null;
+  birth_lat?: number | null;
+  birth_lng?: number | null;
 }
 
 interface NoteRow {
@@ -26,12 +34,14 @@ function PlacementRow({ body, sign, degree, house }: { body: string; sign: strin
   const glyph = BODY_GLYPH[body] ?? body.charAt(0).toUpperCase();
   const signGlyph = SIGN_GLYPH[sign] ?? "";
   const el = signElement(sign);
+  const interp = interpretPlacement(body, sign);
   return (
     <div className="placement-row">
       <span className="glyph" title={body}>{glyph}</span>
       <span className="placement-body">{body}</span>
       <span className={`placement-sign el-${el}`}>{signGlyph} {sign}</span>
       <span className="placement-deg">{degree.toFixed(1)}°{house ? ` · H${house}` : ""}</span>
+      {interp ? <span className="placement-interp">{interp}</span> : null}
     </div>
   );
 }
@@ -96,7 +106,7 @@ export default function PersonProfilePage() {
     }
 
     const [{ data: personData, error: pErr }, { data: chartData, error: cErr }, { data: noteData }] = await Promise.all([
-      supabase.from("people").select("id, display_name, relation, birth_precision").eq("id", actualPersonId).single(),
+      supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, birth_date, birth_time, birth_place, birth_lat, birth_lng").eq("id", actualPersonId).single(),
       supabase.from("charts").select("data").eq("person_id", actualPersonId).single(),
       supabase.from("notes").select("id, body, created_at").eq("about_person", actualPersonId).order("created_at", { ascending: false }).limit(20)
     ]);
@@ -171,9 +181,10 @@ export default function PersonProfilePage() {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link className="pill-link" href="/app/compare">Compare</Link>
         <Link className="pill-link" href="/app/vela">Ask Vela</Link>
+        <EditPersonPanel person={person} userId={userId ?? ""} onSaved={() => loadProfile(userId ?? "")} onDeleted={() => window.location.href = "/app"} />
       </div>
 
       {/* ── Big Three ── */}
@@ -193,7 +204,7 @@ export default function PersonProfilePage() {
                 {s ? (
                   <>
                     <span className={`placement-sign el-${signElement(s)}`}>{SIGN_GLYPH[s]} {s}</span>
-                    <span className="placement-interp">{note}</span>
+                    <span className="placement-interp">{interpretBigThree(label.toLowerCase() as "sun"|"moon"|"rising", s)}</span>
                   </>
                 ) : (
                   <span className="placement-deg" style={{ fontStyle: "italic" }}>

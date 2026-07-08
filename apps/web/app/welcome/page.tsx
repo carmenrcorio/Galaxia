@@ -253,7 +253,10 @@ export default function WelcomePage() {
           This person is a minor
         </label>
         <BirthFields input={personInput} onChange={setPersonInput} />
-        <button className="pill-link pill-link--gold" disabled={!canSavePerson || savingPerson} onClick={savePerson} style={{ marginTop: 12 }}>
+        {people.length >= peopleLimit ? (
+          <p className="error" style={{ fontSize: 13, margin: "8px 0 0" }}>Free plan: 5-person limit reached. Upgrade to Galaxia+ for unlimited people.</p>
+        ) : null}
+        <button className="pill-link pill-link--gold" disabled={!canSavePerson || savingPerson || people.length >= peopleLimit} onClick={savePerson} style={{ marginTop: 12 }}>
           {savingPerson ? "Adding…" : "Add to constellation"}
         </button>
       </section>

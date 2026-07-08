@@ -310,7 +310,6 @@ export default function VelaPage() {
       </section>
 
       {status ? <p className="success">{status}</p> : null}
-      <small className="muted">Edge function: {functionUrl}</small>
     </main>
   );
 }

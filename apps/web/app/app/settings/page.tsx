@@ -21,15 +21,11 @@ export default function SettingsPage() {
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [groups, setGroups] = useState<GroupLite[]>([]);
   const [status, setStatus] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      setUserId(user.id);
       const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
         supabase.from("profiles").select("subscription_tier").eq("id", user.id).single(),
         supabase.from("people").select("id, display_name, relation").eq("owner_id", user.id).order("display_name", { ascending: true }),
@@ -42,71 +38,72 @@ export default function SettingsPage() {
     void load();
   }, [supabase]);
 
-  const switchTier = async () => {
-    if (!userId) return;
-    const nextTier = tier === "free" ? "plus" : "free";
-    const { error } = await supabase.from("profiles").upsert({ id: userId, subscription_tier: nextTier });
-    if (error) {
-      setStatus(error.message);
-      return;
-    }
-    setTier(nextTier);
-    setStatus(nextTier === "plus" ? "Galaxia+ enabled (debug toggle)." : "Switched to free tier.");
-  };
-
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
-    if (error) {
-      setStatus(error.message);
-      return;
-    }
+    if (error) { setStatus(error.message); return; }
     window.location.href = "/login";
   };
 
   return (
-    <main className="container" style={{ padding: "30px 0 80px", display: "grid", gap: 12 }}>
-      <h1 className="auth-title">Settings</h1>
+    <main className="container app-content">
+      <p className="eyebrow">Account</p>
+      <h1 className="page-title">Settings</h1>
 
       <section className="glass-card">
-        <h2 style={{ marginTop: 0 }}>Subscription</h2>
-        <p className="muted">Current plan: {tier === "plus" ? "Galaxia+" : "Free"}</p>
-        <button className="pill-link pill-link--gold" onClick={switchTier}>
-          {tier === "plus" ? "Switch to Free (debug)" : "Upgrade to Galaxia+ (debug)"}
-        </button>
+        <h2 className="card-title">Subscription</h2>
+        {tier === "plus" ? (
+          <p className="muted">You're on <strong style={{ color: "var(--gold)" }}>Galaxia+</strong> — unlimited people, groups, and Vela.</p>
+        ) : (
+          <>
+            <p className="muted">You're on the <strong>Free</strong> plan — up to 5 people and 12 Vela messages per day.</p>
+            <div className="upsell-card">
+              <p style={{ margin: "0 0 4px", fontFamily: "var(--font-fraunces)", fontSize: 18, color: "var(--cream)" }}>
+                Galaxia+ — <em>coming soon</em>
+              </p>
+              <p className="muted" style={{ margin: "0 0 10px", fontSize: 14 }}>Unlimited people, groups, cohort overlays, and Vela conversations. Early access pricing for founding members.</p>
+              <span className="pill-link">Notify me when it's available</span>
+            </div>
+          </>
+        )}
       </section>
 
       <section className="glass-card">
-        <h2 style={{ marginTop: 0 }}>Privacy & shared spaces</h2>
-        <p className="muted">Private notes are owner-only and excluded from shared-mode Vela context.</p>
-        <p className="muted">Shared spaces require participant consent and are blocked for minor-involved scopes.</p>
+        <h2 className="card-title">Privacy</h2>
+        <p className="muted">Your private notes are visible only to you — never shared with the person they're about and never included in shared-space Vela conversations.</p>
+        <p className="muted">Shared spaces require consent from all participants and are blocked when any participant is a minor.</p>
       </section>
 
       <section className="glass-card">
-        <h2 style={{ marginTop: 0 }}>People</h2>
-        {people.length === 0 ? <p className="muted">No people yet.</p> : null}
-        {people.map((person) => (
-          <div key={person.id} className="glass-card" style={{ padding: 10 }}>
-            <strong>{person.display_name}</strong>
-            <div className="muted">{person.relation}</div>
+        <h2 className="card-title">Your people ({people.length})</h2>
+        {people.length === 0 ? (
+          <p className="muted">No people yet — add yourself and your circle in <a href="/welcome" style={{ color: "var(--gold)" }}>onboarding</a>.</p>
+        ) : null}
+        <div style={{ display: "grid", gap: 6 }}>
+          {people.map((person) => (
+            <div key={person.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
+              <span style={{ color: "var(--cream)" }}>{person.display_name}</span>
+              <span className="muted" style={{ fontSize: 13 }}>{person.relation}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {groups.length > 0 ? (
+        <section className="glass-card">
+          <h2 className="card-title">Your groups ({groups.length})</h2>
+          <div style={{ display: "grid", gap: 6 }}>
+            {groups.map((group) => (
+              <div key={group.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
+                <span style={{ color: "var(--cream)" }}>{group.name}</span>
+                <span className="muted" style={{ fontSize: 13 }}>{group.kind}</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </section>
+        </section>
+      ) : null}
 
-      <section className="glass-card">
-        <h2 style={{ marginTop: 0 }}>Groups</h2>
-        {groups.length === 0 ? <p className="muted">No groups yet.</p> : null}
-        {groups.map((group) => (
-          <div key={group.id} className="glass-card" style={{ padding: 10 }}>
-            <strong>{group.name}</strong>
-            <div className="muted">{group.kind}</div>
-          </div>
-        ))}
-      </section>
-
-      <button className="pill-link" onClick={signOut}>
-        Sign out
-      </button>
-      {status ? <p className="success">{status}</p> : null}
+      <button className="pill-link" onClick={signOut}>Sign out</button>
+      {status ? <p className="error">{status}</p> : null}
     </main>
   );
 }

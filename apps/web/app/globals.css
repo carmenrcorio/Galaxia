@@ -1,3 +1,4 @@
+/* ─── Design tokens ──────────────────────────────────────────────── */
 :root {
   --ink: #100b22;
   --ink1: #171130;
@@ -15,25 +16,24 @@
   --earth: #b6a86a;
   --air: #b79ad8;
   --water: #6fb1b8;
+  /* avatar palette — deterministic by initial */
+  --av1: #e6ae6c; --av2: #6fb1b8; --av3: #da8c8c;
+  --av4: #b79ad8; --av5: #e0825c; --av6: #b6a86a;
 }
 
-* {
-  box-sizing: border-box;
-}
+/* ─── Reset ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
-html,
-body {
+html, body {
   margin: 0;
   padding: 0;
-  background: radial-gradient(1200px 600px at 20% -10%, #22174a 0%, var(--ink) 55%);
+  background: radial-gradient(1200px 600px at 20% -10%, #22174a 0%, var(--ink) 55%) fixed;
   color: var(--cream);
   font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+a { color: inherit; text-decoration: none; }
 
 a:focus-visible,
 button:focus-visible,
@@ -44,65 +44,398 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
+/* ─── Layout ─────────────────────────────────────────────────────── */
 .container {
   width: min(1100px, 94vw);
   margin: 0 auto;
 }
 
-.glass-card {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(44, 33, 82, 0.52), rgba(23, 17, 48, 0.92));
-  backdrop-filter: blur(6px);
-  padding: 16px;
+/* App screen content: centered, max-width, comfortable vertical padding */
+.app-content {
+  width: min(860px, 94vw);
+  margin: 0 auto;
+  padding: 32px 0 96px;
+  display: grid;
+  gap: 16px;
 }
 
-.pill-link {
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--ink3);
+/* Two-column split for wide screens (picker | results) */
+.split-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .split-layout { grid-template-columns: 1fr; }
+}
+
+/* ─── Typography ─────────────────────────────────────────────────── */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+  margin: 0 0 4px;
+}
+
+.page-title {
+  font-family: var(--font-fraunces), serif;
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.1;
+  margin: 0 0 4px;
   color: var(--cream);
-  padding: 10px 16px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
 }
 
-.pill-link--gold {
-  background: var(--gold);
-  border-color: transparent;
-  color: var(--ink);
-}
-
-.field {
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: rgba(23, 17, 48, 0.9);
+.card-title {
+  font-family: var(--font-fraunces), serif;
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0 0 10px;
   color: var(--cream);
-  padding: 12px 14px;
-  width: 100%;
 }
 
-.field::placeholder {
-  color: var(--mist2);
-}
-
+/* legacy auth pages */
 .auth-title {
   font-family: var(--font-fraunces), serif;
   font-size: clamp(34px, 5vw, 54px);
   margin: 0 0 10px;
 }
 
-.muted {
-  color: var(--mist);
+.muted   { color: var(--mist); }
+.success { color: var(--gold); }
+.error   { color: var(--rose); }
+
+/* ─── Cards ──────────────────────────────────────────────────────── */
+.glass-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(44,33,82,.55), rgba(23,17,48,.93));
+  backdrop-filter: blur(8px);
+  padding: 18px;
 }
 
-.success {
+/* Upsell / callout card */
+.upsell-card {
+  margin-top: 12px;
+  border: 1px solid var(--gold-soft);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(230,174,108,.08), rgba(23,17,48,.7));
+  padding: 14px 16px;
+}
+
+/* ─── Controls ───────────────────────────────────────────────────── */
+.pill-link {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--ink3);
+  color: var(--cream);
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms;
+}
+
+.pill-link:hover { background: rgba(58,47,99,.9); }
+
+.pill-link--gold {
+  background: var(--gold);
+  border-color: transparent;
+  color: var(--ink);
+}
+.pill-link--gold:hover { background: var(--gold-soft); }
+
+.pill-link--teal {
+  background: rgba(111,177,184,.15);
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.field {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(23,17,48,.9);
+  color: var(--cream);
+  padding: 11px 14px;
+  width: 100%;
+  font-family: inherit;
+  font-size: 15px;
+  transition: border-color 150ms;
+}
+.field:focus { border-color: var(--gold-soft); outline: none; }
+.field::placeholder { color: var(--mist2); }
+
+select.field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b80b0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+/* ─── Initial avatars ────────────────────────────────────────────── */
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+  color: var(--ink);
+}
+.avatar-lg { width: 48px; height: 48px; font-size: 18px; }
+.avatar-sm { width: 24px; height: 24px; font-size: 11px; }
+
+/* Avatar colors cycle through palette */
+.av-0 { background: var(--av1); }
+.av-1 { background: var(--av2); }
+.av-2 { background: var(--av3); }
+.av-3 { background: var(--av4); }
+.av-4 { background: var(--av5); }
+.av-5 { background: var(--av6); }
+
+.person-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ─── Zodiac glyphs ─────────────────────────────────────────────── */
+.glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(230,174,108,.12);
+  border: 1px solid rgba(230,174,108,.3);
+  font-size: 14px;
+  flex-shrink: 0;
   color: var(--gold);
 }
 
-.error {
-  color: var(--rose);
+.placement-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(58,47,99,.6);
+}
+.placement-row:last-child { border-bottom: none; }
+
+.placement-body {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--mist2);
+  width: 52px;
+  flex-shrink: 0;
+}
+
+.placement-sign {
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.placement-deg {
+  color: var(--mist2);
+  font-size: 13px;
+}
+
+.placement-interp {
+  color: var(--mist);
+  font-size: 13px;
+  font-style: italic;
+  margin-left: auto;
+  text-align: right;
+  max-width: 180px;
+}
+
+/* Element color accents on placement rows */
+.el-fire  { color: var(--fire); }
+.el-earth { color: var(--earth); }
+.el-air   { color: var(--air); }
+.el-water { color: var(--water); }
+
+/* ─── Vela chat bubbles ──────────────────────────────────────────── */
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 460px;
+  overflow-y: auto;
+  padding: 4px 0 8px;
+  scroll-behavior: smooth;
+}
+
+.bubble {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  line-height: 1.55;
+  font-size: 15px;
+  word-break: break-word;
+}
+
+.bubble-user {
+  align-self: flex-end;
+  background: var(--gold);
+  color: var(--ink);
+  border-bottom-right-radius: 4px;
+}
+
+.bubble-vela {
+  align-self: flex-start;
+  background: linear-gradient(135deg, rgba(44,33,82,.85), rgba(23,17,48,.95));
+  border: 1px solid var(--line);
+  color: var(--cream);
+  border-bottom-left-radius: 4px;
+}
+
+.bubble-system {
+  align-self: center;
+  background: transparent;
+  color: var(--mist2);
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+.bubble-sender {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.bubble-user   .bubble-sender { color: rgba(16,11,34,.6); }
+.bubble-vela   .bubble-sender { color: var(--gold-soft); }
+
+/* Typing indicator */
+.typing-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mist2);
+  animation: blink 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes blink {
+  0%, 80%, 100% { opacity: .25; }
+  40%           { opacity: 1; }
+}
+
+/* Suggested prompt chips */
+.prompt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.prompt-chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(58,47,99,.5);
+  color: var(--mist);
+  font-size: 13px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: border-color 150ms, color 150ms;
+}
+.prompt-chip:hover { border-color: var(--gold-soft); color: var(--cream); }
+
+/* ─── Compatibility score cards ─────────────────────────────────── */
+.compat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.compat-cell {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(23,17,48,.6);
+  text-align: center;
+}
+
+.compat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--mist2);
+  margin-bottom: 4px;
+}
+
+.compat-word {
+  font-family: var(--font-fraunces), serif;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.compat-high   { color: var(--gold); }
+.compat-mid    { color: var(--teal); }
+.compat-low    { color: var(--rose); }
+
+/* ─── Skeleton loaders ───────────────────────────────────────────── */
+@keyframes shimmer {
+  from { background-position: -400px 0; }
+  to   { background-position:  400px 0; }
+}
+
+.skeleton {
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(58,47,99,.3) 25%,
+    rgba(58,47,99,.6) 50%,
+    rgba(58,47,99,.3) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+.skeleton-text  { height: 14px; margin-bottom: 8px; border-radius: 4px; }
+.skeleton-title { height: 28px; margin-bottom: 12px; width: 60%; border-radius: 6px; }
+
+/* ─── Entrance animation for cards ──────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeUp 320ms ease both;
+}
+.fade-in-delay-1 { animation-delay: 60ms; }
+.fade-in-delay-2 { animation-delay: 120ms; }
+.fade-in-delay-3 { animation-delay: 180ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in, .fade-in-delay-1, .fade-in-delay-2, .fade-in-delay-3 {
+    animation: none;
+  }
+  .typing-dot { animation: none; opacity: 1; }
+  .skeleton   { animation: none; }
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .app-content { padding: 20px 0 80px; gap: 12px; }
+  .bubble { max-width: 92%; font-size: 14px; }
 }

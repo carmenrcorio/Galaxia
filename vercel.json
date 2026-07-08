@@ -1,6 +1,0 @@
-{
-  "framework": "nextjs",
-  "installCommand": "npx --yes pnpm@9.15.9 install --no-frozen-lockfile --filter \"@galaxia/web...\"",
-  "buildCommand": "npx --yes pnpm@9.15.9 --filter @galaxia/web build",
-  "outputDirectory": "apps/web/.next"
-}

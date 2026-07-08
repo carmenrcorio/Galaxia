@@ -1,5 +1,6 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter @galaxia/web build"
+  "framework": "nextjs",
+  "installCommand": "npx --yes pnpm@9.15.9 install --no-frozen-lockfile --filter \"@galaxia/web...\"",
+  "buildCommand": "npx --yes pnpm@9.15.9 --filter @galaxia/web build",
+  "outputDirectory": "apps/web/.next"
 }

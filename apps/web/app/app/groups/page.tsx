@@ -135,12 +135,13 @@ export default function GroupsPage() {
   }
 
   return (
-    <main className="container" style={{ padding: "30px 0 80px", display: "grid", gap: 12 }}>
-      <h1 className="auth-title">Groups & Cohorts</h1>
+    <main className="app-content">
+      <p className="eyebrow">Cohorts</p>
+      <h1 className="page-title">Groups</h1>
       <p className="muted">Build sibling/friend/family sets and see shared sky + generational fault lines.</p>
 
       <section className="glass-card">
-        <h2 style={{ marginTop: 0 }}>Saved groups</h2>
+        <h2 className="card-title">Saved groups</h2>
         {groups.length === 0 ? <p className="muted">No groups yet. Create one below.</p> : null}
         <div style={{ display: "grid", gap: 8 }}>
           {groups.map((group) => (
@@ -153,7 +154,7 @@ export default function GroupsPage() {
       </section>
 
       <section className="glass-card">
-        <h2 style={{ marginTop: 0 }}>Create / edit cohort</h2>
+        <h2 className="card-title">Create / edit cohort</h2>
         <input className="field" value={groupName} onChange={(event) => setGroupName(event.target.value)} placeholder="Group name (e.g. Siblings)" />
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {(["siblings", "friends", "family", "group"] as GroupKind[]).map((kind) => (
@@ -186,12 +187,12 @@ export default function GroupsPage() {
       {cohort ? (
         <>
           <section className="glass-card">
-            <h2 style={{ marginTop: 0 }}>{cohort.groupLabel}</h2>
+            <h2 className="card-title">{cohort.groupLabel}</h2>
             <p className="muted">Members: {cohort.memberNames.join(", ")}</p>
             <p className="muted">{cohort.overlay.label}</p>
           </section>
           <section className="glass-card">
-            <h2 style={{ marginTop: 0 }}>Shared sky</h2>
+            <h2 className="card-title">Shared sky</h2>
             {cohort.overlay.sharedSky.map((item: any) => (
               <p key={`${item.planet}-${item.sign}`} className="muted">
                 {item.planet.toUpperCase()} in {item.sign}
@@ -199,7 +200,7 @@ export default function GroupsPage() {
             ))}
           </section>
           <section className="glass-card">
-            <h2 style={{ marginTop: 0 }}>Fault lines</h2>
+            <h2 className="card-title">Fault lines</h2>
             {cohort.overlay.faultLines.length === 0 ? <p className="muted">No major splits.</p> : null}
             {cohort.overlay.faultLines.map((line: any) => (
               <div key={line.planet}>
@@ -216,7 +217,6 @@ export default function GroupsPage() {
       ) : null}
 
       {status ? <p className="success">{status}</p> : null}
-      <small className="muted">{userId ? "Connected to shared Supabase account." : "Checking session..."}</small>
     </main>
   );
 }

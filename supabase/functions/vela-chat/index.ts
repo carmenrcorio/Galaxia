@@ -128,16 +128,14 @@ Deno.serve(async (req) => {
 
   try {
     // ── Env / config ─────────────────────────────────────────────────────────
-    // Auto-injected by Supabase into every edge function — always present
-    const supabaseUrl    = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl    = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const anthropicKey   = Deno.env.get("ANTHROPIC_API_KEY");
     const anthropicModel = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-5";
 
-    // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are always auto-injected by Supabase
-    // into every edge function — do not guard on them (and Supabase blocks manually
-    // setting secrets with the SUPABASE_ prefix anyway).
-    // The only secret that must be manually added is ANTHROPIC_API_KEY.
+    if (!supabaseUrl || !serviceRoleKey) {
+      return jsonResponse(500, { error: "Missing Supabase environment variables." });
+    }
     if (!anthropicKey) {
       return jsonResponse(503, {
         error: "Vela isn't configured yet — add ANTHROPIC_API_KEY to the vela-chat function secrets in Supabase."

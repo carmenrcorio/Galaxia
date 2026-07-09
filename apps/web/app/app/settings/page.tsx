@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Spinner } from "../../../components/spinner";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 interface PersonLite {
@@ -21,6 +22,7 @@ export default function SettingsPage() {
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [groups, setGroups] = useState<GroupLite[]>([]);
   const [status, setStatus] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -39,8 +41,9 @@ export default function SettingsPage() {
   }, [supabase]);
 
   const signOut = async () => {
+    setSigningOut(true);
     const { error } = await supabase.auth.signOut();
-    if (error) { setStatus(error.message); return; }
+    if (error) { setStatus(error.message); setSigningOut(false); return; }
     window.location.href = "/login";
   };
 
@@ -102,7 +105,10 @@ export default function SettingsPage() {
         </section>
       ) : null}
 
-      <button className="pill-link" onClick={signOut}>Sign out</button>
+      <button className="pill-link" onClick={signOut} disabled={signingOut} style={{ gap: 8 }}>
+        {signingOut && <Spinner size={12} />}
+        {signingOut ? "Signing out…" : "Sign out"}
+      </button>
       {status ? <p className="error">{status}</p> : null}
     </main>
   );

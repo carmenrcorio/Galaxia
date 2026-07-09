@@ -17,6 +17,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { InitialAvatar } from "../../../../components/initial-avatar";
+import { Spinner } from "../../../../components/spinner";
 import { ASPECT_GLYPH, ASPECT_LINE, BODY_GLYPH, SIGN_GLYPH, SIGN_VIBE, signElement } from "../../../../lib/design";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 
@@ -33,7 +34,7 @@ interface NoteRow { id: string; body: string; created_at: string; }
  *
  * Changes from prototype:
  * - Real ecliptic longitudes (placements[].lon) instead of house-midpoint guesses
- * - #3a2f63 strokes → rgba(230,174,108,.13) gold hairlines (token --line)
+ * - structural ring strokes use rgba(230,174,108,.13) gold hairline (token --line)
  * - Planet glyphs coloured by element (fire/earth/air/water)
  * - Sign glyphs in cream (as specified)
  * - Aspect lines drawn across the inner disc (from real aspect data)
@@ -483,7 +484,8 @@ export default function PersonProfilePage() {
         <p className="eyebrow" style={{ marginBottom: 4 }}>Private notes</p>
         <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>Owner-only · never shared · never in Vela shared mode</p>
         <textarea className="field field--rect" value={noteDraft} onChange={e => setNoteDraft(e.target.value)} placeholder="Log a private moment, pattern, or thing to remember…" rows={3} style={{ marginBottom: 10 }} />
-        <button className="btn-primary" onClick={saveNote} disabled={noteSaving || !noteDraft.trim()}>
+        <button className="btn-primary" onClick={saveNote} disabled={noteSaving || !noteDraft.trim()} style={{ gap: 8 }}>
+          {noteSaving && <Spinner size={13} color="#1a1206" />}
           {noteSaving ? "Saving…" : "Save note"}
         </button>
         {notes.length > 0 ? (

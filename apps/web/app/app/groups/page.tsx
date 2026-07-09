@@ -3,6 +3,7 @@
 import { cohortOverlay, compareGenerational, type GenSignature, type NatalChart } from "@galaxia/astro";
 import { useEffect, useMemo, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
+import { Spinner } from "../../../components/spinner";
 import { BODY_GLYPH, SIGN_GLYPH } from "../../../lib/design";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
@@ -37,6 +38,8 @@ export default function GroupsPage() {
   const [groupKind, setGroupKind]         = useState<GroupKind>("group");
   const [status, setStatus]               = useState<string|null>(null);
   const [cohort, setCohort]               = useState<any>(null);
+  const [savingGroup, setSavingGroup]     = useState(false);
+  const [buildingOverlay, setBuildingOverlay] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -64,12 +67,13 @@ export default function GroupsPage() {
     if (!userId) return;
     if (groupName.trim().length < 2) { setStatus("Give the group a name."); return; }
     if (selectedPersonIds.length < 3) { setStatus("Select at least 3 people for a cohort."); return; }
+    setSavingGroup(true);
     const { data: g, error: gErr } = await supabase.from("groups").insert({ owner_id: userId, name: groupName.trim(), kind: groupKind }).select("id, name, kind").single();
     if (gErr || !g) { setStatus(gErr?.message ?? "Unable to create group."); return; }
     const { error: mErr } = await supabase.from("group_members").insert(selectedPersonIds.map(pid => ({ group_id: g.id, person_id: pid })));
     if (mErr) { setStatus(mErr.message); return; }
     setGroupName(""); setGroupKind("group"); setSelectedPersonIds([]); setSelectedGroupId(g.id);
-    await fetchGroups(userId); setStatus("Group saved.");
+    await fetchGroups(userId); setSavingGroup(false); setStatus("Group saved.");
   }
   async function loadGroupMembers(gid: string) {
     setSelectedGroupId(gid);
@@ -78,6 +82,7 @@ export default function GroupsPage() {
   }
   async function buildOverlay() {
     if (selectedPersonIds.length < 3) { setStatus("Pick at least 3 people."); return; }
+    setBuildingOverlay(true);
     const sel = people.filter(p => selectedPersonIds.includes(p.id));
     const chartRes = await Promise.all(sel.map(async p => {
       const { data } = await supabase.from("charts").select("data").eq("person_id", p.id).single();
@@ -94,6 +99,7 @@ export default function GroupsPage() {
         pairHighlights.push({ pair: `${a.person.display_name} × ${b.person.display_name}`, summary: rel.sameGeneration ? `Same generation (${rel.shared.map(s => `${s.planet} ${s.sign}`).join(", ")}).` : `Fault line: ${rel.diverged.map(d => `${d.planet} ${d.signA}/${d.signB}`).join(" · ")}.` });
       }
     }
+    setBuildingOverlay(false);
     setCohort({ groupLabel: groups.find(g => g.id === selectedGroupId)?.name ?? "Ad-hoc cohort", memberNames: sel.map(p => p.display_name), memberIds: sel.map(p => p.id), overlay, pairHighlights: pairHighlights.slice(0, 3) });
     setStatus(null);
   }
@@ -146,8 +152,14 @@ export default function GroupsPage() {
           </div>
         ) : null}
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn-primary" onClick={saveGroup}>Save group</button>
-          <button className="pill-link" onClick={buildOverlay}>Generate cohort overlay</button>
+          <button className="btn-primary" onClick={saveGroup} disabled={savingGroup} style={{ gap: 8 }}>
+            {savingGroup && <Spinner size={13} color="#1a1206" />}
+            {savingGroup ? "Saving…" : "Save group"}
+          </button>
+          <button className="pill-link" onClick={buildOverlay} disabled={buildingOverlay} style={{ gap: 8 }}>
+            {buildingOverlay && <Spinner size={12} />}
+            {buildingOverlay ? "Building…" : "Generate cohort overlay"}
+          </button>
         </div>
       </section>
 

@@ -6,6 +6,20 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-09 (cleanup)
+
+**[FIXED] Custom checkbox component everywhere** (`CustomCheck`).
+The native browser `<input type="checkbox">` on `/welcome` ("This person is a minor") and in `EditPersonPanel` (Minor field) replaced with the `CustomCheck` component — rounded-square, gold check, violet fill — as specified in §3. Component lives at `apps/web/components/custom-check.tsx`.
+
+**[ADDED] Inline spinners on all network action buttons** (`Spinner`).
+Every button that triggers a network call now shows a small animated ring while in-flight and disables: Save my profile, Add to constellation, Save changes (edit panel), Confirm delete, Run comparison, Save private moment, Save group, Generate cohort overlay, Save note (person page), Send (Vela), Sign out (settings). Component at `apps/web/components/spinner.tsx`. Uses `.spin` keyframe added to `globals.css`.
+
+**[FIXED] `#3a2f63` stroke comment removed** from person page wheel. Confirmed no literal `#3a2f63` appears in any rendered SVG — all structural lines use `rgba(230,174,108,.13)` (`LINE_COLOR` const).
+
+**[FIXED] Groups page placement class names** updated from old set (`placement-row`, `glyph`) to current set (`pl-row`, `glyph-sq`) matching `globals.css`.
+
+---
+
 ## 2026-07-09
 
 **[ADDED] Chart wheel on `/app/person/[id]` (deferred from step 6, now built).**

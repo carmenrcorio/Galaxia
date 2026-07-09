@@ -24,6 +24,50 @@ Verified: Venus/Aquarius ≠ Mars/Aquarius; Saturn/Capricorn ≠ Uranus/Capricor
 
 ---
 
+## 2026-07-09 (bugfixes)
+
+**[FIXED — SAFETY] Minor chat gate was not enforced (BUG 1).**
+Root cause: `minorInScope` only blocked `mode === "shared"`. Ask mode with a minor as subject passed through to Vela.
+
+Client fix (`apps/web/app/app/vela/page.tsx`):
+- `minorChatBlocked` flag replaces the entire input + send button with a visible explanation ("Two-way chat is turned off for minors") and a link to the person's private notes.
+- Blocks ALL modes, not just shared.
+- `useEffect` ref tracks `subjectId` changes — switching focus resets `threadId` and `lines` so each person gets an isolated thread.
+
+Server fix (`supabase/functions/vela-chat/index.ts`):
+- Added `is_minor` check *before* the shared-mode block, covering all modes.
+- Returns clear 400 if any scoped person is a minor: "Two-way chat is turned off when a minor is the conversation subject."
+- Requires re-deploy: `supabase functions deploy vela-chat --project-ref eigfvribtntbxyjutsma --no-verify-jwt`
+
+**[FIXED] Rising sign never computed despite "exact precision" data (BUG 2).**
+Root cause: `BirthFields` in `welcome/page.tsx` collected a city name but never called `geocodeCity`, so `lat`/`lng` remained empty strings. `computeNatalChart` received `undefined` for both, so `computeAscMc()` was never called and `chart.asc` was always `undefined`.
+
+Also: birth time was stored and treated as UTC. Birth time is local time at birth; it must be converted to UTC via the birth-place timezone.
+
+Fixes:
+- `lib/birth.ts`: added `tzOffsetMin` to `BirthFormInput`; `localTimeToUTC()` converts local → UTC using tz offset. Old data without a timezone still stores, but the UI notes the degradation.
+- `BirthFields` in `welcome/page.tsx`: geocodes on city-field `onBlur`, writes `lat`/`lng`/`tzOffsetMin` into form state, shows confirmation label. Auto-geocodes again at save if coords still absent.
+- `persistPerson` in `welcome`: also auto-geocodes at save as a safety net; persists `tz_offset_min` column.
+- `EditPersonPanel`: same geocode-at-save pattern, now persists `tz_offset_min`.
+- `apps/web/app/app/person/[id]/page.tsx`: backfills on load — if person has `birth_place` but no `birth_lat`/`birth_lng`, geocodes, recomputes chart with correct UTC time, persists both.
+
+Verification: load a profile with date + time + city → Rising sign renders in Big Three chips and house cusps appear on wheel.
+
+**[FIXED] Compare "What X needs from you" returned identical text for all people (BUG 3).**
+Root cause: `whatTheyNeed()` tested the shared `scores` object with the same threshold tree for both Person A and Person B. Both typically hit the first `communication < 52` branch and got identical copy.
+
+Fix:
+- `whatTheyNeed()` now takes the person's actual Moon/Venus sign (from the chart, which `runCompare()` now populates on each `PersonLite`) and the computed synastry result.
+- Builds copy from three sources: Moon sign need (from a 12-entry map), Venus sign love language (from a 12-entry map), and the tightest cross-aspect orb.
+- Different Moon signs produce different first sentences. Different synastry aspect patterns produce different action lines.
+- `runCompare()` enriches each `PersonLite` with `sun`/`moon`/`venus`/`mars` from `natalA`/`natalB` before calling `setResult`.
+
+Score band fix (`lib/design.ts`):
+- Bands widened: ≥76 Effortless / ≥65 Easy & warm / ≥54 Workable / ≥43 Tender / ≥32 Some friction / <32 Charged.
+- Previously: 30, 21, 15, 15 all resolved to "Charged". Now they get distinct labels.
+
+---
+
 ## 2026-07-09 (cleanup)
 
 **[FIXED] Custom checkbox component everywhere** (`CustomCheck`).

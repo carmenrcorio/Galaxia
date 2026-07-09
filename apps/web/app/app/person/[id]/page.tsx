@@ -19,6 +19,7 @@ import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { InitialAvatar } from "../../../../components/initial-avatar";
 import { Spinner } from "../../../../components/spinner";
 import { ASPECT_GLYPH, ASPECT_LINE, BODY_GLYPH, SIGN_GLYPH, SIGN_VIBE, signElement } from "../../../../lib/design";
+import { geocodeCity } from "../../../../lib/geocode";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 
 interface PersonRow {
@@ -287,14 +288,64 @@ export default function PersonProfilePage() {
     if (!actualId) { setStatus("No self profile yet. Add yourself in onboarding first."); setLoading(false); return; }
 
     const [{ data: pData, error: pErr }, { data: cData, error: cErr }, { data: nData }] = await Promise.all([
-      supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, birth_date, birth_time, birth_place, birth_lat, birth_lng").eq("id", actualId).single(),
+      supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min").eq("id", actualId).single(),
       supabase.from("charts").select("data").eq("person_id", actualId).single(),
       supabase.from("notes").select("id, body, created_at").eq("about_person", actualId).order("created_at", { ascending: false }).limit(20)
     ]);
     if (pErr || !pData) { setStatus(pErr?.message ?? "Unable to load person."); setLoading(false); return; }
     if (cErr || !cData) { setStatus(cErr?.message  ?? "No chart yet — save their birth data again."); setLoading(false); return; }
-    setPerson(pData as PersonRow);
-    setChart(cData.data as NatalChart);
+
+    const personRow = pData as PersonRow & { tz_offset_min?: number | null };
+
+    // ── Backfill: geocode existing people that have a city but no coords ──
+    let chartData = cData.data as NatalChart;
+    const needsBackfill =
+      personRow.birth_precision !== "year" &&
+      personRow.birth_place?.trim() &&
+      !personRow.birth_lat &&
+      !personRow.birth_lng;
+
+    if (needsBackfill) {
+      const birthDate = personRow.birth_date ? new Date(`${personRow.birth_date}T12:00:00Z`) : new Date();
+      const geo = await geocodeCity(personRow.birth_place!, birthDate);
+      if (geo) {
+        // Persist coords so we don't geocode every visit
+        await supabase.from("people").update({
+          birth_lat: geo.lat, birth_lng: geo.lng, tz_offset_min: geo.tzOffset
+        }).eq("id", actualId);
+
+        // Recompute the chart with coords + correct UTC time
+        const { computeNatalChart } = await import("@galaxia/astro");
+        const tzOffset = geo.tzOffset;
+        let dateUTC: string;
+        if (personRow.birth_time && personRow.birth_date) {
+          const time = personRow.birth_time.slice(0, 5); // HH:MM
+          const [yr, mo, dy] = personRow.birth_date.slice(0, 10).split("-").map(Number);
+          const [hr, mn] = time.split(":").map(Number);
+          const localMs = Date.UTC(yr, mo - 1, dy, hr, mn, 0);
+          dateUTC = new Date(localMs - tzOffset * 60_000).toISOString();
+        } else {
+          dateUTC = personRow.birth_date
+            ? `${personRow.birth_date.slice(0, 10)}T12:00:00.000Z`
+            : new Date().toISOString();
+        }
+        const recomputed = computeNatalChart({
+          dateUTC,
+          precision: personRow.birth_precision,
+          lat: geo.lat,
+          lng: geo.lng,
+          tzOffsetMin: geo.tzOffset,
+          houseSystem: "placidus" as const
+        });
+        await supabase.from("charts").upsert({
+          person_id: actualId, house_system: "placidus", data: recomputed, engine_version: 1
+        });
+        chartData = recomputed;
+      }
+    }
+
+    setPerson(personRow as PersonRow);
+    setChart(chartData);
     setNotes((nData ?? []) as NoteRow[]);
     setLoading(false);
   }

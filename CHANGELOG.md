@@ -6,6 +6,24 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-09 (interpretation wiring)
+
+**[CHANGED] Interpretation library wired into /app/person/[id].**
+
+Root cause of dull chart reads: old stub was `BODY_LABEL[body] + " · " + SIGN_LINE[sign]` — 10 labels × 12 sign lines, so every planet in the same sign got identical text.
+
+Fixes:
+- `interpretations.ts` (user-committed 309-line library) wired into person page. Old `BODY_LABEL`, `SIGN_LINE`, `interpretBigThree`, old `interpretPlacement(string,string)→string` all deleted.
+- New API: `interpretPlacement(body,sign)→Reading`, `interpretRising(sign)→Reading`, `interpretAspect(a,b,type)→Reading`, `BODY_DOMAIN`, `ELEMENT_DOMINANT`, `ELEMENT_ABSENT`.
+- Expandable rows on every placement and aspect (click or Expand all). Big Three default open, rest default collapsed.
+- `BODY_DOMAIN` renders as label-caps row label ("HOW THEY LOVE", "DRIVE & CONFLICT").
+- Element balance: bare counts replaced with `ELEMENT_DOMINANT` / `ELEMENT_ABSENT` prose readings.
+- Case-normalisation guards on all lookups; missing readings log in dev, never render blank.
+
+Verified: Venus/Aquarius ≠ Mars/Aquarius; Saturn/Capricorn ≠ Uranus/Capricorn.
+
+---
+
 ## 2026-07-09 (bugfixes)
 
 **[FIXED — SAFETY] Minor chat gate was not enforced (BUG 1).**

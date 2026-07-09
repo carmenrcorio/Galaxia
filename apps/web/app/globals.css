@@ -293,7 +293,9 @@ select.field--rect {
   stroke-linecap: round; stroke-linejoin: round;
   opacity: 0; transform: scale(.7);
   transition: opacity .15s, transform .15s;
+  overflow: visible;
 }
+.custom-check input:checked ~ .custom-check__box { background: rgba(230,174,108,.18); border-color: var(--gold); }
 .custom-check input:checked ~ .custom-check__box .custom-check__tick { opacity: 1; transform: scale(1); }
 
 /* ─── Big Three sign chips (from landing .chip + galaxia.jsx .kd-tcell) ── */
@@ -502,6 +504,10 @@ select.field--rect {
 .fade-in-delay-1   { animation-delay: 60ms; }
 .fade-in-delay-2   { animation-delay: 130ms; }
 .fade-in-delay-3   { animation-delay: 210ms; }
+
+/* ─── Spinner ────────────────────────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.7s linear infinite; }
 
 /* ─── Reduced motion ─────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {

@@ -4,7 +4,9 @@ import { computeNatalChart, type Precision } from "@galaxia/astro";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CosmicBackground } from "../../components/cosmic-background";
+import { CustomCheck } from "../../components/custom-check";
 import { InitialAvatar } from "../../components/initial-avatar";
+import { Spinner } from "../../components/spinner";
 import { buildBirthInput, type BirthFormInput } from "../../lib/birth";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 
@@ -182,7 +184,8 @@ export default function WelcomePage() {
         <p className="eyebrow">You first</p>
         <input className="field" value={selfName} onChange={(event) => setSelfName(event.target.value)} placeholder="Your display name" style={{ marginBottom: 12 }} />
         <BirthFields input={selfInput} onChange={setSelfInput} />
-        <button className="btn-primary" style={{ marginTop: 14 }} disabled={!canSaveSelf || savingSelf} onClick={saveSelf}>
+        <button className="btn-primary" style={{ marginTop: 14, gap: 8 }} disabled={!canSaveSelf || savingSelf} onClick={saveSelf}>
+          {savingSelf && <Spinner size={13} color="#1a1206" />}
           {savingSelf ? "Saving chart…" : "Save my profile"}
         </button>
       </section>
@@ -198,18 +201,15 @@ export default function WelcomePage() {
             </button>
           ))}
         </div>
-        <label className="custom-check" style={{ marginBottom: 12 }}>
-          <input type="checkbox" checked={personMinor} onChange={(event) => setPersonMinor(event.target.checked)} />
-          <span className="custom-check__box">
-            <svg className="custom-check__tick" viewBox="0 0 10 8"><polyline points="1,4 3.5,7 9,1" /></svg>
-          </span>
-          This person is a minor
-        </label>
+        <div style={{ marginBottom: 12 }}>
+          <CustomCheck checked={personMinor} onChange={setPersonMinor} label="This person is a minor" />
+        </div>
         <BirthFields input={personInput} onChange={setPersonInput} />
         {people.length >= peopleLimit ? (
           <p className="error" style={{ fontSize: 13, margin: "10px 0 0" }}>Free plan: 5-person limit reached.</p>
         ) : null}
-        <button className="btn-primary" style={{ marginTop: 14 }} disabled={!canSavePerson || savingPerson || people.length >= peopleLimit} onClick={savePerson}>
+        <button className="btn-primary" style={{ marginTop: 14, gap: 8 }} disabled={!canSavePerson || savingPerson || people.length >= peopleLimit} onClick={savePerson}>
+          {savingPerson && <Spinner size={13} color="#1a1206" />}
           {savingPerson ? "Adding…" : "Add to constellation"}
         </button>
       </section>

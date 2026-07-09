@@ -5,6 +5,8 @@ import { useState } from "react";
 import { type BirthFormInput, buildBirthInput } from "../lib/birth";
 import { geocodeCity } from "../lib/geocode";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
+import { CustomCheck } from "./custom-check";
+import { Spinner } from "./spinner";
 
 interface PersonRow { id: string; display_name: string; relation: string; is_minor: boolean; birth_precision: "exact"|"date"|"year"; birth_date?: string|null; birth_time?: string|null; birth_place?: string|null; birth_lat?: number|null; birth_lng?: number|null; }
 interface Props { person: PersonRow; userId: string; onSaved: () => void; onDeleted: () => void; }
@@ -60,11 +62,7 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
       <div style={{ display: "grid", gap: 8 }}>
         <input className="field" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Display name" />
         <input className="field" value={relation}    onChange={e => setRelation(e.target.value)}    placeholder="Relation" />
-        <label className="custom-check">
-          <input type="checkbox" checked={isMinor} onChange={e => setIsMinor(e.target.checked)} />
-          <span className="custom-check__box"><svg className="custom-check__tick" viewBox="0 0 10 8"><polyline points="1,4 3.5,7 9,1" /></svg></span>
-          Minor
-        </label>
+        <CustomCheck checked={isMinor} onChange={setIsMinor} label="Minor" />
         <div style={{ display: "flex", gap: 6 }}>
           {(["exact","date","year"] as const).map(p => <button key={p} className="pill-link" style={{ fontSize: 12, borderColor: input.precision === p ? "rgba(230,174,108,.5)" : undefined }} onClick={() => setInput(prev => ({ ...prev, precision: p }))}>{p}</button>)}
         </div>
@@ -72,9 +70,21 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
         <input className="field" value={input.birthPlace ?? ""} onChange={e => setInput(p => ({ ...p, birthPlace: e.target.value, lat:"", lng:"" }))} placeholder="Birth city (geocoded on save)" />
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-        <button className="btn-primary" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
+        <button className="btn-primary" onClick={save} disabled={saving} style={{ gap: 8 }}>
+          {saving && <Spinner size={13} color="#1a1206" />}
+          {saving ? "Saving…" : "Save changes"}
+        </button>
         <button className="pill-link" onClick={() => setOpen(false)}>Cancel</button>
-        {!confirmDelete ? <button className="pill-link" style={{ borderColor: "rgba(218,140,140,.4)", color: "var(--rose)" }} onClick={() => setConfirmDelete(true)}>Delete</button> : <><button className="pill-link" style={{ background: "rgba(218,140,140,.15)", borderColor: "var(--rose)", color: "var(--rose)" }} onClick={deletePerson} disabled={deleting}>{deleting ? "Deleting…" : "Confirm delete"}</button><button className="pill-link" onClick={() => setConfirmDelete(false)}>Cancel</button></>}
+        {!confirmDelete
+          ? <button className="pill-link" style={{ borderColor: "rgba(218,140,140,.4)", color: "var(--rose)" }} onClick={() => setConfirmDelete(true)}>Delete</button>
+          : <>
+              <button className="pill-link" style={{ background: "rgba(218,140,140,.15)", borderColor: "var(--rose)", color: "var(--rose)", gap: 8 }} onClick={deletePerson} disabled={deleting}>
+                {deleting && <Spinner size={12} color="var(--rose)" />}
+                {deleting ? "Deleting…" : "Confirm delete"}
+              </button>
+              <button className="pill-link" onClick={() => setConfirmDelete(false)}>Cancel</button>
+            </>
+        }
       </div>
       {status ? <p className={status === "Saved." ? "success" : "error"} style={{ fontSize: 13, marginTop: 8 }}>{status}</p> : null}
     </section>

@@ -1,6 +1,7 @@
 "use client";
 
 import { buildVelaContext, detectCrisisLanguage } from "@galaxia/vela";
+import { Spinner } from "../../../components/spinner";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { publicEnv } from "../../../lib/env";
@@ -270,8 +271,9 @@ export default function VelaPage() {
               rows={2}
               disabled={sending}
             />
-            <button className="btn-primary" onClick={() => sendMessage()} disabled={sending || !message.trim()} style={{ flexShrink: 0, alignSelf: "flex-end", padding: "11px 20px" }}>
-              {sending ? "…" : "Send"}
+            <button className="btn-primary" onClick={() => sendMessage()} disabled={sending || !message.trim()} style={{ flexShrink: 0, alignSelf: "flex-end", padding: "11px 20px", gap: 6 }}>
+              {sending && <Spinner size={13} color="#1a1206" />}
+              {sending ? "Sending…" : "Send"}
             </button>
           </div>
           {status ? <p className={status.includes("danger") || status.includes("crisis") || status.includes("immediate") ? "error" : "muted"} style={{ fontSize: 12, marginTop: 6 }}>{status}</p> : null}

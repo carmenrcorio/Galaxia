@@ -16,6 +16,7 @@ import { compareGenerational, computeSynastry, type GenSignature, type NatalChar
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
+import { Spinner } from "../../../components/spinner";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
@@ -142,7 +143,8 @@ export default function ComparePage() {
               {people.map(p => <option key={`b-${p.id}`} value={p.id}>{p.display_name}</option>)}
             </select>
           </div>
-          <button className="btn-primary" onClick={runCompare} disabled={running} style={{ width: "fit-content" }}>
+          <button className="btn-primary" onClick={runCompare} disabled={running} style={{ width: "fit-content", gap: 8 }}>
+            {running && <Spinner size={13} color="#1a1206" />}
             {running ? "Running…" : "Run comparison"}
           </button>
         </div>
@@ -268,7 +270,8 @@ export default function ComparePage() {
           <section className="glass-card fade-in fade-in-delay-3">
             <p className="eyebrow" style={{ marginBottom: 8 }}>Log a moment (private)</p>
             <textarea className="field field--rect" value={noteDraft} onChange={e => setNoteDraft(e.target.value)} placeholder="Capture what happened and what you noticed…" rows={3} style={{ borderRadius: 14, marginBottom: 10 }} />
-            <button className="btn-primary" onClick={saveMoment} disabled={saving || !noteDraft.trim()}>
+            <button className="btn-primary" onClick={saveMoment} disabled={saving || !noteDraft.trim()} style={{ gap: 8 }}>
+              {saving && <Spinner size={13} color="#1a1206" />}
               {saving ? "Saving…" : "Save private moment"}
             </button>
           </section>

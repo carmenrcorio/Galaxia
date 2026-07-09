@@ -6,6 +6,33 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-09 (house interpretations wired)
+
+**[ADDED] House layer wired into /app/person/[id] from lib/house-interpretations.ts.**
+
+Previously: every placement row showed a house badge (H4, H8) that said nothing. The sign reading was the only content. Half a chart was rendered.
+
+Changes to `apps/web/app/app/person/[id]/page.tsx`:
+
+1. **Expanded placement row — three blocks:**  
+   Expanding any placement now shows (a) "IN [SIGN]" → `interpretPlacement.long`, (b) "IN THE [N]TH HOUSE" → `interpretHouse(body, house).long` with `houseMeaning.domain` as subtitle, (c) "ASPECTS" → every aspect this planet makes via `interpretAspect`, with orb and tight-accent treatment. House block only appears when exact birth time + location are present.
+
+2. **House badge tooltip:**  
+   The H4/H8 badge is now a button. Clicking it shows `houseMeaning(h).name` + `.short` in a glass tooltip ("Fourth House · the foundation under everything"). Never blank.
+
+3. **The Twelve Houses section:**  
+   New collapsible card after Placements, visible only when `chart.cusps` has 12 entries (exact birth time + location). Each house shows: number, name, cusp sign with degree, domain label, planet glyphs. Expanding a house shows `houseMeaning(h).long` and per-occupant `interpretHouse(body, house).short` readings. Empty houses get a plain explanation ("An empty house is normal — the themes are present in the life, just not strongly emphasised by birth placement."). Expand all / Collapse all control. Without exact time: dashed card explaining what's needed to unlock the layer.
+
+4. **Stellium detection:**  
+   Before placements list: if 3+ planets share one house OR one sign, a gold alert shows "Stellium in the 4th house" / "Stellium in Capricorn", lists the bodies, and renders `STELLIUM_NOTE` verbatim.
+
+5. **Modality balance:**  
+   Alongside element balance: cardinal/fixed/mutable tally with `MODALITY_DOMINANT` / `MODALITY_ABSENT` prose (thresholds: dominant ≥ 4, absent = 0), both from locally defined maps.
+
+No LLM in this path. All copy from `lib/house-interpretations.ts` (hand-written). Rendered verbatim.
+
+---
+
 ## 2026-07-09 (data-entry bugs)
 
 **[FIXED] Three data-entry bugs causing wrong charts.**

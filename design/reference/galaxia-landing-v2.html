@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Galaxia — relationship intelligence, by the stars</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#0a0717; --ink1:#0f0b22; --ink2:#16102e; --ink3:#1d1640;
+    --line:rgba(230,174,108,.12); --line2:rgba(183,154,216,.14);
+    --gold:#E6AE6C; --gold-bright:#f0c089; --rose:#DA8C8C; --teal:#6FB1B8;
+    --mist:#b9aede; --mist2:#8076a6; --cream:#F4ECDB;
+    --fire:#E0825C; --earth:#cdbd7a; --air:#B79AD8; --water:#6FB1B8;
+    --serif:'Fraunces',Georgia,serif; --sans:'Inter',system-ui,sans-serif;
+    --measure:62ch;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--ink); color:var(--cream); font-family:var(--sans);
+    font-weight:400; line-height:1.65; -webkit-font-smoothing:antialiased;
+    overflow-x:hidden; position:relative;
+  }
+  /* ---------- cosmic ground ---------- */
+  .sky{position:fixed;inset:0;z-index:0;pointer-events:none}
+  #stars{position:fixed;inset:0;z-index:0;width:100%;height:100%;pointer-events:none}
+  .aura{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(120% 80% at 78% -5%, rgba(110,177,184,.10), transparent 55%),
+      radial-gradient(90% 70% at 12% 8%, rgba(183,154,216,.12), transparent 50%),
+      radial-gradient(120% 100% at 50% 120%, rgba(230,174,108,.08), transparent 60%),
+      linear-gradient(180deg,#0a0717 0%, #0c0820 40%, #0a0717 100%);
+  }
+  .milkyway{
+    position:fixed; z-index:0; pointer-events:none; inset:-20% -20% auto -20%; height:140%;
+    background:radial-gradient(60% 40% at 50% 50%, rgba(183,154,216,.07), transparent 70%);
+    transform:rotate(-18deg); filter:blur(20px);
+  }
+  .grain{
+    position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+    box-shadow:inset 0 0 240px 60px rgba(5,3,12,.9);}
+  main,nav,footer{position:relative;z-index:2}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 32px}
+  @media(max-width:640px){.wrap{padding:0 22px}}
+
+  /* ---------- nav ---------- */
+  nav{position:sticky;top:0;z-index:40;
+    backdrop-filter:blur(14px) saturate(1.1);
+    background:linear-gradient(180deg, rgba(10,7,23,.72), rgba(10,7,23,.18));
+    border-bottom:1px solid rgba(255,255,255,.05);}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .brand{font-family:var(--serif);font-weight:600;font-size:1.42rem;color:var(--gold);
+    letter-spacing:.01em;text-decoration:none}
+  .brand span{font-style:italic;font-weight:500}
+  .nav-links{display:flex;align-items:center;gap:30px}
+  .nav-links a{color:var(--mist);text-decoration:none;font-size:.86rem;font-weight:500;
+    letter-spacing:.01em;transition:color .25s}
+  .nav-links a:hover{color:var(--cream)}
+  .nav-cta{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:100px;
+    background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#1a1206 !important;
+    font-weight:600 !important;box-shadow:0 6px 22px -8px rgba(230,174,108,.6);transition:transform .2s,box-shadow .2s}
+  .nav-cta:hover{transform:translateY(-1px);box-shadow:0 10px 28px -8px rgba(230,174,108,.7)}
+  @media(max-width:860px){.nav-links a:not(.nav-cta){display:none}}
+
+  /* ---------- shared type ---------- */
+  .eyebrow{font-size:.7rem;font-weight:600;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--gold);display:inline-flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:24px;height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
+  h1,h2,h3{font-family:var(--serif);font-weight:500;line-height:1.02;letter-spacing:-.018em;color:var(--cream)}
+  h2{font-size:clamp(2.1rem,5vw,3.5rem);line-height:1.04}
+  .lede{color:var(--mist);max-width:var(--measure);font-size:clamp(1.02rem,1.45vw,1.2rem);
+    font-weight:300;line-height:1.72}
+  em{font-style:italic;color:var(--cream)}
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  /* ---------- hero ---------- */
+  .hero{padding-top:clamp(48px,8vh,90px);padding-bottom:clamp(60px,10vh,120px)}
+  .hero-grid{display:grid;grid-template-columns:1.04fr .96fr;gap:56px;align-items:center}
+  .h1{font-size:clamp(3rem,8.4vw,6.6rem);font-weight:500;margin:22px 0 0;letter-spacing:-.03em}
+  .h1 .em{font-style:italic;font-weight:600;color:var(--gold)}
+  .hero .lede{margin-top:26px}
+  .form{margin-top:34px;display:flex;gap:10px;max-width:440px;flex-wrap:wrap}
+  .form input{flex:1;min-width:200px;padding:14px 18px;border-radius:100px;
+    background:rgba(255,255,255,.04);border:1px solid rgba(183,154,216,.22);
+    color:var(--cream);font-family:var(--sans);font-size:.95rem;outline:none;transition:border-color .2s,background .2s}
+  .form input::placeholder{color:var(--mist2)}
+  .form input:focus{border-color:var(--gold);background:rgba(255,255,255,.06)}
+  .btn{padding:14px 26px;border-radius:100px;border:none;cursor:pointer;
+    background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#1a1206;
+    font-family:var(--sans);font-weight:600;font-size:.95rem;white-space:nowrap;
+    box-shadow:0 8px 26px -8px rgba(230,174,108,.55);transition:transform .2s,box-shadow .2s}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 14px 34px -8px rgba(230,174,108,.68)}
+  .meta{margin-top:18px;font-size:.8rem;color:var(--mist2);letter-spacing:.04em}
+  .ok{margin-top:20px;color:var(--teal);font-size:.92rem;display:none}
+  .ok.show{display:block}
+
+  .constellation{position:relative;aspect-ratio:1/.92;width:100%;
+    border-radius:26px;overflow:hidden;
+    background:radial-gradient(120% 120% at 60% 30%, rgba(29,22,64,.6), rgba(10,7,23,.2));
+    border:1px solid var(--line2);
+    box-shadow:0 40px 100px -40px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.05);}
+  .constellation canvas{position:absolute;inset:0;width:100%;height:100%}
+
+  @media(max-width:860px){
+    .hero-grid{grid-template-columns:1fr;gap:38px}
+    .constellation{order:-1;aspect-ratio:1/.8}
+  }
+
+  /* ---------- section rhythm ---------- */
+  section{padding-block:clamp(72px,12vh,128px)}
+  .shift{max-width:880px}
+  .shift h2{margin:20px 0 24px}
+  .shift .lede{font-size:clamp(1.15rem,2vw,1.55rem);max-width:24ch;color:var(--cream);font-weight:400}
+  .shift .body{color:var(--mist);max-width:var(--measure);margin-top:22px;font-weight:300;line-height:1.8}
+  .shift .body em{color:var(--gold)}
+
+  /* glass card base */
+  .glass{
+    background:linear-gradient(165deg, rgba(255,255,255,.045), rgba(255,255,255,.012));
+    backdrop-filter:blur(22px) saturate(1.15);
+    border:1px solid rgba(230,174,108,.13);border-radius:22px;
+    box-shadow:0 30px 80px -34px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06);}
+
+  /* how it works */
+  .how-head{display:flex;justify-content:space-between;align-items:end;gap:30px;flex-wrap:wrap;margin-bottom:54px}
+  .how-head h2{max-width:14ch}
+  .how-head p{color:var(--mist);max-width:34ch;font-weight:300}
+  .steps{display:grid;gap:26px}
+  .step{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center}
+  .step:nth-child(even){grid-template-columns:1fr 1fr}
+  .step:nth-child(even) .step-text{order:2}
+  .step-num{font-family:var(--serif);font-size:.84rem;letter-spacing:.2em;color:var(--gold);
+    text-transform:uppercase;display:block;margin-bottom:14px}
+  .step-text h3{font-size:clamp(1.6rem,3vw,2.2rem);margin-bottom:14px}
+  .step-text p{color:var(--mist);font-weight:300;max-width:46ch;line-height:1.78}
+  .step-text p em{color:var(--cream)}
+  @media(max-width:780px){
+    .step,.step:nth-child(even){grid-template-columns:1fr;gap:26px}
+    .step:nth-child(even) .step-text{order:0}
+  }
+
+  /* mock cards */
+  .mock{padding:22px;border-radius:20px}
+  .mock-top{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;
+    font-family:var(--serif);font-size:1.05rem;color:#1a1206;font-weight:600;flex:none}
+  .mock-name{font-family:var(--serif);font-size:1.12rem;color:var(--cream)}
+  .mock-sub{font-size:.78rem;color:var(--mist2);letter-spacing:.02em}
+  .chips{display:flex;gap:8px;margin:14px 0}
+  .chip{flex:1;padding:10px 8px;border-radius:12px;text-align:center;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+  .chip .g{font-size:1rem;display:block;margin-bottom:3px}
+  .chip .t{font-size:.62rem;color:var(--mist2);text-transform:uppercase;letter-spacing:.12em}
+  .chip .v{font-size:.82rem;color:var(--cream);font-weight:500}
+  .pl{display:flex;align-items:flex-start;gap:11px;padding:11px 4px;border-top:1px solid rgba(255,255,255,.05)}
+  .pl .glyph{font-size:1.05rem;width:22px;flex:none;text-align:center}
+  .pl .pl-t{font-size:.86rem;color:var(--cream)}
+  .pl .pl-d{font-size:.74rem;color:var(--mist2)}
+  .label{font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:block}
+  .dyn{margin-top:8px;padding:14px;border-radius:14px;background:rgba(111,177,184,.06);border:1px solid rgba(111,177,184,.15)}
+  .dyn-row{display:flex;justify-content:space-between;font-size:.82rem;padding:5px 0}
+  .dyn-row span:first-child{color:var(--mist)}
+  .dyn-row span:last-child{color:var(--teal);font-weight:500}
+  .tip{margin-top:12px;font-size:.82rem;color:var(--mist);line-height:1.6;font-style:italic}
+  .tip b{color:var(--gold);font-style:normal}
+
+  /* chat bubble mock */
+  .chat{padding:20px}
+  .bubble{padding:12px 15px;border-radius:14px;font-size:.88rem;line-height:1.55;margin-bottom:10px;max-width:90%}
+  .bubble.user{margin-left:auto;background:rgba(230,174,108,.12);border:1px solid rgba(230,174,108,.2);color:var(--cream)}
+  .bubble.vela{background:rgba(183,154,216,.09);border:1px solid rgba(183,154,216,.18);color:var(--mist)}
+  .bubble.vela b{color:var(--air);font-weight:600;display:block;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+
+  /* generational */
+  .gen-grid{display:grid;grid-template-columns:1fr .95fr;gap:54px;align-items:center}
+  .gen-callout{margin-top:26px;padding:20px 22px;border-radius:16px;
+    background:linear-gradient(120deg, rgba(111,177,184,.1), rgba(111,177,184,.02));
+    border:1px solid rgba(111,177,184,.22)}
+  .gen-callout b{color:var(--teal)}
+  .gen-callout span{color:var(--mist);font-weight:300}
+  .cohort{padding:24px}
+  .cluster{display:flex;margin:6px 0 18px}
+  .cluster .av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;
+    font-family:var(--serif);font-size:.9rem;margin-left:-10px;border:2px solid var(--ink1);
+    background:linear-gradient(150deg,var(--air),var(--mist2));color:#1a1206;font-weight:600}
+  .cluster .av:first-child{margin-left:0}
+  .cluster .more{background:rgba(255,255,255,.08);color:var(--mist)}
+  .split{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)}
+  @media(max-width:780px){.gen-grid{grid-template-columns:1fr;gap:36px}}
+
+  /* vela section */
+  .vela-wrap{max-width:740px;margin:0 auto;text-align:center}
+  .vela-wrap .lede{margin:24px auto 0;text-align:left}
+  .vela-card{margin-top:40px;text-align:left;padding:22px}
+
+  /* trust */
+  .trust-head{max-width:680px;margin-bottom:46px}
+  .trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .tcard{padding:26px 24px}
+  .tcard .ico{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;margin-bottom:16px;
+    background:rgba(230,174,108,.1);border:1px solid rgba(230,174,108,.2);font-size:1.1rem}
+  .tcard h3{font-size:1.18rem;margin-bottom:9px}
+  .tcard p{color:var(--mist);font-size:.9rem;font-weight:300;line-height:1.7}
+  @media(max-width:780px){.trust-grid{grid-template-columns:1fr}}
+
+  /* faq */
+  .faq-wrap{max-width:760px;margin:0 auto}
+  .faq-head{text-align:center;margin-bottom:40px}
+  .faq-item{border-bottom:1px solid rgba(255,255,255,.08)}
+  .faq-q{width:100%;text-align:left;background:none;border:none;cursor:pointer;
+    padding:22px 0;color:var(--cream);font-family:var(--serif);font-size:clamp(1.05rem,2vw,1.32rem);
+    font-weight:500;display:flex;justify-content:space-between;align-items:center;gap:20px}
+  .faq-q .pm{color:var(--gold);font-size:1.4rem;flex:none;transition:transform .3s;font-family:var(--sans);font-weight:300}
+  .faq-item.open .pm{transform:rotate(45deg)}
+  .faq-a{max-height:0;overflow:hidden;transition:max-height .4s ease,padding .4s ease}
+  .faq-item.open .faq-a{max-height:340px;padding-bottom:24px}
+  .faq-a p{color:var(--mist);font-weight:300;line-height:1.78;max-width:64ch}
+  .faq-a em{color:var(--gold)}
+
+  /* close */
+  .close{text-align:center}
+  .close-h{font-size:clamp(2.4rem,6vw,4.6rem);max-width:16ch;margin:0 auto;line-height:1.04}
+  .close-h em{color:var(--gold)}
+  .close .form{margin:38px auto 0;justify-content:center}
+  .close .meta{text-align:center}
+
+  footer{border-top:1px solid rgba(255,255,255,.07);padding:46px 0;margin-top:40px}
+  .foot-in{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+  .foot-brand{font-family:var(--serif);font-size:1.3rem;color:var(--gold)}
+  .foot-in p{color:var(--mist2);font-size:.82rem}
+  .foot-links{display:flex;gap:22px}
+  .foot-links a{color:var(--mist2);font-size:.82rem;text-decoration:none;transition:color .2s}
+  .foot-links a:hover{color:var(--cream)}
+
+  @media(prefers-reduced-motion:reduce){
+    .reveal{opacity:1;transform:none;transition:none}
+    html{scroll-behavior:auto}
+  }
+</style>
+</head>
+<body>
+  <div class="aura"></div>
+  <div class="milkyway" data-par="0.08"></div>
+  <canvas id="stars"></canvas>
+  <div class="grain"></div>
+  <div class="vignette"></div>
+
+  <nav>
+    <div class="wrap nav-in">
+      <a href="#" class="brand">Galax<span>ia</span></a>
+      <div class="nav-links">
+        <a href="#shift">Why Galaxia</a>
+        <a href="#generations">Generations</a>
+        <a href="#vela">Meet Vela</a>
+        <a href="#trust">Privacy</a>
+        <a href="#join" class="nav-cta">Early access</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- HERO -->
+    <header class="hero wrap">
+      <div class="hero-grid">
+        <div class="hero-text">
+          <span class="eyebrow reveal">Galaxia Mea · your inner circle</span>
+          <h1 class="h1 reveal">The night sky belongs to everyone. <span class="em">Yours</span> doesn't.</h1>
+          <p class="lede reveal">Yours is small, and close — the handful of people you actually steer your life by. Galaxia helps you understand them through their charts, then show up for each bond with more intention and care. Astrology, turned into something you can use.</p>
+          <div class="form reveal">
+            <input type="email" placeholder="you@example.com" aria-label="Email address" id="email1" />
+            <button class="btn" data-form="1">Request early access</button>
+          </div>
+          <p class="ok" id="ok1">✦ You're on the list. We'll be in touch.</p>
+          <p class="meta reveal">Mobile-first · iOS &amp; Android · private by design</p>
+        </div>
+        <div class="constellation reveal">
+          <canvas id="graph"></canvas>
+        </div>
+      </div>
+    </header>
+
+    <!-- SHIFT -->
+    <section class="shift wrap" id="shift">
+      <span class="eyebrow reveal">The shift</span>
+      <h2 class="reveal">Astrology forgot the people you love.</h2>
+      <p class="body reveal">Every other app is built for you alone — your horoscope, your transits — or for swiping on strangers. But the relationships that actually shape your days are the ones already in your life: your partner, your kids, your mother, your siblings, the friends who became family — even the ones who came before. Galaxia is built for <em>them</em>.</p>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="wrap" id="how">
+      <div class="how-head reveal">
+        <h2>See them. Understand them. Tend the bond.</h2>
+        <p>Three moves, in order. Each one turns a chart into something you can actually do.</p>
+      </div>
+      <div class="steps">
+
+        <!-- 01 SEE -->
+        <div class="step reveal">
+          <div class="step-text">
+            <span class="step-num">01 — See</span>
+            <h3>See them clearly.</h3>
+            <p>Open anyone's real birth chart — not a stripped-down vibe, but the actual placements, houses, and aspects, in language that finally makes sense. <em>Depth for the astrology lover; clarity for everyone else.</em></p>
+          </div>
+          <div class="mock glass">
+            <div class="mock-top">
+              <div class="avatar" style="background:linear-gradient(150deg,#6FB1B8,#4d8a91)">R</div>
+              <div>
+                <div class="mock-name">Rosa · your mom</div>
+                <div class="mock-sub">Cancer Sun · Pisces Moon · Cancer Rising</div>
+              </div>
+            </div>
+            <div class="chips">
+              <div class="chip"><span class="g">♋</span><span class="t">Sun</span><span class="v">Cancer</span></div>
+              <div class="chip"><span class="g">♓</span><span class="t">Moon</span><span class="v">Pisces</span></div>
+              <div class="chip"><span class="g">♋</span><span class="t">Rising</span><span class="v">Cancer</span></div>
+            </div>
+            <div class="pl"><span class="glyph" style="color:var(--water)">☽</span><div><div class="pl-t">Moon in Pisces</div><div class="pl-d">Emotional world · tender, absorbent</div></div></div>
+            <div class="pl"><span class="glyph" style="color:var(--air)">♀</span><div><div class="pl-t">Venus in Gemini</div><div class="pl-d">How she loves · playful, talkative</div></div></div>
+            <div class="pl"><span class="glyph" style="color:var(--fire)">♂</span><div><div class="pl-t">Mars in Leo</div><div class="pl-d">Drive · warm, proud, generous</div></div></div>
+          </div>
+        </div>
+
+        <!-- 02 UNDERSTAND -->
+        <div class="step reveal">
+          <div class="step-text">
+            <span class="step-num">02 — Understand</span>
+            <h3>Understand what's between you.</h3>
+            <p>Compare any two people and see where you flow, where you catch, and exactly what each of you needs from the other — read differently whether you're partners, parent and child, or siblings. <em>Not a dating-app score. A real map.</em></p>
+          </div>
+          <div class="mock glass">
+            <span class="label">Reading as · Partners</span>
+            <div class="mock-top" style="margin-bottom:10px">
+              <div class="avatar" style="background:linear-gradient(150deg,var(--gold-bright),var(--gold))">Y</div>
+              <div class="avatar" style="margin-left:-12px;background:linear-gradient(150deg,var(--air),#8a6fb0)">D</div>
+              <div style="margin-left:6px"><div class="mock-name" style="font-size:.98rem">You &amp; Daniel</div><div class="mock-sub">your dynamic</div></div>
+            </div>
+            <div class="dyn">
+              <div class="dyn-row"><span>Emotional ease</span><span>Effortless</span></div>
+              <div class="dyn-row"><span>Communication</span><span>Workable</span></div>
+              <div class="dyn-row"><span>Warmth</span><span>Easy &amp; warm</span></div>
+            </div>
+            <p class="tip"><b>→ What Daniel needs from you</b> Lead with the feeling, not the verdict. Libra freezes when it feels judged, and opens when it feels invited.</p>
+          </div>
+        </div>
+
+        <!-- 03 TEND -->
+        <div class="step reveal">
+          <div class="step-text">
+            <span class="step-num">03 — Tend</span>
+            <h3>Tend the bond.</h3>
+            <p>Vela, your AI astrologer and relationship coach, helps you navigate the hard conversations — drawing on the chart <em>and</em> plain good sense. Ask privately, or open a consented shared space where Vela helps you both, without ever taking a side.</p>
+          </div>
+          <div class="mock chat glass">
+            <span class="label">Ask Vela · private · about Daniel</span>
+            <div class="bubble user">Why do we keep having the same fight?</div>
+            <div class="bubble vela"><b>Vela</b>Here's the root: you move fast and say it out loud; Daniel goes quiet to keep the peace. Winning isn't the goal — naming the pattern before you're in it is. Try: "we're doing the thing again, can we slow down?"</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- GENERATIONAL -->
+    <section class="wrap" id="generations">
+      <div class="gen-grid">
+        <div class="reveal">
+          <span class="eyebrow">The generational layer</span>
+          <h2 style="margin:20px 0 22px">The sky you were all born under.</h2>
+          <p class="lede">The slow planets — the ones that shape a whole generation — drift so gently that everyone born within a few years shares them. It's why siblings feel cut from the same cloth, why a friend group just <em>gets</em> each other, and why the people who came before you saw the world the way they did. Galaxia reads it across your whole circle: what you share, and where you quietly diverge.</p>
+          <div class="gen-callout"><b>It needs only a birth year.</b> <span>So the people you have the least on — a grandmother, an old friend, the ones who came before — still take their place in your sky.</span></div>
+        </div>
+        <div class="cohort glass reveal">
+          <div class="mock-sub" style="letter-spacing:.16em;text-transform:uppercase;font-size:.66rem;color:var(--gold)">Your group · the cousins</div>
+          <div class="cluster">
+            <div class="av">S</div><div class="av">M</div><div class="av">N</div><div class="av">J</div><div class="av more">+2</div>
+          </div>
+          <span class="label">Your shared sky</span>
+          <div class="pl"><span class="glyph" style="color:var(--air)">♅</span><div><div class="pl-t">Uranus in Aquarius</div><div class="pl-d">The reformers — wired to question the rules</div></div></div>
+          <div class="pl"><span class="glyph" style="color:var(--earth)">♆</span><div><div class="pl-t">Neptune in Capricorn</div><div class="pl-d">A pragmatic, build-it kind of dreaming</div></div></div>
+          <div class="pl"><span class="glyph" style="color:var(--rose)">♇</span><div><div class="pl-t">Pluto in Scorpio</div><div class="pl-d">Intensity, loyalty, all-or-nothing depth</div></div></div>
+          <div class="split">
+            <span class="label" style="color:var(--rose)">Where you split · fault line</span>
+            <p class="tip" style="font-style:normal;color:var(--mist)">The youngest carries Pluto in Sagittarius — more restless and free, less guarded than the rest of you.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VELA -->
+    <section class="wrap" id="vela">
+      <div class="vela-wrap">
+        <span class="eyebrow reveal" style="justify-content:center">Your guide</span>
+        <h2 class="reveal" style="margin-top:18px;font-size:clamp(2.4rem,5.5vw,4rem)">Meet <em style="color:var(--gold)">Vela</em>.</h2>
+        <p class="lede reveal">Most apps talk <em>at</em> you. Vela talks with you — an astrologer who already knows both charts and a coach who gives you something to actually do. Every answer comes from two angles at once: what the stars show, and plain relationship sense. It never invents the chart, never takes a side in a shared space, and never breaches your privacy.</p>
+        <div class="vela-card chat glass reveal">
+          <span class="label">Vela · parenting guidance</span>
+          <div class="bubble user">She's 16 and shuts me out. What do I do?</div>
+          <div class="bubble vela"><b>Vela</b>Sofia's Capricorn Moon needs to feel competent, not managed. She doesn't open up head-on — she opens up sideways, low-stakes. Drop the face-to-face talk; sit beside her in the car and let silence do half the work. Want a gentle way to start?</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRUST -->
+    <section class="wrap" id="trust">
+      <div class="trust-head reveal">
+        <span class="eyebrow">Built on trust</span>
+        <h2 style="margin:18px 0 16px">Private by design.</h2>
+        <p class="lede">The people in here are the ones you love most. We treat that the way it deserves.</p>
+      </div>
+      <div class="trust-grid">
+        <div class="tcard glass reveal"><div class="ico">✶</div><h3>Your notes are yours</h3><p>What you write about someone is private to you — always. It's never shared, and never fed into a conversation they can see.</p></div>
+        <div class="tcard glass reveal"><div class="ico">☾</div><h3>Family-safe</h3><p>No two-way AI chat with children. Conversations about a child are private guidance for the parent — never content aimed at the kid.</p></div>
+        <div class="tcard glass reveal"><div class="ico">✷</div><h3>Real astrology, real data</h3><p>Charts are computed from precise birth data — not guessed by an AI. The stars are the foundation; the AI only ever interprets what's real.</p></div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="wrap" id="faq">
+      <div class="faq-wrap">
+        <div class="faq-head reveal">
+          <span class="eyebrow" style="justify-content:center">Questions</span>
+          <h2 style="margin-top:16px">Good to know.</h2>
+        </div>
+        <div class="faq-list">
+          <div class="faq-item reveal"><button class="faq-q">Do I need everyone's exact birth time?<span class="pm">+</span></button><div class="faq-a"><p>No — and that's the point. An exact time unlocks the deepest detail (houses, your rising sign, the precise Moon). But the signs, the compatibility reads, and the entire generational layer work from just a birth date — often just a <em>year</em>. Add the people you have, at whatever detail you have. The grandmother you only know a birth year for still belongs in your sky.</p></div></div>
+          <div class="faq-item reveal"><button class="faq-q">Is this actually private?<span class="pm">+</span></button><div class="faq-a"><p>Completely. The notes you keep about someone are yours alone — never shared, never shown to them, never fed into a conversation they can see. Anything about your children stays private to you. The people in here are the ones you love most; we treat that the way it deserves.</p></div></div>
+          <div class="faq-item reveal"><button class="faq-q">Is it real astrology, or AI making things up?<span class="pm">+</span></button><div class="faq-a"><p>Real. Every chart is computed from precise astronomical data — the actual positions of the planets at the moment someone was born. Vela, the guide, only ever interprets what's real. She never invents a placement.</p></div></div>
+          <div class="faq-item reveal"><button class="faq-q">Who is Galaxia for?<span class="pm">+</span></button><div class="faq-a"><p>Anyone who wants to understand the people already in their life — a partner, kids, parents, siblings, the friends who became family, the ones who came before. It's not for swiping on strangers, and it's not a daily horoscope. It's for tending the bonds that actually make a life.</p></div></div>
+          <div class="faq-item reveal"><button class="faq-q">When can I use it?<span class="pm">+</span></button><div class="faq-a"><p>We're building it now, for iOS and Android. Join the early-access list and you'll be among the first to map your galaxy.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLOSE -->
+    <section class="wrap close" id="join">
+      <h2 class="close-h reveal">The small, bright, <em>irreplaceable</em> galaxy that is yours.</h2>
+      <div class="form reveal">
+        <input type="email" placeholder="you@example.com" aria-label="Email address" id="email2" />
+        <button class="btn" data-form="2">Request early access</button>
+      </div>
+      <p class="ok" id="ok2" style="text-align:center">✦ You're on the list. We'll be in touch.</p>
+      <p class="meta reveal">Be among the first to map your galaxy.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot-in">
+      <div>
+        <div class="foot-brand">Galaxia</div>
+        <p>The people you love, written in the stars. · © 2026 Galaxia</p>
+      </div>
+      <div class="foot-links">
+        <a href="#">Privacy</a><a href="#">Terms</a><a href="#join">Early access</a>
+      </div>
+    </div>
+  </footer>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  /* ---- ambient starfield ---- */
+  var sc = document.getElementById('stars'), sx = sc.getContext('2d');
+  var stars = [], W, H, DPR = Math.min(window.devicePixelRatio||1, 2);
+  function sizeStars(){
+    W = sc.width = innerWidth*DPR; H = sc.height = innerHeight*DPR;
+    sc.style.width = innerWidth+'px'; sc.style.height = innerHeight+'px';
+    var n = Math.round(innerWidth*innerHeight/9000);
+    stars = [];
+    for(var i=0;i<n;i++){
+      stars.push({x:Math.random()*W,y:Math.random()*H,
+        r:(Math.random()*1.1+0.2)*DPR, a:Math.random(), tw:Math.random()*0.02+0.004,
+        depth:Math.random()*0.6+0.2});
+    }
+  }
+  sizeStars();
+  var scrollY = 0;
+  function drawStars(){
+    sx.clearRect(0,0,W,H);
+    for(var i=0;i<stars.length;i++){
+      var s = stars[i];
+      if(!reduce){ s.a += s.tw; }
+      var al = 0.25 + Math.abs(Math.sin(s.a))*0.65;
+      var yy = s.y - scrollY*DPR*s.depth*0.15;
+      yy = ((yy % H) + H) % H;
+      sx.beginPath();
+      sx.arc(s.x, yy, s.r, 0, 7);
+      sx.fillStyle = 'rgba(244,236,219,'+al+')';
+      sx.fill();
+    }
+    if(!reduce) requestAnimationFrame(drawStars); 
+  }
+  drawStars();
+  if(reduce){ drawStars(); }
+
+  /* ---- living constellation ---- */
+  var gc = document.getElementById('graph'), gx = gc.getContext('2d');
+  var nodes = [
+    {n:'You',   x:0.50, y:0.52, you:true,  c:'#E6AE6C', r:8},
+    {n:'Rosa',  x:0.30, y:0.24, c:'#6FB1B8', r:5.5},
+    {n:'Daniel',x:0.74, y:0.26, c:'#B79AD8', r:5.5},
+    {n:'Luna',  x:0.82, y:0.50, c:'#6FB1B8', r:5},
+    {n:'Eli',   x:0.66, y:0.74, c:'#DA8C8C', r:5},
+    {n:'Sofia', x:0.34, y:0.78, c:'#B79AD8', r:5},
+    {n:'Mateo', x:0.18, y:0.52, c:'#6FB1B8', r:5}
+  ];
+  var links = [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,2],[5,6],[3,4]];
+  nodes.forEach(function(p,i){ p.ph = Math.random()*6.28; p.sp = 0.4+Math.random()*0.5; });
+  var gW,gH,t0=performance.now();
+  function sizeGraph(){
+    var rect = gc.getBoundingClientRect();
+    gW = gc.width = rect.width*DPR; gH = gc.height = rect.height*DPR;
+    gc.style.width=rect.width+'px'; gc.style.height=rect.height+'px';
+  }
+  sizeGraph();
+  function pos(p,time){
+    var dx = reduce?0:Math.sin(time*0.0006*p.sp + p.ph)*0.012;
+    var dy = reduce?0:Math.cos(time*0.0005*p.sp + p.ph)*0.012;
+    return {x:(p.x+dx)*gW, y:(p.y+dy)*gH};
+  }
+  function curve(a,b){
+    var mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    var nx=-(b.y-a.y), ny=(b.x-a.x);
+    var len=Math.hypot(nx,ny)||1; nx/=len; ny/=len;
+    var off=Math.hypot(b.x-a.x,b.y-a.y)*0.12;
+    return {cx:mx+nx*off, cy:my+ny*off};
+  }
+  function drawGraph(time){
+    gx.clearRect(0,0,gW,gH);
+    var P = nodes.map(function(p){return pos(p,time);});
+    // links
+    for(var i=0;i<links.length;i++){
+      var a=P[links[i][0]], b=P[links[i][1]];
+      var c=curve(a,b);
+      var grad=gx.createLinearGradient(a.x,a.y,b.x,b.y);
+      grad.addColorStop(0,'rgba(230,174,108,0.0)');
+      grad.addColorStop(0.5,'rgba(230,174,108,0.32)');
+      grad.addColorStop(1,'rgba(183,154,216,0.05)');
+      gx.beginPath(); gx.moveTo(a.x,a.y);
+      gx.quadraticCurveTo(c.cx,c.cy,b.x,b.y);
+      gx.strokeStyle=grad; gx.lineWidth=1*DPR; gx.stroke();
+      // travelling pulse
+      if(!reduce){
+        var tt=((time*0.0002 + i*0.3)%1);
+        var px=(1-tt)*(1-tt)*a.x+2*(1-tt)*tt*c.cx+tt*tt*b.x;
+        var py=(1-tt)*(1-tt)*a.y+2*(1-tt)*tt*c.cy+tt*tt*b.y;
+        gx.beginPath(); gx.arc(px,py,1.4*DPR,0,7);
+        gx.fillStyle='rgba(244,236,219,'+(0.5*Math.sin(tt*3.14))+')'; gx.fill();
+      }
+    }
+    // nodes
+    for(var j=0;j<nodes.length;j++){
+      var p=nodes[j], pt=P[j];
+      var pulse=reduce?1:(0.85+0.15*Math.sin(time*0.002+p.ph));
+      var R=p.r*DPR;
+      var glow=gx.createRadialGradient(pt.x,pt.y,0,pt.x,pt.y,R*5);
+      glow.addColorStop(0,p.c+(p.you?'cc':'88'));
+      glow.addColorStop(1,'rgba(0,0,0,0)');
+      gx.beginPath(); gx.arc(pt.x,pt.y,R*5,0,7); gx.fillStyle=glow; gx.globalAlpha=pulse; gx.fill(); gx.globalAlpha=1;
+      gx.beginPath(); gx.arc(pt.x,pt.y,R,0,7); gx.fillStyle=p.c; gx.fill();
+      gx.beginPath(); gx.arc(pt.x,pt.y,R*0.4,0,7); gx.fillStyle='rgba(255,255,255,.8)'; gx.fill();
+      // label
+      gx.font='500 '+(11*DPR)+'px Inter, sans-serif';
+      gx.fillStyle=p.you?'rgba(244,236,219,.95)':'rgba(185,174,222,.85)';
+      gx.textAlign='center';
+      gx.fillText(p.n, pt.x, pt.y + R + 15*DPR);
+    }
+    if(!reduce) requestAnimationFrame(drawGraph);
+  }
+  requestAnimationFrame(drawGraph);
+  if(reduce) drawGraph(0);
+
+  /* ---- parallax + scroll ---- */
+  function onScroll(){
+    scrollY = window.pageYOffset;
+    var mw=document.querySelector('.milkyway');
+    if(mw) mw.style.transform='rotate(-18deg) translateY('+(scrollY*0.06)+'px)';
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+
+  /* ---- resize ---- */
+  var rt;
+  window.addEventListener('resize', function(){
+    clearTimeout(rt); rt=setTimeout(function(){ sizeStars(); sizeGraph(); if(reduce){drawStars();drawGraph(0);} },150);
+  });
+
+  /* ---- reveals ---- */
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+  },{threshold:0.12, rootMargin:'0px 0px -8% 0px'});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  /* ---- faq ---- */
+  document.querySelectorAll('.faq-q').forEach(function(b){
+    b.addEventListener('click', function(){ b.parentElement.classList.toggle('open'); });
+  });
+
+  /* ---- form ---- */
+  document.querySelectorAll('.btn[data-form]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var id=b.getAttribute('data-form');
+      var inp=document.getElementById('email'+id);
+      if(inp && /\S+@\S+\.\S+/.test(inp.value)){
+        document.getElementById('ok'+id).classList.add('show');
+        inp.value=''; inp.placeholder='Added ✦';
+      } else if(inp){ inp.focus(); inp.style.borderColor='var(--rose)'; }
+    });
+  });
+})();
+</script>
+</body>
+</html>

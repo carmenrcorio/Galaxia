@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Galaxia Mea — living constellation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#08061a; --ink1:#0d0a24; --ink2:#141033;
+    --gold:#E6AE6C; --gold-bright:#f0c089; --rose:#DA8C8C; --teal:#6FB1B8;
+    --mist:#b9aede; --mist2:#8076a6; --cream:#F4ECDB;
+    --fire:#E0825C; --earth:#cdbd7a; --air:#B79AD8; --water:#6FB1B8;
+    --serif:'Fraunces',Georgia,serif; --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--ink); color:var(--cream); font-family:var(--sans);
+    overflow:hidden; -webkit-font-smoothing:antialiased;
+  }
+  #sky{position:fixed;inset:0;display:block;cursor:crosshair}
+
+  /* ---- chrome ---- */
+  .topbar{
+    position:fixed;top:0;left:0;right:0;z-index:10;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 26px;pointer-events:none;
+    background:linear-gradient(180deg, rgba(8,6,26,.75), transparent);
+  }
+  .brand{font-family:var(--serif);font-size:1.28rem;color:var(--gold);letter-spacing:.01em}
+  .brand span{font-style:italic;font-weight:500}
+  .sub{font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--mist2);margin-top:2px}
+  .modes{display:flex;gap:8px;pointer-events:auto}
+  .mode{
+    font-family:var(--sans);font-size:.76rem;font-weight:500;letter-spacing:.02em;
+    padding:9px 15px;border-radius:100px;cursor:pointer;
+    background:rgba(255,255,255,.04);border:1px solid rgba(183,154,216,.18);color:var(--mist);
+    transition:all .25s;backdrop-filter:blur(10px);
+  }
+  .mode:hover{border-color:rgba(230,174,108,.4);color:var(--cream)}
+  .mode.on{background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#1a1206;border-color:transparent;font-weight:600}
+
+  /* ---- legend ---- */
+  .legend{
+    position:fixed;left:26px;bottom:26px;z-index:10;width:250px;
+    padding:20px;border-radius:20px;
+    background:linear-gradient(165deg, rgba(255,255,255,.05), rgba(255,255,255,.012));
+    backdrop-filter:blur(20px) saturate(1.15);
+    border:1px solid rgba(230,174,108,.13);
+    box-shadow:0 30px 70px -30px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .legend h3{font-family:var(--serif);font-size:1.02rem;font-weight:500;margin-bottom:4px}
+  .legend .hint{font-size:.72rem;color:var(--mist2);line-height:1.5;margin-bottom:14px}
+  .lrow{display:flex;align-items:center;gap:11px;padding:6px 0;font-size:.78rem;color:var(--mist)}
+  .lrow b{color:var(--cream);font-weight:500}
+  .swatch{width:26px;height:26px;flex:none;position:relative}
+  .swatch canvas{position:absolute;inset:0}
+
+  /* ---- inspector ---- */
+  .inspect{
+    position:fixed;right:26px;top:84px;z-index:10;width:290px;
+    padding:22px;border-radius:20px;opacity:0;transform:translateY(10px);
+    pointer-events:none;transition:opacity .4s cubic-bezier(.2,.7,.2,1),transform .4s cubic-bezier(.2,.7,.2,1);
+    background:linear-gradient(165deg, rgba(255,255,255,.05), rgba(255,255,255,.012));
+    backdrop-filter:blur(20px) saturate(1.15);
+    border:1px solid rgba(230,174,108,.13);
+    box-shadow:0 30px 70px -30px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .inspect.show{opacity:1;transform:none}
+  .eyebrow{font-size:.62rem;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:9px}
+  .inspect h2{font-family:var(--serif);font-size:1.55rem;font-weight:500;line-height:1.05;margin-bottom:3px}
+  .rel{font-size:.76rem;color:var(--mist2);margin-bottom:15px}
+  .form{
+    display:inline-block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+    padding:5px 11px;border-radius:100px;margin-bottom:15px;
+    background:rgba(111,177,184,.1);border:1px solid rgba(111,177,184,.24);color:var(--teal);
+  }
+  .prop{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid rgba(255,255,255,.06);font-size:.79rem}
+  .prop span:first-child{color:var(--mist2)}
+  .prop span:last-child{color:var(--cream);text-align:right}
+  .why{
+    margin-top:15px;padding:13px;border-radius:13px;font-size:.75rem;line-height:1.62;color:var(--mist);
+    background:rgba(183,154,216,.06);border:1px solid rgba(183,154,216,.14);
+  }
+  .why em{color:var(--gold);font-style:italic}
+
+  /* ---- constellation namer ---- */
+  .namer{
+    position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);z-index:12;
+    opacity:0;pointer-events:none;transition:all .4s cubic-bezier(.2,.7,.2,1);
+    display:flex;gap:9px;align-items:center;padding:13px 15px;border-radius:100px;
+    background:linear-gradient(165deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+    backdrop-filter:blur(20px);border:1px solid rgba(230,174,108,.2);
+    box-shadow:0 24px 60px -24px rgba(0,0,0,.8);
+  }
+  .namer.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
+  .namer input{
+    background:rgba(255,255,255,.05);border:1px solid rgba(183,154,216,.2);border-radius:100px;
+    padding:10px 17px;color:var(--cream);font-family:var(--serif);font-size:.95rem;outline:none;width:230px;
+  }
+  .namer input::placeholder{color:var(--mist2);font-style:italic}
+  .namer input:focus{border-color:var(--gold)}
+  .namer button{
+    padding:10px 19px;border-radius:100px;border:none;cursor:pointer;font-family:var(--sans);
+    font-weight:600;font-size:.82rem;background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#1a1206;
+  }
+  .namer .ghost{background:none;border:1px solid rgba(183,154,216,.2);color:var(--mist)}
+
+  .toast{
+    position:fixed;left:50%;top:26px;transform:translateX(-50%);z-index:20;
+    padding:11px 20px;border-radius:100px;font-size:.8rem;color:var(--cream);
+    background:rgba(20,16,51,.9);backdrop-filter:blur(14px);
+    border:1px solid rgba(230,174,108,.22);
+    opacity:0;transition:opacity .4s;pointer-events:none;
+  }
+  .toast.show{opacity:1}
+
+  @media(max-width:820px){
+    .legend{display:none}
+    .inspect{right:14px;left:14px;width:auto;top:auto;bottom:14px}
+  }
+  @media(prefers-reduced-motion:reduce){ *{transition:none !important} }
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+
+<div class="topbar">
+  <div>
+    <div class="brand">Galax<span>ia</span> Mea</div>
+    <div class="sub">my galaxy</div>
+  </div>
+  <div class="modes">
+    <button class="mode on" data-mode="explore">Explore</button>
+    <button class="mode" data-mode="draw">Draw a constellation</button>
+    <button class="mode" data-mode="nebula">Generations</button>
+  </div>
+</div>
+
+<div class="legend">
+  <h3>Nothing here is assigned.</h3>
+  <p class="hint">The sky renders what's true. Form follows the bond, colour follows the element, and focus follows how much you know.</p>
+  <div class="lrow"><div class="swatch"><canvas data-sw="binary"></canvas></div><div><b>Binary star</b> · a partner</div></div>
+  <div class="lrow"><div class="swatch"><canvas data-sw="moon"></canvas></div><div><b>Moon</b> · a child</div></div>
+  <div class="lrow"><div class="swatch"><canvas data-sw="fixed"></canvas></div><div><b>Fixed star</b> · who raised you</div></div>
+  <div class="lrow"><div class="swatch"><canvas data-sw="ancient"></canvas></div><div><b>Ancient light</b> · an ancestor</div></div>
+</div>
+
+<div class="inspect" id="inspect">
+  <span class="eyebrow" id="i-eyebrow">In your sky</span>
+  <h2 id="i-name">—</h2>
+  <div class="rel" id="i-rel">—</div>
+  <div class="form" id="i-form">—</div>
+  <div class="prop"><span>Element</span><span id="i-elem">—</span></div>
+  <div class="prop"><span>Known to</span><span id="i-prec">—</span></div>
+  <div class="prop"><span>Generation</span><span id="i-gen">—</span></div>
+  <div class="why" id="i-why">—</div>
+</div>
+
+<div class="namer" id="namer">
+  <input id="cname" placeholder="Name this constellation…" />
+  <button id="csave">Name it</button>
+  <button id="cclear" class="ghost">Clear</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var cv = document.getElementById('sky'), cx = cv.getContext('2d');
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  var W=0, H=0;
+
+  var ELEM = { fire:'#E0825C', earth:'#cdbd7a', air:'#B79AD8', water:'#6FB1B8' };
+
+  // ---- the sky. properties are DERIVED, never assigned. ----
+  // form: binary(partner) | moon(child) | fixed(parent/raised you) | ancient(ancestor) | star(friend/sibling)
+  // precision: exact | date | year   -> drives sharpness (how resolved the light is)
+  // cohort: which generational nebula they were born into
+  var people = [
+    {n:'You',    rel:'self',            form:'self',    el:'fire',  prec:'exact', coh:'millennial', x:.50, y:.52,
+     why:'The centre of your own sky. Everything here is measured from where you stand.'},
+    {n:'Daniel', rel:'your partner',    form:'binary',  el:'air',   prec:'exact', coh:'millennial', x:.665,y:.40,
+     why:'A binary star. Two bodies bound by a shared centre of gravity, each pulling the other into orbit. Neither one circles the other.'},
+    {n:'Sofia',  rel:'your daughter',   form:'moon',    el:'earth', prec:'exact', coh:'genz',       x:.40, y:.70,
+     why:'A moon, held close, still reflecting the light she was given. She is not lesser. She is nearer, and still becoming.'},
+    {n:'Mateo',  rel:'your son',        form:'moon',    el:'water', prec:'date',  coh:'genz',       x:.585,y:.73,
+     why:'A moon in a wider orbit. Without a birth time his light stays a little unresolved, and the houses of his chart wait.'},
+    {n:'Rosa',   rel:'your mother',     form:'fixed',   el:'water', prec:'exact', coh:'boomer',     x:.31, y:.31,
+     why:'A fixed star. The kind you learn to navigate by, whether or not you meant to.'},
+    {n:'Elena',  rel:'your sister',     form:'star',    el:'air',   prec:'exact', coh:'millennial', x:.775,y:.60,
+     why:'Born under the same slow planets as you. Cut from the same sky, which is why she needs no explaining.'},
+    {n:'Abuela', rel:'your grandmother',form:'ancient', el:'water', prec:'year',  coh:'silent',     x:.185,y:.60,
+     why:'Light from a star that has already gone still arrives. You are seeing her now. A birth year alone is enough to place her among her generation.'},
+    {n:'Tomás',  rel:'great-grandfather',form:'ancient',el:'earth', prec:'year',  coh:'silent',     x:.245,y:.19,
+     why:'Older light still, and fainter. Not because he matters less, but because less of him reached you.'}
+  ];
+
+  var COHORT = {
+    silent:     {c:'#6FB1B8', label:'Silent generation', note:'Pluto in Cancer · Neptune in Virgo'},
+    boomer:     {c:'#DA8C8C', label:'Boomer',            note:'Pluto in Leo · Uranus in Gemini'},
+    millennial: {c:'#B79AD8', label:'Millennial',        note:'Pluto in Scorpio · Uranus in Sagittarius'},
+    genz:       {c:'#E6AE6C', label:'Gen Z',             note:'Pluto in Sagittarius · Neptune in Aquarius'}
+  };
+  var PRECLABEL = { exact:'the minute', date:'the day', year:'the year' };
+  var FORMLABEL = { self:'Your centre', binary:'Binary star', moon:'Moon', fixed:'Fixed star', ancient:'Ancient light', star:'Star' };
+
+  // relationships that already exist (the bonds, not the drawn constellations)
+  var bonds = [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[4,6],[6,7],[2,3]];
+
+  // ---- ambient starfield ----
+  var bg = [];
+  function seedBg(){
+    bg = [];
+    var n = Math.round(W*H/(14000*DPR));
+    for(var i=0;i<n;i++) bg.push({x:Math.random()*W,y:Math.random()*H,r:(Math.random()*1.05+.15)*DPR,a:Math.random()*6.28,tw:.004+Math.random()*.014});
+  }
+
+  // ---- shooting stars = real transits crossing a person ----
+  var transits = [];
+  function spawnTransit(){
+    if(reduce) return;
+    var target = people[1 + Math.floor(Math.random()*(people.length-1))];
+    var tx = target.x*W, ty = target.y*H;
+    var ang = Math.random()*6.28;
+    var dist = Math.max(W,H)*.55;
+    transits.push({
+      x: tx + Math.cos(ang)*dist, y: ty + Math.sin(ang)*dist,
+      tx: tx, ty: ty, t: 0, life: 150 + Math.random()*60,
+      c: ELEM[target.el], who: target.n
+    });
+  }
+
+  // ---- state ----
+  var mode = 'explore';
+  var hover = -1, selected = -1;
+  var drawn = [];            // {pts:[i,j,...], name:''}
+  var pending = [];          // indices being linked in draw mode
+  var t = 0;
+
+  function size(){
+    W = cv.width = innerWidth*DPR; H = cv.height = innerHeight*DPR;
+    cv.style.width = innerWidth+'px'; cv.style.height = innerHeight+'px';
+    seedBg();
+  }
+  size();
+
+  function px(p){ return {x:p.x*W, y:p.y*H}; }
+
+  // gentle drift, so the sky breathes
+  people.forEach(function(p,i){ p.ph = i*1.7; p.sp = .35+Math.random()*.4; });
+  function pos(p){
+    if(reduce || p.form==='self') return px(p);
+    var d = px(p);
+    return { x: d.x + Math.sin(t*.00045*p.sp + p.ph)*7*DPR,
+             y: d.y + Math.cos(t*.00038*p.sp + p.ph)*7*DPR };
+  }
+
+  // sharpness: how resolved the light is. exact=crisp, year=diffuse.
+  function sharp(p){ return p.prec==='exact' ? 1 : p.prec==='date' ? .62 : .32; }
+  function coreR(p){
+    var base = p.form==='self' ? 7 : p.form==='ancient' ? 3.4 : p.form==='moon' ? 4.2 : 5;
+    return base*DPR;
+  }
+
+  // ---- nebulae: the generational cohorts, rendered behind their people ----
+  function drawNebulae(alpha){
+    if(alpha<=0) return;
+    var groups = {};
+    people.forEach(function(p,i){ (groups[p.coh] = groups[p.coh] || []).push(i); });
+    Object.keys(groups).forEach(function(k){
+      var idxs = groups[k], col = COHORT[k].c;
+      // centroid + spread
+      var cxm=0, cym=0;
+      idxs.forEach(function(i){ var q=pos(people[i]); cxm+=q.x; cym+=q.y; });
+      cxm/=idxs.length; cym/=idxs.length;
+      var rad = 0;
+      idxs.forEach(function(i){ var q=pos(people[i]); rad = Math.max(rad, Math.hypot(q.x-cxm,q.y-cym)); });
+      rad = Math.max(rad, 60*DPR) + 105*DPR;
+      var puff = reduce?0:Math.sin(t*.0006 + k.length)*8*DPR;
+      var g = cx.createRadialGradient(cxm,cym,0,cxm,cym,rad+puff);
+      g.addColorStop(0, hexA(col, .17*alpha));
+      g.addColorStop(.55, hexA(col, .07*alpha));
+      g.addColorStop(1, hexA(col, 0));
+      cx.beginPath(); cx.arc(cxm,cym,rad+puff,0,7); cx.fillStyle=g; cx.fill();
+
+      if(alpha>.55){
+        cx.font = '600 '+(9.5*DPR)+'px Inter, sans-serif';
+        cx.fillStyle = hexA(col, .75*alpha);
+        cx.textAlign='center';
+        cx.letterSpacing = '2px';
+        cx.fillText(COHORT[k].label.toUpperCase(), cxm, cym - rad - 12*DPR);
+        cx.letterSpacing = '0px';
+      }
+    });
+  }
+  function hexA(hex,a){
+    var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+    return 'rgba('+r+','+g+','+b+','+a+')';
+  }
+
+  // ---- celestial forms ----
+  function drawBody(p, q, i){
+    var col = ELEM[p.el], s = sharp(p), R = coreR(p);
+    var isHot = (i===hover || i===selected || pending.indexOf(i)>=0);
+    var pulse = reduce?1:(.9+.1*Math.sin(t*.0018+p.ph));
+
+    // halo. diffuse light = wider, softer, dimmer core.
+    var haloR = R * (s===1 ? 5.5 : s>.5 ? 8 : 11) * (isHot?1.3:1);
+    var g = cx.createRadialGradient(q.x,q.y,0,q.x,q.y,haloR);
+    g.addColorStop(0, hexA(col, (.55*s + .18) * pulse * (isHot?1.35:1)));
+    g.addColorStop(.4, hexA(col, .12*s*pulse));
+    g.addColorStop(1, hexA(col,0));
+    cx.beginPath(); cx.arc(q.x,q.y,haloR,0,7); cx.fillStyle=g; cx.fill();
+
+    if(p.form==='binary'){
+      // two bodies orbiting a shared barycentre
+      var sep = 8.5*DPR, a = reduce?0:t*.0012;
+      var ax = q.x+Math.cos(a)*sep, ay = q.y+Math.sin(a)*sep*.55;
+      var bx = q.x-Math.cos(a)*sep, by = q.y-Math.sin(a)*sep*.55;
+      cx.strokeStyle = hexA(col,.30); cx.lineWidth=1*DPR;
+      cx.beginPath(); cx.ellipse(q.x,q.y,sep,sep*.55,0,0,7); cx.stroke();
+      [[ax,ay,R*.72],[bx,by,R*.56]].forEach(function(o){
+        cx.beginPath(); cx.arc(o[0],o[1],o[2],0,7); cx.fillStyle=col; cx.fill();
+        cx.beginPath(); cx.arc(o[0],o[1],o[2]*.42,0,7); cx.fillStyle='rgba(255,255,255,.92)'; cx.fill();
+      });
+    } else if(p.form==='moon'){
+      // a lit crescent: reflecting light it was given
+      cx.beginPath(); cx.arc(q.x,q.y,R,0,7); cx.fillStyle=hexA(col,.30); cx.fill();
+      cx.save(); cx.beginPath(); cx.arc(q.x,q.y,R,0,7); cx.clip();
+      var off = R*.62;
+      cx.beginPath(); cx.arc(q.x-off*.55, q.y-off*.42, R*1.02, 0, 7);
+      cx.fillStyle=col; cx.fill();
+      cx.restore();
+      cx.beginPath(); cx.arc(q.x,q.y,R,0,7);
+      cx.strokeStyle=hexA(col,.5); cx.lineWidth=.8*DPR; cx.stroke();
+    } else if(p.form==='fixed'){
+      // steady star with the four-point flare you navigate by
+      var fl = R*3.1*(isHot?1.2:1);
+      cx.strokeStyle = hexA(col,.42*pulse); cx.lineWidth=.9*DPR;
+      cx.beginPath(); cx.moveTo(q.x-fl,q.y); cx.lineTo(q.x+fl,q.y);
+      cx.moveTo(q.x,q.y-fl); cx.lineTo(q.x,q.y+fl); cx.stroke();
+      cx.beginPath(); cx.arc(q.x,q.y,R,0,7); cx.fillStyle=col; cx.fill();
+      cx.beginPath(); cx.arc(q.x,q.y,R*.42,0,7); cx.fillStyle='rgba(255,255,255,.95)'; cx.fill();
+    } else if(p.form==='ancient'){
+      // light that left long ago: soft, no hard core, faint outer ring still travelling
+      var rr = R*(1+ (reduce?0:.06*Math.sin(t*.0011+p.ph)));
+      cx.beginPath(); cx.arc(q.x,q.y,rr,0,7); cx.fillStyle=hexA(col,.62); cx.fill();
+      var ringR = R*(4.4 + (reduce?0:(Math.sin(t*.0007+p.ph)+1)*1.5));
+      cx.beginPath(); cx.arc(q.x,q.y,ringR,0,7);
+      cx.strokeStyle=hexA(col,.13); cx.lineWidth=1*DPR; cx.stroke();
+    } else if(p.form==='self'){
+      cx.beginPath(); cx.arc(q.x,q.y,R,0,7); cx.fillStyle=col; cx.fill();
+      cx.beginPath(); cx.arc(q.x,q.y,R*.45,0,7); cx.fillStyle='rgba(255,255,255,.97)'; cx.fill();
+      cx.beginPath(); cx.arc(q.x,q.y,R*1.85,0,7);
+      cx.strokeStyle=hexA(col,.30); cx.lineWidth=1*DPR; cx.stroke();
+    } else {
+      cx.beginPath(); cx.arc(q.x,q.y,R,0,7); cx.fillStyle=col; cx.fill();
+      cx.beginPath(); cx.arc(q.x,q.y,R*.4,0,7); cx.fillStyle='rgba(255,255,255,.9)'; cx.fill();
+    }
+
+    // name
+    var lit = isHot ? .96 : (.30 + .5*s);
+    cx.font = (isHot?'500 ':'400 ') + (11*DPR)+'px Inter, sans-serif';
+    cx.fillStyle = p.form==='self' ? 'rgba(244,236,219,'+Math.max(lit,.9)+')' : 'rgba(185,174,222,'+lit+')';
+    cx.textAlign='center';
+    cx.fillText(p.n, q.x, q.y + coreR(p)*(p.form==='fixed'?3.9:2.9) + 12*DPR);
+  }
+
+  function hit(mx,my){
+    for(var i=0;i<people.length;i++){
+      var q = pos(people[i]);
+      if(Math.hypot(mx-q.x,my-q.y) < 22*DPR) return i;
+    }
+    return -1;
+  }
+
+  var nebAlpha = 0;
+  function frame(){
+    t = performance.now();
+    cx.clearRect(0,0,W,H);
+
+    // deep field wash
+    var wash = cx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.45,Math.max(W,H)*.75);
+    wash.addColorStop(0,'#0d0a24'); wash.addColorStop(1,'#08061a');
+    cx.fillStyle=wash; cx.fillRect(0,0,W,H);
+
+    // ambient stars
+    for(var i=0;i<bg.length;i++){
+      var s=bg[i]; if(!reduce) s.a+=s.tw;
+      cx.beginPath(); cx.arc(s.x,s.y,s.r,0,7);
+      cx.fillStyle='rgba(244,236,219,'+(.16+Math.abs(Math.sin(s.a))*.5)+')'; cx.fill();
+    }
+
+    // nebulae fade in/out with the Generations mode
+    var target = (mode==='nebula')?1:0.001;
+    nebAlpha += (target-nebAlpha)*.06;
+    drawNebulae(nebAlpha);
+
+    // bonds
+    for(var b=0;b<bonds.length;b++){
+      var A=pos(people[bonds[b][0]]), B=pos(people[bonds[b][1]]);
+      var g=cx.createLinearGradient(A.x,A.y,B.x,B.y);
+      g.addColorStop(0, hexA(ELEM[people[bonds[b][0]].el], .20));
+      g.addColorStop(1, hexA(ELEM[people[bonds[b][1]].el], .20));
+      cx.beginPath(); cx.moveTo(A.x,A.y); cx.lineTo(B.x,B.y);
+      cx.strokeStyle=g; cx.lineWidth=.8*DPR; cx.stroke();
+    }
+
+    // drawn constellations (gold, deliberate, named)
+    drawn.forEach(function(c){
+      cx.beginPath();
+      c.pts.forEach(function(idx,k){ var q=pos(people[idx]); k?cx.lineTo(q.x,q.y):cx.moveTo(q.x,q.y); });
+      cx.strokeStyle='rgba(230,174,108,.55)'; cx.lineWidth=1.3*DPR; cx.stroke();
+      if(c.name){
+        var mx=0,my=0; c.pts.forEach(function(idx){var q=pos(people[idx]);mx+=q.x;my+=q.y;});
+        mx/=c.pts.length; my/=c.pts.length;
+        cx.font='italic 500 '+(13*DPR)+'px Fraunces, Georgia, serif';
+        cx.fillStyle='rgba(230,174,108,.8)'; cx.textAlign='center';
+        cx.fillText(c.name, mx, my);
+      }
+    });
+
+    // in-progress drawing
+    if(pending.length){
+      cx.beginPath();
+      pending.forEach(function(idx,k){ var q=pos(people[idx]); k?cx.lineTo(q.x,q.y):cx.moveTo(q.x,q.y); });
+      if(mouse.x){ cx.lineTo(mouse.x,mouse.y); }
+      cx.strokeStyle='rgba(230,174,108,.42)'; cx.lineWidth=1.2*DPR;
+      cx.setLineDash([4*DPR,5*DPR]); cx.stroke(); cx.setLineDash([]);
+    }
+
+    // transits (real events crossing a person's field)
+    for(var k=transits.length-1;k>=0;k--){
+      var s2=transits[k]; s2.t++;
+      var u = s2.t/s2.life;
+      if(u>=1){ transits.splice(k,1); continue; }
+      var cxp = s2.x+(s2.tx-s2.x)*u, cyp = s2.y+(s2.ty-s2.y)*u;
+      var pxp = s2.x+(s2.tx-s2.x)*Math.max(0,u-.05), pyp = s2.y+(s2.ty-s2.y)*Math.max(0,u-.05);
+      var fade = Math.sin(u*3.14);
+      var g2 = cx.createLinearGradient(pxp,pyp,cxp,cyp);
+      g2.addColorStop(0, hexA(s2.c,0)); g2.addColorStop(1, hexA(s2.c,.75*fade));
+      cx.beginPath(); cx.moveTo(pxp,pyp); cx.lineTo(cxp,cyp);
+      cx.strokeStyle=g2; cx.lineWidth=1.6*DPR; cx.stroke();
+      cx.beginPath(); cx.arc(cxp,cyp,1.6*DPR,0,7); cx.fillStyle=hexA('#F4ECDB',.85*fade); cx.fill();
+    }
+
+    for(var j=0;j<people.length;j++) drawBody(people[j], pos(people[j]), j);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  if(!reduce) setInterval(function(){ if(Math.random()<.55) spawnTransit(); }, 3400);
+
+  // ---- interaction ----
+  var mouse = {x:0,y:0};
+  cv.addEventListener('mousemove', function(e){
+    mouse.x = e.clientX*DPR; mouse.y = e.clientY*DPR;
+    var h = hit(mouse.x,mouse.y);
+    if(h!==hover){ hover=h; cv.style.cursor = h>=0 ? 'pointer' : (mode==='draw'?'crosshair':'default'); }
+    if(h>=0 && mode==='explore') show(h);
+  });
+  cv.addEventListener('mouseleave', function(){ mouse.x=0; });
+
+  cv.addEventListener('click', function(e){
+    var mx=e.clientX*DPR, my=e.clientY*DPR;
+    var h = hit(mx,my);
+    if(h<0) return;
+    if(mode==='draw'){
+      if(pending[pending.length-1]===h) return;
+      pending.push(h);
+      document.getElementById('namer').classList.toggle('show', pending.length>=2);
+    } else { selected=h; show(h); }
+  });
+
+  function show(i){
+    var p = people[i];
+    document.getElementById('i-name').textContent = p.n;
+    document.getElementById('i-rel').textContent  = p.rel;
+    document.getElementById('i-form').textContent = FORMLABEL[p.form];
+    document.getElementById('i-elem').textContent = p.el.charAt(0).toUpperCase()+p.el.slice(1);
+    document.getElementById('i-prec').textContent = PRECLABEL[p.prec];
+    document.getElementById('i-gen').textContent  = COHORT[p.coh].label;
+    document.getElementById('i-why').innerHTML    = p.why + (p.prec!=='exact' ? ' <em>Softer light: you know less of when.</em>' : '');
+    document.getElementById('inspect').classList.add('show');
+  }
+
+  document.querySelectorAll('.mode').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.mode').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      mode = b.getAttribute('data-mode');
+      pending = [];
+      document.getElementById('namer').classList.remove('show');
+      cv.style.cursor = mode==='draw' ? 'crosshair' : 'default';
+      if(mode==='draw') toast('Click star to star to trace a shape. Then name it.');
+      if(mode==='nebula') toast('Each cloud is a generation, born under the same slow planets.');
+    });
+  });
+
+  document.getElementById('csave').addEventListener('click', function(){
+    var nm = document.getElementById('cname').value.trim();
+    if(pending.length<2) return;
+    drawn.push({pts:pending.slice(), name:nm || ''});
+    toast(nm ? '“'+nm+'” is in your sky.' : 'Constellation traced.');
+    pending=[]; document.getElementById('cname').value='';
+    document.getElementById('namer').classList.remove('show');
+  });
+  document.getElementById('cclear').addEventListener('click', function(){
+    pending=[]; document.getElementById('namer').classList.remove('show');
+  });
+
+  var tt;
+  function toast(m){
+    var el=document.getElementById('toast');
+    el.textContent=m; el.classList.add('show');
+    clearTimeout(tt); tt=setTimeout(function(){ el.classList.remove('show'); }, 3200);
+  }
+
+  // ---- legend swatches ----
+  document.querySelectorAll('[data-sw]').forEach(function(c){
+    var g=c.getContext('2d'); c.width=26*DPR; c.height=26*DPR; c.style.width='26px'; c.style.height='26px';
+    var kind=c.getAttribute('data-sw'), col= kind==='binary'?'#B79AD8':kind==='moon'?'#cdbd7a':kind==='fixed'?'#6FB1B8':'#DA8C8C';
+    var q={x:13*DPR,y:13*DPR};
+    var gr=g.createRadialGradient(q.x,q.y,0,q.x,q.y,11*DPR);
+    gr.addColorStop(0,hexA(col,.5)); gr.addColorStop(1,hexA(col,0));
+    g.beginPath(); g.arc(q.x,q.y,11*DPR,0,7); g.fillStyle=gr; g.fill();
+    if(kind==='binary'){
+      g.strokeStyle=hexA(col,.4); g.lineWidth=1;
+      g.beginPath(); g.ellipse(q.x,q.y,5*DPR,3*DPR,0,0,7); g.stroke();
+      [[-5,0,2.4],[5,0,1.9]].forEach(function(o){ g.beginPath(); g.arc(q.x+o[0]*DPR,q.y+o[1]*DPR,o[2]*DPR,0,7); g.fillStyle=col; g.fill(); });
+    } else if(kind==='moon'){
+      g.beginPath(); g.arc(q.x,q.y,4.4*DPR,0,7); g.fillStyle=hexA(col,.3); g.fill();
+      g.save(); g.beginPath(); g.arc(q.x,q.y,4.4*DPR,0,7); g.clip();
+      g.beginPath(); g.arc(q.x-2.4*DPR,q.y-1.8*DPR,4.5*DPR,0,7); g.fillStyle=col; g.fill(); g.restore();
+    } else if(kind==='fixed'){
+      g.strokeStyle=hexA(col,.5); g.lineWidth=1;
+      g.beginPath(); g.moveTo(q.x-8*DPR,q.y); g.lineTo(q.x+8*DPR,q.y);
+      g.moveTo(q.x,q.y-8*DPR); g.lineTo(q.x,q.y+8*DPR); g.stroke();
+      g.beginPath(); g.arc(q.x,q.y,3.2*DPR,0,7); g.fillStyle=col; g.fill();
+    } else {
+      g.beginPath(); g.arc(q.x,q.y,2.6*DPR,0,7); g.fillStyle=hexA(col,.6); g.fill();
+      g.beginPath(); g.arc(q.x,q.y,7.5*DPR,0,7); g.strokeStyle=hexA(col,.22); g.lineWidth=1; g.stroke();
+    }
+  });
+
+  var rt;
+  window.addEventListener('resize', function(){ clearTimeout(rt); rt=setTimeout(size,140); });
+  setTimeout(function(){ show(0); }, 700);
+})();
+</script>
+</body>
+</html>

@@ -1,3 +1,10 @@
+/**
+ * Design utilities
+ * Glyph maps ported from design/reference/galaxia.jsx (SIGN, PLANET, ASPGLY).
+ * Avatar palette from landing .avatar gradient patterns.
+ */
+
+/* Deterministic avatar colour class from name hash */
 export function avatarColorClass(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -10,34 +17,83 @@ export function initials(name: string): string {
   return ((parts[0]?.charAt(0) ?? "") + (parts[parts.length - 1]?.charAt(0) ?? "")).toUpperCase();
 }
 
+/* Sign glyphs — from galaxia.jsx SIGN object (unicode codepoints) */
 export const SIGN_GLYPH: Record<string, string> = {
-  Aries:"♈", Taurus:"♉", Gemini:"♊", Cancer:"♋",
-  Leo:"♌", Virgo:"♍", Libra:"♎", Scorpio:"♏",
-  Sagittarius:"♐", Capricorn:"♑", Aquarius:"♒", Pisces:"♓"
+  Aries: "\u2648", Taurus: "\u2649", Gemini: "\u264A", Cancer: "\u264B",
+  Leo: "\u264C", Virgo: "\u264D", Libra: "\u264E", Scorpio: "\u264F",
+  Sagittarius: "\u2650", Capricorn: "\u2651", Aquarius: "\u2652", Pisces: "\u2653"
 };
 
+/* Planet glyphs — from galaxia.jsx PLANET object */
 export const BODY_GLYPH: Record<string, string> = {
-  sun:"☉", moon:"☽", mercury:"☿", venus:"♀", mars:"♂",
-  jupiter:"♃", saturn:"♄", uranus:"♅", neptune:"♆", pluto:"♇",
-  Uranus:"♅", Neptune:"♆", Pluto:"♇"
+  Sun: "\u2609", Moon: "\u263D", Mercury: "\u263F", Venus: "\u2640", Mars: "\u2642",
+  Jupiter: "\u2643", Saturn: "\u2644", Uranus: "\u2645", Neptune: "\u2646", Pluto: "\u2647",
+  // lower-case variants for engine output
+  sun: "\u2609", moon: "\u263D", mercury: "\u263F", venus: "\u2640", mars: "\u2642",
+  jupiter: "\u2643", saturn: "\u2644", uranus: "\u2645", neptune: "\u2646", pluto: "\u2647",
 };
 
-export function signElement(sign: string): "fire"|"earth"|"air"|"water" {
+/* Aspect glyphs — from galaxia.jsx ASPGLY */
+export const ASPECT_GLYPH: Record<string, string> = {
+  conjunction: "\u260C", sextile: "\u26B9", square: "\u25A1",
+  trine: "\u25B3", opposition: "\u260D"
+};
+
+/* Aspect one-liners — from galaxia.jsx ASPLINE */
+export const ASPECT_LINE: Record<string, string> = {
+  conjunction:  "fused — one charged focus",
+  sextile:      "easy, supportive talent",
+  square:       "inner friction that drives growth",
+  trine:        "natural, effortless gift",
+  opposition:   "a balancing act, pulled two ways",
+};
+
+/* Element for a sign */
+export function signElement(sign: string): "fire" | "earth" | "air" | "water" {
   if (["Aries","Leo","Sagittarius"].includes(sign)) return "fire";
   if (["Taurus","Virgo","Capricorn"].includes(sign)) return "earth";
   if (["Gemini","Libra","Aquarius"].includes(sign)) return "air";
   return "water";
 }
 
+/* Compat word + CSS class from score — from galaxia.jsx sdesc() */
 export function compatWord(score: number): { word: string; cls: string } {
-  if (score >= 72) return { word: "Effortless", cls: "compat-high" };
-  if (score >= 60) return { word: "Easy & warm", cls: "compat-high" };
-  if (score >= 50) return { word: "Workable",    cls: "compat-mid"  };
-  if (score >= 40) return { word: "Tender",      cls: "compat-mid"  };
-  return              { word: "Charged",     cls: "compat-low"  };
+  if (score >= 76) return { word: "Effortless",   cls: "compat-high" };
+  if (score >= 68) return { word: "Easy & warm",  cls: "compat-high" };
+  if (score >= 58) return { word: "Workable",      cls: "compat-mid"  };
+  if (score >= 48) return { word: "Tender",         cls: "compat-mid"  };
+  return              { word: "Charged",         cls: "compat-low"  };
 }
 
+/* Dimension display labels — from galaxia.jsx DIM_LABEL */
 export const COMPAT_LABELS: Record<string, string> = {
-  overall:"Overall", emotional:"Emotional", communication:"Communication",
-  warmth:"Warmth", values:"Values", stability:"Stability"
+  overall:       "Overall",
+  emotional:     "Emotional ease",
+  communication: "Communication",
+  warmth:        "Warmth",
+  values:        "Shared values",
+  stability:     "Stability",
 };
+
+/* Sign vibe one-liners — from galaxia.jsx VIBE */
+export const SIGN_VIBE: Record<string, string> = {
+  Aries:       "bold, fast, all-in",
+  Taurus:      "steady, sensual, immovable",
+  Gemini:      "quick, curious, talkative",
+  Cancer:      "tender, protective, remembers everything",
+  Leo:         "warm, proud, generous",
+  Virgo:       "precise, caring through usefulness",
+  Libra:       "fair, charming, seeks balance",
+  Scorpio:     "intense, private, all-or-nothing",
+  Sagittarius: "restless, honest, big-picture",
+  Capricorn:   "disciplined, ambitious, quietly loyal",
+  Aquarius:    "independent, inventive, principled",
+  Pisces:      "dreamy, compassionate, absorbent",
+};
+
+/* House meaning summaries — from galaxia.jsx HOUSE_AREA */
+export const HOUSE_AREA = [
+  "self & identity", "money & values", "communication & siblings", "home & roots",
+  "creativity & romance", "work & health", "partnership", "intimacy & transformation",
+  "beliefs & travel", "career & reputation", "friends & community", "solitude & the unconscious"
+];

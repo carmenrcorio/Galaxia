@@ -271,12 +271,28 @@ Deno.serve(async (req) => {
       (chartRows ?? []).map((r) => [r.person_id as string, r.data])
     );
 
-    // Build people context
+    // Build people context.
+    // A placement with confident === false (year-only birth data — the true
+    // sign depends on an unknown birth date) is never presented to the model
+    // as a settled fact; Vela must not interpret a sign we do not know.
     const peopleCtx = people.map((person) => {
       const chart = chartById.get(person.id);
-      const placements = (chart?.placements ?? []) as Array<{ body: string; sign: string }>;
-      const getSign = (body: string) =>
-        placements.find((p) => p.body === body)?.sign ?? "Unknown";
+      const placements = (chart?.placements ?? []) as Array<{ body: string; sign: string; confident?: boolean; possibleSigns?: string[] }>;
+      const getSign = (body: string) => {
+        const p = placements.find((pl) => pl.body === body);
+        if (!p) return "Unknown";
+        if (p.confident === false) {
+          return p.possibleSigns?.length ? `Uncertain (${p.possibleSigns.join(" or ")})` : "Uncertain — birth year only";
+        }
+        return p.sign;
+      };
+      const genSign = (g?: { sign?: string; confident?: boolean; possibleSigns?: string[] }) => {
+        if (!g?.sign) return "Unknown";
+        if (g.confident === false) {
+          return g.possibleSigns?.length ? `Uncertain (${g.possibleSigns.join(" or ")})` : "Uncertain — birth year only";
+        }
+        return g.sign;
+      };
       return {
         name:      person.display_name,
         role:      person.relation ?? "person",
@@ -288,9 +304,9 @@ Deno.serve(async (req) => {
         venus:  getSign("venus"),
         mars:   getSign("mars"),
         generational: {
-          uranus:     chart?.generational?.uranus?.sign  ?? "Unknown",
-          neptune:    chart?.generational?.neptune?.sign ?? "Unknown",
-          pluto:      chart?.generational?.pluto?.sign   ?? "Unknown",
+          uranus:     genSign(chart?.generational?.uranus),
+          neptune:    genSign(chart?.generational?.neptune),
+          pluto:      genSign(chart?.generational?.pluto),
           cohortLabel: chart?.generational?.cohortLabel  ?? "Unknown"
         }
       };

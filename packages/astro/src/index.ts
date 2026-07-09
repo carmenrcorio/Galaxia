@@ -1,7 +1,7 @@
 import { Body, GeoVector, Ecliptic, EclipticGeoMoon, SiderealTime, SunPosition } from "astronomy-engine";
 
 export type Precision = "exact" | "date" | "year";
-export type HouseSystem = "placidus" | "whole";
+export type HouseSystem = "placidus" | "whole" | "equal";
 export type Planet = "uranus" | "neptune" | "pluto";
 export type BodyName = "sun" | "moon" | "mercury" | "venus" | "mars" | "jupiter" | "saturn" | "uranus" | "neptune" | "pluto";
 export type AspectType = "conjunction" | "sextile" | "square" | "trine" | "opposition";
@@ -45,7 +45,12 @@ export interface NatalChart {
   mc?: Sign;
   cusps?: number[];
   precision: Precision;
+  /** The house system actually used to compute `cusps`. Never a system the code did not compute. */
   houseSystem?: HouseSystem;
+  /** The system the caller asked for. Differs from `houseSystem` only when a fallback occurred. */
+  houseSystemRequested?: HouseSystem;
+  /** Human-readable reason when `houseSystem` differs from `houseSystemRequested` (e.g. polar latitude). */
+  houseSystemFallbackReason?: string;
   generational: GenSignature;
 }
 
@@ -192,31 +197,163 @@ function evaluateSignConfidence(body: BodyName, date: Date, precision: Precision
     return { confident: signs.length === 1, possibleSigns: signs.length > 1 ? signs : undefined };
   }
 
+  // Year precision: sample monthly across the year. Sampling only the year's
+  // endpoints falsely reported the Sun as a confident Capricorn (Jan 1 and
+  // Dec 31 are both Capricorn) when in truth a year-only Sun can be any sign.
   const year = date.getUTCFullYear();
-  const yearStart = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
-  const yearEnd = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
-  const signs = Array.from(new Set([longitudeToSign(bodyLongitude(body, yearStart)), longitudeToSign(bodyLongitude(body, yearEnd))]));
+  const samples: Sign[] = [];
+  for (let month = 0; month < 12; month += 1) {
+    samples.push(longitudeToSign(bodyLongitude(body, new Date(Date.UTC(year, month, 1, 0, 0, 0)))));
+    samples.push(longitudeToSign(bodyLongitude(body, new Date(Date.UTC(year, month, 15, 0, 0, 0)))));
+  }
+  samples.push(longitudeToSign(bodyLongitude(body, new Date(Date.UTC(year, 11, 31, 23, 59, 59)))));
+  const signs = Array.from(new Set(samples));
   return { confident: signs.length === 1, possibleSigns: signs.length > 1 ? signs : undefined };
 }
 
-function computeAscMc(date: Date, lat: number, lng: number): { ascLon: number; mcLon: number } {
-  const lstDeg = normalizeZodiacLongitude(SiderealTime(date) * 15 + lng);
-  const theta = (lstDeg * Math.PI) / 180;
-  const epsilon = (23.4392911 * Math.PI) / 180;
-  const phi = (lat * Math.PI) / 180;
+const DEG = Math.PI / 180;
 
-  const mc = Math.atan2(Math.sin(theta) * Math.cos(epsilon), Math.cos(theta));
-  const asc = Math.atan2(Math.cos(theta), -(Math.sin(theta) * Math.cos(epsilon) + Math.tan(phi) * Math.sin(epsilon)));
-  return { ascLon: normalizeZodiacLongitude((asc * 180) / Math.PI), mcLon: normalizeZodiacLongitude((mc * 180) / Math.PI) };
+/** Mean obliquity of the ecliptic of date (IAU 1980 series), in degrees. */
+function meanObliquityDeg(date: Date): number {
+  const jd = date.getTime() / 86_400_000 + 2_440_587.5;
+  const t = (jd - 2_451_545.0) / 36_525;
+  return 23.439291111 - 0.013004167 * t - 1.6389e-7 * t * t + 5.0361e-7 * t * t * t;
 }
 
-function computeCusps(ascLon: number, houseSystem: HouseSystem): number[] {
-  if (houseSystem === "whole") {
-    const houseOneStart = Math.floor(ascLon / 30) * 30;
-    return Array.from({ length: 12 }, (_, idx) => normalizeZodiacLongitude(houseOneStart + idx * 30));
+interface Angles {
+  ascLon: number;
+  mcLon: number;
+  /** Right ascension of the Midheaven (local apparent sidereal time), degrees. */
+  ramcDeg: number;
+  /** Obliquity of the ecliptic of date, degrees. */
+  epsilonDeg: number;
+}
+
+function computeAscMc(date: Date, lat: number, lng: number): Angles {
+  const ramcDeg = normalizeZodiacLongitude(SiderealTime(date) * 15 + lng);
+  const theta = ramcDeg * DEG;
+  const epsilonDeg = meanObliquityDeg(date);
+  const epsilon = epsilonDeg * DEG;
+  const phi = lat * DEG;
+
+  // MC is the ecliptic point on the meridian: tan(MC) = tan(RAMC) / cos(ε).
+  // (The previous form multiplied by cos ε instead of dividing — up to ~2.7° wrong.)
+  const mc = Math.atan2(Math.sin(theta), Math.cos(theta) * Math.cos(epsilon));
+  const asc = Math.atan2(Math.cos(theta), -(Math.sin(theta) * Math.cos(epsilon) + Math.tan(phi) * Math.sin(epsilon)));
+  return {
+    ascLon: normalizeZodiacLongitude((asc / DEG)),
+    mcLon: normalizeZodiacLongitude((mc / DEG)),
+    ramcDeg,
+    epsilonDeg
+  };
+}
+
+/** Ecliptic longitude (degrees) of the ecliptic point whose right ascension is `raDeg`. */
+function eclipticLongitudeFromRA(raDeg: number, epsilonDeg: number): number {
+  const ra = raDeg * DEG;
+  const lon = Math.atan2(Math.sin(ra), Math.cos(ra) * Math.cos(epsilonDeg * DEG));
+  return normalizeZodiacLongitude(lon / DEG);
+}
+
+/**
+ * Real Placidus intermediate cusp via the standard iterative algorithm.
+ *
+ * A Placidus cusp is the locus of points that have completed a fixed fraction of
+ * their diurnal (above horizon) or nocturnal (below horizon) semi-arc. For the
+ * ecliptic point with right ascension α: declination δ = atan(tan ε · sin α), and
+ * its ascensional difference AD = asin(tan δ · tan φ). Then:
+ *   cusp 11: RA = RAMC + (1/3)(90° + AD)
+ *   cusp 12: RA = RAMC + (2/3)(90° + AD)
+ *   cusp  2: RA = RAMC + 180° − (2/3)(90° − AD)
+ *   cusp  3: RA = RAMC + 180° − (1/3)(90° − AD)
+ * Iterated to convergence; returns null when the cusp is undefined (circumpolar
+ * ecliptic point, i.e. |tan δ · tan φ| ≥ 1), which happens above the polar circle.
+ */
+function placidusIntermediateCusp(
+  ramcDeg: number,
+  epsilonDeg: number,
+  latDeg: number,
+  offsetDeg: 30 | 60 | 120 | 150,
+  fraction: number,
+  nocturnal: boolean
+): number | null {
+  const tanEps = Math.tan(epsilonDeg * DEG);
+  const tanPhi = Math.tan(latDeg * DEG);
+  let ra = ramcDeg + offsetDeg;
+  for (let i = 0; i < 100; i += 1) {
+    const delta = Math.atan(tanEps * Math.sin(ra * DEG));
+    const x = Math.tan(delta) * tanPhi;
+    if (Math.abs(x) >= 1) return null; // circumpolar: Placidus undefined here
+    const adDeg = Math.asin(x) / DEG;
+    const next = nocturnal
+      ? ramcDeg + 180 - fraction * (90 - adDeg)
+      : ramcDeg + fraction * (90 + adDeg);
+    if (Math.abs(next - ra) < 1e-9) {
+      ra = next;
+      break;
+    }
+    ra = next;
   }
-  // Equal-house fallback keeps deterministic behavior until full Placidus implementation is added.
-  return Array.from({ length: 12 }, (_, idx) => normalizeZodiacLongitude(ascLon + idx * 30));
+  return eclipticLongitudeFromRA(ra, epsilonDeg);
+}
+
+/**
+ * Full Placidus cusp set. Returns null when Placidus is undefined at this
+ * latitude (inside the polar circles, |lat| ≳ 66.5°) so the caller can fall
+ * back explicitly — never silently.
+ */
+function computePlacidusCusps(angles: Angles, latDeg: number): number[] | null {
+  if (Math.abs(latDeg) >= 90 - angles.epsilonDeg) return null;
+  const { ramcDeg, epsilonDeg } = angles;
+  const c11 = placidusIntermediateCusp(ramcDeg, epsilonDeg, latDeg, 30, 1 / 3, false);
+  const c12 = placidusIntermediateCusp(ramcDeg, epsilonDeg, latDeg, 60, 2 / 3, false);
+  const c2 = placidusIntermediateCusp(ramcDeg, epsilonDeg, latDeg, 120, 2 / 3, true);
+  const c3 = placidusIntermediateCusp(ramcDeg, epsilonDeg, latDeg, 150, 1 / 3, true);
+  if (c11 === null || c12 === null || c2 === null || c3 === null) return null;
+  const opp = (lon: number) => normalizeZodiacLongitude(lon + 180);
+  return [
+    angles.ascLon, // 1 = Ascendant
+    c2,
+    c3,
+    opp(angles.mcLon), // 4 = IC
+    opp(c11), // 5
+    opp(c12), // 6
+    opp(angles.ascLon), // 7 = Descendant
+    opp(c2), // 8
+    opp(c3), // 9
+    angles.mcLon, // 10 = MC
+    c11,
+    c12
+  ];
+}
+
+const PLACIDUS_POLAR_FALLBACK_REASON =
+  "Placidus houses are mathematically undefined at this birth latitude (inside the polar circles), so Whole Sign houses are shown instead.";
+
+interface CuspResult {
+  cusps: number[];
+  /** The system actually computed. */
+  systemUsed: HouseSystem;
+  /** Present only when `systemUsed` differs from the requested system. */
+  fallbackReason?: string;
+}
+
+function computeCusps(angles: Angles, latDeg: number, houseSystem: HouseSystem): CuspResult {
+  if (houseSystem === "whole") {
+    const houseOneStart = Math.floor(angles.ascLon / 30) * 30;
+    return { cusps: Array.from({ length: 12 }, (_, idx) => normalizeZodiacLongitude(houseOneStart + idx * 30)), systemUsed: "whole" };
+  }
+  if (houseSystem === "equal") {
+    return { cusps: Array.from({ length: 12 }, (_, idx) => normalizeZodiacLongitude(angles.ascLon + idx * 30)), systemUsed: "equal" };
+  }
+  const placidus = computePlacidusCusps(angles, latDeg);
+  if (placidus) return { cusps: placidus, systemUsed: "placidus" };
+  const houseOneStart = Math.floor(angles.ascLon / 30) * 30;
+  return {
+    cusps: Array.from({ length: 12 }, (_, idx) => normalizeZodiacLongitude(houseOneStart + idx * 30)),
+    systemUsed: "whole",
+    fallbackReason: PLACIDUS_POLAR_FALLBACK_REASON
+  };
 }
 
 function houseFromLongitude(lon: number, cusps: number[]): number {
@@ -240,19 +377,24 @@ function elementForSign(sign: Sign): "fire" | "earth" | "air" | "water" {
 }
 
 export function computeNatalChart(birth: Birth): NatalChart {
-  const houseSystem = birth.houseSystem ?? "placidus";
+  const houseSystemRequested = birth.houseSystem ?? "placidus";
   const date = getWorkingDate(birth);
   const bodies = birth.precision === "year" ? (["sun", "uranus", "neptune", "pluto"] as BodyName[]) : MAJOR_BODIES;
 
   let ascLon: number | undefined;
   let mcLon: number | undefined;
   let cusps: number[] | undefined;
+  let houseSystemUsed: HouseSystem | undefined;
+  let houseSystemFallbackReason: string | undefined;
 
   if (birth.precision === "exact" && birth.lat !== undefined && birth.lng !== undefined) {
     const angles = computeAscMc(date, birth.lat, birth.lng);
     ascLon = angles.ascLon;
     mcLon = angles.mcLon;
-    cusps = computeCusps(angles.ascLon, houseSystem);
+    const cuspResult = computeCusps(angles, birth.lat, houseSystemRequested);
+    cusps = cuspResult.cusps;
+    houseSystemUsed = cuspResult.systemUsed;
+    houseSystemFallbackReason = cuspResult.fallbackReason;
   }
 
   const placements: Placement[] = bodies.map((body) => {
@@ -274,9 +416,14 @@ export function computeNatalChart(birth: Birth): NatalChart {
 
   const generational = computeGenerational(birth.dateUTC, birth.precision);
   if (cusps) {
-    generational.uranusHouse = houseFromLongitude(placements.find((p) => p.body === "uranus")?.lon ?? 0, cusps);
-    generational.neptuneHouse = houseFromLongitude(placements.find((p) => p.body === "neptune")?.lon ?? 0, cusps);
-    generational.plutoHouse = houseFromLongitude(placements.find((p) => p.body === "pluto")?.lon ?? 0, cusps);
+    // Only assign a generational house when the planet was actually computed —
+    // never derive a house from a fabricated 0° longitude.
+    const uranus = placements.find((p) => p.body === "uranus");
+    const neptune = placements.find((p) => p.body === "neptune");
+    const pluto = placements.find((p) => p.body === "pluto");
+    if (uranus) generational.uranusHouse = houseFromLongitude(uranus.lon, cusps);
+    if (neptune) generational.neptuneHouse = houseFromLongitude(neptune.lon, cusps);
+    if (pluto) generational.plutoHouse = houseFromLongitude(pluto.lon, cusps);
   }
 
   return {
@@ -285,7 +432,9 @@ export function computeNatalChart(birth: Birth): NatalChart {
     mc: mcLon === undefined ? undefined : longitudeToSign(mcLon),
     cusps,
     precision: birth.precision,
-    houseSystem,
+    houseSystem: houseSystemUsed,
+    houseSystemRequested,
+    houseSystemFallbackReason,
     generational
   };
 }
@@ -384,7 +533,11 @@ export function computeGenerational(dateUTC: string, precision: Precision): GenS
   const uranus = precision === "year" ? evaluateYearConfidence(year, "uranus") : { sign: signFromDate(date, "uranus"), confident: true };
   const neptune = precision === "year" ? evaluateYearConfidence(year, "neptune") : { sign: signFromDate(date, "neptune"), confident: true };
   const pluto = precision === "year" ? evaluateYearConfidence(year, "pluto") : { sign: signFromDate(date, "pluto"), confident: true };
-  return { uranus, neptune, pluto, cohortLabel: `Pluto in ${pluto.sign} · Neptune in ${neptune.sign} · Uranus in ${uranus.sign}` };
+  // When a year-only planet changed sign during the birth year, say so —
+  // never present the mid-year sample as a settled fact.
+  const labelFor = (sig: GenPlanetSignature): string =>
+    sig.confident || !sig.possibleSigns ? sig.sign : sig.possibleSigns.join(" or ");
+  return { uranus, neptune, pluto, cohortLabel: `Pluto in ${labelFor(pluto)} · Neptune in ${labelFor(neptune)} · Uranus in ${labelFor(uranus)}` };
 }
 
 export function compareGenerational(a: GenSignature, b: GenSignature, birthYearGap?: number): GenRelation {

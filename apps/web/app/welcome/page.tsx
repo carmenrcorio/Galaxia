@@ -9,6 +9,7 @@ import { InitialAvatar } from "../../components/initial-avatar";
 import { Spinner } from "../../components/spinner";
 import { buildBirthInput, formatDateForConfirmation, type BirthFormInput } from "../../lib/birth";
 import { searchPlaces, type GeoCandidate } from "../../lib/geocode";
+import { CHART_ENGINE_VERSION, getPreferredHouseSystem } from "../../lib/house-system";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 
 type Relation = "partner" | "child" | "parent" | "grandparent" | "sibling" | "friend" | "ancestor" | "self";
@@ -81,7 +82,9 @@ function BirthFields({ input, onChange }: { input: BirthFormInput; onChange: (ne
   // Resolved place confirmation
   const resolvedPlace = input.birthPlace && input.lat && input.lng;
   const tzLabel = resolvedPlace && input.tzId
-    ? `${input.tzId} (UTC${(input.tzOffsetMin ?? 0) >= 0 ? "+" : ""}${((input.tzOffsetMin ?? 0) / 60).toFixed(0)}h at birth date)`
+    ? input.tzOffsetMin != null
+      ? `${input.tzId} (UTC${input.tzOffsetMin >= 0 ? "+" : ""}${(input.tzOffsetMin / 60).toFixed(0)}h at birth date)`
+      : `${input.tzId} (timezone offset could not be resolved — exact-time charts need it)`
     : null;
 
   const hasExactTimeAndPlace = input.precision === "exact" && resolvedPlace;
@@ -93,12 +96,18 @@ function BirthFields({ input, onChange }: { input: BirthFormInput; onChange: (ne
     setSearching(true);
     setCandidates([]);
     setSearchError(null);
-    const results = await searchPlaces(q, dateForGeo);
-    setSearching(false);
-    if (!results.length) {
-      setSearchError(`No places found for "${q}". Try adding a region or country (e.g. "Jacksonville, Arkansas").`);
-    } else {
-      setCandidates(results);
+    try {
+      const results = await searchPlaces(q, dateForGeo);
+      if (!results.length) {
+        setSearchError(`No places found for "${q}". Try adding a region or country (e.g. "Jacksonville, Arkansas").`);
+      } else {
+        setCandidates(results);
+      }
+    } catch (err) {
+      // An outage is not "no results" — say what actually happened.
+      setSearchError(err instanceof Error ? err.message : "The place search service couldn't be reached.");
+    } finally {
+      setSearching(false);
     }
   }
 
@@ -108,7 +117,7 @@ function BirthFields({ input, onChange }: { input: BirthFormInput; onChange: (ne
       birthPlace:  c.label,
       lat:         String(c.lat),
       lng:         String(c.lng),
-      tzOffsetMin: c.tzOffset,
+      tzOffsetMin: c.tzOffset ?? undefined,
       tzId:        c.tzId,
     });
     setCandidates([]);
@@ -353,7 +362,8 @@ export default function WelcomePage() {
 
     // buildBirthInput now throws clearly if timezone is missing for exact precision (BUG C)
     const built = buildBirthInput(input);
-    const natal = computeNatalChart({ ...built.birth, houseSystem: "placidus" });
+    const houseSystem = await getPreferredHouseSystem(supabase, userId);
+    const natal = computeNatalChart({ ...built.birth, houseSystem });
 
     const { data: person, error: personError } = await supabase
       .from("people")
@@ -377,7 +387,8 @@ export default function WelcomePage() {
     if (personError || !person) throw new Error(personError?.message ?? "Failed to save person.");
 
     const { error: chartError } = await supabase.from("charts").upsert({
-      person_id: person.id, house_system: "placidus", data: natal, engine_version: 1
+      // house_system records what was actually computed — never a claim the engine didn't fulfil
+      person_id: person.id, house_system: natal.houseSystem ?? null, data: natal, engine_version: CHART_ENGINE_VERSION
     });
     if (chartError) throw new Error(chartError.message);
     return natal;

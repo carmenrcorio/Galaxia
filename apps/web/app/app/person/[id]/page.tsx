@@ -25,7 +25,7 @@ import {
   houseMeaning, interpretHouse, STELLIUM_NOTE,
   type HouseKey
 } from "../../../../lib/house-interpretations";
-import { geocodeCity } from "../../../../lib/geocode";
+import { CHART_ENGINE_VERSION, getPreferredHouseSystem, houseSystemLabelForChart } from "../../../../lib/house-system";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 
 interface PersonRow {
@@ -66,7 +66,9 @@ function svgAngle(lon:number,ascLon:number|null):number{const n=(v:number)=>((v%
 function ChartWheel({ chart }: { chart: NatalChart }) {
   const hasHouses = chart.cusps != null && chart.cusps.length >= 12;
   const ascLon: number|null = hasHouses ? (chart.cusps![0] ?? null) : null;
-  const sortedPlanets = [...chart.placements].sort((a,b) => a.lon - b.lon);
+  // Never plot a planet whose sign is uncertain (year-only data): its drawn
+  // position would be a guess presented as fact.
+  const sortedPlanets = [...chart.placements].filter(p => p.confident !== false).sort((a,b) => a.lon - b.lon);
   const planetPositions = sortedPlanets.map((p, idx) => {
     const a = svgAngle(p.lon, ascLon);
     const near = sortedPlanets.filter(q => q.body !== p.body && Math.abs(q.lon - p.lon) < 14);
@@ -285,6 +287,7 @@ export default function PersonProfilePage() {
   const [userId, setUserId]         = useState<string | null>(null);
   const [person, setPerson]         = useState<PersonRow | null>(null);
   const [chart, setChart]           = useState<NatalChart | null>(null);
+  const [engineVersion, setEngineVersion] = useState<number>(CHART_ENGINE_VERSION);
   const [notes, setNotes]           = useState<NoteRow[]>([]);
   const [noteDraft, setNoteDraft]   = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
@@ -325,24 +328,28 @@ export default function PersonProfilePage() {
 
   const hasHouses = useMemo(() => Boolean(chart?.cusps?.length === 12), [chart]);
 
+  // Balance tallies count only placements whose sign is actually known —
+  // an uncertain (year-only) sign must not be tallied as if it were fact.
   const elementBalance = useMemo(() => {
-    if (!chart) return null;
-    return chart.placements.reduce(
+    if (!chart || chart.precision === "year") return null;
+    return chart.placements.filter(p => p.confident !== false).reduce(
       (acc, p) => { acc[signElement(p.sign) as keyof typeof acc] += 1; return acc; },
       { fire: 0, earth: 0, air: 0, water: 0 }
     );
   }, [chart]);
 
   const modalityBalance = useMemo(() => {
-    if (!chart) return null;
-    return chart.placements.reduce(
+    if (!chart || chart.precision === "year") return null;
+    return chart.placements.filter(p => p.confident !== false).reduce(
       (acc, p) => { const m = SIGN_MODALITY[p.sign]; if (m) acc[m] += 1; return acc; },
       { cardinal: 0, fixed: 0, mutable: 0 }
     );
   }, [chart]);
 
   const natalAspects = useMemo(() => {
-    if (!chart) return [];
+    // Aspects need real positions. Year-only charts have sampled longitudes
+    // (mid-year), so aspect orbs computed from them would be fabricated.
+    if (!chart || chart.precision === "year") return [];
     const dedupe = new Set<string>();
     return computeSynastry(chart, chart).aspects
       .filter(a => a.from !== a.to)
@@ -363,12 +370,12 @@ export default function PersonProfilePage() {
     return map;
   }, [natalAspects]);
 
-  /** Detect stellia: 3+ bodies in same house OR same sign */
+  /** Detect stellia: 3+ bodies in same house OR same sign (known signs only) */
   const stellia = useMemo(() => {
     if (!chart) return [];
     const byHouse = new Map<number, string[]>();
     const bySign  = new Map<string, string[]>();
-    for (const p of chart.placements) {
+    for (const p of chart.placements.filter(pl => pl.confident !== false)) {
       if (p.house) { if (!byHouse.has(p.house)) byHouse.set(p.house, []); byHouse.get(p.house)!.push(p.body); }
       if (!bySign.has(p.sign)) bySign.set(p.sign, []); bySign.get(p.sign)!.push(p.body);
     }
@@ -387,6 +394,23 @@ export default function PersonProfilePage() {
     return map;
   }, [chart, hasHouses]);
 
+  /**
+   * Rebuild the UTC birth instant from the stored, user-confirmed birth fields.
+   * Returns null when the stored data is insufficient — we never substitute
+   * "now", noon, or UTC to force a recompute through.
+   */
+  function rebuildDateUTC(p: PersonRow): string | null {
+    if (!p.birth_date) return null;
+    const [yr, mo, dy] = p.birth_date.slice(0, 10).split("-").map(Number);
+    if (p.birth_precision === "exact") {
+      if (!p.birth_time || p.tz_offset_min == null) return null;
+      const [hr, mn] = p.birth_time.slice(0, 5).split(":").map(Number);
+      return new Date(Date.UTC(yr!, mo! - 1, dy!, hr!, mn!, 0) - p.tz_offset_min * 60_000).toISOString();
+    }
+    if (p.birth_precision === "date") return `${p.birth_date.slice(0, 10)}T12:00:00.000Z`;
+    return `${yr}-01-01T00:00:00.000Z`;
+  }
+
   async function loadProfile(uid: string) {
     setLoading(true);
     const actualId = personId === "self"
@@ -395,36 +419,43 @@ export default function PersonProfilePage() {
     if (!actualId) { setStatus("No self profile yet."); setLoading(false); return; }
     const [{ data: pData, error: pErr }, { data: cData, error: cErr }, { data: nData }] = await Promise.all([
       supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min").eq("id", actualId).single(),
-      supabase.from("charts").select("data").eq("person_id", actualId).single(),
+      supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualId).single(),
       supabase.from("notes").select("id, body, created_at").eq("about_person", actualId).order("created_at", { ascending: false }).limit(20)
     ]);
     if (pErr || !pData) { setStatus(pErr?.message ?? "Unable to load person."); setLoading(false); return; }
     if (cErr || !cData) { setStatus(cErr?.message  ?? "No chart yet."); setLoading(false); return; }
     const personRow = pData as PersonRow & { tz_offset_min?: number | null };
     let chartData = cData.data as NatalChart;
-    const needsBackfill = personRow.birth_precision !== "year" && personRow.birth_place?.trim() && !personRow.birth_lat && !personRow.birth_lng;
-    if (needsBackfill) {
-      const birthDate = personRow.birth_date ? new Date(`${personRow.birth_date}T12:00:00Z`) : new Date();
-      const geo = await geocodeCity(personRow.birth_place!, birthDate);
-      if (geo) {
-        await supabase.from("people").update({ birth_lat: geo.lat, birth_lng: geo.lng, tz_offset_min: geo.tzOffset }).eq("id", actualId);
+    let version = (cData.engine_version as number | null) ?? 1;
+
+    const preferred = await getPreferredHouseSystem(supabase, uid);
+    const stale = version < CHART_ENGINE_VERSION || (chartData.houseSystemRequested ?? "placidus") !== preferred;
+    if (stale) {
+      const dateUTC = rebuildDateUTC(personRow);
+      const canRecompute = dateUTC !== null &&
+        (personRow.birth_precision !== "exact" || (personRow.birth_lat != null && personRow.birth_lng != null));
+      if (canRecompute) {
         const { computeNatalChart } = await import("@galaxia/astro");
-        const tzOffset = geo.tzOffset;
-        let dateUTC: string;
-        if (personRow.birth_time && personRow.birth_date) {
-          const time = personRow.birth_time.slice(0, 5);
-          const [yr, mo, dy] = personRow.birth_date.slice(0, 10).split("-").map(Number);
-          const [hr, mn] = time.split(":").map(Number);
-          dateUTC = new Date(Date.UTC(yr, mo - 1, dy, hr, mn, 0) - tzOffset * 60_000).toISOString();
-        } else {
-          dateUTC = personRow.birth_date ? `${personRow.birth_date.slice(0, 10)}T12:00:00.000Z` : new Date().toISOString();
-        }
-        const recomputed = computeNatalChart({ dateUTC, precision: personRow.birth_precision, lat: geo.lat, lng: geo.lng, tzOffsetMin: geo.tzOffset, houseSystem: "placidus" as const });
-        await supabase.from("charts").upsert({ person_id: actualId, house_system: "placidus", data: recomputed, engine_version: 1 });
+        const recomputed = computeNatalChart({
+          dateUTC: dateUTC!,
+          precision: personRow.birth_precision,
+          lat: personRow.birth_lat ?? undefined,
+          lng: personRow.birth_lng ?? undefined,
+          tzOffsetMin: personRow.tz_offset_min ?? undefined,
+          houseSystem: preferred
+        });
+        await supabase.from("charts").upsert({ person_id: actualId, house_system: recomputed.houseSystem ?? null, data: recomputed, engine_version: CHART_ENGINE_VERSION });
         chartData = recomputed;
+        version = CHART_ENGINE_VERSION;
+      } else if (version < CHART_ENGINE_VERSION && cData.house_system !== "equal" && chartData.cusps) {
+        // Legacy chart (engine v1) that cannot be recomputed from its stored
+        // fields. Its cusps were computed as Equal House but stored under the
+        // label "placidus" — correct the label to what the data actually is.
+        chartData = { ...chartData, houseSystem: "equal", houseSystemRequested: preferred };
+        await supabase.from("charts").upsert({ person_id: actualId, house_system: "equal", data: chartData, engine_version: version });
       }
     }
-    setPerson(personRow); setChart(chartData); setNotes((nData ?? []) as NoteRow[]); setLoading(false);
+    setPerson(personRow); setChart(chartData); setEngineVersion(version); setNotes((nData ?? []) as NoteRow[]); setLoading(false);
   }
 
   async function saveNote() {
@@ -463,10 +494,10 @@ export default function PersonProfilePage() {
         <div>
           <p className="eyebrow">{person.relation} · {person.birth_precision} precision</p>
           <h1 className="page-title">{person.display_name}</h1>
-          {sun && moon ? (
+          {sun ? (
             <p className="muted" style={{ fontSize: ".88rem", margin: 0 }}>
-              {SIGN_GLYPH[sun.sign]} {sun.sign} Sun
-              {moon.sign ? ` · ${SIGN_GLYPH[moon.sign]} ${moon.sign} Moon` : ""}
+              {sun.confident !== false ? `${SIGN_GLYPH[sun.sign]} ${sun.sign} Sun` : "Sun sign uncertain (year-only birth data)"}
+              {moon && moon.confident !== false ? ` · ${SIGN_GLYPH[moon.sign]} ${moon.sign} Moon` : ""}
               {chart.asc ? ` · ${SIGN_GLYPH[chart.asc]} ${chart.asc} Rising` : ""}
             </p>
           ) : null}
@@ -482,9 +513,14 @@ export default function PersonProfilePage() {
       {/* ── Chart Wheel ── */}
       <section className="glass-card fade-in fade-in-delay-1">
         <p className="eyebrow" style={{ marginBottom: 14 }}>
-          {chart.precision === "exact" && chart.asc ? "Natal wheel · Equal House" : "Zodiac wheel"}
+          {chart.precision === "exact" && chart.asc ? `Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}` : "Zodiac wheel"}
         </p>
         <ChartWheel chart={chart} />
+        {chart.houseSystemFallbackReason ? (
+          <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
+            {chart.houseSystemFallbackReason}
+          </p>
+        ) : null}
         {(chart.precision !== "exact" || !chart.asc) ? (
           <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "48ch", margin: "10px auto 0" }}>
             Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
@@ -497,15 +533,25 @@ export default function PersonProfilePage() {
         <p className="eyebrow" style={{ marginBottom: 12 }}>The big three</p>
         <div style={{ display: "grid", gap: 8 }}>
           {([
-            { key: "sun",    label: "Sun",    sign: sun?.sign,  body: "sun",  house: sun?.house  },
-            { key: "moon",   label: "Moon",   sign: moon?.sign, body: "moon", house: moon?.house },
-            { key: "rising", label: "Rising", sign: chart.asc,  body: null,   house: undefined    },
-          ] as { key: string; label: string; sign: string|undefined; body: string|null; house: number|undefined }[]).map(({ key, label, sign, body, house }) => {
+            { key: "sun",    label: "Sun",    sign: sun?.sign,  body: "sun",  house: sun?.house,  uncertain: sun?.confident === false,  possibleSigns: sun?.possibleSigns  },
+            { key: "moon",   label: "Moon",   sign: moon?.sign, body: "moon", house: moon?.house, uncertain: moon?.confident === false, possibleSigns: moon?.possibleSigns },
+            { key: "rising", label: "Rising", sign: chart.asc,  body: null,   house: undefined,   uncertain: false, possibleSigns: undefined },
+          ] as { key: string; label: string; sign: string|undefined; body: string|null; house: number|undefined; uncertain: boolean; possibleSigns: string[]|undefined }[]).map(({ key, label, sign, body, house, uncertain, possibleSigns }) => {
             if (!sign) return (
               <div key={key} className="sign-chip" style={{ opacity: .45 }}>
                 <span className="sign-chip__glyph" style={{ color: "var(--mist2)" }}>—</span>
                 <span className="sign-chip__label">{label}</span>
                 <span className="sign-chip__value">{label === "Rising" ? "Exact time + city needed" : "—"}</span>
+              </div>
+            );
+            if (uncertain) return (
+              // A sign we cannot pin down is never presented as fact.
+              <div key={key} className="sign-chip" style={{ opacity: .6 }}>
+                <span className="sign-chip__glyph" style={{ color: "var(--mist2)" }}>?</span>
+                <span className="sign-chip__label">{label}</span>
+                <span className="sign-chip__value">
+                  {possibleSigns?.length ? `Could be ${possibleSigns.join(" or ")}` : "Uncertain"} — a birth date would settle it
+                </span>
               </div>
             );
             const el = signElement(sign);
@@ -606,6 +652,21 @@ export default function PersonProfilePage() {
           const el  = signElement(p.sign);
           const gly = BODY_GLYPH[p.body] ?? p.body[0].toUpperCase();
           const domain = BODY_DOMAIN[bk];
+          if (p.confident === false) {
+            // Year-only data: the sign is not known. Say so — never interpret a guess.
+            return (
+              <div key={p.body} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65 }}>
+                <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{gly}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{domain}</div>
+                  <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{p.body.charAt(0).toUpperCase() + p.body.slice(1)} — sign uncertain</div>
+                </div>
+                <span style={{ fontSize: ".76rem", color: "var(--mist2)", fontStyle: "italic", textAlign: "right" }}>
+                  {p.possibleSigns?.length ? `Could be ${p.possibleSigns.join(" or ")}` : "Needs a birth date"}
+                </span>
+              </div>
+            );
+          }
           const signR = interpretPlacement(bk, sk);
           if (process.env.NODE_ENV !== "production" && !signR.short) console.warn(`[interpretations] missing: ${bk} in ${sk}`);
           const houseR = (p.house && hasHouses)
@@ -716,7 +777,10 @@ export default function PersonProfilePage() {
             <p className="eyebrow" style={{ margin: 0 }}>The twelve houses</p>
             <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllHouses(!housesAllOpen)}>{housesAllOpen ? "Collapse all" : "Expand all"}</button>
           </div>
-          <p className="muted" style={{ fontSize: ".72rem", marginBottom: 12 }}>Equal House · click a house to read it</p>
+          <p className="muted" style={{ fontSize: ".72rem", marginBottom: 12 }}>{houseSystemLabelForChart(chart, engineVersion)} · click a house to read it</p>
+          {chart.houseSystemFallbackReason ? (
+            <p className="muted" style={{ fontSize: ".72rem", marginBottom: 12 }}>{chart.houseSystemFallbackReason}</p>
+          ) : null}
           {Array.from({ length: 12 }, (_, i) => i + 1).map(h => {
             const hk = h as HouseKey;
             const hm = houseMeaning(hk)!;
@@ -795,6 +859,21 @@ export default function PersonProfilePage() {
         {(["uranus","neptune","pluto"] as const).map(planet => {
           const data = chart.generational[planet as "uranus"|"neptune"|"pluto"];
           const bk = planet as BodyKey;
+          if (data.confident === false) {
+            // The planet changed sign during the birth year — we don't know which side.
+            return (
+              <div key={planet} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65 }}>
+                <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{BODY_GLYPH[planet] ?? planet[0].toUpperCase()}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{BODY_DOMAIN[bk]}</div>
+                  <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{planet.charAt(0).toUpperCase() + planet.slice(1)} — sign uncertain</div>
+                </div>
+                <span style={{ fontSize: ".76rem", color: "var(--mist2)", fontStyle: "italic", textAlign: "right" }}>
+                  {data.possibleSigns?.length ? `Could be ${data.possibleSigns.join(" or ")}` : "Changed sign that year"}
+                </span>
+              </div>
+            );
+          }
           const sk = normaliseSign(data.sign);
           const reading = interpretPlacement(bk, sk);
           const rowKey = `gen-${planet}`;

@@ -3,7 +3,8 @@
 import { computeNatalChart } from "@galaxia/astro";
 import { useState } from "react";
 import { buildBirthInput, formatDateForConfirmation, type BirthFormInput } from "../lib/birth";
-import { geocodeCity, searchPlaces, type GeoCandidate } from "../lib/geocode";
+import { searchPlaces, type GeoCandidate } from "../lib/geocode";
+import { CHART_ENGINE_VERSION, getPreferredHouseSystem } from "../lib/house-system";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { CustomCheck } from "./custom-check";
 import { Spinner } from "./spinner";
@@ -76,14 +77,19 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
     const dateForGeo = (input.year && input.month && input.day)
       ? new Date(Date.UTC(input.year, input.month - 1, input.day, 12, 0, 0))
       : undefined;
-    const results = await searchPlaces(q, dateForGeo);
-    setSearching(false);
-    if (!results.length) setSearchError(`No places found for "${q}".`);
-    else setCandidates(results);
+    try {
+      const results = await searchPlaces(q, dateForGeo);
+      if (!results.length) setSearchError(`No places found for "${q}". Try adding a region or country.`);
+      else setCandidates(results);
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : "The place search service couldn't be reached.");
+    } finally {
+      setSearching(false);
+    }
   }
 
   function selectCandidate(c: GeoCandidate) {
-    setInput(prev => ({ ...prev, birthPlace: c.label, lat: String(c.lat), lng: String(c.lng), tzOffsetMin: c.tzOffset, tzId: c.tzId }));
+    setInput(prev => ({ ...prev, birthPlace: c.label, lat: String(c.lat), lng: String(c.lng), tzOffsetMin: c.tzOffset ?? undefined, tzId: c.tzId }));
     setCityQuery(c.label); setCandidates([]);
   }
 
@@ -91,17 +97,17 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
     if (!displayName.trim()) { setStatus("Name is required."); return; }
     setSaving(true); setStatus(null);
     try {
-      // If city present but no coords, try auto-geocode as fallback
-      let fi = { ...input };
+      // A place with no coordinates means the user typed a city but never picked
+      // one from the search results. Never geocode it silently — the first
+      // result can be the wrong city (Jacksonville FL vs AR) and the whole
+      // chart would be wrong. Require an explicit choice.
+      const fi = { ...input };
       if (input.birthPlace?.trim() && !input.lat && !input.lng) {
-        const dateForGeo = (input.year && input.month && input.day)
-          ? new Date(Date.UTC(input.year, input.month - 1, input.day, 12, 0, 0))
-          : undefined;
-        const geo = await geocodeCity(input.birthPlace, dateForGeo);
-        if (geo) fi = { ...fi, lat: String(geo.lat), lng: String(geo.lng), tzOffsetMin: geo.tzOffset };
+        throw new Error("Search for the birth city and pick it from the results, so the right place (and timezone) is used.");
       }
       const built = buildBirthInput(fi);
-      const natal = computeNatalChart({ ...built.birth, houseSystem: "placidus" });
+      const houseSystem = await getPreferredHouseSystem(supabase, userId);
+      const natal = computeNatalChart({ ...built.birth, houseSystem });
       const { error: pErr } = await supabase.from("people").update({
         display_name: displayName.trim(), relation, is_minor: isMinor,
         birth_date: built.birthDate, birth_time: built.birthTime, birth_place: built.birthPlace,
@@ -110,7 +116,7 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
         tz_offset_min: built.tzOffsetMin ?? null,
       }).eq("id", person.id).eq("owner_id", userId);
       if (pErr) throw new Error(pErr.message);
-      const { error: cErr } = await supabase.from("charts").upsert({ person_id: person.id, house_system: "placidus", data: natal, engine_version: 1 });
+      const { error: cErr } = await supabase.from("charts").upsert({ person_id: person.id, house_system: natal.houseSystem ?? null, data: natal, engine_version: CHART_ENGINE_VERSION });
       if (cErr) throw new Error(cErr.message);
       setStatus("Saved."); setOpen(false); onSaved();
     } catch (err) { setStatus(err instanceof Error ? err.message : "Unable to save."); }
@@ -190,7 +196,7 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
                   <select className="field" value={input.hour ?? ""} onChange={e => setInput(p => ({ ...p, hour: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined }))}>
                     <option value="">Hour</option>
-                    {Array.from({ length: 24 }, (_, i) => i).map(h => <option key={h} value={h}>{String(h).padStart(2,"0")}:xx</option>)}
+                    {Array.from({ length: 24 }, (_, i) => i).map(h => <option key={h} value={h}>{String(h).padStart(2, "0")}:00 ({h === 0 ? "midnight" : h === 12 ? "noon" : h < 12 ? `${h} am` : `${h - 12} pm`})</option>)}
                   </select>
                   <select className="field" value={input.minute ?? ""} onChange={e => setInput(p => ({ ...p, minute: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined }))}>
                     <option value="">Minute</option>

@@ -1,7 +1,9 @@
 "use client";
 
+import type { HouseSystem } from "@galaxia/astro";
 import { useEffect, useMemo, useState } from "react";
 import { Spinner } from "../../../components/spinner";
+import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "../../../lib/house-system";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 interface PersonLite {
@@ -23,22 +25,39 @@ export default function SettingsPage() {
   const [groups, setGroups] = useState<GroupLite[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [houseSystem, setHouseSystem] = useState<HouseSystem>("placidus");
+  const [savingHouseSystem, setSavingHouseSystem] = useState(false);
+  const [houseSystemStatus, setHouseSystemStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setUserId(user.id);
       const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
-        supabase.from("profiles").select("subscription_tier").eq("id", user.id).single(),
+        supabase.from("profiles").select("subscription_tier, house_system").eq("id", user.id).maybeSingle(),
         supabase.from("people").select("id, display_name, relation").eq("owner_id", user.id).order("display_name", { ascending: true }),
         supabase.from("groups").select("id, name, kind").eq("owner_id", user.id).order("created_at", { ascending: false })
       ]);
       setTier((profile?.subscription_tier as "free" | "plus") ?? "free");
+      if (isHouseSystem(profile?.house_system)) setHouseSystem(profile.house_system);
       setPeople((peopleRows ?? []) as PersonLite[]);
       setGroups((groupRows ?? []) as GroupLite[]);
     };
     void load();
   }, [supabase]);
+
+  const changeHouseSystem = async (next: HouseSystem) => {
+    if (!userId || next === houseSystem) return;
+    setSavingHouseSystem(true); setHouseSystemStatus(null);
+    const previous = houseSystem;
+    setHouseSystem(next);
+    const { error } = await supabase.from("profiles").upsert({ id: userId, house_system: next });
+    setSavingHouseSystem(false);
+    if (error) { setHouseSystem(previous); setHouseSystemStatus(error.message); return; }
+    setHouseSystemStatus("Saved. Each chart recomputes with the new system the next time you open it.");
+  };
 
   const signOut = async () => {
     setSigningOut(true);
@@ -68,6 +87,43 @@ export default function SettingsPage() {
             </div>
           </>
         )}
+      </section>
+
+      <section className="glass-card">
+        <h2 className="card-title">House system</h2>
+        <p className="muted" style={{ marginBottom: 12 }}>
+          How the twelve houses are divided on charts with an exact birth time. Placidus is the default and matches astro.com and Cafe Astrology.
+        </p>
+        <div style={{ display: "grid", gap: 8 }}>
+          {HOUSE_SYSTEM_OPTIONS.map((option) => {
+            const active = houseSystem === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => void changeHouseSystem(option.value)}
+                disabled={savingHouseSystem}
+                aria-pressed={active}
+                style={{
+                  textAlign: "left", cursor: "pointer", borderRadius: 12, padding: "10px 14px",
+                  background: active ? "rgba(230,174,108,.09)" : "rgba(255,255,255,.02)",
+                  border: active ? "1px solid rgba(230,174,108,.45)" : "1px solid rgba(183,154,216,.14)"
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: active ? "var(--gold)" : "var(--cream)", fontWeight: 600, fontSize: ".9rem" }}>{option.label}</span>
+                  {active ? <span style={{ color: "var(--gold)", fontSize: ".72rem" }}>✓ in use</span> : null}
+                  {active && savingHouseSystem ? <Spinner size={11} /> : null}
+                </span>
+                <span className="muted" style={{ display: "block", fontSize: ".78rem", marginTop: 2 }}>{option.description}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="muted" style={{ fontSize: ".74rem", marginTop: 10 }}>
+          Placidus is undefined at polar latitudes (above roughly 66°). If a birth place is inside the polar circles, that chart shows Whole Sign instead — and says so.
+        </p>
+        {houseSystemStatus ? <p className={houseSystemStatus.startsWith("Saved") ? "success" : "error"} style={{ fontSize: ".78rem", marginTop: 8 }}>{houseSystemStatus}</p> : null}
       </section>
 
       <section className="glass-card">

@@ -6,6 +6,67 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-09 (Phase 0 — real Placidus, stop fabricating)
+
+**[FIXED] House cusps were Equal House labeled "Placidus" — real Placidus implemented.**
+
+Root cause: `computeCusps()` in `packages/astro/src/index.ts` returned Equal House cusps (`ascLon + idx * 30`) for the `"placidus"` system, with a comment admitting it was a fallback. Every chart write stored `house_system: "placidus"`; the UI said "Placidus". An external audit confirmed every cusp sat at exactly the Ascendant degree + 30° steps — the Equal House signature.
+
+Changes to `packages/astro/src/index.ts`:
+
+1. **Real Placidus cusps** — the standard iterative algorithm, pure TypeScript, no new dependency. From RAMC (via `SiderealTime`), the obliquity of the ecliptic **of date** (previously a fixed J2000 constant), and geographic latitude. Cusps 11, 12, 2, 3 iterate on the semi-arc fractions (AD = asin(tan δ · tan φ), δ = atan(tan ε · sin RA)); 5, 6, 8, 9 derive by opposition; 1 = Ascendant, 10 = MC.
+2. **MC formula bug found and fixed by the external regression test** — the old code computed `atan2(sin θ · cos ε, cos θ)` (multiplying by cos ε instead of dividing), putting the MC up to ~2.7° off. Correct: `atan2(sin θ, cos θ · cos ε)`. This also affected the IC and house 10/4 boundaries under the old Equal fallback.
+3. **Polar honesty** — Placidus is undefined inside the polar circles (|lat| ≥ 90° − ε ≈ 66.5°) or when a cusp point is circumpolar. The engine falls back to Whole Sign **explicitly**: `houseSystem` on the chart records what was actually computed, `houseSystemRequested` what was asked, `houseSystemFallbackReason` a human-readable reason shown in the UI. Verified by a Svalbard (78.2°N) test.
+4. **Three explicit systems** — `"placidus"` (default; matches astro.com and Cafe Astrology), `"whole"`, `"equal"`. The stored `charts.house_system` is now always the system actually computed.
+
+**Regression test against external ground truth** (`packages/astro/test/placidus-external-ground-truth.test.ts`):
+Birth 1987-12-29, 22:30 CST, Little Rock AR (34.7465, −92.2896). Asserted against Cafe Astrology's published Placidus values, tolerance 1 arc-minute. Results (computed vs published):
+
+| Point | Computed | Cafe Astrology |
+|---|---|---|
+| ASC | 16°01′29″ Virgo | 16°01′50″ Virgo |
+| MC | 14°36′35″ Gemini | 14°36′ Gemini |
+| 2nd | 12°03′30″ Libra | 12°03′49″ Libra |
+| 3rd | 12°03′18″ Scorpio | 12°03′38″ Scorpio |
+| 5th | 17°21′26″ Capricorn | 17°21′50″ Capricorn |
+| 6th | 18°11′37″ Aquarius | 18°12′01″ Aquarius |
+
+All within 1′. The test values are hand-entered from Cafe Astrology and must never be regenerated from engine output (a previous heliocentric bug passed its own self-referential tests). An anti-regression test also asserts the cusps are *not* the Equal House signature.
+
+**House system is a stored user choice:**
+- New migration `20260709230000_add_house_system_pref.sql`: `profiles.house_system` (`placidus` default).
+- Settings → new "House system" card: Placidus / Whole Sign / Equal House with plain descriptions and a note about polar fallback.
+- All chart writers (`/welcome`, `EditPersonPanel`, mobile onboarding) compute with the user's preference and store `natal.houseSystem` — the computed truth, never a hardcoded string.
+- UI labels ("Natal wheel · Placidus", Twelve Houses subtitle) derive from `chart.houseSystem` via `houseSystemLabelForChart()` — never hardcoded.
+
+**Backfill:** `CHART_ENGINE_VERSION` bumped to 2. On profile load, a chart with `engine_version < 2` (or a house system that no longer matches the user's preference) recomputes from the stored, user-confirmed birth fields and is re-stored. When a legacy chart cannot be recomputed (missing coordinates/timezone), its stored label is corrected to `"equal"` — what the cusps actually are — instead of continuing the false "placidus" claim.
+
+**[FIXED] Fabrication audit — every silent fallback found, fixed or documented.**
+
+Fixed:
+1. `geocode.ts` `tzOffsetMinutesForDate` returned **0 (UTC) on failure** — now returns `null`; exact-precision saves are blocked without a resolved timezone (existing guard in `buildBirthInput`).
+2. `geocode.ts` `searchPlaces` returned `[]` on network failure, so the UI said **"No places found"** during an outage — now throws `GeocodeUnavailableError`; both search UIs show the real cause.
+3. `geocodeCity` (take-the-first-result API) **deleted**. The edit panel silently geocoded an unresolved city on save (the Jacksonville FL/AR bug in a second code path) — now it requires an explicit pick from the candidate list.
+4. Person-page backfill used **`new Date()` (now!) as the birth date** when `birth_date` was missing, and silently geocoded the first candidate — removed; recompute only happens from stored, user-confirmed fields (`rebuildDateUTC` returns null rather than substituting).
+5. **Year-only Sun shown as a confident sign.** `evaluateSignConfidence` sampled only Jan 1 and Dec 31 — both Capricorn — so a year-only Sun claimed `confident: true` while the real sign is unknowable. Now samples twice monthly; the Sun correctly reports all 12 `possibleSigns`.
+6. **Uncertainty flags were computed and then ignored by every surface.** Now respected: person page (header, Big Three, placement rows, generational rows show "sign uncertain — could be X or Y"), the wheel (unconfident placements are not plotted at guessed positions), element/modality tallies and stellium detection (known signs only), Key Aspects (skipped for year charts — orbs from sampled positions would be fabricated), Compare (year-only people get the generational comparison plus an explanation instead of fabricated synastry scores), and the Vela edge function (unconfident signs are sent as "Uncertain (X or Y)", never as fact).
+7. `cohortLabel` said "Pluto in Scorpio" even when the planet changed sign during a year-only birth year — now "Pluto in Scorpio or Sagittarius".
+8. Generational houses were computed from a **fabricated 0° longitude** (`?? 0`) if a planet was missing — now only assigned when the planet exists.
+9. Edit panel hour dropdown rendered `22:xx` — now matches onboarding's `22:00 (10 pm)` format.
+
+Documented and deliberately left (with reasons):
+- `getWorkingDate` noon-UTC convention for date-only births: a midpoint convention, honest because sign-confidence flags carry the ambiguity (e.g. Moon `possibleSigns` when it changed sign that day) and houses/angles are never computed without exact time.
+- Constellation link intensity uses a neutral default when a chart row is missing — purely decorative opacity; no score is displayed anywhere.
+- Compare `ageGap ?? 0`: unknown age gap conservatively skips the ancestral headline; nothing false is asserted.
+- "No notable transits today" can also appear when chart data is missing — cosmetic; transit copy never names a specific placement it doesn't have.
+- `longitudeToSign` `?? "Aries"` and `houseFromLongitude` terminal `return 1`: mathematically unreachable defensive branches (inputs normalized to [0,360), cusps cover the circle).
+- Groups cohort overlay groups year-only members by their representative sign even when unconfident; fault lines can therefore be uncertain. Fixing requires uncertainty states through `cohortOverlay` and the groups UI — logged as follow-up, and the underlying signatures now carry honest `possibleSigns`.
+- Charts recompute on person-page load, not in bulk: Compare/Groups/Vela read stored placements (longitudes unaffected by the house fix) and the corrected labels/houses propagate the first time each profile is opened.
+
+**[ADDED] ENGINEERING.md §12 — "Galaxia never fabricates."** The rule, the four shipped instances, and what it means in code (labels derive from data, uncertainty flags must be respected everywhere, tests assert external ground truth).
+
+---
+
 ## 2026-07-09 (house interpretations wired)
 
 **[ADDED] House layer wired into /app/person/[id] from lib/house-interpretations.ts.**

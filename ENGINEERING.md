@@ -131,3 +131,24 @@ These are product promises made on the landing page. Code that violates them is 
 ## 11. Changes are recorded
 
 Every meaningful change, decision, or reversal goes in `CHANGELOG.md` with a date and a reason. If we cannot reconstruct why something is the way it is, we will break it again.
+
+---
+
+## 12. Galaxia never fabricates
+
+**Galaxia never fabricates. Where the data or the method is not what we claim, we say so, or we do not show it. A silent fallback that produces a confident wrong answer is worse than no answer.**
+
+This rule exists because the same failure shipped four times:
+
+1. Year-only births were silently computed for July 1 and shown as settled signs.
+2. A missing timezone was silently treated as UTC (the code comment called it "the old (wrong) behavior").
+3. An ambiguous city was silently geocoded to the first result (Jacksonville, Florida instead of Arkansas).
+4. Equal House cusps were silently labeled **Placidus**.
+
+What this means in code:
+
+- A default that stands in for missing data is only acceptable when the UI says so (e.g. "sign uncertain — could be X or Y", "Whole Sign shown because Placidus is undefined at this latitude").
+- Labels are derived from the data (`chart.houseSystem`, the stored row), never hardcoded strings that assert a method.
+- A lookup or network failure surfaces as an error the user can read — never as an empty result, a zero, or "no results found" for an outage.
+- Uncertainty flags computed by the engine (`confident`, `possibleSigns`, `houseSystemFallbackReason`) must be respected by every surface that renders the data, including what is fed to Vela.
+- Regression tests assert against **external ground truth** (astro.com, Cafe Astrology), never the engine's own output.

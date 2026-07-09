@@ -5,9 +5,14 @@
  * Returns multiple candidates so the UI can present a disambiguation list.
  * Never silently accepts the first result.
  *
- * BUG B fix: Nominatim limit=1 was silently returning Jacksonville, FL for "Jacksonville"
- * when the user meant Jacksonville, AR. Open-Meteo returns structured admin1 (state/region)
- * and country fields, making disambiguation unambiguous.
+ * Honesty rules enforced here:
+ * - No `geocodeCity`-style "take the first hit" helper exists. Every place is
+ *   chosen explicitly by the user from the candidate list (BUG B: Nominatim
+ *   limit=1 silently returned Jacksonville, FL when the user meant Arkansas).
+ * - A timezone offset that cannot be resolved is `null`, never a silent 0
+ *   (0 would mean "treat the birth time as UTC" — a confidently wrong chart).
+ * - A network failure throws; only a genuine empty result set returns [].
+ *   "No places found" must never be shown for an outage.
  */
 
 export interface GeoCandidate {
@@ -17,24 +22,26 @@ export interface GeoCandidate {
   lng: number;
   /** IANA timezone id, e.g. "America/Chicago" */
   tzId: string;
-  /** UTC offset in minutes at the given birth date */
-  tzOffset: number;
+  /** UTC offset in minutes at the given birth date, or null when it could not be resolved. */
+  tzOffset: number | null;
   /** Admin region (state/province) if available */
   admin1?: string;
   country?: string;
 }
 
-/** Kept for backward compatibility where a resolved single result is stored */
-export interface GeoResult {
-  lat: number;
-  lng: number;
-  displayName: string;
-  tzOffset: number;
-  tzId: string;
+/** Thrown when the geocoding service cannot be reached (distinct from "no results"). */
+export class GeocodeUnavailableError extends Error {
+  constructor() {
+    super("The place search service couldn't be reached. Check your connection and try again.");
+    this.name = "GeocodeUnavailableError";
+  }
 }
 
-/** Derive UTC offset in minutes for a given IANA timezone and date. */
-export async function tzOffsetMinutesForDate(tzId: string, date: Date): Promise<number> {
+/**
+ * Derive UTC offset in minutes for a given IANA timezone and date.
+ * Returns null when the offset cannot be determined — never a fabricated 0.
+ */
+export function tzOffsetMinutesForDate(tzId: string, date: Date): number | null {
   try {
     const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: tzId,
@@ -42,21 +49,24 @@ export async function tzOffsetMinutesForDate(tzId: string, date: Date): Promise<
       hour: "numeric",
     });
     const parts = formatter.formatToParts(date);
-    const tzPart = parts.find((p) => p.type === "timeZoneName")?.value ?? "GMT+0";
+    const tzPart = parts.find((p) => p.type === "timeZoneName")?.value;
+    if (!tzPart) return null;
+    if (tzPart === "GMT") return 0; // Intl renders a true zero offset as bare "GMT"
     const match = tzPart.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
-    if (!match) return 0;
+    if (!match) return null;
     const sign = match[1] === "+" ? 1 : -1;
     const hours = parseInt(match[2] ?? "0", 10);
     const mins  = parseInt(match[3] ?? "0", 10);
     return sign * (hours * 60 + mins);
   } catch {
-    return 0;
+    return null;
   }
 }
 
 /**
  * Search Open-Meteo for up to 5 matching places.
- * Returns an empty array on failure (never throws).
+ * Returns [] only when the service genuinely found nothing;
+ * throws GeocodeUnavailableError when the service can't be reached.
  *
  * @param query     Place name, optionally with state/country e.g. "Jacksonville, Arkansas"
  * @param birthDate Used to derive the historical UTC offset (DST-aware)
@@ -66,74 +76,49 @@ export async function searchPlaces(
   birthDate?: Date,
 ): Promise<GeoCandidate[]> {
   if (!query.trim()) return [];
+  let json: {
+    results?: Array<{
+      id: number;
+      name: string;
+      latitude: number;
+      longitude: number;
+      timezone: string;
+      admin1?: string;
+      country?: string;
+      country_code?: string;
+    }>;
+  };
   try {
     const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query.trim())}&count=5&language=en&format=json`;
     const res = await fetch(url);
-    if (!res.ok) return [];
-
-    const json = (await res.json()) as {
-      results?: Array<{
-        id: number;
-        name: string;
-        latitude: number;
-        longitude: number;
-        timezone: string;
-        admin1?: string;
-        country?: string;
-        country_code?: string;
-      }>;
-    };
-
-    if (!json.results?.length) return [];
-
-    const refDate = birthDate ?? new Date();
-
-    // Build candidates in parallel
-    const candidates = await Promise.all(
-      json.results.map(async (r) => {
-        const tzId = r.timezone;
-        const tzOffset = await tzOffsetMinutesForDate(tzId, refDate);
-
-        // Build a label the user can read unambiguously
-        const parts = [r.name];
-        if (r.admin1 && r.admin1 !== r.name) parts.push(r.admin1);
-        if (r.country) parts.push(r.country);
-        const label = parts.join(", ");
-
-        return {
-          label,
-          lat: r.latitude,
-          lng: r.longitude,
-          tzId,
-          tzOffset,
-          admin1: r.admin1,
-          country: r.country,
-        } satisfies GeoCandidate;
-      }),
-    );
-
-    return candidates;
+    if (!res.ok) throw new Error(`geocoding ${res.status}`);
+    json = await res.json();
   } catch {
-    return [];
+    throw new GeocodeUnavailableError();
   }
-}
 
-/**
- * Convenience wrapper: geocode a single city string (used in backfill / edit panel).
- * Takes the first result; callers that need disambiguation should use searchPlaces instead.
- */
-export async function geocodeCity(
-  city: string,
-  birthDate?: Date,
-): Promise<GeoResult | null> {
-  const candidates = await searchPlaces(city, birthDate);
-  const first = candidates[0];
-  if (!first) return null;
-  return {
-    lat: first.lat,
-    lng: first.lng,
-    displayName: first.label,
-    tzOffset: first.tzOffset,
-    tzId: first.tzId,
-  };
+  if (!json.results?.length) return [];
+
+  const refDate = birthDate ?? new Date();
+
+  return json.results.map((r) => {
+    const tzId = r.timezone;
+    const tzOffset = tzOffsetMinutesForDate(tzId, refDate);
+
+    // Build a label the user can read unambiguously
+    const parts = [r.name];
+    if (r.admin1 && r.admin1 !== r.name) parts.push(r.admin1);
+    if (r.country) parts.push(r.country);
+    const label = parts.join(", ");
+
+    return {
+      label,
+      lat: r.latitude,
+      lng: r.longitude,
+      tzId,
+      tzOffset,
+      admin1: r.admin1,
+      country: r.country,
+    } satisfies GeoCandidate;
+  });
 }

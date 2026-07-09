@@ -81,6 +81,8 @@ export default function OnboardingScreen() {
       ...built.birth,
       houseSystem: "placidus"
     });
+    // natal.houseSystem is the system the engine actually computed (it can
+    // fall back to Whole Sign at polar latitudes) — store that, never a claim.
 
     const { data: person, error: personError } = await supabase
       .from("people")
@@ -105,9 +107,9 @@ export default function OnboardingScreen() {
 
     const { error: chartError } = await supabase.from("charts").upsert({
       person_id: person.id,
-      house_system: "placidus",
+      house_system: natal.houseSystem ?? null,
       data: natal,
-      engine_version: 1
+      engine_version: 2
     });
 
     if (chartError) {

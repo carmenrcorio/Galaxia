@@ -179,15 +179,30 @@ export default function ComparePage() {
     if (!chartA?.data || !chartB?.data) { setStatus("Missing chart data for one or both people."); return; }
     const natalA = chartA.data as NatalChart;
     const natalB = chartB.data as NatalChart;
+    // Year-only charts have sampled (mid-year) planet positions, so aspect
+    // orbs and synastry scores computed from them would be fabricated. The
+    // generational layer is the honest comparison for year-only data.
+    if (natalA.precision === "year" || natalB.precision === "year") {
+      const generationalOnly = compareGenerational(natalA.generational as GenSignature, natalB.generational as GenSignature, estimateYearGap(selectedA, selectedB));
+      setResult(null);
+      setStatus(
+        `${natalA.precision === "year" ? selectedA.display_name : selectedB.display_name} has year-only birth data, so a full synastry read isn't possible — the planet-to-planet aspects would be guesses. ` +
+        `What the generational layer shows: ${generationalOnly.theme} Add a birth date to unlock the full comparison.`
+      );
+      return;
+    }
     const synastry     = computeSynastry(natalA, natalB);
     const generational = compareGenerational(natalA.generational as GenSignature, natalB.generational as GenSignature, estimateYearGap(selectedA, selectedB));
     const ageGap = estimateYearGap(selectedA, selectedB) ?? 0;
     const ancestralHeadline = relationType === "ancestor" || ageGap >= 18
       ? `This connection spans different eras — the generational layer is the headline. ${generational.theme}` : null;
 
-    // Enrich PersonLite with chart placements for chart-specific guidance
-    const getSign = (natal: NatalChart, body: string) =>
-      natal.placements.find(p => p.body === body)?.sign ?? undefined;
+    // Enrich PersonLite with chart placements for chart-specific guidance.
+    // A sign the engine flagged as uncertain is not used for guidance copy.
+    const getSign = (natal: NatalChart, body: string) => {
+      const p = natal.placements.find(pl => pl.body === body);
+      return p && p.confident !== false ? p.sign : undefined;
+    };
     const personAWithChart: PersonLite = {
       ...selectedA,
       sun: getSign(natalA, "sun"), moon: getSign(natalA, "moon"),

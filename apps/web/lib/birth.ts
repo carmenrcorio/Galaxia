@@ -2,14 +2,26 @@ import type { Birth, Precision } from "@galaxia/astro";
 
 export interface BirthFormInput {
   precision: Precision;
-  date: string;
-  time: string;
-  year: string;
-  birthPlace?: string;
+
+  // For "date" and "exact" precision — structured values, NOT raw text
+  month?: number;   // 1-12
+  day?:   number;   // 1-31
+  year?:  number;   // 1800-present
+
+  // For "exact" precision
+  hour?:   number;  // 0-23
+  minute?: number;  // 0-59
+
+  // For "year" precision
+  yearOnly?: number;
+
+  // Location (resolved via geocoder, never free-typed)
+  birthPlace?: string;    // display label, e.g. "Jacksonville, Arkansas, United States"
   lat?: string;
   lng?: string;
-  /** UTC offset in minutes at the birth place on the birth date (from tz-lookup + Intl). */
+  /** UTC offset in minutes at the birth place on the birth date. REQUIRED for exact precision. */
   tzOffsetMin?: number;
+  tzId?: string;          // IANA id, for display
 }
 
 function parseOptionalFloat(value?: string): number | undefined {
@@ -18,30 +30,54 @@ function parseOptionalFloat(value?: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+/** Zero-pad to 2 digits */
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** Build an ISO date string from structured month/day/year. Validates range. */
+function buildDateString(month: number, day: number, year: number): string {
+  // Month 1-12, day 1-last day of month
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw new Error(`Invalid date: ${day} ${month} ${year}`);
+  }
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
 /**
  * Convert local birth time to UTC.
- * If tzOffsetMin is provided, subtract it from local time to get UTC.
- * e.g. 14:30 local at UTC+3 (offset=180) → 14:30 - 180min = 11:30 UTC
  *
- * Without a timezone offset (old data / no geocode yet), we fall back to
- * treating the time as UTC — callers should surface this degradation.
+ * BUG C fix: if no timezone is known, we MUST NOT silently treat local time as UTC.
+ * That produces a wrong Sun sign for anyone born near midnight in a non-UTC timezone.
+ * If tzOffsetMin is absent, the caller must either:
+ *   a) provide a birth place and resolve the timezone first, or
+ *   b) accept that Ascendant/MC/houses cannot be computed (date-only precision).
+ * We throw here so the calling code cannot accidentally proceed.
  */
-function localTimeToUTC(date: string, time: string, tzOffsetMin?: number): string {
-  if (tzOffsetMin === undefined || tzOffsetMin === null) {
-    // No timezone known — store as-is and note the degradation.
-    // This is the old (wrong) behavior; we surface it in the UI.
-    return `${date}T${time}:00.000Z`;
-  }
-  // Parse local datetime components
-  const [year, month, day] = date.split("-").map(Number);
-  const [hour, minute] = time.split(":").map(Number);
-  if ([year, month, day, hour, minute].some(n => !Number.isFinite(n))) {
-    return `${date}T${time}:00.000Z`;
-  }
-  // Build a Date from local components then subtract the UTC offset
+function localTimeToUTC(
+  year: number, month: number, day: number,
+  hour: number, minute: number,
+  tzOffsetMin: number,
+): string {
   const localMs = Date.UTC(year, month - 1, day, hour, minute, 0);
   const utcMs   = localMs - tzOffsetMin * 60_000;
   return new Date(utcMs).toISOString();
+}
+
+/** Human-readable date summary shown back to the user for confirmation. */
+export function formatDateForConfirmation(
+  month: number, day: number, year: number,
+): string {
+  const MONTHS = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+  return `${day} ${MONTHS[month - 1]} ${year}`;
 }
 
 export function buildBirthInput(input: BirthFormInput): {
@@ -51,53 +87,94 @@ export function buildBirthInput(input: BirthFormInput): {
   birthPlace: string | null;
   tzOffsetMin: number | null;
   hadTimezone: boolean;
+  /** Human-readable date for UI confirmation */
+  displayDate: string;
 } {
   const normalizedPlace = input.birthPlace?.trim() ? input.birthPlace.trim() : null;
 
   if (input.precision === "year") {
-    const year = Number(input.year);
-    if (!Number.isInteger(year) || year < 1800 || year > 2200) {
-      throw new Error("Enter a valid birth year.");
+    const year = input.yearOnly ?? 0;
+    if (!Number.isInteger(year) || year < 1800 || year > new Date().getFullYear() + 1) {
+      throw new Error("Enter a valid birth year (1800 – present).");
     }
     return {
       birth: {
         dateUTC: `${year}-01-01T00:00:00.000Z`,
         precision: "year",
         lat: parseOptionalFloat(input.lat),
-        lng: parseOptionalFloat(input.lng)
+        lng: parseOptionalFloat(input.lng),
       },
       birthDate:   `${year}-01-01`,
       birthTime:   null,
       birthPlace:  normalizedPlace,
-      tzOffsetMin: input.tzOffsetMin ?? null,
-      hadTimezone: input.tzOffsetMin !== undefined,
+      tzOffsetMin: null,
+      hadTimezone: false,
+      displayDate: String(year),
     };
   }
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
-    throw new Error("Use YYYY-MM-DD for birth date.");
+  // date or exact precision — require structured month/day/year
+  const { month, day, year } = input;
+  if (!month || !day || !year) {
+    throw new Error("Select a month, day, and year.");
+  }
+  if (year < 1800 || year > new Date().getFullYear() + 1) {
+    throw new Error("Year must be between 1800 and the present.");
   }
 
-  if (input.precision === "exact" && !/^\d{2}:\d{2}$/.test(input.time)) {
-    throw new Error("Use HH:MM (24h) for exact birth time.");
+  const dateStr    = buildDateString(month, day, year);
+  const displayDate = formatDateForConfirmation(month, day, year);
+
+  if (input.precision === "date") {
+    return {
+      birth: {
+        dateUTC: `${dateStr}T12:00:00.000Z`,
+        precision: "date",
+        lat: parseOptionalFloat(input.lat),
+        lng: parseOptionalFloat(input.lng),
+      },
+      birthDate:   dateStr,
+      birthTime:   null,
+      birthPlace:  normalizedPlace,
+      tzOffsetMin: null,
+      hadTimezone: false,
+      displayDate,
+    };
   }
 
-  const dateUTC = input.precision === "exact"
-    ? localTimeToUTC(input.date, input.time, input.tzOffsetMin)
-    : `${input.date}T12:00:00.000Z`;
+  // exact precision — require hour, minute, and timezone
+  const { hour, minute } = input;
+  if (hour === undefined || minute === undefined) {
+    throw new Error("Select a birth hour and minute.");
+  }
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    throw new Error("Invalid birth time.");
+  }
+
+  // BUG C: if no timezone, refuse to compute UTC — do not silently treat local as UTC
+  if (input.tzOffsetMin === undefined || input.tzOffsetMin === null) {
+    throw new Error(
+      "A birth place with a resolved timezone is required for exact precision. " +
+      "Without it, birth time cannot be converted to UTC and the chart will be wrong."
+    );
+  }
+
+  const dateUTC = localTimeToUTC(year, month, day, hour, minute, input.tzOffsetMin);
+  const timeStr = `${pad2(hour)}:${pad2(minute)}:00`;
 
   return {
     birth: {
       dateUTC,
-      precision: input.precision,
-      lat: parseOptionalFloat(input.lat),
-      lng: parseOptionalFloat(input.lng),
+      precision:   "exact",
+      lat:         parseOptionalFloat(input.lat),
+      lng:         parseOptionalFloat(input.lng),
       tzOffsetMin: input.tzOffsetMin,
     },
-    birthDate:   input.date,
-    birthTime:   input.precision === "exact" ? `${input.time}:00` : null,
+    birthDate:   dateStr,
+    birthTime:   timeStr,
     birthPlace:  normalizedPlace,
-    tzOffsetMin: input.tzOffsetMin ?? null,
-    hadTimezone: input.tzOffsetMin !== undefined,
+    tzOffsetMin: input.tzOffsetMin,
+    hadTimezone: true,
+    displayDate,
   };
 }

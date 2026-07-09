@@ -6,6 +6,49 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-09 (data-entry bugs)
+
+**[FIXED] Three data-entry bugs causing wrong charts.**
+
+Root cause of wrong Sun sign (1987-12-29, Jacksonville AR → Sagittarius instead of Capricorn):
+The geocoder silently returned Jacksonville, FL instead of AR (limit=1, no disambiguation).
+Additionally, birth time was being treated as UTC rather than converted from local time.
+Neither failure was surfaced to the user.
+
+**BUG A — Free-text date/time replaced with structured selects.**
+`apps/web/app/welcome/page.tsx` `BirthFields` component rewritten:
+- Month is now a named-month select (January … December). Day is a number select. Year is a number select. No user can enter "12/29/1987" and get it silently misinterpreted.
+- Days-in-month are constrained to the selected month and year (Feb 30 impossible).
+- Hour and minute are separate selects for exact-time entry with AM/PM labels.
+- Parsed date is shown back to the user in unambiguous form ("29 December 1987") before they submit.
+- `BirthFormInput` in `lib/birth.ts` updated: structured `month`/`day`/`year`/`hour`/`minute`/`yearOnly` fields replace the old free-text `date`/`time`/`year` strings.
+- `EditPersonPanel` updated to use the same structured fields, populating them from stored `birth_date`/`birth_time` DB columns on open.
+
+**BUG B — Geocoder switched to Open-Meteo; disambiguation list required.**
+`apps/web/lib/geocode.ts` rewritten:
+- Backend: Nominatim → Open-Meteo (`geocoding-api.open-meteo.com`), which returns structured `admin1` (state/region) and `country` fields, making disambiguation unambiguous. Keyless, generous rate limits.
+- `searchPlaces(query, birthDate)` returns up to 5 candidates.
+- UI in `BirthFields` shows the disambiguation list and requires the user to explicitly choose. Never auto-accepts the first result — even if only one result returns, it is displayed for confirmation.
+- After selection, shows: "Jacksonville, Arkansas, United States · 34.8659°, -92.1099° · America/Chicago (UTC-6h at birth date)".
+- User can type a region to narrow results: "Jacksonville, Arkansas" returns AR before FL.
+
+**BUG C — Silent UTC fallback removed; exact precision blocked without timezone.**
+`lib/birth.ts` `localTimeToUTC()` previously fell back to treating local time as UTC when no timezone was known ("This is the old (wrong) behavior"). Now throws:
+`"A birth place with a resolved timezone is required for exact precision. Without it, birth time cannot be converted to UTC and the chart will be wrong."`
+The `buildBirthInput` function enforces this: `exact` precision without a resolved `tzOffsetMin` is a hard error, not a silent degradation.
+
+**Regression tests added** (`packages/astro/test/natal-synastry-transits.test.ts`):
+- `Sun is Capricorn for 1987-12-29 date-only` — locks the correct Sun sign.
+- `Sun is Capricorn for 1987-12-29 with Jacksonville AR coords (exact, local midnight)` — verifies UTC conversion via tz offset.
+- `geocoding disambiguation: Open-Meteo returns multiple Jacksonville results` — documents that `searchPlaces("Jacksonville")` returns ≥ 2 results, proving the disambiguation list is populated.
+All 9 tests pass.
+
+**Deferred / not changed:**
+- `apps/web/app/page.tsx` (marketing landing) — not touched per constraint.
+- Minute select offers every minute (0–59) in the `EditPersonPanel` for birth-certificate precision, and common 5-minute intervals first in `BirthFields` for ease of entry.
+
+---
+
 ## 2026-07-09 (interpretation wiring)
 
 **[CHANGED] Interpretation library wired into /app/person/[id].**

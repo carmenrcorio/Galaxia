@@ -3,6 +3,8 @@
 import { computeNatalChart, type Precision } from "@galaxia/astro";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { CosmicBackground } from "../../components/cosmic-background";
+import { InitialAvatar } from "../../components/initial-avatar";
 import { buildBirthInput, type BirthFormInput } from "../../lib/birth";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 
@@ -39,7 +41,7 @@ export default function WelcomePage() {
   const [people, setPeople] = useState<Array<{ id: string; display_name: string; relation: string; birth_precision: string }>>([]);
   const [savingSelf, setSavingSelf] = useState(false);
   const [savingPerson, setSavingPerson] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ text: string; ok: boolean } | null>(null);
 
   const peopleLimit = tier === "plus" ? Number.POSITIVE_INFINITY : 5;
   const canSaveSelf = selfName.trim().length > 1;
@@ -127,9 +129,9 @@ export default function WelcomePage() {
     try {
       await persistPerson({ displayName: selfName, relation: "self", isSelf: true, isMinor: false, input: selfInput });
       await fetchPeople();
-      setStatus("Saved your profile and natal chart.");
+      setStatus({ text: "Saved your profile and natal chart.", ok: true });
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to save your profile.");
+      setStatus({ text: error instanceof Error ? error.message : "Unable to save your profile.", ok: false });
     } finally {
       setSavingSelf(false);
     }
@@ -140,7 +142,7 @@ export default function WelcomePage() {
     setStatus(null);
     try {
       if (people.length >= peopleLimit) {
-        setStatus(`Free tier limit reached (5 people). Upgrade in settings for unlimited people.`);
+        setStatus({ text: "Free plan: 5-person limit reached.", ok: false });
         return;
       }
       await persistPerson({
@@ -155,77 +157,88 @@ export default function WelcomePage() {
       setPersonRelation("friend");
       setPersonInput(baseInput);
       await fetchPeople();
-      setStatus("Person added to your constellation.");
+      setStatus({ text: `${personName} added to your constellation.`, ok: true });
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to add person.");
+      setStatus({ text: error instanceof Error ? error.message : "Unable to add person.", ok: false });
     } finally {
       setSavingPerson(false);
     }
   };
 
   return (
-    <main className="container" style={{ padding: "40px 0 80px", display: "grid", gap: 18 }}>
-      <h1 className="auth-title">Welcome to Galaxia</h1>
-      <p className="muted">Start with yourself, then add people at exact/date/year precision so `/app` is never empty.</p>
-      <p style={{ color: "var(--gold-soft)" }}>
-        Plan: {tier === "plus" ? "Galaxia+" : "Free"} · {tier === "plus" ? "unlimited people" : "5 people max"}
-      </p>
+    <div style={{ position: "relative", minHeight: "100vh" }}>
+    <CosmicBackground />
+    <main className="app-content">
+      <div>
+        <p className="eyebrow">Onboarding</p>
+        <h1 className="page-title">Build your constellation</h1>
+        <p className="muted">Start with yourself, then add the people at the center of your life.</p>
+        <p style={{ color: "var(--gold-soft)", fontSize: 13, marginTop: 4 }}>
+          {tier === "plus" ? "Galaxia+ · unlimited people" : `Free plan · ${Math.max(0, 5 - people.length)} people remaining`}
+        </p>
+      </div>
 
-      <section className="glass-card">
-        <h2 style={{ marginTop: 0 }}>You first</h2>
-        <input className="field" value={selfName} onChange={(event) => setSelfName(event.target.value)} placeholder="Your display name" />
+      <section className="glass-card fade-in">
+        <p className="eyebrow">You first</p>
+        <input className="field" value={selfName} onChange={(event) => setSelfName(event.target.value)} placeholder="Your display name" style={{ marginBottom: 12 }} />
         <BirthFields input={selfInput} onChange={setSelfInput} />
-        <button className="pill-link pill-link--gold" disabled={!canSaveSelf || savingSelf} onClick={saveSelf}>
-          {savingSelf ? "Saving..." : "Save your profile"}
+        <button className="btn-primary" style={{ marginTop: 14 }} disabled={!canSaveSelf || savingSelf} onClick={saveSelf}>
+          {savingSelf ? "Saving chart…" : "Save my profile"}
         </button>
       </section>
 
-      <section className="glass-card">
-        <h2 style={{ marginTop: 0 }}>Add people</h2>
-        <input className="field" value={personName} onChange={(event) => setPersonName(event.target.value)} placeholder="Person name" />
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      <section className="glass-card fade-in fade-in-delay-1">
+        <p className="eyebrow">Add people</p>
+        <input className="field" value={personName} onChange={(event) => setPersonName(event.target.value)} placeholder="Name" style={{ marginBottom: 10 }} />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
           {relationOptions.map((relation) => (
-            <button key={relation} className="pill-link" onClick={() => setPersonRelation(relation)} style={{ borderColor: personRelation === relation ? "var(--gold)" : "var(--line)" }}>
+            <button key={relation} className="pill-link" onClick={() => setPersonRelation(relation)}
+              style={{ fontSize: 13, padding: "6px 13px", borderColor: personRelation === relation ? "rgba(230,174,108,.5)" : undefined, color: personRelation === relation ? "var(--gold)" : undefined }}>
               {relation}
             </button>
           ))}
         </div>
-        <label style={{ color: "var(--mist)", display: "flex", gap: 8, alignItems: "center" }}>
+        <label className="custom-check" style={{ marginBottom: 12 }}>
           <input type="checkbox" checked={personMinor} onChange={(event) => setPersonMinor(event.target.checked)} />
+          <span className="custom-check__box">
+            <svg className="custom-check__tick" viewBox="0 0 10 8"><polyline points="1,4 3.5,7 9,1" /></svg>
+          </span>
           This person is a minor
         </label>
         <BirthFields input={personInput} onChange={setPersonInput} />
-        <button className="pill-link pill-link--gold" disabled={!canSavePerson || savingPerson} onClick={savePerson}>
-          {savingPerson ? "Saving..." : "Add person"}
+        {people.length >= peopleLimit ? (
+          <p className="error" style={{ fontSize: 13, margin: "10px 0 0" }}>Free plan: 5-person limit reached.</p>
+        ) : null}
+        <button className="btn-primary" style={{ marginTop: 14 }} disabled={!canSavePerson || savingPerson || people.length >= peopleLimit} onClick={savePerson}>
+          {savingPerson ? "Adding…" : "Add to constellation"}
         </button>
       </section>
 
-      {status ? <p className="success">{status}</p> : null}
+      {status ? <p className={status.ok ? "success" : "error"}>{status.text}</p> : null}
 
-      <section className="glass-card">
-        <h2 style={{ marginTop: 0 }}>Your constellation</h2>
-        {people.length === 0 ? <p className="muted">No people yet. Start with yourself, then add your first relationship.</p> : null}
-        <div style={{ display: "grid", gap: 8 }}>
-          {people.map((person) => (
-            <Link key={person.id} href={`/app/person/${person.id}`} className="glass-card" style={{ padding: 12 }}>
-              <strong>{person.display_name}</strong>
-              <div className="muted">
-                {person.relation} · {person.birth_precision}
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {people.length > 0 ? (
+        <section className="glass-card fade-in fade-in-delay-2">
+          <p className="eyebrow">Your constellation ({people.length})</p>
+          <div style={{ display: "grid", gap: 10, marginTop: 6 }}>
+            {people.map((p) => (
+              <Link key={p.id} href={`/app/person/${p.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.1)", textDecoration: "none" }}>
+                <InitialAvatar name={p.display_name} size="sm" />
+                <div>
+                  <div style={{ color: "var(--cream)", fontWeight: 600 }}>{p.display_name}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>{p.relation} · {p.birth_precision}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <Link className="pill-link pill-link--gold" href="/app">
-          Continue to Galaxia Mea
-        </Link>
-        <Link className="pill-link" href="/app/groups">
-          Groups
-        </Link>
+        <Link className="btn-primary" href="/app">Open Galaxia Mea</Link>
+        <Link className="pill-link" href="/app/groups">Groups</Link>
       </div>
     </main>
+    </div>
   );
 }
 

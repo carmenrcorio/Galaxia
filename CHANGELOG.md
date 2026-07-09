@@ -8,6 +8,11 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ## 2026-07-09
 
+**[ADDED] Chart wheel on `/app/person/[id]` (deferred from step 6, now built).**
+Ported `Wheel()` from `design/reference/galaxia.jsx`. SVG ring chart: outer ring, 12-sector sign ring with element fill (18% opacity) + cream glyphs, house ring (only when cusps available), planets at true ecliptic longitudes with element-coloured glyphs, aspect lines across inner disc. `#3a2f63` strokes replaced with `rgba(230,174,108,.13)` gold hairline. When no exact time: renders zodiac + planets only, with a note explaining houses and rising require exact time + location. Responsive via SVG viewBox.
+
+**[FIXED] Groups page placement classes** updated to `pl-row` / `pl-body` / `pl-desc` / `glyph-sq` matching the current CSS.
+
 **[CHANGED] Design parity steps 4–6 (`cursor/design-steps-4-6-b265`).**
 
 Step 4 — `/app` constellation:

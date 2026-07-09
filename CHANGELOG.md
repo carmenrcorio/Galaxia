@@ -1,0 +1,70 @@
+# Galaxia — Changelog & Decision Log
+
+Every meaningful change, decision, and reversal. Newest first. If a decision is not written here, it will be re-litigated or broken.
+
+Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `ADDED`, `CHANGED`, `REVERTED`, `BROKEN`, `OPEN`.
+
+---
+
+## 2026-07-08
+
+**[DECISION] `design/reference/` is the design source of truth, committed to the repo.**
+`galaxia.jsx` (app structure: chart wheel, glyph maps, Home/Profile/Compare, starfield) and `galaxia-landing-v2.html` (material: glass, blur, aura, type scale). Reason: these lived outside the repo for weeks, so Cursor never saw them and invented generic replacements twice. Reference only; never imported by `apps/web`.
+
+**[ADDED] `ENGINEERING.md`.** Standards derived from the failure modes actually hit in this project.
+
+**[OPEN] Design parity work not started.** `.glass-card` in `apps/web/app/globals.css` uses `blur(8px)`, an opaque violet border, `16px` radius, `18px` padding, and **zero `box-shadow` anywhere in the file**. The landing uses `blur(22px) saturate(1.15)`, a translucent gold hairline `rgba(230,174,108,.13)`, `22px` radius, `24px` padding, and a two-layer shadow with an inset highlight. There is also **no starfield or cosmic aura in the app shell**. This is the single highest-leverage fix. See `galaxia-design-parity-spec.md`.
+
+**[FIXED] Vela edge function reaching Anthropic.** Rewritten for the Anthropic Messages API (`https://api.anthropic.com/v1/messages`, `anthropic-version: 2023-06-01`, system prompt as a top-level field, `content_block_delta` SSE parsing). Runs on a single `ANTHROPIC_API_KEY`. Model pinned to `claude-sonnet-5` via `ANTHROPIC_MODEL`.
+
+**[FIXED] Vela deployed to the wrong Supabase project.** The function was deployed and tested against `nsmkddufubobtmhypfho` (an unrelated project) while the key lived on `eigfvribtntbxyjutsma`. Symptom was a misleading "not configured" 503.
+
+**[FIXED] Edge function required manually-set `SUPABASE_*` secrets.** Supabase auto-injects these and blocks setting them by hand. The function now reads the injected values.
+
+**[FIXED] Hardcoded placeholder synastry scores fed to Vela.** Vela was reasoning over invented compatibility numbers. Now uses real `computeSynastry` output.
+
+**[FIXED] Debug scaffolding shipped to production.** Removed: `Upgrade to Galaxia+ (debug)` label, `Connected to shared Supabase account` footer, raw session UUID, `monospace` fonts in the notes and Vela inputs, and a black-on-dark Arial rendering bug on `/app/groups`. The debug tier toggle wrote directly to the database, allowing a user to grant themselves a paid plan. That was a revenue defect.
+
+**[FIXED] App screens 404'd in production.** The entire web app (`/welcome`, `/app`, `/app/person/[id]`, `/app/compare`, `/app/groups`, `/app/vela`, `/app/settings`) sat unmerged on branch `cursor/web-app-vertical-slice-b265` for weeks while everyone debugged deploy config. Merged to `main` with `-X theirs`, keeping the premium landing page.
+
+**[DECISION] No root `vercel.json`.** Vercel's native Next.js detection with Root Directory `apps/web` and Framework Preset `Next.js` is the working configuration. Every custom `vercel.json` we tried fought one of those two settings (doubled output paths, missing Next detection, or a hunt for a nonexistent `public/` directory).
+
+**[FIXED] Premium landing design ported into `apps/web/app/page.tsx`.** Previously the design only existed on a throwaway static Vercel project (`galaxia-site`) while the real project served a bland stub.
+
+**[OPEN] Retire the `galaxia-site` Vercel project.** Only after confirming the `galaxia` project serves the premium landing.
+
+---
+
+## 2026-07-07 and earlier
+
+**[FIXED] Geocoding and timezone for birth data.** City → lat/lng, IANA timezone via coordinate lookup, stored `tz_offset_min`. Birth time was previously treated as UTC, which silently produced wrong houses and rising signs.
+
+**[DECISION] Keyless geocoding.** Open-Meteo (not Nominatim) plus `tz-lookup`. City-level accuracy is sufficient for a natal chart; a keyed provider adds billing setup for no accuracy benefit. Manual lat/lng remains an advanced override.
+
+**[DECISION] Interpretation copy is a static curated library, not LLM-generated.** Reason: instant, free, deterministic, and it protects the brand promise ("real astrology, not AI making things up"). Vela remains the conversational layer on top.
+
+**[FIXED] Supabase schema applied.** Four migrations run in order against `eigfvribtntbxyjutsma`; 14 tables. The schema had never been applied to this project, so every write would have failed.
+
+**[DECISION] `eigfvribtntbxyjutsma` (GALAXIA org) is the only Galaxia Supabase project.** `nsmkddufubobtmhypfho` belongs to an unrelated project and must never appear in this codebase.
+
+**[FIXED] `ERR_INVALID_THIS` on every Vercel install.** pnpm 9.12.3 could not reach the npm registry on Vercel's Node version. Vercel ignores the `packageManager` field, so the version had to be forced. Since resolved by removing custom install commands entirely.
+
+**[FIXED] Expo web white screen.** Metro cannot resolve pnpm's nested `node_modules`. Root `.npmrc` now sets `node-linker=hoisted`. Also added the missing `metro.config.js` and `babel.config.js` to `apps/mobile`.
+
+**[FIXED] Critical engine bug: heliocentric coordinates in a natal chart.** An AI agent used `EclipticLongitude()` (heliocentric) instead of geocentric positions. The Moon, Mercury, Venus, and Mars were all wrong. The agent's own tests passed because they tested its own wrong output. Fixed with `GeoVector`/`Ecliptic`/`EclipticGeoMoon`. **Lesson: test against external ground truth, never self-consistency.**
+
+**[DECISION] `astronomy-engine` (MIT), not Swiss Ephemeris (AGPL).** Chiron and asteroids will come from an embedded ephemeris data table rather than an AGPL dependency.
+
+**[DECISION] Names are locked.** App = Galaxia. Home view = Galaxia Mea. AI guide = Vela. Do not re-suggest.
+
+---
+
+## Open items
+
+- **[OPEN] Design parity.** Card recipe, app-shell atmosphere, shared components. See `galaxia-design-parity-spec.md`. Highest leverage work in the product.
+- **[OPEN] The moat is undesigned.** Three independent audits agreed: the constellation graph and the generational layer are the only features no competitor has, and they are currently the least designed things we ship. The constellation is a cropped force graph with no glow, no curves, no hover state, using ~55% of its container.
+- **[OPEN] `/app/compare` contradicts the marketing promise.** It prints `Overall 52 · emotional 55` while the landing promises "Not a dating-app score. A real map." The "What [name] needs from you" callout, the actionable payoff of the whole feature, was never built.
+- **[OPEN] Natal chart is incomplete.** Missing Chiron, North/South Node, Lilith, retrograde flags, element/modality balance, and the chart wheel that exists in `design/reference/galaxia.jsx`. House system must default to **Placidus** to match the sites users cross-check against; the engine currently uses whole-sign. See `galaxia-natal-chart-standard.md`.
+- **[OPEN] Constellation as a living sky.** Prototype exists (`galaxia-constellation-prototype.html`): celestial form derived from bond type, sharpness derived from birth-data precision, nebulae for generational cohorts, transits as shooting stars, drag-to-name constellations. Not yet specced for build. Held pending review.
+- **[OPEN] Chart accuracy regression tests** against astro.com for known charts.
+- **[OPEN] Mobile app** (`apps/mobile`) still points at the wrong Supabase URL in its local `.env`.

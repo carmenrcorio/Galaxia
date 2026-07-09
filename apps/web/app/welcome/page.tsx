@@ -8,6 +8,7 @@ import { CustomCheck } from "../../components/custom-check";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { Spinner } from "../../components/spinner";
 import { buildBirthInput, type BirthFormInput } from "../../lib/birth";
+import { geocodeCity } from "../../lib/geocode";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 
 type Relation = "partner" | "child" | "parent" | "grandparent" | "sibling" | "friend" | "ancestor" | "self";
@@ -27,7 +28,8 @@ const baseInput: BirthFormInput = {
   year: "",
   birthPlace: "",
   lat: "",
-  lng: ""
+  lng: "",
+  tzOffsetMin: undefined
 };
 
 export default function WelcomePage() {
@@ -90,11 +92,29 @@ export default function WelcomePage() {
     input: BirthFormInput;
   }) => {
     if (!userId) throw new Error("Please sign in first.");
-    const built = buildBirthInput(input);
-    const natal = computeNatalChart({
-      ...built.birth,
-      houseSystem: "placidus"
-    });
+
+    // Auto-geocode if city present but no coords yet.
+    // This handles the case where the user typed a city but didn't wait for the blur geocode.
+    let finalInput = { ...input };
+    if (
+      input.precision !== "year" &&
+      input.birthPlace?.trim() &&
+      (!input.lat || !input.lng)
+    ) {
+      const birthDateForTz = input.date ? new Date(`${input.date}T12:00:00Z`) : new Date();
+      const geo = await geocodeCity(input.birthPlace, birthDateForTz);
+      if (geo) {
+        finalInput = {
+          ...finalInput,
+          lat: String(geo.lat),
+          lng: String(geo.lng),
+          tzOffsetMin: geo.tzOffset
+        };
+      }
+    }
+
+    const built = buildBirthInput(finalInput);
+    const natal = computeNatalChart({ ...built.birth, houseSystem: "placidus" });
 
     const { data: person, error: personError } = await supabase
       .from("people")
@@ -107,9 +127,10 @@ export default function WelcomePage() {
         birth_date: built.birthDate,
         birth_time: built.birthTime,
         birth_place: built.birthPlace,
-        birth_precision: input.precision,
-        birth_lat: built.birth.lat,
-        birth_lng: built.birth.lng
+        birth_precision: finalInput.precision,
+        birth_lat: built.birth.lat ?? null,
+        birth_lng: built.birth.lng ?? null,
+        tz_offset_min: built.tzOffsetMin ?? null,
       })
       .select("id")
       .single();
@@ -123,15 +144,21 @@ export default function WelcomePage() {
       engine_version: 1
     });
     if (chartError) throw new Error(chartError.message);
+    return natal;
   };
 
   const saveSelf = async () => {
     setSavingSelf(true);
     setStatus(null);
     try {
-      await persistPerson({ displayName: selfName, relation: "self", isSelf: true, isMinor: false, input: selfInput });
+      const savedChart = await persistPerson({ displayName: selfName, relation: "self", isSelf: true, isMinor: false, input: selfInput });
       await fetchPeople();
-      setStatus({ text: "Saved your profile and natal chart.", ok: true });
+      const risingNote = savedChart?.asc
+        ? ` Rising: ${savedChart.asc}.`
+        : selfInput.precision === "exact"
+          ? " (No rising yet — add a birth city to unlock houses.)"
+          : "";
+      setStatus({ text: `Saved your chart.${risingNote}`, ok: true });
     } catch (error) {
       setStatus({ text: error instanceof Error ? error.message : "Unable to save your profile.", ok: false });
     } finally {
@@ -243,31 +270,111 @@ export default function WelcomePage() {
 }
 
 function BirthFields({ input, onChange }: { input: BirthFormInput; onChange: (next: BirthFormInput) => void }) {
+  const [geocoding, setGeocoding] = useState(false);
+  const [geoLabel,  setGeoLabel]  = useState<string | null>(null);
+
+  const handleCityBlur = async () => {
+    const city = input.birthPlace?.trim();
+    if (!city || input.precision === "year") return;
+    // Only geocode if coords not manually set already
+    if (input.lat && input.lng) return;
+    setGeocoding(true);
+    setGeoLabel(null);
+    const birthDateForTz = input.date ? new Date(`${input.date}T12:00:00Z`) : new Date();
+    const geo = await geocodeCity(city, birthDateForTz);
+    setGeocoding(false);
+    if (geo) {
+      onChange({ ...input, lat: String(geo.lat), lng: String(geo.lng), tzOffsetMin: geo.tzOffset });
+      const short = geo.displayName.split(",").slice(0, 2).join(",");
+      setGeoLabel(`✓ ${short}`);
+    } else {
+      setGeoLabel("City not found — enter coordinates manually below.");
+    }
+  };
+
+  const hasCoords = Boolean(input.lat && input.lng);
+  const noLocationWarning =
+    input.precision === "exact" && !hasCoords && !input.birthPlace?.trim();
+
   return (
     <div style={{ display: "grid", gap: 10 }}>
-      <div style={{ display: "grid", gap: 8 }}>
+      {/* Precision selector */}
+      <div style={{ display: "grid", gap: 6 }}>
         {precisionTiers.map((tier) => (
-          <button key={tier.key} className="glass-card" onClick={() => onChange({ ...input, precision: tier.key })} style={{ textAlign: "left", borderColor: input.precision === tier.key ? "var(--gold)" : "var(--line)" }}>
-            <strong style={{ color: input.precision === tier.key ? "var(--gold)" : "var(--cream)" }}>{tier.label}</strong>
-            <p className="muted" style={{ margin: "4px 0 0" }}>
-              {tier.unlocks}
-            </p>
+          <button
+            key={tier.key} type="button" className="glass-card"
+            onClick={() => onChange({ ...input, precision: tier.key })}
+            style={{ textAlign: "left", cursor: "pointer", borderColor: input.precision === tier.key ? "var(--gold)" : "var(--line)", padding: "10px 14px" }}>
+            <strong style={{ color: input.precision === tier.key ? "var(--gold)" : "var(--cream)", display: "block", marginBottom: 2 }}>{tier.label}</strong>
+            <span className="muted" style={{ fontSize: ".8rem" }}>{tier.unlocks}</span>
           </button>
         ))}
       </div>
+
+      {/* Date/time fields */}
       {input.precision === "year" ? (
-        <input className="field" value={input.year} onChange={(event) => onChange({ ...input, year: event.target.value })} placeholder="Birth year (e.g. 1995)" />
+        <input className="field" value={input.year}
+          onChange={e => onChange({ ...input, year: e.target.value })}
+          placeholder="Birth year (e.g. 1952)" />
       ) : (
         <>
-          <input className="field" value={input.date} onChange={(event) => onChange({ ...input, date: event.target.value })} placeholder="Birth date (YYYY-MM-DD)" />
+          <input className="field" value={input.date}
+            onChange={e => onChange({ ...input, date: e.target.value })}
+            placeholder="Birth date (YYYY-MM-DD)" />
           {input.precision === "exact" ? (
-            <input className="field" value={input.time} onChange={(event) => onChange({ ...input, time: event.target.value })} placeholder="Birth time (HH:MM 24h)" />
+            <input className="field" value={input.time}
+              onChange={e => onChange({ ...input, time: e.target.value })}
+              placeholder="Birth time (HH:MM — 24h, local time at birth place)" />
           ) : null}
         </>
       )}
-      <input className="field" value={input.birthPlace ?? ""} onChange={(event) => onChange({ ...input, birthPlace: event.target.value })} placeholder="Birth city (e.g. Buenos Aires)" />
-      <input className="field" value={input.lat ?? ""} onChange={(event) => onChange({ ...input, lat: event.target.value })} placeholder="Latitude (optional)" />
-      <input className="field" value={input.lng ?? ""} onChange={(event) => onChange({ ...input, lng: event.target.value })} placeholder="Longitude (optional)" />
+
+      {/* City field with geocode-on-blur */}
+      {input.precision !== "year" ? (
+        <div>
+          <input
+            className="field"
+            value={input.birthPlace ?? ""}
+            onChange={e => onChange({ ...input, birthPlace: e.target.value, lat: "", lng: "", tzOffsetMin: undefined })}
+            onBlur={handleCityBlur}
+            placeholder={input.precision === "exact"
+              ? "Birth city — required for rising sign & houses"
+              : "Birth city (optional)"}
+          />
+          {geocoding ? (
+            <p className="muted" style={{ fontSize: ".74rem", marginTop: 4 }}>Looking up location…</p>
+          ) : geoLabel ? (
+            <p style={{ fontSize: ".74rem", marginTop: 4, color: geoLabel.startsWith("✓") ? "var(--teal)" : "var(--rose)" }}>{geoLabel}</p>
+          ) : null}
+          {noLocationWarning ? (
+            <p className="error" style={{ fontSize: ".74rem", marginTop: 4 }}>
+              Exact time without a birth city: houses and rising sign won't compute. Enter a city above.
+            </p>
+          ) : null}
+          {hasCoords ? (
+            <p className="muted" style={{ fontSize: ".72rem", marginTop: 2 }}>
+              {input.tzOffsetMin !== undefined
+                ? `Coordinates resolved · UTC${input.tzOffsetMin >= 0 ? "+" : ""}${input.tzOffsetMin / 60}h at birth`
+                : "Coordinates set manually"}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* Manual coordinate override (collapsed by default) */}
+      {input.precision !== "year" ? (
+        <details style={{ color: "var(--mist2)", fontSize: ".78rem" }}>
+          <summary style={{ cursor: "pointer" }}>Enter coordinates manually</summary>
+          <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+            <input className="field" value={input.lat ?? ""}
+              onChange={e => onChange({ ...input, lat: e.target.value })}
+              placeholder="Latitude (e.g. 40.7128)" />
+            <input className="field" value={input.lng ?? ""}
+              onChange={e => onChange({ ...input, lng: e.target.value })}
+              placeholder="Longitude (e.g. -74.0060)" />
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }

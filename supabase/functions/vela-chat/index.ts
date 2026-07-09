@@ -227,12 +227,16 @@ Deno.serve(async (req) => {
     if (!people?.length) return jsonResponse(404, { error: "People not found for this thread." });
 
     // ── Safety checks ────────────────────────────────────────────────────────
+    // No two-way chat where a minor is the subject, in ANY mode.
+    // The product promise: guidance ABOUT a child goes to the parent via private notes,
+    // not an interactive thread whose subject is the child's chart.
+    if (people.some((p) => p.is_minor)) {
+      return jsonResponse(400, {
+        error: "Two-way chat is turned off when a minor is the conversation subject. Use private notes for your own reflections about them."
+      });
+    }
+
     if (mode === "shared") {
-      if (people.some((p) => p.is_minor)) {
-        return jsonResponse(400, {
-          error: "Shared mode is disabled when any participant is a minor. Use ask mode for parenting guidance."
-        });
-      }
       const { data: consented } = await supabase
         .from("thread_participants")
         .select("user_id")

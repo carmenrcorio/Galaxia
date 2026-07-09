@@ -28,13 +28,20 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
     setSaving(true); setStatus(null);
     try {
       let fi = { ...input };
-      if (input.precision === "exact" && input.birthPlace?.trim() && !input.lat && !input.lng) {
-        const geo = await geocodeCity(input.birthPlace);
-        if (geo) fi = { ...fi, lat: String(geo.lat), lng: String(geo.lng) };
+      if (input.birthPlace?.trim() && !input.lat && !input.lng) {
+        const birthDateForTz = input.date ? new Date(`${input.date}T12:00:00Z`) : new Date();
+        const geo = await geocodeCity(input.birthPlace, birthDateForTz);
+        if (geo) fi = { ...fi, lat: String(geo.lat), lng: String(geo.lng), tzOffsetMin: geo.tzOffset };
       }
       const built = buildBirthInput(fi);
       const natal = computeNatalChart({ ...built.birth, houseSystem: "placidus" });
-      const { error: pErr } = await supabase.from("people").update({ display_name: displayName.trim(), relation, is_minor: isMinor, birth_date: built.birthDate, birth_time: built.birthTime, birth_place: built.birthPlace, birth_precision: fi.precision, birth_lat: built.birth.lat ?? null, birth_lng: built.birth.lng ?? null }).eq("id", person.id).eq("owner_id", userId);
+      const { error: pErr } = await supabase.from("people").update({
+        display_name: displayName.trim(), relation, is_minor: isMinor,
+        birth_date: built.birthDate, birth_time: built.birthTime, birth_place: built.birthPlace,
+        birth_precision: fi.precision,
+        birth_lat: built.birth.lat ?? null, birth_lng: built.birth.lng ?? null,
+        tz_offset_min: built.tzOffsetMin ?? null,
+      }).eq("id", person.id).eq("owner_id", userId);
       if (pErr) throw new Error(pErr.message);
       const { error: cErr } = await supabase.from("charts").upsert({ person_id: person.id, house_system: "placidus", data: natal, engine_version: 1 });
       if (cErr) throw new Error(cErr.message);

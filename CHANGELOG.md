@@ -6,6 +6,34 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-09
+
+**[CHANGED] Design parity steps 4–6 (`cursor/design-steps-4-6-b265`).**
+
+Step 4 — `/app` constellation:
+- Canvas rendering ported from `design/reference/galaxia-constellation-prototype.html`. Node forms now derived from relationship type: self (gold disc + outer ring), binary partner (two orbiting bodies + ellipse), moon/child (crescent), fixed/parent (four-point flare + disc), ancient/ancestor (diffuse glow + expanding ring), star/sibling (disc + highlight).
+- Radial glow halos: `createRadialGradient`, halo radius scales with data precision (exact=5.5×, date=8×, year=11×) — year-only people render as soft diffuse light, exact-time as crisp.
+- Links: quadratic bezier curves + gradient between node element colours (prototype `hexA` pattern). Travelling light pulse along each link via `t * 0.0002` fraction along the bezier.
+- Gentle drift: `sin/cos` with per-person phase and speed, matching prototype `pos()`.
+- Hover inspector: glass card floating over canvas, slides in, shows form / precision / "click to open".
+- Click on any node routes to `/app/person/[id]`.
+- Legend strip: celestial form key at bottom of canvas container.
+- Duplicate bottom nav row deleted per spec.
+- Canvas fills full container width (was ~55% with dead space).
+
+Step 5 — `/app/compare`:
+- Numeric score line (`Overall 52 · emotional 55`) replaced with `.dyn`-style labeled qualitative outcomes from landing: word labels from `galaxia.jsx sdesc()` thresholds (≥76 Effortless, ≥68 Easy & warm, ≥58 Workable, ≥48 Tender, else Charged), colour-banded with thin underline bars sized to percentage.
+- Raw numbers behind a "Show numbers" disclosure.
+- **Built the missing "What [name] needs from you" callout** — the tip block that the landing promises and the app never had. Renders for both persons with italic body copy and gold `→` lead-in.
+
+Step 6 — `/app/person/[id]`:
+- Big Three replaced with 3-up glyph chips from landing `.chip` pattern: glyph (zodiac unicode), label-caps (SUN/MOON/RISING), value (sign name), one-line vibe from `galaxia.jsx VIBE`.
+- Placement list from landing `.pl` pattern: element-gradient glyph square (`galaxia.jsx EL_GRAD`), body name + house badge, degree as `16°48′` (not decimal), SIGN_VIBE gloss.
+- Aspect section: sorted by orb ascending, tight (<2°) get gold left-border accent class, loose (>5°) dimmed. Aspect glyphs from `galaxia.jsx ASPGLY`, one-liners from `ASPLINE`.
+- Glyph maps in `lib/design.ts` extended with `ASPECT_GLYPH`, `ASPECT_LINE`, `SIGN_VIBE`, `HOUSE_AREA`, `EL_GRAD` (all from `galaxia.jsx`).
+
+---
+
 ## 2026-07-08
 
 **[DECISION] `design/reference/` is the design source of truth, committed to the repo.**

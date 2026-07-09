@@ -10,7 +10,7 @@
  * Degree displayed as 16°48′ (not decimal)
  */
 
-import { computeSynastry, type NatalChart } from "@galaxia/astro";
+import { computeSynastry, type NatalChart, type Placement } from "@galaxia/astro";
 import { describeGenerationalArchetype } from "@galaxia/core";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -27,6 +27,195 @@ interface PersonRow {
   birth_place?: string | null; birth_lat?: number | null; birth_lng?: number | null;
 }
 interface NoteRow { id: string; body: string; created_at: string; }
+
+/* ─── ChartWheel ──────────────────────────────────────────────────────────────
+ * Ported from design/reference/galaxia.jsx function Wheel({ chart })
+ *
+ * Changes from prototype:
+ * - Real ecliptic longitudes (placements[].lon) instead of house-midpoint guesses
+ * - #3a2f63 strokes → rgba(230,174,108,.13) gold hairlines (token --line)
+ * - Planet glyphs coloured by element (fire/earth/air/water)
+ * - Sign glyphs in cream (as specified)
+ * - Aspect lines drawn across the inner disc (from real aspect data)
+ * - No-cusp fallback: renders zodiac + planets without house ring, with a note
+ * - Responsive via SVG viewBox + maxWidth
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+const SIGNS_ORDER = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
+const EL_SOLID: Record<string, string> = { fire:"#E0825C", earth:"#cdbd7a", air:"#B79AD8", water:"#6FB1B8" };
+
+/* Wheel dimensions — same as prototype */
+const S = 300, CX = S/2, CY = S/2;
+const R_OUT    = 140;  // outer ring
+const R_SIGN_IN = 112; // inner edge of sign ring
+const R_SIGN_GL = 126; // sign glyph radius (mid of sign band)
+const R_HOUSE_GL = 99; // house number radius
+const R_INNER  = 62;   // inner disc edge (aspect lines end here)
+const R_PLANET = 84;   // planet circle radius
+const LINE_COLOR = "rgba(230,174,108,.13)"; // token --line
+
+/** Polar → SVG cartesian. Same as prototype pt(r,deg). */
+function pt(r: number, deg: number): [number, number] {
+  const a = (deg * Math.PI) / 180;
+  return [CX + r * Math.cos(a), CY - r * Math.sin(a)];
+}
+
+/**
+ * Convert ecliptic longitude to SVG angle.
+ * With ASC: ASC ecliptic lon anchors to SVG 180° (9-o'clock, standard chart left).
+ * Without ASC (no cusps): Aries 0° at SVG 270° (top), a common simplified orientation.
+ */
+function svgAngle(lon: number, ascLon: number | null): number {
+  const norm = (v: number) => ((v % 360) + 360) % 360;
+  if (ascLon !== null) {
+    return norm(180 - lon + ascLon);
+  }
+  // no ASC: Aries at top (270°), ascending counterclockwise
+  return norm(270 - lon);
+}
+
+function ChartWheel({ chart }: { chart: NatalChart }) {
+  const hasHouses = chart.cusps != null && chart.cusps.length >= 12;
+  const ascLon: number | null = hasHouses ? (chart.cusps![0] ?? null) : null;
+
+  // sign ring — 12 x 30° sectors; sectors are fixed zodiac bands
+  const signSectors = SIGNS_ORDER.map((sign, i) => {
+    const lon0 = i * 30;           // ecliptic start of sign
+    const lon1 = lon0 + 30;        // ecliptic end
+    const a0   = svgAngle(lon0, ascLon);
+    const a1   = svgAngle(lon1, ascLon);
+    const [ox0, oy0] = pt(R_OUT,     a0);
+    const [ox1, oy1] = pt(R_OUT,     a1);
+    const [ix1, iy1] = pt(R_SIGN_IN, a1);
+    const [ix0, iy0] = pt(R_SIGN_IN, a0);
+    const [gx,  gy ] = pt(R_SIGN_GL, (a0 + a1) / 2);
+    const el = signElement(sign);
+    const elCol = EL_SOLID[el] ?? "#b9aede";
+    // large-arc-flag: 1 if sweep > 180°, else 0. Each sign = 30° so flag = 0.
+    const laf = 0;
+    // sweep goes from a0 to a1; since degrees increase counterclockwise in our system,
+    // we need to figure out the correct sweep direction.
+    // In pt(), decreasing angle in degrees = clockwise. Signs span 30° in SVG angle space.
+    // We draw the arc from a0 to a1 where a1 = a0 - 30 (since svgAngle decreases as lon increases).
+    return { sign, el, elCol, ox0, oy0, ox1, oy1, ix0, iy0, ix1, iy1, gx, gy, a0, lon0 };
+  });
+
+  // house cusps (if available)
+  const houseCusps = hasHouses
+    ? Array.from({ length: 12 }, (_, i) => {
+        const lon  = chart.cusps![i]!;
+        const a    = svgAngle(lon, ascLon);
+        const [x0, y0] = pt(R_SIGN_IN, a);
+        const [x1, y1] = pt(R_INNER,   a);
+        const [hx, hy] = pt(R_HOUSE_GL, svgAngle(lon + 15, ascLon));
+        return { i, a, x0, y0, x1, y1, hx, hy };
+      })
+    : [];
+
+  // planets grouped by ecliptic position (spread within a ±8° window if crowded)
+  const sortedPlanets = [...chart.placements].sort((a, b) => a.lon - b.lon);
+  // Simple crowding: offset overlapping planets radially
+  const planetPositions = sortedPlanets.map((p, idx) => {
+    const a   = svgAngle(p.lon, ascLon);
+    // alternate radial offset for planets within 12° of each other
+    const near = sortedPlanets.filter(q => q.body !== p.body && Math.abs(q.lon - p.lon) < 14);
+    const rr  = near.length > 0 && idx % 2 === 1 ? R_PLANET - 15 : R_PLANET;
+    const [px, py] = pt(rr, a);
+    const el  = signElement(p.sign);
+    const col = EL_SOLID[el] ?? "#b9aede";
+    const gly = BODY_GLYPH[p.body] ?? p.body[0].toUpperCase();
+    return { p, px, py, col, gly, a };
+  });
+
+  // aspect lines — drawn inside the inner disc between planet positions (on R_INNER ring)
+  const aspectLines = chart.precision === "exact" || chart.precision === "date"
+    ? computeSynastry(chart, chart).aspects
+        .filter(a => a.from !== a.to)
+        .filter((a, idx, arr) => arr.findIndex(b => [b.from, b.to].sort().join() === [a.from, a.to].sort().join() && b.type === a.type) === idx)
+        .filter(a => a.orb < 5)
+        .slice(0, 12)
+        .map(a => {
+          const pa = chart.placements.find(p => p.body === a.from);
+          const pb = chart.placements.find(p => p.body === a.to);
+          if (!pa || !pb) return null;
+          const [x0, y0] = pt(R_INNER, svgAngle(pa.lon, ascLon));
+          const [x1, y1] = pt(R_INNER, svgAngle(pb.lon, ascLon));
+          const col = a.harmony >= 1.2 ? "rgba(111,177,184," : a.harmony < 0 ? "rgba(218,140,140," : "rgba(183,154,216,";
+          const alpha = Math.max(0.08, 0.22 - a.orb * 0.03);
+          return { x0, y0, x1, y1, col: col + alpha + ")" };
+        }).filter(Boolean)
+    : [];
+
+  return (
+    <div style={{ width: "100%", maxWidth: 290, margin: "0 auto" }}>
+      <svg viewBox={`0 0 ${S} ${S}`} width="100%" style={{ display: "block" }}>
+        {/* Structural rings */}
+        <circle cx={CX} cy={CY} r={R_OUT}     fill="none" stroke={LINE_COLOR} strokeWidth="1" />
+        <circle cx={CX} cy={CY} r={R_SIGN_IN} fill="none" stroke={LINE_COLOR} strokeWidth="1" />
+        <circle cx={CX} cy={CY} r={R_INNER}   fill="rgba(10,7,23,.6)"  stroke={LINE_COLOR} strokeWidth="1" />
+
+        {/* Aspect lines inside inner disc */}
+        {aspectLines.map((al, i) =>
+          al ? <line key={i} x1={al.x0} y1={al.y0} x2={al.x1} y2={al.y1} stroke={al.col} strokeWidth="1" /> : null
+        )}
+
+        {/* Sign sectors — 12 arcs with element fill + glyph */}
+        {signSectors.map(({ sign, elCol, ox0, oy0, ox1, oy1, ix0, iy0, ix1, iy1, gx, gy, a0, lon0 }) => {
+          // Build arc path: outer arc from a0→a1, inner arc back
+          // sign is 30° wide, SVG angle decreases by ~30° as lon increases 30°
+          const a1 = svgAngle(lon0 + 30, ascLon);
+          // determine arc sweep direction. Signs progress CCW on real ecliptic.
+          // In SVG, CCW = decreasing angle in pt() convention.
+          // We always draw 0 large-arc, sweep-flag depends on direction.
+          // Since each sign = exactly 30° of SVG space, large-arc=0 always.
+          const [qx0,qy0] = pt(R_OUT,     a0);
+          const [qx1,qy1] = pt(R_OUT,     a1);
+          const [qi1,qi1y]= pt(R_SIGN_IN, a1);
+          const [qi0,qi0y]= pt(R_SIGN_IN, a0);
+          return (
+            <g key={sign}>
+              <path
+                d={`M${qx0},${qy0} A${R_OUT},${R_OUT} 0 0 0 ${qx1},${qy1} L${qi1},${qi1y} A${R_SIGN_IN},${R_SIGN_IN} 0 0 1 ${qi0},${qi0y} Z`}
+                fill={elCol} opacity="0.18"
+              />
+              <line x1={qx0} y1={qy0} x2={qi0} y2={qi0y} stroke={LINE_COLOR} strokeWidth="1" />
+              <text x={gx} y={gy} fill="#F4ECDB" fontSize="13" textAnchor="middle" dominantBaseline="central">
+                {SIGN_GLYPH[sign]}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* ASC / MC labels */}
+        {hasHouses ? (
+          <>
+            <text x={pt(R_OUT+10, 180)[0]} y={pt(R_OUT+10, 180)[1]} fill="#E6AE6C" fontSize="8" textAnchor="middle" dominantBaseline="central" fontWeight="700">ASC</text>
+            {chart.mc ? (
+              <text x={pt(R_OUT+10, svgAngle(chart.cusps![9]!, ascLon))[0]} y={pt(R_OUT+10, svgAngle(chart.cusps![9]!, ascLon))[1]} fill="#E6AE6C" fontSize="8" textAnchor="middle" dominantBaseline="central" fontWeight="700">MC</text>
+            ) : null}
+          </>
+        ) : null}
+
+        {/* House cusps — thin spoke lines + house numbers */}
+        {houseCusps.map(({ i, x0, y0, x1, y1, hx, hy }) => (
+          <g key={i}>
+            <line x1={x0} y1={y0} x2={x1} y2={y1} stroke={LINE_COLOR} strokeWidth="0.8" />
+            <text x={hx} y={hy} fill="#8076a6" fontSize="8" textAnchor="middle" dominantBaseline="central"
+              style={{ fontFamily: "var(--serif)" }}>{i + 1}</text>
+          </g>
+        ))}
+
+        {/* Planets — circles with glyph, coloured by element */}
+        {planetPositions.map(({ p, px, py, col, gly }) => (
+          <g key={p.body}>
+            <circle cx={px} cy={py} r="10" fill="rgba(10,7,23,.85)" stroke="rgba(230,174,108,.35)" strokeWidth="0.8" />
+            <text x={px} y={py} fill={col} fontSize="11" textAnchor="middle" dominantBaseline="central">{gly}</text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
 
 /* convert decimal degrees to °mm′ (same as spec) */
 function toDMS(deg: number): string {
@@ -161,6 +350,19 @@ export default function PersonProfilePage() {
         <Link href="/app/vela"    className="pill-link" style={{ fontSize: ".82rem" }}>Ask Vela</Link>
         <EditPersonPanel person={person} userId={userId ?? ""} onSaved={() => loadProfile(userId ?? "")} onDeleted={() => router.push("/app")} />
       </div>
+
+      {/* ── Chart Wheel — SVG, above Big Three chips ── */}
+      <section className="glass-card fade-in fade-in-delay-1">
+        <p className="eyebrow" style={{ marginBottom: 14 }}>
+          {chart.precision === "exact" && chart.asc ? "Natal wheel" : "Zodiac wheel"}
+        </p>
+        <ChartWheel chart={chart} />
+        {chart.precision !== "exact" || !chart.asc ? (
+          <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "48ch", margin: "10px auto 0" }}>
+            Houses and rising sign need an exact birth time and location. Planets are placed at their true ecliptic degrees. Add a birth city to this profile to unlock the full wheel.
+          </p>
+        ) : null}
+      </section>
 
       {/* ── Big Three — 3-up chip row (from landing .chips + .chip) ── */}
       <section className="glass-card fade-in fade-in-delay-1">

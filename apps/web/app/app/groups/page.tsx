@@ -173,13 +173,14 @@ export default function GroupsPage() {
           <section className="glass-card fade-in">
             <p className="eyebrow" style={{ marginBottom: 10 }}>Shared sky</p>
             {cohort.overlay.sharedSky.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>No full-group shared outer-planet signatures.</p> : null}
-            <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ display: "grid", gap: 4 }}>
               {cohort.overlay.sharedSky.map((item: any) => (
-                <div key={`${item.planet}-${item.sign}`} className="placement-row">
-                  <span className="glyph">{BODY_GLYPH[item.planet]}</span>
-                  <span className="placement-body">{item.planet}</span>
-                  <span className="placement-sign">{SIGN_GLYPH[item.sign]} {item.sign}</span>
-                  <span className="placement-interp">{planetLine(item.sign)}</span>
+                <div key={`${item.planet}-${item.sign}`} className="pl-row">
+                  <div className="glyph-sq" style={{ fontSize: ".9rem" }}>{BODY_GLYPH[item.planet]}</div>
+                  <div>
+                    <div className="pl-body">{item.planet} in {SIGN_GLYPH[item.sign]} {item.sign}</div>
+                    <div className="pl-desc">{planetLine(item.sign)}</div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -191,7 +192,7 @@ export default function GroupsPage() {
               {cohort.overlay.faultLines.map((line: any) => (
                 <div key={line.planet} style={{ marginBottom: 12 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span className="glyph">{BODY_GLYPH[line.planet]}</span>
+                    <div className="glyph-sq" style={{ fontSize: ".9rem" }}>{BODY_GLYPH[line.planet]}</div>
                     <strong style={{ color: "var(--teal)" }}>{line.planet.toUpperCase()}</strong>
                   </div>
                   {line.groups.map((g: any) => (

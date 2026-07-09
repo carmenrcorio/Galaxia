@@ -2,35 +2,102 @@
 
 import { computeNatalChart } from "@galaxia/astro";
 import { useState } from "react";
-import { type BirthFormInput, buildBirthInput } from "../lib/birth";
-import { geocodeCity } from "../lib/geocode";
+import { buildBirthInput, formatDateForConfirmation, type BirthFormInput } from "../lib/birth";
+import { geocodeCity, searchPlaces, type GeoCandidate } from "../lib/geocode";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { CustomCheck } from "./custom-check";
 import { Spinner } from "./spinner";
 
-interface PersonRow { id: string; display_name: string; relation: string; is_minor: boolean; birth_precision: "exact"|"date"|"year"; birth_date?: string|null; birth_time?: string|null; birth_place?: string|null; birth_lat?: number|null; birth_lng?: number|null; }
+const MONTHS = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
+
+interface PersonRow {
+  id: string; display_name: string; relation: string; is_minor: boolean;
+  birth_precision: "exact"|"date"|"year";
+  birth_date?: string|null; birth_time?: string|null;
+  birth_place?: string|null; birth_lat?: number|null; birth_lng?: number|null;
+  tz_offset_min?: number|null;
+}
 interface Props { person: PersonRow; userId: string; onSaved: () => void; onDeleted: () => void; }
+
+/** Parse stored "YYYY-MM-DD" → {month,day,year} */
+function parseDateStr(s: string | null | undefined): { month?: number; day?: number; year?: number } {
+  if (!s) return {};
+  const [yr, mo, dy] = s.slice(0, 10).split("-").map(Number);
+  return { year: yr, month: mo, day: dy };
+}
+
+/** Parse stored "HH:MM:SS" → {hour, minute} */
+function parseTimeStr(s: string | null | undefined): { hour?: number; minute?: number } {
+  if (!s) return {};
+  const [hr, mn] = s.slice(0, 5).split(":").map(Number);
+  return { hour: hr, minute: mn };
+}
 
 export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
   const supabase = createSupabaseBrowserClient();
-  const [open, setOpen]               = useState(false);
+  const [open, setOpen]             = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [saving, setSaving]           = useState(false);
-  const [deleting, setDeleting]       = useState(false);
-  const [status, setStatus]           = useState<string|null>(null);
+  const [saving, setSaving]         = useState(false);
+  const [deleting, setDeleting]     = useState(false);
+  const [status, setStatus]         = useState<string|null>(null);
   const [displayName, setDisplayName] = useState(person.display_name);
-  const [relation, setRelation]       = useState(person.relation);
-  const [isMinor, setIsMinor]         = useState(person.is_minor);
-  const [input, setInput]             = useState<BirthFormInput>({ precision: person.birth_precision, date: person.birth_date?.slice(0,10) ?? "", time: person.birth_time?.slice(0,5) ?? "", year: person.birth_precision === "year" ? (person.birth_date?.slice(0,4) ?? "") : "", birthPlace: person.birth_place ?? "", lat: person.birth_lat != null ? String(person.birth_lat) : "", lng: person.birth_lng != null ? String(person.birth_lng) : "" });
+  const [relation, setRelation]     = useState(person.relation);
+  const [isMinor, setIsMinor]       = useState(person.is_minor);
+
+  // Populate structured fields from stored data
+  const storedDate = parseDateStr(person.birth_date);
+  const storedTime = parseTimeStr(person.birth_time);
+  const [input, setInput] = useState<BirthFormInput>({
+    precision: person.birth_precision,
+    ...storedDate,
+    ...storedTime,
+    yearOnly: person.birth_precision === "year" ? (storedDate.year ?? undefined) : undefined,
+    birthPlace:  person.birth_place ?? "",
+    lat:         person.birth_lat  != null ? String(person.birth_lat)  : "",
+    lng:         person.birth_lng  != null ? String(person.birth_lng)  : "",
+    tzOffsetMin: person.tz_offset_min != null ? person.tz_offset_min : undefined,
+  });
+
+  // City search state
+  const [cityQuery,    setCityQuery]    = useState(person.birth_place ?? "");
+  const [searching,    setSearching]    = useState(false);
+  const [candidates,   setCandidates]   = useState<GeoCandidate[]>([]);
+  const [searchError,  setSearchError]  = useState<string|null>(null);
+
+  const resolvedPlace = Boolean(input.birthPlace && input.lat && input.lng);
+
+  async function handleSearch() {
+    const q = cityQuery.trim();
+    if (!q) return;
+    setSearching(true); setCandidates([]); setSearchError(null);
+    const dateForGeo = (input.year && input.month && input.day)
+      ? new Date(Date.UTC(input.year, input.month - 1, input.day, 12, 0, 0))
+      : undefined;
+    const results = await searchPlaces(q, dateForGeo);
+    setSearching(false);
+    if (!results.length) setSearchError(`No places found for "${q}".`);
+    else setCandidates(results);
+  }
+
+  function selectCandidate(c: GeoCandidate) {
+    setInput(prev => ({ ...prev, birthPlace: c.label, lat: String(c.lat), lng: String(c.lng), tzOffsetMin: c.tzOffset, tzId: c.tzId }));
+    setCityQuery(c.label); setCandidates([]);
+  }
 
   async function save() {
     if (!displayName.trim()) { setStatus("Name is required."); return; }
     setSaving(true); setStatus(null);
     try {
+      // If city present but no coords, try auto-geocode as fallback
       let fi = { ...input };
       if (input.birthPlace?.trim() && !input.lat && !input.lng) {
-        const birthDateForTz = input.date ? new Date(`${input.date}T12:00:00Z`) : new Date();
-        const geo = await geocodeCity(input.birthPlace, birthDateForTz);
+        const dateForGeo = (input.year && input.month && input.day)
+          ? new Date(Date.UTC(input.year, input.month - 1, input.day, 12, 0, 0))
+          : undefined;
+        const geo = await geocodeCity(input.birthPlace, dateForGeo);
         if (geo) fi = { ...fi, lat: String(geo.lat), lng: String(geo.lng), tzOffsetMin: geo.tzOffset };
       }
       const built = buildBirthInput(fi);
@@ -63,19 +130,114 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
 
   if (!open) return <button className="pill-link" onClick={() => setOpen(true)} style={{ fontSize: 13 }}>Edit / delete</button>;
 
+  const currentYear = new Date().getFullYear();
+  const daysInMonth = (input.month && input.year) ? new Date(input.year, input.month, 0).getDate() : 31;
+
+  const displayDate = (input.precision !== "year" && input.month && input.day && input.year)
+    ? formatDateForConfirmation(input.month, input.day, input.year)
+    : null;
+
   return (
     <section className="glass-card" style={{ marginTop: 10 }}>
       <p className="eyebrow" style={{ marginBottom: 10 }}>Edit profile</p>
-      <div style={{ display: "grid", gap: 8 }}>
+      <div style={{ display: "grid", gap: 10 }}>
         <input className="field" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Display name" />
         <input className="field" value={relation}    onChange={e => setRelation(e.target.value)}    placeholder="Relation" />
         <CustomCheck checked={isMinor} onChange={setIsMinor} label="Minor" />
+
+        {/* Precision */}
         <div style={{ display: "flex", gap: 6 }}>
-          {(["exact","date","year"] as const).map(p => <button key={p} className="pill-link" style={{ fontSize: 12, borderColor: input.precision === p ? "rgba(230,174,108,.5)" : undefined }} onClick={() => setInput(prev => ({ ...prev, precision: p }))}>{p}</button>)}
+          {(["exact","date","year"] as const).map(p => (
+            <button key={p} className="pill-link"
+              style={{ fontSize: 12, borderColor: input.precision === p ? "rgba(230,174,108,.5)" : undefined, color: input.precision === p ? "var(--gold)" : undefined }}
+              onClick={() => setInput(prev => ({ ...prev, precision: p }))}>
+              {p}
+            </button>
+          ))}
         </div>
-        {input.precision === "year" ? <input className="field" value={input.year} onChange={e => setInput(p => ({ ...p, year: e.target.value }))} placeholder="Birth year (YYYY)" /> : <><input className="field" value={input.date} onChange={e => setInput(p => ({ ...p, date: e.target.value, lat:"", lng:"" }))} placeholder="Birth date (YYYY-MM-DD)" />{input.precision === "exact" ? <input className="field" value={input.time} onChange={e => setInput(p => ({ ...p, time: e.target.value }))} placeholder="Birth time (HH:MM)" /> : null}</>}
-        <input className="field" value={input.birthPlace ?? ""} onChange={e => setInput(p => ({ ...p, birthPlace: e.target.value, lat:"", lng:"" }))} placeholder="Birth city (geocoded on save)" />
+
+        {/* Year-only */}
+        {input.precision === "year" ? (
+          <input type="number" className="field" value={input.yearOnly ?? ""} min={1800} max={currentYear}
+            onChange={e => setInput(p => ({ ...p, yearOnly: e.target.value ? parseInt(e.target.value, 10) : undefined }))}
+            placeholder="Birth year (e.g. 1952)" />
+        ) : (
+          <>
+            {/* Structured date */}
+            <div>
+              <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginBottom: 4 }}>Birth date</p>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 2fr", gap: 5 }}>
+                <select className="field" value={input.month ?? ""} onChange={e => setInput(p => ({ ...p, month: e.target.value ? parseInt(e.target.value, 10) : undefined }))}>
+                  <option value="">Month</option>
+                  {MONTHS.map((m, i) => <option key={m} value={i+1}>{m}</option>)}
+                </select>
+                <select className="field" value={input.day ?? ""} onChange={e => setInput(p => ({ ...p, day: e.target.value ? parseInt(e.target.value, 10) : undefined }))}>
+                  <option value="">Day</option>
+                  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <select className="field" value={input.year ?? ""} onChange={e => setInput(p => ({ ...p, year: e.target.value ? parseInt(e.target.value, 10) : undefined }))}>
+                  <option value="">Year</option>
+                  {Array.from({ length: currentYear - 1799 }, (_, i) => currentYear - i).map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+              {displayDate ? <p style={{ fontSize: ".72rem", color: "var(--teal)", marginTop: 4 }}>✓ {displayDate}</p> : null}
+            </div>
+
+            {/* Exact time */}
+            {input.precision === "exact" ? (
+              <div>
+                <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginBottom: 4 }}>Birth time (local)</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
+                  <select className="field" value={input.hour ?? ""} onChange={e => setInput(p => ({ ...p, hour: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined }))}>
+                    <option value="">Hour</option>
+                    {Array.from({ length: 24 }, (_, i) => i).map(h => <option key={h} value={h}>{String(h).padStart(2,"0")}:xx</option>)}
+                  </select>
+                  <select className="field" value={input.minute ?? ""} onChange={e => setInput(p => ({ ...p, minute: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined }))}>
+                    <option value="">Minute</option>
+                    {Array.from({ length: 60 }, (_, i) => i).map(m => <option key={m} value={m}>{String(m).padStart(2,"0")}</option>)}
+                  </select>
+                </div>
+              </div>
+            ) : null}
+
+            {/* City search */}
+            <div>
+              <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginBottom: 4 }}>Birth city</p>
+              {resolvedPlace ? (
+                <div style={{ padding: "8px 10px", borderRadius: 10, background: "rgba(111,177,184,.08)", border: "1px solid rgba(111,177,184,.25)" }}>
+                  <p style={{ color: "var(--teal)", fontSize: ".8rem", fontWeight: 600, margin: "0 0 4px" }}>✓ {input.birthPlace}</p>
+                  <button type="button" className="pill-link" style={{ fontSize: ".7rem", padding: "2px 8px" }}
+                    onClick={() => { setInput(p => ({ ...p, birthPlace: "", lat: "", lng: "", tzOffsetMin: undefined })); setCityQuery(""); }}>
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "flex", gap: 5 }}>
+                    <input className="field" value={cityQuery}
+                      onChange={e => { setCityQuery(e.target.value); setCandidates([]); setSearchError(null); }}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); void handleSearch(); } }}
+                      placeholder="City, State / Country" />
+                    <button type="button" className="pill-link" onClick={handleSearch} disabled={searching || !cityQuery.trim()} style={{ flexShrink: 0, gap: 5 }}>
+                      {searching && <Spinner size={11} />}
+                      {searching ? "…" : "Search"}
+                    </button>
+                  </div>
+                  {searchError ? <p className="error" style={{ fontSize: ".7rem", marginTop: 4 }}>{searchError}</p> : null}
+                  {candidates.map((c, i) => (
+                    <button key={i} type="button" onClick={() => selectCandidate(c)}
+                      style={{ display: "block", width: "100%", textAlign: "left", background: "rgba(23,17,48,.8)", border: "1px solid rgba(183,154,216,.15)", borderRadius: 8, padding: "7px 10px", marginTop: 4, cursor: "pointer" }}>
+                      <span style={{ color: "var(--cream)", fontSize: ".8rem" }}>{c.label}</span>
+                      <span style={{ color: "var(--mist2)", fontSize: ".68rem", marginLeft: 6 }}>{c.lat.toFixed(4)}°</span>
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          </>
+        )}
       </div>
+
       <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
         <button className="btn-primary" onClick={save} disabled={saving} style={{ gap: 8 }}>
           {saving && <Spinner size={13} color="#1a1206" />}

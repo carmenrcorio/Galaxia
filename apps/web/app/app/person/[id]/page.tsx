@@ -482,7 +482,7 @@ export default function PersonProfilePage() {
       {/* ── Chart Wheel ── */}
       <section className="glass-card fade-in fade-in-delay-1">
         <p className="eyebrow" style={{ marginBottom: 14 }}>
-          {chart.precision === "exact" && chart.asc ? "Natal wheel · Placidus" : "Zodiac wheel"}
+          {chart.precision === "exact" && chart.asc ? "Natal wheel · Equal House" : "Zodiac wheel"}
         </p>
         <ChartWheel chart={chart} />
         {(chart.precision !== "exact" || !chart.asc) ? (
@@ -716,7 +716,7 @@ export default function PersonProfilePage() {
             <p className="eyebrow" style={{ margin: 0 }}>The twelve houses</p>
             <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllHouses(!housesAllOpen)}>{housesAllOpen ? "Collapse all" : "Expand all"}</button>
           </div>
-          <p className="muted" style={{ fontSize: ".72rem", marginBottom: 12 }}>Placidus · click a house to read it</p>
+          <p className="muted" style={{ fontSize: ".72rem", marginBottom: 12 }}>Equal House · click a house to read it</p>
           {Array.from({ length: 12 }, (_, i) => i + 1).map(h => {
             const hk = h as HouseKey;
             const hm = houseMeaning(hk)!;

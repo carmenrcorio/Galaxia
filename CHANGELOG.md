@@ -6,6 +6,32 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-10 (Vela presentation bugs)
+
+**[FIXED] Vela's suggested follow-ups rendered as raw "→ " text inside the answer bubble.**
+
+The system prompt asks the model to end with up to 3 follow-up prompts, each on its own line prefixed "→ ". The web client never parsed them, so newlines collapsed and replies ended in a run-on string of arrows.
+
+- New `apps/web/lib/vela-parse.ts` — `splitVelaReply()`: everything before the first "→ " line is the answer body; each "→ " line is one suggestion (max 3). No "→ " lines → no chips; suggestions are never fabricated.
+- `apps/web/app/app/vela/page.tsx`:
+  - Body renders as the chat bubble (now `white-space: pre-wrap`, so the model's real line breaks survive). Suggestions render **below** the bubble as tappable pill chips — translucent violet border `rgba(183,154,216,.22)`, mist text, no gold (secondary to the answer).
+  - Tapping a chip sends it as the user's next message.
+  - Streaming: mid-stream the split is applied on every chunk, so a half-written "→ …" line stays buffered and is only revealed as a chip after the stream ends.
+  - Chips show under the **latest** Vela answer only — earlier suggestions are stale once the conversation moves on.
+- Persistence: new migration `20260710011000_add_message_suggestions.sql` adds `messages.suggestions jsonb`. The edge function now stores the body and the suggestions separately, so a resumed thread renders correctly. Legacy rows (raw reply with arrows in `body`) are split client-side on load. If the migration isn't applied yet, the function falls back to persisting the raw reply — nothing breaks, the client parser still handles it.
+- Edge function history context now feeds the model answer bodies only (strips legacy "→ " lines).
+
+**[FIXED] The safety/consent line rendered per-message.**
+"Private by default · no private notes in shared mode · consent required for shared threads" was a system chat bubble re-inserted on every thread reset. It is now a single quiet caption under the thread header ("Asking about X"), shown once. The system-bubble message type is gone from the page.
+
+**[FIXED] Chat bubble CSS never matched.** `globals.css` styled `.bubble.user` / `.bubble.vela` but the page renders `bubble bubble-user` / `bubble bubble-vela`, so the user/vela variant styles (alignment, gold/violet tints, sender label treatment) silently never applied. Selectors now cover both forms.
+
+**Requires redeploy:** `supabase functions deploy vela-chat` (project `eigfvribtntbxyjutsma`), and `supabase db push` for the `messages.suggestions` migration — apply the migration first, though order is safe either way thanks to the insert fallback.
+
+**Skipped:** `apps/mobile/app/vela.tsx` still renders replies raw (same arrow symptom on mobile); out of scope for this web fix, logged for the mobile pass. No unit-test home exists for `apps/web` lib code (web `test` script is a stub) — parser verified by direct execution of the edge cases instead.
+
+---
+
 ## 2026-07-09 (Phase 0 — real Placidus, stop fabricating)
 
 **[FIXED] House cusps were Equal House labeled "Placidus" — real Placidus implemented.**

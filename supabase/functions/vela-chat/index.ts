@@ -41,6 +41,27 @@ OUTPUT
 const CRISIS_PATTERN =
   /\b(suicid(e|al)|kill myself|self harm|self-harm|hurt myself|end my life|want to die|homicid(e|al)|kill them|abuse)\b/i;
 
+/**
+ * Split a Vela reply into the answer body and the "→ " suggested follow-ups.
+ * Mirrors apps/web/lib/vela-parse.ts (edge functions cannot import from apps).
+ * Body and suggestions are persisted separately so resumed threads render
+ * the answer bubble and the suggestion chips correctly.
+ */
+function splitVelaReply(text: string): { body: string; suggestions: string[] } {
+  const lines = text.split("\n");
+  const firstArrow = lines.findIndex((l) => l.trimStart().startsWith("→"));
+  if (firstArrow === -1) return { body: text.trim(), suggestions: [] };
+  const body = lines.slice(0, firstArrow).join("\n").trim();
+  const suggestions = lines
+    .slice(firstArrow)
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("→"))
+    .map((l) => l.replace(/^→\s*/, "").trim())
+    .filter(Boolean)
+    .slice(0, 3);
+  return { body, suggestions };
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function jsonResponse(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -348,7 +369,12 @@ Deno.serve(async (req) => {
       .limit(12);
     const history = (historyRows ?? [])
       .reverse()
-      .map((r) => ({ role: r.sender === "vela" ? "assistant" as const : "user" as const, content: r.body as string }));
+      .map((r) => ({
+        role: r.sender === "vela" ? "assistant" as const : "user" as const,
+        // Legacy vela rows may still carry "→ " lines in the body — keep the
+        // model's conversation context to answer bodies only.
+        content: r.sender === "vela" ? (splitVelaReply(r.body as string).body || (r.body as string)) : (r.body as string)
+      }));
 
     // Persist the user message
     await supabase.from("messages").insert({ thread_id: threadId, sender: "user", body: userMessage });
@@ -460,13 +486,27 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Persist Vela's reply
-          if (fullReply.trim()) {
-            await supabase.from("messages").insert({
-              thread_id: threadId,
-              sender:    "vela",
-              body:      fullReply.trim()
+          // Persist Vela's reply: answer body and "→ " follow-up suggestions
+          // are stored separately so resumed threads render correctly.
+          const trimmedReply = fullReply.trim();
+          if (trimmedReply) {
+            const { body, suggestions } = splitVelaReply(trimmedReply);
+            const { error: insertError } = await supabase.from("messages").insert({
+              thread_id:   threadId,
+              sender:      "vela",
+              body:        body || trimmedReply,
+              suggestions: suggestions.length > 0 ? suggestions : null
             });
+            if (insertError) {
+              // If the suggestions column doesn't exist yet (migration not
+              // applied), fall back to storing the raw reply — the client's
+              // parser still splits it on load.
+              await supabase.from("messages").insert({
+                thread_id: threadId,
+                sender:    "vela",
+                body:      trimmedReply
+              });
+            }
           }
 
           controller.close();

@@ -27,7 +27,8 @@ import {
   type HouseKey
 } from "../../../../lib/house-interpretations";
 import { CHART_ENGINE_VERSION, getPreferredHouseSystem, houseSystemLabelForChart } from "../../../../lib/house-system";
-import { fetchRecord, fetchVelaPins, type RecordEntry } from "../../../../lib/record";
+import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, type RecordEntry } from "../../../../lib/record";
+import { ThreadMenu } from "../../../../components/thread-menu";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 
 interface PersonRow {
@@ -270,14 +271,19 @@ const RECORD_META: Record<string, { label: string; color: string }> = {
   conversation:    { label: "Vela conversation", color: "rgba(183,154,216,.4)" },
 };
 
-function RecordItem({ entry }: { entry: RecordEntry; personName: string }) {
+function RecordItem({ entry, onArchive }: { entry: RecordEntry; personName: string; onArchive?: (entryId: string) => void }) {
   const meta = RECORD_META[entry.kind] ?? RECORD_META.note;
   const when = new Date(entry.createdAt);
   return (
     <div style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: `2px solid ${meta.color}` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 4, alignItems: "center" }}>
         <span style={{ fontSize: ".62rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--mist2)" }}>{meta.label}</span>
-        <small className="muted" style={{ fontSize: ".68rem", flexShrink: 0 }}>{when.toLocaleDateString()}</small>
+        <span style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <small className="muted" style={{ fontSize: ".68rem" }}>{when.toLocaleDateString()}</small>
+          {entry.kind === "conversation" && onArchive ? (
+            <ThreadMenu threadId={entry.id.replace(/^thread-/, "")} onArchive={() => onArchive(entry.id)} />
+          ) : null}
+        </span>
       </div>
       <p style={{ margin: 0, color: "var(--cream)", lineHeight: 1.55, fontSize: ".86rem" }}>{entry.body}</p>
       {entry.kind === "conversation" && entry.href ? (
@@ -326,6 +332,7 @@ export default function PersonProfilePage() {
   const [engineVersion, setEngineVersion] = useState<number>(CHART_ENGINE_VERSION);
   const [record, setRecord]         = useState<RecordEntry[]>([]);
   const [velaPins, setVelaPins]     = useState<RecordEntry[]>([]);
+  const [archivedThreads, setArchivedThreads] = useState<RecordEntry[]>([]);
   const [noteDraft, setNoteDraft]   = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
   const [status, setStatus]         = useState<string | null>(null);
@@ -511,13 +518,30 @@ export default function PersonProfilePage() {
     setLoading(false);
   }
 
-  /** Load the person's Record (all note kinds + conversations) and Vela pins. */
+  /** Load the person's Record (all note kinds + active conversations), Vela pins, and archived threads. */
   async function loadRecord(uid: string, actualId: string) {
-    const [rec, pins] = await Promise.all([
+    const [rec, pins, archived] = await Promise.all([
       fetchRecord(supabase, uid, { personId: actualId }, 40).catch(() => [] as RecordEntry[]),
-      fetchVelaPins(supabase, uid, actualId, 2).catch(() => [] as RecordEntry[])
+      fetchVelaPins(supabase, uid, actualId, 2).catch(() => [] as RecordEntry[]),
+      fetchArchivedThreads(supabase, uid, actualId, 40).catch(() => [] as RecordEntry[])
     ]);
-    setRecord(rec); setVelaPins(pins);
+    setRecord(rec); setVelaPins(pins); setArchivedThreads(archived);
+  }
+
+  const threadIdFromEntry = (entryId: string) => entryId.replace(/^thread-/, "");
+
+  async function archiveThread(entryId: string) {
+    const tid = threadIdFromEntry(entryId);
+    setRecord(prev => prev.filter(e => e.id !== entryId)); // hide from Record immediately
+    await setThreadStatus(supabase, tid, "archived");
+    if (userId) await loadRecord(userId, person?.id ?? personId);
+  }
+
+  async function unarchiveThread(entryId: string) {
+    const tid = threadIdFromEntry(entryId);
+    setArchivedThreads(prev => prev.filter(e => e.id !== entryId));
+    await setThreadStatus(supabase, tid, "active");
+    if (userId) await loadRecord(userId, person?.id ?? personId);
   }
 
   async function saveNote() {
@@ -598,7 +622,7 @@ export default function PersonProfilePage() {
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <Link href="/app/compare" className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
+        <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
         <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Ask Vela</Link>
         <EditPersonPanel person={person} userId={userId ?? ""} onSaved={() => loadProfile(userId ?? "")} onDeleted={() => router.push("/app")} />
       </div>
@@ -1050,7 +1074,7 @@ export default function PersonProfilePage() {
         </button>
         {record.length > 0 ? (
           <div style={{ marginTop: 14, display: "grid", gap: 8 }}>
-            {record.map(entry => <RecordItem key={entry.id} entry={entry} personName={person.display_name} /> )}
+            {record.map(entry => <RecordItem key={entry.id} entry={entry} personName={person.display_name} onArchive={archiveThread} /> )}
           </div>
         ) : (
           <p className="muted" style={{ fontSize: ".8rem", marginTop: 12 }}>
@@ -1058,6 +1082,28 @@ export default function PersonProfilePage() {
           </p>
         )}
       </section>
+
+      {/* ── Past conversations (archived threads) ── */}
+      {archivedThreads.length > 0 ? (
+        <section className="glass-card fade-in fade-in-delay-3">
+          <p className="eyebrow" style={{ marginBottom: 4 }}>Past conversations</p>
+          <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>Archived Vela threads about {person.display_name}. Nothing is ever deleted.</p>
+          <div style={{ display: "grid", gap: 8 }}>
+            {archivedThreads.map(entry => (
+              <div key={entry.id} style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: "2px solid rgba(183,154,216,.25)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ margin: 0, color: "var(--mist)", fontSize: ".84rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.body}</p>
+                  <small className="muted" style={{ fontSize: ".68rem" }}>{new Date(entry.createdAt).toLocaleDateString()}</small>
+                </div>
+                <span style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  {entry.href ? <Link href={entry.href as never} className="pill-link" style={{ fontSize: ".74rem" }}>Resume</Link> : null}
+                  <button className="pill-link" style={{ fontSize: ".74rem" }} onClick={() => unarchiveThread(entry.id)}>Unarchive</button>
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {status ? <p className="error">{status}</p> : null}
     </main>

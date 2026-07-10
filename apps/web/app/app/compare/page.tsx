@@ -14,7 +14,8 @@
 
 import { compareGenerational, computeSynastry, type GenSignature, type NatalChart } from "@galaxia/astro";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { Spinner } from "../../../components/spinner";
 import { SIGN_VIBE } from "../../../lib/design";
@@ -158,7 +159,17 @@ function whatTheyNeed(
 }
 
 export default function ComparePage() {
+  // useSearchParams requires a Suspense boundary for this route.
+  return (
+    <Suspense fallback={<main className="app-content"><div className="skeleton skeleton-title" /></main>}>
+      <ComparePageInner />
+    </Suspense>
+  );
+}
+
+function ComparePageInner() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const searchParams = useSearchParams();
   const [userId, setUserId]       = useState<string | null>(null);
   const [people, setPeople]       = useState<PersonLite[]>([]);
   const [personAId, setPersonAId] = useState<string | null>(null);
@@ -182,10 +193,14 @@ export default function ComparePage() {
         .eq("owner_id", user.id).order("created_at", { ascending: false });
       const rows = (data ?? []) as PersonLite[];
       setPeople(rows);
-      if (rows[0]) setPersonAId(rows[0].id);
-      if (rows[1]) setPersonBId(rows[1].id);
+      // BUG B: pre-fill Person A from ?a=<personId> when navigating in from a profile.
+      const preA = searchParams.get("a");
+      const aId = preA && rows.some(r => r.id === preA) ? preA : rows[0]?.id ?? null;
+      if (aId) setPersonAId(aId);
+      const bRow = rows.find(r => r.id !== aId);
+      if (bRow) setPersonBId(bRow.id);
     });
-  }, [supabase]);
+  }, [supabase, searchParams]);
 
   const selectedA = people.find(p => p.id === personAId) ?? null;
   const selectedB = people.find(p => p.id === personBId) ?? null;

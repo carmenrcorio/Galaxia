@@ -70,8 +70,8 @@ export async function fetchRecord(
     };
   });
 
-  // Scoped conversations
-  let tQuery = supabase.from("threads").select("id, mode, created_at").eq("owner_id", ownerId).order("created_at", { ascending: false }).limit(limit);
+  // Scoped conversations — active only (archived live under "Past conversations")
+  let tQuery = supabase.from("threads").select("id, mode, created_at, status").eq("owner_id", ownerId).eq("status", "active").order("created_at", { ascending: false }).limit(limit);
   if ("personId" in scope) tQuery = tQuery.eq("subject_person", scope.personId);
   else if ("groupId" in scope) tQuery = tQuery.eq("group_id", scope.groupId);
   else tQuery = tQuery.eq("pair_low", scope.pairLow).eq("pair_high", scope.pairHigh);
@@ -90,6 +90,39 @@ export async function fetchRecord(
   }));
 
   return [...noteEntries, ...convEntries].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
+/** Archived conversations for a person (subject or in a pair). Powers "Past conversations". */
+export async function fetchArchivedThreads(
+  supabase: SupabaseClient,
+  ownerId: string,
+  personId: string,
+  limit = 40
+): Promise<RecordEntry[]> {
+  const { data: threads } = await supabase
+    .from("threads")
+    .select("id, mode, created_at")
+    .eq("owner_id", ownerId)
+    .eq("status", "archived")
+    .or(`subject_person.eq.${personId},pair_low.eq.${personId},pair_high.eq.${personId}`)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return Promise.all((threads ?? []).map(async (t) => {
+    const { data: msg } = await supabase.from("messages").select("body").eq("thread_id", t.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    return {
+      id: `thread-${t.id}`,
+      kind: "conversation" as const,
+      body: (msg?.body as string | undefined)?.slice(0, 120) ?? "Vela conversation",
+      createdAt: t.created_at as string,
+      href: `/app/vela?threadId=${t.id}`,
+      mode: (t.mode as "ask" | "shared")
+    };
+  }));
+}
+
+/** Set a thread's status. Never deletes. */
+export async function setThreadStatus(supabase: SupabaseClient, threadId: string, status: "active" | "archived"): Promise<void> {
+  await supabase.from("threads").update({ status }).eq("id", threadId);
 }
 
 /**

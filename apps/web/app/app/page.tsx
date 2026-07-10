@@ -21,6 +21,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../components/initial-avatar";
+import { ThreadMenu } from "../../components/thread-menu";
+import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 
 interface PersonRow {
@@ -350,7 +352,7 @@ export default function AppHomePage() {
         supabase.from("profiles").select("display_name").eq("id", uid).single(),
         supabase.from("people").select("id, display_name, relation, birth_precision, is_self").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
-        supabase.from("threads").select("id, mode").eq("owner_id", uid).order("created_at", { ascending: false }).limit(6)
+        supabase.from("threads").select("id, mode").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6)
       ]);
 
       setWelcomeName(profile?.display_name ?? email.split("@")[0] ?? "stargazer");
@@ -400,6 +402,11 @@ export default function AppHomePage() {
       }
     } catch (err) { setHomeStatus(err instanceof Error ? err.message : "Unable to load."); }
     finally { setLoading(false); }
+  }
+
+  async function archiveThread(threadId: string) {
+    setThreadChips(prev => prev.filter(tc => tc.id !== threadId)); // hide immediately
+    await setThreadStatus(supabase, threadId, "archived");
   }
 
   const selfPerson = people.find(p => p.is_self);
@@ -504,10 +511,13 @@ export default function AppHomePage() {
           <p className="eyebrow">Resume a thread</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
             {threadChips.map(tc => (
-              <Link key={tc.id} href={`/app/vela?threadId=${tc.id}`} className="pill-link" style={{ gap: 8 }}>
-                <span style={{ color: "var(--gold-soft)", fontSize: ".65rem", textTransform: "uppercase", letterSpacing: ".08em" }}>{tc.mode}</span>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220, fontSize: ".82rem" }}>{tc.preview}</span>
-              </Link>
+              <span key={tc.id} className="pill-link" style={{ gap: 8, display: "inline-flex", alignItems: "center" }}>
+                <Link href={`/app/vela?threadId=${tc.id}`} style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none", color: "inherit" }}>
+                  <span style={{ color: "var(--gold-soft)", fontSize: ".65rem", textTransform: "uppercase", letterSpacing: ".08em" }}>{tc.mode}</span>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200, fontSize: ".82rem" }}>{tc.preview}</span>
+                </Link>
+                <ThreadMenu threadId={tc.id} onArchive={archiveThread} />
+              </span>
             ))}
           </div>
         </section>

@@ -6,6 +6,25 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-10 (Pricing Part 7 emails + FAQ + QA bugs + archive threads)
+
+**Migration `20260710183000_threads_status_and_trial_emails.sql`** (applied via MCP): `threads.status` (`active`|`archived`, default active) + a `trial_emails(user_id, kind)` idempotency table (service-role only).
+
+**Part 7 — trial emails.** `apps/web/lib/emails.ts` renders all five emails **verbatim** from copy §3, except Day-11 which uses the approved card-optional rewrite (no "you'll be charged"; "your galaxy pauses until you continue"). `sendEmail` posts to Resend and **no-ops + logs when `RESEND_API_KEY` is absent**. `apps/web/app/api/cron/trial-emails/route.ts` is a daily, `CRON_SECRET`-gated handler (GET/POST) that evaluates every trialing user and sends whichever email is due, once (idempotent). Windows: day1 (age <3d, ≥1 person), day4_one (age 3–8d, exactly 1 person — the at-risk branch), day4_multi (age 3–8d, ≥2), day11 (~3d before trial end), day14 (trial ended, still trialing). Every count (people/notes/threads/groups) and the person name are **real per-user values**; nothing fabricated.
+- **Not wired to a schedule (reported):** no `vercel.json` added (constraint + ENGINEERING §2). To activate: set `CRON_SECRET` + `RESEND_API_KEY` (and optional `RESEND_FROM`), then schedule the route daily via a Vercel cron (Vercel auto-sends `Authorization: Bearer <CRON_SECRET>`) or Supabase `pg_cron`. Until then the route returns 503 (no secret) and never sends.
+
+**Item 2 — FAQ.** Replaced the stale "When can I use it?" answer verbatim with "Available now on the web at galaxia.app. iOS and Android are in development. Sign up today and your account works across all platforms when the mobile apps launch." Additive text-only edit to `page.tsx`; no section/animation/other copy touched.
+
+**Bug A — /welcome duplicate self.** On load, `/welcome` now checks for an existing `is_self` person. If one exists, the "You first" create form is replaced with a "You're in your sky" panel linking to the existing chart; `saveSelf` also hard-guards against creating a second self. Adding other people still works.
+
+**Bug B — Compare carries the person.** The profile "Compare" button now links to `/app/compare?a=<personId>`. Compare reads `useSearchParams()` (wrapped in a Suspense boundary) and pre-fills Person A from `a`, choosing a different Person B.
+
+**Archive threads.** New `ThreadMenu` (⋯ → Resume / Archive) on the home "Resume a thread" chips and on the person Record's conversation entries. Archiving sets `threads.status='archived'` (never deletes) and hides the thread from default lists. The person profile gains a **"Past conversations"** section listing archived threads with Resume + Unarchive. `lib/record.ts` filters active threads in `fetchRecord` and adds `fetchArchivedThreads` + `setThreadStatus`.
+
+**Skipped/pending:** Stripe (Part 3) still needs keys; the trial-email cron needs `CRON_SECRET`/`RESEND_API_KEY` + a scheduler; mobile "Galaxia+/Free" display copy still deferred.
+
+---
+
 ## 2026-07-10 (Minor-safety gate fix + Pricing Part 5 & 6)
 
 **[FIXED] Minor safety gate was too broad — blocked the core parenting use case.**

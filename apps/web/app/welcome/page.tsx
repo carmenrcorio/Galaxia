@@ -325,7 +325,7 @@ export default function WelcomePage() {
   const [personRelation, setPersonRelation] = useState<Relation>("friend");
   const [personMinor, setPersonMinor] = useState(false);
   const [personInput, setPersonInput] = useState<BirthFormInput>(baseInput);
-  const [people, setPeople]     = useState<Array<{ id: string; display_name: string; relation: string; birth_precision: string }>>([]);
+  const [people, setPeople]     = useState<Array<{ id: string; display_name: string; relation: string; birth_precision: string; is_self: boolean }>>([]);
   const [savingSelf, setSavingSelf]     = useState(false);
   const [savingPerson, setSavingPerson] = useState(false);
   const [status, setStatus] = useState<{ text: string; ok: boolean } | null>(null);
@@ -339,7 +339,7 @@ export default function WelcomePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      const { data: peopleRows } = await supabase.from("people").select("id, display_name, relation, birth_precision").eq("owner_id", user.id).order("created_at", { ascending: false });
+      const { data: peopleRows } = await supabase.from("people").select("id, display_name, relation, birth_precision, is_self").eq("owner_id", user.id).order("created_at", { ascending: false });
       setPeople(peopleRows ?? []);
     };
     void load();
@@ -347,9 +347,12 @@ export default function WelcomePage() {
 
   const fetchPeople = async () => {
     if (!userId) return;
-    const { data } = await supabase.from("people").select("id, display_name, relation, birth_precision").eq("owner_id", userId).order("created_at", { ascending: false });
+    const { data } = await supabase.from("people").select("id, display_name, relation, birth_precision, is_self").eq("owner_id", userId).order("created_at", { ascending: false });
     setPeople(data ?? []);
   };
+
+  // BUG A: never show the create-self form to someone who already has a self.
+  const selfPerson = people.find(p => p.is_self) ?? null;
 
   const persistPerson = async ({
     displayName, relation, isSelf, isMinor, input
@@ -407,6 +410,8 @@ export default function WelcomePage() {
   };
 
   const saveSelf = async () => {
+    // BUG A: never create a second self-profile.
+    if (selfPerson) { setStatus({ text: "You're already in your sky. Edit your profile from your chart.", ok: false }); return; }
     setSavingSelf(true); setStatus(null);
     try {
       const natal = await persistPerson({ displayName: selfName, relation: "self", isSelf: true, isMinor: false, input: selfInput });
@@ -447,16 +452,29 @@ export default function WelcomePage() {
           <p className="muted">Start with yourself, then add the people at the center of your life.</p>
         </div>
 
-        {/* You first */}
-        <section className="glass-card fade-in">
-          <p className="eyebrow">You first</p>
-          <input className="field" value={selfName} onChange={e => setSelfName(e.target.value)} placeholder="Your display name" style={{ marginBottom: 12, borderRadius: 14 }} />
-          <BirthFields input={selfInput} onChange={setSelfInput} />
-          <button className="btn-primary" style={{ marginTop: 14, gap: 8 }} disabled={!canSaveSelf || savingSelf} onClick={saveSelf}>
-            {savingSelf && <Spinner size={13} color="#1a1206" />}
-            {savingSelf ? "Saving chart…" : "Save my profile"}
-          </button>
-        </section>
+        {/* You first — but never offer to create a second self (BUG A) */}
+        {selfPerson ? (
+          <section className="glass-card fade-in">
+            <p className="eyebrow">You're in your sky</p>
+            <p className="muted" style={{ margin: "6px 0 12px" }}>
+              You've already added yourself as <strong style={{ color: "var(--cream)" }}>{selfPerson.display_name}</strong>. Edit your birth data from your chart — no need to add yourself again.
+            </p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <Link href={`/app/person/${selfPerson.id}`} className="btn-primary">View / edit my chart</Link>
+              <Link href="/app" className="pill-link">Open Galaxia Mea</Link>
+            </div>
+          </section>
+        ) : (
+          <section className="glass-card fade-in">
+            <p className="eyebrow">You first</p>
+            <input className="field" value={selfName} onChange={e => setSelfName(e.target.value)} placeholder="Your display name" style={{ marginBottom: 12, borderRadius: 14 }} />
+            <BirthFields input={selfInput} onChange={setSelfInput} />
+            <button className="btn-primary" style={{ marginTop: 14, gap: 8 }} disabled={!canSaveSelf || savingSelf} onClick={saveSelf}>
+              {savingSelf && <Spinner size={13} color="#1a1206" />}
+              {savingSelf ? "Saving chart…" : "Save my profile"}
+            </button>
+          </section>
+        )}
 
         {/* Add people */}
         <section className="glass-card fade-in fade-in-delay-1">

@@ -152,3 +152,13 @@ What this means in code:
 - A lookup or network failure surfaces as an error the user can read — never as an empty result, a zero, or "no results found" for an outage.
 - Uncertainty flags computed by the engine (`confident`, `possibleSigns`, `houseSystemFallbackReason`) must be respected by every surface that renders the data, including what is fed to Vela.
 - Regression tests assert against **external ground truth** (astro.com, Cafe Astrology), never the engine's own output.
+
+---
+
+## 13. The constellation reflects the record, never app usage
+
+**The map may reflect facts of the record — an active transit, a saved reading, a written note, an approaching solar return — but never app-usage frequency.**
+
+Edge weight or node emphasis that encodes "how often you open this person in the app" is a streak wearing a costume. It would quietly punish the healthiest relationships: the ones you don't need to check on. Every visual difference on the constellation must map to a real, inspectable event — click the edge and the reason is right there.
+
+This is a corollary of §12 (never fabricate) and the product's own constraint list (no streaks, no badges, no per-person score as a headline). A synastry score is time-invariant (two fixed birth charts produce one constant); it is a fact, not a trend, and must never be animated into a fake trajectory. What genuinely moves is transits against a natal chart and the notes a person writes — build every "living" surface from those.

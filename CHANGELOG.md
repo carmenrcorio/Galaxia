@@ -6,6 +6,30 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-10 (Pricing — Part 2 + Part 4: card-optional trial model + paywall UI)
+
+Stops before Stripe (Part 3). Amendments applied: card-optional trial; founding cap 300.
+
+**Part 2 — data model & shared entitlement.**
+- Migration `20260710163000_trial_model.sql` (applied to Galaxia `eigfvribtntbxyjutsma` via MCP): adds `subscription_status` (default `trialing`), `trial_ends_at`, `stripe_customer_id`, `stripe_subscription_id`, `current_period_end`, `plan`. `subscription_tier` kept but commented DEPRECATED and no longer read anywhere in web.
+- **Card-optional (Amendment 1):** signup still collects email + password only — no card, no Stripe at signup. A DB trigger `handle_new_user` (SECURITY DEFINER, on `auth.users` insert) creates the profile with `subscription_status='trialing'`, `trial_ends_at = now() + 14 days`. Works for web and mobile regardless of email-confirmation. A TODO in the migration notes the 90-day revisit of card-required.
+- **Backfill deviation (reported):** the spec suggested `trial_ends_at = created_at + 14 days`. Because middleware now redirects expired trials to `/subscribe` and checkout is stubbed until Part 3, dating from `created_at` would instantly soft-lock existing accounts (incl. the reviewer) with no way to subscribe. Backfilled to `now() + 14 days` instead. Verified: the one existing profile is `trialing` until 2026-07-24.
+- **One shared `hasAccess`** in `packages/core`: `active || lifetime || (trialing && trial_ends_at > now)`, plus `trialDaysRemaining`. `@galaxia/core` added to `apps/web` `transpilePackages` (permitted extension).
+- **Web middleware** enforces it server-side: `/app/*` and `/welcome` require access; expired → redirect `/subscribe`. `/account` and `/subscribe` stay reachable always (export/subscribe/cancel; data never deleted). Fail-open only when no profile row exists yet (trigger settling).
+- **Mobile revenue bug fixed (ENGINEERING §7):** `apps/mobile` entitlement-provider rewritten to read `subscription_status`/`trial_ends_at` and expose the shared `hasAccess`. The `setTier` self-grant (which let a user write themselves a paid plan) is **removed**, and the "Upgrade to Galaxia+ (debug)" button in mobile Settings is gone. Old per-count caps (people/day) are removed (non-gating shims kept so the other mobile screens compile during rollout).
+
+**Part 4 — paywall UI (static; no Stripe).**
+- New route `/subscribe` + `<Paywall />` (`components/paywall.tsx`), rendered over the cosmic background — looks like the landing, not a billing page. All copy **verbatim** from `galaxia-pricing-copy.md` §1: eyebrow "YOUR TRIAL HAS ENDED", Fraunces "Keep your galaxy.", the body line, the two price cards, the reassurance line, and the five included items. No tiers, no comparison table, no asterisks, no countdown, no fake scarcity.
+- **Annual pre-selected + "Best value":** `$89 /year`, `$7.42 a month · save 26%`; Monthly `$9.99 /month`.
+- Primary "Continue with Galaxia" → `POST /api/checkout` (**stub, 501** until Part 3; a neutral error shows if clicked).
+- **Founding block (Amendment 2):** rendered only when `NEXT_PUBLIC_FOUNDING_ENABLED === "true"` (off by default). Capped at **300** ("FOUNDING MEMBERS · 300 ONLY", "Three hundred people…"), remaining computed from a real DB count (`300 − count(status='lifetime')`), never faked.
+- **Calm trial banner** (`components/trial-banner.tsx`): shows only while `trialing` — "Trial ends {date} · N days left" + "Continue with Galaxia →". Added to the `/app` layout (persistent across app screens) and `/account`.
+- `/account`: quick actions now include a **Subscribe** button → `/subscribe`. `/account/subscription` left in place (neutral copy from Part 1), just no longer linked.
+
+**Skipped/deferred (reported):** Stripe wiring (Part 3), cancellation screen (Part 5), marketing pricing section + CTAs (Part 6), trial emails (Part 7) — all after this stop point. Mobile display copy still says "Galaxia+"/"Free" in a few screens (vela/compare/groups/index/onboarding); deferred to a dedicated mobile pass since mobile is not store-deployed and the revenue-bug + shared-entitlement requirements are met.
+
+---
+
 ## 2026-07-10 (Pricing — Part 1: remove every freemium remnant)
 
 Executing `design/galaxia-pricing-implementation-spec.md` Part 1, deployed on its own before the data model / paywall / Stripe. Two amendments apply to later parts (card-optional trial; 300 founding members) and are noted where relevant.

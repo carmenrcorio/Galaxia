@@ -4,7 +4,8 @@ export const publicEnv = {
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "",
   iosAppStoreUrl: process.env.NEXT_PUBLIC_IOS_APP_STORE_URL ?? "",
   androidPlayUrl: process.env.NEXT_PUBLIC_ANDROID_PLAY_URL ?? "",
-  testflightUrl: process.env.NEXT_PUBLIC_TESTFLIGHT_URL ?? ""
+  testflightUrl: process.env.NEXT_PUBLIC_TESTFLIGHT_URL ?? "",
+  foundingEnabled: process.env.NEXT_PUBLIC_FOUNDING_ENABLED === "true"
 };
 
 export const privateEnv = {

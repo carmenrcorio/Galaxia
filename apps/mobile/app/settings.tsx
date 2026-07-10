@@ -19,7 +19,7 @@ interface GroupLite {
 
 export default function SettingsScreen() {
   const { session } = useAuth();
-  const { tier, setTier, refresh } = useEntitlement();
+  const { status: subStatus, trialDaysLeft } = useEntitlement();
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [groups, setGroups] = useState<GroupLite[]>([]);
   const [status, setStatus] = useState<string | null>(null);
@@ -39,27 +39,19 @@ export default function SettingsScreen() {
     setGroups((groupRows ?? []) as GroupLite[]);
   };
 
-  const switchTier = async () => {
-    const nextTier = tier === "free" ? "plus" : "free";
-    await setTier(nextTier);
-    await refresh();
-    setStatus(nextTier === "plus" ? "Galaxia+ enabled (mock RevenueCat sync)." : "Switched to free tier.");
-  };
-
   return (
     <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink2 }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
       <Text style={{ color: tokens.colors.cream, fontSize: 30, fontWeight: "700" }}>Settings</Text>
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Subscription</Text>
-        <Text style={cardBody}>Current plan: {tier === "plus" ? "Galaxia+" : "Free"}</Text>
-        <Pressable onPress={switchTier} style={primaryButton}>
-          <Text style={{ color: tokens.colors.ink, textAlign: "center", fontWeight: "700" }}>
-            {tier === "plus" ? "Switch to Free (debug)" : "Upgrade to Galaxia+ (debug)"}
-          </Text>
-        </Pressable>
-        <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
-          RevenueCat wiring is scaffolded via `useEntitlement`; replace debug toggle with live purchase actions in production.
+        <Text style={cardBody}>Nothing here is locked. This is the whole product.</Text>
+        <Text style={cardBody}>
+          {subStatus === "trialing"
+            ? `14 days, everything included. ${trialDaysLeft} left in your trial.`
+            : subStatus === "canceled" || subStatus === "past_due"
+              ? "Your subscription has ended. Manage it on the web to continue."
+              : "You're subscribed. Manage your plan on the web."}
         </Text>
       </View>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { CosmicBackground } from "../../components/cosmic-background";
+import { TrialBanner } from "../../components/trial-banner";
 
 /**
  * App shell layout.
@@ -45,6 +46,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Content sits above CosmicBackground (z-index 2) */}
       <div style={{ position: "relative", zIndex: 2 }}>
+        <TrialBanner />
         {children}
       </div>
     </div>

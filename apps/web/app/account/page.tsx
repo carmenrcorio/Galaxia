@@ -6,6 +6,7 @@ import { CosmicBackground } from "../../components/cosmic-background";
 import { GetApp } from "../../components/get-app";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { SignOutButton } from "../../components/sign-out-button";
+import { TrialBanner } from "../../components/trial-banner";
 import { publicEnv } from "../../lib/env";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 
@@ -50,6 +51,8 @@ export default function AccountPage() {
         </nav>
       </header>
 
+      <TrialBanner />
+
       <main className="app-content">
         <div className="person-row fade-in" style={{ gap: 16 }}>
           <InitialAvatar name={displayName} size="lg" />
@@ -72,7 +75,7 @@ export default function AccountPage() {
           <p className="eyebrow" style={{ marginBottom: 12 }}>Quick actions</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
             <Link className="btn-primary" href="/app">Open Galaxia Mea</Link>
-            <Link className="pill-link" href="/account/subscription">Subscription</Link>
+            <Link className="pill-link" href="/subscribe">Subscribe</Link>
             <Link className="pill-link" href="/account/data">Your data</Link>
             {siteUrl ? <a className="pill-link" href={`${siteUrl}/account`}>Open in app</a> : null}
           </div>

@@ -1,43 +1,69 @@
+import { hasAccess, trialDaysRemaining, type SubscriptionStatus } from "@galaxia/core";
 import type { PropsWithChildren } from "react";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { cacheGet, cacheSet } from "../lib/cache";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./auth-provider";
 
-type Tier = "free" | "plus";
-
+/**
+ * Entitlement is now the shared card-optional trial model (packages/core
+ * `hasAccess`), not a free/plus tier. There is ONE product; nothing is gated on
+ * the number of people or messages. Access = active | lifetime | live trial.
+ *
+ * The previous `setTier` debug switch — which let a user grant themselves a paid
+ * plan by writing `subscription_tier` — is REMOVED (ENGINEERING.md §7 revenue
+ * bug). Status is set by signup (trial) and by the Stripe webhook only.
+ *
+ * The `@deprecated` fields below are non-gating compatibility shims so existing
+ * mobile screens keep compiling during the trial-model rollout. They no longer
+ * impose any limit; a follow-up mobile pass will delete them and the remaining
+ * "Galaxia+" display copy (mobile is not yet store-deployed).
+ */
 interface EntitlementContextValue {
-  tier: Tier;
-  peopleLimit: number;
-  dailyVelaLimit: number;
-  velaUsedToday: number;
-  canUseGroups: boolean;
-  canUseSharedSpaces: boolean;
-  canUseWebAccess: boolean;
-  canAddPerson: (currentPeopleCount: number) => boolean;
-  canSendVelaMessage: () => boolean;
-  recordVelaMessageSent: () => Promise<void>;
-  setTier: (nextTier: Tier) => Promise<void>;
+  status: SubscriptionStatus;
+  trialEndsAt: string | null;
+  /** The single source of truth: can this user use the product right now. */
+  hasAccess: boolean;
+  trialDaysLeft: number;
   refresh: () => Promise<void>;
-}
 
-const TODAY_KEY = () => new Date().toISOString().slice(0, 10);
+  /** @deprecated non-gating shim — derived from hasAccess, not settable. */
+  tier: "free" | "plus";
+  /** @deprecated no people cap exists. */
+  peopleLimit: number;
+  /** @deprecated no daily message cap exists. */
+  dailyVelaLimit: number;
+  /** @deprecated always 0; no per-day counting. */
+  velaUsedToday: number;
+  /** @deprecated use hasAccess. */
+  canUseGroups: boolean;
+  /** @deprecated use hasAccess. */
+  canUseSharedSpaces: boolean;
+  /** @deprecated use hasAccess. */
+  canUseWebAccess: boolean;
+  /** @deprecated no people cap. */
+  canAddPerson: (currentPeopleCount: number) => boolean;
+  /** @deprecated use hasAccess. */
+  canSendVelaMessage: () => boolean;
+  /** @deprecated no-op; no per-day counting. */
+  recordVelaMessageSent: () => Promise<void>;
+}
 
 const EntitlementContext = createContext<EntitlementContextValue | null>(null);
 
 export function EntitlementProvider({ children }: PropsWithChildren) {
   const { session } = useAuth();
-  const [tier, setTierState] = useState<Tier>("free");
-  const [velaUsedToday, setVelaUsedToday] = useState(0);
+  const [status, setStatus] = useState<SubscriptionStatus>("trialing");
+  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
 
   const refresh = async () => {
     if (!session?.user.id) return;
-    const [{ data: profile }, usage] = await Promise.all([
-      supabase.from("profiles").select("subscription_tier").eq("id", session.user.id).single(),
-      cacheGet<Record<string, number>>(`vela_usage:${session.user.id}`)
-    ]);
-    setTierState((profile?.subscription_tier as Tier) ?? "free");
-    setVelaUsedToday(usage?.[TODAY_KEY()] ?? 0);
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("subscription_status, trial_ends_at")
+      .eq("id", session.user.id)
+      .maybeSingle();
+    setStatus(((profile?.subscription_status as SubscriptionStatus) ?? "trialing"));
+    setTrialEndsAt((profile?.trial_ends_at as string | null) ?? null);
   };
 
   useEffect(() => {
@@ -45,37 +71,27 @@ export function EntitlementProvider({ children }: PropsWithChildren) {
     void refresh();
   }, [session?.user.id]);
 
-  const peopleLimit = tier === "plus" ? Number.POSITIVE_INFINITY : 5;
-  const dailyVelaLimit = tier === "plus" ? Number.POSITIVE_INFINITY : 12;
-
-  const value = useMemo<EntitlementContextValue>(
-    () => ({
-      tier,
-      peopleLimit,
-      dailyVelaLimit,
-      velaUsedToday,
-      canUseGroups: tier === "plus",
-      canUseSharedSpaces: tier === "plus",
-      canUseWebAccess: tier === "plus",
-      canAddPerson: (currentPeopleCount) => currentPeopleCount < peopleLimit,
-      canSendVelaMessage: () => velaUsedToday < dailyVelaLimit,
-      recordVelaMessageSent: async () => {
-        if (!session?.user.id) return;
-        const key = `vela_usage:${session.user.id}`;
-        const usage = (await cacheGet<Record<string, number>>(key)) ?? {};
-        usage[TODAY_KEY()] = (usage[TODAY_KEY()] ?? 0) + 1;
-        await cacheSet(key, usage);
-        setVelaUsedToday(usage[TODAY_KEY()]);
-      },
-      setTier: async (nextTier) => {
-        if (!session?.user.id) return;
-        await supabase.from("profiles").upsert({ id: session.user.id, subscription_tier: nextTier });
-        setTierState(nextTier);
-      },
-      refresh
-    }),
-    [dailyVelaLimit, peopleLimit, session?.user.id, tier, velaUsedToday]
-  );
+  const value = useMemo<EntitlementContextValue>(() => {
+    const access = hasAccess({ status, trialEndsAt });
+    return {
+      status,
+      trialEndsAt,
+      hasAccess: access,
+      trialDaysLeft: trialDaysRemaining(trialEndsAt),
+      refresh,
+      // deprecated shims — non-gating
+      tier: access ? "plus" : "free",
+      peopleLimit: Number.POSITIVE_INFINITY,
+      dailyVelaLimit: Number.POSITIVE_INFINITY,
+      velaUsedToday: 0,
+      canUseGroups: access,
+      canUseSharedSpaces: access,
+      canUseWebAccess: access,
+      canAddPerson: () => true,
+      canSendVelaMessage: () => access,
+      recordVelaMessageSent: async () => {}
+    };
+  }, [status, trialEndsAt, session?.user.id]);
 
   return <EntitlementContext.Provider value={value}>{children}</EntitlementContext.Provider>;
 }

@@ -1,3 +1,4 @@
+import { hasAccess } from "@galaxia/core";
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -23,17 +24,41 @@ export async function middleware(request: NextRequest) {
     data: { user }
   } = await supabase.auth.getUser();
 
-  const guarded = request.nextUrl.pathname.startsWith("/app") || request.nextUrl.pathname.startsWith("/account") || request.nextUrl.pathname.startsWith("/welcome");
-  if (!user && guarded) {
+  const path = request.nextUrl.pathname;
+  // Login required for the whole authed surface. /subscribe is authed too so a
+  // logged-out user can't land there.
+  const needsAuth =
+    path.startsWith("/app") || path.startsWith("/account") || path === "/welcome" || path === "/subscribe";
+  if (!user && needsAuth) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
+    url.searchParams.set("next", `${path}${request.nextUrl.search}`);
     return NextResponse.redirect(url);
+  }
+
+  // Entitlement gate: /app/* and /welcome require an active/lifetime plan or a
+  // live trial. /account and /subscribe stay reachable when the trial ends, so
+  // the user can always export their data or subscribe. Data is never deleted.
+  const accessGated = user && (path.startsWith("/app") || path === "/welcome");
+  if (accessGated) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("subscription_status, trial_ends_at")
+      .eq("id", user.id)
+      .maybeSingle();
+    // Fail-open only when there is genuinely no profile row yet (the new-user
+    // trigger is still settling). A row that exists is trusted.
+    if (profile && !hasAccess({ status: profile.subscription_status, trialEndsAt: profile.trial_ends_at })) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/subscribe";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/account/:path*", "/welcome"]
+  matcher: ["/app/:path*", "/account/:path*", "/welcome", "/subscribe"]
 };

@@ -210,8 +210,9 @@ const RECORD_META: Record<string, { label: string; color: string }> = {
 function RecordItem({ entry, onArchive }: { entry: RecordEntry; personName: string; onArchive?: (entryId: string) => void }) {
   const meta = RECORD_META[entry.kind] ?? RECORD_META.note;
   const when = new Date(entry.createdAt);
+  const withdrawn = Boolean(entry.withdrawnReason);
   return (
-    <div style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: `2px solid ${meta.color}` }}>
+    <div style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: `2px solid ${withdrawn ? "rgba(183,154,216,.2)" : meta.color}`, opacity: withdrawn ? .7 : 1 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 4, alignItems: "center" }}>
         <span style={{ fontSize: ".62rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--mist2)" }}>{meta.label}</span>
         <span style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
@@ -221,7 +222,11 @@ function RecordItem({ entry, onArchive }: { entry: RecordEntry; personName: stri
           ) : null}
         </span>
       </div>
-      <p style={{ margin: 0, color: "var(--cream)", lineHeight: 1.55, fontSize: ".86rem" }}>{entry.body}</p>
+      {withdrawn ? (
+        <p className="muted" style={{ margin: 0, lineHeight: 1.55, fontSize: ".82rem", fontStyle: "italic" }}>{entry.body}</p>
+      ) : (
+        <p style={{ margin: 0, color: "var(--cream)", lineHeight: 1.55, fontSize: ".86rem" }}>{entry.body}</p>
+      )}
       {entry.kind === "conversation" && entry.href ? (
         <Link href={entry.href as never} style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}>Reopen conversation →</Link>
       ) : null}
@@ -596,8 +601,8 @@ export default function PersonProfilePage() {
         {velaPins.length > 0 ? (
           <div style={{ display: "grid", gap: 8 }}>
             {velaPins.map(pin => (
-              <div key={pin.id} style={{ borderLeft: "2px solid rgba(183,154,216,.35)", paddingLeft: 12 }}>
-                <p style={{ margin: "0 0 4px", color: "var(--mist)", fontSize: ".86rem", lineHeight: 1.55 }}>{pin.body}</p>
+              <div key={pin.id} style={{ borderLeft: `2px solid ${pin.withdrawnReason ? "rgba(183,154,216,.15)" : "rgba(183,154,216,.35)"}`, paddingLeft: 12, opacity: pin.withdrawnReason ? .7 : 1 }}>
+                <p style={{ margin: "0 0 4px", color: pin.withdrawnReason ? "var(--mist2)" : "var(--mist)", fontStyle: pin.withdrawnReason ? "italic" : "normal", fontSize: ".86rem", lineHeight: 1.55 }}>{pin.body}</p>
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                   <small className="muted" style={{ fontSize: ".68rem" }}>{new Date(pin.createdAt).toLocaleDateString()}</small>
                   {pin.sourceThreadId ? (
@@ -1028,7 +1033,7 @@ export default function PersonProfilePage() {
             {archivedThreads.map(entry => (
               <div key={entry.id} style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: "2px solid rgba(183,154,216,.25)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: 0, color: "var(--mist)", fontSize: ".84rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.body}</p>
+                  <p style={{ margin: 0, color: entry.withdrawnReason ? "var(--mist2)" : "var(--mist)", fontStyle: entry.withdrawnReason ? "italic" : "normal", fontSize: ".84rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.body}</p>
                   <small className="muted" style={{ fontSize: ".68rem" }}>{new Date(entry.createdAt).toLocaleDateString()}</small>
                 </div>
                 <span style={{ display: "flex", gap: 8, flexShrink: 0 }}>

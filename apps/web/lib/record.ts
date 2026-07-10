@@ -25,6 +25,10 @@ export interface RecordEntry {
   href?: string;
   /** For conversation entries: the mode chip. */
   mode?: "ask" | "shared";
+  /** Set when the latest message in this conversation was withdrawn (fabrication
+   * remediation) — the Record preview shows this note in place of the body,
+   * never the withdrawn content, and never silently drops the entry. */
+  withdrawnReason?: string | null;
 }
 
 export type RecordScope =
@@ -35,6 +39,7 @@ export type RecordScope =
 interface NoteRow {
   id: string; body: string; created_at: string;
   kind: RecordKind | null; payload: Record<string, unknown> | null; source_thread_id: string | null;
+  withdrawn_at?: string | null; withdrawn_reason?: string | null;
 }
 
 /** Order a pair id tuple deterministically (matches the edge function). */
@@ -60,13 +65,16 @@ export async function fetchRecord(
   const { data: notes } = await query;
   const noteEntries: RecordEntry[] = (notes ?? []).map((r) => {
     const row = r as NoteRow;
+    const withdrawn = Boolean(row.withdrawn_at);
     return {
       id: row.id,
       kind: (row.kind ?? "note") as RecordKind,
-      body: row.body,
+      // A withdrawn note never shows its original content — only the note.
+      body: withdrawn ? (row.withdrawn_reason ?? "This note referenced inaccurate chart data and has been withdrawn.") : row.body,
       createdAt: row.created_at,
       payload: row.payload ?? null,
-      sourceThreadId: row.source_thread_id ?? null
+      sourceThreadId: row.source_thread_id ?? null,
+      withdrawnReason: withdrawn ? (row.withdrawn_reason ?? "This note referenced inaccurate chart data and has been withdrawn.") : null
     };
   });
 
@@ -77,19 +85,36 @@ export async function fetchRecord(
   else tQuery = tQuery.eq("pair_low", scope.pairLow).eq("pair_high", scope.pairHigh);
 
   const { data: threads } = await tQuery;
-  const convEntries: RecordEntry[] = await Promise.all((threads ?? []).map(async (t) => {
-    const { data: msg } = await supabase.from("messages").select("body").eq("thread_id", t.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
-    return {
-      id: `thread-${t.id}`,
-      kind: "conversation" as const,
-      body: (msg?.body as string | undefined)?.slice(0, 120) ?? "Vela conversation",
-      createdAt: t.created_at as string,
-      href: `/app/vela?threadId=${t.id}`,
-      mode: (t.mode as "ask" | "shared")
-    };
-  }));
+  const convEntries: RecordEntry[] = await Promise.all((threads ?? []).map((t) => fetchThreadPreview(supabase, t.id, t.created_at as string, t.mode as "ask" | "shared")));
 
   return [...noteEntries, ...convEntries].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
+/**
+ * Preview for a single thread: the latest message. If that message was
+ * withdrawn (fabrication remediation), the preview shows the withdrawal note
+ * instead of the body — never the withdrawn content, never silently dropped.
+ */
+async function fetchThreadPreview(
+  supabase: SupabaseClient,
+  threadId: string,
+  createdAt: string,
+  mode: "ask" | "shared"
+): Promise<RecordEntry> {
+  const { data: msg } = await supabase.from("messages").select("*").eq("thread_id", threadId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const row = msg as { body?: string; withdrawn_at?: string | null; withdrawn_reason?: string | null } | null;
+  const withdrawn = Boolean(row?.withdrawn_at);
+  return {
+    id: `thread-${threadId}`,
+    kind: "conversation" as const,
+    body: withdrawn
+      ? (row?.withdrawn_reason ?? "This note referenced inaccurate chart data and has been withdrawn.")
+      : (row?.body ?? "").slice(0, 120) || "Vela conversation",
+    createdAt,
+    href: `/app/vela?threadId=${threadId}`,
+    mode,
+    withdrawnReason: withdrawn ? (row?.withdrawn_reason ?? "This note referenced inaccurate chart data and has been withdrawn.") : null
+  };
 }
 
 /** Archived conversations for a person (subject or in a pair). Powers "Past conversations". */
@@ -107,17 +132,7 @@ export async function fetchArchivedThreads(
     .or(`subject_person.eq.${personId},pair_low.eq.${personId},pair_high.eq.${personId}`)
     .order("created_at", { ascending: false })
     .limit(limit);
-  return Promise.all((threads ?? []).map(async (t) => {
-    const { data: msg } = await supabase.from("messages").select("body").eq("thread_id", t.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
-    return {
-      id: `thread-${t.id}`,
-      kind: "conversation" as const,
-      body: (msg?.body as string | undefined)?.slice(0, 120) ?? "Vela conversation",
-      createdAt: t.created_at as string,
-      href: `/app/vela?threadId=${t.id}`,
-      mode: (t.mode as "ask" | "shared")
-    };
-  }));
+  return Promise.all((threads ?? []).map((t) => fetchThreadPreview(supabase, t.id, t.created_at as string, t.mode as "ask" | "shared")));
 }
 
 /** Set a thread's status. Never deletes. */
@@ -145,6 +160,12 @@ export async function fetchVelaPins(
     .limit(limit);
   return (data ?? []).map((r) => {
     const row = r as NoteRow;
-    return { id: row.id, kind: "vela_pin" as const, body: row.body, createdAt: row.created_at, sourceThreadId: row.source_thread_id ?? null };
+    const withdrawn = Boolean(row.withdrawn_at);
+    return {
+      id: row.id, kind: "vela_pin" as const,
+      body: withdrawn ? (row.withdrawn_reason ?? "This note referenced inaccurate chart data and has been withdrawn.") : row.body,
+      createdAt: row.created_at, sourceThreadId: row.source_thread_id ?? null,
+      withdrawnReason: withdrawn ? (row.withdrawn_reason ?? "This note referenced inaccurate chart data and has been withdrawn.") : null
+    };
   });
 }

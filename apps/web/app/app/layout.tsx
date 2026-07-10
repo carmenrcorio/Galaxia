@@ -37,6 +37,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <NavLink href="/app/groups">Groups</NavLink>
             <NavLink href="/app/vela">Vela</NavLink>
             <NavLink href="/app/settings">Settings</NavLink>
+            {/* Public route — no auth guard needed. Distinct from the floating
+                "Quick check" launcher on /app (fast in-app compatibility
+                modal); this opens the full public /chart experience. */}
+            <NavLink href="/chart">Quick Chart</NavLink>
             <Link href="/account" className="pill-link--gold" style={{ padding: "9px 18px", borderRadius: 100, background: "linear-gradient(180deg,var(--gold-bright),var(--gold))", color: "#1a1206", fontWeight: 600, fontSize: ".86rem", boxShadow: "0 6px 22px -8px rgba(230,174,108,.6)", textDecoration: "none" }}>
               Account
             </Link>

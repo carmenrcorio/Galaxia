@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { Spinner } from "../../../components/spinner";
 import { publicEnv } from "../../../lib/env";
+import { orderPair } from "../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 import { splitVelaReply } from "../../../lib/vela-parse";
 
@@ -54,7 +55,9 @@ export default function VelaPage() {
   const [sending, setSending]   = useState(false);
   const [status, setStatus]     = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState("You");
+  const [pinnedKeys, setPinnedKeys] = useState<Set<number>>(new Set());
   // Bootstrap params captured once from the entry URL. Navigation into this
   // page is always cross-route (home "Resume a thread", Compare "Ask Vela",
   // Groups "Ask Vela"), so the page remounts and a one-time read is reliable.
@@ -111,6 +114,7 @@ export default function VelaPage() {
       const user = ud.user; const session = sd.session;
       if (!user || !session) return;
       setAccessToken(session.access_token);
+      setUserId(user.id);
       setUserName(user.email?.split("@")[0] ?? "You");
       const [{ data: pd }, { data: gd }] = await Promise.all([
         supabase.from("people").select("id, display_name, is_minor").eq("owner_id", user.id).order("display_name"),
@@ -309,6 +313,25 @@ export default function VelaPage() {
     } finally { setSending(false); }
   }
 
+  /**
+   * Pin a Vela insight to the current scope's Record. Only Vela's messages are
+   * ever pinnable (the button is rendered on Vela bubbles only), which upholds
+   * the shared-mode rule: you may save Vela's guidance, never the other
+   * participant's words. The pin is private to the pinner (owner-scoped row).
+   */
+  async function pinInsight(idx: number, text: string) {
+    if (!userId || !text.trim() || pinnedKeys.has(idx)) return;
+    const row: Record<string, unknown> = {
+      owner_id: userId, kind: "vela_pin", body: text.trim(), source_thread_id: threadId ?? null
+    };
+    if (scope === "group" && groupId) row.group_id = groupId;
+    else if (scope === "pair" && subjectId && pairId) { const { pairLow, pairHigh } = orderPair(subjectId, pairId); row.pair_low = pairLow; row.pair_high = pairHigh; }
+    else if (subjectId) row.about_person = subjectId;
+    const { error } = await supabase.from("notes").insert(row);
+    if (!error) setPinnedKeys(prev => new Set(prev).add(idx));
+    else setStatus(error.message);
+  }
+
   const scopeSubject = selectedSubject ?? people[0] ?? null;
   const hasMessages  = lines.some(l => l.role === "user");
 
@@ -389,7 +412,11 @@ export default function VelaPage() {
       {mode === "shared" && !sharedBlocked ? (
         <section className="glass-card fade-in">
           <p className="eyebrow" style={{ marginBottom: 8 }}>Consent gate</p>
-          <p className="muted" style={{ fontSize: ".8rem", marginBottom: 10 }}>Shared threads need consent from both participants before Vela responds.</p>
+          <p className="muted" style={{ fontSize: ".8rem", marginBottom: 6 }}>Shared threads need consent from both participants before Vela responds.</p>
+          <p className="muted" style={{ fontSize: ".8rem", marginBottom: 10 }}>
+            In a shared space, Vela stays neutral and never sees anyone's private notes. Please know: either participant
+            may privately save Vela's guidance to their own record. Neither of you can save the other's messages.
+          </p>
           <button className="pill-link pill-link--teal" onClick={sendConsent}>Confirm my consent</button>
         </section>
       ) : null}
@@ -442,12 +469,27 @@ export default function VelaPage() {
                 // earlier suggestions are stale once the conversation moves on.
                 const isLatestVela = idx === lines.length - 1 && !sending;
                 const chips = isLatestVela ? (line.suggestions ?? []) : [];
+                const canPin = Boolean(line.text) && !(sending && idx === lines.length - 1);
                 return (
                   <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7, maxWidth: "90%" }}>
                     <div className="bubble bubble-vela fade-in" style={{ whiteSpace: "pre-wrap", maxWidth: "100%" }}>
                       <div className="bubble-sender">Vela</div>
                       {line.text || (sending ? null : "…")}
                     </div>
+                    {canPin ? (
+                      <button
+                        type="button"
+                        onClick={() => void pinInsight(idx, line.text)}
+                        disabled={pinnedKeys.has(idx)}
+                        style={{
+                          background: "transparent", border: "none", cursor: pinnedKeys.has(idx) ? "default" : "pointer",
+                          color: pinnedKeys.has(idx) ? "var(--teal)" : "var(--mist2)", fontSize: ".72rem", padding: "0 2px"
+                        }}
+                        title="Save this insight to this person's record (private to you)"
+                      >
+                        {pinnedKeys.has(idx) ? "✓ Pinned to their record" : "＋ Pin to record"}
+                      </button>
+                    ) : null}
                     {chips.length > 0 ? (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                         {chips.map(s => (

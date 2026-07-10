@@ -6,6 +6,7 @@ import { buildBirthInput, formatDateForConfirmation, type BirthFormInput } from 
 import { searchPlaces, type GeoCandidate } from "../lib/geocode";
 import { CHART_ENGINE_VERSION, getPreferredHouseSystem } from "../lib/house-system";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
+import { AskBirthData } from "./ask-birth-data";
 import { CustomCheck } from "./custom-check";
 import { Spinner } from "./spinner";
 
@@ -16,7 +17,7 @@ const MONTHS = [
 
 interface PersonRow {
   id: string; display_name: string; relation: string; is_minor: boolean;
-  birth_precision: "exact"|"date"|"year";
+  birth_precision: "none"|"exact"|"date"|"year";
   birth_date?: string|null; birth_time?: string|null;
   birth_place?: string|null; birth_lat?: number|null; birth_lng?: number|null;
   tz_offset_min?: number|null;
@@ -52,7 +53,8 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
   const storedDate = parseDateStr(person.birth_date);
   const storedTime = parseTimeStr(person.birth_time);
   const [input, setInput] = useState<BirthFormInput>({
-    precision: person.birth_precision,
+    // A 'none' person is adding data now — default the form to a usable precision.
+    precision: person.birth_precision === "none" ? "date" : person.birth_precision,
     ...storedDate,
     ...storedTime,
     yearOnly: person.birth_precision === "year" ? (storedDate.year ?? undefined) : undefined,
@@ -243,6 +245,13 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
           </>
         )}
       </div>
+
+      {input.precision !== "exact" && userId ? (
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(183,154,216,.1)" }}>
+          <p className="muted" style={{ fontSize: ".76rem", marginBottom: 8 }}>Don't have their exact details? Let them fill it in:</p>
+          <AskBirthData personId={person.id} personName={person.display_name} userId={userId} />
+        </div>
+      ) : null}
 
       <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
         <button className="btn-primary" onClick={save} disabled={saving} style={{ gap: 8 }}>

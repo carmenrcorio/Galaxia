@@ -45,7 +45,7 @@ const baseInput: BirthFormInput = {
  *            Never auto-accepts the first geocode result.
  * BUG C fix: if no timezone is resolved, exact precision is blocked at save.
  */
-function BirthFields({ input, onChange }: { input: BirthFormInput; onChange: (next: BirthFormInput) => void }) {
+function BirthFields({ input, onChange, allowNone = false }: { input: BirthFormInput; onChange: (next: BirthFormInput) => void; allowNone?: boolean }) {
   // Geocoder state
   const [searching,   setSearching]   = useState(false);
   const [candidates,  setCandidates]  = useState<GeoCandidate[]>([]);
@@ -136,7 +136,10 @@ function BirthFields({ input, onChange }: { input: BirthFormInput; onChange: (ne
 
       {/* Precision selector */}
       <div style={{ display: "grid", gap: 6 }}>
-        {precisionTiers.map((tier) => (
+        {(allowNone
+          ? [...precisionTiers, { key: "none" as const, label: "Add birth data later", unlocks: "Just save their name and relationship now — you can add a year, date, or exact time whenever you have it (or ask them to)." }]
+          : precisionTiers
+        ).map((tier) => (
           <button
             key={tier.key} type="button" className="glass-card"
             onClick={() => onChange({ ...baseInput, precision: tier.key })}
@@ -149,8 +152,8 @@ function BirthFields({ input, onChange }: { input: BirthFormInput; onChange: (ne
         ))}
       </div>
 
-      {/* Year-only */}
-      {input.precision === "year" ? (
+      {/* No birth data yet — nothing more to collect */}
+      {input.precision === "none" ? null : input.precision === "year" ? (
         <div>
           <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 5 }}>Birth year</p>
           <input
@@ -360,6 +363,20 @@ export default function WelcomePage() {
   }) => {
     if (!userId) throw new Error("Please sign in first.");
 
+    // ── Progressive capture: name + relation only, no birth data yet ────────
+    if (input.precision === "none") {
+      const { error: personError } = await supabase
+        .from("people")
+        .insert({
+          owner_id: userId, is_self: isSelf, display_name: displayName.trim(),
+          relation, is_minor: isMinor, birth_precision: "none",
+          birth_date: null, birth_time: null, birth_place: null,
+          birth_lat: null, birth_lng: null, tz_offset_min: null,
+        });
+      if (personError) throw new Error(personError.message);
+      return null; // no chart computed — none exists yet
+    }
+
     // buildBirthInput now throws clearly if timezone is missing for exact precision (BUG C)
     const built = buildBirthInput(input);
     const houseSystem = await getPreferredHouseSystem(supabase, userId);
@@ -399,7 +416,7 @@ export default function WelcomePage() {
     try {
       const natal = await persistPerson({ displayName: selfName, relation: "self", isSelf: true, isMinor: false, input: selfInput });
       await fetchPeople();
-      const risingNote = natal.asc ? ` Rising: ${natal.asc}.` : selfInput.precision === "exact" ? " (No rising — resolve a birth city to unlock houses.)" : "";
+      const risingNote = natal?.asc ? ` Rising: ${natal.asc}.` : selfInput.precision === "exact" ? " (No rising — resolve a birth city to unlock houses.)" : "";
       setStatus({ text: `Saved your chart.${risingNote}`, ok: true });
     } catch (error) {
       setStatus({ text: error instanceof Error ? error.message : "Unable to save.", ok: false });
@@ -413,10 +430,17 @@ export default function WelcomePage() {
         setStatus({ text: "Free plan: 5-person limit reached.", ok: false });
         return;
       }
+      const deferred = personInput.precision === "none";
       await persistPerson({ displayName: personName, relation: personRelation, isSelf: false, isMinor: personMinor, input: personInput });
+      const savedName = personName;
       setPersonName(""); setPersonMinor(false); setPersonRelation("friend"); setPersonInput(baseInput);
       await fetchPeople();
-      setStatus({ text: `${personName} added to your constellation.`, ok: true });
+      setStatus({
+        text: deferred
+          ? `${savedName} added — open their profile to add birth data, or ask them for it, whenever you're ready.`
+          : `${savedName} added to your constellation.`,
+        ok: true
+      });
     } catch (error) {
       setStatus({ text: error instanceof Error ? error.message : "Unable to add person.", ok: false });
     } finally { setSavingPerson(false); }
@@ -461,7 +485,7 @@ export default function WelcomePage() {
           <div style={{ marginBottom: 12 }}>
             <CustomCheck checked={personMinor} onChange={setPersonMinor} label="This person is a minor" />
           </div>
-          <BirthFields input={personInput} onChange={setPersonInput} />
+          <BirthFields input={personInput} onChange={setPersonInput} allowNone />
           {people.length >= peopleLimit ? (
             <p className="error" style={{ fontSize: 13, margin: "10px 0 0" }}>Free plan: 5-person limit reached.</p>
           ) : null}

@@ -6,6 +6,28 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-10 (Relationship Record — R5-E1: progressive capture + ask-them link)
+
+Pulled forward ahead of R1 per the activation priority (25–55% of trial users never add a second person). Two features shipped together.
+
+**[ADDED] Progressive capture — save a person with just name + relation.**
+- Migration `20260710014000_progressive_capture.sql`: `people.birth_precision` gains a `'none'` state (default), so a person can exist before any birth data.
+- `/welcome` add-person form gains an "Add birth data later" tier (self entry does not — self always needs a chart). Choosing it saves name/relation/minor only, no chart row, no synthesized date.
+- `apps/web/lib/birth.ts`: `BirthFormInput.precision` widened to `FormPrecision = Precision | "none"`; `buildBirthInput` throws if ever called with `'none'` (guard — callers persist directly).
+- The person page renders a first-class "add birth data" state for a chartless person (what each precision unlocks + the edit panel + the ask-them link) instead of the old "Profile not found" error. The `EditPersonPanel` accepts a `'none'` person and defaults its form to date precision so data can be added immediately.
+
+**[ADDED] E3 — "Ask them for their birth details" share link.**
+- Same migration extends `invites` with `person_id` + `kind` (`shared_space` | `birth_data`) and an RLS policy letting an authenticated owner manage their own invites.
+- `AskBirthData` component (person page + edit panel for non-exact profiles) creates a `birth_data` invite and shows a copyable link.
+- `/invite/[token]` branches on `kind`: a birth-data invite renders a warm, public, unauthenticated one-person form (`InviteBirthDataForm`) — structured month/day/year, optional exact time, Open-Meteo city disambiguation — that never shows any existing data.
+- `POST /api/invite/birth-data` writes back via the service role through the **same `buildBirthInput` + `computeNatalChart` pipeline** the app uses (date echo, resolved timezone — no fabrication), updates the pending person, upserts the chart, and marks the invite accepted.
+
+Privacy upheld throughout: the invited person sees only a request for their own birth details — never notes, never charts, never other people.
+
+**Requires:** `supabase db push` for the new migration. No edge-function change in this stage.
+
+---
+
 ## 2026-07-10 (Relationship Record — R0: close the verified dead-ends)
 
 First implementation stage of `design/galaxia-relationship-record-plan.md`. No schema changes; behavior/handoff fixes only.

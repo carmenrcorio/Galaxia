@@ -36,7 +36,7 @@ export default function OnboardingScreen() {
   const [personRelation, setPersonRelation] = useState<Relation>("friend");
   const [personMinor, setPersonMinor] = useState(false);
   const [personInput, setPersonInput] = useState<BirthFormInput>(baseInput);
-  const [people, setPeople] = useState<Array<{ id: string; display_name: string; relation: string; birth_precision: string }>>([]);
+  const [people, setPeople] = useState<Array<{ id: string; display_name: string; relation: string; birth_precision: string; is_self?: boolean }>>([]);
   const [savingSelf, setSavingSelf] = useState(false);
   const [savingPerson, setSavingPerson] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -53,11 +53,13 @@ export default function OnboardingScreen() {
     if (!session?.user.id) return;
     const { data } = await supabase
       .from("people")
-      .select("id, display_name, relation, birth_precision")
+      .select("id, display_name, relation, birth_precision, is_self")
       .eq("owner_id", session.user.id)
       .order("created_at", { ascending: false });
     setPeople(data ?? []);
   };
+
+  const selfPerson = people.find((p) => p.is_self) ?? null;
 
   const persistPerson = async ({
     displayName,
@@ -118,9 +120,29 @@ export default function OnboardingScreen() {
   };
 
   const saveSelf = async () => {
+    if (!session?.user.id) {
+      setStatus("Please sign in first.");
+      return;
+    }
     setSavingSelf(true);
     setStatus(null);
     try {
+      // This mobile screen previously had NO guard against creating a second
+      // self — web's /welcome had a client-side check but mobile had none.
+      // Re-check the database immediately before inserting (closes the race
+      // a mount-only check would leave open); the unique index on
+      // people(owner_id) WHERE is_self is the real backstop either way.
+      const { data: existingSelf } = await supabase
+        .from("people")
+        .select("id")
+        .eq("owner_id", session.user.id)
+        .eq("is_self", true)
+        .maybeSingle();
+      if (existingSelf) {
+        await fetchPeople();
+        setStatus("You're already in your sky. Edit your profile from your chart.");
+        return;
+      }
       await persistPerson({
         displayName: selfName,
         relation: "self",
@@ -131,7 +153,13 @@ export default function OnboardingScreen() {
       await fetchPeople();
       setStatus("Saved your profile and natal chart.");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to save your profile.");
+      const message = error instanceof Error ? error.message : "Unable to save your profile.";
+      if (message.includes("people_one_self_per_owner")) {
+        await fetchPeople();
+        setStatus("You're already in your sky (added just now, perhaps on another device). Edit your profile from your chart.");
+      } else {
+        setStatus(message);
+      }
     } finally {
       setSavingSelf(false);
     }
@@ -258,23 +286,38 @@ export default function OnboardingScreen() {
       <Text style={{ color: tokens.colors.cream, fontSize: 28, fontWeight: "700" }}>
         You first
       </Text>
-      <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>
-        Add your own birth data at any precision. Year-only is first-class for ancestors and loosely known friends.
-      </Text>
-      <Text style={{ color: tokens.colors.goldSoft }}>
-        Plan: {tier === "plus" ? "Galaxia+" : "Free"} · {tier === "plus" ? "unlimited people" : `${peopleLimit} people max`}
-      </Text>
-      <TextInput
-        value={selfName}
-        onChangeText={setSelfName}
-        placeholder="Your display name"
-        placeholderTextColor={tokens.colors.mist2}
-        style={fieldStyle}
-      />
-      <BirthFields input={selfInput} onChange={setSelfInput} />
-      <Pressable onPress={saveSelf} disabled={!canSaveSelf || savingSelf} style={primaryButtonStyle}>
-        <Text style={primaryButtonLabel}>{savingSelf ? "Saving..." : "Save your profile"}</Text>
-      </Pressable>
+      {selfPerson ? (
+        <>
+          <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>
+            You've already added yourself as {selfPerson.display_name}. Edit your birth data from your chart — no need to add yourself again.
+          </Text>
+          <Link href={`/profile/${selfPerson.id}`} asChild>
+            <Pressable style={primaryButtonStyle}>
+              <Text style={primaryButtonLabel}>View / edit my chart</Text>
+            </Pressable>
+          </Link>
+        </>
+      ) : (
+        <>
+          <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>
+            Add your own birth data at any precision. Year-only is first-class for ancestors and loosely known friends.
+          </Text>
+          <Text style={{ color: tokens.colors.goldSoft }}>
+            Plan: {tier === "plus" ? "Galaxia+" : "Free"} · {tier === "plus" ? "unlimited people" : `${peopleLimit} people max`}
+          </Text>
+          <TextInput
+            value={selfName}
+            onChangeText={setSelfName}
+            placeholder="Your display name"
+            placeholderTextColor={tokens.colors.mist2}
+            style={fieldStyle}
+          />
+          <BirthFields input={selfInput} onChange={setSelfInput} />
+          <Pressable onPress={saveSelf} disabled={!canSaveSelf || savingSelf} style={primaryButtonStyle}>
+            <Text style={primaryButtonLabel}>{savingSelf ? "Saving..." : "Save your profile"}</Text>
+          </Pressable>
+        </>
+      )}
 
       <View style={{ height: 1, backgroundColor: tokens.colors.line, marginVertical: 6 }} />
 

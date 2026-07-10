@@ -73,9 +73,11 @@ export default function QuickComparePage() {
     const supabase = createSupabaseBrowserClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
+      // A unique index on people(owner_id) WHERE is_self guarantees at most
+      // one row here — no ordering/limit tie-breaker needed.
       const { data: self } = await supabase.from("people")
         .select("birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, birth_precision")
-        .eq("owner_id", user.id).eq("is_self", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
+        .eq("owner_id", user.id).eq("is_self", true).maybeSingle();
       if (!self || self.birth_precision === "none") return;
       setInputA({
         precision: self.birth_precision as BirthFormInput["precision"],

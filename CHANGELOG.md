@@ -16,6 +16,26 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 - **Left untouched, confirmed intact**: the floating "✦ Quick check" launcher (`apps/web/components/quick-check-modal.tsx`'s `QuickCheckLauncher`, rendered only on `/app`'s Home). It's a `position: fixed` button that opens a fast in-app compatibility modal — a different job from the new nav links, which open the full public `/chart` experience. Not removed, not restyled, not repositioned.
 - Typecheck and production build clean; grepped the build output to confirm both "Quick Chart" strings survived into the compiled bundles for `/` and `/app/*`.
 
+## Enforce single self (branch `fix/enforce-single-self`)
+
+**Trigger**: QA audit reported multiple `is_self` person records on one account (a real "Carmen" plus three junk "TestSelfDup" rows), causing Home's constellation center node to be labeled with a junk record while linking to the real profile, and `/welcome` to name the wrong record.
+
+**Phase 0 — diagnosis (reported before any change)**: `people.is_self` (boolean) plus `people.relation` (text, can independently equal `'self'`) both represent "self"; ownership is `people.owner_id → auth.users(id)`.
+
+- **[OPEN]** Queried the live database (`is_self=true`, `relation='self'`, `display_name ILIKE '%testselfdup%'`, combined, no owner filter) and grepped the full repo + git history for the literal string `TestSelfDup`. Found **zero** matches anywhere — only one self-flagged row exists (Carmen). Confirmed only one Supabase project is reachable (`eigfvribtntbxyjutsma`, the documented sole backend), so this isn't a wrong-project miss. Reporting this rather than fabricating a cleanup of records that don't exist in the environment available to this agent. Phase 1 (data cleanup) is therefore a no-op — nothing found to remove or demote.
+- **[FIXED]** `/welcome`'s duplicate-self guard did query the database (not pure local state, contra the QA hypothesis) — but only once, on mount, into React state. That's a point-in-time check, not a constraint: a second tab, a slow reload, or a retried request could still race past it.
+- **[BROKEN → FIXED]** `apps/mobile/app/onboarding.tsx`'s `saveSelf` had **no guard at all** — a second, independent code path with zero protection against creating a duplicate self. This is the real reason a client-side guard in one file was never going to be enough.
+- **[FIXED]** Home (`apps/web/app/app/page.tsx`) selected self via `people.find(p => p.is_self)` after loading `people` ordered by `created_at ascending` — the *oldest* self-flagged row, an arbitrary tie-breaker if duplicates exist. Separately, the canvas draw loop forced *every* `is_self` row to the exact same center coordinates and painted labels in array order, so with duplicates the *last*-drawn label (not necessarily the one `.find()` picked for the "My chart" link) would visually win — a second, independent bug explaining the exact "labeled X, links to Y" symptom reported.
+
+**Phase 2 — structural enforcement**:
+
+- **[ADDED]** Migration `20260710213000_enforce_single_self.sql`: partial unique index `people_one_self_per_owner on people (owner_id) WHERE is_self = true`. Applied cleanly (no duplicates existed to violate it). Verified live with a rolled-back transaction that attempted a second self insert for the same owner — rejected with `23505 duplicate key value violates unique constraint "people_one_self_per_owner"`.
+- **[FIXED]** `apps/web/app/welcome/page.tsx` `saveSelf`: re-checks the database immediately before inserting (closes the race a mount-only check left open), and catches a `people_one_self_per_owner` violation gracefully (never a raw Postgres error, never a false "saved") in case of a genuine concurrent race.
+- **[FIXED]** `apps/mobile/app/onboarding.tsx`: added the identical database re-check before insert, the identical unique-violation handling, and an "already in your sky" panel (mirroring web) that replaces the create-self form when a self exists — this screen previously always showed the create form regardless.
+- **[FIXED]** `apps/web/app/app/page.tsx`: removed a dead, unused `selfIdx` lookup; documented that `selfPerson = people.find(p => p.is_self)` is now safe by construction (the unique index makes "more than one to find" impossible), not by ordering luck.
+- **[FIXED]** Removed now-pointless `order("created_at", ...).limit(1)` tie-breakers on single-self lookups in `apps/web/app/app/person/[id]/page.tsx`, `apps/web/components/quick-check-modal.tsx`, `apps/web/app/chart/compare/page.tsx`, and `apps/mobile/app/profile/[personId].tsx` — replaced with plain `.maybeSingle()`/`.single()`, since there is structurally nothing left to break the tie on.
+- Typecheck (web + mobile) clean. Web production build passes. `packages/astro` test suite (27 tests) unaffected and green.
+
 ## 2026-07-10 (Vela fabrication purge — QA audit response)
 
 QA flagged 3 stored "Record" entries asserting zodiac placements contradicting the computed chart (Riley Nguyen: confident "Cancer Sun" on a year-only, minor profile; Carmen: "Scorpio Moon under a Pisces Sun" ×2, real chart is Capricorn Sun / Taurus Moon). Diagnosed before any fix, per instructions.

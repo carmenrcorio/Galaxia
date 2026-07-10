@@ -46,6 +46,8 @@ export default function PersonProfileScreen() {
   const loadProfile = async () => {
     if (!session?.user.id || !resolvedPersonId) return;
 
+    // A unique index on people(owner_id) WHERE is_self guarantees at most
+    // one row here — no ordering/limit tie-breaker needed.
     const actualPersonId =
       resolvedPersonId === "self"
         ? (
@@ -54,9 +56,7 @@ export default function PersonProfileScreen() {
               .select("id")
               .eq("owner_id", session.user.id)
               .eq("is_self", true)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .single()
+              .maybeSingle()
           ).data?.id
         : resolvedPersonId;
 

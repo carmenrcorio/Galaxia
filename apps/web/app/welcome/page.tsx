@@ -127,16 +127,35 @@ export default function WelcomePage() {
   };
 
   const saveSelf = async () => {
-    // BUG A: never create a second self-profile.
-    if (selfPerson) { setStatus({ text: "You're already in your sky. Edit your profile from your chart.", ok: false }); return; }
+    if (!userId) { setStatus({ text: "Please sign in first.", ok: false }); return; }
     setSavingSelf(true); setStatus(null);
     try {
+      // Re-check the database immediately before inserting — not the `people`
+      // state loaded on mount, which can be stale (a second tab, a slow
+      // reload, another device). This closes the race the old mount-only
+      // check left open; the unique index below is the real backstop.
+      const { data: existingSelf } = await supabase.from("people").select("id, display_name").eq("owner_id", userId).eq("is_self", true).maybeSingle();
+      if (existingSelf) {
+        await fetchPeople();
+        setStatus({ text: "You're already in your sky. Edit your profile from your chart.", ok: false });
+        return;
+      }
       const natal = await persistPerson({ displayName: selfName, relation: "self", isSelf: true, isMinor: false, input: selfInput });
       await fetchPeople();
       const risingNote = natal?.asc ? ` Rising: ${natal.asc}.` : selfInput.precision === "exact" ? " (No rising — resolve a birth city to unlock houses.)" : "";
       setStatus({ text: `Saved your chart.${risingNote}`, ok: true });
     } catch (error) {
-      setStatus({ text: error instanceof Error ? error.message : "Unable to save.", ok: false });
+      // A unique-violation from people_one_self_per_owner means a self was
+      // created concurrently (another tab/device) between our check and our
+      // insert. The database is the real backstop for that race — never a
+      // fabricated "success" here, and never a raw Postgres error surfaced.
+      const message = error instanceof Error ? error.message : "Unable to save.";
+      if (message.includes("people_one_self_per_owner")) {
+        await fetchPeople();
+        setStatus({ text: "You're already in your sky (added just now, perhaps in another tab). Edit your profile from your chart.", ok: false });
+      } else {
+        setStatus({ text: message, ok: false });
+      }
     } finally { setSavingSelf(false); }
   };
 

@@ -69,7 +69,9 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { setLoadingSelf(false); setNoSelf(true); return; }
       setUserId(user.id);
-      const { data: self } = await supabase.from("people").select("id").eq("owner_id", user.id).eq("is_self", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      // A unique index on people(owner_id) WHERE is_self guarantees at most
+      // one row here — no ordering/limit tie-breaker needed.
+      const { data: self } = await supabase.from("people").select("id").eq("owner_id", user.id).eq("is_self", true).maybeSingle();
       if (!self) { setLoadingSelf(false); setNoSelf(true); return; }
       const { data: chartRow } = await supabase.from("charts").select("data").eq("person_id", self.id).single();
       setMyChart((chartRow?.data as NatalChart) ?? null);

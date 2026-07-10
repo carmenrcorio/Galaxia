@@ -14,7 +14,7 @@ type VelaMode = "ask" | "shared";
 type Scope     = "person" | "pair" | "group";
 interface PersonLite { id: string; display_name: string; is_minor: boolean; }
 interface GroupLite  { id: string; name: string; }
-interface ChatLine   { role: "user" | "vela"; text: string; suggestions?: string[]; }
+interface ChatLine   { role: "user" | "vela"; text: string; suggestions?: string[]; withdrawnReason?: string | null; }
 
 const PRIVACY_CAPTION = "Private by default · no private notes in shared mode · consent required for shared threads";
 
@@ -192,12 +192,18 @@ export default function VelaPage() {
   }, [subjectId]);
 
   async function loadHistory(tid: string) {
-    // select("*") so the query also works before the suggestions migration lands
+    // select("*") so the query also works before the suggestions/withdrawn migrations land
     const { data } = await supabase.from("messages").select("*")
       .eq("thread_id", tid).order("created_at").limit(80);
     if (!data) return;
-    setLines((data as Array<{ sender: string; body: string; suggestions?: unknown }>).map(r => {
+    setLines((data as Array<{ sender: string; body: string; suggestions?: unknown; withdrawn_at?: string | null; withdrawn_reason?: string | null }>).map(r => {
       if (r.sender !== "vela") return { role: "user" as const, text: r.body };
+      // A withdrawn message is never re-shown as if it were a normal answer —
+      // its content is replaced entirely by the withdrawal note, but the row
+      // (and this note) stays visible, never silently dropped.
+      if (r.withdrawn_at) {
+        return { role: "vela" as const, text: "", withdrawnReason: r.withdrawn_reason ?? "This note referenced inaccurate chart data and has been withdrawn." };
+      }
       const stored = Array.isArray(r.suggestions)
         ? (r.suggestions as unknown[]).filter((s): s is string => typeof s === "string")
         : [];
@@ -473,6 +479,17 @@ export default function VelaPage() {
                     {line.text}
                   </div>
                 );
+                // Withdrawn: the answer content is never shown — only the quiet
+                // note. Never silently dropped; the row stays, so the audit
+                // trail is visible (this matters when the row is on a minor's profile).
+                if (line.withdrawnReason) {
+                  return (
+                    <div key={idx} className="bubble bubble-vela fade-in" style={{ opacity: .7, fontStyle: "italic" }}>
+                      <div className="bubble-sender">Vela</div>
+                      <span className="muted" style={{ fontSize: ".82rem" }}>{line.withdrawnReason}</span>
+                    </div>
+                  );
+                }
                 // Follow-up chips belong to the latest Vela answer only —
                 // earlier suggestions are stale once the conversation moves on.
                 const isLatestVela = idx === lines.length - 1 && !sending;

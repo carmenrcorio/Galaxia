@@ -6,6 +6,45 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-10 (Vela fabrication purge — QA audit response)
+
+QA flagged 3 stored "Record" entries asserting zodiac placements contradicting the computed chart (Riley Nguyen: confident "Cancer Sun" on a year-only, minor profile; Carmen: "Scorpio Moon under a Pisces Sun" ×2, real chart is Capricorn Sun / Taurus Moon). Diagnosed before any fix, per instructions.
+
+**Phase 0 — diagnosis (correcting the premise first).** "The Record" is not one table: `lib/record.ts` unions `notes` (pinned/saved entries) with live previews pulled from `threads`+`messages`. **All three flagged fabrications, and two more found below, live in `messages` as ordinary Vela chat replies — zero `notes`/`vela_pin` rows anywhere in the database match any of the fabricated text.** This changed where Phase 2's remediation needed to point.
+
+Exact timestamps: Riley's message — `2026-07-09 01:30:34 UTC`. Carmen's two — `2026-07-09 00:04:46` and `01:04:29 UTC`. The fix commit (`410beb8`, "Phase 0: real Placidus…fabrication audit") introduced `engine_version 2`, per-placement `confident`/`possibleSigns` flags, and the Vela edge function's `confident === false` hedging check — the only commit in history that does. Both flagged people's `charts` rows already show this exact post-fix shape at `computed_at` **2026-07-08 18:29–18:31 UTC**, ~29 hours before `410beb8`'s git author timestamp. I'm flagging that inconsistency rather than hiding it: I treated the live database's internal clock as authoritative (one continuous external clock) over cross-referencing sandbox git timestamps, corroborated by structural evidence (only post-fix code produces these fields at all).
+
+**The context-builder question, answered precisely, verified against the LIVE deployed function (not just git):**
+- **Riley's mechanism — a real, now-closed hole.** The pre-fix edge function (`git show 5a2e898`) did `placements.find(p => p.body === body)?.sign ?? "Unknown"` with **no confidence check** — it would hand the model `"sun": "Cancer"` (the stored mid-year-sampling fallback for her year-only birth) as if it were fact. Smoking-gun corroboration: her fabricated message says "Riley's Cancer Sun" — an exact match to that fallback value, not a plausible independent guess. Pulled the **currently active deployed function** via `get_edge_function` (version 7) and confirmed byte-for-byte it now sends `"Uncertain — birth year only"` instead. **This hole is closed. Per the stated gating rule, Phase 1 is skipped for this mechanism — no fix invented for a bug that's already fixed.**
+- **Carmen's mechanism — not a context-builder hole.** Her chart has been correct (`confident: true` Capricorn Sun / Taurus Moon) continuously since creation; no duplicate self-profile, no stale row, nothing upstream was ever wrong. Vela was given the correct chart and asserted a different one anyway, on the first-ever message about her. **Phase 1 as scoped ("Vela can still be handed a concrete sign the data cannot support") does not apply — the data always supported the correct sign.** Noted, not silently fixed: the Anthropic call sets no `temperature` (defaults to 1.0) — a real, currently-live, separate gap I'm flagging for your decision rather than folding into this fix.
+
+**Phase 2.2 — full-table detection pass (not just the 3 examples given).** Wrote `scripts/detect-vela-fabrications.mjs`: regex-extracts Sun/Moon/Rising-sign assertions from every `messages` (sender='vela') and `notes` row, cross-checks against the scoped person's(s') computed chart, flags when no scoped person confidently matches. Ran the equivalent query live via SQL (Postgres word-boundary syntax differs from JS: `\y`, not `\b` — caught and fixed after an initial silent zero-match). **Result: 5 distinct fabricated messages, not 3** — the detector caught two previously unreported fabrications about a third person, **Jamie Chen** (`e81c7dad…`, `2026-07-08 23:56:02 UTC`, pair thread with Morgan Lee: "her Cancer sun"; `11b84fb9…`, `2026-07-09 01:28:17 UTC`, solo thread: "Jamie's Sun in Cancer"). Real computed Sun for Jamie: Leo, confident. Zero fabrications found in `notes`.
+
+| # | table | id | person | minor | created_at | asserted | computed |
+|---|---|---|---|---|---|---|---|
+| 1 | messages | `92b33191…` | Carmen | no | 07-09 00:04:46 | Sun=Pisces, Moon=Scorpio | Sun=Capricorn, Moon=Taurus (confident) |
+| 2 | messages | `1294c8a5…` | Carmen | no | 07-09 01:04:29 | Sun=Pisces, Moon=Scorpio | Sun=Capricorn, Moon=Taurus (confident) |
+| 3 | messages | `e4b596b4…` | Riley Nguyen | **yes** | 07-09 01:30:34 | Sun=Cancer (asserted as fact) | Sun unconfident — year-only, cannot support a concrete sign |
+| 4 | messages | `9905e813…` | Jamie Chen | no | 07-08 23:56:02 | Sun=Cancer | Sun=Leo (confident) |
+| 5 | messages | `e9298be5…` | Jamie Chen | no | 07-09 01:28:17 | Sun=Cancer | Sun=Leo (confident) |
+
+All 5 predate the fix window. 4 of 5 (everyone except Riley) are the "correct data, wrong assertion anyway" class — the dominant failure mode here, not the minority case.
+
+**Phase 2.1 — migration** (`20260710210000_withdrawn_entries.sql`, applied): nullable `withdrawn_at timestamptz` + `withdrawn_reason text` on **both** `messages` (where today's real fabrications live) and `notes` (where `vela_pin` is a live path for the same failure, even though none has hit it yet). No data loss.
+
+**Phase 2.3 — marked, not deleted.** All 5 rows above: `withdrawn_at` set, `withdrawn_reason` states the asserted-vs-computed mismatch plainly, **original `body` untouched** — the audit trail survives, which matters given entry #3 is on a minor's profile. Verified the later, *correct* Riley thread (`84bf2d36…`, 2026-07-10, "without a precise birth time or known Sun sign for Riley, I can't point to a specific placement") was left alone. Added `scripts/mark-vela-fabrications-withdrawn.mjs`, a separate, explicit, id-list-driven marking script — it never decides what's a fabrication on its own.
+
+**UI**: a withdrawn message renders as a quiet muted/italic note ("This note referenced inaccurate chart data and has been withdrawn," or the specific stored reason) in place of its content — in the Vela chat thread itself, in the person page's Record timeline, in the "Vela on {name}" pinned-insights module, and in "Past conversations." Never silently dropped from any list. `lib/record.ts`'s thread-preview logic (used by both active and archived conversation lists) now checks the latest message's `withdrawn_at` and substitutes the note.
+
+**Judgment calls for you to verify:**
+1. Whether to add a low `temperature` to the Anthropic call as hardening against Carmen's failure class (not applied — outside Phase 1's literal trigger condition, flagged rather than assumed).
+2. The two additional Jamie Chen fabrications the detector found beyond your original 3 — I withdrew them under the same rule, but you didn't ask about Jamie specifically.
+3. The git-commit-vs-database-timestamp discrepancy noted above (sandbox clock reliability across sessions) — noted, not resolved, since it doesn't change any conclusion here.
+
+Verified: `tsc --noEmit` and `next build` pass; 27/27 astro tests pass (untouched). No `next.config.mjs`, root `.npmrc`, or Vercel settings touched. (No ESLint config exists in this repo — `next lint` prompts to create one interactively; skipped rather than adding lint tooling mid-fix.)
+
+---
+
 ## 2026-07-10 (Quick Chart — top-of-funnel acquisition + in-app utility)
 
 Three modes, per spec. No database rows are ever created by a visit alone — only an explicit "Save"/"Add" click writes anything.

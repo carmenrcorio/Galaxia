@@ -13,7 +13,6 @@ export default function AccountPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [email, setEmail]           = useState("");
   const [displayName, setDisplayName] = useState("Friend");
-  const [tier, setTier]             = useState<"free"|"plus">("free");
   const [peopleCount, setPeopleCount] = useState(0);
   const [sampleNames, setSampleNames] = useState<string[]>([]);
   const siteUrl = publicEnv.siteUrl || "";
@@ -24,12 +23,11 @@ export default function AccountPage() {
       if (!user) return;
       setEmail(user.email ?? "");
       const [{ data: profile }, { count }, { data: sample }] = await Promise.all([
-        supabase.from("profiles").select("display_name, subscription_tier").eq("id", user.id).single(),
+        supabase.from("profiles").select("display_name").eq("id", user.id).single(),
         supabase.from("people").select("id", { count: "exact", head: true }).eq("owner_id", user.id),
         supabase.from("people").select("display_name").eq("owner_id", user.id).limit(5)
       ]);
       setDisplayName(profile?.display_name ?? user.email?.split("@")[0] ?? "Friend");
-      setTier((profile?.subscription_tier as "free"|"plus") ?? "free");
       setPeopleCount(count ?? 0);
       setSampleNames((sample ?? []).map(r => r.display_name as string));
     };
@@ -66,9 +64,7 @@ export default function AccountPage() {
         <section className="glass-card fade-in">
           <p className="eyebrow" style={{ marginBottom: 10 }}>Your constellation</p>
           <p className="muted">{peopleCount} {peopleCount === 1 ? "person" : "people"} in your galaxy{sampleNames.length ? ` · ${sampleNames.join(", ")}` : ""}.</p>
-          <p style={{ color: tier === "plus" ? "var(--gold)" : "var(--mist2)", fontSize: 13, marginTop: 6 }}>
-            {tier === "plus" ? "Galaxia+ ✦" : "Free plan — up to 5 people"}
-          </p>
+          <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>Nothing here is locked. This is the whole product.</p>
         </section>
 
         {/* Actions */}

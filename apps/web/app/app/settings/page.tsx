@@ -20,7 +20,6 @@ interface GroupLite {
 
 export default function SettingsPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const [tier, setTier] = useState<"free" | "plus">("free");
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [groups, setGroups] = useState<GroupLite[]>([]);
   const [status, setStatus] = useState<string | null>(null);
@@ -36,11 +35,10 @@ export default function SettingsPage() {
       if (!user) return;
       setUserId(user.id);
       const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
-        supabase.from("profiles").select("subscription_tier, house_system").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("house_system").eq("id", user.id).maybeSingle(),
         supabase.from("people").select("id, display_name, relation").eq("owner_id", user.id).order("display_name", { ascending: true }),
         supabase.from("groups").select("id, name, kind").eq("owner_id", user.id).order("created_at", { ascending: false })
       ]);
-      setTier((profile?.subscription_tier as "free" | "plus") ?? "free");
       if (isHouseSystem(profile?.house_system)) setHouseSystem(profile.house_system);
       setPeople((peopleRows ?? []) as PersonLite[]);
       setGroups((groupRows ?? []) as GroupLite[]);
@@ -73,20 +71,8 @@ export default function SettingsPage() {
 
       <section className="glass-card">
         <h2 className="card-title">Subscription</h2>
-        {tier === "plus" ? (
-          <p className="muted">You're on <strong style={{ color: "var(--gold)" }}>Galaxia+</strong> — unlimited people, groups, and Vela.</p>
-        ) : (
-          <>
-            <p className="muted">You're on the <strong>Free</strong> plan — up to 5 people and 12 Vela messages per day.</p>
-            <div className="upsell-card">
-              <p style={{ margin: "0 0 4px", fontFamily: "var(--font-fraunces)", fontSize: 18, color: "var(--cream)" }}>
-                Galaxia+ — <em>coming soon</em>
-              </p>
-              <p className="muted" style={{ margin: "0 0 10px", fontSize: 14 }}>Unlimited people, groups, cohort overlays, and Vela conversations. Early access pricing for founding members.</p>
-              <span className="pill-link">Notify me when it's available</span>
-            </div>
-          </>
-        )}
+        <p className="muted">Nothing here is locked. This is the whole product.</p>
+        <p className="muted">14 days, everything included. We'll remind you before the trial ends.</p>
       </section>
 
       <section className="glass-card">

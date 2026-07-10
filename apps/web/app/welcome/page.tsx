@@ -319,7 +319,6 @@ function BirthFields({ input, onChange, allowNone = false }: { input: BirthFormI
 export default function WelcomePage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [userId, setUserId]     = useState<string | null>(null);
-  const [tier, setTier]         = useState<"free" | "plus">("free");
   const [selfName, setSelfName] = useState("");
   const [selfInput, setSelfInput] = useState<BirthFormInput>(baseInput);
   const [personName, setPersonName]   = useState("");
@@ -331,7 +330,7 @@ export default function WelcomePage() {
   const [savingPerson, setSavingPerson] = useState(false);
   const [status, setStatus] = useState<{ text: string; ok: boolean } | null>(null);
 
-  const peopleLimit = tier === "plus" ? Number.POSITIVE_INFINITY : 5;
+  // No people cap. Value compounds with every person added; nothing is gated.
   const canSaveSelf   = selfName.trim().length > 1;
   const canSavePerson = personName.trim().length > 1;
 
@@ -340,11 +339,7 @@ export default function WelcomePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      const [{ data: profile }, { data: peopleRows }] = await Promise.all([
-        supabase.from("profiles").select("subscription_tier").eq("id", user.id).single(),
-        supabase.from("people").select("id, display_name, relation, birth_precision").eq("owner_id", user.id).order("created_at", { ascending: false })
-      ]);
-      setTier((profile?.subscription_tier as "free" | "plus") ?? "free");
+      const { data: peopleRows } = await supabase.from("people").select("id, display_name, relation, birth_precision").eq("owner_id", user.id).order("created_at", { ascending: false });
       setPeople(peopleRows ?? []);
     };
     void load();
@@ -426,10 +421,6 @@ export default function WelcomePage() {
   const savePerson = async () => {
     setSavingPerson(true); setStatus(null);
     try {
-      if (people.length >= peopleLimit) {
-        setStatus({ text: "Free plan: 5-person limit reached.", ok: false });
-        return;
-      }
       const deferred = personInput.precision === "none";
       await persistPerson({ displayName: personName, relation: personRelation, isSelf: false, isMinor: personMinor, input: personInput });
       const savedName = personName;
@@ -454,9 +445,6 @@ export default function WelcomePage() {
           <p className="eyebrow">Onboarding</p>
           <h1 className="page-title">Build your constellation</h1>
           <p className="muted">Start with yourself, then add the people at the center of your life.</p>
-          <p style={{ color: "var(--gold-soft)", fontSize: 13, marginTop: 4 }}>
-            {tier === "plus" ? "Galaxia+ · unlimited people" : `Free plan · ${Math.max(0, 5 - people.length)} people remaining`}
-          </p>
         </div>
 
         {/* You first */}
@@ -486,10 +474,7 @@ export default function WelcomePage() {
             <CustomCheck checked={personMinor} onChange={setPersonMinor} label="This person is a minor" />
           </div>
           <BirthFields input={personInput} onChange={setPersonInput} allowNone />
-          {people.length >= peopleLimit ? (
-            <p className="error" style={{ fontSize: 13, margin: "10px 0 0" }}>Free plan: 5-person limit reached.</p>
-          ) : null}
-          <button className="btn-primary" style={{ marginTop: 14, gap: 8 }} disabled={!canSavePerson || savingPerson || people.length >= peopleLimit} onClick={savePerson}>
+          <button className="btn-primary" style={{ marginTop: 14, gap: 8 }} disabled={!canSavePerson || savingPerson} onClick={savePerson}>
             {savingPerson && <Spinner size={13} color="#1a1206" />}
             {savingPerson ? "Adding…" : "Add to constellation"}
           </button>

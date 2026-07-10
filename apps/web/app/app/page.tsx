@@ -90,7 +90,6 @@ export default function AppHomePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [welcomeName, setWelcomeName] = useState("stargazer");
-  const [tier, setTier]               = useState<"free" | "plus">("free");
   const [people, setPeople]           = useState<PersonRow[]>([]);
   const [links, setLinks]             = useState<LinkRow[]>([]);
   const [activeTransitIds, setActiveTransitIds] = useState<string[]>([]);
@@ -348,14 +347,13 @@ export default function AppHomePage() {
       const personIds = (idRows ?? []).map(r => r.id as string);
 
       const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }] = await Promise.all([
-        supabase.from("profiles").select("display_name, subscription_tier").eq("id", uid).single(),
+        supabase.from("profiles").select("display_name").eq("id", uid).single(),
         supabase.from("people").select("id, display_name, relation, birth_precision, is_self").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode").eq("owner_id", uid).order("created_at", { ascending: false }).limit(6)
       ]);
 
       setWelcomeName(profile?.display_name ?? email.split("@")[0] ?? "stargazer");
-      setTier((profile?.subscription_tier as "free" | "plus") ?? "free");
       const castPeople = (peopleRows ?? []) as PersonRow[];
       setPeople(castPeople);
 
@@ -525,15 +523,6 @@ export default function AppHomePage() {
             {selfPerson ? <Link href={`/app/person/${selfPerson.id}`} className="pill-link">My chart</Link> : null}
             <Link href="/welcome" className="pill-link">Add people</Link>
           </div>
-          {/* A6: state the cap honestly here rather than silently redirecting from the form.
-             Phase 1 (one tier, unlimited people) removes the cap entirely. */}
-          {tier !== "plus" ? (
-            <p className="muted" style={{ fontSize: ".76rem", marginTop: 6 }}>
-              {people.length >= 5
-                ? "Free plan: you've added 5 people (the current cap). Managing your plan will lift this."
-                : `Free plan · ${5 - people.length} of 5 people remaining.`}
-            </p>
-          ) : null}
         </div>
       ) : null}
     </main>

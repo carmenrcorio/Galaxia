@@ -6,6 +6,24 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-10 (Pricing — Part 1: remove every freemium remnant)
+
+Executing `design/galaxia-pricing-implementation-spec.md` Part 1, deployed on its own before the data model / paywall / Stripe. Two amendments apply to later parts (card-optional trial; 300 founding members) and are noted where relevant.
+
+Two independent audits found the single biggest reason a trial user won't pay: the live product tells them they're already on a permanent free plan. Every such surface in `apps/web` is removed. Grep sweep results (`free plan`, `5-person`, `personLimit`, `Galaxia+`, `subscription_tier`, `tier ===`) — all web hits resolved:
+
+- **`/welcome`** — deleted the 5-person cap entirely (the `peopleLimit`, the "Free plan: 5-person limit reached" save-gate, the disabled button, and the "Free plan · N people remaining" header line). A brand-new signup can now add six or more people with no gate. Stopped reading `subscription_tier`.
+- **`/app/settings`** — removed the "Galaxia+ — coming soon" upsell card and its "Notify me when it's available" button. The Subscription section now shows only approved copy (§5): "Nothing here is locked. This is the whole product." + "14 days, everything included. We'll remind you before the trial ends."
+- **`/account`** — removed the "Free plan — up to 5 people" / "Galaxia+ ✦" badge; replaced with the same approved line. Stopped reading `subscription_tier`.
+- **`/account/subscription`** — removed "Current plan: Free/Galaxia+" and the mobile-IAP billing framing; interim approved copy until Part 4 wires the real Paywall/portal.
+- **`/app` (home)** — removed the tier state, the `subscription_tier` read, and the "Free plan · N of 5 remaining" note.
+
+No copy was invented: interim text is verbatim from `design/galaxia-pricing-copy.md` §5. The `subscription_tier` **column** is untouched (Part 2 deprecates it); only web *reads* of it are gone. The now-unused `.upsell-card` CSS rule is left in `globals.css` (harmless; not user-facing).
+
+**Deferred, reported explicitly:** the **mobile app** (`apps/mobile`) still contains extensive freemium logic (`entitlement-provider` people/Vela caps, the "Upgrade to Galaxia+ (debug)" tier switch flagged in ENGINEERING §7, Galaxia+ gates in compare/groups/vela/settings). Mobile is a separate, not-yet-store-deployed product; reworking its entitlement belongs with Part 2's shared `packages/core` `hasAccess` and is out of scope for this web-deploy-first Part 1. Tracked for the data-model stage.
+
+---
+
 ## 2026-07-10 (Relationship Record — R1: the Record itself)
 
 The connective tissue. `notes` becomes the single per-scope timeline; the person page reads it back.

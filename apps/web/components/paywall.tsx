@@ -1,12 +1,24 @@
 "use client";
 
+import { trialDaysRemaining } from "@galaxia/core";
 import { useState } from "react";
 import { publicEnv } from "../lib/env";
 import { Spinner } from "./spinner";
 
 /**
- * The paywall. All copy is verbatim from design/galaxia-pricing-copy.md §1
- * (and §2 for the optional founding-member block). Do not paraphrase.
+ * The paywall. Copy for the genuinely-trial-ended state is verbatim from
+ * design/galaxia-pricing-copy.md §1 (and §2 for the founding-member block).
+ * Do not paraphrase that one.
+ *
+ * BUG (fixed here): this component used to render "YOUR TRIAL HAS ENDED"
+ * unconditionally, regardless of subscription_status/trial_ends_at. The spec
+ * only ever describes this page as "shown at trial end" — it never
+ * anticipated someone reaching it mid-trial, subscribed, or previously
+ * canceled, but the app lets all of those happen (direct navigation, an old
+ * link, /account's "Subscribe" pill for a canceled account). The header copy
+ * below is now derived from the real subscriptionStatus/trialEndsAt passed
+ * in from the server component — never asserted. An unrecognized/missing
+ * status renders neutral copy that claims nothing, per ENGINEERING.md §12.
  *
  * Card-optional trial (Amendment 1): the card is collected here, at trial end
  * or when the user chooses to subscribe — never at signup.
@@ -40,11 +52,85 @@ const INCLUDED: { title: string; body: string }[] = [
   { title: "Private by design.", body: "Your notes about someone are yours alone. Always. No two-way AI chat about children." },
 ];
 
-export function Paywall({ foundingRemaining }: { foundingRemaining?: number | null }) {
+interface HeaderCopy {
+  eyebrow: string | null;
+  headline: string;
+  body: string;
+  showCheckout: boolean;
+}
+
+/**
+ * The one place that decides what the paywall's header says. Every branch is
+ * gated on the real subscriptionStatus/trialEndsAt — none of this is
+ * reachable without checking data first, and the fallback for an
+ * unrecognized or missing status asserts nothing about the trial.
+ */
+export function deriveHeaderCopy(subscriptionStatus: string | null, trialEndsAt: string | null): HeaderCopy {
+  if (subscriptionStatus === "active" || subscriptionStatus === "lifetime") {
+    return {
+      eyebrow: "YOUR PLAN",
+      headline: "You're already in.",
+      body: "You're subscribed — thank you. There's nothing more to unlock here; manage your plan from your account.",
+      showCheckout: false,
+    };
+  }
+
+  if (subscriptionStatus === "trialing") {
+    const daysLeft = trialDaysRemaining(trialEndsAt);
+    if (trialEndsAt && daysLeft > 0) {
+      return {
+        eyebrow: `${daysLeft} ${daysLeft === 1 ? "DAY" : "DAYS"} LEFT IN YOUR TRIAL`,
+        headline: "Keep your galaxy.",
+        body: "Nothing here is locked — this is the whole product. Continue now, or keep exploring until your trial ends; nothing is charged until you choose to.",
+        showCheckout: true,
+      };
+    }
+    // trialEndsAt missing or in the past — the trial has genuinely ended.
+    // This is the only state the original approved copy describes.
+    return {
+      eyebrow: "YOUR TRIAL HAS ENDED",
+      headline: "Keep your galaxy.",
+      body: "Everything you've built is still here — every chart, every note, every constellation you named. Continue whenever you're ready.",
+      showCheckout: true,
+    };
+  }
+
+  if (subscriptionStatus === "canceled" || subscriptionStatus === "past_due") {
+    // They were a subscriber; this isn't a trial ending, it's a lapsed
+    // subscription. Same underlying promise (nothing was deleted), different
+    // premise, so the "trial ended" eyebrow would be a specific wrong claim.
+    return {
+      eyebrow: "PICK UP WHERE YOU LEFT OFF",
+      headline: "Keep your galaxy.",
+      body: "Everything you've built is still here — every chart, every note, every constellation you named. Continue whenever you're ready.",
+      showCheckout: true,
+    };
+  }
+
+  // Unknown or missing status (e.g. a brand-new account whose profile row is
+  // still settling). Say nothing about trial state rather than assert one.
+  return {
+    eyebrow: null,
+    headline: "Keep your galaxy.",
+    body: "Nothing here is locked. This is the whole product.",
+    showCheckout: true,
+  };
+}
+
+export function Paywall({
+  foundingRemaining,
+  subscriptionStatus = null,
+  trialEndsAt = null,
+}: {
+  foundingRemaining?: number | null;
+  subscriptionStatus?: string | null;
+  trialEndsAt?: string | null;
+}) {
   const [selected, setSelected] = useState<"annual" | "monthly">("annual"); // annual pre-selected
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const foundingEnabled = publicEnv.foundingEnabled;
+  const foundingEnabled = publicEnv.foundingEnabled && subscriptionStatus !== "lifetime";
+  const copy = deriveHeaderCopy(subscriptionStatus, trialEndsAt);
 
   async function checkout(plan: "annual" | "monthly" | "lifetime") {
     setSubmitting(true);
@@ -71,15 +157,21 @@ export function Paywall({ foundingRemaining }: { foundingRemaining?: number | nu
   return (
     <div style={{ maxWidth: 560, margin: "0 auto", display: "grid", gap: 20 }}>
       <div style={{ textAlign: "center" }}>
-        <p className="eyebrow">YOUR TRIAL HAS ENDED</p>
+        {copy.eyebrow ? <p className="eyebrow">{copy.eyebrow}</p> : null}
         <h1 style={{ fontFamily: "var(--serif)", fontSize: "2.4rem", color: "var(--cream)", margin: "6px 0 12px", lineHeight: 1.1 }}>
-          Keep your galaxy.
+          {copy.headline}
         </h1>
         <p className="muted" style={{ fontSize: ".96rem", lineHeight: 1.6, maxWidth: "46ch", margin: "0 auto" }}>
-          Everything you've built is still here — every chart, every note, every constellation you named. Continue whenever you're ready.
+          {copy.body}
         </p>
       </div>
 
+      {!copy.showCheckout ? (
+        <div style={{ textAlign: "center" }}>
+          <a className="btn-primary" href="/account">Manage my subscription</a>
+        </div>
+      ) : (
+      <>
       {/* Price cards — annual pre-selected, marked Best value */}
       <div style={{ display: "grid", gap: 10 }}>
         {PLANS.map((plan) => {
@@ -158,6 +250,8 @@ export function Paywall({ foundingRemaining }: { foundingRemaining?: number | nu
           ) : null}
         </div>
       ) : null}
+      </>
+      )}
     </div>
   );
 }

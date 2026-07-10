@@ -6,6 +6,25 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Subscribe page no longer claims a trial ended when it hasn't (branch `fix/subscribe-trial-status-claim`)
+
+**Trigger**: `components/paywall.tsx` rendered the eyebrow "YOUR TRIAL HAS ENDED" unconditionally — a hardcoded string, not derived from any prop, state, or query. Verified on a fresh account with 14 real days remaining (`trial_ends_at` 2026-07-24): the page still claimed the trial had ended. Same class of bug ENGINEERING.md §12 exists to prevent, on the exact page where a user decides whether to pay.
+
+**Phase 0 — diagnosis**:
+- Confirmed `<p className="eyebrow">YOUR TRIAL HAS ENDED</p>` (was line 74) was a literal string; `Paywall` only ever received `foundingRemaining` as a prop — no subscription data reached it at all.
+- `subscription_status`/`trial_ends_at` live on `profiles`, already read elsewhere (`TrialBanner`, `/account`, `middleware.ts`) via `@galaxia/core`'s `hasAccess`/`trialDaysRemaining`, but never fetched by `/subscribe/page.tsx` or passed to `Paywall`.
+- Real states that reach this page: `trialing` (with real days left, or expired/missing `trial_ends_at`), `active`, `lifetime`, `canceled`, `past_due`, and — briefly, for a just-created account — no profile row at all. The design spec (`galaxia-pricing-copy.md` §1) only ever describes this page as "shown at trial end," but middleware redirects `canceled`/`past_due`/expired-`trialing` users here alike, and nothing stops an `active`/`lifetime` user or a mid-trial user from navigating here directly (`/account`'s own "Subscribe" pill is correctly gated by status, but the page itself had no such gate).
+
+**Phase 1 — copy now derived from real state**, via a new pure function `deriveHeaderCopy(subscriptionStatus, trialEndsAt)` in `paywall.tsx` (exported for direct verification):
+- **[FIXED]** `trialing` + real days left → `"N DAYS LEFT IN YOUR TRIAL"`, honest, never "ended."
+- **[FIXED]** `trialing` + expired or missing `trial_ends_at` → the original approved `"YOUR TRIAL HAS ENDED"` copy — now the only state it renders for.
+- **[ADDED]** `canceled` / `past_due` → new copy, `"PICK UP WHERE YOU LEFT OFF"` — these users were subscribers, not trial users; calling it a trial ending would be a second, different false claim. Body text reused verbatim (it never mentioned "trial" to begin with).
+- **[ADDED]** `active` / `lifetime` → new copy, `"YOUR PLAN"` / "You're already in." — the entire checkout section (price cards, plan buttons, cancel/charge reassurance) is now hidden for these two statuses, replaced with a single "Manage my subscription" link to `/account`. Also hides the founding-member upsell specifically for `lifetime` (already a lifetime member).
+- **[FIXED]** Missing/unrecognized status (e.g. a brand-new account whose `handle_new_user` trigger row hasn't landed yet) → no eyebrow at all, neutral body ("Nothing here is locked. This is the whole product.") — asserts nothing, per the explicit "say nothing rather than assert" rule.
+- `apps/web/app/subscribe/page.tsx` now fetches `subscription_status, trial_ends_at` from `profiles` server-side (alongside the existing founding-count query) and passes them to `Paywall` as props.
+
+**Verification**: `tsc --noEmit` and `next build` pass. Live-verified against a real database round trip: created a fresh confirmed test account, confirmed its trigger-created profile row was `subscription_status: 'trialing'`, `trial_ends_at` 14 days out (the exact reported scenario) — then ran the real, exported `deriveHeaderCopy` against that value and all other real statuses (`active`, `lifetime`, `canceled`, `past_due`, expired-trialing, missing-trialing, unknown). Fresh 14-day trial now returns `"14 DAYS LEFT IN YOUR TRIAL"`, never `"YOUR TRIAL HAS ENDED"`. Full interactive browser confirmation of the rendered page was blocked by an unrelated Supabase Auth 500 on a manually-inserted test user (a GoTrue quirk with directly-inserted `auth.users`/`auth.identities` rows, not a fix bug); noting this rather than silently skipping it. All test data (user, identity, profile) deleted after verification.
+
 ## Quick Chart nav entry points (branch `feat/quick-chart-nav-link`)
 
 **Trigger**: Quick Chart (`/chart`, `/chart/compare`) shipped as a public acquisition tool but had no link from anywhere in the product — an acquisition funnel with no front door.

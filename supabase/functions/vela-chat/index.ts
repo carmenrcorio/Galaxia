@@ -248,12 +248,14 @@ Deno.serve(async (req) => {
     if (!people?.length) return jsonResponse(404, { error: "People not found for this thread." });
 
     // ── Safety checks ────────────────────────────────────────────────────────
-    // No two-way chat where a minor is the subject, in ANY mode.
-    // The product promise: guidance ABOUT a child goes to the parent via private notes,
-    // not an interactive thread whose subject is the child's chart.
-    if (people.some((p) => p.is_minor)) {
+    // The line is shared-mode, not minor-as-subject. A parent asking Vela
+    // PRIVATELY about their child is the core parenting use case; the `parenting`
+    // flag below puts Vela in coach-the-parent mode (never addressing the child).
+    // What must never happen is a minor being a participant in a real-time
+    // two-way (shared) session.
+    if (mode === "shared" && people.some((p) => p.is_minor)) {
       return jsonResponse(400, {
-        error: "Two-way chat is turned off when a minor is the conversation subject. Use private notes for your own reflections about them."
+        error: "Shared spaces are turned off when a minor is involved. Ask about them privately in ask mode instead."
       });
     }
 

@@ -6,6 +6,28 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-10 (Minor-safety gate fix + Pricing Part 5 & 6)
+
+**[FIXED] Minor safety gate was too broad — blocked the core parenting use case.**
+Previously any thread with a minor in scope was refused in ALL modes ("use private notes"), which blocked a parent from privately asking Vela how to reach their teenager — the exact guidance the landing page promises.
+- **Edge function** (`vela-chat`, redeployed v7 via MCP): the block is now `mode === "shared" && minor in scope` only. Private ask-mode about a child is allowed; the `parenting` flag already puts Vela in coach-the-parent mode (never addressing the child).
+- **Web** (`vela/page.tsx`): removed the blanket `minorChatBlocked`. Input is hidden only in shared mode with a minor (`sharedBlocked`), which now offers a one-tap "Switch to Private (ask)". In ask mode with a minor subject, the input shows normally with two reassurances: a banner ("Vela coaches you about your child privately. Your child is never part of this conversation and will never see it.") and a label above the input ("Vela will coach you as the parent — your child won't see this conversation."). The old "Two-way chat is turned off / use private notes" copy is gone.
+- Shared-mode-with-minor stays refused (the correct line).
+
+**Pricing Part 5 — cancellation (one screen, one click).** Copy verbatim from copy §4. `/account/cancel` + `<CancelSubscription/>`: "Cancel your subscription?", the two body lines (with `{period_end_date}` from `current_period_end`), primary "Cancel subscription" → `POST /api/cancel` (**stub 501** until Stripe), secondary "Never mind, keep Galaxia". No retention offer, discount, pause, or pre-button survey; the optional "what was missing?" question appears only after confirmation. `/account` links here when status is `active`/`past_due` (else shows Subscribe; lifetime shows neither).
+
+**Pricing Part 6 — marketing pricing section + CTAs** (`apps/web/app/page.tsx`, additive only — no redesign):
+- New `#pricing` section between FAQ and the close: eyebrow "PRICING", "One price. Everyone you love.", the body line, two price cards (annual highlighted "Best value" $89/yr · $7.42/mo · save 26%; monthly $9.99), the five included items **verbatim**, "Cancel in one click, any time.", CTA "Start 14 days free" → `/signup`. Built with the page's existing `.glass`/tokens/`.reveal` animation; added scoped `.pcard`/`.incl` CSS.
+- Nav gains a **Pricing** link; the nav CTA and both hero + close CTAs now read **"Start 14 days free"** → `/signup`. The email capture is kept as a secondary **"Notify me"**. No existing section, animation, or body copy was rewritten.
+
+**Constraint note:** this message's trailing block said "do not touch page.tsx" (attached to the minor-gate task) while the body requested Part 6 and the mid-message constraint said "no page.tsx **redesign**". Read together with the pricing spec's explicit "permitted to modify page.tsx for Part 6 only," I treated it as add-only. Flag if that wasn't intended.
+
+**Part 7 (trial emails): NOT wired.** Per instruction, the rewritten card-optional day-11 copy is presented for approval first; no email code shipped this round.
+
+**Stripe (Part 3) still skipped.** Env vars needed before it can be wired: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PRICE_MONTHLY`, `NEXT_PUBLIC_STRIPE_PRICE_ANNUAL`, `NEXT_PUBLIC_STRIPE_PRICE_LIFETIME`, `NEXT_PUBLIC_FOUNDING_ENABLED`; `RESEND_API_KEY` for Part 7.
+
+---
+
 ## 2026-07-10 (Pricing — Part 2 + Part 4: card-optional trial model + paywall UI)
 
 Stops before Stripe (Part 3). Amendments applied: card-optional trial; founding cap 300.

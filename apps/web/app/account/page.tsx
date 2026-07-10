@@ -14,6 +14,7 @@ export default function AccountPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [email, setEmail]           = useState("");
   const [displayName, setDisplayName] = useState("Friend");
+  const [subStatus, setSubStatus]   = useState<string | null>(null);
   const [peopleCount, setPeopleCount] = useState(0);
   const [sampleNames, setSampleNames] = useState<string[]>([]);
   const siteUrl = publicEnv.siteUrl || "";
@@ -24,11 +25,12 @@ export default function AccountPage() {
       if (!user) return;
       setEmail(user.email ?? "");
       const [{ data: profile }, { count }, { data: sample }] = await Promise.all([
-        supabase.from("profiles").select("display_name").eq("id", user.id).single(),
+        supabase.from("profiles").select("display_name, subscription_status").eq("id", user.id).single(),
         supabase.from("people").select("id", { count: "exact", head: true }).eq("owner_id", user.id),
         supabase.from("people").select("display_name").eq("owner_id", user.id).limit(5)
       ]);
       setDisplayName(profile?.display_name ?? user.email?.split("@")[0] ?? "Friend");
+      setSubStatus((profile?.subscription_status as string | null) ?? null);
       setPeopleCount(count ?? 0);
       setSampleNames((sample ?? []).map(r => r.display_name as string));
     };
@@ -75,7 +77,11 @@ export default function AccountPage() {
           <p className="eyebrow" style={{ marginBottom: 12 }}>Quick actions</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
             <Link className="btn-primary" href="/app">Open Galaxia Mea</Link>
-            <Link className="pill-link" href="/subscribe">Subscribe</Link>
+            {subStatus === "active" || subStatus === "past_due" ? (
+              <Link className="pill-link" href="/account/cancel">Cancel subscription</Link>
+            ) : subStatus === "lifetime" ? null : (
+              <Link className="pill-link" href="/subscribe">Subscribe</Link>
+            )}
             <Link className="pill-link" href="/account/data">Your data</Link>
             {siteUrl ? <a className="pill-link" href={`${siteUrl}/account`}>Open in app</a> : null}
           </div>

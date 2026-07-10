@@ -74,18 +74,20 @@ export default function VelaPage() {
   const selectedPair    = people.find(p => p.id === pairId)    ?? null;
 
   // ── Minor safety gate ─────────────────────────────────────────────────────
-  // A minor may never be the chat subject in ANY mode (ask or shared).
-  // Guidance ABOUT a minor addressed to the parent goes through private notes,
-  // not a two-way Vela thread whose subject is the child's chart.
+  // The line is NOT "minor as subject = blocked". A parent asking Vela PRIVATELY
+  // about their child is the core parenting use case the landing page promises —
+  // Vela coaches the parent and never addresses the child. What must never happen
+  // is a minor being a participant in a real-time two-way (shared) session.
   const subjectIsMinor = scope === "person"
     ? Boolean(selectedSubject?.is_minor)
     : scope === "pair"
       ? Boolean(selectedSubject?.is_minor || selectedPair?.is_minor)
       : false;
 
-  // sharedBlocked is a separate case (minor in shared mode)
-  const minorChatBlocked = subjectIsMinor;
-  const sharedBlocked    = mode === "shared" && subjectIsMinor;
+  // Only shared mode with a minor in scope is blocked. Private ask-mode is allowed.
+  const sharedBlocked = mode === "shared" && subjectIsMinor;
+  // Show the warm parenting reassurance whenever a minor is the private subject.
+  const parentingAsk  = mode === "ask" && subjectIsMinor;
 
   const functionUrl = `${publicEnv.supabaseUrl}/functions/v1/vela-chat`;
 
@@ -220,9 +222,9 @@ export default function VelaPage() {
     const userText = (prefill ?? message).trim();
     if (sending || !accessToken || !userText) return;
 
-    // ── Safety block: minor as chat subject ─────────────────────────────────
-    // This must be checked before every send, not just on mount.
-    if (minorChatBlocked) return; // button is hidden anyway but belt-and-suspenders
+    // ── Safety block: only shared mode with a minor is refused ──────────────
+    // Private ask-mode about a child is allowed (Vela coaches the parent).
+    if (sharedBlocked) return; // input is hidden anyway — belt-and-suspenders
 
     if (!subjectId && scope !== "group") { setStatus("Choose a person."); return; }
     if (scope === "pair" && (!subjectId || !pairId || subjectId === pairId)) {
@@ -439,24 +441,30 @@ export default function VelaPage() {
           </p>
         </div>
 
-        {/* ── Minor chat block: replaces input entirely ──────────────────── */}
-        {minorChatBlocked ? (
+        {/* ── Shared-mode + minor: the one case that stays refused ──────────── */}
+        {sharedBlocked ? (
           <div style={{ padding: "18px 0", textAlign: "center" }}>
             <p style={{ color: "var(--rose)", fontSize: ".88rem", marginBottom: 10 }}>
-              Two-way chat is turned off for minors.
+              Shared spaces aren't available when a child is involved.
             </p>
-            <p className="muted" style={{ fontSize: ".8rem", marginBottom: 14, maxWidth: "44ch", margin: "0 auto 14px" }}>
-              This protects {selectedSubject?.display_name ?? "this person"} — no two-way AI conversations where a child is the subject.
-              Use private notes for your own reflections about them.
+            <p className="muted" style={{ fontSize: ".8rem", marginBottom: 14, maxWidth: "46ch", margin: "0 auto 14px" }}>
+              A child is never part of a two-way Vela session. To get parenting guidance about {selectedSubject?.display_name ?? "them"},
+              switch to <strong>Private (ask)</strong> mode — Vela will coach you, and your child never sees the conversation.
             </p>
-            {selectedSubject ? (
-              <Link href={`/app/person/${selectedSubject.id}#notes`} className="pill-link" style={{ fontSize: ".82rem" }}>
-                Open {selectedSubject.display_name}'s private notes →
-              </Link>
-            ) : null}
+            <button className="pill-link" onClick={() => setMode("ask")} style={{ fontSize: ".82rem" }}>
+              Switch to Private (ask)
+            </button>
           </div>
         ) : (
           <>
+            {/* Parenting reassurance — shown, never a block, when the private subject is a minor */}
+            {parentingAsk ? (
+              <div style={{ background: "rgba(111,177,184,.08)", border: "1px solid rgba(111,177,184,.2)", borderRadius: 12, padding: "10px 14px", marginBottom: 12 }}>
+                <p className="muted" style={{ fontSize: ".8rem", margin: 0, lineHeight: 1.5 }}>
+                  Vela coaches you about your child privately. Your child is never part of this conversation and will never see it.
+                </p>
+              </div>
+            ) : null}
             <div ref={chatRef} className="chat-thread">
               {lines.map((line, idx) => {
                 if (line.role === "user") return (
@@ -530,6 +538,11 @@ export default function VelaPage() {
             ) : null}
 
             <div className="vela-input-wrap" style={{ marginTop: 12 }}>
+              {parentingAsk ? (
+                <p className="muted" style={{ fontSize: ".72rem", marginBottom: 6 }}>
+                  Vela will coach you as the parent — your child won't see this conversation.
+                </p>
+              ) : null}
               <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
                 <textarea
                   ref={inputRef}

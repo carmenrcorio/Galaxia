@@ -21,6 +21,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../components/initial-avatar";
+import { QuickCheckLauncher } from "../../components/quick-check-modal";
 import { ThreadMenu } from "../../components/thread-menu";
 import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
@@ -535,6 +536,7 @@ export default function AppHomePage() {
           </div>
         </div>
       ) : null}
+      {!loading ? <QuickCheckLauncher /> : null}
     </main>
   );
 }

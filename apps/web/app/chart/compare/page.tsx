@@ -1,0 +1,259 @@
+"use client";
+
+/**
+ * Quick Compatibility (/chart/compare) — public, no login required.
+ *
+ * Both charts and the synastry are computed server-side via
+ * POST /api/quick-compare. If the visitor is logged in, their own chart
+ * pre-fills Person A (read from their existing people/charts rows — no
+ * recomputation of a person that already exists). Nothing new is stored
+ * unless "Save to your galaxy" is clicked.
+ */
+
+import type { NatalChart } from "@galaxia/astro";
+import { useEffect, useState } from "react";
+import { BASE_BIRTH_INPUT, BirthFields } from "../../../components/birth-fields";
+import { QuickChartShell } from "../../../components/quick-chart-shell";
+import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
+import { ShareLinkButton } from "../../../components/share-link-button";
+import { Spinner } from "../../../components/spinner";
+import type { BirthFormInput } from "../../../lib/birth";
+import { whatTheyNeed, type RelationType } from "../../../lib/compare-guidance";
+import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
+import { interpretAspect, type AspectKey, type BodyKey } from "../../../lib/interpretations";
+import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
+import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
+
+// Local shape matching @galaxia/astro's SynastryResult (avoids importing computeSynastry just for its type).
+type SynastryShape = { scores: Record<string, number>; aspects: Array<{ from: string; to: string; type: string; orb: number; harmony: number }> };
+
+interface CompareResult {
+  chartA: NatalChart;
+  chartB: NatalChart;
+  synastry: SynastryShape | null;
+  generational: { theme: string; shared: { planet: string; sign: string }[]; diverged: { planet: string; signA: string; signB: string }[] };
+}
+
+const RELATION_TYPES: RelationType[] = ["partners", "siblings", "friends", "parent-child", "ancestor"];
+
+function parseDateStr(s: string | null | undefined): { month?: number; day?: number; year?: number } {
+  if (!s) return {};
+  const [yr, mo, dy] = s.slice(0, 10).split("-").map(Number);
+  return { year: yr, month: mo, day: dy };
+}
+function parseTimeStr(s: string | null | undefined): { hour?: number; minute?: number } {
+  if (!s) return {};
+  const [hr, mn] = s.slice(0, 5).split(":").map(Number);
+  return { hour: hr, minute: mn };
+}
+
+export default function QuickComparePage() {
+  const [inputA, setInputA] = useState<BirthFormInput>(BASE_BIRTH_INPUT);
+  const [inputB, setInputB] = useState<BirthFormInput>(BASE_BIRTH_INPUT);
+  const [nameA, setNameA] = useState("");
+  const [nameB, setNameB] = useState("");
+  const [usingMyChart, setUsingMyChart] = useState(false);
+  const [relationType, setRelationType] = useState<RelationType>("partners");
+  const [result, setResult] = useState<CompareResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fromShareLink, setFromShareLink] = useState(false);
+
+  // Shared link: a_*/b_* birth params in the URL, no names.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const a = decodeBirthQuery(params, "a_");
+    const b = decodeBirthQuery(params, "b_");
+    if (a && b) {
+      setInputA(a); setInputB(b); setFromShareLink(true);
+      void runCompare(a, b, { updateUrl: false });
+      return;
+    }
+    // Not a share link — try to prefill Person A from the logged-in user's own chart.
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data: self } = await supabase.from("people")
+        .select("birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, birth_precision")
+        .eq("owner_id", user.id).eq("is_self", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (!self || self.birth_precision === "none") return;
+      setInputA({
+        precision: self.birth_precision as BirthFormInput["precision"],
+        ...parseDateStr(self.birth_date),
+        ...parseTimeStr(self.birth_time),
+        lat: self.birth_lat != null ? String(self.birth_lat) : "",
+        lng: self.birth_lng != null ? String(self.birth_lng) : "",
+        tzOffsetMin: self.tz_offset_min ?? undefined,
+        birthPlace: self.birth_place ?? ""
+      });
+      setNameA("You");
+      setUsingMyChart(true);
+    });
+  }, []);
+
+  async function runCompare(a: BirthFormInput, b: BirthFormInput, opts: { updateUrl: boolean } = { updateUrl: true }) {
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch("/api/quick-compare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ a, b })
+      });
+      const body = await res.json();
+      if (!res.ok) { setError(body.error ?? "Could not compare those two."); return; }
+      setResult(body);
+      if (opts.updateUrl) {
+        const qs = new URLSearchParams([
+          ...birthQueryToSearchParams(a, "a_"),
+          ...birthQueryToSearchParams(b, "b_")
+        ]).toString();
+        window.history.replaceState(null, "", `/chart/compare?${qs}`);
+      }
+    } catch {
+      setError("Network error — check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+
+  const getSign = (chart: NatalChart, body: string) => {
+    const p = chart.placements.find((pl) => pl.body === body);
+    return p && p.confident !== false ? p.sign : undefined;
+  };
+
+  const personA = result ? { display_name: nameA || "Person A", sun: getSign(result.chartA, "sun"), moon: getSign(result.chartA, "moon"), venus: getSign(result.chartA, "venus"), mars: getSign(result.chartA, "mars") } : null;
+  const personB = result ? { display_name: nameB || "Person B", sun: getSign(result.chartB, "sun"), moon: getSign(result.chartB, "moon"), venus: getSign(result.chartB, "venus"), mars: getSign(result.chartB, "mars") } : null;
+
+  return (
+    <QuickChartShell eyebrow="Quick Compatibility" title={fromShareLink ? "A compatibility reading" : "Check your compatibility, free."}>
+      <p className="lede" style={{ marginBottom: 20 }}>
+        Enter both birth dates for a real synastry reading — where you flow, where you catch, and what each of you needs. Nothing is saved unless you choose to.
+      </p>
+
+      {!result ? (
+        <section className="glass-card fade-in" style={{ display: "grid", gap: 16 }}>
+          <div>
+            <p className="eyebrow" style={{ marginBottom: 8 }}>Relationship type</p>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {RELATION_TYPES.map((t) => (
+                <button key={t} type="button" className="pill-link" onClick={() => setRelationType(t)}
+                  style={{ fontSize: ".8rem", padding: "6px 13px", borderColor: relationType === t ? "rgba(230,174,108,.5)" : undefined, color: relationType === t ? "var(--gold)" : undefined }}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="eyebrow" style={{ marginBottom: 8 }}>Person A {usingMyChart ? "· using your chart" : ""}</p>
+            {usingMyChart ? (
+              <div style={{ padding: "10px 12px", borderRadius: 12, background: "rgba(111,177,184,.08)", border: "1px solid rgba(111,177,184,.25)" }}>
+                <p style={{ color: "var(--teal)", fontSize: ".82rem", fontWeight: 600, margin: "0 0 4px" }}>✓ Using your own chart</p>
+                <button type="button" className="pill-link" style={{ fontSize: ".72rem", padding: "2px 10px" }} onClick={() => { setUsingMyChart(false); setInputA(BASE_BIRTH_INPUT); setNameA(""); }}>Not you? Enter someone else</button>
+              </div>
+            ) : (
+              <>
+                <input className="field" value={nameA} onChange={(e) => setNameA(e.target.value)} placeholder="Name (optional)" style={{ marginBottom: 10, borderRadius: 14 }} />
+                <BirthFields input={inputA} onChange={setInputA} />
+              </>
+            )}
+          </div>
+
+          <div>
+            <p className="eyebrow" style={{ marginBottom: 8 }}>Person B</p>
+            <input className="field" value={nameB} onChange={(e) => setNameB(e.target.value)} placeholder="Name (optional)" style={{ marginBottom: 10, borderRadius: 14 }} />
+            <BirthFields input={inputB} onChange={setInputB} />
+          </div>
+
+          <button className="btn-primary" onClick={() => runCompare(inputA, inputB)} disabled={loading} style={{ gap: 8, justifySelf: "start" }}>
+            {loading && <Spinner size={13} color="#1a1206" />}
+            {loading ? "Comparing…" : "See our compatibility"}
+          </button>
+          {error ? <p className="error" style={{ fontSize: ".84rem" }}>{error}</p> : null}
+        </section>
+      ) : (
+        <>
+          <section className="glass-card fade-in" style={{ textAlign: "center" }}>
+            <p style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)", margin: "0 0 4px" }}>
+              {personA!.display_name} &amp; {personB!.display_name}
+            </p>
+            <p className="muted" style={{ fontSize: ".78rem" }}>{relationType}</p>
+          </section>
+
+          {!result.synastry ? (
+            <section className="glass-card fade-in fade-in-delay-1">
+              <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>
+                One of you has year-only birth data, so a full synastry read isn't possible — the planet-to-planet aspects would be guesses.
+                What the generational layer shows: {result.generational.theme}
+              </p>
+            </section>
+          ) : (
+            <>
+              <section className="glass-card fade-in fade-in-delay-1">
+                <p className="eyebrow" style={{ marginBottom: 12 }}>Your dynamic</p>
+                <div style={{ borderRadius: 14, background: "rgba(111,177,184,.06)", border: "1px solid rgba(111,177,184,.15)", padding: "4px 0", marginBottom: 14 }}>
+                  {Object.entries(result.synastry.scores).map(([key, score]) => {
+                    const { word, cls } = compatWord(score as number);
+                    return (
+                      <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 16px", borderTop: key === "overall" ? "none" : "1px solid rgba(255,255,255,.04)" }}>
+                        <span style={{ fontSize: ".82rem", color: "var(--mist)" }}>{COMPAT_LABELS[key] ?? key}</span>
+                        <span className={`compat-word ${cls}`} style={{ fontSize: ".88rem", fontFamily: "var(--serif)" }}>{word}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {[personA!, personB!].map((person) => (
+                  <div key={person.display_name} style={{ marginBottom: 10, padding: "13px 15px", borderRadius: 13, background: "linear-gradient(165deg, rgba(255,255,255,.025), rgba(255,255,255,.008))", border: "1px solid rgba(183,154,216,.12)" }}>
+                    <p style={{ fontSize: ".7rem", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 6 }}>
+                      → What {person.display_name} needs from you
+                    </p>
+                    <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.62, fontStyle: "italic", margin: 0 }}>
+                      {whatTheyNeed(result.synastry.scores, person, relationType, result.synastry as never)}
+                    </p>
+                  </div>
+                ))}
+              </section>
+
+              <section className="glass-card fade-in fade-in-delay-2">
+                <p className="eyebrow" style={{ marginBottom: 10 }}>Where it flows and catches</p>
+                {result.synastry.aspects.filter((a) => a.from !== a.to).sort((a, b) => a.orb - b.orb).slice(0, 6).map((a, idx) => {
+                  const reading = interpretAspect(a.from.toLowerCase() as BodyKey, a.to.toLowerCase() as BodyKey, a.type.toLowerCase() as AspectKey);
+                  return (
+                    <div key={`${a.from}-${a.to}-${idx}`} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
+                      <span style={{ fontSize: ".8rem", color: a.harmony >= 0 ? "var(--teal)" : "var(--rose)", flexShrink: 0 }}>{a.harmony >= 0 ? "↑ flows" : "↓ catches"}</span>
+                      <span className="muted" style={{ fontSize: ".82rem" }}>{a.from} {a.type} {a.to}</span>
+                      <span className="muted" style={{ fontSize: ".74rem", fontStyle: "italic" }}>{reading.short}</span>
+                      <span className="muted" style={{ fontSize: ".72rem", marginLeft: "auto", flexShrink: 0 }}>{a.orb.toFixed(1)}°</span>
+                    </div>
+                  );
+                })}
+              </section>
+            </>
+          )}
+
+          <section className="glass-card fade-in fade-in-delay-2">
+            <p className="eyebrow" style={{ marginBottom: 8 }}>Generational call-out</p>
+            <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>{result.generational.theme}</p>
+            {result.generational.shared.length > 0 ? (
+              <p className="muted" style={{ fontSize: ".8rem", marginTop: 8 }}>
+                Shared sky: {result.generational.shared.map((s) => `${SIGN_GLYPH[s.sign] ?? ""} ${s.planet} in ${s.sign}`).join(" · ")}
+              </p>
+            ) : null}
+          </section>
+
+          <section className="glass-card fade-in fade-in-delay-2" style={{ textAlign: "center", display: "grid", gap: 12 }}>
+            {!usingMyChart ? <SaveToGalaxyButton birthInput={inputA} defaultName={nameA || undefined} /> : null}
+            <SaveToGalaxyButton birthInput={inputB} defaultName={nameB || undefined} />
+            <ShareLinkButton url={shareUrl} />
+            <button type="button" className="pill-link" onClick={() => { setResult(null); setFromShareLink(false); }}>
+              Try another comparison
+            </button>
+          </section>
+        </>
+      )}
+    </QuickChartShell>
+  );
+}

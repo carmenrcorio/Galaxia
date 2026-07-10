@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { getSiteUrlFromRequestOrigin } from "../lib/env";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 
-export function SignupForm({ initialEmail = "" }: { initialEmail?: string }) {
+export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: string; nextPath?: string }) {
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [email, setEmail] = useState(initialEmail);
@@ -14,16 +14,23 @@ export function SignupForm({ initialEmail = "" }: { initialEmail?: string }) {
   const [status, setStatus] = useState<"idle" | "submitting" | "confirm">("idle");
   const [error, setError] = useState<string | null>(null);
 
+  // Quick Chart hand-off: /chart's "Save to your galaxy" sends signed-out
+  // visitors here with ?next=/welcome?prefill=... so the birth data they
+  // already entered survives account creation without retyping.
+  const destination = nextPath && nextPath.startsWith("/") ? nextPath : "/welcome";
+
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setStatus("submitting");
     setError(null);
     const siteUrl = getSiteUrlFromRequestOrigin(window.location.origin);
+    const redirectUrl = new URL(`${siteUrl}/auth/callback`);
+    if (nextPath) redirectUrl.searchParams.set("next", nextPath);
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${siteUrl}/auth/callback`
+        emailRedirectTo: redirectUrl.toString()
       }
     });
     if (signUpError) {
@@ -32,7 +39,7 @@ export function SignupForm({ initialEmail = "" }: { initialEmail?: string }) {
       return;
     }
     if (data.session) {
-      router.push("/welcome");
+      router.push(destination as never);
       router.refresh();
       return;
     }

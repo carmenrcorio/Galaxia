@@ -6,6 +6,33 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-10 (Quick Chart — top-of-funnel acquisition + in-app utility)
+
+Three modes, per spec. No database rows are ever created by a visit alone — only an explicit "Save"/"Add" click writes anything.
+
+**Mode 1 — Quick Natal (`/chart`), public, no login.** Structured birth entry (reusing the never-fabricate `BirthFields`/geocoder), computed **server-side** via `POST /api/quick-chart` (engine never runs in the browser for this path). Shows Big Three with `interpretPlacement`/`interpretRising` readings, a collapsed-by-default full placements list, and the chart wheel when houses are available. "Save to your galaxy" and "Copy share link" — no paywall, no Vela.
+
+**Mode 2 — Quick Compatibility (`/chart/compare`), public, no login.** Same pattern via `POST /api/quick-compare`: both charts + synastry computed server-side, qualitative labels, "What X needs from you" (reused from Compare), key cross-aspects with `interpretAspect`. Logged-in visitors get their own stored chart pre-filled as Person A (read-only reuse of the existing row — no recomputation). Year-only precision on either side returns the honest generational-only read (`synastry: null`), never a fabricated one — verified live.
+
+**Mode 3 — in-app Quick Check, logged-in only.** Floating "✦ Quick check" button on `/app` opens a modal: the user's own stored chart is Person A, the other person needs only a birthday. Computed client-side, consistent with the existing authenticated Compare/person-page convention (this one screen intentionally does not match the public routes' server-side rule — see rationale below). "Add to my galaxy" writes the person; "Discard" writes nothing (there is nothing to clean up).
+
+**Never-fabricate rules held throughout:** the share URL encodes only birth data — **never a name** — verified by reading `lib/quick-chart.ts`'s encoder, which has no name field. Sharing a saved-into-database resolved place is fine (a city, not a person). Nothing persists on a bare visit; only the three explicit "Save"/"Add" actions write rows, and even those reuse the same `buildBirthInput` validation (structured dates, geocode disambiguation, required timezone for exact precision) as every other add-person flow.
+
+**Signed-out save path:** `/chart`'s "Save to your galaxy" → `/signup?next=/welcome?prefill=...&name=...`. `next` now flows end-to-end: `SignupForm` forwards it into `emailRedirectTo`'s own `next` param (the existing `/auth/callback` route already reads and redirects to it — no change needed there), and on immediate-session signups `router.push`es there directly. `/welcome` parses `prefill`/`name` from the URL on mount and populates the Add-person form — **never auto-submitted**, always reviewed and confirmed by the user like any other add.
+
+**Refactors done to enable reuse (behavior-preserving):**
+- `ChartWheel` extracted from `person/[id]/page.tsx` → `components/chart-wheel.tsx`.
+- `BirthFields` extracted from `welcome/page.tsx` → `components/birth-fields.tsx`.
+- `whatTheyNeed`/`RelationType` extracted from `compare/page.tsx` → `lib/compare-guidance.ts`.
+
+**Design rationale documented in code:** the public routes (`/chart`, `/chart/compare`) compute via server API routes per the spec's explicit instruction. The in-app Quick Check computes client-side because that already matches the codebase's established, unremarked pattern for every other *authenticated* screen (Compare, person page, and `welcome` itself all import `@galaxia/astro` directly into `"use client"` components) — the engine has no secrets, so this isn't a security boundary, and introducing a fourth pattern for one modal seemed worse than being consistent with the other twenty screens. Flagging this explicitly in case a stricter server-only rule was intended for all three modes.
+
+**Verified:** `tsc` + `next build` pass; both new API routes smoke-tested directly (Little Rock Placidus regression chart reproduces `Capricorn` Sun via `/api/quick-chart`; `/api/quick-compare` returns real scores/aspects for two real dates and correctly returns `synastry: null` — never a guess — when either side is year-only; bad input returns the same validation errors as the rest of the app). 27/27 astro tests still pass (untouched).
+
+**Skipped/deferred:** no dedicated `/chart` link was added to the marketing landing nav (not requested; `page.tsx` wasn't touched this round). Quick Check's date picker is date-only by design (no exact time/city) per the spec's "fast, date-night" framing — exact-time compatibility isn't offered from that entry point, only from the full Compare page.
+
+---
+
 ## 2026-07-10 (Pricing Part 7 emails + FAQ + QA bugs + archive threads)
 
 **Migration `20260710183000_threads_status_and_trial_emails.sql`** (applied via MCP): `threads.status` (`active`|`archived`, default active) + a `trial_emails(user_id, kind)` idempotency table (service-role only).

@@ -27,6 +27,7 @@ import {
   type HouseKey
 } from "../../../../lib/house-interpretations";
 import { CHART_ENGINE_VERSION, getPreferredHouseSystem, houseSystemLabelForChart } from "../../../../lib/house-system";
+import { fetchRecord, fetchVelaPins, type RecordEntry } from "../../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 
 interface PersonRow {
@@ -36,8 +37,6 @@ interface PersonRow {
   birth_place?: string | null; birth_lat?: number | null; birth_lng?: number | null;
   tz_offset_min?: number | null;
 }
-interface NoteRow { id: string; body: string; created_at: string; }
-
 /* ─── Normalise engine output to library key conventions ─────────────────── */
 function normaliseBody(b: string): BodyKey { return b.toLowerCase() as BodyKey; }
 function normaliseSign(s: string): SignKey  { return (s.charAt(0).toUpperCase() + s.slice(1)) as SignKey; }
@@ -261,6 +260,42 @@ function ExpandRow({
   );
 }
 
+/* ─── RecordItem — one entry in the person's Record timeline ─────────────── */
+const RECORD_META: Record<string, { label: string; color: string }> = {
+  note:            { label: "You noted",       color: "rgba(230,174,108,.4)" },
+  tending:         { label: "Tending note",    color: "rgba(111,177,184,.5)" },
+  vela_pin:        { label: "Pinned from Vela", color: "rgba(183,154,216,.5)" },
+  compare_reading: { label: "Saved comparison", color: "rgba(230,174,108,.5)" },
+  cohort_reading:  { label: "Saved cohort reading", color: "rgba(111,177,184,.4)" },
+  conversation:    { label: "Vela conversation", color: "rgba(183,154,216,.4)" },
+};
+
+function RecordItem({ entry }: { entry: RecordEntry; personName: string }) {
+  const meta = RECORD_META[entry.kind] ?? RECORD_META.note;
+  const when = new Date(entry.createdAt);
+  return (
+    <div style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: `2px solid ${meta.color}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+        <span style={{ fontSize: ".62rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--mist2)" }}>{meta.label}</span>
+        <small className="muted" style={{ fontSize: ".68rem", flexShrink: 0 }}>{when.toLocaleDateString()}</small>
+      </div>
+      <p style={{ margin: 0, color: "var(--cream)", lineHeight: 1.55, fontSize: ".86rem" }}>{entry.body}</p>
+      {entry.kind === "conversation" && entry.href ? (
+        <Link href={entry.href as never} style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}>Reopen conversation →</Link>
+      ) : null}
+      {entry.kind === "vela_pin" && entry.sourceThreadId ? (
+        <Link href={`/app/vela?threadId=${entry.sourceThreadId}`} style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}>Reopen conversation →</Link>
+      ) : null}
+      {entry.kind === "compare_reading" ? (
+        <Link href="/app/compare" style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}>Open Compare →</Link>
+      ) : null}
+      {entry.kind === "cohort_reading" ? (
+        <Link href="/app/groups" style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}>Open Groups →</Link>
+      ) : null}
+    </div>
+  );
+}
+
 /* ─── Modality balance ───────────────────────────────────────────────────── */
 const SIGN_MODALITY: Record<string, "cardinal"|"fixed"|"mutable"> = {
   Aries:"cardinal",Cancer:"cardinal",Libra:"cardinal",Capricorn:"cardinal",
@@ -289,7 +324,8 @@ export default function PersonProfilePage() {
   const [person, setPerson]         = useState<PersonRow | null>(null);
   const [chart, setChart]           = useState<NatalChart | null>(null);
   const [engineVersion, setEngineVersion] = useState<number>(CHART_ENGINE_VERSION);
-  const [notes, setNotes]           = useState<NoteRow[]>([]);
+  const [record, setRecord]         = useState<RecordEntry[]>([]);
+  const [velaPins, setVelaPins]     = useState<RecordEntry[]>([]);
   const [noteDraft, setNoteDraft]   = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
   const [status, setStatus]         = useState<string | null>(null);
@@ -426,17 +462,18 @@ export default function PersonProfilePage() {
       ? (await supabase.from("people").select("id").eq("owner_id", uid).eq("is_self", true).order("created_at", { ascending: false }).limit(1).single()).data?.id
       : personId;
     if (!actualId) { setStatus("No self profile yet."); setLoading(false); return; }
-    const [{ data: pData, error: pErr }, { data: cData, error: cErr }, { data: nData }] = await Promise.all([
+    const [{ data: pData, error: pErr }, { data: cData, error: cErr }] = await Promise.all([
       supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min").eq("id", actualId).single(),
-      supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualId).single(),
-      supabase.from("notes").select("id, body, created_at").eq("about_person", actualId).order("created_at", { ascending: false }).limit(20)
+      supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualId).single()
     ]);
     if (pErr || !pData) { setStatus(pErr?.message ?? "Unable to load person."); setLoading(false); return; }
     const personRow = pData as PersonRow & { tz_offset_min?: number | null };
     // Progressive capture: a person with no chart yet (birth_precision 'none')
     // is not an error — render the "add birth data" state instead of failing.
     if (cErr || !cData) {
-      setPerson(personRow); setChart(null); setNotes((nData ?? []) as NoteRow[]); setLoading(false);
+      setPerson(personRow); setChart(null);
+      await loadRecord(uid, actualId);
+      setLoading(false);
       return;
     }
     let chartData = cData.data as NatalChart;
@@ -469,7 +506,18 @@ export default function PersonProfilePage() {
         await supabase.from("charts").upsert({ person_id: actualId, house_system: "equal", data: chartData, engine_version: version });
       }
     }
-    setPerson(personRow); setChart(chartData); setEngineVersion(version); setNotes((nData ?? []) as NoteRow[]); setLoading(false);
+    setPerson(personRow); setChart(chartData); setEngineVersion(version);
+    await loadRecord(uid, actualId);
+    setLoading(false);
+  }
+
+  /** Load the person's Record (all note kinds + conversations) and Vela pins. */
+  async function loadRecord(uid: string, actualId: string) {
+    const [rec, pins] = await Promise.all([
+      fetchRecord(supabase, uid, { personId: actualId }, 40).catch(() => [] as RecordEntry[]),
+      fetchVelaPins(supabase, uid, actualId, 2).catch(() => [] as RecordEntry[])
+    ]);
+    setRecord(rec); setVelaPins(pins);
   }
 
   async function saveNote() {
@@ -581,6 +629,34 @@ export default function PersonProfilePage() {
           </Link>
         </section>
       ) : null}
+
+      {/* ── Vela has said this about them (B2) ── */}
+      <section className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)" }}>
+        <p className="eyebrow" style={{ marginBottom: 8, color: "var(--air)" }}>Vela on {person.display_name}</p>
+        {velaPins.length > 0 ? (
+          <div style={{ display: "grid", gap: 8 }}>
+            {velaPins.map(pin => (
+              <div key={pin.id} style={{ borderLeft: "2px solid rgba(183,154,216,.35)", paddingLeft: 12 }}>
+                <p style={{ margin: "0 0 4px", color: "var(--mist)", fontSize: ".86rem", lineHeight: 1.55 }}>{pin.body}</p>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <small className="muted" style={{ fontSize: ".68rem" }}>{new Date(pin.createdAt).toLocaleDateString()}</small>
+                  {pin.sourceThreadId ? (
+                    <Link href={`/app/vela?threadId=${pin.sourceThreadId}`} style={{ fontSize: ".7rem", color: "var(--gold-soft)" }}>Reopen conversation →</Link>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+            <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".78rem", width: "fit-content", marginTop: 2 }}>Ask Vela more</Link>
+          </div>
+        ) : (
+          <div>
+            <p className="muted" style={{ fontSize: ".82rem", marginBottom: 10 }}>
+              Nothing pinned yet. Ask Vela about {person.display_name}, then pin any insight worth keeping — it will live here.
+            </p>
+            <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".8rem" }}>Ask Vela about {person.display_name}</Link>
+          </div>
+        )}
+      </section>
 
       {/* ── Chart Wheel ── */}
       <section className="glass-card fade-in fade-in-delay-1">
@@ -961,26 +1037,25 @@ export default function PersonProfilePage() {
         })}
       </section>
 
-      {/* ── Private notes ── */}
-      <section className="glass-card fade-in fade-in-delay-3">
-        <p className="eyebrow" style={{ marginBottom: 4 }}>Private notes</p>
-        <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>Owner-only · never shared · never in Vela shared mode</p>
-        <textarea id="notes" className="field field--rect" value={noteDraft} onChange={e => setNoteDraft(e.target.value)} placeholder="Log a private moment, pattern, or thing to remember…" rows={3} style={{ marginBottom: 10 }} />
+      {/* ── The record (B1): notes, tending, Vela pins, saved readings, conversations ── */}
+      <section id="notes" className="glass-card fade-in fade-in-delay-3">
+        <p className="eyebrow" style={{ marginBottom: 4 }}>The record</p>
+        <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>
+          Owner-only · never shared. The chart never changes — this is the layer that does: everything you note, pin, and discuss about {person.display_name}, in date order.
+        </p>
+        <textarea className="field field--rect" value={noteDraft} onChange={e => setNoteDraft(e.target.value)} placeholder="Log a private moment, pattern, or thing to remember…" rows={3} style={{ marginBottom: 10 }} />
         <button className="btn-primary" onClick={saveNote} disabled={noteSaving || !noteDraft.trim()} style={{ gap: 8 }}>
           {noteSaving && <Spinner size={13} color="#1a1206" />}
-          {noteSaving ? "Saving…" : "Save note"}
+          {noteSaving ? "Saving…" : "Add to the record"}
         </button>
-        {notes.length > 0 ? (
+        {record.length > 0 ? (
           <div style={{ marginTop: 14, display: "grid", gap: 8 }}>
-            {notes.map(note => (
-              <div key={note.id} style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: "2px solid rgba(230,174,108,.3)" }}>
-                <p style={{ margin: "0 0 4px", color: "var(--cream)", lineHeight: 1.55, fontSize: ".88rem" }}>{note.body}</p>
-                <small className="muted" style={{ fontSize: ".7rem" }}>{new Date(note.created_at).toLocaleString()}</small>
-              </div>
-            ))}
+            {record.map(entry => <RecordItem key={entry.id} entry={entry} personName={person.display_name} /> )}
           </div>
         ) : (
-          <p className="muted" style={{ fontSize: ".8rem", marginTop: 8 }}>No notes yet.</p>
+          <p className="muted" style={{ fontSize: ".8rem", marginTop: 12 }}>
+            Nothing recorded yet — notes, saved readings, and Vela conversations about {person.display_name} will gather here.
+          </p>
         )}
       </section>
 

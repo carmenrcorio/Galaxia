@@ -40,6 +40,8 @@ export default function GroupsPage() {
   const [cohort, setCohort]               = useState<any>(null);
   const [savingGroup, setSavingGroup]     = useState(false);
   const [buildingOverlay, setBuildingOverlay] = useState(false);
+  const [savingReading, setSavingReading] = useState(false);
+  const [readingSaved, setReadingSaved]   = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -115,9 +117,24 @@ export default function GroupsPage() {
       }
       const label = labelArg ?? groups.find(g => g.id === selectedGroupId)?.name ?? "Ad-hoc cohort";
       setCohort({ groupLabel: label, memberNames: sel.map(p => p.display_name), memberIds: sel.map(p => p.id), overlay, pairHighlights: pairHighlights.slice(0, 3) });
+      setReadingSaved(false);
     } finally {
       setBuildingOverlay(false);
     }
+  }
+
+  /** Save the cohort overlay as an immutable dated reading on the group's record. */
+  async function saveCohortReading() {
+    if (!userId || !cohort || !selectedGroupId) return;
+    setSavingReading(true);
+    const body = `Cohort reading for ${cohort.groupLabel}: ${cohort.overlay.label}`;
+    const { error } = await supabase.from("notes").insert({
+      owner_id: userId, group_id: selectedGroupId, kind: "cohort_reading", body,
+      payload: { overlay: cohort.overlay, pairHighlights: cohort.pairHighlights, memberNames: cohort.memberNames }
+    });
+    setSavingReading(false);
+    if (error) { setStatus(error.message); return; }
+    setReadingSaved(true); setStatus("Reading saved to this group.");
   }
 
   return (
@@ -196,11 +213,17 @@ export default function GroupsPage() {
               </div>
             </div>
             <p className="muted" style={{ fontStyle: "italic" }}>{cohort.overlay.label}</p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12, alignItems: "center" }}>
               {selectedGroupId ? (
-                <a className="pill-link" href={`/app/vela?scope=group&groupId=${selectedGroupId}`}>Ask Vela about this group</a>
+                <>
+                  <button className="pill-link" onClick={saveCohortReading} disabled={savingReading || readingSaved} style={{ gap: 8 }}>
+                    {savingReading && <Spinner size={12} />}
+                    {readingSaved ? "✓ Reading saved" : savingReading ? "Saving…" : "Save this reading"}
+                  </button>
+                  <a className="pill-link" href={`/app/vela?scope=group&groupId=${selectedGroupId}`}>Ask Vela about this group</a>
+                </>
               ) : (
-                <span className="muted" style={{ fontSize: ".76rem" }}>Save this cohort as a group to ask Vela about it.</span>
+                <span className="muted" style={{ fontSize: ".76rem" }}>Save this cohort as a group to keep this reading and ask Vela about it.</span>
               )}
             </div>
           </section>

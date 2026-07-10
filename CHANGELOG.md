@@ -6,6 +6,32 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-10 (Relationship Record — R1: the Record itself)
+
+The connective tissue. `notes` becomes the single per-scope timeline; the person page reads it back.
+
+**[ADDED] Migration `20260710020000_record_timeline.sql`** — extends `notes` with `group_id`, `kind` (`note`|`tending`|`vela_pin`|`compare_reading`|`cohort_reading`), `payload jsonb`, `source_thread_id`. One store, the existing owner-only RLS, no second notes table.
+
+**[ADDED] `apps/web/lib/record.ts`** — the only read/write path: `fetchRecord(scope)` (notes of all kinds ∪ scoped conversations, date-ordered), `fetchVelaPins(personId)`, `orderPair()`.
+
+**[ADDED] B1 — the person-page Record timeline.** The old "Private notes" section is now "The record": the note composer plus a date-ordered timeline of notes, tending notes, Vela pins (with reopen links), saved comparisons, saved cohort readings, and scoped conversations. Empty state names what will gather there; the chart above is unchanged — this is the layer that accumulates.
+
+**[ADDED] B2 — "Vela on {name}".** A module near the top of the person page showing the last two pinned Vela insights (with reopen-conversation links), or an "Ask Vela about {name}" chip when empty. Closes the audited gap where a person's page didn't know about the conversation just had about them.
+
+**[ADDED] B3 — pin Vela insights.** Every Vela answer bubble has a quiet "＋ Pin to record" affordance (mist, secondary). Pins write `kind='vela_pin'` scoped to the current person/pair/group, owner-private, with `source_thread_id` for reopening. **Shared-mode rule enforced:** only Vela's messages are pinnable (the button never renders on a participant's message), and the pin is private to the pinner. The shared-space consent gate copy now states this plainly before anyone enters.
+
+**[ADDED] B4 — Compare saves a dated snapshot, never a trend.**
+- "Save this reading" writes `kind='compare_reading'` with an immutable `payload` (scores, top aspects, generational, `engineVersion`, `birthFingerprint`), on the pair's shared record (visible on both people's pages).
+- **No synastry delta.** `computeSynastry` is deterministic, so saved readings render as "Read on {date}". If a re-run differs, the cause is attributed exactly from the stored fingerprint/engine: "…the birth data changed since — not because the relationship did" or "…the astrology engine was updated." An input change is never presented as a relationship change.
+- The "Log a moment" note and the person-page notes are now explicitly one store (pair notes surface on both people's records).
+- Groups gained the deferred "Save this reading" (`kind='cohort_reading'`, on the group's record).
+
+**[ADDED] Determinism regression test** (`packages/astro/test/synastry-determinism.test.ts`): asserts `computeSynastry` returns byte-identical output across repeated/"different-day" calls and takes no temporal argument (signature guard) — locking out any future time-varying synastry that could tempt a fake trend. 27/27 astro tests pass.
+
+**Requires:** `supabase db push` for the new migration. No edge-function change.
+
+---
+
 ## 2026-07-10 (Relationship Record — R5-E1: progressive capture + ask-them link)
 
 Pulled forward ahead of R1 per the activation priority (25–55% of trial users never add a second person). Two features shipped together.

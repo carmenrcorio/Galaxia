@@ -6,6 +6,16 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Quick Chart nav entry points (branch `feat/quick-chart-nav-link`)
+
+**Trigger**: Quick Chart (`/chart`, `/chart/compare`) shipped as a public acquisition tool but had no link from anywhere in the product — an acquisition funnel with no front door.
+
+- **[ADDED]** Marketing landing nav (`apps/web/app/page.tsx`, the raw HTML/CSS string injected via `dangerouslySetInnerHTML`): a plain `Quick Chart` link to `/chart`, placed between "Pricing" and the gold "Start 14 days free" CTA. Styled identically to the other `.nav-links a` items (no new CSS); inherits the existing `@media(max-width:860px){.nav-links a:not(.nav-cta){display:none}}` rule automatically, so mobile behavior matches "Pricing" and every other non-CTA link exactly — hidden below 860px along with the rest, leaving only the gold CTA. No hamburger/drawer exists on this nav to update.
+- **[ADDED]** In-app nav (`apps/web/app/app/layout.tsx`): a `Quick Chart` `NavLink` to `/chart`, after "Settings" and before the gold "Account" pill. Same `NavLink` component as every other in-app nav item; the container already wraps via `flexWrap: "wrap"` on narrow viewports, so this item wraps the same way — no separate mobile-menu logic exists here either.
+- `/chart` is a public route; neither link needed or received an auth guard.
+- **Left untouched, confirmed intact**: the floating "✦ Quick check" launcher (`apps/web/components/quick-check-modal.tsx`'s `QuickCheckLauncher`, rendered only on `/app`'s Home). It's a `position: fixed` button that opens a fast in-app compatibility modal — a different job from the new nav links, which open the full public `/chart` experience. Not removed, not restyled, not repositioned.
+- Typecheck and production build clean; grepped the build output to confirm both "Quick Chart" strings survived into the compiled bundles for `/` and `/app/*`.
+
 ## 2026-07-10 (Quick Chart — top-of-funnel acquisition + in-app utility)
 
 Three modes, per spec. No database rows are ever created by a visit alone — only an explicit "Save"/"Add" click writes anything.

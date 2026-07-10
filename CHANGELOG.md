@@ -6,6 +6,30 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-10 (Relationship Record — R0: close the verified dead-ends)
+
+First implementation stage of `design/galaxia-relationship-record-plan.md`. No schema changes; behavior/handoff fixes only.
+
+**[FIXED] A1 — "Resume a thread" now restores the conversation's scope.**
+Root cause: `apps/web/app/app/vela/page.tsx` read `threadId` on mount but never restored the thread's `mode`/scope/people from the `threads` row, so the Focus selectors and the "Asking about X" header misrepresented every resumed conversation, and the focus-change reset effect could discard it. Now: on entry the page fetches the `threads` row (`subject_person`, `pair_low/high`, `group_id`, `mode`) and sets scope/mode/people from it before loading history; a `restoringRef` suppresses the reset during restoration; all entry params are parsed once from the entry URL (navigation into Vela is always cross-route, so the page remounts and the read is reliable).
+
+**[FIXED] A2 — Compare → Vela handoff carries the pair.**
+Root cause: Compare linked to `/app/vela?subjectPersonId=…` and the Vela page never read that parameter at all. Compare now passes `?scope=pair&subject=A&pair=B&relType=…`; Vela reads `scope/subject/pair/relType` (plus legacy `subjectPersonId`) and opens on Focus=pair with both people and the relationship type applied. A `q` param prefills the input (never auto-sends).
+
+**[FIXED] A3 — Groups: one-click restore + Ask Vela; overlay bugs.**
+Selecting a saved group now regenerates its overlay in the same action (audited "saved groups are inert" + "generate twice"), by passing the member ids explicitly to `buildOverlay` instead of waiting on `setState`. `buildOverlay` no longer leaves the spinner stuck when a chart is missing (early returns now reset state in a `finally`). Added "Ask Vela about this group" (→ `/app/vela?scope=group&groupId=…`, already supported end-to-end). **Deferred to R1:** "Save this reading" persistence needs the `notes.kind/payload/group_id` columns from R1's migration.
+
+**[FIXED] A4 — "Today in your sky" is no longer a dead text block.**
+Each named person is now a link to their profile. The person page computes its own transits (deterministic: real ephemeris vs stored natal positions; skipped for year-only charts) and shows an "Active today" banner with the tight hits and an "Ask Vela how this is showing up" deep link (prefilled prompt).
+
+**[CHANGED] A6 — the 5-person cap is stated on home, not enforced by silent redirect.**
+Home now shows "Free plan · N of 5 remaining" / a plain at-cap message. Phase 1 removes the cap entirely.
+
+**[CHANGED] A7 — duplicate navigation removed.**
+The home footer row duplicated the sticky header (Compare/Groups/Vela). It's now just the two contextual actions that are the natural next step from home (My chart, Add people); global nav lives only in the header.
+
+---
+
 ## 2026-07-10 (Vela presentation bugs)
 
 **[FIXED] Vela's suggested follow-ups rendered as raw "→ " text inside the answer bubble.**

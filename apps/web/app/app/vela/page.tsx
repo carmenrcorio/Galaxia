@@ -55,7 +55,15 @@ export default function VelaPage() {
   const [status, setStatus]     = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [userName, setUserName] = useState("You");
-  const [initialThreadId, setInitialThreadId] = useState<string | null>(null);
+  // Bootstrap params captured once from the entry URL. Navigation into this
+  // page is always cross-route (home "Resume a thread", Compare "Ask Vela",
+  // Groups "Ask Vela"), so the page remounts and a one-time read is reliable.
+  const [boot, setBoot] = useState<{
+    threadId: string | null; scope: Scope | null;
+    subject: string | null; pair: string | null; groupId: string | null; relType: string | null;
+  } | null>(null);
+  // Suppress the focus-change reset while we programmatically restore a thread.
+  const restoringRef = useRef(false);
   const chatRef  = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -79,10 +87,23 @@ export default function VelaPage() {
   const functionUrl = `${publicEnv.supabaseUrl}/functions/v1/vela-chat`;
 
   useEffect(() => {
-    setInitialThreadId(new URLSearchParams(window.location.search).get("threadId"));
+    const q = new URLSearchParams(window.location.search);
+    const rawScope = q.get("scope");
+    setBoot({
+      threadId: q.get("threadId"),
+      scope: rawScope === "person" || rawScope === "pair" || rawScope === "group" ? rawScope : null,
+      subject: q.get("subject") ?? q.get("subjectPersonId"),
+      pair: q.get("pair"),
+      groupId: q.get("groupId"),
+      relType: q.get("relType")
+    });
+    // Prefill (never auto-send) — e.g. arriving from a transit banner.
+    const prefill = q.get("q");
+    if (prefill) setMessage(prefill);
   }, []);
 
   useEffect(() => {
+    if (!boot) return;
     const load = async () => {
       const [{ data: ud }, { data: sd }] = await Promise.all([
         supabase.auth.getUser(), supabase.auth.getSession()
@@ -98,16 +119,50 @@ export default function VelaPage() {
       const allPeople = (pd ?? []) as PersonLite[];
       setPeople(allPeople);
       setGroups((gd ?? []) as GroupLite[]);
-      if (!subjectId && allPeople[0]) setSubjectId(allPeople[0].id);
-      if (!pairId    && allPeople[1]) setPairId(allPeople[1].id);
-      if (!groupId   && gd?.[0]) setGroupId(gd[0].id as string);
-      if (initialThreadId) {
-        setThreadId(initialThreadId);
-        await loadHistory(initialThreadId);
+
+      restoringRef.current = true;
+
+      // 1) Resuming a thread — restore its exact scope from the stored row so
+      //    the "Asking about X" header and Focus selectors match the conversation.
+      if (boot.threadId) {
+        const { data: t } = await supabase
+          .from("threads")
+          .select("id, mode, subject_person, pair_low, pair_high, group_id")
+          .eq("id", boot.threadId).eq("owner_id", user.id).maybeSingle();
+        if (t) {
+          const row = t as { mode: VelaMode; subject_person: string | null; pair_low: string | null; pair_high: string | null; group_id: string | null };
+          setMode(row.mode === "shared" ? "shared" : "ask");
+          if (row.group_id) { setScope("group"); setGroupId(row.group_id); }
+          else if (row.pair_low && row.pair_high) { setScope("pair"); setSubjectId(row.pair_low); setPairId(row.pair_high); }
+          else if (row.subject_person) { setScope("person"); setSubjectId(row.subject_person); }
+          setThreadId(boot.threadId);
+          await loadHistory(boot.threadId);
+          prevSubjectRef.current = row.pair_low ?? row.subject_person ?? null;
+          restoringRef.current = false;
+          return;
+        }
       }
+
+      // 2) Handoff from Compare / Groups — apply the carried scope.
+      if (boot.scope === "pair" && boot.subject && boot.pair) {
+        setScope("pair"); setSubjectId(boot.subject); setPairId(boot.pair);
+        if (boot.relType) setRelType(boot.relType);
+        prevSubjectRef.current = boot.subject;
+      } else if (boot.scope === "group" && boot.groupId) {
+        setScope("group"); setGroupId(boot.groupId);
+      } else if (boot.subject) {
+        setScope("person"); setSubjectId(boot.subject);
+        prevSubjectRef.current = boot.subject;
+      } else {
+        // 3) Fresh session defaults.
+        if (allPeople[0]) { setSubjectId(allPeople[0].id); prevSubjectRef.current = allPeople[0].id; }
+        if (allPeople[1]) setPairId(allPeople[1].id);
+        if (gd?.[0]) setGroupId(gd[0].id as string);
+      }
+      restoringRef.current = false;
     };
     void load();
-  }, [supabase, initialThreadId]);
+  }, [supabase, boot]);
 
   useEffect(() => {
     chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" });
@@ -119,8 +174,10 @@ export default function VelaPage() {
   const prevSubjectRef = useRef<string | null>(null);
   useEffect(() => {
     if (!subjectId) return;
+    // Don't reset while we're programmatically restoring a resumed/handed-off thread.
+    if (restoringRef.current) { prevSubjectRef.current = subjectId; return; }
     if (prevSubjectRef.current !== null && prevSubjectRef.current !== subjectId) {
-      // Focus person changed — discard old thread and start fresh
+      // Focus person changed by the user — discard old thread and start fresh
       setThreadId(null);
       setLines([]);
       setStatus(null);

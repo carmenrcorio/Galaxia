@@ -8,7 +8,7 @@
  * Glyph maps: design/reference/galaxia.jsx
  */
 
-import { computeSynastry, type NatalChart, type Placement } from "@galaxia/astro";
+import { computeSynastry, computeTransits, type NatalChart, type Placement } from "@galaxia/astro";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -328,6 +328,14 @@ export default function PersonProfilePage() {
 
   const hasHouses = useMemo(() => Boolean(chart?.cusps?.length === 12), [chart]);
 
+  // Today's transits against this natal chart. Deterministic (real ephemeris
+  // vs stored natal positions). Skipped for year-only charts, whose sampled
+  // positions would make transit orbs fabricated.
+  const todayTransits = useMemo(() => {
+    if (!chart || chart.precision === "year") return [];
+    return computeTransits(chart, new Date().toISOString()).filter(h => h.orb <= 1.5).slice(0, 3);
+  }, [chart]);
+
   // Balance tallies count only placements whose sign is actually known —
   // an uncertain (year-only) sign must not be tallied as if it were fact.
   const elementBalance = useMemo(() => {
@@ -506,9 +514,36 @@ export default function PersonProfilePage() {
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link href="/app/compare" className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
-        <Link href="/app/vela"    className="pill-link" style={{ fontSize: ".82rem" }}>Ask Vela</Link>
+        <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Ask Vela</Link>
         <EditPersonPanel person={person} userId={userId ?? ""} onSaved={() => loadProfile(userId ?? "")} onDeleted={() => router.push("/app")} />
       </div>
+
+      {/* ── Active today (transit) — deterministic; links back to Vela ── */}
+      {todayTransits.length > 0 ? (
+        <section className="glass-card fade-in" style={{ borderColor: "rgba(230,174,108,.28)", background: "rgba(230,174,108,.05)" }}>
+          <p className="eyebrow" style={{ marginBottom: 8 }}>Active today for {person.display_name}</p>
+          <div style={{ display: "grid", gap: 6 }}>
+            {todayTransits.map((t, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: ".84rem" }}>
+                <span style={{ color: "var(--gold-soft)", flexShrink: 0 }}>
+                  {BODY_GLYPH[t.transitBody] ?? t.transitBody} {ASPECT_GLYPH[t.type] ?? ""} {BODY_GLYPH[t.natalBody] ?? t.natalBody}
+                </span>
+                <span style={{ color: "var(--cream)" }}>
+                  transiting {t.transitBody} {t.type} their natal {t.natalBody}
+                </span>
+                <span style={{ color: "var(--mist2)", fontSize: ".72rem" }}>{t.orb.toFixed(1)}° orb</span>
+              </div>
+            ))}
+          </div>
+          <Link
+            href={`/app/vela?scope=person&subject=${person.id}&q=${encodeURIComponent(`How does today's ${todayTransits[0].transitBody} ${todayTransits[0].type} their natal ${todayTransits[0].natalBody} affect us right now?`)}`}
+            className="pill-link"
+            style={{ fontSize: ".8rem", marginTop: 10 }}
+          >
+            Ask Vela how this is showing up
+          </Link>
+        </section>
+      ) : null}
 
       {/* ── Chart Wheel ── */}
       <section className="glass-card fade-in fade-in-delay-1">

@@ -15,7 +15,7 @@ The encouraging part, verified in code: the data layer is already ~80% built.
 | Person-scoped and pair-scoped notes | `notes` table already has `about_person`, `pair_low`, `pair_high` — the "two disconnected note stores" are **one table** written by two UIs that never cross-query |
 | Conversation scope | `threads` table already stores `subject_person`, `pair_low`, `pair_high`, `group_id`, `mode` |
 | Full conversation history | `messages` per thread (now with `suggestions` split out) |
-| Synastry snapshots | `synastry` table exists (`person_low`, `person_high`, `relation_type`, `data jsonb`, `computed_at`) — currently unused by the web Compare flow |
+| Synastry snapshots | `synastry` table exists (`person_low`, `person_high`, `relation_type`, `data jsonb`, `computed_at`) — currently unused by the web Compare flow. Note: `computeSynastry` is **time-invariant**, so a snapshot is a dated record, never a trend series. |
 | Birth data for triggers | `people.birth_date/birth_time/birth_place/tz_offset_min` — confirmed populated |
 | Live transit computation | `computeTransits` already runs on the home page (`apps/web/app/app/page.tsx` ~line 386) |
 
@@ -63,7 +63,10 @@ alter table notes add column if not exists source_thread_id uuid references thre
 - `kind='note'` — freeform (existing rows default correctly).
 - `kind='tending'` — a note logged from a trigger prompt (Workstream C), same privacy as any note.
 - `kind='vela_pin'` — body = the pinned Vela paragraph verbatim, `source_thread_id` links back to the reopenable conversation.
-- `kind='compare_reading'` — `payload` = `{ relationType, scores, topAspects, generational }` at save time. Immutable; this is what makes "warmth moved from Charged to Tender between July and September" computable later — an honest delta between two saved facts, never an invented narrative.
+- `kind='compare_reading'` — `payload` = `{ relationType, scores, topAspects, generational, engineVersion, birthFingerprint }` at save time. **Immutable snapshot, dated.** It is displayed as "read on 12 July," never as a trend.
+  - **Correction (verified against `computeSynastry(a, b)`): synastry is time-invariant.** It takes two natal charts and nothing else — no date, no transits. The score between two fixed birth charts is a *constant*; it cannot move from "Charged" to "Tender" in July or ever, unless the birth data was corrected or the engine changed. Presenting a re-run difference as a relationship trend would be the codebase's fifth fabrication (after July-1 births, silent-UTC, Jacksonville-FL, Equal-House-as-Placidus). **We do not ship a synastry "delta."**
+  - If a re-run produces a different score, the *inputs* changed. Attribute it exactly, from the stored `engineVersion` and `birthFingerprint`: "This reading changed because you corrected Daniel's birth time" or "…because the engine was updated (v2 → v3)." Never present an input change as a relationship change.
+  - The genuinely time-varying material — **transits against a natal chart, and the notes the user wrote** — is what the timeline is built from. "Saturn has been sitting on his Moon since March; here's what you wrote in April" is true, moving, and honest. That is the real version of the accumulation the audits reached for.
 - `kind='cohort_reading'` — `payload` = the overlay (`sharedSky`, `faultLines`, pair highlights), `group_id` set.
 
 **Why reuse `notes` instead of a new table:** RLS policies, owner scoping, and the privacy promise ("notes are owner-only") already exist and are already correct for this table. A second timeline table would need identical policies and would reintroduce the exact disconnection we are removing. One store, one privacy rule, one query.
@@ -122,10 +125,12 @@ Small module near the top of the person page (distinct visual treatment from Pri
 **B3. Pin to profile.**
 On every Vela answer bubble (web), a quiet "Pin" affordance (mist text, no gold — same secondary hierarchy as the suggestion chips). Pinning writes `kind='vela_pin'` with the answer body verbatim and the thread reference, scoped to the thread's subject/pair/group. Owner-private always; in shared mode, pinning is still private to the pinner and the pin is never visible to the other participant (privacy rule §9 upheld — the pin is *about* the shared conversation, stored in the pinner's own record).
 
-**B4. Compare: one note store, save the reading, show the delta.**
+**B4. Compare: one note store, save the reading as a dated snapshot.**
 - "Log a moment" already writes `notes` with `pair_low/pair_high` — keep the write, and render the pair's Record right there under the result (read-side unification; the person page shows the same entries filtered to that person).
-- **Save this reading** button → `kind='compare_reading'` snapshot. Also auto-upsert the latest computation into the existing `synastry` table (cheap cache, already schema'd).
-- When a previous saved reading exists for the same pair + relationship type, render an honest delta line: "Since 12 July: warmth Charged → Tender, communication unchanged." Computed strictly from the two stored payloads — shown only when both facts exist.
+- **Save this reading** button → `kind='compare_reading'` immutable snapshot carrying `engineVersion` and a `birthFingerprint` (a hash of both people's birth inputs). Also auto-upsert the latest computation into the existing `synastry` table (cheap cache, already schema'd).
+- **No synastry delta.** `computeSynastry` is deterministic, so a saved reading is shown as "read on 12 July," full stop. If a re-run differs, compare the stored `engineVersion`/`birthFingerprint` against the current ones and state the actual cause ("this reading changed because you corrected Daniel's birth time" / "…because the engine was updated"). An input change is never dressed up as a relationship change.
+- The moving layer on the pair page is transits-against-natal + the note timeline (Workstream C + B1), not a synastry trend.
+- **Regression test:** assert `computeSynastry(a, b)` returns identical output for the same two charts across different `whenUTC`/system-clock values — locking determinism so no future edit can reintroduce a time-varying score and tempt a fake trend.
 
 **B5. The Edge Ledger (constellation).**
 The Gemini audit's "one thing," built last in this workstream because it is a presentation layer over B1–B4's data. Clicking the connecting line between two nodes on `/app` opens a side panel (bottom sheet under 600px) with three stacked groups: **Active transits between you** (live compute), **Pinned insights** (`vela_pin` for the pair), **Notes & readings** (the pair Record), plus "Open full comparison" and "Ask Vela." Canvas work: the bezier edges need hit-testing (distance-to-quadratic-curve sampling — the canvas already hit-tests nodes for hover, same pattern). The panel replaces nothing on desktop; on first ship, the "Resume a thread" list remains until B1+A1 make it redundant, then it collapses into a smaller "Recent conversations" row.
@@ -206,11 +211,12 @@ Ordered by structural leverage; each stage ships independently. No calendar esti
 | Stage | Contents | Touches | Depends on |
 |---|---|---|---|
 | **R0** | A1 resume-with-scope, A2 pair handoff, A3 groups save/ask/restore, A4 transit links, A6 cap honesty, A7 nav cleanup | `vela/page.tsx`, `compare/page.tsx`, `groups/page.tsx`, `app/page.tsx` — no schema | Nothing. Start immediately. |
-| **R1** | §2 migration + `lib/record.ts`, B1 person timeline, B2 Vela trace, B3 pin, B4 compare save/delta | One migration, person page, compare page, vela page, edge function (pin needs no function change — client writes `notes` directly) | R0-A1 (reopen links) |
+| **R5-E1** *(pulled forward)* | Progressive capture (name + relation now, birth data later) **and** the "ask them for their birth time" share link (E3), shipped together | Migration for nullable/`'none'` precision, welcome/onboarding, person page missing-data prompts, `/invite` route + public write-back page | R0. **This is the activation lever and runs before R1.** |
+| **R1** | §2 migration + `lib/record.ts`, B1 person timeline, B2 Vela trace, B3 pin, B4 compare dated-snapshot + determinism test | One migration, person page, compare page, vela page, edge function (pin needs no function change — client writes `notes` directly) | R0-A1 (reopen links) |
 | **R2** | B5 edge ledger, B6 name resolution, A5 data export/delete | Canvas hit-testing on `app/page.tsx`, new export/delete server routes | R1 (renders the Record) |
 | **R3** | C1 solar return, C2 tending prompts, C3 note echo, `trigger_log` | Home page, person page, one tiny migration, new deterministic copy maps | R1 (tending notes land in the Record) |
 | **R4** | D1–D4 decode layer | New `lib/decode.ts` (hand-written copy — the long pole), tooltip/drawer component, person + compare + home surfaces | Nothing (parallelizable with R1–R3) |
-| **R5** | E1 progressive capture, E2 Vela capture card, E3 ask-them link, E4 entry points | Welcome/onboarding, vela page + edge function (extraction), invite route, small migration for `'unknown'` precision | E2 depends on nothing in R1–R3; E1 unblocks activation and may be pulled forward next to R0 |
+| **R5 (rest)** | E2 Vela capture card, E4 entry points | vela page + edge function (extraction) | E2 sandboxed behind the confirmation card |
 | **Parallel** | **Phase 1 pricing/Stripe** per `galaxia-pricing-implementation-spec.md` | — | Independent; A6 becomes moot when it lands |
 
 Risk notes: R1's migration is additive-only (safe); B5's canvas hit-testing is the only genuinely fiddly UI work in the plan; E2 is the only place an LLM touches structured data and it is sandboxed behind the confirmation card; the Vela edge function changes (B6 hint context, E2 extraction) each require a `supabase functions deploy vela-chat`.
@@ -246,10 +252,14 @@ Mobile: everything here is web-first (the live product). The mobile app inherits
 
 ---
 
-## 12. Open decisions for Carmen
+## 12. Decisions (resolved 10 July 2026)
 
-1. **Pin visibility in shared mode:** plan says pins are always private to the pinner, even pins of shared-thread messages. Confirm this matches the intended shared-space social contract.
-2. **Compare auto-snapshot vs explicit save:** plan makes saving explicit (auto-upserting only the invisible `synastry` cache) so the Record stays intentional. The alternative — auto-save every run — makes the delta feature richer but the timeline noisier. Plan recommends explicit; flag if you want auto.
-3. **"Resume a thread" afterlife:** once the Edge Ledger and person Records exist, does the home list collapse to a compact "Recent conversations" row (plan's recommendation) or disappear entirely?
-4. **E1 `'unknown'` precision naming** — cosmetic but schema-visible; will be decided at implementation unless you have a preference.
-5. **R5-E1 pull-forward:** activation data (25–55% single-person trials) argues for shipping progressive capture alongside R0 rather than last. Plan sequences it in R5 for coherence; say the word and it moves.
+1. **Pin visibility in shared mode — REFINED.** In a shared thread you may pin **Vela's** messages only; you may **not** pin the other participant's messages. Pins are private to the pinner. The shared-space consent copy must state plainly, *before anyone enters*, that either participant may privately save Vela's guidance — transparency is what makes the consent real. (Implemented in B3 and the consent gate copy.)
+2. **Compare: explicit save, no delta — CONFIRMED + CORRECTED.** Saving is explicit; the `synastry` cache upserts invisibly. There is **no delta feature** — synastry is deterministic, so a snapshot is a dated fact with input-change attribution, not a trend (see §2.2, §4-B4).
+3. **"Resume a thread" afterlife — DEFERRED.** Once the Edge Ledger + person Records exist, the home list collapses to a compact "Recent conversations" row (recommendation stands); revisit at R2.
+4. **E1 precision naming — implementer's call** unless Carmen objects; leaning toward a nullable birth-precision with an explicit `'none'`/`'unknown'` sentinel surfaced as "birth data not added yet."
+5. **R5-E1 pull-forward — YES, EMPHATICALLY.** Progressive capture + the "ask them for their birth time" share link ship **immediately after R0, ahead of R1**. The 25–55% never-add-a-second-person figure, not any R1–R4 feature, decides whether this is a business. Sequencing updated accordingly (§9).
+
+## 13. The living-map guardrail (promoted to ENGINEERING.md §13)
+
+Recorded here and added to `ENGINEERING.md` as its own rule: **the constellation may reflect *facts of the record* (an active transit, a saved reading, a note, an approaching solar return) but never app-usage frequency.** Edge weight that encodes "how often you open this person" is a streak in a costume; it would quietly punish the healthiest relationships — the ones you don't need to check on. Every visual difference on the map must map to a real, inspectable event.

@@ -90,6 +90,7 @@ export default function AppHomePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [welcomeName, setWelcomeName] = useState("stargazer");
+  const [tier, setTier]               = useState<"free" | "plus">("free");
   const [people, setPeople]           = useState<PersonRow[]>([]);
   const [links, setLinks]             = useState<LinkRow[]>([]);
   const [activeTransitIds, setActiveTransitIds] = useState<string[]>([]);
@@ -347,13 +348,14 @@ export default function AppHomePage() {
       const personIds = (idRows ?? []).map(r => r.id as string);
 
       const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }] = await Promise.all([
-        supabase.from("profiles").select("display_name").eq("id", uid).single(),
+        supabase.from("profiles").select("display_name, subscription_tier").eq("id", uid).single(),
         supabase.from("people").select("id, display_name, relation, birth_precision, is_self").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode").eq("owner_id", uid).order("created_at", { ascending: false }).limit(6)
       ]);
 
       setWelcomeName(profile?.display_name ?? email.split("@")[0] ?? "stargazer");
+      setTier((profile?.subscription_tier as "free" | "plus") ?? "free");
       const castPeople = (peopleRows ?? []) as PersonRow[];
       setPeople(castPeople);
 
@@ -480,9 +482,20 @@ export default function AppHomePage() {
           <p className="eyebrow">Today in your sky</p>
           <p className="muted">{todayTransit}</p>
           {activeTransitIds.length > 0 ? (
-            <p className="muted" style={{ fontSize: ".8rem", marginTop: 4 }}>
-              Tight transit: {activeTransitIds.map(id => people.find(p => p.id === id)?.display_name).filter(Boolean).join(", ")}
-            </p>
+            <div style={{ marginTop: 8 }}>
+              <p className="muted" style={{ fontSize: ".78rem", marginBottom: 6 }}>Tight transit touching — open a chart to see it applied:</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {activeTransitIds.map(id => {
+                  const name = people.find(p => p.id === id)?.display_name;
+                  if (!name) return null;
+                  return (
+                    <Link key={id} href={`/app/person/${id}?transit=1`} className="pill-link" style={{ fontSize: ".8rem" }}>
+                      {name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           ) : null}
         </section>
       ) : null}
@@ -502,14 +515,25 @@ export default function AppHomePage() {
         </section>
       ) : null}
 
-      {/* ── Quick links (no duplicate nav — spec §4 "delete duplicate bottom nav row") ── */}
+      {/* ── Contextual actions (global nav lives in the header — A7: no duplicate row) ──
+         Only the two actions that are the natural next step from home remain:
+         open your own chart, and grow the constellation. Compare/Groups/Vela are
+         one tap away in the sticky header. */}
       {!loading ? (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }} className="fade-in fade-in-delay-2">
-          {selfPerson ? <Link href={`/app/person/${selfPerson.id}`} className="pill-link">My chart</Link> : null}
-          <Link href="/welcome" className="pill-link">Add people</Link>
-          <Link href="/app/compare" className="pill-link">Compare</Link>
-          <Link href="/app/groups"  className="pill-link">Groups</Link>
-          <Link href="/app/vela"    className="pill-link">Ask Vela</Link>
+        <div className="fade-in fade-in-delay-2">
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {selfPerson ? <Link href={`/app/person/${selfPerson.id}`} className="pill-link">My chart</Link> : null}
+            <Link href="/welcome" className="pill-link">Add people</Link>
+          </div>
+          {/* A6: state the cap honestly here rather than silently redirecting from the form.
+             Phase 1 (one tier, unlimited people) removes the cap entirely. */}
+          {tier !== "plus" ? (
+            <p className="muted" style={{ fontSize: ".76rem", marginTop: 6 }}>
+              {people.length >= 5
+                ? "Free plan: you've added 5 people (the current cap). Managing your plan will lift this."
+                : `Free plan · ${5 - people.length} of 5 people remaining.`}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </main>

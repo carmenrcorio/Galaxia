@@ -377,10 +377,15 @@ export default function ComparePage() {
             ) : null}
           </section>
 
-          {/* Ask Vela */}
+          {/* Ask Vela — carry the full pair context so Vela opens on Focus=pair */}
           <section className="glass-card fade-in fade-in-delay-2" style={{ textAlign: "center" }}>
             <p className="muted" style={{ marginBottom: 12, fontSize: ".88rem" }}>Want Vela to read this dynamic for you?</p>
-            <Link href={`/app/vela?subjectPersonId=${result.personA.id}`} className="btn-primary">Ask Vela about this relationship</Link>
+            <Link
+              href={`/app/vela?scope=pair&subject=${result.personA.id}&pair=${result.personB.id}&relType=${encodeURIComponent(relationType)}`}
+              className="btn-primary"
+            >
+              Ask Vela about {result.personA.display_name} &amp; {result.personB.display_name}
+            </Link>
           </section>
 
           {/* Log moment */}

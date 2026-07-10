@@ -143,7 +143,6 @@ export default function AppHomePage() {
     /* compute position with drift — prototype pos() */
     function nodePos(i: number): { x: number; y: number } {
       const p = people[i];
-      const selfIdx = people.findIndex(q => q.is_self);
       let baseX: number, baseY: number;
       if (p.is_self) {
         baseX = W() / 2;
@@ -410,6 +409,10 @@ export default function AppHomePage() {
     await setThreadStatus(supabase, threadId, "archived");
   }
 
+  // Deterministic: a unique index on people(owner_id) WHERE is_self makes
+  // "more than one self" impossible at the database level, so `.find()`
+  // here can never surface the wrong one among duplicates — there can be
+  // at most one to find. No ordering (created_at or otherwise) is load-bearing.
   const selfPerson = people.find(p => p.is_self);
 
   return (

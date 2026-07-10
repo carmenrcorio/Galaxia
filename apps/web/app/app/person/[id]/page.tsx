@@ -406,8 +406,11 @@ export default function PersonProfilePage() {
 
   async function loadProfile(uid: string) {
     setLoading(true);
+    // A unique index on people(owner_id) WHERE is_self makes more than one
+    // self structurally impossible, so this is never a "pick among duplicates"
+    // query — no ordering/limit tie-breaker needed or used.
     const actualId = personId === "self"
-      ? (await supabase.from("people").select("id").eq("owner_id", uid).eq("is_self", true).order("created_at", { ascending: false }).limit(1).single()).data?.id
+      ? (await supabase.from("people").select("id").eq("owner_id", uid).eq("is_self", true).maybeSingle()).data?.id
       : personId;
     if (!actualId) { setStatus("No self profile yet."); setLoading(false); return; }
     const [{ data: pData, error: pErr }, { data: cData, error: cErr }] = await Promise.all([

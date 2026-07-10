@@ -524,6 +524,68 @@ select.field--rect {
   .compat-grid  { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ─── In-app nav (apps/web/components/app-nav.tsx) ──────────────────────────
+   Breakpoint matches the marketing nav's existing @media(max-width:860px)
+   for consistency. Below it, the header row holds only the brand + the
+   hamburger trigger — nothing left to wrap, so nothing can spill out of a
+   fixed-height box the way the old single-row nav did. */
+.app-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.app-nav-trigger-btn { display: none; }
+
+.app-nav-link {
+  color: var(--mist);
+  text-decoration: none;
+  font-size: .86rem;
+  font-weight: 500;
+  letter-spacing: .01em;
+  transition: color .25s;
+}
+.app-nav-link:hover { color: var(--cream); }
+
+@media (max-width: 860px) {
+  .app-nav-links { display: none; }
+  .app-nav-trigger-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid rgba(183,154,216,.22);
+    border-radius: 12px;
+    color: var(--cream);
+    cursor: pointer;
+  }
+  .app-nav-trigger-btn:hover { border-color: rgba(183,154,216,.4); }
+}
+
+/* Mobile drawer: real, full-width, stacked tap targets — never bare text. */
+.app-nav-drawer {
+  display: grid;
+  gap: 4px;
+  padding: 4px 0 16px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.app-nav-drawer-link {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 6px;
+  border-radius: 10px;
+  color: var(--mist);
+  text-decoration: none;
+  font-size: .95rem;
+  font-weight: 500;
+  transition: background .15s, color .15s;
+}
+.app-nav-drawer-link:hover { background: rgba(255,255,255,.04); color: var(--cream); }
+.app-nav-drawer-link--gold { color: var(--gold); font-weight: 600; }
+
 /* ─── Aspect weight classes ──────────────────────────────────────────────── */
 /* tight < 2°: gold accent; mid < 4°: mist accent; loose > 5°: dimmed */
 .aspect-tight { border-left: 2.5px solid var(--gold);       padding-left: 10px; }

@@ -6,6 +6,22 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## In-app nav: real mobile menu, no more overflow (branch `fix/app-nav-mobile`)
+
+**Trigger**: a mobile-friendliness audit found this was the worst break in the app. `apps/web/app/app/layout.tsx`'s nav put 6 links + the Account pill in one flex row with a hardcoded `height:64`. Below ~860px those 7 items couldn't fit one line; the only escape valve (`flexWrap:wrap` on the inner group) wrapped them into 2–3 rows that didn't fit the fixed-height box, spilling both above and below it — pushing "Home"/"Compare"/"Groups" off the top of the viewport (unreachable, not merely scrolled away) and rendering the gold "Account" pill directly on top of `TrialBanner`'s text underneath, with zero clearance between the two. Every link was also a bare 23px-tall text node with no padding. This affected all 6 routes sharing the layout: `/app`, `/app/compare`, `/app/groups`, `/app/person/[id]`, `/app/settings`, `/app/vela` — confirmed no others use it.
+
+**Phase 1 — real responsive nav, not a fixed-height patch**:
+
+- **[ADDED]** `apps/web/components/app-nav.tsx` — the nav extracted into its own client component (`"use client"`, needed for the drawer's open/close state). Below the breakpoint, the header row now holds only the brand and a hamburger trigger — nothing left to wrap, so nothing can spill out of a fixed-height box. The 6 links + Account move into a drawer rendered in normal document flow directly under the header, inside the same `position: sticky` `<nav>`; opening it grows the nav and pushes `TrialBanner`/page content down instead of overlapping them, because there is no fixed height anywhere left to overflow.
+- **[FIXED]** Removed the `height: 64` constraint entirely; the header row uses `minHeight: 64` instead, which only ever holds 2 items on mobile (brand + trigger) so it can never wrap.
+- **[FIXED]** Tap targets: the hamburger trigger is 44×44px; every drawer link is a full-width row with `min-height: 48px` and real padding — a button-shaped tappable row, not bare text. (Desktop links are deliberately left as the existing bare-text style — see below.)
+- **[ADDED]** `globals.css`: `.app-nav-links`/`.app-nav-trigger-btn`/`.app-nav-drawer`/`.app-nav-drawer-link` rules, gated on `@media (max-width: 860px)` — the same breakpoint the marketing nav already uses, for consistency.
+- Drawer closes automatically on route change (`usePathname` effect) and on Escape; never left open across a navigation.
+- **Desktop unchanged**: above 860px the same inline links row and gold Account pill render with identical styling to before — verified pixel-identical link positions/sizes via the same measurement script used to diagnose the bug.
+- **Reusable primitive**: `AppNav` is now a standalone component, but the marketing nav (`apps/web/app/page.tsx`) is raw HTML in a JS string, not JSX — it can't import this directly without first being ported to JSX, which is out of scope here. Noting the seam rather than doing that port.
+
+**Verification**: `tsc --noEmit` and `next build` pass. Live-verified against a real signed-up-and-confirmed test account at 320/375/390px: zero horizontal overflow before or after opening the drawer; all 6 links + Account visible, each a full-width 48px-tall row, sequential with no overlap; hamburger trigger measured 44×44px exactly; drawer confirmed closed after clicking a link and navigating. Desktop re-verified at 1280px: all 7 items render in the original single row, same positions/sizes as pre-fix measurements, hamburger trigger confirmed hidden (`display:none`). All test data deleted after verification.
+
 ## Subscribe page no longer claims a trial ended when it hasn't (branch `fix/subscribe-trial-status-claim`)
 
 **Trigger**: `components/paywall.tsx` rendered the eyebrow "YOUR TRIAL HAS ENDED" unconditionally — a hardcoded string, not derived from any prop, state, or query. Verified on a fresh account with 14 real days remaining (`trial_ends_at` 2026-07-24): the page still claimed the trial had ended. Same class of bug ENGINEERING.md §12 exists to prevent, on the exact page where a user decides whether to pay.

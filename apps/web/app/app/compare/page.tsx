@@ -19,15 +19,35 @@ import { InitialAvatar } from "../../../components/initial-avatar";
 import { Spinner } from "../../../components/spinner";
 import { SIGN_VIBE } from "../../../lib/design";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
+import { CHART_ENGINE_VERSION } from "../../../lib/house-system";
+import { orderPair } from "../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 type RelationType = "partners" | "siblings" | "friends" | "parent-child" | "ancestor";
 
 interface PersonLite {
   id: string; display_name: string; relation: string;
-  birth_date: string | null; birth_precision: "exact" | "date" | "year";
+  birth_date: string | null; birth_precision: "none" | "exact" | "date" | "year";
+  birth_time?: string | null; birth_place?: string | null;
+  birth_lat?: number | null; birth_lng?: number | null; tz_offset_min?: number | null;
   // Populated from chart data after comparison runs
   sun?: string; moon?: string; venus?: string; mars?: string;
+}
+
+/**
+ * Stable fingerprint of a person's birth inputs. Two saved readings with the
+ * same engine version but different fingerprints changed because the birth data
+ * changed — never because the (deterministic) relationship "moved".
+ */
+function birthFingerprint(p: PersonLite): string {
+  return [p.birth_date, p.birth_time, p.birth_place, p.birth_lat, p.birth_lng, p.tz_offset_min, p.birth_precision]
+    .map(v => (v === null || v === undefined ? "" : String(v))).join("|");
+}
+
+interface SavedReading {
+  id: string; createdAt: string;
+  engineVersion: number; fingerprint: string;
+  scores?: Record<string, number>;
 }
 
 /**
@@ -150,13 +170,15 @@ export default function ComparePage() {
   const [status, setStatus]       = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [showRaw, setShowRaw]     = useState(false);
+  const [savedReadings, setSavedReadings] = useState<SavedReading[]>([]);
+  const [savingReading, setSavingReading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
       setUserId(user.id);
       const { data } = await supabase.from("people")
-        .select("id, display_name, relation, birth_date, birth_precision")
+        .select("id, display_name, relation, birth_date, birth_precision, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min")
         .eq("owner_id", user.id).order("created_at", { ascending: false });
       const rows = (data ?? []) as PersonLite[];
       setPeople(rows);
@@ -215,7 +237,46 @@ export default function ComparePage() {
     };
 
     setResult({ personA: personAWithChart, personB: personBWithChart, synastry, generational, ancestralHeadline });
+
+    // Load prior saved readings for this pair (immutable, dated snapshots).
+    const { pairLow, pairHigh } = orderPair(selectedA.id, selectedB.id);
+    const { data: priorRows } = await supabase.from("notes")
+      .select("id, created_at, payload").eq("owner_id", userId!)
+      .eq("kind", "compare_reading").eq("pair_low", pairLow).eq("pair_high", pairHigh)
+      .order("created_at", { ascending: false }).limit(5);
+    setSavedReadings((priorRows ?? []).map(r => {
+      const pl = (r.payload ?? {}) as { engineVersion?: number; birthFingerprint?: string; scores?: Record<string, number> };
+      return { id: r.id as string, createdAt: r.created_at as string, engineVersion: pl.engineVersion ?? 1, fingerprint: pl.birthFingerprint ?? "", scores: pl.scores };
+    }));
   }
+
+  async function saveReading() {
+    if (!userId || !result) return;
+    setSavingReading(true);
+    const a: PersonLite = result.personA, b: PersonLite = result.personB;
+    const { pairLow, pairHigh } = orderPair(a.id, b.id);
+    const fingerprint = `${birthFingerprint(a)}//${birthFingerprint(b)}`;
+    const payload = {
+      relationType, scores: result.synastry.scores,
+      topAspects: result.synastry.aspects.slice(0, 8),
+      generational: result.generational,
+      engineVersion: CHART_ENGINE_VERSION, birthFingerprint: fingerprint
+    };
+    const body = `Compared as ${relationType} — overall ${result.synastry.scores.overall}. A dated snapshot of this reading.`;
+    const { error } = await supabase.from("notes").insert({
+      owner_id: userId, pair_low: pairLow, pair_high: pairHigh, kind: "compare_reading", body, payload
+    });
+    setSavingReading(false);
+    if (error) { setStatus(error.message); return; }
+    setStatus("Reading saved to both people's records.");
+    await runCompare();
+  }
+
+  // Attribution: a prior reading with the same engine but a different birth
+  // fingerprint means the inputs changed — never a relationship "trend".
+  const currentFingerprint = result ? `${birthFingerprint(result.personA)}//${birthFingerprint(result.personB)}` : "";
+  const changedReading = savedReadings.find(r => r.fingerprint && r.fingerprint !== currentFingerprint);
+  const engineChangedReading = savedReadings.find(r => r.fingerprint === currentFingerprint && r.engineVersion !== CHART_ENGINE_VERSION);
 
   async function saveMoment() {
     if (!userId || !result || !noteDraft.trim()) return;
@@ -377,15 +438,55 @@ export default function ComparePage() {
             ) : null}
           </section>
 
-          {/* Ask Vela */}
+          {/* Ask Vela — carry the full pair context so Vela opens on Focus=pair */}
           <section className="glass-card fade-in fade-in-delay-2" style={{ textAlign: "center" }}>
             <p className="muted" style={{ marginBottom: 12, fontSize: ".88rem" }}>Want Vela to read this dynamic for you?</p>
-            <Link href={`/app/vela?subjectPersonId=${result.personA.id}`} className="btn-primary">Ask Vela about this relationship</Link>
+            <Link
+              href={`/app/vela?scope=pair&subject=${result.personA.id}&pair=${result.personB.id}&relType=${encodeURIComponent(relationType)}`}
+              className="btn-primary"
+            >
+              Ask Vela about {result.personA.display_name} &amp; {result.personB.display_name}
+            </Link>
+          </section>
+
+          {/* Save this reading — an immutable, dated snapshot (never a trend) */}
+          <section className="glass-card fade-in fade-in-delay-2">
+            <p className="eyebrow" style={{ marginBottom: 8 }}>Save this reading</p>
+            <p className="muted" style={{ fontSize: ".8rem", marginBottom: 10 }}>
+              A comparison between two birth charts is the same every time — so a saved reading is a dated record, not a trend.
+              It lives on both {result.personA.display_name}'s and {result.personB.display_name}'s pages.
+            </p>
+            <button className="btn-primary" onClick={saveReading} disabled={savingReading} style={{ gap: 8 }}>
+              {savingReading && <Spinner size={13} color="#1a1206" />}
+              {savingReading ? "Saving…" : "Save this reading"}
+            </button>
+
+            {changedReading ? (
+              <p className="muted" style={{ fontSize: ".78rem", marginTop: 12, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+                A reading saved on {new Date(changedReading.createdAt).toLocaleDateString()} differs from this one because the birth data changed since — not because the relationship did. The chart math is identical for identical inputs.
+              </p>
+            ) : engineChangedReading ? (
+              <p className="muted" style={{ fontSize: ".78rem", marginTop: 12, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+                A reading saved on {new Date(engineChangedReading.createdAt).toLocaleDateString()} differs because the astrology engine was updated since — the birth data is unchanged.
+              </p>
+            ) : null}
+
+            {savedReadings.length > 0 ? (
+              <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
+                <p className="muted" style={{ fontSize: ".72rem" }}>Saved readings for this pair:</p>
+                {savedReadings.map(r => (
+                  <div key={r.id} style={{ fontSize: ".78rem", color: "var(--mist)" }}>
+                    Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""}
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </section>
 
           {/* Log moment */}
           <section className="glass-card fade-in fade-in-delay-3">
             <p className="eyebrow" style={{ marginBottom: 8 }}>Log a moment (private)</p>
+            <p className="muted" style={{ fontSize: ".78rem", marginBottom: 10 }}>Saved to this pair's shared record — visible on both their pages.</p>
             <textarea className="field field--rect" value={noteDraft} onChange={e => setNoteDraft(e.target.value)} placeholder="Capture what happened and what you noticed…" rows={3} style={{ borderRadius: 14, marginBottom: 10 }} />
             <button className="btn-primary" onClick={saveMoment} disabled={saving || !noteDraft.trim()} style={{ gap: 8 }}>
               {saving && <Spinner size={13} color="#1a1206" />}

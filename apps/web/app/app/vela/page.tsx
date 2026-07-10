@@ -6,13 +6,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { Spinner } from "../../../components/spinner";
 import { publicEnv } from "../../../lib/env";
+import { orderPair } from "../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
+import { splitVelaReply } from "../../../lib/vela-parse";
 
 type VelaMode = "ask" | "shared";
 type Scope     = "person" | "pair" | "group";
 interface PersonLite { id: string; display_name: string; is_minor: boolean; }
 interface GroupLite  { id: string; name: string; }
-interface ChatLine   { role: "user" | "vela" | "system"; text: string; }
+interface ChatLine   { role: "user" | "vela"; text: string; suggestions?: string[]; }
+
+const PRIVACY_CAPTION = "Private by default · no private notes in shared mode · consent required for shared threads";
 
 const SUGGESTED_PROMPTS = [
   "What do we need most from each other?",
@@ -45,14 +49,24 @@ export default function VelaPage() {
   const [groupId, setGroupId]   = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [message, setMessage]   = useState("");
-  const [lines, setLines]       = useState<ChatLine[]>([
-    { role: "system", text: "Private by default · no private notes in shared mode · consent required for shared threads" }
-  ]);
+  // The privacy line is a one-time caption under the thread header (PRIVACY_CAPTION),
+  // never a per-message bubble.
+  const [lines, setLines]       = useState<ChatLine[]>([]);
   const [sending, setSending]   = useState(false);
   const [status, setStatus]     = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState("You");
-  const [initialThreadId, setInitialThreadId] = useState<string | null>(null);
+  const [pinnedKeys, setPinnedKeys] = useState<Set<number>>(new Set());
+  // Bootstrap params captured once from the entry URL. Navigation into this
+  // page is always cross-route (home "Resume a thread", Compare "Ask Vela",
+  // Groups "Ask Vela"), so the page remounts and a one-time read is reliable.
+  const [boot, setBoot] = useState<{
+    threadId: string | null; scope: Scope | null;
+    subject: string | null; pair: string | null; groupId: string | null; relType: string | null;
+  } | null>(null);
+  // Suppress the focus-change reset while we programmatically restore a thread.
+  const restoringRef = useRef(false);
   const chatRef  = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -76,10 +90,23 @@ export default function VelaPage() {
   const functionUrl = `${publicEnv.supabaseUrl}/functions/v1/vela-chat`;
 
   useEffect(() => {
-    setInitialThreadId(new URLSearchParams(window.location.search).get("threadId"));
+    const q = new URLSearchParams(window.location.search);
+    const rawScope = q.get("scope");
+    setBoot({
+      threadId: q.get("threadId"),
+      scope: rawScope === "person" || rawScope === "pair" || rawScope === "group" ? rawScope : null,
+      subject: q.get("subject") ?? q.get("subjectPersonId"),
+      pair: q.get("pair"),
+      groupId: q.get("groupId"),
+      relType: q.get("relType")
+    });
+    // Prefill (never auto-send) — e.g. arriving from a transit banner.
+    const prefill = q.get("q");
+    if (prefill) setMessage(prefill);
   }, []);
 
   useEffect(() => {
+    if (!boot) return;
     const load = async () => {
       const [{ data: ud }, { data: sd }] = await Promise.all([
         supabase.auth.getUser(), supabase.auth.getSession()
@@ -87,6 +114,7 @@ export default function VelaPage() {
       const user = ud.user; const session = sd.session;
       if (!user || !session) return;
       setAccessToken(session.access_token);
+      setUserId(user.id);
       setUserName(user.email?.split("@")[0] ?? "You");
       const [{ data: pd }, { data: gd }] = await Promise.all([
         supabase.from("people").select("id, display_name, is_minor").eq("owner_id", user.id).order("display_name"),
@@ -95,16 +123,50 @@ export default function VelaPage() {
       const allPeople = (pd ?? []) as PersonLite[];
       setPeople(allPeople);
       setGroups((gd ?? []) as GroupLite[]);
-      if (!subjectId && allPeople[0]) setSubjectId(allPeople[0].id);
-      if (!pairId    && allPeople[1]) setPairId(allPeople[1].id);
-      if (!groupId   && gd?.[0]) setGroupId(gd[0].id as string);
-      if (initialThreadId) {
-        setThreadId(initialThreadId);
-        await loadHistory(initialThreadId);
+
+      restoringRef.current = true;
+
+      // 1) Resuming a thread — restore its exact scope from the stored row so
+      //    the "Asking about X" header and Focus selectors match the conversation.
+      if (boot.threadId) {
+        const { data: t } = await supabase
+          .from("threads")
+          .select("id, mode, subject_person, pair_low, pair_high, group_id")
+          .eq("id", boot.threadId).eq("owner_id", user.id).maybeSingle();
+        if (t) {
+          const row = t as { mode: VelaMode; subject_person: string | null; pair_low: string | null; pair_high: string | null; group_id: string | null };
+          setMode(row.mode === "shared" ? "shared" : "ask");
+          if (row.group_id) { setScope("group"); setGroupId(row.group_id); }
+          else if (row.pair_low && row.pair_high) { setScope("pair"); setSubjectId(row.pair_low); setPairId(row.pair_high); }
+          else if (row.subject_person) { setScope("person"); setSubjectId(row.subject_person); }
+          setThreadId(boot.threadId);
+          await loadHistory(boot.threadId);
+          prevSubjectRef.current = row.pair_low ?? row.subject_person ?? null;
+          restoringRef.current = false;
+          return;
+        }
       }
+
+      // 2) Handoff from Compare / Groups — apply the carried scope.
+      if (boot.scope === "pair" && boot.subject && boot.pair) {
+        setScope("pair"); setSubjectId(boot.subject); setPairId(boot.pair);
+        if (boot.relType) setRelType(boot.relType);
+        prevSubjectRef.current = boot.subject;
+      } else if (boot.scope === "group" && boot.groupId) {
+        setScope("group"); setGroupId(boot.groupId);
+      } else if (boot.subject) {
+        setScope("person"); setSubjectId(boot.subject);
+        prevSubjectRef.current = boot.subject;
+      } else {
+        // 3) Fresh session defaults.
+        if (allPeople[0]) { setSubjectId(allPeople[0].id); prevSubjectRef.current = allPeople[0].id; }
+        if (allPeople[1]) setPairId(allPeople[1].id);
+        if (gd?.[0]) setGroupId(gd[0].id as string);
+      }
+      restoringRef.current = false;
     };
     void load();
-  }, [supabase, initialThreadId]);
+  }, [supabase, boot]);
 
   useEffect(() => {
     chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" });
@@ -116,26 +178,32 @@ export default function VelaPage() {
   const prevSubjectRef = useRef<string | null>(null);
   useEffect(() => {
     if (!subjectId) return;
+    // Don't reset while we're programmatically restoring a resumed/handed-off thread.
+    if (restoringRef.current) { prevSubjectRef.current = subjectId; return; }
     if (prevSubjectRef.current !== null && prevSubjectRef.current !== subjectId) {
-      // Focus person changed — discard old thread and start fresh
+      // Focus person changed by the user — discard old thread and start fresh
       setThreadId(null);
-      setLines([{ role: "system", text: "Private by default · no private notes in shared mode" }]);
+      setLines([]);
       setStatus(null);
     }
     prevSubjectRef.current = subjectId;
   }, [subjectId]);
 
   async function loadHistory(tid: string) {
-    const { data } = await supabase.from("messages").select("sender, body")
+    // select("*") so the query also works before the suggestions migration lands
+    const { data } = await supabase.from("messages").select("*")
       .eq("thread_id", tid).order("created_at").limit(80);
     if (!data) return;
-    setLines([
-      { role: "system", text: "Resumed thread — private by default" },
-      ...(data).map(r => ({
-        role: r.sender === "vela" ? "vela" as const : "user" as const,
-        text: r.body as string
-      }))
-    ]);
+    setLines((data as Array<{ sender: string; body: string; suggestions?: unknown }>).map(r => {
+      if (r.sender !== "vela") return { role: "user" as const, text: r.body };
+      const stored = Array.isArray(r.suggestions)
+        ? (r.suggestions as unknown[]).filter((s): s is string => typeof s === "string")
+        : [];
+      if (stored.length > 0) return { role: "vela" as const, text: r.body, suggestions: stored };
+      // Legacy rows persisted the raw reply with "→ " lines inline — split on load.
+      const { body, suggestions } = splitVelaReply(r.body);
+      return { role: "vela" as const, text: body || r.body, suggestions };
+    }));
   }
 
   async function sendConsent() {
@@ -175,7 +243,7 @@ export default function VelaPage() {
         ...(selectedSubject ? [{ name: selectedSubject.display_name, role: "subject", isMinor: false, precision: "date" as const, sun: "Unknown", moon: null, rising: null, venus: "Unknown", mars: "Unknown", traits: "", generational: { uranus: "Unknown", neptune: "Unknown", pluto: "Unknown", cohortLabel: "" } }] : []),
         ...(selectedPair    ? [{ name: selectedPair.display_name,    role: "pair",    isMinor: false, precision: "date" as const, sun: "Unknown", moon: null, rising: null, venus: "Unknown", mars: "Unknown", traits: "", generational: { uranus: "Unknown", neptune: "Unknown", pluto: "Unknown", cohortLabel: "" } }] : [])
       ],
-      history: lines.filter(l => l.role !== "system").map(l => ({
+      history: lines.map(l => ({
         role: l.role === "vela" ? "vela" as const : "user" as const, text: l.text
       })),
       userMessage: userText
@@ -223,16 +291,45 @@ export default function VelaPage() {
         done = chunk.done;
         if (chunk.value) {
           streamed += decoder.decode(chunk.value, { stream: true });
+          // Mid-stream: show only the answer body. Any trailing "→ " line —
+          // even a half-written one — stays buffered until the stream ends.
+          const { body } = splitVelaReply(streamed);
           setLines(prev => {
             const next = [...prev];
-            next[next.length - 1] = { role: "vela", text: streamed };
+            next[next.length - 1] = { role: "vela", text: body };
             return next;
           });
         }
       }
+      // Stream complete: reveal the suggestions as chips below the bubble.
+      const { body: finalBody, suggestions } = splitVelaReply(streamed);
+      setLines(prev => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "vela", text: finalBody || streamed.trim(), suggestions };
+        return next;
+      });
     } catch {
       setLines(prev => [...prev, { role: "vela", text: "Network error — check your connection and try again." }]);
     } finally { setSending(false); }
+  }
+
+  /**
+   * Pin a Vela insight to the current scope's Record. Only Vela's messages are
+   * ever pinnable (the button is rendered on Vela bubbles only), which upholds
+   * the shared-mode rule: you may save Vela's guidance, never the other
+   * participant's words. The pin is private to the pinner (owner-scoped row).
+   */
+  async function pinInsight(idx: number, text: string) {
+    if (!userId || !text.trim() || pinnedKeys.has(idx)) return;
+    const row: Record<string, unknown> = {
+      owner_id: userId, kind: "vela_pin", body: text.trim(), source_thread_id: threadId ?? null
+    };
+    if (scope === "group" && groupId) row.group_id = groupId;
+    else if (scope === "pair" && subjectId && pairId) { const { pairLow, pairHigh } = orderPair(subjectId, pairId); row.pair_low = pairLow; row.pair_high = pairHigh; }
+    else if (subjectId) row.about_person = subjectId;
+    const { error } = await supabase.from("notes").insert(row);
+    if (!error) setPinnedKeys(prev => new Set(prev).add(idx));
+    else setStatus(error.message);
   }
 
   const scopeSubject = selectedSubject ?? people[0] ?? null;
@@ -315,22 +412,32 @@ export default function VelaPage() {
       {mode === "shared" && !sharedBlocked ? (
         <section className="glass-card fade-in">
           <p className="eyebrow" style={{ marginBottom: 8 }}>Consent gate</p>
-          <p className="muted" style={{ fontSize: ".8rem", marginBottom: 10 }}>Shared threads need consent from both participants before Vela responds.</p>
+          <p className="muted" style={{ fontSize: ".8rem", marginBottom: 6 }}>Shared threads need consent from both participants before Vela responds.</p>
+          <p className="muted" style={{ fontSize: ".8rem", marginBottom: 10 }}>
+            In a shared space, Vela stays neutral and never sees anyone's private notes. Please know: either participant
+            may privately save Vela's guidance to their own record. Neither of you can save the other's messages.
+          </p>
           <button className="pill-link pill-link--teal" onClick={sendConsent}>Confirm my consent</button>
         </section>
       ) : null}
 
       {/* Chat section */}
       <section className="glass-card fade-in" style={{ display: "flex", flexDirection: "column" }}>
-        {scopeSubject ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid rgba(183,154,216,.1)" }}>
-            <InitialAvatar name={scopeSubject.display_name} size="sm" />
-            <p className="eyebrow" style={{ margin: 0 }}>
-              Asking about {scopeSubject.display_name}
-              {scope === "pair" && selectedPair ? ` & ${selectedPair.display_name}` : ""}
-            </p>
-          </div>
-        ) : null}
+        <div style={{ marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid rgba(183,154,216,.1)" }}>
+          {scopeSubject ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <InitialAvatar name={scopeSubject.display_name} size="sm" />
+              <p className="eyebrow" style={{ margin: 0 }}>
+                Asking about {scopeSubject.display_name}
+                {scope === "pair" && selectedPair ? ` & ${selectedPair.display_name}` : ""}
+              </p>
+            </div>
+          ) : null}
+          {/* One quiet caption for the whole thread — never a per-message line */}
+          <p style={{ margin: scopeSubject ? "8px 0 0" : 0, fontSize: ".7rem", color: "var(--mist2)" }}>
+            {PRIVACY_CAPTION}
+          </p>
+        </div>
 
         {/* ── Minor chat block: replaces input entirely ──────────────────── */}
         {minorChatBlocked ? (
@@ -351,21 +458,66 @@ export default function VelaPage() {
         ) : (
           <>
             <div ref={chatRef} className="chat-thread">
-              {lines.map((line, idx) =>
-                line.role === "system" ? (
-                  <div key={idx} className="bubble bubble-system">{line.text}</div>
-                ) : line.role === "user" ? (
+              {lines.map((line, idx) => {
+                if (line.role === "user") return (
                   <div key={idx} className="bubble bubble-user fade-in">
                     <div className="bubble-sender">You</div>
                     {line.text}
                   </div>
-                ) : (
-                  <div key={idx} className="bubble bubble-vela fade-in">
-                    <div className="bubble-sender">Vela</div>
-                    {line.text || (sending ? null : "…")}
+                );
+                // Follow-up chips belong to the latest Vela answer only —
+                // earlier suggestions are stale once the conversation moves on.
+                const isLatestVela = idx === lines.length - 1 && !sending;
+                const chips = isLatestVela ? (line.suggestions ?? []) : [];
+                const canPin = Boolean(line.text) && !(sending && idx === lines.length - 1);
+                return (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7, maxWidth: "90%" }}>
+                    <div className="bubble bubble-vela fade-in" style={{ whiteSpace: "pre-wrap", maxWidth: "100%" }}>
+                      <div className="bubble-sender">Vela</div>
+                      {line.text || (sending ? null : "…")}
+                    </div>
+                    {canPin ? (
+                      <button
+                        type="button"
+                        onClick={() => void pinInsight(idx, line.text)}
+                        disabled={pinnedKeys.has(idx)}
+                        style={{
+                          background: "transparent", border: "none", cursor: pinnedKeys.has(idx) ? "default" : "pointer",
+                          color: pinnedKeys.has(idx) ? "var(--teal)" : "var(--mist2)", fontSize: ".72rem", padding: "0 2px"
+                        }}
+                        title="Save this insight to this person's record (private to you)"
+                      >
+                        {pinnedKeys.has(idx) ? "✓ Pinned to their record" : "＋ Pin to record"}
+                      </button>
+                    ) : null}
+                    {chips.length > 0 ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {chips.map(s => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => void sendMessage(s)}
+                            disabled={sending}
+                            style={{
+                              background: "transparent",
+                              border: "1px solid rgba(183,154,216,.22)",
+                              color: "var(--mist)",
+                              borderRadius: 999,
+                              padding: "7px 12px",
+                              fontSize: ".76rem",
+                              lineHeight: 1.25,
+                              cursor: "pointer",
+                              textAlign: "left"
+                            }}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
-                )
-              )}
+                );
+              })}
               {sending ? <TypingIndicator /> : null}
             </div>
 

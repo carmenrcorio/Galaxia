@@ -419,14 +419,14 @@ select.field--rect {
   max-width: 90%;
   word-break: break-word;
 }
-.bubble.user {
+.bubble.user, .bubble.bubble-user {
   align-self: flex-end;
   background: rgba(230,174,108,.12);
   border: 1px solid rgba(230,174,108,.20);
   color: var(--cream);
   border-bottom-right-radius: 4px;
 }
-.bubble.vela {
+.bubble.vela, .bubble.bubble-vela {
   align-self: flex-start;
   background: rgba(183,154,216,.09);
   border: 1px solid rgba(183,154,216,.18);
@@ -434,7 +434,7 @@ select.field--rect {
   border-bottom-left-radius: 4px;
 }
 /* from landing .bubble.vela b */
-.bubble.vela .bubble-sender {
+.bubble.vela .bubble-sender, .bubble.bubble-vela .bubble-sender {
   color: var(--air);
   font-weight: 600;
   display: block;

@@ -6,6 +6,104 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## 2026-07-10 (Relationship Record — R1: the Record itself)
+
+The connective tissue. `notes` becomes the single per-scope timeline; the person page reads it back.
+
+**[ADDED] Migration `20260710020000_record_timeline.sql`** — extends `notes` with `group_id`, `kind` (`note`|`tending`|`vela_pin`|`compare_reading`|`cohort_reading`), `payload jsonb`, `source_thread_id`. One store, the existing owner-only RLS, no second notes table.
+
+**[ADDED] `apps/web/lib/record.ts`** — the only read/write path: `fetchRecord(scope)` (notes of all kinds ∪ scoped conversations, date-ordered), `fetchVelaPins(personId)`, `orderPair()`.
+
+**[ADDED] B1 — the person-page Record timeline.** The old "Private notes" section is now "The record": the note composer plus a date-ordered timeline of notes, tending notes, Vela pins (with reopen links), saved comparisons, saved cohort readings, and scoped conversations. Empty state names what will gather there; the chart above is unchanged — this is the layer that accumulates.
+
+**[ADDED] B2 — "Vela on {name}".** A module near the top of the person page showing the last two pinned Vela insights (with reopen-conversation links), or an "Ask Vela about {name}" chip when empty. Closes the audited gap where a person's page didn't know about the conversation just had about them.
+
+**[ADDED] B3 — pin Vela insights.** Every Vela answer bubble has a quiet "＋ Pin to record" affordance (mist, secondary). Pins write `kind='vela_pin'` scoped to the current person/pair/group, owner-private, with `source_thread_id` for reopening. **Shared-mode rule enforced:** only Vela's messages are pinnable (the button never renders on a participant's message), and the pin is private to the pinner. The shared-space consent gate copy now states this plainly before anyone enters.
+
+**[ADDED] B4 — Compare saves a dated snapshot, never a trend.**
+- "Save this reading" writes `kind='compare_reading'` with an immutable `payload` (scores, top aspects, generational, `engineVersion`, `birthFingerprint`), on the pair's shared record (visible on both people's pages).
+- **No synastry delta.** `computeSynastry` is deterministic, so saved readings render as "Read on {date}". If a re-run differs, the cause is attributed exactly from the stored fingerprint/engine: "…the birth data changed since — not because the relationship did" or "…the astrology engine was updated." An input change is never presented as a relationship change.
+- The "Log a moment" note and the person-page notes are now explicitly one store (pair notes surface on both people's records).
+- Groups gained the deferred "Save this reading" (`kind='cohort_reading'`, on the group's record).
+
+**[ADDED] Determinism regression test** (`packages/astro/test/synastry-determinism.test.ts`): asserts `computeSynastry` returns byte-identical output across repeated/"different-day" calls and takes no temporal argument (signature guard) — locking out any future time-varying synastry that could tempt a fake trend. 27/27 astro tests pass.
+
+**Requires:** `supabase db push` for the new migration. No edge-function change.
+
+---
+
+## 2026-07-10 (Relationship Record — R5-E1: progressive capture + ask-them link)
+
+Pulled forward ahead of R1 per the activation priority (25–55% of trial users never add a second person). Two features shipped together.
+
+**[ADDED] Progressive capture — save a person with just name + relation.**
+- Migration `20260710014000_progressive_capture.sql`: `people.birth_precision` gains a `'none'` state (default), so a person can exist before any birth data.
+- `/welcome` add-person form gains an "Add birth data later" tier (self entry does not — self always needs a chart). Choosing it saves name/relation/minor only, no chart row, no synthesized date.
+- `apps/web/lib/birth.ts`: `BirthFormInput.precision` widened to `FormPrecision = Precision | "none"`; `buildBirthInput` throws if ever called with `'none'` (guard — callers persist directly).
+- The person page renders a first-class "add birth data" state for a chartless person (what each precision unlocks + the edit panel + the ask-them link) instead of the old "Profile not found" error. The `EditPersonPanel` accepts a `'none'` person and defaults its form to date precision so data can be added immediately.
+
+**[ADDED] E3 — "Ask them for their birth details" share link.**
+- Same migration extends `invites` with `person_id` + `kind` (`shared_space` | `birth_data`) and an RLS policy letting an authenticated owner manage their own invites.
+- `AskBirthData` component (person page + edit panel for non-exact profiles) creates a `birth_data` invite and shows a copyable link.
+- `/invite/[token]` branches on `kind`: a birth-data invite renders a warm, public, unauthenticated one-person form (`InviteBirthDataForm`) — structured month/day/year, optional exact time, Open-Meteo city disambiguation — that never shows any existing data.
+- `POST /api/invite/birth-data` writes back via the service role through the **same `buildBirthInput` + `computeNatalChart` pipeline** the app uses (date echo, resolved timezone — no fabrication), updates the pending person, upserts the chart, and marks the invite accepted.
+
+Privacy upheld throughout: the invited person sees only a request for their own birth details — never notes, never charts, never other people.
+
+**Requires:** `supabase db push` for the new migration. No edge-function change in this stage.
+
+---
+
+## 2026-07-10 (Relationship Record — R0: close the verified dead-ends)
+
+First implementation stage of `design/galaxia-relationship-record-plan.md`. No schema changes; behavior/handoff fixes only.
+
+**[FIXED] A1 — "Resume a thread" now restores the conversation's scope.**
+Root cause: `apps/web/app/app/vela/page.tsx` read `threadId` on mount but never restored the thread's `mode`/scope/people from the `threads` row, so the Focus selectors and the "Asking about X" header misrepresented every resumed conversation, and the focus-change reset effect could discard it. Now: on entry the page fetches the `threads` row (`subject_person`, `pair_low/high`, `group_id`, `mode`) and sets scope/mode/people from it before loading history; a `restoringRef` suppresses the reset during restoration; all entry params are parsed once from the entry URL (navigation into Vela is always cross-route, so the page remounts and the read is reliable).
+
+**[FIXED] A2 — Compare → Vela handoff carries the pair.**
+Root cause: Compare linked to `/app/vela?subjectPersonId=…` and the Vela page never read that parameter at all. Compare now passes `?scope=pair&subject=A&pair=B&relType=…`; Vela reads `scope/subject/pair/relType` (plus legacy `subjectPersonId`) and opens on Focus=pair with both people and the relationship type applied. A `q` param prefills the input (never auto-sends).
+
+**[FIXED] A3 — Groups: one-click restore + Ask Vela; overlay bugs.**
+Selecting a saved group now regenerates its overlay in the same action (audited "saved groups are inert" + "generate twice"), by passing the member ids explicitly to `buildOverlay` instead of waiting on `setState`. `buildOverlay` no longer leaves the spinner stuck when a chart is missing (early returns now reset state in a `finally`). Added "Ask Vela about this group" (→ `/app/vela?scope=group&groupId=…`, already supported end-to-end). **Deferred to R1:** "Save this reading" persistence needs the `notes.kind/payload/group_id` columns from R1's migration.
+
+**[FIXED] A4 — "Today in your sky" is no longer a dead text block.**
+Each named person is now a link to their profile. The person page computes its own transits (deterministic: real ephemeris vs stored natal positions; skipped for year-only charts) and shows an "Active today" banner with the tight hits and an "Ask Vela how this is showing up" deep link (prefilled prompt).
+
+**[CHANGED] A6 — the 5-person cap is stated on home, not enforced by silent redirect.**
+Home now shows "Free plan · N of 5 remaining" / a plain at-cap message. Phase 1 removes the cap entirely.
+
+**[CHANGED] A7 — duplicate navigation removed.**
+The home footer row duplicated the sticky header (Compare/Groups/Vela). It's now just the two contextual actions that are the natural next step from home (My chart, Add people); global nav lives only in the header.
+
+---
+
+## 2026-07-10 (Vela presentation bugs)
+
+**[FIXED] Vela's suggested follow-ups rendered as raw "→ " text inside the answer bubble.**
+
+The system prompt asks the model to end with up to 3 follow-up prompts, each on its own line prefixed "→ ". The web client never parsed them, so newlines collapsed and replies ended in a run-on string of arrows.
+
+- New `apps/web/lib/vela-parse.ts` — `splitVelaReply()`: everything before the first "→ " line is the answer body; each "→ " line is one suggestion (max 3). No "→ " lines → no chips; suggestions are never fabricated.
+- `apps/web/app/app/vela/page.tsx`:
+  - Body renders as the chat bubble (now `white-space: pre-wrap`, so the model's real line breaks survive). Suggestions render **below** the bubble as tappable pill chips — translucent violet border `rgba(183,154,216,.22)`, mist text, no gold (secondary to the answer).
+  - Tapping a chip sends it as the user's next message.
+  - Streaming: mid-stream the split is applied on every chunk, so a half-written "→ …" line stays buffered and is only revealed as a chip after the stream ends.
+  - Chips show under the **latest** Vela answer only — earlier suggestions are stale once the conversation moves on.
+- Persistence: new migration `20260710011000_add_message_suggestions.sql` adds `messages.suggestions jsonb`. The edge function now stores the body and the suggestions separately, so a resumed thread renders correctly. Legacy rows (raw reply with arrows in `body`) are split client-side on load. If the migration isn't applied yet, the function falls back to persisting the raw reply — nothing breaks, the client parser still handles it.
+- Edge function history context now feeds the model answer bodies only (strips legacy "→ " lines).
+
+**[FIXED] The safety/consent line rendered per-message.**
+"Private by default · no private notes in shared mode · consent required for shared threads" was a system chat bubble re-inserted on every thread reset. It is now a single quiet caption under the thread header ("Asking about X"), shown once. The system-bubble message type is gone from the page.
+
+**[FIXED] Chat bubble CSS never matched.** `globals.css` styled `.bubble.user` / `.bubble.vela` but the page renders `bubble bubble-user` / `bubble bubble-vela`, so the user/vela variant styles (alignment, gold/violet tints, sender label treatment) silently never applied. Selectors now cover both forms.
+
+**Requires redeploy:** `supabase functions deploy vela-chat` (project `eigfvribtntbxyjutsma`), and `supabase db push` for the `messages.suggestions` migration — apply the migration first, though order is safe either way thanks to the insert fallback.
+
+**Skipped:** `apps/mobile/app/vela.tsx` still renders replies raw (same arrow symptom on mobile); out of scope for this web fix, logged for the mobile pass. No unit-test home exists for `apps/web` lib code (web `test` script is a stub) — parser verified by direct execution of the edge cases instead.
+
+---
+
 ## 2026-07-09 (Phase 0 — real Placidus, stop fabricating)
 
 **[FIXED] House cusps were Equal House labeled "Placidus" — real Placidus implemented.**

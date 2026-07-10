@@ -40,6 +40,8 @@ export default function GroupsPage() {
   const [cohort, setCohort]               = useState<any>(null);
   const [savingGroup, setSavingGroup]     = useState(false);
   const [buildingOverlay, setBuildingOverlay] = useState(false);
+  const [savingReading, setSavingReading] = useState(false);
+  const [readingSaved, setReadingSaved]   = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -78,30 +80,61 @@ export default function GroupsPage() {
   async function loadGroupMembers(gid: string) {
     setSelectedGroupId(gid);
     const { data } = await supabase.from("group_members").select("person_id").eq("group_id", gid);
-    setSelectedPersonIds((data ?? []).map(r => r.person_id as string));
+    const ids = (data ?? []).map(r => r.person_id as string);
+    setSelectedPersonIds(ids);
+    // One click: selecting a saved group also regenerates its overlay, so the
+    // reading is never a dead membership list (audit: saved groups were inert).
+    if (ids.length >= 3) await buildOverlay(ids, groups.find(g => g.id === gid)?.name ?? "Cohort");
+    else setCohort(null);
   }
-  async function buildOverlay() {
-    if (selectedPersonIds.length < 3) { setStatus("Pick at least 3 people."); return; }
+
+  /**
+   * Build the overlay. Accepts an explicit id list + label so it can run
+   * immediately after selecting a saved group without waiting for setState
+   * to propagate (this was the audited "generate twice" bug).
+   */
+  async function buildOverlay(idsArg?: string[], labelArg?: string) {
+    const ids = idsArg ?? selectedPersonIds;
+    if (ids.length < 3) { setStatus("Pick at least 3 people."); return; }
     setBuildingOverlay(true);
-    const sel = people.filter(p => selectedPersonIds.includes(p.id));
-    const chartRes = await Promise.all(sel.map(async p => {
-      const { data } = await supabase.from("charts").select("data").eq("person_id", p.id).single();
-      return { person: p, chart: data?.data as NatalChart|undefined };
-    }));
-    const missing = chartRes.find(r => !r.chart?.generational);
-    if (missing) { setStatus(`Missing chart for ${missing.person.display_name}.`); return; }
-    const overlay = cohortOverlay(chartRes.map(r => ({ name: r.person.display_name, gen: r.chart!.generational as GenSignature })));
-    const pairHighlights: Array<{ pair: string; summary: string }> = [];
-    for (let i = 0; i < chartRes.length; i++) {
-      for (let j = i + 1; j < chartRes.length; j++) {
-        const a = chartRes[i]; const b = chartRes[j];
-        const rel = compareGenerational(a.chart!.generational as GenSignature, b.chart!.generational as GenSignature);
-        pairHighlights.push({ pair: `${a.person.display_name} × ${b.person.display_name}`, summary: rel.sameGeneration ? `Same generation (${rel.shared.map(s => `${s.planet} ${s.sign}`).join(", ")}).` : `Fault line: ${rel.diverged.map(d => `${d.planet} ${d.signA}/${d.signB}`).join(" · ")}.` });
-      }
-    }
-    setBuildingOverlay(false);
-    setCohort({ groupLabel: groups.find(g => g.id === selectedGroupId)?.name ?? "Ad-hoc cohort", memberNames: sel.map(p => p.display_name), memberIds: sel.map(p => p.id), overlay, pairHighlights: pairHighlights.slice(0, 3) });
     setStatus(null);
+    try {
+      const sel = people.filter(p => ids.includes(p.id));
+      const chartRes = await Promise.all(sel.map(async p => {
+        const { data } = await supabase.from("charts").select("data").eq("person_id", p.id).single();
+        return { person: p, chart: data?.data as NatalChart|undefined };
+      }));
+      const missing = chartRes.find(r => !r.chart?.generational);
+      if (missing) { setStatus(`Missing chart for ${missing.person.display_name}.`); setCohort(null); return; }
+      const overlay = cohortOverlay(chartRes.map(r => ({ name: r.person.display_name, gen: r.chart!.generational as GenSignature })));
+      const pairHighlights: Array<{ pair: string; summary: string }> = [];
+      for (let i = 0; i < chartRes.length; i++) {
+        for (let j = i + 1; j < chartRes.length; j++) {
+          const a = chartRes[i]; const b = chartRes[j];
+          const rel = compareGenerational(a.chart!.generational as GenSignature, b.chart!.generational as GenSignature);
+          pairHighlights.push({ pair: `${a.person.display_name} × ${b.person.display_name}`, summary: rel.sameGeneration ? `Same generation (${rel.shared.map(s => `${s.planet} ${s.sign}`).join(", ")}).` : `Fault line: ${rel.diverged.map(d => `${d.planet} ${d.signA}/${d.signB}`).join(" · ")}.` });
+        }
+      }
+      const label = labelArg ?? groups.find(g => g.id === selectedGroupId)?.name ?? "Ad-hoc cohort";
+      setCohort({ groupLabel: label, memberNames: sel.map(p => p.display_name), memberIds: sel.map(p => p.id), overlay, pairHighlights: pairHighlights.slice(0, 3) });
+      setReadingSaved(false);
+    } finally {
+      setBuildingOverlay(false);
+    }
+  }
+
+  /** Save the cohort overlay as an immutable dated reading on the group's record. */
+  async function saveCohortReading() {
+    if (!userId || !cohort || !selectedGroupId) return;
+    setSavingReading(true);
+    const body = `Cohort reading for ${cohort.groupLabel}: ${cohort.overlay.label}`;
+    const { error } = await supabase.from("notes").insert({
+      owner_id: userId, group_id: selectedGroupId, kind: "cohort_reading", body,
+      payload: { overlay: cohort.overlay, pairHighlights: cohort.pairHighlights, memberNames: cohort.memberNames }
+    });
+    setSavingReading(false);
+    if (error) { setStatus(error.message); return; }
+    setReadingSaved(true); setStatus("Reading saved to this group.");
   }
 
   return (
@@ -156,7 +189,7 @@ export default function GroupsPage() {
             {savingGroup && <Spinner size={13} color="#1a1206" />}
             {savingGroup ? "Saving…" : "Save group"}
           </button>
-          <button className="pill-link" onClick={buildOverlay} disabled={buildingOverlay} style={{ gap: 8 }}>
+          <button className="pill-link" onClick={() => buildOverlay()} disabled={buildingOverlay} style={{ gap: 8 }}>
             {buildingOverlay && <Spinner size={12} />}
             {buildingOverlay ? "Building…" : "Generate cohort overlay"}
           </button>
@@ -180,6 +213,19 @@ export default function GroupsPage() {
               </div>
             </div>
             <p className="muted" style={{ fontStyle: "italic" }}>{cohort.overlay.label}</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12, alignItems: "center" }}>
+              {selectedGroupId ? (
+                <>
+                  <button className="pill-link" onClick={saveCohortReading} disabled={savingReading || readingSaved} style={{ gap: 8 }}>
+                    {savingReading && <Spinner size={12} />}
+                    {readingSaved ? "✓ Reading saved" : savingReading ? "Saving…" : "Save this reading"}
+                  </button>
+                  <a className="pill-link" href={`/app/vela?scope=group&groupId=${selectedGroupId}`}>Ask Vela about this group</a>
+                </>
+              ) : (
+                <span className="muted" style={{ fontSize: ".76rem" }}>Save this cohort as a group to keep this reading and ask Vela about it.</span>
+              )}
+            </div>
           </section>
 
           <section className="glass-card fade-in">

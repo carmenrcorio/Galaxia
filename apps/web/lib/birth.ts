@@ -1,7 +1,10 @@
 import type { Birth, Precision } from "@galaxia/astro";
 
+/** Form-level precision: the engine's precisions plus a "not added yet" state. */
+export type FormPrecision = Precision | "none";
+
 export interface BirthFormInput {
-  precision: Precision;
+  precision: FormPrecision;
 
   // For "date" and "exact" precision — structured values, NOT raw text
   month?: number;   // 1-12
@@ -91,6 +94,13 @@ export function buildBirthInput(input: BirthFormInput): {
   displayDate: string;
 } {
   const normalizedPlace = input.birthPlace?.trim() ? input.birthPlace.trim() : null;
+
+  if (input.precision === "none") {
+    // Progressive capture: a person with no birth data has no chart. Callers
+    // must persist name/relation directly and skip chart computation — never
+    // synthesize a date. This guard catches accidental chart builds.
+    throw new Error("No birth data to build a chart from. Save the person with name and relation, and add birth data later.");
+  }
 
   if (input.precision === "year") {
     const year = input.yearOnly ?? 0;

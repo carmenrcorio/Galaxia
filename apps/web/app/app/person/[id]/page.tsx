@@ -12,6 +12,7 @@ import { computeSynastry, computeTransits, type NatalChart, type Placement } fro
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AskBirthData } from "../../../../components/ask-birth-data";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { InitialAvatar } from "../../../../components/initial-avatar";
 import { Spinner } from "../../../../components/spinner";
@@ -30,7 +31,7 @@ import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 
 interface PersonRow {
   id: string; display_name: string; relation: string;
-  birth_precision: "exact" | "date" | "year"; is_minor: boolean;
+  birth_precision: "none" | "exact" | "date" | "year"; is_minor: boolean;
   birth_date?: string | null; birth_time?: string | null;
   birth_place?: string | null; birth_lat?: number | null; birth_lng?: number | null;
   tz_offset_min?: number | null;
@@ -431,8 +432,13 @@ export default function PersonProfilePage() {
       supabase.from("notes").select("id, body, created_at").eq("about_person", actualId).order("created_at", { ascending: false }).limit(20)
     ]);
     if (pErr || !pData) { setStatus(pErr?.message ?? "Unable to load person."); setLoading(false); return; }
-    if (cErr || !cData) { setStatus(cErr?.message  ?? "No chart yet."); setLoading(false); return; }
     const personRow = pData as PersonRow & { tz_offset_min?: number | null };
+    // Progressive capture: a person with no chart yet (birth_precision 'none')
+    // is not an error — render the "add birth data" state instead of failing.
+    if (cErr || !cData) {
+      setPerson(personRow); setChart(null); setNotes((nData ?? []) as NoteRow[]); setLoading(false);
+      return;
+    }
     let chartData = cData.data as NatalChart;
     let version = (cData.engine_version as number | null) ?? 1;
 
@@ -440,13 +446,13 @@ export default function PersonProfilePage() {
     const stale = version < CHART_ENGINE_VERSION || (chartData.houseSystemRequested ?? "placidus") !== preferred;
     if (stale) {
       const dateUTC = rebuildDateUTC(personRow);
-      const canRecompute = dateUTC !== null &&
+      const canRecompute = dateUTC !== null && personRow.birth_precision !== "none" &&
         (personRow.birth_precision !== "exact" || (personRow.birth_lat != null && personRow.birth_lng != null));
       if (canRecompute) {
         const { computeNatalChart } = await import("@galaxia/astro");
         const recomputed = computeNatalChart({
           dateUTC: dateUTC!,
-          precision: personRow.birth_precision,
+          precision: personRow.birth_precision as "exact" | "date" | "year",
           lat: personRow.birth_lat ?? undefined,
           lng: personRow.birth_lng ?? undefined,
           tzOffsetMin: personRow.tz_offset_min ?? undefined,
@@ -483,10 +489,41 @@ export default function PersonProfilePage() {
     </main>
   );
 
-  if (!person || !chart) return (
+  if (!person) return (
     <main className="app-content">
       <p className="muted">{status ?? "Profile not found."}</p>
       <Link href="/welcome" className="btn-primary">Add birth data in onboarding</Link>
+    </main>
+  );
+
+  // Progressive capture: person exists but has no chart yet.
+  if (!chart) return (
+    <main className="app-content">
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }} className="fade-in">
+        <InitialAvatar name={person.display_name} size="lg" />
+        <div>
+          <p className="eyebrow">{person.relation}</p>
+          <h1 className="page-title">{person.display_name}</h1>
+          <p className="muted" style={{ fontSize: ".88rem", margin: 0 }}>No birth data yet — their chart is waiting.</p>
+        </div>
+      </div>
+
+      <section className="glass-card fade-in fade-in-delay-1" style={{ display: "grid", gap: 14 }}>
+        <div>
+          <p className="eyebrow" style={{ marginBottom: 6 }}>Add {person.display_name}'s birth data</p>
+          <p className="muted" style={{ fontSize: ".84rem", lineHeight: 1.6 }}>
+            A birth year adds their generational sky. A full date adds every planetary sign. An exact time and city
+            unlock houses, the Ascendant, and the precise Moon. Add whatever you have — you can always refine it later.
+          </p>
+        </div>
+        <EditPersonPanel person={person} userId={userId ?? ""} onSaved={() => loadProfile(userId ?? "")} onDeleted={() => router.push("/app")} />
+        <div style={{ borderTop: "1px solid rgba(183,154,216,.1)", paddingTop: 14 }}>
+          <p className="eyebrow" style={{ marginBottom: 8 }}>Don't know their details?</p>
+          {userId ? <AskBirthData personId={person.id} personName={person.display_name} userId={userId} /> : null}
+        </div>
+      </section>
+
+      {status ? <p className="error">{status}</p> : null}
     </main>
   );
 

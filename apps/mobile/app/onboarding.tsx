@@ -1,4 +1,5 @@
 import { computeNatalChart, type Precision } from "@galaxia/astro";
+import { isMinorForSafety } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -86,6 +87,11 @@ export default function OnboardingScreen() {
     // natal.houseSystem is the system the engine actually computed (it can
     // fall back to Whole Sign at polar latitudes) — store that, never a claim.
 
+    // The age backstop runs at save time too, not only when a gate reads the
+    // row later — so a child is protected even if the "This person is a
+    // minor" switch was left off (it resets after every add on this form).
+    const effectiveIsMinor = isMinorForSafety({ isMinor, birthDate: built.birthDate, birthPrecision: input.precision });
+
     const { data: person, error: personError } = await supabase
       .from("people")
       .insert({
@@ -93,7 +99,7 @@ export default function OnboardingScreen() {
         is_self: isSelf,
         display_name: displayName.trim(),
         relation,
-        is_minor: isMinor,
+        is_minor: effectiveIsMinor,
         birth_date: built.birthDate,
         birth_time: built.birthTime,
         birth_precision: input.precision,
@@ -357,6 +363,9 @@ export default function OnboardingScreen() {
         <Text style={{ color: tokens.colors.cream }}>This person is a minor</Text>
         <Switch value={personMinor} onValueChange={setPersonMinor} />
       </View>
+      <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
+        Galaxia also automatically protects anyone whose birth date shows they're under 18, even if this stays off.
+      </Text>
       <BirthFields input={personInput} onChange={setPersonInput} />
       <Pressable onPress={savePerson} disabled={!canSavePerson || savingPerson} style={primaryButtonStyle}>
         <Text style={primaryButtonLabel}>{savingPerson ? "Saving..." : "Add person"}</Text>

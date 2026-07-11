@@ -1,6 +1,7 @@
 "use client";
 
 import { computeNatalChart } from "@galaxia/astro";
+import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
@@ -79,12 +80,15 @@ export default function WelcomePage() {
     if (!userId) throw new Error("Please sign in first.");
 
     // ── Progressive capture: name + relation only, no birth data yet ────────
+    // No birth date exists to compute an age backstop from, so the manual
+    // flag is the only signal here — isMinorForSafety still runs it through
+    // the single source of truth rather than trusting the raw value inline.
     if (input.precision === "none") {
       const { error: personError } = await supabase
         .from("people")
         .insert({
           owner_id: userId, is_self: isSelf, display_name: displayName.trim(),
-          relation, is_minor: isMinor, birth_precision: "none",
+          relation, is_minor: isMinorForSafety({ isMinor, birthPrecision: "none" }), birth_precision: "none",
           birth_date: null, birth_time: null, birth_place: null,
           birth_lat: null, birth_lng: null, tz_offset_min: null,
         });
@@ -97,6 +101,12 @@ export default function WelcomePage() {
     const houseSystem = await getPreferredHouseSystem(supabase, userId);
     const natal = computeNatalChart({ ...built.birth, houseSystem });
 
+    // The age backstop runs at save time too, not only when a gate reads the
+    // row later — so a child is protected even if the "This person is a
+    // minor" checkbox was left unchecked (it resets to unchecked after every
+    // add on this form; a real child slipped through unprotected this way).
+    const effectiveIsMinor = isMinorForSafety({ isMinor, birthDate: built.birthDate, birthPrecision: input.precision });
+
     const { data: person, error: personError } = await supabase
       .from("people")
       .insert({
@@ -104,7 +114,7 @@ export default function WelcomePage() {
         is_self: isSelf,
         display_name: displayName.trim(),
         relation,
-        is_minor: isMinor,
+        is_minor: effectiveIsMinor,
         birth_date: built.birthDate,
         birth_time: built.birthTime,
         birth_place: built.birthPlace,
@@ -226,6 +236,10 @@ export default function WelcomePage() {
           </div>
           <div style={{ marginBottom: 12 }}>
             <CustomCheck checked={personMinor} onChange={setPersonMinor} label="This person is a minor" />
+            <p className="muted" style={{ fontSize: ".72rem", marginTop: 4 }}>
+              Galaxia also automatically protects anyone whose birth date shows they're under 18, even if this stays
+              unchecked — check it anyway if you know, or if you haven't added their birth date yet.
+            </p>
           </div>
           <BirthFields input={personInput} onChange={setPersonInput} allowNone />
           <button className="btn-primary" style={{ marginTop: 14, gap: 8 }} disabled={!canSavePerson || savingPerson} onClick={savePerson}>

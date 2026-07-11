@@ -1,6 +1,7 @@
 "use client";
 
 import { computeNatalChart } from "@galaxia/astro";
+import { isMinorForSafety } from "@galaxia/core";
 import { useState } from "react";
 import { buildBirthInput, formatDateForConfirmation, type BirthFormInput } from "../lib/birth";
 import { searchPlaces, type GeoCandidate } from "../lib/geocode";
@@ -110,8 +111,12 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
       const built = buildBirthInput(fi);
       const houseSystem = await getPreferredHouseSystem(supabase, userId);
       const natal = computeNatalChart({ ...built.birth, houseSystem });
+      // Age backstop runs at save time too (single source of truth, see
+      // packages/core `isMinorForSafety`) — the manual checkbox can only add
+      // protection, never remove it from a birth date that implies a minor.
+      const effectiveIsMinor = isMinorForSafety({ isMinor, birthDate: built.birthDate, birthPrecision: fi.precision });
       const { error: pErr } = await supabase.from("people").update({
-        display_name: displayName.trim(), relation, is_minor: isMinor,
+        display_name: displayName.trim(), relation, is_minor: effectiveIsMinor,
         birth_date: built.birthDate, birth_time: built.birthTime, birth_place: built.birthPlace,
         birth_precision: fi.precision,
         birth_lat: built.birth.lat ?? null, birth_lng: built.birth.lng ?? null,
@@ -152,6 +157,9 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
         <input className="field" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Display name" />
         <input className="field" value={relation}    onChange={e => setRelation(e.target.value)}    placeholder="Relation" />
         <CustomCheck checked={isMinor} onChange={setIsMinor} label="Minor" />
+        <p className="muted" style={{ fontSize: ".72rem", marginTop: -4 }}>
+          Anyone whose birth date shows they're under 18 is automatically protected regardless of this box.
+        </p>
 
         {/* Precision */}
         <div style={{ display: "flex", gap: 6 }}>

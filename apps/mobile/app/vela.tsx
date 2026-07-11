@@ -1,3 +1,4 @@
+import { isMinorForSafety } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -14,6 +15,14 @@ interface PersonLite {
   id: string;
   display_name: string;
   is_minor: boolean;
+  birth_date: string | null;
+  birth_precision: "none" | "exact" | "date" | "year" | null;
+}
+
+/** Single source of truth (ENGINEERING.md §9) — never read person.is_minor directly. */
+function minorOf(person: PersonLite | null | undefined): boolean {
+  if (!person) return false;
+  return isMinorForSafety({ isMinor: person.is_minor, birthDate: person.birth_date, birthPrecision: person.birth_precision });
 }
 
 interface GroupLite {
@@ -69,18 +78,22 @@ export default function VelaScreen() {
   const selectedPair = useMemo(() => people.find((person) => person.id === pairPersonId) ?? null, [people, pairPersonId]);
   const selectedGroup = useMemo(() => groups.find((group) => group.id === groupId) ?? null, [groups, groupId]);
 
+  // Age-aware backstop (isMinorForSafety) — never the raw is_minor boolean
+  // alone. Group scope is not checked here (pre-existing gap, out of scope
+  // for this fix); the edge function's server-side block is authoritative
+  // and does cover group members.
   const minorInScope = useMemo(() => {
-    if (scope === "person") return selectedSubject?.is_minor ?? false;
-    if (scope === "pair") return Boolean(selectedSubject?.is_minor || selectedPair?.is_minor);
+    if (scope === "person") return minorOf(selectedSubject);
+    if (scope === "pair") return minorOf(selectedSubject) || minorOf(selectedPair);
     return false;
-  }, [scope, selectedSubject?.is_minor, selectedPair?.is_minor]);
+  }, [scope, selectedSubject, selectedPair]);
 
   const sharedBlocked = mode === "shared" && minorInScope;
   const dailyBlocked = !canSendVelaMessage();
 
   const fetchScopeData = async () => {
     const [{ data: peopleData }, { data: groupData }] = await Promise.all([
-      supabase.from("people").select("id, display_name, is_minor").eq("owner_id", session?.user.id).order("display_name", { ascending: true }),
+      supabase.from("people").select("id, display_name, is_minor, birth_date, birth_precision").eq("owner_id", session?.user.id).order("display_name", { ascending: true }),
       supabase.from("groups").select("id, name").eq("owner_id", session?.user.id).order("name", { ascending: true })
     ]);
     const allPeople = (peopleData ?? []) as PersonLite[];
@@ -312,7 +325,7 @@ export default function VelaScreen() {
                 <Pressable key={person.id} onPress={() => setSubjectPersonId(person.id)} style={chip(subjectPersonId === person.id)}>
                   <Text style={{ color: subjectPersonId === person.id ? tokens.colors.gold : tokens.colors.cream }}>
                     {person.display_name}
-                    {person.is_minor ? " (minor)" : ""}
+                    {minorOf(person) ? " (minor)" : ""}
                   </Text>
                 </Pressable>
               ))}
@@ -328,7 +341,7 @@ export default function VelaScreen() {
                 <Pressable key={`pair-${person.id}`} onPress={() => setPairPersonId(person.id)} style={chip(pairPersonId === person.id)}>
                   <Text style={{ color: pairPersonId === person.id ? tokens.colors.gold : tokens.colors.cream }}>
                     {person.display_name}
-                    {person.is_minor ? " (minor)" : ""}
+                    {minorOf(person) ? " (minor)" : ""}
                   </Text>
                 </Pressable>
               ))}

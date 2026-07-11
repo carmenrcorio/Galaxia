@@ -1,5 +1,6 @@
 "use client";
 
+import { isMinorForSafety } from "@galaxia/core";
 import { buildVelaContext, detectCrisisLanguage } from "@galaxia/vela";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -12,8 +13,14 @@ import { splitVelaReply } from "../../../lib/vela-parse";
 
 type VelaMode = "ask" | "shared";
 type Scope     = "person" | "pair" | "group";
-interface PersonLite { id: string; display_name: string; is_minor: boolean; }
+interface PersonLite {
+  id: string; display_name: string; is_minor: boolean;
+  birth_date: string | null; birth_precision: "none" | "exact" | "date" | "year" | null;
+}
 interface GroupLite  { id: string; name: string; }
+/** Single source of truth (ENGINEERING.md §9) — never read person.is_minor directly. */
+const minorOf = (p: PersonLite | null | undefined) =>
+  Boolean(p) && isMinorForSafety({ isMinor: p!.is_minor, birthDate: p!.birth_date, birthPrecision: p!.birth_precision });
 interface ChatLine   { role: "user" | "vela"; text: string; suggestions?: string[]; withdrawnReason?: string | null; }
 
 const PRIVACY_CAPTION = "Private by default · no private notes in shared mode · consent required for shared threads";
@@ -78,10 +85,17 @@ export default function VelaPage() {
   // about their child is the core parenting use case the landing page promises —
   // Vela coaches the parent and never addresses the child. What must never happen
   // is a minor being a participant in a real-time two-way (shared) session.
+  //
+  // subjectIsMinor uses minorOf() (isMinorForSafety), never the raw is_minor
+  // boolean directly — a real child was found in production with the manual
+  // checkbox unchecked. Age computed from birth_date is an unconditional
+  // backstop here. NOTE: group scope does not check member minor status
+  // client-side (pre-existing gap, out of scope for this fix) — the edge
+  // function's server-side block IS authoritative and covers group members.
   const subjectIsMinor = scope === "person"
-    ? Boolean(selectedSubject?.is_minor)
+    ? minorOf(selectedSubject)
     : scope === "pair"
-      ? Boolean(selectedSubject?.is_minor || selectedPair?.is_minor)
+      ? minorOf(selectedSubject) || minorOf(selectedPair)
       : false;
 
   // Only shared mode with a minor in scope is blocked. Private ask-mode is allowed.
@@ -119,7 +133,7 @@ export default function VelaPage() {
       setUserId(user.id);
       setUserName(user.email?.split("@")[0] ?? "You");
       const [{ data: pd }, { data: gd }] = await Promise.all([
-        supabase.from("people").select("id, display_name, is_minor").eq("owner_id", user.id).order("display_name"),
+        supabase.from("people").select("id, display_name, is_minor, birth_date, birth_precision").eq("owner_id", user.id).order("display_name"),
         supabase.from("groups").select("id, name").eq("owner_id", user.id).order("name")
       ]);
       const allPeople = (pd ?? []) as PersonLite[];
@@ -244,12 +258,18 @@ export default function VelaPage() {
 
     const ctx = buildVelaContext({
       mode,
-      parenting: subjectIsMinor, // never true here since we block minor subjects
+      // subjectIsMinor already uses the age-aware minorOf() backstop above.
+      parenting: mode === "ask" && subjectIsMinor,
       relationshipType: relType,
       user: { name: userName },
+      // Note: this client-built context is NOT what the edge function acts
+      // on for safety — the server rebuilds people/parenting context itself
+      // from the database (supabase/functions/vela-chat/index.ts) and is
+      // authoritative. isMinor here reflects real computed status (never
+      // hardcoded) so this payload cannot mislead a future reader.
       people: [
-        ...(selectedSubject ? [{ name: selectedSubject.display_name, role: "subject", isMinor: false, precision: "date" as const, sun: "Unknown", moon: null, rising: null, venus: "Unknown", mars: "Unknown", traits: "", generational: { uranus: "Unknown", neptune: "Unknown", pluto: "Unknown", cohortLabel: "" } }] : []),
-        ...(selectedPair    ? [{ name: selectedPair.display_name,    role: "pair",    isMinor: false, precision: "date" as const, sun: "Unknown", moon: null, rising: null, venus: "Unknown", mars: "Unknown", traits: "", generational: { uranus: "Unknown", neptune: "Unknown", pluto: "Unknown", cohortLabel: "" } }] : [])
+        ...(selectedSubject ? [{ name: selectedSubject.display_name, role: "subject", isMinor: minorOf(selectedSubject), precision: "date" as const, sun: "Unknown", moon: null, rising: null, venus: "Unknown", mars: "Unknown", traits: "", generational: { uranus: "Unknown", neptune: "Unknown", pluto: "Unknown", cohortLabel: "" } }] : []),
+        ...(selectedPair    ? [{ name: selectedPair.display_name,    role: "pair",    isMinor: minorOf(selectedPair),    precision: "date" as const, sun: "Unknown", moon: null, rising: null, venus: "Unknown", mars: "Unknown", traits: "", generational: { uranus: "Unknown", neptune: "Unknown", pluto: "Unknown", cohortLabel: "" } }] : [])
       ],
       history: lines.map(l => ({
         role: l.role === "vela" ? "vela" as const : "user" as const, text: l.text
@@ -383,7 +403,7 @@ export default function VelaPage() {
                   onChange={e => setSubjectId(e.target.value)}>
                   {people.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.display_name}{p.is_minor ? " (minor)" : ""}
+                      {p.display_name}{minorOf(p) ? " (minor)" : ""}
                     </option>
                   ))}
                 </select>
@@ -394,7 +414,7 @@ export default function VelaPage() {
                   onChange={e => setPairId(e.target.value)}>
                   {people.map(p => (
                     <option key={`pair-${p.id}`} value={p.id}>
-                      {p.display_name}{p.is_minor ? " (minor)" : ""}
+                      {p.display_name}{minorOf(p) ? " (minor)" : ""}
                     </option>
                   ))}
                 </select>

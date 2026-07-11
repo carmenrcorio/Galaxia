@@ -41,6 +41,40 @@ OUTPUT
 const CRISIS_PATTERN =
   /\b(suicid(e|al)|kill myself|self harm|self-harm|hurt myself|end my life|want to die|homicid(e|al)|kill them|abuse)\b/i;
 
+// ─── Minor safety — single age-aware source of truth ──────────────────────
+// Mirrors packages/core/src/index.ts `isMinorForSafety` / `minPossibleAge`
+// (edge functions cannot import from the pnpm workspace). Keep both in sync.
+//
+// An audit found a real child in production with `is_minor = false` — the
+// manual checkbox can be forgotten or absent from an insert path, so this
+// (the ONLY server-side, authoritative enforcement point) must never rely on
+// it alone. effective minor = is_minor === true OR computed age < 18. The
+// manual flag can only ADD protection, never remove it. Year-only precision
+// is ambiguous, so it over-protects by assuming the latest possible birthday
+// (Dec 31 — the youngest possible current age).
+function minPossibleAge(
+  birthDate: string | null | undefined,
+  birthPrecision: string | null | undefined,
+  now: Date = new Date()
+): number | null {
+  if (!birthDate || !birthPrecision || birthPrecision === "none") return null;
+  const [year, storedMonth, storedDay] = birthDate.slice(0, 10).split("-").map(Number);
+  if (!Number.isFinite(year)) return null;
+  const [month, day] = birthPrecision === "year" ? [12, 31] : [storedMonth, storedDay];
+  if (!Number.isFinite(month) || !Number.isFinite(day)) return null;
+  let age = now.getUTCFullYear() - year;
+  const beforeBirthdayThisYear =
+    now.getUTCMonth() + 1 < month || (now.getUTCMonth() + 1 === month && now.getUTCDate() < day);
+  if (beforeBirthdayThisYear) age -= 1;
+  return age;
+}
+
+function isMinorForSafety(person: { is_minor?: boolean | null; birth_date?: string | null; birth_precision?: string | null }): boolean {
+  if (person.is_minor === true) return true;
+  const age = minPossibleAge(person.birth_date, person.birth_precision);
+  return age !== null && age < 18;
+}
+
 /**
  * Split a Vela reply into the answer body and the "→ " suggested follow-ups.
  * Mirrors apps/web/lib/vela-parse.ts (edge functions cannot import from apps).
@@ -243,7 +277,7 @@ Deno.serve(async (req) => {
 
     const { data: people } = await supabase
       .from("people")
-      .select("id, display_name, relation, is_minor, birth_precision")
+      .select("id, display_name, relation, is_minor, birth_date, birth_precision")
       .in("id", personIds);
     if (!people?.length) return jsonResponse(404, { error: "People not found for this thread." });
 
@@ -253,7 +287,11 @@ Deno.serve(async (req) => {
     // flag below puts Vela in coach-the-parent mode (never addressing the child).
     // What must never happen is a minor being a participant in a real-time
     // two-way (shared) session.
-    if (mode === "shared" && people.some((p) => p.is_minor)) {
+    //
+    // isMinorForSafety(), never `p.is_minor` directly — this is the single
+    // authoritative safety enforcement point (the client's own check is
+    // belt-and-suspenders UX only). See comment above isMinorForSafety.
+    if (mode === "shared" && people.some((p) => isMinorForSafety(p))) {
       return jsonResponse(400, {
         error: "Shared spaces are turned off when a minor is involved. Ask about them privately in ask mode instead."
       });
@@ -319,7 +357,7 @@ Deno.serve(async (req) => {
       return {
         name:      person.display_name,
         role:      person.relation ?? "person",
-        isMinor:   Boolean(person.is_minor),
+        isMinor:   isMinorForSafety(person),
         precision: person.birth_precision,
         sun:    getSign("sun"),
         moon:   getSign("moon"),

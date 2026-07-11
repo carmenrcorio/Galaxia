@@ -12,6 +12,7 @@
  */
 
 import { computeNatalChart, computeSynastry, type NatalChart } from "@galaxia/astro";
+import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { buildBirthInput } from "../lib/birth";
@@ -100,8 +101,11 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
     try {
       const supabase = createSupabaseBrowserClient();
       const built = buildBirthInput({ precision: "date", month, day, year });
+      // This flow has no minor checkbox at all — the age backstop is the
+      // ONLY protection a child saved here gets, so it must run on save.
+      const effectiveIsMinor = isMinorForSafety({ isMinor: false, birthDate: built.birthDate, birthPrecision: "date" });
       const { data: person, error: pErr } = await supabase.from("people").insert({
-        owner_id: userId, is_self: false, display_name: name.trim() || "New person", relation, is_minor: false,
+        owner_id: userId, is_self: false, display_name: name.trim() || "New person", relation, is_minor: effectiveIsMinor,
         birth_date: built.birthDate, birth_time: null, birth_place: null, birth_precision: "date",
         birth_lat: null, birth_lng: null, tz_offset_min: null,
       }).select("id").single();

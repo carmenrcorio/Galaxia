@@ -1,6 +1,7 @@
 "use client";
 
 import { computeNatalChart } from "@galaxia/astro";
+import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { buildBirthInput, type BirthFormInput } from "../lib/birth";
@@ -54,8 +55,12 @@ export function SaveToGalaxyButton({
       const houseSystem = await getPreferredHouseSystem(supabase, userId);
       const natal = computeNatalChart({ ...built.birth, houseSystem });
 
+      // This flow has no minor checkbox at all — the age backstop is the
+      // ONLY protection a child saved here gets, so it must run on save.
+      const effectiveIsMinor = isMinorForSafety({ isMinor: false, birthDate: built.birthDate, birthPrecision: birthInput.precision });
+
       const { data: person, error: pErr } = await supabase.from("people").insert({
-        owner_id: userId, is_self: false, display_name: name.trim(), relation, is_minor: false,
+        owner_id: userId, is_self: false, display_name: name.trim(), relation, is_minor: effectiveIsMinor,
         birth_date: built.birthDate, birth_time: built.birthTime, birth_place: built.birthPlace,
         birth_precision: birthInput.precision,
         birth_lat: built.birth.lat ?? null, birth_lng: built.birth.lng ?? null,

@@ -602,3 +602,205 @@ select.field--rect {
 .aspect-tight { border-left: 2.5px solid var(--gold);       padding-left: 10px; }
 .aspect-mid   { border-left: 2.5px solid rgba(183,154,216,.4); padding-left: 10px; }
 .aspect-loose { opacity: .55; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MARKETING LANDING PAGE (apps/web/app/page.tsx + components/marketing/*)
+   Rebuilt from a dangerouslySetInnerHTML raw-HTML string into real JSX
+   components. Reuses tokens/.container/.glass-card/.eyebrow/.lede/.btn-primary/
+   CosmicBackground/.app-nav-* above rather than redefining them — everything
+   below is genuinely marketing-page-specific (no existing equivalent).
+   Mobile-first-safe: every grid child gets min-width:0 (the exact cause of a
+   prior 320px overflow — CSS Grid's default min-width:auto refuses to shrink
+   below content's intrinsic size), nothing uses 100vw, all grids collapse to
+   a single column at or below 780px.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+section { padding-block: clamp(64px, 11vh, 120px); }
+
+/* ─── hero ─────────────────────────────────────────────────────────────── */
+.hero { padding-top: clamp(40px, 7vh, 80px); padding-bottom: clamp(56px, 9vh, 110px); }
+.hero-grid { display: grid; grid-template-columns: 1.04fr .96fr; gap: 48px; align-items: center; min-width: 0; }
+.hero-text, .constellation { min-width: 0; }
+
+/* Shrunk poetic kicker — was the full-size h1 (clamp(3rem,8.4vw,6.6rem)),
+   which filled the whole mobile viewport before a visitor reached anything
+   that says what the product is. Now a smaller italic line above the real,
+   plain-language headline. */
+.hero-kicker {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1.3rem, 3.2vw, 1.9rem);
+  line-height: 1.32;
+  color: var(--mist);
+  margin: 16px 0 0;
+  max-width: 34ch;
+}
+.hero-kicker em { font-style: italic; font-weight: 600; color: var(--gold); }
+
+.hero-h1 {
+  font-size: clamp(2.1rem, 5.4vw, 3.4rem);
+  font-weight: 500;
+  margin: 14px 0 0;
+  letter-spacing: -.02em;
+  max-width: 22ch;
+}
+
+.hero-actions { margin-top: 30px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.hero-scroll-cue {
+  display: inline-flex; align-items: center; gap: 7px;
+  color: var(--mist2); font-size: .84rem; font-weight: 500;
+  text-decoration: none; transition: color .2s;
+}
+.hero-scroll-cue svg { animation: bob 2.4s ease-in-out infinite; }
+.hero-scroll-cue:hover { color: var(--cream); }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+
+.constellation {
+  position: relative; aspect-ratio: 1 / .92; width: 100%;
+  border-radius: 26px; overflow: hidden;
+  background: radial-gradient(120% 120% at 60% 30%, rgba(29,22,64,.6), rgba(10,7,23,.2));
+  border: 1px solid var(--line2);
+  box-shadow: 0 40px 100px -40px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+@media (max-width: 860px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 32px; }
+  /* Text FIRST on mobile, graphic second — the opposite of the previous
+     design's `.constellation{order:-1}`. "Make it clear within seconds that
+     this is a tool for understanding the people close to you" cannot happen
+     if a visitor has to scroll past a decorative animated graphic before
+     reaching any text at all, which is what order:-1 did. */
+  .constellation { aspect-ratio: 1 / .8; }
+}
+
+/* ─── the why (.shift) ────────────────────────────────────────────────────── */
+.shift { max-width: 880px; }
+.shift h2 { margin: 20px 0 24px; }
+.shift .body { color: var(--mist); max-width: var(--measure); margin-top: 22px; font-weight: 300; line-height: 1.8; }
+.shift .body em { color: var(--gold); }
+
+/* ─── core features (how it works) ───────────────────────────────────────── */
+.how-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; flex-wrap: wrap; margin-bottom: 50px; }
+.how-head h2 { max-width: 16ch; }
+.how-head p { color: var(--mist); max-width: 34ch; font-weight: 300; }
+
+.steps { display: grid; gap: 26px; }
+.step { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; min-width: 0; }
+.step-text, .mock { min-width: 0; }
+.step:nth-child(even) .step-text { order: 2; }
+.step-num { font-family: var(--serif); font-size: .84rem; letter-spacing: .2em; color: var(--gold); text-transform: uppercase; display: block; margin-bottom: 14px; }
+.step-text h3 { font-size: clamp(1.5rem, 2.8vw, 2.1rem); margin-bottom: 14px; }
+.step-text p { color: var(--mist); font-weight: 300; max-width: 46ch; line-height: 1.78; }
+.step-text p em { color: var(--cream); }
+@media (max-width: 780px) {
+  .step { grid-template-columns: 1fr; gap: 24px; }
+  .step:nth-child(even) .step-text { order: 0; }
+}
+
+/* mock cards — app-mockup-style visuals, reusing the real app's own classes
+   (.sign-chip, .glyph-sq, .pl-body/.pl-desc, .compat-word, .bubble) for the
+   content inside; these wrapper classes are layout-only. */
+.mock { padding: 22px; min-width: 0; }
+.mock-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.mock-name { font-family: var(--serif); font-size: 1.12rem; color: var(--cream); }
+.mock-sub { font-size: .78rem; color: var(--mist2); letter-spacing: .02em; }
+.mock-sub--eyebrow { letter-spacing: .16em; text-transform: uppercase; font-size: .66rem; color: var(--gold); }
+.mock-label { font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; display: block; }
+.mock-chips { display: flex; gap: 8px; margin: 14px 0; }
+.mock-chips .sign-chip { min-width: 0; }
+.mock-compat { margin-top: 8px; padding: 14px; border-radius: 14px; background: rgba(111,177,184,.06); border: 1px solid rgba(111,177,184,.15); }
+.mock-compat-row { display: flex; justify-content: space-between; align-items: center; font-size: .82rem; padding: 5px 0; }
+.mock-compat-row span:first-child { color: var(--mist); }
+.mock-example-tag { margin-top: 14px; font-size: .68rem; letter-spacing: .06em; color: var(--mist2); font-style: italic; }
+
+/* ─── the edge (generational layer) ──────────────────────────────────────── */
+.gen-grid { display: grid; grid-template-columns: 1fr .95fr; gap: 50px; align-items: center; min-width: 0; }
+.gen-grid > * { min-width: 0; }
+.cohort { padding: 24px; min-width: 0; }
+.cluster-more { background: rgba(255,255,255,.08); color: var(--mist); font-size: .7rem; }
+.gen-split { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.06); }
+.gen-split-note { font-size: .82rem; color: var(--mist); line-height: 1.6; margin-top: 6px; }
+@media (max-width: 780px) { .gen-grid { grid-template-columns: 1fr; gap: 32px; } }
+
+/* ─── vela example ────────────────────────────────────────────────────────── */
+.vela-wrap { max-width: 740px; margin: 0 auto; text-align: center; min-width: 0; }
+.vela-h2 { margin-top: 18px; font-size: clamp(2.1rem, 5vw, 3.6rem); }
+.vela-card { margin-top: 36px; text-align: left; padding: 22px; }
+
+/* ─── trust ───────────────────────────────────────────────────────────────── */
+.trust-head { max-width: 680px; margin-bottom: 42px; }
+.trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.tcard { padding: 26px 24px; min-width: 0; }
+.tcard-ico {
+  width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; margin-bottom: 16px;
+  background: rgba(230,174,108,.1); border: 1px solid rgba(230,174,108,.2); font-size: 1.1rem;
+}
+.tcard h3 { font-size: 1.14rem; margin-bottom: 9px; }
+.tcard p { color: var(--mist); font-size: .89rem; font-weight: 300; line-height: 1.7; }
+@media (max-width: 780px) { .trust-grid { grid-template-columns: 1fr; } }
+
+/* ─── pricing ─────────────────────────────────────────────────────────────── */
+.price-wrap { max-width: 860px; margin: 0 auto; min-width: 0; }
+.price-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 32px; min-width: 0; }
+.pcard { padding: 28px 24px; position: relative; text-align: center; min-width: 0; }
+.pcard--best { border-color: rgba(230,174,108,.4); }
+.pcard-badge {
+  position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold)); color: #1a1206;
+  font-size: .62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  padding: 4px 12px; border-radius: 100px;
+}
+.pcard-name { font-family: var(--serif); font-size: 1.2rem; color: var(--cream); margin-bottom: 8px; }
+.pcard-price { font-family: var(--serif); font-size: 2.1rem; color: var(--cream); font-weight: 600; }
+.pcard-price span { font-size: .88rem; color: var(--mist2); font-weight: 400; }
+.pcard-sub { font-size: .82rem; color: var(--mist); margin-top: 4px; min-height: 1.2em; }
+@media (max-width: 640px) { .price-cards { grid-template-columns: 1fr; } }
+
+.price-no-cap { text-align: center; color: var(--gold); font-size: .9rem; margin-top: 20px; font-weight: 500; }
+.incl { margin-top: 20px; padding: 24px; display: grid; gap: 12px; }
+.incl-row { display: flex; gap: 11px; align-items: flex-start; }
+.incl-star { color: var(--gold); flex-shrink: 0; }
+.incl-row p { color: var(--mist); font-size: .9rem; font-weight: 300; line-height: 1.6; }
+.incl-row b { color: var(--cream); font-weight: 600; }
+.price-reassure { text-align: center; color: var(--mist2); font-size: .86rem; margin-top: 18px; }
+
+/* ─── faq ─────────────────────────────────────────────────────────────────── */
+.faq-wrap { max-width: 760px; margin: 0 auto; min-width: 0; }
+.faq-head { text-align: center; margin-bottom: 40px; }
+.faq-item { border-bottom: 1px solid rgba(255,255,255,.08); }
+.faq-q {
+  width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+  padding: 20px 0; color: var(--cream); font-family: var(--serif);
+  font-size: clamp(1rem, 1.9vw, 1.26rem); font-weight: 500;
+  display: flex; justify-content: space-between; align-items: center; gap: 20px;
+}
+.faq-q .pm { color: var(--gold); font-size: 1.4rem; flex-shrink: 0; transition: transform .3s; font-family: var(--sans); font-weight: 300; }
+.faq-item.open .pm { transform: rotate(45deg); }
+.faq-a { max-height: 0; overflow: hidden; transition: max-height .4s ease, padding .4s ease; }
+.faq-item.open .faq-a { max-height: 340px; padding-bottom: 22px; }
+.faq-a p { color: var(--mist); font-weight: 300; line-height: 1.78; max-width: 64ch; }
+.faq-a p em { color: var(--gold); }
+
+/* ─── footer CTA (close) ──────────────────────────────────────────────────── */
+.close { text-align: center; }
+.close-h { font-size: clamp(2.1rem, 5.6vw, 4.2rem); max-width: 18ch; margin: 0 auto; line-height: 1.06; }
+.close-h em { color: var(--gold); }
+.close-cta { margin-top: 32px; display: flex; justify-content: center; }
+
+/* ─── site footer ─────────────────────────────────────────────────────────── */
+.site-footer { border-top: 1px solid rgba(255,255,255,.07); padding: 42px 0; }
+.site-footer-in { display: flex; justify-content: space-between; align-items: center; gap: 18px; flex-wrap: wrap; }
+.site-footer-brand { font-family: var(--serif); font-size: 1.3rem; color: var(--gold); }
+.site-footer-in p { color: var(--mist2); font-size: .82rem; margin-top: 2px; }
+.site-footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+.site-footer-links a { color: var(--mist2); font-size: .82rem; text-decoration: none; transition: color .2s; }
+.site-footer-links a:hover { color: var(--cream); }
+
+/* ─── reveal (scroll fade-up, ported from the removed inline SCRIPT) ────── */
+.reveal { opacity: 0; transform: translateY(26px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .hero-scroll-cue svg { animation: none; }
+}

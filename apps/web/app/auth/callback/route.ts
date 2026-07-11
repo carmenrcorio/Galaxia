@@ -8,7 +8,10 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get("code");
   const tokenHash = requestUrl.searchParams.get("token_hash");
   const type = requestUrl.searchParams.get("type");
-  const next = requestUrl.searchParams.get("next") ?? "/welcome";
+  // Default to the /start resolver so email-confirm / password-reset logins
+  // route returning users to /app and new users to /welcome. An explicit
+  // `next` (e.g. a Quick Chart prefill hand-off) is respected as-is.
+  const next = requestUrl.searchParams.get("next") ?? "/start";
 
   let response = NextResponse.redirect(new URL(next, request.url));
   const supabase = createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {

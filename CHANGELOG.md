@@ -6,6 +6,33 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Smart post-login routing + guided onboarding (branch `cursor/smart-login-routing-onboarding-0d60`) — 2026-07-11
+
+**Trigger**: two connected post-login problems. (1) Returning users with an established constellation were always dropped into the setup/welcome flow. (2) First-time onboarding was a single flat form that didn't explain *why* each piece of birth data is asked for or what accuracy unlocks — punishing for newcomers whose only astrology exposure is a daily horoscope.
+
+**Phase 0 — diagnosis (read-only).**
+- Root cause of the always-lands-on-setup bug: the post-login destination was a hardcoded `/welcome` default in three places, with no query of the user's record — `apps/web/app/login/page.tsx` (`resolved.next ?? "/welcome"`), `apps/web/components/login-form.tsx` (`router.push(nextPath || "/app")`, dead fallback since `nextPath` was always ≥ `/welcome`), and `apps/web/app/auth/callback/route.ts` (`?? "/welcome"`, the email-confirm / password-reset path). Deep links already worked (middleware preserves the original path as `?next=`), so the fix had to keep `next` and only override the generic default.
+- `/welcome` was one flat client screen (self card + add-people card + list), not a stepped flow. Reusable pieces to build on: `BirthFields` (with `PRECISION_TIERS`), `persistPerson` (runs `isMinorForSafety` + `buildBirthInput` never-fabricate rules + chart compute), `CustomCheck`, `InitialAvatar`.
+
+**Phase 1 — smart routing.** Added `apps/web/app/start/page.tsx`, a server resolver that reads the user's record and redirects: **established constellation → `/app`, otherwise → `/welcome`.**
+- **Signal chosen (deliberate, reported): a real self `people` row AND at least one non-self `people` row.** Picked over a stored `onboarding_completed` flag because it is *derived from the record*, never drifts (a pre-flag account or one that deleted everyone would lie about a boolean), needs no migration, and matches the product definition "new user = no self / no people" — honoring §12 (never assert a state the data doesn't support).
+- Login-page and auth-callback defaults changed from `/welcome` to `/start`. Explicit deep-link `next` (e.g. the Quick Chart prefill hand-off `?next=/welcome?prefill=…`, or logging in from an `/app/person/…` link) is passed straight through and never routed via `/start`, so deep links are still respected.
+- `middleware.ts`: `/start` added to the auth matcher (needs a user to read) but intentionally left out of the entitlement gate — it redirects onward to `/app`/`/welcome`, which are gated, so a trial-ended user still lands on `/subscribe`.
+
+**Phase 2 — guided onboarding.** Rebuilt `/welcome` as a 3-step progressive flow (progress header + one card per step), resuming at the correct step from the same record signal (no self → step 1; self only → step 2; established → step 3 recap):
+- **Step 1 · You** — add yourself, with a plain-language "why we ask for a birth time" callout (exact time unlocks Rising + houses; date-only still gives Sun/Moon and real readings).
+- **Step 2 · Your first person** — add someone you love, with an honest precision spectrum at the field level (exact → full picture; date → Sun/Moon/planets + real comparison; year → the generational layer, "even just a birth year places your grandmother in your sky"; none → progressive capture, "nothing is lost by starting light"). The minor checkbox now has a clearly visible §9 explanation (private guidance, no two-way AI chat with a minor, age backstop protects regardless).
+- **Step 3 · What you got** — lands them on their constellation with an avatar cluster and three next-step pointers (View a chart, Run a Compare, Ask Vela) plus Open Galaxia Mea.
+- Copy tone throughout: warm, jargon-free, always states what the user **does** get — never implies missing data breaks the product. All authored strings are marked `// FOUNDER-REVIEW` (the `COPY` object + each rendered block in `apps/web/app/welcome/page.tsx`) so the founder can refine voice in one place.
+
+**Safety / no-fabrication kept intact (§9, §12).** All existing guarantees carried over verbatim: `isMinorForSafety` runs on every person save (self and other, including the age backstop and progressive-capture path), the pre-insert self re-check + `people_one_self_per_owner` unique-index race handling, and `buildBirthInput`'s throw-on-missing-timezone. No new fabrication surface; `/start` computes nothing, only reads two booleans.
+
+**Not touched**: `next.config.mjs`, `.npmrc`, Vercel settings, any applied migration (the signal needs no schema change).
+
+**Verified**: `@galaxia/web` `tsc --noEmit` and `next build` pass (`/start` compiles as a dynamic route, `/welcome` as static). All three onboarding steps were screenshotted in a real browser via a temporary local preview harness (mock-seeded, reverted before commit) — live auth-gated testing of `/welcome`/`/app`/`/start` is not possible in the cloud VM without Supabase secrets (`/app` and `/account` return the same placeholder-env 500 as `/start`), the documented no-secrets limitation.
+
+---
+
 ## Relationship-type-aware Compare — wired real engine data + authored per-type scaffolding (branch `cursor/compare-relationship-aware-94e4`) — 2026-07-11
 
 **Trigger**: `/app/compare` is the flagship feature but was underdelivering. Phase 0 audit confirmed verdict (b) — **wiring + authored content, not an engine limitation**: `computeSynastry` already exposes everything needed (per-aspect `from`/`to`/`type`/`orb`/`harmony`, `houseOverlays` where houses exist, `elementBalance`), but `/app/compare` read almost none of it. Relationship type was decorative — parent-child appended ONE hardcoded sentence to both people; siblings/friends had zero dedicated content; the aspect list rendered in raw engine order with no type-aware framing.

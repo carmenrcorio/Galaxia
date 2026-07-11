@@ -27,7 +27,9 @@ export function Hero() {
           <p className="hero-kicker fade-in fade-in-delay-1">
             The night sky belongs to everyone. <em>Yours</em> doesn't.
           </p>
-          <h1 className="hero-h1 fade-in fade-in-delay-1">Understand the people you love, through their real charts.</h1>
+          <h1 className="hero-h1 fade-in fade-in-delay-1">
+            Understand <em>the people you love</em>, through their real charts.
+          </h1>
           <p className="lede fade-in fade-in-delay-2" style={{ marginTop: 18 }}>
             Galaxia reads the real birth charts of the small, close circle you actually steer your life
             by — partner, kids, parents, siblings, friends — then helps you show up for each bond with

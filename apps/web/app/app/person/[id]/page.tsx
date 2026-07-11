@@ -1044,7 +1044,15 @@ export default function PersonProfilePage() {
         <section className="glass-card fade-in fade-in-delay-3">
           <p className="eyebrow" style={{ marginBottom: 4 }}>Past conversations</p>
           <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>Archived Vela threads about {person.display_name}. Nothing is ever deleted.</p>
-          <div style={{ display: "grid", gap: 8 }}>
+          {/* grid-template-columns: minmax(0,1fr) — without it the single implicit
+              grid track is `auto`, which sizes to the max-content of its rows.
+              Each row's body <p> is white-space:nowrap (single-line ellipsis),
+              and overflow:hidden/ellipsis do NOT shrink an element's max-content
+              contribution — so the track (and thus the whole page's layout
+              viewport) grew to the untruncated text width, forcing horizontal
+              overflow / pinch-zoom-out on mobile. minmax(0,1fr) caps the track
+              at the container width so the ellipsis truncation actually engages. */}
+          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "minmax(0, 1fr)" }}>
             {archivedThreads.map(entry => (
               <div key={entry.id} style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: "2px solid rgba(183,154,216,.25)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                 <div style={{ minWidth: 0 }}>

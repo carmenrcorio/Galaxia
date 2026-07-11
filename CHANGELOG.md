@@ -6,6 +6,16 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Marketing hero cleanup: removed waitlist email capture + false iOS/Android claim (branch `fix/marketing-hero-cleanup`)
+
+**Trigger**: two conversion-killing hero problems confirmed by screenshot on the live site — a "Notify me" waitlist box competing with the real "Start 14 days free" CTA on an already-launched product, and a "Mobile-first · iOS & Android · private by design" line promising native apps that don't exist.
+
+**Phase 0 — located, no orphaned CSS or JS found (report before editing)**: `apps/web/app/page.tsx`'s marketing landing is a raw HTML string rendered via `dangerouslySetInnerHTML`, not JSX — checked every CSS class involved (`.form`, `.form input`, `.btn`, `.meta`, `.ok`, `.ok.show`) and found **none of them exclusive to the removed elements** — all are shared with things staying on the page: `.form`/`.btn` also style the "Start 14 days free" button's own wrapper; `.meta` also styles the closing section's "Be among the first to map your galaxy" line; `.ok`/`.form input` also style the closing section's own separate, still-intact email capture (`email2`/`ok2`, out of this task's scope — the task explicitly named the *hero's* email box only). **No CSS needed deletion.** The JS handler (`document.querySelectorAll('.btn[data-form]').forEach(...)`) is generic — driven entirely by whatever `data-form` elements exist at load time, with no hardcoded reference to the hero's specific `data-form="1"`. Removing the HTML just means the loop finds one fewer element; nothing errors, nothing is orphaned. **No JS needed changing.**
+
+**Phase 1 — removed**: deleted the hero's entire email-capture block (`<input id="email1">`, the "Notify me" button, and the `<p id="ok1">` success message) and the "Mobile-first · iOS & Android · private by design" line. Left "Start 14 days free" as the hero's single CTA. No new copy added, nothing else in the hero touched.
+
+**Verified**: `tsc --noEmit` and `next build` pass. Live-rendered the page and confirmed via the DOM: zero email-capture elements remain in the hero (`#email1`, `data-form="1"` button, `#ok1` all absent), zero "Mobile-first" text in the hero, exactly one CTA link remains (`"Start 14 days free"`), and the closing section's separate email capture (`#email2`/`#ok2`) is confirmed still present and untouched. Screenshotted at desktop and 320/375/390px — hero flows cleanly straight from the lede paragraph into the single CTA with no leftover gap.
+
 ## Mobile content column flush to screen edges — a different bug from the background-layer fix (branch `fix/mobile-content-width`)
 
 **Trigger**: real-iPhone screenshot showing content edge-to-edge with near-zero side margin, the "Galaxia" wordmark touching the left screen edge, at full zoom-out. Explicitly not the `.milkyway`/fixed-background-layer bug from the prior PR — that fix is correct and untouched here.

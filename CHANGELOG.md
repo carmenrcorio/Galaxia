@@ -6,6 +6,22 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Visual pacing pass on the marketing middle sections (branch `feat/marketing-visual-pacing`) — 2026-07-11
+
+**Trigger**: the rebuilt landing page's three middle sections — Add/Understand/Care (`FeaturesSection`), The Edge / generational layer (`EdgeSection`), and Meet Vela (`VelaExampleSection`) — all used the identical rhythm (header → glass-card UI example → text, same sizes/alignment/background), so they read as one monotonous "blob" and the eye stopped registering transitions.
+
+**CHANGED — styling/layout only; no copy, Vela example content, pricing, or FAQ touched, and no new colours/fonts (reused the existing gold/teal/air/mist/cream tokens, Fraunces/Inter, and `.glass-card`).** All three restyles keep the mobile rule that text stacks before its visual regardless of desktop side.
+
+- **Add/Understand/Care** — grouped into one bounded "How it works" module (`.how-panel`: hairline border, faint gradient fill, rounded) so the three moves read as a single sequenced unit. Each step is now its own bento card (`.step` gains a subtle fill, hairline, radius, padding) with a colour-coded index/left-accent (step 1 gold, 2 teal, 3 air) so the steps read as distinct blocks, not continuous text. The existing desktop Z-pattern (`.step:nth-child(even) .step-text{order:2}`) is preserved and still collapses to text-first single-column at ≤780px.
+- **The Edge** — broken out of the side-by-side grid into a full-width immersive band (`.edge-band`: full-bleed section background with a soft teal→transparent aura + faint gold underglow and top/bottom hairlines) with large centered typography (`.edge-h2` up to `clamp(…,6vw,4.2rem)`), a centered lede, and the cohort card centered below as a single showcase (`.cohort` now `max-width:560px; margin:auto`). The birth-year `teal-callout` moved to a centered closing statement under the card. Signals a major feature shift instead of another small UI snippet.
+- **Meet Vela** — restyled as an asymmetric spotlight (`.vela-grid`: narrower `.82fr` intro column beside a wider `1.18fr` chat window) instead of a centered stack. The card (`.vela-chat`) gains a title-bar (`.vela-chat-bar`) with Vela's `InitialAvatar` + the existing label, a mist hairline, and a mist-tinted border — a chat-window affordance so it reads as "a conversation," visibly distinct from the data-screen cards above. Collapses to a single column (intro then chat) at ≤860px.
+
+**Mobile**: every restyled grid keeps `min-width:0` on its children and collapses to one column (Features/Edge at ≤780px, Vela at ≤860px); the Edge band and Features panel use `clamp()` padding. Verified no horizontal overflow at 320 / 375 / 390 px and that each section stacks text-then-visual.
+
+**Verified**: `tsc --noEmit` and `next build` pass; manual browser check at desktop (1440px) confirms the three sections now read as distinct paced blocks, and at 320/375/390px confirms clean stacking with no horizontal scroll.
+
+---
+
 ## Marketing landing page rebuilt as real JSX (branch `cursor/feat-marketing-jsx-rebuild-b265`)
 
 **Trigger**: `apps/web/app/page.tsx` was a single `dangerouslySetInnerHTML` raw HTML string plus an injected `<script>` — no real components, no way to add interactivity without string surgery, and a duplicate `:root`/font-import/CosmicBackground/star-canvas implementation living outside the shared design system.

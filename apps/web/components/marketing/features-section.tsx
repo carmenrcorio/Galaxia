@@ -12,11 +12,12 @@ import { InitialAvatar } from "../initial-avatar";
 export function FeaturesSection() {
   return (
     <section className="container" id="how">
-      <div className="how-head reveal">
-        <h2>Add them. Understand them. Care for the bond.</h2>
-        <p>Three moves, in order. Each one turns a chart into something you can actually do.</p>
-      </div>
-      <div className="steps">
+      <div className="how-panel">
+        <div className="how-head reveal">
+          <h2>Add them. Understand them. Care for the bond.</h2>
+          <p>Three moves, in order. Each one turns a chart into something you can actually do.</p>
+        </div>
+        <div className="steps">
         <div className="step reveal">
           <div className="step-text">
             <span className="step-num">01 — Add</span>
@@ -116,6 +117,7 @@ export function FeaturesSection() {
             </div>
             <p className="mock-example-tag">Illustrative example</p>
           </div>
+        </div>
         </div>
       </div>
     </section>

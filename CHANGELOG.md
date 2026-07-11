@@ -6,6 +6,28 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Relationship-type-aware Compare — wired real engine data + authored per-type scaffolding (branch `cursor/compare-relationship-aware-94e4`) — 2026-07-11
+
+**Trigger**: `/app/compare` is the flagship feature but was underdelivering. Phase 0 audit confirmed verdict (b) — **wiring + authored content, not an engine limitation**: `computeSynastry` already exposes everything needed (per-aspect `from`/`to`/`type`/`orb`/`harmony`, `houseOverlays` where houses exist, `elementBalance`), but `/app/compare` read almost none of it. Relationship type was decorative — parent-child appended ONE hardcoded sentence to both people; siblings/friends had zero dedicated content; the aspect list rendered in raw engine order with no type-aware framing.
+
+**Phase 0 — plan (per-type body-priority groups + relationship houses).** Extended the existing `sortAspectsForFocus` / `ROMANTIC_BODIES` / `PLATONIC_BODIES` pattern (built for Quick Chart) rather than reinventing it. Proposed groups: partners → Venus/Mars/Sun/Moon + 7th/5th houses; parent-child → Moon/Saturn + 4th/10th houses; siblings → Mercury/Moon + 3rd house; friends → Mercury/Jupiter + 11th house; ancestor → Pluto/Neptune/Uranus (generational, no house lens). Confirmed `houseOverlays`/`elementBalance` were available and unused in `/app/compare`.
+
+**Phase 1 — wiring (`apps/web/lib/compare-guidance.ts`, `apps/web/app/app/compare/page.tsx`).**
+- `sortAspectsForFocus` broadened from `"romantic"|"platonic"|null` to `RelationType|null` via a new `RELATION_BODY_PRIORITY` map (romantic/platonic entries unchanged, so Quick Chart is byte-for-byte unaffected). The "Where it flows and catches" list now reorders the **real, orb-sorted** aspects so the type-relevant bodies surface first — never adds/removes/alters an aspect.
+- `relationHouseOverlays()` reads real `houseOverlays` for the type's relevant houses; `available` is false for date-only charts (no cusps → empty engine arrays), which drives an honest hedge instead of asserting a house that was never computed (§12).
+- `relationElementSignal()` reads real `elementBalance` counts into one comparison line.
+- **Mechanical result per type** (same two exact-time charts): 5 distinct top-6 aspect orderings; partners surface 7th/5th-house overlays, parent-child 10th, siblings 3rd, friends 11th/3rd, ancestor none; date-only charts show the no-houses hedge.
+
+**Phase 2 — authored content (SCAFFOLD, flagged for founder review).** In the style/density/voice of the existing `MOON_NEED`/`VENUS_NEED` tables: added `SATURN_NEED` (parent-child structure/authority lens) and `MERCURY_NEED` (siblings/friends communication lens); `whatTheyNeed` now reads THAT person's real Moon + type-appropriate body (Venus only for partner lenses, Saturn for parent-child, Mercury for siblings/friends, an era note for ancestor) and **the single hardcoded parent-child sentence was removed**. Added `RELATION_ASPECT_FRAME` (2 variants/type) + `relationshipAspectFraming()` which frames the tightest **real** type-relevant aspects in relationship terms, and `narrateHouseOverlay()`. **Every authored string is marked `// FOUNDER-REVIEW: authored placeholder — refine voice` for the founder to rewrite** — this is scaffolding in the correct structure, not final voice.
+
+**No fabrication (§12).** Every authored line only fires when the underlying datum is real and confident: a need line requires that person's confident sign; a framing line requires a real aspect (verified: every rendered aspect exists in `synastry.aspects`); a house line requires computed cusps, else the hedge. Relationship type only **reframes and reweights** real data — it never invents.
+
+**Minor safety (§9, non-negotiable).** `/app/compare` now loads `is_minor` and computes minor status via `isMinorForSafety` (age-aware, ORs the manual flag with computed age) through a local `minorOf()` — never the raw `is_minor` boolean. When a minor is in the comparison, the Ask-Vela handoff surfaces a private-coaching reassurance; Vela opens in private (ask) mode by default and its own gate refuses shared mode with a minor in scope.
+
+**Verified**: `@galaxia/web` `tsc --noEmit` and `next build` pass; `@galaxia/astro` `vitest run` 33/33 pass. A dedicated verification drove the SAME two charts through all 5 types (see the run log): 5 distinct aspect orderings, 5 distinct `whatTheyNeed` texts, every framing line traced to a real aspect, and date-only charts hedged (`available=false`, 0 lines). Live browser testing of `/app/compare` itself was not possible in the cloud VM (no Supabase secrets → `/app/*` is auth-gated with no seeded people/charts); the public `/chart/compare` (shared `compare-guidance.ts`) was checked live.
+
+---
+
 ## Visual pacing pass on the marketing middle sections (branch `feat/marketing-visual-pacing`) — 2026-07-11
 
 **Trigger**: the rebuilt landing page's three middle sections — Add/Understand/Care (`FeaturesSection`), The Edge / generational layer (`EdgeSection`), and Meet Vela (`VelaExampleSection`) — all used the identical rhythm (header → glass-card UI example → text, same sizes/alignment/background), so they read as one monotonous "blob" and the eye stopped registering transitions.

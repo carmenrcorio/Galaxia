@@ -519,7 +519,12 @@ select.field--rect {
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
-  .app-content  { padding: 20px 0 80px; gap: 14px; }
+  /* Below 600px, stop relying on width:min(860px,94vw)'s implicit margin
+     for the gutter — that shrinks proportionally with the viewport (only
+     ~10px at 320px wide) and isn't a "comfortable margin" on the smallest
+     phones. width:100% + an explicit 16px horizontal padding gives every
+     phone the same predictable gutter regardless of exact viewport width. */
+  .app-content  { width: 100%; padding: 20px 16px 80px; gap: 14px; }
   .bubble       { max-width: 94%; font-size: .84rem; }
   .compat-grid  { grid-template-columns: repeat(2, 1fr); }
 }
@@ -568,7 +573,13 @@ select.field--rect {
 .app-nav-drawer {
   display: grid;
   gap: 4px;
-  padding: 4px 0 16px;
+  /* padding-top/padding-bottom only — same class of bug as app-nav.tsx's
+     header row: this class shares an element with .container, which already
+     sets horizontal padding via CSS. The padding shorthand here would win
+     (later in source order, equal specificity) and zero out .container's
+     left/right padding, flushing every drawer link to the screen edges. */
+  padding-top: 4px;
+  padding-bottom: 16px;
   border-top: 1px solid rgba(255,255,255,.06);
 }
 .app-nav-drawer-link {

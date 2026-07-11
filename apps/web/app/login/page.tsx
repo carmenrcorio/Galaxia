@@ -4,7 +4,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const resolved = await searchParams;
   const nextPath = resolved.next ?? "/welcome";
   return (
-    <main className="container" style={{ padding: "72px 0", maxWidth: 820 }}>
+    <main className="container" style={{ paddingTop: 72, paddingBottom: 72, maxWidth: 820 }}>
       <h1 className="auth-title">Sign in to Galaxia</h1>
       <p className="muted">Use the same email + password account as mobile.</p>
       <LoginForm nextPath={nextPath} />

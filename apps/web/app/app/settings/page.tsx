@@ -65,7 +65,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <main className="container app-content">
+    <main className="app-content">
       <p className="eyebrow">Account</p>
       <h1 className="page-title">Settings</h1>
 

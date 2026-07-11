@@ -293,11 +293,6 @@ export default function PersonProfilePage() {
     setOpenRows(prev => { const next = new Set(prev); chart?.placements.forEach(p => open ? next.add(`pl-${p.body}`) : next.delete(`pl-${p.body}`)); return next; });
   }, [chart]);
 
-  const toggleAllAspects = useCallback((open: boolean) => {
-    setAspectsAllOpen(open);
-    setOpenRows(prev => { const next = new Set(prev); natalAspects.forEach((a,idx) => { const k=`asp-${a.from}-${a.to}-${idx}`; open?next.add(k):next.delete(k); }); return next; });
-  }, []);
-
   const toggleAllHouses = useCallback((open: boolean) => {
     setHousesAllOpen(open);
     setOpenRows(prev => { const next = new Set(prev); for(let h=1;h<=12;h++) open?next.add(`h-${h}`):next.delete(`h-${h}`); return next; });
@@ -350,6 +345,23 @@ export default function PersonProfilePage() {
       .sort((a, b) => a.orb - b.orb)
       .slice(0, 14);
   }, [chart]);
+
+  // Defined here (not with the other toggles above) because it must close over
+  // the CURRENT natalAspects. When it was a useCallback with an empty dep array
+  // declared before natalAspects, it captured the first render's value — which
+  // is [] while the chart is still loading — so "Expand all" flipped its label
+  // but never added any asp-* keys to openRows (the rows never opened).
+  const toggleAllAspects = useCallback((open: boolean) => {
+    setAspectsAllOpen(open);
+    setOpenRows(prev => {
+      const next = new Set(prev);
+      natalAspects.forEach((a, idx) => {
+        const k = `asp-${a.from}-${a.to}-${idx}`;
+        if (open) next.add(k); else next.delete(k);
+      });
+      return next;
+    });
+  }, [natalAspects]);
 
   // Per-planet aspect map (for expanded placement rows)
   const aspectsByBody = useMemo(() => {

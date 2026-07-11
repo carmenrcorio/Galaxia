@@ -22,6 +22,57 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Account: show the user's name (not their email) and let them set it (branch `cursor/fix-account-name-and-profile-fc1d`)
+
+**Trigger**: the `/account` page showed the login **email where the person's name should be**, and nothing in the account ever asked the user for their name.
+
+**Phase 0 — located, read-only, confirmed against production before changing code.**
+- The name field already exists: `profiles.display_name text` (initial schema, `20260629212000_initial_schema.sql`), with owner insert/update/select RLS (`20260629220500_add_owner_rls_policies.sql`). **No migration needed.**
+- Root cause: **nothing ever writes `profiles.display_name`** (grepped every `from("profiles")` call — only `house_system`/subscription fields are written), and there was no UI to set it. `apps/web/app/account/page.tsx` resolved the identity as `profile?.display_name ?? user.email?.split("@")[0] ?? "Friend"`, so with `display_name` always null it displayed the email's local part **as the name**. Confirmed in prod: the one profile row has `display_name = null`.
+- A reusable name exists elsewhere: the account's **"self" person record** (`people` where `is_self`, enforced unique) carries a `display_name` from onboarding. Confirmed in prod: the self-person has a name. So the account display can default from it instead of the email.
+
+**Phase 1 — fix (`apps/web/app/account/page.tsx` only; no schema change).**
+1. Name now resolves as **set profile name → self-person name → prompt** — the raw email is *never* used as the name. When no name is known, the title reads "Add your name" (muted/italic) instead of the email; the email always renders only as the contact line beneath.
+2. Added a **"Your profile"** section with a first-name / display-name input and a "Save name" button that upserts `profiles.display_name` (RLS-scoped to the owner). It's pre-filled with the best known name (profile → self), never the email.
+3. **Defaulted the account display name from the self-person record** when no profile name is set (chosen: yes), with an honest note — "Using the name from your own chart (<name>) until you set one here." — so the source is never silently implied (ENGINEERING.md §12).
+4. Avatar initials derive from the resolved name (a neutral "?" when there is no name yet), never from the email.
+
+**Verified**: `apps/web` `tsc --noEmit` and `next build` pass. Live browser (video + screenshots): on load the title showed the self-record name "Aria Vance" (email only as the contact line); setting "Nova Okafor" saved and updated the title and avatar immediately. No fabrication — email is shown as the login/contact detail, never as the name.
+
+---
+
+## Person page: Key Aspects "Expand all" fixed; planet-to-house assignment audited (branch `cursor/fix-aspect-expand-and-house-occupancy-fc1d`)
+
+**Trigger**: two reported bugs on `/app/person/[id]` for a person with an exact birth time — (A) the Key Aspects expand control "did nothing," and (B) "every one of the 12 houses shows empty / No planets here" even though the cusps render.
+
+**Phase 0 — diagnosed both, read-only, reproduced in a live browser against real Supabase before changing code (ENGINEERING.md §4).**
+
+- **Bug A — real, and narrower than reported.** The per-row ▶ arrow on each aspect works correctly (verified live: clicking a row rotates the arrow and reveals its interpretation text — `interpretAspect` always returns a non-empty `long`). The actually-dead control is the **"Expand all"** button. `toggleAllAspects` was a `useCallback` with an **empty dependency array** declared *above* `natalAspects`; it closed over the first render's `natalAspects`, which is `[]` while the chart is still loading. So clicking "Expand all" flipped the label to "Collapse all" but never added any `asp-*` keys to `openRows` — the rows never opened. (The Placements and Houses "Expand all" buttons were unaffected: `toggleAllPlacements` depends on `[chart]`, and `toggleAllHouses` iterates a constant `1..12`.)
+
+- **Bug B — NOT reproducible; planet-to-house assignment is correct, and this is not app-wide.** Traced assignment to `houseFromLongitude` in `@galaxia/astro` (called from `computeNatalChart`, stored on each `Placement.house`, read by the person page's `houseOccupants`). Evidence gathered before concluding: (1) a freshly computed exact chart assigns every planet a house `1..12` and distributes them across houses; (2) **all 7 exact charts in production** (project `eigfvribtntbxyjutsma`) have complete, distributed `house` values on every placement and 12 cusps — including **the exact chart the report cited** (Ascendant 7°56′ Leo / 4th cusp 29°06′ Libra), whose planets occupy houses 6, 8, 9, 10, 11, 12; (3) the person page rendered occupant glyphs and readings correctly in a live browser for an exact chart, and still did so after forcing the client-side stale-chart recompute path. The `PLANET_IN_HOUSE` interpretation library covers all 10 bodies × 12 houses, so occupant readings are complete. Scope: correct for every record — the "all houses empty" symptom does not exist in the current engine, data, or UI (most likely an earlier, since-healed stored-chart state). No fabricated "fix" was applied, per §12.
+
+**Phase 1 — fix + regression coverage.**
+- `apps/web/app/app/person/[id]/page.tsx`: moved `toggleAllAspects` to after `natalAspects` is defined and gave it `[natalAspects]` deps, so "Expand all" opens every aspect row. No other behavior changed.
+- `packages/astro/test/house-occupancy.test.ts` (new, 6 tests): locks the planet-to-house step the profile depends on — every planet gets a concrete house `1..12`; planets distribute across more than one house (excludes both the all-in-house-1 fallback shape and the all-undefined shape); each planet lands in the house whose cusp arc actually contains its longitude (independent, wraparound-aware recomputation); a longitude 0.5° past the Ascendant maps to house 1 and 0.5° before to house 12 (the 0°/360° candidate); and, per §12, date-only and location-less charts yield **no** cusps and **undefined** houses (no fabricated occupancy).
+
+**Verified**: `packages/astro` `vitest run` (33/33 pass, was 27); `apps/web` `tsc --noEmit` and `next build` both pass; reproduced the original state and confirmed the fix in a live browser (video + screenshots) — "Expand all" now expands every aspect row with text, and houses populate for the exact-time chart while no-time charts still hedge.
+
+---
+
+## FAQ accordion no longer makes the answer vanish on click (branch `fix/marketing-faq-accordion`) — 2026-07-11
+
+**Trigger**: On the rebuilt JSX marketing page, clicking an FAQ question in `components/marketing/faq-section.tsx` made the whole item (question + answer) fade out instead of expanding to reveal the answer. Reproduced in-browser: click → text disappears, leaving empty space; re-clicking did nothing visible.
+
+**FIXED — root cause was React reconciliation clobbering an imperatively-added class, not inverted open/closed state.** The open/closed logic was actually correct (`openSet` adds the index on click; CSS `.faq-item.open .faq-a` animates `max-height: 0 → …`). The real bug: every `.faq-item` also carries the page-wide `reveal` class, and `RevealObserver` reveals elements by calling `entry.target.classList.add("in")` **imperatively** — a class React never knows about. FAQ rows re-render on every open/close, so React rebuilds each row's `className` from `faq-item reveal${open ? " open" : ""}`, which does **not** include `in`, and React wipes the imperatively-added `in` on the clicked row. That reverts the row to `.reveal`'s base `opacity:0; transform:translateY(26px)`, so the entire item vanishes on click. (Static reveal sections were unaffected because their `className` string never changes, so React never touches the attribute.) The prior parity check missed this because it only asserted the accordion "opens/closes" via class toggling, not that the content stayed *visible*.
+
+**Fix**: `FaqSection` now owns its scroll-reveal state instead of leaning on the imperative global observer. A local `IntersectionObserver` (same threshold/rootMargin as `RevealObserver`, and `prefers-reduced-motion`-aware) records revealed rows in a `revealedSet` React state, and each row's `className` includes `in` derived from that state — so re-renders on open/close keep the row revealed. No DOM structure, copy, or styling changed.
+
+**Also fixed while here**: `.faq-item.open .faq-a` had `max-height: 340px`, which clipped the longest answer (the ~90-word first answer) once it wrapped to many lines on a 320px viewport. Raised to `640px` so no answer is cut off at any width. This is a cap for the open→close transition only; content still sizes to its own height.
+
+**Verified**: `tsc --noEmit` and `next build` pass. Manual browser test — desktop: each item expands to show its answer, items open independently, re-click collapses, question text never disappears. Mobile (DevTools responsive at 320 / 375 / 390 px): the longest first answer expands fully with its final line "…still belongs in your sky." visible and not clipped at all three widths.
+
+---
+
 ## Marketing landing page rebuilt as real JSX (branch `cursor/feat-marketing-jsx-rebuild-b265`)
 
 **Trigger**: `apps/web/app/page.tsx` was a single `dangerouslySetInnerHTML` raw HTML string plus an injected `<script>` — no real components, no way to add interactivity without string surgery, and a duplicate `:root`/font-import/CosmicBackground/star-canvas implementation living outside the shared design system.

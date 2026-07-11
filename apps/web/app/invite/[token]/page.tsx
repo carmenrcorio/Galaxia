@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { InviteBirthDataForm } from "../../../components/invite-birth-data-form";
-import { SmartAppBanner } from "../../../components/smart-app-banner";
-import { publicEnv } from "../../../lib/env";
 import { getInviteByToken } from "../../../lib/invites";
 
 export const metadata: Metadata = {
@@ -11,8 +9,6 @@ export const metadata: Metadata = {
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const invite = await getInviteByToken(token);
-  const siteUrl = publicEnv.siteUrl || "";
-  const deepLink = `${siteUrl}/invite/${token}`;
 
   if (!invite) {
     return (
@@ -52,13 +48,19 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     );
   }
 
+  // Any invite.kind other than "birth_data" is the deferred, v2 user-to-user
+  // "shared space" connect feature — its own creation UI never shipped (no
+  // button anywhere makes an invites row with this kind; confirmed zero rows
+  // of any kind exist in the live database). This branch used to claim
+  // "open this invite in the mobile app to continue," but mobile has no
+  // handler for it either — that was a false claim about a real path
+  // existing. Say plainly that it isn't available yet instead.
   return (
     <main className="container" style={{ padding: "56px 0", maxWidth: 780 }}>
-      <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 42 }}>You were invited to Galaxia</h1>
+      <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 42 }}>This invite isn't ready yet</h1>
       <p style={{ color: "var(--mist)", lineHeight: 1.7 }}>
-        {invite.inviter_name ?? "Someone you know"} invited you to a {invite.relationship_type ?? "shared"} space. Status: {invite.status}. Open this invite in the mobile app to continue.
+        {invite.inviter_name ?? "Someone you know"} sent you this link, but shared spaces you can join this way aren't available yet — that feature is still being built.
       </p>
-      <SmartAppBanner deepLink={deepLink} />
       <p style={{ color: "var(--mist2)", marginTop: 16 }}>
         Privacy reminder: this page never shows private notes or detailed chart content.
       </p>

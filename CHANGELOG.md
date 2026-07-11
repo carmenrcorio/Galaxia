@@ -6,6 +6,20 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## FAQ accordion no longer makes the answer vanish on click (branch `fix/marketing-faq-accordion`) — 2026-07-11
+
+**Trigger**: On the rebuilt JSX marketing page, clicking an FAQ question in `components/marketing/faq-section.tsx` made the whole item (question + answer) fade out instead of expanding to reveal the answer. Reproduced in-browser: click → text disappears, leaving empty space; re-clicking did nothing visible.
+
+**FIXED — root cause was React reconciliation clobbering an imperatively-added class, not inverted open/closed state.** The open/closed logic was actually correct (`openSet` adds the index on click; CSS `.faq-item.open .faq-a` animates `max-height: 0 → …`). The real bug: every `.faq-item` also carries the page-wide `reveal` class, and `RevealObserver` reveals elements by calling `entry.target.classList.add("in")` **imperatively** — a class React never knows about. FAQ rows re-render on every open/close, so React rebuilds each row's `className` from `faq-item reveal${open ? " open" : ""}`, which does **not** include `in`, and React wipes the imperatively-added `in` on the clicked row. That reverts the row to `.reveal`'s base `opacity:0; transform:translateY(26px)`, so the entire item vanishes on click. (Static reveal sections were unaffected because their `className` string never changes, so React never touches the attribute.) The prior parity check missed this because it only asserted the accordion "opens/closes" via class toggling, not that the content stayed *visible*.
+
+**Fix**: `FaqSection` now owns its scroll-reveal state instead of leaning on the imperative global observer. A local `IntersectionObserver` (same threshold/rootMargin as `RevealObserver`, and `prefers-reduced-motion`-aware) records revealed rows in a `revealedSet` React state, and each row's `className` includes `in` derived from that state — so re-renders on open/close keep the row revealed. No DOM structure, copy, or styling changed.
+
+**Also fixed while here**: `.faq-item.open .faq-a` had `max-height: 340px`, which clipped the longest answer (the ~90-word first answer) once it wrapped to many lines on a 320px viewport. Raised to `640px` so no answer is cut off at any width. This is a cap for the open→close transition only; content still sizes to its own height.
+
+**Verified**: `tsc --noEmit` and `next build` pass. Manual browser test — desktop: each item expands to show its answer, items open independently, re-click collapses, question text never disappears. Mobile (DevTools responsive at 320 / 375 / 390 px): the longest first answer expands fully with its final line "…still belongs in your sky." visible and not clipped at all three widths.
+
+---
+
 ## Marketing landing page rebuilt as real JSX (branch `cursor/feat-marketing-jsx-rebuild-b265`)
 
 **Trigger**: `apps/web/app/page.tsx` was a single `dangerouslySetInnerHTML` raw HTML string plus an injected `<script>` — no real components, no way to add interactivity without string surgery, and a duplicate `:root`/font-import/CosmicBackground/star-canvas implementation living outside the shared design system.

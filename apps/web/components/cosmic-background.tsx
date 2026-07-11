@@ -51,7 +51,12 @@ export function CosmicBackground() {
           y:     Math.random() * H,
           r:     (Math.random() * 1.1 + 0.2) * DPR,
           a:     Math.random() * Math.PI * 2,
-          tw:    Math.random() * 0.02 + 0.004,
+          // Twinkle speed. Was Math.random()*0.02 + 0.004 (a full min↔max
+          // pulse every ~2–13s per star) — reported as a fast flicker across
+          // many stars at once. ~5x slower: a gentle shimmer, ~10–65s per
+          // pulse. prefers-reduced-motion is already honored below (this
+          // increment is skipped entirely, and only one static frame draws).
+          tw:    Math.random() * 0.004 + 0.0008,
           depth: Math.random() * 0.6 + 0.2,
         });
       }
@@ -95,11 +100,28 @@ export function CosmicBackground() {
   }, []);
 
   return (
-    <div aria-hidden style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}>
+    // overflow:hidden here only clips position:absolute descendants — it would
+    // do nothing for position:fixed ones, since fixed elements are positioned
+    // against the viewport (initial containing block), not this wrapper,
+    // *unless* an ancestor establishes a containing block for them (a
+    // transform/filter/etc., which this wrapper doesn't have). That's exactly
+    // the bug: every child below used to be independently position:fixed, so
+    // none of them were ever actually contained by anything. .milkyway's
+    // inset:-20% -20% auto -20% intentionally renders ~1.4x viewport width
+    // (verified empirically: 448px at a 320px viewport, 525px at 375px, 546px
+    // at 390px — exactly 1.4x every time) to get an oversized rotated blur
+    // without doing that math by hand. On desktop that bled past the edges
+    // harmlessly. This wrapper is already position:fixed + inset:0, i.e.
+    // already pinned to and sized to the viewport at all times — so switching
+    // every child to position:absolute keeps them pixel-identical to before,
+    // while making overflow:hidden below actually take effect and guarantee
+    // nothing here can ever be measured wider than the viewport, on any
+    // browser, regardless of any specific engine's fixed+transform quirks.
+    <div aria-hidden style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
 
       {/* .aura — exact from landing */}
       <div style={{
-        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+        position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
         background: [
           "radial-gradient(120% 80% at 78% -5%, rgba(110,177,184,.10), transparent 55%)",
           "radial-gradient(90% 70% at 12% 8%, rgba(183,154,216,.12), transparent 50%)",
@@ -110,7 +132,7 @@ export function CosmicBackground() {
 
       {/* .milkyway — exact from landing (parallax handled by JS in landing; here CSS) */}
       <div style={{
-        position: "fixed", zIndex: 0, pointerEvents: "none",
+        position: "absolute", zIndex: 0, pointerEvents: "none",
         inset: "-20% -20% auto -20%", height: "140%",
         background: "radial-gradient(60% 40% at 50% 50%, rgba(183,154,216,.07), transparent 70%)",
         transform: "rotate(-18deg)",
@@ -118,11 +140,11 @@ export function CosmicBackground() {
       }} />
 
       {/* #stars canvas */}
-      <canvas ref={starsRef} style={{ position: "fixed", inset: 0, zIndex: 0, width: "100%", height: "100%" }} />
+      <canvas ref={starsRef} style={{ position: "absolute", inset: 0, zIndex: 0, width: "100%", height: "100%" }} />
 
       {/* .grain — exact from landing */}
       <div style={{
-        position: "fixed", inset: 0, zIndex: 1, pointerEvents: "none",
+        position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
         opacity: .05,
         mixBlendMode: "overlay",
         backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
@@ -130,7 +152,7 @@ export function CosmicBackground() {
 
       {/* .vignette — exact from landing */}
       <div style={{
-        position: "fixed", inset: 0, zIndex: 1, pointerEvents: "none",
+        position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
         boxShadow: "inset 0 0 240px 60px rgba(5,3,12,.9)",
       }} />
 

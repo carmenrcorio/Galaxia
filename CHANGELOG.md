@@ -6,6 +6,32 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Constellation entrance ignition + living light (branch `feat/galaxy-entrance-and-light`) — 2026-07-11
+
+**Trigger**: `/app` (Galaxia Mea) is the product's signature view and the login moment — correct but visually quiet. Goal: make the galaxy *arrive* on login (a restrained ignition sequence) and make the stars feel alive with light. Pure visual polish of the EXISTING `<canvas>` renderer in `apps/web/app/app/page.tsx` — **no** new rendering library (no PixiJS/Three.js), and **nothing that changes what data means** (§12/§13): relationship→form, element→colour, precision→brightness stay sacred. Only *how* they look and *how* they enter changed.
+
+**Phase 0 — render-loop audit (read-only, reported before building).** The constellation is one `useEffect` (deps `[loading, people, links, activeTransitIds, hoverPerson, router]`) that grabs a 2D context and runs a `requestAnimationFrame` loop (`draw()`), i.e. it was already animated, not a static draw — but there was no entrance; nodes were simply present from frame one. DPR is `min(devicePixelRatio, 2)` applied via `cx.setTransform(DPR,0,0,DPR,0,0)` in `resize()`; all geometry is authored in CSS px. `t = performance.now()` drives drift/twinkle. The natural entrance hook is the moment this effect first runs after data resolves (`loading===false && people.length>0`). Caveat found: the effect re-runs on every hover (`hoverPerson` dep), so the entrance had to be anchored outside the effect to avoid replaying — done with two refs.
+
+**Phase 1 — the entrance (login WOW), ~1.5–1.8s.** Added an ignition timeline persisted in `entranceStartRef`/`entranceKeyRef` (survives the hover-driven effect re-runs, resets only when the *set of people* changes — so it plays once on load, not on every state change):
+- The self star ignites first (soft bloom, `SELF_DUR` 650ms), scaling up from nothing.
+- People kindle in a staggered sequence, **inner bonds first** — ordered by real synastry score to self (`links[].scoreA`), `NODE_LEAD` 440ms then `NODE_GAP` 130ms apart, each with a brief white-hot ignition flare (`easeOutBack` overshoot) that settles into its normal form.
+- Constellation lines draw themselves in (`drawLink(..., progress)` samples the bezier up to a growing `progress`), each starting once both endpoints are ~half-lit and finishing as the last stars settle.
+- **`prefers-reduced-motion`**: no sequence — a single gentle global opacity fade over ~900ms, after which the rAF loop stops and the sky rests fully static (verified by canvas pixel-diff).
+
+**Phase 2 — living light (within the existing loop).**
+- **Real layered glow** (`drawGlow`): a soft element-hued halo + a bright inner white-hot core, replacing the flat single-gradient disc. Precision→brightness kept: exact = tight, hot, crisp halo; year-only ancient light = wide, dim, diffuse.
+- **Idle life**: gentle organic twinkle from two summed *slow* sines (amp ~0.10) — deliberately not the fast blink that was previously fixed; drift amplitude eases in with each star's ignition.
+- **Binary (partner) stars** now orbit their shared centre very slowly (~22s period, was ~5s) — what a real binary does.
+- **Moons (children)** keep the crescent shading and gained a soft shimmer riding the lit limb.
+
+**Performance / graceful degradation.** Frame work is capped and DPR handling is unchanged. An EMA frame-budget monitor drops the second (inner-bloom) glow layer if a frame ever blows ~26ms (`lowPerf`), and small mobile viewports start in the reduced-layer mode — so a struggling device sheds glow layers rather than janking. Measured at 375px with 4× CPU throttle (Playwright + CDP, mid-range profile): **60fps, 0 long tasks** through entrance and idle.
+
+**Not touched**: `next.config.mjs`, `.npmrc`, Vercel settings, any migration, and all data-derived meaning (forms/colours/positions/precision, and the synastry-driven ordering is read-only). The rendering is still the same hand-rolled canvas.
+
+**Verified**: `@galaxia/web` `tsc --noEmit` and `next build` pass. Visual QA was done against the real render loop via a temporary mock-seeded, non-gated preview route (reverted before commit — `/app` is auth-gated and needs Supabase secrets not present in the cloud VM, the documented no-secrets limitation): entrance stagger (center-first → inner bonds → outer, lines growing), reduced-motion fade-then-static, and the mobile 60fps check were all captured.
+
+---
+
 ## Smart post-login routing + guided onboarding (branch `cursor/smart-login-routing-onboarding-0d60`) — 2026-07-11
 
 **Trigger**: two connected post-login problems. (1) Returning users with an established constellation were always dropped into the setup/welcome flow. (2) First-time onboarding was a single flat form that didn't explain *why* each piece of birth data is asked for or what accuracy unlocks — punishing for newcomers whose only astrology exposure is a daily horoscope.

@@ -91,6 +91,10 @@ export default function AppHomePage() {
   const supabase  = useMemo(() => createSupabaseBrowserClient(), []);
   const router    = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  /* entrance ignition timeline — persists across effect re-runs (e.g. hover)
+     so the arrival sequence plays once on data load, not on every state change */
+  const entranceStartRef = useRef<number | null>(null);
+  const entranceKeyRef   = useRef<string>("");
 
   const [welcomeName, setWelcomeName] = useState("stargazer");
   const [people, setPeople]           = useState<PersonRow[]>([]);
@@ -121,7 +125,6 @@ export default function AppHomePage() {
     const DPR     = Math.min(window.devicePixelRatio || 1, 2);
     let raf = 0;
     let t   = 0;
-    let mouseX = 0, mouseY = 0;
 
     const resize = () => {
       const rect = canvas.parentElement!.getBoundingClientRect();
@@ -137,10 +140,86 @@ export default function AppHomePage() {
     const W = () => canvas.width  / DPR;
     const H = () => canvas.height / DPR;
 
-    /* per-person stable phase for drift */
+    /* ── easing + small helpers ── */
+    const clamp01     = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
+    const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3);
+    /* overshoot ease: gives the "flare then settle into form" ignition feel */
+    const easeOutBack  = (x: number) => {
+      const c1 = 1.70158, c3 = c1 + 1;
+      return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    };
+
+    /* ── entrance timeline ─────────────────────────────────────────────
+       The constellation ARRIVES: the self star ignites first, people kindle
+       in sequence (strongest bonds → self first), lines draw themselves in
+       behind them. Persisted via refs so it plays once on data load, not on
+       every hover/state re-run of this effect. */
+    const selfP  = people.find(p => p.is_self);
+    const selfId = selfP?.id ?? people[0]?.id;
+    const scoreToSelf = (id: string) => {
+      const l = links.find(k =>
+        (k.fromId === selfId && k.toId === id) || (k.toId === selfId && k.fromId === id));
+      return l ? l.scoreA : 0;
+    };
+    /* inner bonds (strongest synastry to self) kindle first */
+    const ordered = people.filter(p => !p.is_self)
+      .sort((a, b) => scoreToSelf(b.id) - scoreToSelf(a.id));
+
+    const SELF_DUR = 650, NODE_DUR = 520, NODE_GAP = 130, NODE_LEAD = 440, LINK_DUR = 480;
+    const schedule = new Map<string, { delay: number; dur: number }>();
+    schedule.set(selfId, { delay: 0, dur: SELF_DUR });
+    ordered.forEach((p, k) => schedule.set(p.id, { delay: NODE_LEAD + k * NODE_GAP, dur: NODE_DUR }));
+
+    /* a line starts once both endpoints are ~half-ignited, finishing with them */
+    const linkSchedule = (link: LinkRow) => {
+      const a = schedule.get(link.fromId), b = schedule.get(link.toId);
+      const start = Math.max((a?.delay ?? 0) + (a?.dur ?? 0) * 0.5,
+                             (b?.delay ?? 0) + (b?.dur ?? 0) * 0.5);
+      return { start, dur: LINK_DUR };
+    };
+
+    let totalDuration = SELF_DUR;
+    schedule.forEach(s => { totalDuration = Math.max(totalDuration, s.delay + s.dur); });
+    for (const link of links) {
+      const { start, dur } = linkSchedule(link);
+      totalDuration = Math.max(totalDuration, start + dur);
+    }
+    const REDUCED_FADE = 900; /* reduced-motion: a single gentle fade, no sequence */
+
+    /* reset the entrance only when the actual set of people changes */
+    const entranceKey = people.map(p => p.id).join(",");
+    if (entranceKey !== entranceKeyRef.current) {
+      entranceKeyRef.current = entranceKey;
+      entranceStartRef.current = null;
+    }
+
+    let elapsed = 0;      /* ms since entrance start (updated each frame) */
+    let globalFade = 1;   /* reduced-motion fade progress */
+
+    /* ── adaptive performance: drop the extra bloom layer if a frame budget
+       is blown, so mobile degrades (fewer glow layers) rather than janks ── */
+    let lowPerf = Math.min(W(), H()) < 380 || DPR >= 2 && W() < 430;
+    let emaFrameMs = 16.7;
+    let lastFrame = performance.now();
+    let warmup = 0;
+
+    /* per-person stable phase for drift/twinkle */
     const phases = people.map((_, i) => ({ ph: i * 1.7, sp: 0.35 + (i * 0.17 % 0.4) }));
 
-    /* compute position with drift — prototype pos() */
+    /* ignition state for a person this frame */
+    function ignition(id: string): { alpha: number; scale: number; flare: number; raw: number } {
+      if (reduced) return { alpha: globalFade, scale: 0.7 + 0.3 * globalFade, flare: 0, raw: globalFade };
+      const s = schedule.get(id) ?? { delay: 0, dur: NODE_DUR };
+      const local = clamp01((elapsed - s.delay) / s.dur);
+      return {
+        alpha: easeOutCubic(local),
+        scale: local <= 0 ? 0 : easeOutBack(local),
+        flare: local > 0 && local < 1 ? Math.sin(local * Math.PI) : 0,
+        raw: local,
+      };
+    }
+
+    /* compute position with drift — prototype pos() (drift settles in with ignition) */
     function nodePos(i: number): { x: number; y: number } {
       const p = people[i];
       let baseX: number, baseY: number;
@@ -157,9 +236,10 @@ export default function AppHomePage() {
       }
       if (reduced || p.is_self) return { x: baseX, y: baseY };
       const { ph, sp } = phases[i];
+      const settle = clamp01(ignition(p.id).raw);
       return {
-        x: baseX + Math.sin(t * 0.00045 * sp + ph) * 7,
-        y: baseY + Math.cos(t * 0.00038 * sp + ph) * 7,
+        x: baseX + Math.sin(t * 0.00045 * sp + ph) * 7 * settle,
+        y: baseY + Math.cos(t * 0.00038 * sp + ph) * 7 * settle,
       };
     }
 
@@ -169,33 +249,73 @@ export default function AppHomePage() {
       return base;
     }
 
+    /* ── layered radial glow: soft element-hued halo + a bright inner core.
+       precision→brightness kept sacred: exact = crisp & bright (tight halo,
+       hot core); year-only ancient light = soft & diffuse (wide, dim). ── */
+    function drawGlow(q: { x: number; y: number }, col: string, R: number, s: number,
+                      intensity: number, isHovered: boolean, scale: number) {
+      const haloR = R * (s === 1 ? 5 : s > 0.5 ? 7.5 : 10.5) * (isHovered ? 1.3 : 1) * scale;
+      const halo  = cx.createRadialGradient(q.x, q.y, 0, q.x, q.y, haloR);
+      halo.addColorStop(0,    hexA(col, (0.5 * s + 0.16) * intensity * (isHovered ? 1.35 : 1)));
+      halo.addColorStop(0.35, hexA(col, 0.12 * s * intensity));
+      halo.addColorStop(1,    hexA(col, 0));
+      cx.beginPath(); cx.arc(q.x, q.y, haloR, 0, Math.PI * 2); cx.fillStyle = halo; cx.fill();
+
+      /* inner white-hot bloom — the second glow layer, dropped on lowPerf */
+      if (!lowPerf) {
+        const coreR2 = R * (s === 1 ? 2.8 : s > 0.5 ? 2.4 : 2.0) * scale;
+        const core   = cx.createRadialGradient(q.x, q.y, 0, q.x, q.y, coreR2);
+        core.addColorStop(0,   hexA("#ffffff", (0.55 * s + 0.12) * intensity));
+        core.addColorStop(0.5, hexA(col, 0.28 * s * intensity));
+        core.addColorStop(1,   hexA(col, 0));
+        cx.beginPath(); cx.arc(q.x, q.y, coreR2, 0, Math.PI * 2); cx.fillStyle = core; cx.fill();
+      }
+    }
+
     /* ── draw a single celestial body (from prototype drawBody) ── */
-    function drawBody(p: PersonRow, q: { x: number; y: number }, isHovered: boolean, isActive: boolean) {
+    function drawBody(i: number, q: { x: number; y: number }, isHovered: boolean, isActive: boolean) {
+      const p     = people[i];
       const col   = p.is_self ? EL_COLOR.gold : (EL_COLOR[elementFromRelation(p.relation)] ?? "#B79AD8");
       const s     = sharp(p.birth_precision);
-      const R     = coreR(p);
+      const R0    = coreR(p);
       const form  = formFromRelation(p.is_self, p.relation);
-      const pulse = reduced ? 1 : (0.9 + 0.1 * Math.sin(t * 0.0018 + phases[people.indexOf(p)].ph));
+      const ign   = ignition(p.id);
+      if (ign.alpha <= 0.001) return; /* not yet kindled */
+      const scale = reduced ? 1 : Math.max(0.001, ign.scale);
+      const R     = R0 * scale;
+      /* gentle organic twinkle (two slow summed sines — NOT the old fast blink) */
+      const tw    = reduced ? 1 : (1 + 0.06 * Math.sin(t * 0.0009 * phases[i].sp + phases[i].ph)
+                                     + 0.04 * Math.sin(t * 0.0005 + phases[i].ph * 1.7));
 
-      /* radial glow halo — diffuse if year-precision (s=0.32) */
-      const haloR = R * (s === 1 ? 5.5 : s > 0.5 ? 8 : 11) * (isHovered ? 1.3 : 1);
-      const glow  = cx.createRadialGradient(q.x, q.y, 0, q.x, q.y, haloR);
-      glow.addColorStop(0, hexA(col, (0.55 * s + 0.18) * pulse * (isHovered ? 1.35 : 1)));
-      glow.addColorStop(0.4, hexA(col, 0.12 * s * pulse));
-      glow.addColorStop(1,   hexA(col, 0));
-      cx.beginPath();
-      cx.arc(q.x, q.y, haloR, 0, Math.PI * 2);
-      cx.fillStyle = glow;
-      cx.fill();
+      cx.save();
+      cx.globalAlpha = reduced ? globalFade : easeOutCubic(ign.raw);
+
+      /* layered glow */
+      drawGlow(q, col, R0, s, tw, isHovered, scale);
+
+      /* ignition flare — a brief extra bloom as the star lights, brightest for self */
+      if (ign.flare > 0) {
+        const fr = R0 * (s === 1 ? 5.5 : 8) * (1.2 + 0.6 * ign.flare);
+        const fg = cx.createRadialGradient(q.x, q.y, 0, q.x, q.y, fr);
+        fg.addColorStop(0, hexA("#ffffff", (p.is_self ? 0.5 : 0.32) * ign.flare));
+        fg.addColorStop(0.5, hexA(col, 0.2 * ign.flare));
+        fg.addColorStop(1, hexA(col, 0));
+        cx.beginPath(); cx.arc(q.x, q.y, fr, 0, Math.PI * 2); cx.fillStyle = fg; cx.fill();
+      }
 
       /* celestial form body */
       if (form === "binary") {
-        const sep = 8.5, a = reduced ? 0 : t * 0.0012;
+        /* two bodies slowly orbit their shared centre — very slow (~22s period),
+           because that is what a binary star does */
+        const sep = 8.5, a = reduced ? 0 : t * 0.000286;
         const ax = q.x + Math.cos(a) * sep, ay = q.y + Math.sin(a) * sep * 0.55;
         const bx = q.x - Math.cos(a) * sep, by = q.y - Math.sin(a) * sep * 0.55;
         cx.strokeStyle = hexA(col, 0.30); cx.lineWidth = 1;
         cx.beginPath(); cx.ellipse(q.x, q.y, sep, sep * 0.55, 0, 0, Math.PI * 2); cx.stroke();
         [[ax, ay, R * 0.72], [bx, by, R * 0.56]].forEach(([ox, oy, or_]) => {
+          const bg = cx.createRadialGradient(ox, oy, 0, ox, oy, or_ * 2.4);
+          bg.addColorStop(0, hexA(col, 0.5 * tw)); bg.addColorStop(1, hexA(col, 0));
+          cx.beginPath(); cx.arc(ox, oy, or_ * 2.4, 0, Math.PI * 2); cx.fillStyle = bg; cx.fill();
           cx.beginPath(); cx.arc(ox, oy, or_, 0, Math.PI * 2); cx.fillStyle = col; cx.fill();
           cx.beginPath(); cx.arc(ox, oy, or_ * 0.42, 0, Math.PI * 2); cx.fillStyle = "rgba(255,255,255,.92)"; cx.fill();
         });
@@ -203,21 +323,27 @@ export default function AppHomePage() {
         cx.beginPath(); cx.arc(q.x, q.y, R, 0, Math.PI * 2); cx.fillStyle = hexA(col, 0.30); cx.fill();
         cx.save(); cx.beginPath(); cx.arc(q.x, q.y, R, 0, Math.PI * 2); cx.clip();
         const off = R * 0.62;
+        /* soft crescent shading */
         cx.beginPath(); cx.arc(q.x - off * 0.55, q.y - off * 0.42, R * 1.02, 0, Math.PI * 2);
-        cx.fillStyle = col; cx.fill(); cx.restore();
+        cx.fillStyle = col; cx.fill();
+        /* gentle shimmer riding the lit crescent */
+        const sh = reduced ? 0 : (0.5 + 0.5 * Math.sin(t * 0.0012 + phases[i].ph));
+        cx.beginPath(); cx.arc(q.x - off * 0.55, q.y - off * 0.42, R * 1.02, 0, Math.PI * 2);
+        cx.fillStyle = `rgba(255,255,255,${0.06 + 0.08 * sh})`; cx.fill();
+        cx.restore();
         cx.beginPath(); cx.arc(q.x, q.y, R, 0, Math.PI * 2);
         cx.strokeStyle = hexA(col, 0.5); cx.lineWidth = 0.8; cx.stroke();
       } else if (form === "fixed") {
         const fl = R * 3.1 * (isHovered ? 1.2 : 1);
-        cx.strokeStyle = hexA(col, 0.42 * pulse); cx.lineWidth = 0.9;
+        cx.strokeStyle = hexA(col, 0.42 * tw); cx.lineWidth = 0.9;
         cx.beginPath(); cx.moveTo(q.x - fl, q.y); cx.lineTo(q.x + fl, q.y);
         cx.moveTo(q.x, q.y - fl); cx.lineTo(q.x, q.y + fl); cx.stroke();
         cx.beginPath(); cx.arc(q.x, q.y, R, 0, Math.PI * 2); cx.fillStyle = col; cx.fill();
         cx.beginPath(); cx.arc(q.x, q.y, R * 0.42, 0, Math.PI * 2); cx.fillStyle = "rgba(255,255,255,.95)"; cx.fill();
       } else if (form === "ancient") {
-        const rr = R * (1 + (reduced ? 0 : 0.06 * Math.sin(t * 0.0011 + phases[people.indexOf(p)].ph)));
+        const rr = R * (1 + (reduced ? 0 : 0.06 * Math.sin(t * 0.0011 + phases[i].ph)));
         cx.beginPath(); cx.arc(q.x, q.y, rr, 0, Math.PI * 2); cx.fillStyle = hexA(col, 0.62); cx.fill();
-        const ringR = R * (4.4 + (reduced ? 0 : (Math.sin(t * 0.0007 + phases[people.indexOf(p)].ph) + 1) * 1.5));
+        const ringR = R * (4.4 + (reduced ? 0 : (Math.sin(t * 0.0007 + phases[i].ph) + 1) * 1.5));
         cx.beginPath(); cx.arc(q.x, q.y, ringR, 0, Math.PI * 2);
         cx.strokeStyle = hexA(col, 0.13); cx.lineWidth = 1; cx.stroke();
       } else if (form === "self") {
@@ -232,7 +358,7 @@ export default function AppHomePage() {
 
       /* transit shimmer pulse ring */
       if (isActive && !reduced) {
-        cx.beginPath(); cx.arc(q.x, q.y, R * (2.8 + 0.8 * Math.sin(t * 0.025 + phases[people.indexOf(p)].ph)), 0, Math.PI * 2);
+        cx.beginPath(); cx.arc(q.x, q.y, R0 * (2.8 + 0.8 * Math.sin(t * 0.025 + phases[i].ph)), 0, Math.PI * 2);
         cx.strokeStyle = hexA(col, 0.25); cx.lineWidth = 1; cx.stroke();
       }
 
@@ -241,12 +367,15 @@ export default function AppHomePage() {
       cx.font = (isHovered ? "500 " : "400 ") + "11px Inter, sans-serif";
       cx.fillStyle = p.is_self ? `rgba(244,236,219,${Math.max(lit, 0.9)})` : `rgba(185,174,222,${lit})`;
       cx.textAlign = "center";
-      const labelY = form === "fixed" ? q.y + R * 3.9 + 12 : q.y + coreR(p) * 2.9 + 12;
+      const labelY = form === "fixed" ? q.y + R0 * 3.9 + 12 : q.y + R0 * 2.9 + 12;
       cx.fillText(p.display_name, q.x, labelY);
+
+      cx.restore();
     }
 
-    /* ── travelling pulse along a bezier link (from prototype) ── */
-    function drawLink(link: LinkRow, posA: { x: number; y: number }, posB: { x: number; y: number }) {
+    /* ── a bezier link that draws itself in (progress 0→1), with a travelling
+       pulse once fully drawn (from prototype) ── */
+    function drawLink(link: LinkRow, posA: { x: number; y: number }, posB: { x: number; y: number }, progress: number) {
       const { cpx, cpy } = bezierCP(posA.x, posA.y, posB.x, posB.y);
       const colA = EL_COLOR[link.elA] ?? "#B79AD8";
       const colB = EL_COLOR[link.elB] ?? "#B79AD8";
@@ -256,15 +385,30 @@ export default function AppHomePage() {
       grad.addColorStop(0,   hexA(colA, 0));
       grad.addColorStop(0.5, hexA(colA, link.scoreA >= 62 ? 0.28 : 0.16));
       grad.addColorStop(1,   hexA(colB, 0.05));
-      cx.beginPath();
-      cx.moveTo(posA.x, posA.y);
-      cx.quadraticCurveTo(cpx, cpy, posB.x, posB.y);
       cx.strokeStyle = grad;
       cx.lineWidth   = 0.8;
-      cx.stroke();
 
-      /* travelling light pulse (from prototype) */
-      if (!reduced) {
+      if (progress >= 0.999) {
+        cx.beginPath();
+        cx.moveTo(posA.x, posA.y);
+        cx.quadraticCurveTo(cpx, cpy, posB.x, posB.y);
+        cx.stroke();
+      } else {
+        /* animated line growth — sample the curve up to the current progress */
+        const steps = 22;
+        cx.beginPath();
+        cx.moveTo(posA.x, posA.y);
+        for (let k = 1; k <= steps; k++) {
+          const tt = (k / steps) * progress;
+          const px = (1-tt)*(1-tt)*posA.x + 2*(1-tt)*tt*cpx + tt*tt*posB.x;
+          const py = (1-tt)*(1-tt)*posA.y + 2*(1-tt)*tt*cpy + tt*tt*posB.y;
+          cx.lineTo(px, py);
+        }
+        cx.stroke();
+      }
+
+      /* travelling light pulse — only once the line is fully drawn */
+      if (!reduced && progress >= 0.999) {
         const linkIdx = links.indexOf(link);
         const tt = ((t * 0.0002 + linkIdx * 0.3) % 1);
         const px = (1-tt)*(1-tt)*posA.x + 2*(1-tt)*tt*cpx + tt*tt*posB.x;
@@ -289,33 +433,48 @@ export default function AppHomePage() {
     /* ── render loop ── */
     const draw = () => {
       t = performance.now();
+      if (entranceStartRef.current == null) entranceStartRef.current = t;
+      elapsed = t - entranceStartRef.current;
+      globalFade = reduced ? clamp01(elapsed / REDUCED_FADE) : 1;
+
+      /* adaptive frame-budget tracking (skip warmup frames) */
+      const dt = t - lastFrame; lastFrame = t;
+      if (warmup > 8) {
+        emaFrameMs = emaFrameMs * 0.9 + dt * 0.1;
+        if (!lowPerf && emaFrameMs > 26) lowPerf = true; /* ~<38fps: shed a glow layer */
+      } else { warmup++; }
+
       cx.clearRect(0, 0, W(), H());
 
       const positions = people.map((_, i) => nodePos(i));
       const byId = new Map(people.map((p, i) => [p.id, positions[i]]));
 
-      /* links first */
+      /* links first — each grows in on its own schedule */
       for (const link of links) {
         const posA = byId.get(link.fromId);
         const posB = byId.get(link.toId);
         if (!posA || !posB) continue;
-        drawLink(link, posA, posB);
+        const { start, dur } = linkSchedule(link);
+        const progress = reduced ? globalFade : clamp01((elapsed - start) / dur);
+        if (progress <= 0.001) continue;
+        drawLink(link, posA, posB, progress);
       }
 
       /* nodes */
       for (let i = 0; i < people.length; i++) {
-        const p     = people[i];
         const q     = positions[i];
-        const isHov = hoverPerson?.id === p.id;
-        const isAct = activeTransitIds.includes(p.id);
-        drawBody(p, q, isHov, isAct);
+        const isHov = hoverPerson?.id === people[i].id;
+        const isAct = activeTransitIds.includes(people[i].id);
+        drawBody(i, q, isHov, isAct);
       }
 
+      /* keep animating: idle life forever when not reduced; under reduced motion
+         only until the gentle fade completes, then rest as a static sky */
       if (!reduced) raf = requestAnimationFrame(draw);
+      else if (globalFade < 1) raf = requestAnimationFrame(draw);
     };
 
     draw();
-    if (!reduced) raf = requestAnimationFrame(draw);
 
     /* hover */
     const onMove = (e: PointerEvent) => {

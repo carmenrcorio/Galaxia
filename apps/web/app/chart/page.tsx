@@ -10,6 +10,7 @@
  */
 
 import type { NatalChart } from "@galaxia/astro";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
 import { ChartWheel } from "../../components/chart-wheel";
@@ -29,6 +30,7 @@ interface QuickResult {
 }
 
 export default function QuickChartPage() {
+  const router = useRouter();
   const [input, setInput] = useState<BirthFormInput>(BASE_BIRTH_INPUT);
   const [name, setName] = useState("");
   const [result, setResult] = useState<QuickResult | null>(null);
@@ -81,15 +83,32 @@ export default function QuickChartPage() {
       </p>
 
       {!result ? (
-        <section className="glass-card fade-in" style={{ display: "grid", gap: 12 }}>
-          <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional — shown only to you, never saved or shared)" style={{ borderRadius: 14 }} />
-          <BirthFields input={input} onChange={setInput} />
-          <button className="btn-primary" onClick={() => runChart(input)} disabled={loading} style={{ gap: 8, justifySelf: "start" }}>
-            {loading && <Spinner size={13} color="#1a1206" />}
-            {loading ? "Computing…" : "See the chart"}
-          </button>
-          {error ? <p className="error" style={{ fontSize: ".84rem" }}>{error}</p> : null}
-        </section>
+        <>
+          {/* Mode: a solo chart has no romantic/platonic dimension, so that
+              choice only ever appears after picking Compatibility, on
+              /chart/compare itself — not here. */}
+          <section className="glass-card fade-in" style={{ marginBottom: 16 }}>
+            <p className="eyebrow" style={{ marginBottom: 8 }}>What do you want to see?</p>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <button type="button" className="pill-link" aria-pressed style={{ fontSize: ".82rem", padding: "8px 16px", borderColor: "rgba(230,174,108,.5)", color: "var(--gold)" }}>
+                Single chart
+              </button>
+              <button type="button" className="pill-link" onClick={() => router.push("/chart/compare")} style={{ fontSize: ".82rem", padding: "8px 16px" }}>
+                Check compatibility
+              </button>
+            </div>
+          </section>
+
+          <section className="glass-card fade-in" style={{ display: "grid", gap: 12 }}>
+            <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional — shown only to you, never saved or shared)" style={{ borderRadius: 14 }} />
+            <BirthFields input={input} onChange={setInput} />
+            <button className="btn-primary" onClick={() => runChart(input)} disabled={loading} style={{ gap: 8, justifySelf: "start" }}>
+              {loading && <Spinner size={13} color="#1a1206" />}
+              {loading ? "Computing…" : "See the chart"}
+            </button>
+            {error ? <p className="error" style={{ fontSize: ".84rem" }}>{error}</p> : null}
+          </section>
+        </>
       ) : (
         <>
           <section className="glass-card fade-in" style={{ textAlign: "center" }}>

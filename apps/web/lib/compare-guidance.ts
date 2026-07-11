@@ -7,12 +7,49 @@
  * person's actual Moon, Venus, Mars signs and the cross-aspects between the
  * two charts. Structure follows galaxia.jsx swhy() — different charts must
  * produce different output.
+ *
+ * "romantic"/"platonic" (added for Quick Chart's compatibility mode — see
+ * apps/web/app/chart/compare/page.tsx) are new RelationType values, not a
+ * separate system, per the Phase 0 diagnosis: computeSynastry() itself takes
+ * no relationship parameter — it always returns every cross-aspect and the
+ * same 6 scores. The only honest way to differentiate a "romantic" from a
+ * "platonic" reading is to change WHICH already-computed, already-true data
+ * gets surfaced and emphasized — never to invent new astrological claims.
+ * Venus/Mars aspects are genuinely more relevant to romantic attraction;
+ * Mercury/Moon aspects are genuinely more relevant to platonic understanding.
+ * Neither branch is fabricated — both draw only from computeSynastry's real
+ * aspects[] for these two actual charts.
  */
 
 import type { computeSynastry } from "@galaxia/astro";
 import { SIGN_VIBE } from "./design";
 
-export type RelationType = "partners" | "siblings" | "friends" | "parent-child" | "ancestor";
+export type RelationType = "partners" | "siblings" | "friends" | "parent-child" | "ancestor" | "romantic" | "platonic";
+
+/** Bodies whose cross-aspects are most relevant to a romantic reading. */
+const ROMANTIC_BODIES = ["venus", "mars", "sun", "moon"];
+/** Bodies whose cross-aspects are most relevant to a platonic reading. */
+const PLATONIC_BODIES = ["mercury", "moon", "jupiter"];
+
+/**
+ * Reorders a real, already-computed aspect list so the ones most relevant to
+ * the given focus surface first — never adds, removes, or alters an aspect.
+ * Used only by the compatibility flow's "Where it flows and catches" list.
+ */
+export function sortAspectsForFocus<T extends { from: string; to: string }>(
+  aspects: T[],
+  focus: "romantic" | "platonic" | null
+): T[] {
+  if (!focus) return aspects;
+  const relevant = focus === "romantic" ? ROMANTIC_BODIES : PLATONIC_BODIES;
+  const isRelevant = (a: T) => relevant.includes(a.from.toLowerCase()) || relevant.includes(a.to.toLowerCase());
+  const withIndex = aspects.map((a, i) => ({ a, i, relevant: isRelevant(a) }));
+  withIndex.sort((x, y) => {
+    if (x.relevant !== y.relevant) return x.relevant ? -1 : 1;
+    return x.i - y.i; // stable within each group — preserves the original (orb-sorted) order
+  });
+  return withIndex.map((w) => w.a);
+}
 
 export interface GuidancePerson {
   display_name: string;
@@ -75,19 +112,37 @@ export function whatTheyNeed(
     parts.push(`${name} needs reassurance that the bond holds when the conversation gets hard — lead with the feeling, not the verdict.`);
   }
 
+  // Romantic keeps the Venus "how they feel loved" line — Venus is genuinely
+  // the attraction/romance-relevant body. Platonic skips it: "how they feel
+  // loved" is a romantic frame that doesn't fit a friendship reading, so
+  // showing it there would be the toggle applying a label without changing
+  // anything real. Every other relType keeps the existing behavior.
   const venusLine = venus && venus !== moon ? VENUS_NEED[venus] : null;
-  if (venusLine && scores.warmth < 62) {
+  if (venusLine && scores.warmth < 62 && relType !== "platonic") {
     parts.push(`With ${venus} Venus, they feel loved through ${venusLine}.`);
   }
 
-  if (tightestFrictionAspect && scores.communication < 60) {
+  // Platonic surfaces a real Mercury-domain aspect (communication is the
+  // platonic-relevant register) when one exists among the aspects already
+  // computed for these two actual charts — never invented, never shown if
+  // none exists.
+  if (relType === "platonic") {
+    const mercuryAspect = receivingAspects.find((a) => a.from.toLowerCase() === "mercury" || a.to.toLowerCase() === "mercury");
+    if (mercuryAspect) {
+      parts.push(`As friends, how you talk matters more than how you feel about each other: the ${mercuryAspect.from}–${mercuryAspect.to} ${mercuryAspect.type} (${mercuryAspect.orb.toFixed(1)}°) is the real signal to watch.`);
+    } else if (scores.communication < 60) {
+      parts.push(`As friends, the honest read is in how you talk to each other, not how you feel about each other — that's the register worth tending here.`);
+    }
+  }
+
+  if (tightestFrictionAspect && scores.communication < 60 && relType !== "platonic") {
     const bodyA = tightestFrictionAspect.from, bodyB = tightestFrictionAspect.to;
     parts.push(`The tightest friction runs through a ${bodyA}–${bodyB} ${tightestFrictionAspect.type} (${tightestFrictionAspect.orb.toFixed(1)}°) — name the pattern before you're inside it, and it loses its grip.`);
   }
 
   if (relType === "parent-child") {
     parts.push("As a parent or child dynamic: see the plan before you correct it. They need autonomy with backup, not direction.");
-  } else if (relType === "partners" && scores.overall >= 70) {
+  } else if ((relType === "partners" || relType === "romantic") && scores.overall >= 70) {
     parts.push("The overall flow is strong — the real work is making sure you both say the tender thing out loud while it's easy.");
   }
 

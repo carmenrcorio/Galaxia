@@ -11,6 +11,7 @@
  */
 
 import type { NatalChart } from "@galaxia/astro";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../../components/birth-fields";
 import { QuickChartShell } from "../../../components/quick-chart-shell";
@@ -18,7 +19,7 @@ import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
 import type { BirthFormInput } from "../../../lib/birth";
-import { whatTheyNeed, type RelationType } from "../../../lib/compare-guidance";
+import { sortAspectsForFocus, whatTheyNeed, type RelationType } from "../../../lib/compare-guidance";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
 import { interpretAspect, type AspectKey, type BodyKey } from "../../../lib/interpretations";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
@@ -34,7 +35,20 @@ interface CompareResult {
   generational: { theme: string; shared: { planet: string; sign: string }[]; diverged: { planet: string; signA: string; signB: string }[] };
 }
 
-const RELATION_TYPES: RelationType[] = ["partners", "siblings", "friends", "parent-child", "ancestor"];
+/**
+ * Quick Chart's compatibility flow asks Romantic/Platonic, not the full
+ * 5-value relationship-type picker /app/compare uses (that picker is
+ * untouched — see CHANGELOG.md for the Phase 0 diagnosis). computeSynastry()
+ * itself returns the same aspects/scores regardless of framing, so
+ * "romantic"/"platonic" are wired as real RelationType values in
+ * lib/compare-guidance.ts that change WHICH already-true data gets
+ * surfaced (see sortAspectsForFocus and whatTheyNeed there) — not a
+ * cosmetic label on identical output.
+ */
+const FOCUS_TYPES: { key: RelationType; label: string }[] = [
+  { key: "romantic", label: "Romantic" },
+  { key: "platonic", label: "Platonic" },
+];
 
 function parseDateStr(s: string | null | undefined): { month?: number; day?: number; year?: number } {
   if (!s) return {};
@@ -53,7 +67,7 @@ export default function QuickComparePage() {
   const [nameA, setNameA] = useState("");
   const [nameB, setNameB] = useState("");
   const [usingMyChart, setUsingMyChart] = useState(false);
-  const [relationType, setRelationType] = useState<RelationType>("partners");
+  const [relationType, setRelationType] = useState<RelationType>("romantic");
   const [result, setResult] = useState<CompareResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -135,46 +149,62 @@ export default function QuickComparePage() {
       </p>
 
       {!result ? (
-        <section className="glass-card fade-in" style={{ display: "grid", gap: 16 }}>
-          <div>
-            <p className="eyebrow" style={{ marginBottom: 8 }}>Relationship type</p>
+        <>
+          {/* Mode: this choice only ever appears in compatibility mode — a
+              solo chart (/chart) has no romantic/platonic dimension. */}
+          <section className="glass-card fade-in" style={{ marginBottom: 16 }}>
+            <p className="eyebrow" style={{ marginBottom: 8 }}>What do you want to see?</p>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {RELATION_TYPES.map((t) => (
-                <button key={t} type="button" className="pill-link" onClick={() => setRelationType(t)}
-                  style={{ fontSize: ".8rem", padding: "6px 13px", borderColor: relationType === t ? "rgba(230,174,108,.5)" : undefined, color: relationType === t ? "var(--gold)" : undefined }}>
-                  {t}
-                </button>
-              ))}
+              <Link href="/chart" className="pill-link" style={{ fontSize: ".82rem", padding: "8px 16px", textDecoration: "none" }}>
+                Single chart
+              </Link>
+              <button type="button" className="pill-link" aria-pressed style={{ fontSize: ".82rem", padding: "8px 16px", borderColor: "rgba(230,174,108,.5)", color: "var(--gold)" }}>
+                Check compatibility
+              </button>
             </div>
-          </div>
+          </section>
 
-          <div>
-            <p className="eyebrow" style={{ marginBottom: 8 }}>Person A {usingMyChart ? "· using your chart" : ""}</p>
-            {usingMyChart ? (
-              <div style={{ padding: "10px 12px", borderRadius: 12, background: "rgba(111,177,184,.08)", border: "1px solid rgba(111,177,184,.25)" }}>
-                <p style={{ color: "var(--teal)", fontSize: ".82rem", fontWeight: 600, margin: "0 0 4px" }}>✓ Using your own chart</p>
-                <button type="button" className="pill-link" style={{ fontSize: ".72rem", padding: "2px 10px" }} onClick={() => { setUsingMyChart(false); setInputA(BASE_BIRTH_INPUT); setNameA(""); }}>Not you? Enter someone else</button>
+          <section className="glass-card fade-in" style={{ display: "grid", gap: 16 }}>
+            <div>
+              <p className="eyebrow" style={{ marginBottom: 8 }}>Romantic or platonic?</p>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {FOCUS_TYPES.map((t) => (
+                  <button key={t.key} type="button" className="pill-link" onClick={() => setRelationType(t.key)}
+                    style={{ fontSize: ".8rem", padding: "6px 13px", borderColor: relationType === t.key ? "rgba(230,174,108,.5)" : undefined, color: relationType === t.key ? "var(--gold)" : undefined }}>
+                    {t.label}
+                  </button>
+                ))}
               </div>
-            ) : (
-              <>
-                <input className="field" value={nameA} onChange={(e) => setNameA(e.target.value)} placeholder="Name (optional)" style={{ marginBottom: 10, borderRadius: 14 }} />
-                <BirthFields input={inputA} onChange={setInputA} />
-              </>
-            )}
-          </div>
+            </div>
 
-          <div>
-            <p className="eyebrow" style={{ marginBottom: 8 }}>Person B</p>
-            <input className="field" value={nameB} onChange={(e) => setNameB(e.target.value)} placeholder="Name (optional)" style={{ marginBottom: 10, borderRadius: 14 }} />
-            <BirthFields input={inputB} onChange={setInputB} />
-          </div>
+            <div>
+              <p className="eyebrow" style={{ marginBottom: 8 }}>Person A {usingMyChart ? "· using your chart" : ""}</p>
+              {usingMyChart ? (
+                <div style={{ padding: "10px 12px", borderRadius: 12, background: "rgba(111,177,184,.08)", border: "1px solid rgba(111,177,184,.25)" }}>
+                  <p style={{ color: "var(--teal)", fontSize: ".82rem", fontWeight: 600, margin: "0 0 4px" }}>✓ Using your own chart</p>
+                  <button type="button" className="pill-link" style={{ fontSize: ".72rem", padding: "2px 10px" }} onClick={() => { setUsingMyChart(false); setInputA(BASE_BIRTH_INPUT); setNameA(""); }}>Not you? Enter someone else</button>
+                </div>
+              ) : (
+                <>
+                  <input className="field" value={nameA} onChange={(e) => setNameA(e.target.value)} placeholder="Name (optional)" style={{ marginBottom: 10, borderRadius: 14 }} />
+                  <BirthFields input={inputA} onChange={setInputA} />
+                </>
+              )}
+            </div>
 
-          <button className="btn-primary" onClick={() => runCompare(inputA, inputB)} disabled={loading} style={{ gap: 8, justifySelf: "start" }}>
-            {loading && <Spinner size={13} color="#1a1206" />}
-            {loading ? "Comparing…" : "See our compatibility"}
-          </button>
-          {error ? <p className="error" style={{ fontSize: ".84rem" }}>{error}</p> : null}
-        </section>
+            <div>
+              <p className="eyebrow" style={{ marginBottom: 8 }}>Person B</p>
+              <input className="field" value={nameB} onChange={(e) => setNameB(e.target.value)} placeholder="Name (optional)" style={{ marginBottom: 10, borderRadius: 14 }} />
+              <BirthFields input={inputB} onChange={setInputB} />
+            </div>
+
+            <button className="btn-primary" onClick={() => runCompare(inputA, inputB)} disabled={loading} style={{ gap: 8, justifySelf: "start" }}>
+              {loading && <Spinner size={13} color="#1a1206" />}
+              {loading ? "Comparing…" : "See our compatibility"}
+            </button>
+            {error ? <p className="error" style={{ fontSize: ".84rem" }}>{error}</p> : null}
+          </section>
+        </>
       ) : (
         <>
           <section className="glass-card fade-in" style={{ textAlign: "center" }}>
@@ -221,7 +251,12 @@ export default function QuickComparePage() {
 
               <section className="glass-card fade-in fade-in-delay-2">
                 <p className="eyebrow" style={{ marginBottom: 10 }}>Where it flows and catches</p>
-                {result.synastry.aspects.filter((a) => a.from !== a.to).sort((a, b) => a.orb - b.orb).slice(0, 6).map((a, idx) => {
+                <p className="muted" style={{ fontSize: ".72rem", marginBottom: 8 }}>
+                  {relationType === "romantic"
+                    ? "Leading with attraction and partnership aspects (Venus, Mars, Sun–Moon) first."
+                    : "Leading with communication and understanding aspects (Mercury, Moon, Jupiter) first."}
+                </p>
+                {sortAspectsForFocus(result.synastry.aspects.filter((a) => a.from !== a.to).sort((a, b) => a.orb - b.orb), relationType === "romantic" || relationType === "platonic" ? relationType : null).slice(0, 6).map((a, idx) => {
                   const reading = interpretAspect(a.from.toLowerCase() as BodyKey, a.to.toLowerCase() as BodyKey, a.type.toLowerCase() as AspectKey);
                   return (
                     <div key={`${a.from}-${a.to}-${idx}`} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>

@@ -6,6 +6,37 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Quick Chart: optional time/location + mode selection + honest romantic/platonic (branch `feat/quick-chart-modes`)
+
+**Phase 0 — diagnosis (verdict reported before building anything)**:
+
+- **Verdict (b): the engine could support honest romantic/platonic differentiation with a scoped change.** `computeSynastry(a, b)` takes no relationship-type parameter at all — it always returns the full `aspects[]` (every body-pair cross-aspect), `houseOverlays`, and the same 6 scores, regardless of framing. Any differentiation has to happen in the interpretation layer.
+- The existing "relationship-type-aware synastry" (`lib/compare-guidance.ts`'s `whatTheyNeed()`, shared by `/app/compare` and `/chart/compare`) is real but shallow: of its 5 `RelationType` values, only `partners` and `parent-child` ever produce differentiated text — one conditional sentence each (`partners` only when score ≥70; `parent-child` always, one fixed sentence). `siblings`/`friends`/`ancestor` produce **zero** differentiated content — fully generic, identical to each other.
+- "Romantic"/"platonic" don't map cleanly onto that machinery — there's no "platonic" analog with any real content today. **But** the raw data for an honest differentiation already exists in `SynastryResult.aspects`: every Venus-Mars, Sun-Moon, Mercury-Moon cross-aspect is already computed, and none of those bodies need houses or exact birth time — they work from date-only or even year-only precision. So a genuine, scoped, non-fabricating change is buildable: reorder/prioritize which already-true aspects surface, and which already-existing need-line gets shown, by focus.
+- `/app/compare`'s existing 5-value picker is untouched, out of scope, not regressed.
+
+**Phase 1 — birth time/location genuinely optional**:
+
+- Confirmed via `buildBirthInput`/`lib/birth.ts` (pre-existing, unchanged): `date`/`year` precision already omit time and location with zero error — `lat`/`lng` are parsed as `undefined` when blank, never required. Only `exact` precision requires a resolved timezone (from a city), because a local time is meaningless without one — that's a real astronomical necessity, not a bug, and it fails with a clear, honest error rather than silently guessing (pre-existing `BUG C` fix).
+- **[ADDED]** `components/birth-fields.tsx`: a clarifying note above the precision tiers — "Birth time and city are optional. Pick whatever you actually know — every tier below produces a real chart; more detail just unlocks more of it." Shared by `/welcome`, `/chart`, `/chart/compare`, the edit-person panel, and the invite-birth-data form.
+- **Verified live**, hitting `/api/quick-chart` and `/api/quick-compare` directly: year-only and date-only with zero time/location both return `200` with the correctly hedged chart (Sun sign per precision rules, no Ascendant/cusps); a date-only pair produces a real synastry result with no error; a year-only pair correctly returns `synastry: null` (honest generational-only, never fabricated orbs); `exact` precision with no location correctly returns `400` with the existing clear error, never a silent wrong guess.
+
+**Phase 2 — mode selection**:
+
+- **[ADDED]** `/chart`: a "What do you want to see?" mode selector — `Single chart` (current page, stays) / `Check compatibility` (routes to `/chart/compare`). Styled with the same pill-button pattern `/app/compare`'s relationship-type picker already uses.
+- **[ADDED]** `/chart/compare`: the mirror mode selector, with `Check compatibility` shown active and a `Single chart` link back to `/chart`.
+- **[REMOVED]** `/chart/compare`'s old 5-value "Relationship type" picker (`partners`/`siblings`/`friends`/`parent-child`/`ancestor`) — replaced by the 2-value Romantic/Platonic picker described below. `/app/compare`'s own 5-value picker is untouched.
+- Verified: clicking "Check compatibility" on `/chart` navigates to `/chart/compare` and shows Romantic/Platonic (confirmed present) with no trace of the old 5-value list (confirmed absent); clicking "Single chart" on `/chart/compare` navigates back to `/chart`, which shows no romantic/platonic language anywhere — the choice never appears outside compatibility mode.
+
+**Phase 3 — wiring romantic/platonic per the Phase 0 (b) verdict**:
+
+- **[ADDED]** `lib/compare-guidance.ts`: `"romantic"` and `"platonic"` are new `RelationType` values (not a parallel system) and a new exported `sortAspectsForFocus(aspects, focus)` that reorders a real, already-computed aspect list so the domain-relevant ones surface first — romantic prioritizes Venus/Mars/Sun-Moon; platonic prioritizes Mercury/Moon/Jupiter. Never adds, removes, or alters an aspect — only changes presentation order of real data.
+- **[ADDED]** `whatTheyNeed()`: romantic keeps the existing Venus "how they feel loved" line (Venus is genuinely the attraction-relevant body). Platonic skips that line (a romantic frame doesn't fit a friendship reading) and instead surfaces a real Mercury-domain aspect from the same computed data when one exists among the tightest 3, or a generic communication-emphasis line when the communication score is low and no such aspect exists — never invented, never shown without real grounding.
+- `/chart/compare` shows a one-line note above "Where it flows and catches" naming which domain is being prioritized, so the framing is transparent, not implicit.
+- **Verified with a real two-chart synastry result** (not a mock): confirmed romantic and platonic produce genuinely different `whatTheyNeed()` text for the same two charts (Venus love-language line vs. Mercury communication line), and genuinely different aspect ordering (a real `mercury-mars square` aspect sorts to position 1 under platonic, position 4 under romantic, for the identical input data) — differentiation is real and data-driven, not cosmetic.
+
+**Verified**: `tsc --noEmit`, `next build`, and the `packages/astro` test suite (27/27) all pass. Full end-to-end browser run: filled both people with date-only precision (no time/location), selected Platonic, ran the comparison, confirmed the platonic framing and aspect reordering rendered correctly with zero errors; repeated for Romantic, confirmed distinctly different output for the same inputs.
+
 ## Mobile page-width overflow + starfield twinkle speed (branch `fix/mobile-overflow-and-starfield-speed`)
 
 **Trigger**: real-phone report of two issues: (A) pages render too wide, forcing pinch-zoom, with the natal chart specifically "too small to read" after zooming out; (B) starfield stars blink too fast on both web and mobile. (A) explicitly contradicted a prior headless audit that measured zero `scrollWidth` overflow at 375px — the report asked to reconcile that, not dismiss the human's report.

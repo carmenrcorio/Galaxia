@@ -125,6 +125,9 @@ export function BirthFields({ input, onChange, allowNone = false }: { input: Bir
     <div style={{ display: "grid", gap: 12 }}>
 
       {/* Precision selector */}
+      <p style={{ fontSize: ".76rem", color: "var(--mist2)", lineHeight: 1.5, margin: 0 }}>
+        Birth time and city are optional. Pick whatever you actually know — every tier below produces a real chart; more detail just unlocks more of it.
+      </p>
       <div style={{ display: "grid", gap: 6 }}>
         {(allowNone
           ? [...PRECISION_TIERS, { key: "none" as const, label: "Add birth data later", unlocks: "Just save their name and relationship now — you can add a year, date, or exact time whenever you have it (or ask them to)." }]

@@ -16,7 +16,7 @@ Node 22 and `pnpm@9.15.9` (via corepack) are already present on the VM, and `pnp
 ### Running & testing (standard commands live in root `package.json` / `README.md`)
 
 - `pnpm dev` runs every app's dev server in parallel (turbo). To run just one: `pnpm --filter @galaxia/web dev` (Next.js on `:3000`) or `pnpm --filter @galaxia/mobile dev` (Expo/Metro on `:8081`).
-- `pnpm test`, `pnpm typecheck`, `pnpm build` fan out through turbo. Real automated coverage is `@galaxia/astro` (27 tests) and `@galaxia/vela` (4 tests); `@galaxia/astro` tests make live calls to the Open-Meteo geocoding API, so they need network egress.
+- `pnpm test`, `pnpm typecheck`, `pnpm build` fan out through turbo. Real automated coverage is `@galaxia/astro` (33 tests) and `@galaxia/vela` (4 tests); `@galaxia/astro` tests make live calls to the Open-Meteo geocoding API, so they need network egress.
 
 ### Non-obvious caveats
 

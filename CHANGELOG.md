@@ -6,6 +6,23 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Shared-space user-connect entry point removed, feature deferred to v2 (branch `chore/remove-shared-space-button`)
+
+**Trigger**: the "shared space" / user-to-user connect feature is deferred to v2; asked to remove its entry-point button so users don't hit a dead or incomplete path.
+
+**Phase 0 — diagnosis, reported before changing anything**: **no such button exists in the shipped UI, on web or mobile.** Searched exhaustively:
+- `apps/web/components/ask-birth-data.tsx` — the only code anywhere that inserts an `invites` row — hardcodes `kind: "birth_data"` unconditionally. That's a different, fully-built, working feature ("Ask {name} for their birth details"), not user-to-user connect.
+- A direct grep for `invite`/`Invite` across the entire authenticated app surface (`apps/web/app/app/*`) returned zero matches.
+- Confirmed live: **zero `invites` rows of any kind exist in the production database** — not even a legacy `shared_space` one.
+- The only user-facing surface tied to the deferred feature was a **passive fallback render branch** in `apps/web/app/invite/[token]/page.tsx` (the `else` case when `invite.kind !== "birth_data"`) — unreachable through any current flow, since nothing creates a link that would land there. It previously claimed "Open this invite in the mobile app to continue," which was false — mobile has no handler for it either.
+- **[CONFIRMED UNTOUCHED]** Vela's existing "Shared space" mode toggle (`apps/web/app/app/vela/page.tsx`, mirrored in `apps/mobile/app/vela.tsx`) is a completely separate, working, safety-gated feature (two people co-present in a Vela chat thread, with a consent gate and minor-blocking) — not what's deferred. Verified via `git diff` after the fix: zero changes to that file, `apps/mobile/app/vela.tsx`, or `supabase/functions/vela-chat/index.ts`.
+
+**Phase 1 — fix**: since there was no button to remove, fixed the one dead-end surface instead. `apps/web/app/invite/[token]/page.tsx`'s non-`birth_data` fallback now says plainly "This invite isn't ready yet ... that feature is still being built," instead of falsely claiming a working path exists. Removed the now-unused `SmartAppBanner`/`deepLink` usage that only existed for that branch.
+
+**Recommendation on the orphaned stub**: keep `/invite/[token]/page.tsx` and its fallback branch — the route is shared with the fully-working `birth_data` invite flow, so the file can't be deleted, and the fallback branch is still the correct place to handle a `kind` the type system permits even though nothing generates it today. `apps/web/components/smart-app-banner.tsx` is now unused anywhere in the app (it was generic, not deferred-feature-specific) — recommend leaving it in place rather than deleting, since it's a reusable "get the app" primitive that could be picked up elsewhere (e.g. `/download`, `/account`) rather than dead code tied to this feature specifically.
+
+**Verified**: `tsc --noEmit` and `next build` pass. `git diff --stat` confirms exactly one file changed.
+
 ## Quick Chart: optional time/location + mode selection + honest romantic/platonic (branch `feat/quick-chart-modes`)
 
 **Phase 0 — diagnosis (verdict reported before building anything)**:

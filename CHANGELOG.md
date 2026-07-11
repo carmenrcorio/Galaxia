@@ -30,6 +30,8 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 **Verified**: `@galaxia/web` `tsc --noEmit` and `next build` pass. Visual QA was done against the real render loop via a temporary mock-seeded, non-gated preview route (reverted before commit — `/app` is auth-gated and needs Supabase secrets not present in the cloud VM, the documented no-secrets limitation): entrance stagger (center-first → inner bonds → outer, lines growing), reduced-motion fade-then-static, and the mobile 60fps check were all captured.
 
+**[CHANGED] `/app` home actions: prominent "+ Add person" button, removed the floating "Quick check" launcher.** A gold "+ Add person" button now lives in the constellation card header (visible whenever the constellation renders) → `/welcome`, replacing the easy-to-miss bottom "Add people" pill (removed to avoid a duplicate action, so the bottom row is just "My chart"). The floating `QuickCheckLauncher` bubble was removed from `apps/web/app/app/page.tsx` (import dropped) — it duplicated the sticky header's **Quick Chart** (`/chart`) with no distinct purpose, and as a bonus its removal fixes the pre-existing overlap where the bubble sat on top of the legend's "Hover to preview · click to open" footer. `quick-check-modal.tsx` itself is left in the repo (no other importer today, but harmless to keep).
+
 ---
 
 ## Smart post-login routing + guided onboarding (branch `cursor/smart-login-routing-onboarding-0d60`) — 2026-07-11

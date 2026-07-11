@@ -861,8 +861,14 @@ section { padding-block: clamp(64px, 11vh, 120px); }
 .site-footer-links a { color: var(--mist2); font-size: .82rem; text-decoration: none; transition: color .2s; }
 .site-footer-links a:hover { color: var(--cream); }
 
-/* ─── reveal (scroll fade-up, ported from the removed inline SCRIPT) ────── */
-.reveal { opacity: 0; transform: translateY(26px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
+/* ─── reveal (scroll fade-up, ported from the removed inline SCRIPT) ──────
+   Fast + snappy: the old .9s fade left text sitting at low opacity through a
+   normal scroll (read like a perf bug). Short duration + a small rise, and
+   the observer (reveal-observer.tsx / faq-section.tsx) now triggers *before*
+   the element reaches the viewport (positive bottom rootMargin), so content
+   is already legible by the time it's on screen. Reduced-motion still opts
+   out entirely below. */
+.reveal { opacity: 0; transform: translateY(10px); transition: opacity .35s ease-out, transform .35s ease-out; }
 .reveal.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }

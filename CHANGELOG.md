@@ -6,6 +6,22 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Person page: Key Aspects "Expand all" fixed; planet-to-house assignment audited (branch `cursor/fix-aspect-expand-and-house-occupancy-fc1d`)
+
+**Trigger**: two reported bugs on `/app/person/[id]` for a person with an exact birth time — (A) the Key Aspects expand control "did nothing," and (B) "every one of the 12 houses shows empty / No planets here" even though the cusps render.
+
+**Phase 0 — diagnosed both, read-only, reproduced in a live browser against real Supabase before changing code (ENGINEERING.md §4).**
+
+- **Bug A — real, and narrower than reported.** The per-row ▶ arrow on each aspect works correctly (verified live: clicking a row rotates the arrow and reveals its interpretation text — `interpretAspect` always returns a non-empty `long`). The actually-dead control is the **"Expand all"** button. `toggleAllAspects` was a `useCallback` with an **empty dependency array** declared *above* `natalAspects`; it closed over the first render's `natalAspects`, which is `[]` while the chart is still loading. So clicking "Expand all" flipped the label to "Collapse all" but never added any `asp-*` keys to `openRows` — the rows never opened. (The Placements and Houses "Expand all" buttons were unaffected: `toggleAllPlacements` depends on `[chart]`, and `toggleAllHouses` iterates a constant `1..12`.)
+
+- **Bug B — NOT reproducible; planet-to-house assignment is correct, and this is not app-wide.** Traced assignment to `houseFromLongitude` in `@galaxia/astro` (called from `computeNatalChart`, stored on each `Placement.house`, read by the person page's `houseOccupants`). Evidence gathered before concluding: (1) a freshly computed exact chart assigns every planet a house `1..12` and distributes them across houses; (2) **all 7 exact charts in production** (project `eigfvribtntbxyjutsma`) have complete, distributed `house` values on every placement and 12 cusps — including **the exact chart the report cited** (Ascendant 7°56′ Leo / 4th cusp 29°06′ Libra), whose planets occupy houses 6, 8, 9, 10, 11, 12; (3) the person page rendered occupant glyphs and readings correctly in a live browser for an exact chart, and still did so after forcing the client-side stale-chart recompute path. The `PLANET_IN_HOUSE` interpretation library covers all 10 bodies × 12 houses, so occupant readings are complete. Scope: correct for every record — the "all houses empty" symptom does not exist in the current engine, data, or UI (most likely an earlier, since-healed stored-chart state). No fabricated "fix" was applied, per §12.
+
+**Phase 1 — fix + regression coverage.**
+- `apps/web/app/app/person/[id]/page.tsx`: moved `toggleAllAspects` to after `natalAspects` is defined and gave it `[natalAspects]` deps, so "Expand all" opens every aspect row. No other behavior changed.
+- `packages/astro/test/house-occupancy.test.ts` (new, 6 tests): locks the planet-to-house step the profile depends on — every planet gets a concrete house `1..12`; planets distribute across more than one house (excludes both the all-in-house-1 fallback shape and the all-undefined shape); each planet lands in the house whose cusp arc actually contains its longitude (independent, wraparound-aware recomputation); a longitude 0.5° past the Ascendant maps to house 1 and 0.5° before to house 12 (the 0°/360° candidate); and, per §12, date-only and location-less charts yield **no** cusps and **undefined** houses (no fabricated occupancy).
+
+**Verified**: `packages/astro` `vitest run` (33/33 pass, was 27); `apps/web` `tsc --noEmit` and `next build` both pass; reproduced the original state and confirmed the fix in a live browser (video + screenshots) — "Expand all" now expands every aspect row with text, and houses populate for the exact-time chart while no-time charts still hedge.
+
 ## Minor safety backstop: age computed from birth_date now protects every gate, not just a manual checkbox (branch `cursor/fix-minor-safety-backstop-b265`)
 
 **Trigger**: a safety audit found a real 9-year-old (Gabriel, born 2017-04-03) in production with `is_minor = false`. Every minor-safety gate — web/mobile Vela's shared-mode block, the edge function's authoritative shared-mode block, and the parenting-framing flag sent to the LLM — read the raw `people.is_minor` boolean and nothing else. There was no automatic age-based backstop anywhere. This is the product's core safety promise (ENGINEERING.md §9: "No two-way AI chat with a minor").

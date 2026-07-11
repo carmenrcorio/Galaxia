@@ -6,6 +6,25 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Account: show the user's name (not their email) and let them set it (branch `cursor/fix-account-name-and-profile-fc1d`)
+
+**Trigger**: the `/account` page showed the login **email where the person's name should be**, and nothing in the account ever asked the user for their name.
+
+**Phase 0 — located, read-only, confirmed against production before changing code.**
+- The name field already exists: `profiles.display_name text` (initial schema, `20260629212000_initial_schema.sql`), with owner insert/update/select RLS (`20260629220500_add_owner_rls_policies.sql`). **No migration needed.**
+- Root cause: **nothing ever writes `profiles.display_name`** (grepped every `from("profiles")` call — only `house_system`/subscription fields are written), and there was no UI to set it. `apps/web/app/account/page.tsx` resolved the identity as `profile?.display_name ?? user.email?.split("@")[0] ?? "Friend"`, so with `display_name` always null it displayed the email's local part **as the name**. Confirmed in prod: the one profile row has `display_name = null`.
+- A reusable name exists elsewhere: the account's **"self" person record** (`people` where `is_self`, enforced unique) carries a `display_name` from onboarding. Confirmed in prod: the self-person has a name. So the account display can default from it instead of the email.
+
+**Phase 1 — fix (`apps/web/app/account/page.tsx` only; no schema change).**
+1. Name now resolves as **set profile name → self-person name → prompt** — the raw email is *never* used as the name. When no name is known, the title reads "Add your name" (muted/italic) instead of the email; the email always renders only as the contact line beneath.
+2. Added a **"Your profile"** section with a first-name / display-name input and a "Save name" button that upserts `profiles.display_name` (RLS-scoped to the owner). It's pre-filled with the best known name (profile → self), never the email.
+3. **Defaulted the account display name from the self-person record** when no profile name is set (chosen: yes), with an honest note — "Using the name from your own chart (<name>) until you set one here." — so the source is never silently implied (ENGINEERING.md §12).
+4. Avatar initials derive from the resolved name (a neutral "?" when there is no name yet), never from the email.
+
+**Verified**: `apps/web` `tsc --noEmit` and `next build` pass. Live browser (video + screenshots): on load the title showed the self-record name "Aria Vance" (email only as the contact line); setting "Nova Okafor" saved and updated the title and avatar immediately. No fabrication — email is shown as the login/contact detail, never as the name.
+
+---
+
 ## Person page: Key Aspects "Expand all" fixed; planet-to-house assignment audited (branch `cursor/fix-aspect-expand-and-house-occupancy-fc1d`)
 
 **Trigger**: two reported bugs on `/app/person/[id]` for a person with an exact birth time — (A) the Key Aspects expand control "did nothing," and (B) "every one of the 12 houses shows empty / No planets here" even though the cusps render.

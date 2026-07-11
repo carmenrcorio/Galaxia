@@ -65,7 +65,16 @@ export function AppNav() {
       background:             "linear-gradient(180deg, rgba(10,7,23,.72), rgba(10,7,23,.18))",
       borderBottom:           "1px solid rgba(255,255,255,.05)",
     }}>
-      <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 64, padding: "10px 0" }}>
+      {/* paddingTop/paddingBottom (longhand) only, never the padding shorthand:
+          .container already sets horizontal padding (0 32px, or 0 22px below
+          640px) via CSS. A shorthand inline padding here would override ALL
+          four sides at once — including the horizontal ones — which is
+          exactly what happened before this fix: it silently zeroed the
+          nav's left/right padding, so the brand and hamburger touched the
+          screen edges (confirmed: brand's left edge measured at x=0 on a
+          real mobile viewport). Longhand keeps padding-left/-right governed
+          by .container's CSS, untouched by this inline style. */}
+      <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 64, paddingTop: 10, paddingBottom: 10 }}>
         {/* Brand: italic "ia" from landing .brand span */}
         <Link href="/app" style={{
           fontFamily: "var(--serif)", fontWeight: 600, fontSize: "1.42rem",

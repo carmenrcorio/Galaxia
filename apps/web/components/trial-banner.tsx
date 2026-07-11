@@ -40,7 +40,7 @@ export function TrialBanner() {
     >
       <div
         className="container"
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, padding: "8px 0", fontSize: ".82rem", flexWrap: "wrap" }}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 8, paddingBottom: 8, fontSize: ".82rem", flexWrap: "wrap" }}
       >
         <span>
           Trial ends {dateLabel}

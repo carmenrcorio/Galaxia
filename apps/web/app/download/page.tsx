@@ -7,7 +7,7 @@ export default function DownloadPage() {
   const hasAnyLink = Boolean(iosLink || androidLink);
 
   return (
-    <main className="container" style={{ padding: "56px 0", maxWidth: 920 }}>
+    <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 920 }}>
       <h1 className="auth-title">Download Galaxia</h1>
       <p className="muted">Galaxia Mea, Vela, and your complete constellation are designed for mobile first.</p>
       <section className="glass-card" style={{ marginTop: 16 }}>

@@ -43,7 +43,7 @@ export default function AccountPage() {
 
       {/* Nav header — same as app layout */}
       <header style={{ position: "sticky", top: 0, zIndex: 30, borderBottom: "1px solid rgba(183,154,216,.12)", background: "rgba(10,7,23,.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}>
-        <nav className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", gap: 10, flexWrap: "wrap" }}>
+        <nav className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, paddingBottom: 10, gap: 10, flexWrap: "wrap" }}>
           <Link href="/app" style={{ color: "var(--gold)", fontFamily: "var(--font-fraunces)", fontSize: 22 }}>Galaxia</Link>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
             {[["Galaxia Mea","/app"],["Compare","/app/compare"],["Groups","/app/groups"],["Vela","/app/vela"],["Settings","/app/settings"]].map(([label, href]) => (

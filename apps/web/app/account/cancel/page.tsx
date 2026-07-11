@@ -18,7 +18,7 @@ export default async function CancelPage() {
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
       <CosmicBackground />
-      <main className="container" style={{ position: "relative", zIndex: 2, padding: "72px 0 96px" }}>
+      <main className="container" style={{ position: "relative", zIndex: 2, paddingTop: 72, paddingBottom: 96 }}>
         <CancelSubscription periodEndLabel={periodEndLabel} />
       </main>
     </div>

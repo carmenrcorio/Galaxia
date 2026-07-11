@@ -7,7 +7,7 @@ export default async function DeepLinkBridge({ params }: { params: Promise<{ slu
   const android = process.env.NEXT_PUBLIC_ANDROID_PLAY_URL ?? "#";
 
   return (
-    <main className="container" style={{ padding: "56px 0", maxWidth: 760 }}>
+    <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 760 }}>
       <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 40 }}>Open in Galaxia</h1>
       <p style={{ color: "var(--mist)" }}>If the app is installed, use the deep link below. Otherwise install from your store.</p>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>

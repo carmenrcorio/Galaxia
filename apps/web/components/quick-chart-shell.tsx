@@ -22,7 +22,7 @@ export function QuickChartShell({ eyebrow, title, children }: { eyebrow: string;
         </div>
       </header>
 
-      <main className="container" style={{ position: "relative", zIndex: 2, padding: "24px 0 40px", maxWidth: 640 }}>
+      <main className="container" style={{ position: "relative", zIndex: 2, paddingTop: 24, paddingBottom: 40, maxWidth: 640 }}>
         <p className="eyebrow">{eyebrow}</p>
         <h1 className="page-title" style={{ marginBottom: 6 }}>{title}</h1>
         {children}

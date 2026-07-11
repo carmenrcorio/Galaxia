@@ -1,6 +1,6 @@
 export default function PrivacyPage() {
   return (
-    <main className="container" style={{ padding: "56px 0", maxWidth: 860 }}>
+    <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 860 }}>
       <h1 className="auth-title">Privacy Policy</h1>
       <p className="muted">The people in Galaxia are the ones you love most. We treat that with care.</p>
       <ul style={{ color: "var(--cream)", lineHeight: 1.8 }}>

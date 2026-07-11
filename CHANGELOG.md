@@ -6,6 +6,29 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Mobile content column flush to screen edges — a different bug from the background-layer fix (branch `fix/mobile-content-width`)
+
+**Trigger**: real-iPhone screenshot showing content edge-to-edge with near-zero side margin, the "Galaxia" wordmark touching the left screen edge, at full zoom-out. Explicitly not the `.milkyway`/fixed-background-layer bug from the prior PR — that fix is correct and untouched here.
+
+**Phase 0 — diagnosis, not relying on `scrollWidth`**: walked actual element geometry (`getBoundingClientRect`), not just `document.documentElement.scrollWidth` — the same blind spot that missed the background-layer bug would have missed this one too, since padding differences don't change `scrollWidth` at all.
+
+- **Root cause, confirmed empirically (measured the "Galaxia" link's left edge at exactly `x=0` on a real rendered page)**: `apps/web/components/app-nav.tsx`'s header row is `<div className="container" style={{ ...padding: "10px 0" }}>`. `.container` (globals.css) sets `padding: 0 32px` (`0 22px` below 640px) for its horizontal gutter — but the inline `padding` **shorthand** on the same element overrides all four sides at once, silently zeroing the horizontal padding the CSS class was providing. This was a self-inflicted regression from the prior in-app-nav mobile fix (branch `fix/app-nav-mobile`), which added this inline padding for the drawer's vertical spacing without realizing it also killed the class's horizontal padding.
+- The mobile drawer (`.app-nav-drawer` in globals.css, applied alongside `.container` on the same element) had the **identical bug via a different mechanism**: a CSS class's own `padding: 4px 0 16px` shorthand, defined later in the stylesheet than `.container`, wins for the whole property at equal specificity — same result, zeroed horizontal padding, drawer links flush to the edges when opened.
+- **This turned out to be a systemic pattern, not a one-off**: grepped every `className="container"` usage in `apps/web` and found the *same* shorthand-padding-on-a-`.container`-element mistake repeated across **14 more files** — `/privacy`, `/terms`, `/login`, `/signup`, `/download`, `/r/[slug]`, `/invite/[token]` (all 3 branches), `/account`, `/account/data`, `/account/cancel`, `/account/subscription`, `/subscribe`, `components/trial-banner.tsx`, and `components/quick-chart-shell.tsx` (the shell used by the public `/chart` and `/chart/compare` acquisition pages — confirmed their main content, not just header/footer, had this exact bug). All of these predate this branch; this wasn't only a nav-fix regression.
+- `.app-content` (the per-page content column on `/app/*`) was **not** overflowing anywhere — its `width: min(860px, 94vw)` + `margin: 0 auto` produces a real, if thin (~10px at 320px wide), gutter via implicit centering rather than explicit padding. Not a bug, but not "comfortable" either.
+- **Confirmed**: zero horizontal overflow (`scrollWidth === clientWidth`) on every route tested at every viewport, both before and after this fix — this specific class of bug (padding, not overflow) was never going to show up in a `scrollWidth` check, consistent with the prior background-layer bug's same blind spot.
+
+**Phase 1 — fix**:
+
+- **[FIXED]** Every file above: replaced the shorthand inline/CSS `padding: "Xpx 0"` (or `"Xpx 0 Ypx"`) with explicit `paddingTop`/`paddingBottom` (longhand) only — leaves `.container`'s horizontal padding entirely alone, since longhand properties don't touch sides they don't name.
+- **[ADDED]** `.app-content`'s mobile media query (`@media (max-width: 600px)`, globals.css) now sets `width: 100%` and an explicit `padding: 20px 16px 80px` instead of relying solely on the shrinking `94vw`-based implicit margin — gives every phone the same predictable, comfortable 16px gutter regardless of exact viewport width, rather than ~10px on the smallest ones.
+- **[CLEANED UP]** `apps/web/app/app/settings/page.tsx` used `className="container app-content"` (redundant double class, not itself a mobile bug — confirmed the mobile media query still applied correctly — but a real cascade oddity on desktop). Dropped `container`, matching every other `/app/*` page's `className="app-content"` alone.
+- The natal wheel (`ChartWheel`) was not touched — already correctly responsive, confirmed unaffected.
+
+**Verified**: `tsc --noEmit` and `next build` pass. Re-tested all 17 public and authenticated routes at 320/375/390px after the fix (51 checks): zero horizontal overflow anywhere, and every page with a nav bar now measures the brand link's left edge at the correct `~22px` gutter (matching `.container`'s CSS) instead of `0`. Screenshots confirm comfortable, consistent margins on `/app/person/[id]` and `/chart` specifically. All test data deleted after verification.
+
+**This is the content-column fix, separate from the prior `.milkyway`/fixed-background-layer fix** (branch `fix/mobile-overflow-and-starfield-speed`) — that fix addressed a decorative layer escaping its container; this fix addresses the actual content column's own padding being silently zeroed by inline-style/CSS-class shorthand collisions. Neither fix redoes or depends on the other.
+
 ## Shared-space user-connect entry point removed, feature deferred to v2 (branch `chore/remove-shared-space-button`)
 
 **Trigger**: the "shared space" / user-to-user connect feature is deferred to v2; asked to remove its entry-point button so users don't hit a dead or incomplete path.

@@ -4,7 +4,7 @@ export default async function SubscriptionPage() {
   const { user } = await requireUser("/account/subscription");
 
   return (
-    <main className="container" style={{ padding: "56px 0", maxWidth: 820 }}>
+    <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 820 }}>
       <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 42 }}>Subscription</h1>
 
       <section className="glass-card" style={{ marginTop: 16 }}>

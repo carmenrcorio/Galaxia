@@ -12,7 +12,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   if (!invite) {
     return (
-      <main className="container" style={{ padding: "56px 0", maxWidth: 780 }}>
+      <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 780 }}>
         <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 42 }}>Invite not found</h1>
         <p style={{ color: "var(--mist)" }}>This invite token is invalid, expired, or revoked.</p>
       </main>
@@ -24,7 +24,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     const inviter = invite.inviter_name ?? "Someone you know";
     const alreadyDone = invite.status === "accepted";
     return (
-      <main className="container" style={{ padding: "56px 0", maxWidth: 640 }}>
+      <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 640 }}>
         <p className="eyebrow">A gentle ask</p>
         <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 38, marginTop: 4 }}>
           {inviter} would love your birth details
@@ -56,7 +56,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   // handler for it either — that was a false claim about a real path
   // existing. Say plainly that it isn't available yet instead.
   return (
-    <main className="container" style={{ padding: "56px 0", maxWidth: 780 }}>
+    <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 780 }}>
       <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 42 }}>This invite isn't ready yet</h1>
       <p style={{ color: "var(--mist)", lineHeight: 1.7 }}>
         {invite.inviter_name ?? "Someone you know"} sent you this link, but shared spaces you can join this way aren't available yet — that feature is still being built.

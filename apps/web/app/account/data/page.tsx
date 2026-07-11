@@ -5,7 +5,7 @@ export default async function AccountDataPage() {
   const { user } = await requireUser("/account/data");
 
   return (
-    <main className="container" style={{ padding: "56px 0", maxWidth: 820 }}>
+    <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 820 }}>
       <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 42 }}>Your data</h1>
       <p style={{ color: "var(--mist)" }}>
         We keep your relationship graph private. Notes are owner-only and never included in shared-mode conversations.

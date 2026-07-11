@@ -1,6 +1,6 @@
 export default function TermsPage() {
   return (
-    <main className="container" style={{ padding: "56px 0", maxWidth: 860 }}>
+    <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 860 }}>
       <h1 className="auth-title">Terms of Service</h1>
       <p className="muted">By using Galaxia, you agree to use the service lawfully and with consent for shared-space interactions.</p>
       <ul style={{ color: "var(--cream)", lineHeight: 1.8 }}>

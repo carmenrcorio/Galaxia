@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const FAQS: { q: string; a: React.ReactNode }[] = [
   {
@@ -55,6 +55,42 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
 
 export function FaqSection() {
   const [openSet, setOpenSet] = useState<Set<number>>(new Set());
+  // The scroll-reveal `in` class is normally added imperatively by the
+  // page-wide RevealObserver (`classList.add("in")`). That works for static
+  // sections, but these FAQ rows re-render on every open/close: React rebuilds
+  // each row's `className` from the values below and, because it doesn't know
+  // about the imperatively-added `in`, wipes it — reverting the row to
+  // `.reveal`'s `opacity:0; translateY(26px)` and making the whole item vanish
+  // on click. Owning reveal state in React keeps `in` on re-render.
+  const [revealedSet, setRevealedSet] = useState<Set<number>>(new Set());
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      setRevealedSet(new Set(FAQS.map((_, i) => i)));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const idx = Number((entry.target as HTMLElement).dataset.index);
+            setRevealedSet((prev) => {
+              if (prev.has(idx)) return prev;
+              const next = new Set(prev);
+              next.add(idx);
+              return next;
+            });
+            io.unobserve(entry.target);
+          }
+        }
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+    );
+    itemRefs.current.forEach((el) => el && io.observe(el));
+    return () => io.disconnect();
+  }, []);
 
   function toggle(i: number) {
     setOpenSet((prev) => {
@@ -75,8 +111,16 @@ export function FaqSection() {
         <div>
           {FAQS.map((item, i) => {
             const open = openSet.has(i);
+            const inView = revealedSet.has(i);
             return (
-              <div key={item.q} className={`faq-item reveal${open ? " open" : ""}`}>
+              <div
+                key={item.q}
+                ref={(el) => {
+                  itemRefs.current[i] = el;
+                }}
+                data-index={i}
+                className={`faq-item reveal${inView ? " in" : ""}${open ? " open" : ""}`}
+              >
                 <button type="button" className="faq-q" onClick={() => toggle(i)} aria-expanded={open}>
                   {item.q}
                   <span className="pm">+</span>

@@ -778,7 +778,9 @@ section { padding-block: clamp(64px, 11vh, 120px); }
 .faq-q .pm { color: var(--gold); font-size: 1.4rem; flex-shrink: 0; transition: transform .3s; font-family: var(--sans); font-weight: 300; }
 .faq-item.open .pm { transform: rotate(45deg); }
 .faq-a { max-height: 0; overflow: hidden; transition: max-height .4s ease, padding .4s ease; }
-.faq-item.open .faq-a { max-height: 340px; padding-bottom: 22px; }
+/* Generous cap so the longest answer is never clipped, incl. when it wraps to
+   many lines on a 320px viewport (was 340px, which cut off the first answer). */
+.faq-item.open .faq-a { max-height: 640px; padding-bottom: 22px; }
 .faq-a p { color: var(--mist); font-weight: 300; line-height: 1.78; max-width: 64ch; }
 .faq-a p em { color: var(--gold); }
 

@@ -26,9 +26,16 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   // Login required for the whole authed surface. /subscribe is authed too so a
-  // logged-out user can't land there.
+  // logged-out user can't land there. /start is the post-login resolver — it
+  // needs a user to read, then redirects on to /app or /welcome (both gated
+  // below), so it is auth-gated but intentionally left out of the entitlement
+  // gate.
   const needsAuth =
-    path.startsWith("/app") || path.startsWith("/account") || path === "/welcome" || path === "/subscribe";
+    path.startsWith("/app") ||
+    path.startsWith("/account") ||
+    path === "/welcome" ||
+    path === "/start" ||
+    path === "/subscribe";
   if (!user && needsAuth) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -60,5 +67,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/account/:path*", "/welcome", "/subscribe"]
+  matcher: ["/app/:path*", "/account/:path*", "/welcome", "/start", "/subscribe"]
 };

@@ -868,3 +868,85 @@ section { padding-block: clamp(64px, 11vh, 120px); }
   .reveal { opacity: 1; transform: none; transition: none; }
   .hero-scroll-cue svg { animation: none; }
 }
+
+/* ─── Print / "Download as PDF" export (subscriber perk) ─────────────────────
+ * The printable chart document (.chart-pdf-root) is rendered through a portal
+ * into <body> and kept display:none on screen — it only exists for print.
+ * On print we hide the live app entirely and reveal the document, forcing
+ * colour-adjust so the cosmic chart panel and gold accents survive the print
+ * pipeline (browsers strip backgrounds by default). Reference tokens/serif
+ * from the design system; the page itself is a premium cream sheet. */
+.chart-pdf-root { display: none; }
+
+@media print {
+  html, body { background: #ffffff !important; }
+  /* Isolate the portal'd document: it is a direct child of <body>. */
+  body > *:not(.chart-pdf-root) { display: none !important; }
+  .no-print { display: none !important; }
+
+  .chart-pdf-root {
+    display: block !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  @page { margin: 16mm; }
+}
+
+/* The document styles apply both in print and (harmlessly) if ever shown. */
+.chart-pdf-root .pdf-page {
+  max-width: 720px;
+  margin: 0 auto;
+  color: #241a3a;
+  font-family: var(--sans);
+  background: linear-gradient(180deg, #fbf6ec, #f4ecdb);
+  padding: 28px 34px 34px;
+}
+.chart-pdf-root .pdf-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  border-bottom: 1px solid rgba(230,174,108,.55);
+  padding-bottom: 10px; margin-bottom: 18px;
+}
+.chart-pdf-root .pdf-brand { font-family: var(--serif); font-weight: 600; font-size: 1.5rem; color: #b07a2c; }
+.chart-pdf-root .pdf-eyebrow {
+  font-size: .64rem; font-weight: 700; letter-spacing: .28em; text-transform: uppercase; color: #b07a2c;
+}
+.chart-pdf-root .pdf-title { font-family: var(--serif); font-size: 2rem; color: #1a1230; margin: 0 0 2px; line-height: 1.1; }
+.chart-pdf-root .pdf-meta { color: #6a5f86; font-size: .86rem; margin: 0 0 18px; }
+
+.chart-pdf-root .pdf-wheel-panel {
+  background: radial-gradient(120% 120% at 50% 0%, #16102e, #0a0717);
+  border: 1px solid rgba(230,174,108,.28);
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+.chart-pdf-root .pdf-bigthree {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.chart-pdf-root .pdf-chip {
+  flex: 1; min-width: 150px; text-align: center;
+  border: 1px solid rgba(230,174,108,.35); border-radius: 14px; padding: 12px 10px;
+  background: rgba(255,255,255,.5);
+}
+.chart-pdf-root .pdf-chip-glyph { display: block; font-size: 1.5rem; line-height: 1; margin-bottom: 4px; }
+.chart-pdf-root .pdf-chip-label { display: block; font-size: .62rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #8a5a1e; }
+.chart-pdf-root .pdf-chip-value { display: block; font-family: var(--serif); font-size: 1rem; color: #1a1230; }
+.chart-pdf-root .pdf-chip-reading { display: block; font-size: .72rem; font-style: italic; color: #6a5f86; margin-top: 3px; }
+
+.chart-pdf-root .pdf-section-title {
+  font-size: .64rem; font-weight: 700; letter-spacing: .24em; text-transform: uppercase;
+  color: #b07a2c; margin-bottom: 8px;
+}
+.chart-pdf-root .pdf-placement { display: flex; gap: 12px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid rgba(183,154,216,.28); page-break-inside: avoid; }
+.chart-pdf-root .pdf-placement--uncertain { opacity: .7; align-items: center; }
+.chart-pdf-root .pdf-placement-glyph { width: 22px; text-align: center; flex-shrink: 0; font-size: 1rem; }
+.chart-pdf-root .pdf-placement-domain { font-size: .56rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8076a6; }
+.chart-pdf-root .pdf-placement-name { font-size: .9rem; font-weight: 600; color: #1a1230; }
+.chart-pdf-root .pdf-placement-reading { font-size: .78rem; font-style: italic; color: #574d73; }
+.chart-pdf-root .pdf-placement-uncertain-text { font-size: .82rem; color: #574d73; }
+
+.chart-pdf-root .pdf-footnote { margin-top: 20px; font-size: .7rem; color: #8076a6; line-height: 1.5; border-top: 1px solid rgba(230,174,108,.4); padding-top: 10px; }

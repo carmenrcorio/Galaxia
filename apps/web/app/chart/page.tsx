@@ -13,6 +13,7 @@ import type { NatalChart } from "@galaxia/astro";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
+import { ChartPdfExport } from "../../components/chart-pdf-export";
 import { ChartWheel } from "../../components/chart-wheel";
 import { QuickChartShell } from "../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../components/save-to-galaxy-button";
@@ -22,6 +23,7 @@ import type { BirthFormInput } from "../../lib/birth";
 import { BODY_GLYPH, SIGN_GLYPH, signElement } from "../../lib/design";
 import { BODY_DOMAIN, interpretPlacement, interpretRising, type BodyKey, type SignKey } from "../../lib/interpretations";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../lib/quick-chart";
+import { useViewer } from "../../lib/use-viewer";
 
 interface QuickResult {
   chart: NatalChart;
@@ -31,13 +33,26 @@ interface QuickResult {
 
 export default function QuickChartPage() {
   const router = useRouter();
+  const viewer = useViewer();
   const [input, setInput] = useState<BirthFormInput>(BASE_BIRTH_INPUT);
   const [name, setName] = useState("");
+  const [usingMyChart, setUsingMyChart] = useState(false);
   const [result, setResult] = useState<QuickResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [fromShareLink, setFromShareLink] = useState(false);
+
+  // Offer the logged-in user their own birth data as a pre-fill for the single
+  // chart, mirroring how /chart/compare pre-fills Person A. Only a suggestion —
+  // it fills the same BirthFields the anonymous flow uses; nothing auto-runs.
+  const canUseMyChart = !!viewer.selfInput && !fromShareLink && !result;
+  function useMyChart() {
+    if (!viewer.selfInput) return;
+    setInput(viewer.selfInput);
+    setName(viewer.selfName || "You");
+    setUsingMyChart(true);
+  }
 
   // Opening a shared link: birth params are in the URL, no name (never encoded).
   useEffect(() => {
@@ -76,8 +91,14 @@ export default function QuickChartPage() {
   const moon = result?.chart.placements.find((p) => p.body === "moon");
   const rising = result?.chart.asc;
 
+  const title = fromShareLink
+    ? "A birth chart"
+    : viewer.userId
+      ? "See anyone's real chart."
+      : "See anyone's real chart, free.";
+
   return (
-    <QuickChartShell eyebrow="Quick Chart" title={fromShareLink ? "A birth chart" : "See anyone's real chart, free."}>
+    <QuickChartShell eyebrow="Quick Chart" title={title} authed={!!viewer.userId}>
       <p className="lede" style={{ marginBottom: 20 }}>
         Enter a birth date (and time and city, if known) for a real computed natal chart — Big Three, placements, and the wheel. Nothing is saved unless you choose to.
       </p>
@@ -100,6 +121,18 @@ export default function QuickChartPage() {
           </section>
 
           <section className="glass-card fade-in" style={{ display: "grid", gap: 12 }}>
+            {canUseMyChart ? (
+              usingMyChart ? (
+                <div style={{ padding: "10px 12px", borderRadius: 12, background: "rgba(111,177,184,.08)", border: "1px solid rgba(111,177,184,.25)" }}>
+                  <p style={{ color: "var(--teal)", fontSize: ".82rem", fontWeight: 600, margin: "0 0 4px" }}>✓ Using your own birth data</p>
+                  <button type="button" className="pill-link" style={{ fontSize: ".72rem", padding: "2px 10px" }} onClick={() => { setUsingMyChart(false); setInput(BASE_BIRTH_INPUT); setName(""); }}>Not you? Enter someone else</button>
+                </div>
+              ) : (
+                <button type="button" className="pill-link" onClick={useMyChart} style={{ fontSize: ".8rem", justifySelf: "start" }}>
+                  ✦ Use my birth data
+                </button>
+              )
+            ) : null}
             <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional — shown only to you, never saved or shared)" style={{ borderRadius: 14 }} />
             <BirthFields input={input} onChange={setInput} />
             <button className="btn-primary" onClick={() => runChart(input)} disabled={loading} style={{ gap: 8, justifySelf: "start" }}>
@@ -175,8 +208,13 @@ export default function QuickChartPage() {
 
           <section className="glass-card fade-in fade-in-delay-2" style={{ textAlign: "center", display: "grid", gap: 12 }}>
             <SaveToGalaxyButton birthInput={input} defaultName={name || undefined} />
+            {/* Paid perk: only a real subscriber/trialing user sees this. The
+                share link below stays free for everyone (acquisition funnel). */}
+            {viewer.isSubscriber ? (
+              <ChartPdfExport chart={result.chart} name={name || undefined} displayDate={result.displayDate} birthPlace={result.birthPlace} />
+            ) : null}
             <ShareLinkButton url={shareUrl} />
-            <button type="button" className="pill-link" onClick={() => { setResult(null); setFromShareLink(false); }}>
+            <button type="button" className="pill-link" onClick={() => { setResult(null); setFromShareLink(false); setUsingMyChart(false); }}>
               Try another chart
             </button>
           </section>

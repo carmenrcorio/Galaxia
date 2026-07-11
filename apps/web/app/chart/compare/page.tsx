@@ -23,7 +23,7 @@ import { sortAspectsForFocus, whatTheyNeed, type RelationType } from "../../../l
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
 import { interpretAspect, type AspectKey, type BodyKey } from "../../../lib/interpretations";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
-import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
+import { useViewer } from "../../../lib/use-viewer";
 
 // Local shape matching @galaxia/astro's SynastryResult (avoids importing computeSynastry just for its type).
 type SynastryShape = { scores: Record<string, number>; aspects: Array<{ from: string; to: string; type: string; orb: number; harmony: number }> };
@@ -50,18 +50,8 @@ const FOCUS_TYPES: { key: RelationType; label: string }[] = [
   { key: "platonic", label: "Platonic" },
 ];
 
-function parseDateStr(s: string | null | undefined): { month?: number; day?: number; year?: number } {
-  if (!s) return {};
-  const [yr, mo, dy] = s.slice(0, 10).split("-").map(Number);
-  return { year: yr, month: mo, day: dy };
-}
-function parseTimeStr(s: string | null | undefined): { hour?: number; minute?: number } {
-  if (!s) return {};
-  const [hr, mn] = s.slice(0, 5).split(":").map(Number);
-  return { hour: hr, minute: mn };
-}
-
 export default function QuickComparePage() {
+  const viewer = useViewer();
   const [inputA, setInputA] = useState<BirthFormInput>(BASE_BIRTH_INPUT);
   const [inputB, setInputB] = useState<BirthFormInput>(BASE_BIRTH_INPUT);
   const [nameA, setNameA] = useState("");
@@ -81,31 +71,19 @@ export default function QuickComparePage() {
     if (a && b) {
       setInputA(a); setInputB(b); setFromShareLink(true);
       void runCompare(a, b, { updateUrl: false });
-      return;
     }
-    // Not a share link — try to prefill Person A from the logged-in user's own chart.
-    const supabase = createSupabaseBrowserClient();
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      // A unique index on people(owner_id) WHERE is_self guarantees at most
-      // one row here — no ordering/limit tie-breaker needed.
-      const { data: self } = await supabase.from("people")
-        .select("birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, birth_precision")
-        .eq("owner_id", user.id).eq("is_self", true).maybeSingle();
-      if (!self || self.birth_precision === "none") return;
-      setInputA({
-        precision: self.birth_precision as BirthFormInput["precision"],
-        ...parseDateStr(self.birth_date),
-        ...parseTimeStr(self.birth_time),
-        lat: self.birth_lat != null ? String(self.birth_lat) : "",
-        lng: self.birth_lng != null ? String(self.birth_lng) : "",
-        tzOffsetMin: self.tz_offset_min ?? undefined,
-        birthPlace: self.birth_place ?? ""
-      });
+  }, []);
+
+  // Not a share link — prefill Person A from the logged-in user's own chart
+  // once the viewer resolves (same data, now via the shared useViewer hook).
+  useEffect(() => {
+    if (fromShareLink || result) return;
+    if (viewer.selfInput) {
+      setInputA(viewer.selfInput);
       setNameA("You");
       setUsingMyChart(true);
-    });
-  }, []);
+    }
+  }, [viewer.selfInput, fromShareLink, result]);
 
   async function runCompare(a: BirthFormInput, b: BirthFormInput, opts: { updateUrl: boolean } = { updateUrl: true }) {
     setLoading(true); setError(null);
@@ -143,7 +121,7 @@ export default function QuickComparePage() {
   const personB = result ? { display_name: nameB || "Person B", sun: getSign(result.chartB, "sun"), moon: getSign(result.chartB, "moon"), venus: getSign(result.chartB, "venus"), mars: getSign(result.chartB, "mars") } : null;
 
   return (
-    <QuickChartShell eyebrow="Quick Compatibility" title={fromShareLink ? "A compatibility reading" : "Check your compatibility, free."}>
+    <QuickChartShell eyebrow="Quick Compatibility" title={fromShareLink ? "A compatibility reading" : viewer.userId ? "Check your compatibility." : "Check your compatibility, free."} authed={!!viewer.userId}>
       <p className="lede" style={{ marginBottom: 20 }}>
         Enter both birth dates for a real synastry reading — where you flow, where you catch, and what each of you needs. Nothing is saved unless you choose to.
       </p>

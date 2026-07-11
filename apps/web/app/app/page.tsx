@@ -21,7 +21,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../components/initial-avatar";
-import { QuickCheckLauncher } from "../../components/quick-check-modal";
 import { ThreadMenu } from "../../components/thread-menu";
 import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
@@ -587,8 +586,13 @@ export default function AppHomePage() {
 
       {/* ── Living constellation — full-width, real vertical presence ── */}
       <section className="glass-card fade-in" style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid rgba(255,255,255,.05)" }}>
+        <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <p className="eyebrow" style={{ margin: 0 }}>Your constellation</p>
+          {!loading && people.length > 0 ? (
+            <Link href="/welcome" className="pill-link pill-link--gold" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
+              + Add person
+            </Link>
+          ) : null}
         </div>
 
         {loading ? (
@@ -687,18 +691,18 @@ export default function AppHomePage() {
       ) : null}
 
       {/* ── Contextual actions (global nav lives in the header — A7: no duplicate row) ──
-         Only the two actions that are the natural next step from home remain:
-         open your own chart, and grow the constellation. Compare/Groups/Vela are
-         one tap away in the sticky header. */}
-      {!loading ? (
+         "Add person" now lives as a prominent button in the constellation card
+         header, so the only natural next step left here is opening your own
+         chart. Compare/Groups/Vela/Quick Chart are one tap away in the sticky
+         header. The old floating "Quick check" launcher was removed — it
+         duplicated the header's Quick Chart with no distinct purpose. */}
+      {!loading && selfPerson ? (
         <div className="fade-in fade-in-delay-2">
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {selfPerson ? <Link href={`/app/person/${selfPerson.id}`} className="pill-link">My chart</Link> : null}
-            <Link href="/welcome" className="pill-link">Add people</Link>
+            <Link href={`/app/person/${selfPerson.id}`} className="pill-link">My chart</Link>
           </div>
         </div>
       ) : null}
-      {!loading ? <QuickCheckLauncher /> : null}
     </main>
   );
 }

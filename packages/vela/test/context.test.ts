@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildVelaContext, buildVelaPrompt, detectCrisisLanguage } from "../src/index";
+import { buildVelaContext, buildVelaPrompt, detectCrisisLanguage, VELA_REMEMBRANCE_GUARDRAIL, VELA_SYSTEM_PROMPT } from "../src/index";
 
 const baseInput = {
   mode: "ask" as const,
@@ -51,6 +51,29 @@ describe("buildVelaContext privacy behavior", () => {
 
     expect(context.privateNotesDigest).toBeUndefined();
     expect(buildVelaPrompt(context)).not.toContain("Never share this note");
+  });
+
+  it("caps private notes digest at five (not full recall)", () => {
+    const context = buildVelaContext({
+      ...baseInput,
+      mode: "ask",
+      privateNotes: ["1", "2", "3", "4", "5", "6", "7"]
+    });
+    expect(context.privateNotesDigest).toHaveLength(5);
+  });
+});
+
+describe("Remembrance Phase 2 — Vela never fabricates memories", () => {
+  it("system prompt includes the remembrance guardrail verbatim", () => {
+    expect(VELA_SYSTEM_PROMPT).toContain(VELA_REMEMBRANCE_GUARDRAIL);
+    expect(VELA_REMEMBRANCE_GUARDRAIL).toBe(
+      "Draw only on the computed chart facts you are given and the owner's own saved reflections in the private notes digest. Never fabricate memories, events, or facts about the person. Do not invent what they said, did, or felt."
+    );
+  });
+
+  it("system prompt states the digest is a short sample, not full recall", () => {
+    expect(VELA_SYSTEM_PROMPT).toContain("at most five");
+    expect(VELA_SYSTEM_PROMPT).toContain("not full recall");
   });
 });
 

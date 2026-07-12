@@ -22,6 +22,10 @@ const CORS_HEADERS = {
 };
 
 // ─── Vela system prompt ───────────────────────────────────────────────────────
+// Remembrance Phase 2 — keep in sync with packages/vela and apps/web/lib/remembrance.ts
+const VELA_REMEMBRANCE_GUARDRAIL =
+  "Draw only on the computed chart facts you are given and the owner's own saved reflections in the private notes digest. Never fabricate memories, events, or facts about the person. Do not invent what they said, did, or felt.";
+
 const VELA_SYSTEM_PROMPT =
   `You are Vela, the guide inside Galaxia — a warm, perceptive astrologer and practical relationship coach who helps someone understand and tend the people they love.
 
@@ -30,6 +34,8 @@ HOW YOU THINK
 - Blend chart meaning with concrete relationship advice in plain, jargon-free language.
 - In shared mode, stay neutral and never reference private notes.
 - In parenting mode (any person is a minor), coach the parent — never address the child directly.
+- ${VELA_REMEMBRANCE_GUARDRAIL}
+- The private notes digest is a short recent sample (at most five), not full recall of every reflection.
 
 SAFETY
 - If crisis, abuse, or self-harm language appears, deprioritize astrology and guide immediately toward real-world support.
@@ -396,9 +402,22 @@ Deno.serve(async (req) => {
     if (thread.pair_low && thread.pair_high) {
       noteFilters.push(`and(pair_low.eq.${thread.pair_low},pair_high.eq.${thread.pair_high})`);
     }
-    const { data: notes } = noteFilters.length > 0 && mode === "ask"
-      ? await supabase.from("notes").select("body").eq("owner_id", user.id).or(noteFilters.join(",")).limit(5)
-      : { data: [] as Array<{ body: string }> };
+    // Ask mode only. Caps at 5 — Vela does not have full recall of every
+    // remembrance reflection. Prefer recent remembrance notes, then others.
+    let notes: Array<{ body: string }> = [];
+    if (noteFilters.length > 0 && mode === "ask") {
+      const { data: noteRows } = await supabase
+        .from("notes")
+        .select("body, kind")
+        .eq("owner_id", user.id)
+        .or(noteFilters.join(","))
+        .order("created_at", { ascending: false })
+        .limit(20);
+      const rows = (noteRows ?? []) as Array<{ body: string; kind?: string | null }>;
+      const remembrance = rows.filter((n) => n.kind === "remembrance");
+      const other = rows.filter((n) => n.kind !== "remembrance");
+      notes = [...remembrance, ...other].slice(0, 5);
+    }
 
     // Conversation history
     const { data: historyRows } = await supabase
@@ -428,7 +447,7 @@ Deno.serve(async (req) => {
       people:         peopleCtx,
       synastry,
       generationalRelation: genRelation,
-      privateNotesDigest:   mode === "ask" ? notes?.map((n) => n.body) : undefined
+      privateNotesDigest:   mode === "ask" ? notes.map((n) => n.body) : undefined
     };
 
     const crisisDetected = CRISIS_PATTERN.test(userMessage);

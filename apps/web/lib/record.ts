@@ -12,7 +12,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * difference is attributed to an input change (engineVersion / birthFingerprint).
  */
 
-export type RecordKind = "note" | "tending" | "vela_pin" | "compare_reading" | "cohort_reading";
+export type RecordKind = "note" | "tending" | "vela_pin" | "compare_reading" | "cohort_reading" | "remembrance";
 
 export interface RecordEntry {
   id: string;

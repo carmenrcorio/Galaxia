@@ -21,12 +21,18 @@
  * on save. Preserved from the previous implementation.
  */
 
-import { computeNatalChart, computeSynastry, type HouseSystem, type NatalChart } from "@galaxia/astro";
+import {
+  computeNatalChart,
+  computeSynastry,
+  buildBirthInput,
+  type HouseSystem,
+  type NatalChart,
+  type BirthFormInput,
+} from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
-import { buildBirthInput, type BirthFormInput } from "../lib/birth";
 import { sortAspectsForFocus, whatTheyNeed, type RelationType } from "../lib/compare-guidance";
 import { COMPAT_LABELS, compatWord } from "../lib/design";
 import { CHART_ENGINE_VERSION, getPreferredHouseSystem } from "../lib/house-system";

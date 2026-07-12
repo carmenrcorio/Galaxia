@@ -1,8 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { formatDateForConfirmation, type BirthFormInput, type FormPrecision } from "../lib/birth";
-import { searchPlaces, type GeoCandidate } from "../lib/geocode";
+import {
+  formatDateForConfirmation,
+  searchPlaces,
+  type BirthFormInput,
+  type FormPrecision,
+  type GeoCandidate,
+} from "@galaxia/astro";
 import { Spinner } from "./spinner";
 
 const MONTHS = [

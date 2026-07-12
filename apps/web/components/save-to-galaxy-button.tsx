@@ -1,10 +1,13 @@
 "use client";
 
-import { computeNatalChart } from "@galaxia/astro";
+import {
+  computeNatalChart,
+  buildBirthInput,
+  type BirthFormInput,
+} from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { buildBirthInput, type BirthFormInput } from "../lib/birth";
 import { CHART_ENGINE_VERSION, getPreferredHouseSystem } from "../lib/house-system";
 import { buildWelcomePrefillPath } from "../lib/quick-chart";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";

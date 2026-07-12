@@ -1,4 +1,4 @@
-import type { Birth, Precision } from "@galaxia/astro";
+import type { Birth, Precision } from "./index";
 
 /** Form-level precision: the engine's precisions plus a "not added yet" state. */
 export type FormPrecision = Precision | "none";

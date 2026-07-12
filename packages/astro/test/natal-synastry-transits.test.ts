@@ -205,7 +205,7 @@ describe("Jacksonville, Arkansas regression — 1987-12-29", () => {
   it("geocoding disambiguation: Open-Meteo returns multiple Jacksonville results", async () => {
     // This test documents that searchPlaces returns multiple results for "Jacksonville"
     // including both Florida and Arkansas entries, which the UI must present for user choice.
-    const { searchPlaces } = await import("../../../apps/web/lib/geocode");
+    const { searchPlaces } = await import("../src/geocode");
     const results = await searchPlaces("Jacksonville");
     expect(results.length).toBeGreaterThan(0);
     // Should include at least one Jacksonville result

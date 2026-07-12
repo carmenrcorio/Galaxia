@@ -1,7 +1,10 @@
-import { computeNatalChart } from "@galaxia/astro";
+import {
+  computeNatalChart,
+  buildBirthInput,
+  type BirthFormInput,
+} from "@galaxia/astro";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { buildBirthInput, type BirthFormInput } from "../../../../lib/birth";
 import { privateEnv, publicEnv } from "../../../../lib/env";
 import { CHART_ENGINE_VERSION, getPreferredHouseSystem } from "../../../../lib/house-system";
 

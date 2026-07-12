@@ -1,10 +1,15 @@
 "use client";
 
-import { computeNatalChart } from "@galaxia/astro";
+import {
+  computeNatalChart,
+  buildBirthInput,
+  formatDateForConfirmation,
+  searchPlaces,
+  type BirthFormInput,
+  type GeoCandidate,
+} from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
 import { useState } from "react";
-import { buildBirthInput, formatDateForConfirmation, type BirthFormInput } from "../lib/birth";
-import { searchPlaces, type GeoCandidate } from "../lib/geocode";
 import { CHART_ENGINE_VERSION, getPreferredHouseSystem } from "../lib/house-system";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { AskBirthData } from "./ask-birth-data";

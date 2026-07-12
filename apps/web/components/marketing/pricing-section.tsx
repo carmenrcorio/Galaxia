@@ -23,7 +23,7 @@ export function PricingSection() {
           <div className="pcard glass-card">
             <div className="pcard-name">Monthly</div>
             <div className="pcard-price">$9.99 <span>/month</span></div>
-            <div className="pcard-sub">&nbsp;</div>
+            <div className="pcard-sub">Billed monthly · same everything</div>
             <Link href="/signup" className="btn-primary" style={{ marginTop: 18, display: "inline-block" }}>Start 14 days free</Link>
           </div>
         </div>

@@ -45,7 +45,10 @@ export function ChartPdfExport({ chart, name, displayDate, birthPlace, engineVer
 
   return (
     <>
-      <button type="button" className="btn-primary no-print" onClick={() => window.print()} style={{ gap: 8 }}>
+      {/* Secondary styling (pill, not the gold gradient): "Save to your galaxy"
+          is the primary action on the results card; PDF export is a subordinate
+          convenience, so it should not compete for the same visual weight. */}
+      <button type="button" className="pill-link no-print" onClick={() => window.print()} style={{ gap: 8, justifySelf: "center" }}>
         Download as PDF
       </button>
       {mounted

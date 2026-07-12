@@ -133,7 +133,7 @@ describe("per-person transits are distinct (home 'Today in your sky')", () => {
 
 describe("today's-transit UI policy (shared home + person-page helper)", () => {
   it("skips year-only charts (no fabricated orbs) but keeps exact/date", async () => {
-    const { todayTransitsForChart } = await import("../../../apps/web/lib/transits");
+    const { todayTransitsForChart } = await import("../src/transits");
     const yearOnly = computeNatalChart({ dateUTC: "1995-01-01T00:00:00.000Z", precision: "year" });
     const exact = computeNatalChart({ dateUTC: "1988-03-14T09:20:00.000Z", precision: "exact", lat: 40.7128, lng: -74.006 });
 

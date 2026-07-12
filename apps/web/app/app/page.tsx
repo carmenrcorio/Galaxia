@@ -16,7 +16,12 @@
  * - Duplicate bottom nav row: DELETED per spec
  */
 
-import { computeSynastry, type NatalChart, type TransitHit } from "@galaxia/astro";
+import {
+  computeSynastry,
+  type NatalChart,
+  type TransitHit,
+  todayTransitsForChart,
+} from "@galaxia/astro";
 import {
   HONOR_LINE_STYLE,
   HONOR_RELATION_TYPE,
@@ -36,7 +41,6 @@ import { InitialAvatar } from "../../components/initial-avatar";
 import { ThreadMenu } from "../../components/thread-menu";
 import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
-import { todayTransitsForChart } from "../../lib/transits";
 import { interpretTransit, transitNotation } from "../../lib/transit-interpretations";
 
 interface PersonRow {

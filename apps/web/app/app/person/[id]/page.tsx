@@ -14,6 +14,7 @@ import {
   type Placement,
   CHART_ENGINE_VERSION,
   houseSystemLabelForChart,
+  todayTransitsForChart,
 } from "@galaxia/astro";
 import {
   buildPersonPageNavSections,
@@ -44,7 +45,6 @@ import {
 } from "../../../../lib/house-interpretations";
 import { getPreferredHouseSystem } from "../../../../lib/house-system";
 import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, type RecordEntry } from "../../../../lib/record";
-import { todayTransitsForChart } from "../../../../lib/transits";
 import { interpretTransit, transitNotation } from "../../../../lib/transit-interpretations";
 import { ThreadMenu } from "../../../../components/thread-menu";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";

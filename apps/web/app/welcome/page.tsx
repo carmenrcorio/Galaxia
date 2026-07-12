@@ -14,9 +14,13 @@ import { CHART_ENGINE_VERSION, getPreferredHouseSystem } from "../../lib/house-s
 import { decodeBirthQuery } from "../../lib/quick-chart";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 
-type Relation = "partner" | "child" | "parent" | "grandparent" | "sibling" | "friend" | "ancestor" | "self";
+type Relation = "partner" | "child" | "parent" | "grandparent" | "sibling" | "friend" | "colleague" | "ancestor" | "self";
 
-const relationOptions: Relation[] = ["partner", "child", "parent", "grandparent", "sibling", "friend", "ancestor"];
+// Ordered by galaxy closeness (inner → outer): partner → child → parent →
+// sibling → friend → colleague → grandparent/ancestor. Keeps the add-person
+// picker in sync with the constellation's ring order (see ringIndex in
+// apps/web/app/app/page.tsx).
+const relationOptions: Relation[] = ["partner", "child", "parent", "sibling", "friend", "colleague", "grandparent", "ancestor"];
 
 const baseInput: BirthFormInput = BASE_BIRTH_INPUT;
 

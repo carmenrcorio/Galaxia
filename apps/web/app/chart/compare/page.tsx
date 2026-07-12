@@ -16,6 +16,10 @@ import {
   interpretAspect,
   type AspectKey,
   type BodyKey,
+  aspectActionLine,
+  sortAspectsForFocus,
+  whatTheyNeed,
+  type RelationType,
 } from "@galaxia/astro";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -24,7 +28,6 @@ import { QuickChartShell } from "../../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
-import { aspectActionLine, sortAspectsForFocus, whatTheyNeed, type RelationType } from "../../../lib/compare-guidance";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
 import { useViewer } from "../../../lib/use-viewer";

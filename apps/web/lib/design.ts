@@ -83,25 +83,3 @@ export const COMPAT_LABELS: Record<string, string> = {
   stability:     "Stability",
 };
 
-/* Sign vibe one-liners — from galaxia.jsx VIBE */
-export const SIGN_VIBE: Record<string, string> = {
-  Aries:       "bold, fast, all-in",
-  Taurus:      "steady, sensual, immovable",
-  Gemini:      "quick, curious, talkative",
-  Cancer:      "tender, protective, remembers everything",
-  Leo:         "warm, proud, generous",
-  Virgo:       "precise, caring through usefulness",
-  Libra:       "fair, charming, seeks balance",
-  Scorpio:     "intense, private, all-or-nothing",
-  Sagittarius: "restless, honest, big-picture",
-  Capricorn:   "disciplined, ambitious, quietly loyal",
-  Aquarius:    "independent, inventive, principled",
-  Pisces:      "dreamy, compassionate, absorbent",
-};
-
-/* House meaning summaries — from galaxia.jsx HOUSE_AREA */
-export const HOUSE_AREA = [
-  "self & identity", "money & values", "communication & siblings", "home & roots",
-  "creativity & romance", "work & health", "partnership", "intimacy & transformation",
-  "beliefs & travel", "career & reputation", "friends & community", "solitude & the unconscious"
-];

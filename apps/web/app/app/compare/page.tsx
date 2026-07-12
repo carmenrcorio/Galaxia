@@ -18,14 +18,6 @@ import {
   type GenSignature,
   type NatalChart,
   CHART_ENGINE_VERSION,
-} from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { InitialAvatar } from "../../../components/initial-avatar";
-import { Spinner } from "../../../components/spinner";
-import {
   availableCompareRelationTypes,
   defaultCompareRelationType,
   isRomanticRelation,
@@ -39,7 +31,13 @@ import {
   sortAspectsForFocus,
   whatTheyNeed,
   type RelationType,
-} from "../../../lib/compare-guidance";
+} from "@galaxia/astro";
+import { isMinorForSafety } from "@galaxia/core";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { InitialAvatar } from "../../../components/initial-avatar";
+import { Spinner } from "../../../components/spinner";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
 import { orderPair } from "../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";

@@ -4,7 +4,7 @@ import {
   availableCompareRelationTypes,
   defaultCompareRelationType,
   isRomanticRelation,
-} from "./compare-guidance";
+} from "@galaxia/astro";
 
 const NOW = new Date("2026-07-11T00:00:00.000Z");
 

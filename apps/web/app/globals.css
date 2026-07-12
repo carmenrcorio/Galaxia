@@ -40,7 +40,10 @@
 
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+/* scroll-padding-top clears the sticky, translucent marketing/app nav (~68px)
+   so in-page anchor jumps (#shift, #how, …) land the target heading *below* the
+   header instead of tucked under its blur band, where it read as clipped. */
+html { scroll-behavior: smooth; scroll-padding-top: 88px; }
 
 body {
   background: var(--ink);

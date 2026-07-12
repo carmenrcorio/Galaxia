@@ -926,7 +926,13 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 .faq-a p em { color: var(--gold); }
 
 /* ─── footer CTA (close) ──────────────────────────────────────────────────── */
-.close { text-align: center; }
+/* Generous breathing room around the finale. Needed because every marketing
+   <section> also carries `.container` (padding: 0 32px), which out-specifies the
+   global `section{padding-block}` and zeroes these sections' vertical padding —
+   so the closing headline otherwise sat right against the last FAQ divider.
+   `.close` is later in source at equal specificity, so its padding-block wins
+   the top/bottom while `.container` keeps the horizontal gutters. */
+.close { text-align: center; padding-block: clamp(72px, 10vh, 120px); }
 .close-h { font-size: clamp(2.1rem, 5.6vw, 4.2rem); max-width: 18ch; margin: 0 auto; line-height: 1.06; }
 .close-h em { color: var(--gold); }
 .close-cta { margin-top: 32px; display: flex; justify-content: center; }

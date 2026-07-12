@@ -417,13 +417,22 @@ function ComparePageInner() {
               );
             })}
 
-            {/* Type-framed reading of the tightest type-relevant aspects (real data only) */}
+            {/* Type-framed reading of the tightest type-relevant aspects (real
+                data only), each followed by an actionable "what to do" line —
+                friction → a way to minimize the clash, flow → a way to nurture
+                and use the ease. Both are grounded in the specific bodies. */}
             {aspectFraming.length > 0 ? (
-              <div style={{ marginTop: 14, display: "grid", gap: 8 }}>
+              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
                 {aspectFraming.map((f, idx) => (
-                  <p key={`frame-${idx}`} style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.6, fontStyle: "italic", margin: 0, borderLeft: `2px solid ${f.flows ? "rgba(111,177,184,.4)" : "rgba(200,120,120,.4)"}`, paddingLeft: 12 }}>
-                    {f.text}
-                  </p>
+                  <div key={`frame-${idx}`} style={{ borderLeft: `2px solid ${f.flows ? "rgba(111,177,184,.4)" : "rgba(200,120,120,.4)"}`, paddingLeft: 12 }}>
+                    <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.6, fontStyle: "italic", margin: 0 }}>
+                      {f.text}
+                    </p>
+                    <p style={{ fontSize: ".8rem", color: "var(--cream)", lineHeight: 1.6, margin: "6px 0 0" }}>
+                      <span style={{ color: f.flows ? "var(--teal)" : "var(--gold)", fontWeight: 600 }}>{f.flows ? "Nurture it: " : "Ease it: "}</span>
+                      {f.action}
+                    </p>
+                  </div>
                 ))}
               </div>
             ) : null}

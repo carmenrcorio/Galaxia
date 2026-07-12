@@ -19,7 +19,7 @@ import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
 import type { BirthFormInput } from "../../../lib/birth";
-import { sortAspectsForFocus, whatTheyNeed, type RelationType } from "../../../lib/compare-guidance";
+import { aspectActionLine, sortAspectsForFocus, whatTheyNeed, type RelationType } from "../../../lib/compare-guidance";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
 import { interpretAspect, type AspectKey, type BodyKey } from "../../../lib/interpretations";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
@@ -80,10 +80,16 @@ export default function QuickComparePage() {
     if (fromShareLink || result) return;
     if (viewer.selfInput) {
       setInputA(viewer.selfInput);
-      setNameA("You");
+      // Resolve the user's REAL saved name (grammar bug fix): the third-person
+      // copy templates ("→ What {name} needs from you", "{name}'s Cancer Moon
+      // means they need…") render "What You needs from you" if a literal "You"
+      // is dropped in. Use the self record's display_name like /chart/page.tsx
+      // does; "You" only survives as a last-resort fallback (a self chart
+      // always has a required display_name, so it never actually renders).
+      setNameA(viewer.selfName || "You");
       setUsingMyChart(true);
     }
-  }, [viewer.selfInput, fromShareLink, result]);
+  }, [viewer.selfInput, viewer.selfName, fromShareLink, result]);
 
   async function runCompare(a: BirthFormInput, b: BirthFormInput, opts: { updateUrl: boolean } = { updateUrl: true }) {
     setLoading(true); setError(null);
@@ -236,12 +242,20 @@ export default function QuickComparePage() {
                 </p>
                 {sortAspectsForFocus(result.synastry.aspects.filter((a) => a.from !== a.to).sort((a, b) => a.orb - b.orb), relationType === "romantic" || relationType === "platonic" ? relationType : null).slice(0, 6).map((a, idx) => {
                   const reading = interpretAspect(a.from.toLowerCase() as BodyKey, a.to.toLowerCase() as BodyKey, a.type.toLowerCase() as AspectKey);
+                  const flows = a.harmony >= 0;
                   return (
-                    <div key={`${a.from}-${a.to}-${idx}`} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
-                      <span style={{ fontSize: ".8rem", color: a.harmony >= 0 ? "var(--teal)" : "var(--rose)", flexShrink: 0 }}>{a.harmony >= 0 ? "↑ flows" : "↓ catches"}</span>
-                      <span className="muted" style={{ fontSize: ".82rem" }}>{a.from} {a.type} {a.to}</span>
-                      <span className="muted" style={{ fontSize: ".74rem", fontStyle: "italic" }}>{reading.short}</span>
-                      <span className="muted" style={{ fontSize: ".72rem", marginLeft: "auto", flexShrink: 0 }}>{a.orb.toFixed(1)}°</span>
+                    <div key={`${a.from}-${a.to}-${idx}`} style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                        <span style={{ fontSize: ".8rem", color: flows ? "var(--teal)" : "var(--rose)", flexShrink: 0 }}>{flows ? "↑ flows" : "↓ catches"}</span>
+                        <span className="muted" style={{ fontSize: ".82rem" }}>{a.from} {a.type} {a.to}</span>
+                        <span className="muted" style={{ fontSize: ".74rem", fontStyle: "italic" }}>{reading.short}</span>
+                        <span className="muted" style={{ fontSize: ".72rem", marginLeft: "auto", flexShrink: 0 }}>{a.orb.toFixed(1)}°</span>
+                      </div>
+                      {/* Reading → action: minimize the clash / nurture the ease, grounded in these two bodies. */}
+                      <p style={{ fontSize: ".78rem", color: "var(--cream)", lineHeight: 1.55, margin: "5px 0 0" }}>
+                        <span style={{ color: flows ? "var(--teal)" : "var(--gold)", fontWeight: 600 }}>{flows ? "Nurture it: " : "Ease it: "}</span>
+                        {aspectActionLine(a, relationType)}
+                      </p>
                     </div>
                   );
                 })}

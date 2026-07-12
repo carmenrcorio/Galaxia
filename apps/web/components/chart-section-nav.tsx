@@ -6,7 +6,7 @@
  * (see buildPersonPageNavSections) so there are never dead links.
  */
 
-import type { PersonNavSection } from "../lib/person-care";
+import type { PersonNavSection } from "@galaxia/core";
 
 export function ChartSectionNav({
   sections,

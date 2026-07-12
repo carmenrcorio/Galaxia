@@ -12,14 +12,12 @@
  * Reference: design/reference/galaxia.jsx DIM_LABEL
  */
 
-import { compareGenerational, computeSynastry, type GenSignature, type NatalChart } from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { InitialAvatar } from "../../../components/initial-avatar";
-import { Spinner } from "../../../components/spinner";
 import {
+  compareGenerational,
+  computeSynastry,
+  type GenSignature,
+  type NatalChart,
+  CHART_ENGINE_VERSION,
   availableCompareRelationTypes,
   defaultCompareRelationType,
   isRomanticRelation,
@@ -33,10 +31,14 @@ import {
   sortAspectsForFocus,
   whatTheyNeed,
   type RelationType,
-} from "../../../lib/compare-guidance";
+} from "@galaxia/astro";
+import { isMinorForSafety, orderPair } from "@galaxia/core";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { InitialAvatar } from "../../../components/initial-avatar";
+import { Spinner } from "../../../components/spinner";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
-import { CHART_ENGINE_VERSION } from "../../../lib/house-system";
-import { orderPair } from "../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 interface PersonLite {
@@ -78,7 +80,7 @@ interface SavedReading {
   scores?: Record<string, number>;
 }
 
-// whatTheyNeed extracted to lib/compare-guidance.ts (also used by the public Quick Compare).
+// whatTheyNeed extracted to @galaxia/astro compare-guidance (also used by the public Quick Compare).
 
 export default function ComparePage() {
   // useSearchParams requires a Suspense boundary for this route.

@@ -1,6 +1,12 @@
-import { compareGenerational, computeNatalChart, computeSynastry, type GenSignature } from "@galaxia/astro";
+import {
+  compareGenerational,
+  computeNatalChart,
+  computeSynastry,
+  buildBirthInput,
+  type GenSignature,
+  type BirthFormInput,
+} from "@galaxia/astro";
 import { NextResponse } from "next/server";
-import { buildBirthInput, type BirthFormInput } from "../../../lib/birth";
 
 /**
  * Quick Compatibility — public, no login required. Both charts and the

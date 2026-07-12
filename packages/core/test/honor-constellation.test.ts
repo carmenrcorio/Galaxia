@@ -1,4 +1,4 @@
-import { isMinorForSafety } from "@galaxia/core";
+import { isMinorForSafety } from "../src/index";
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -17,7 +17,7 @@ import {
   livingHonorCandidates,
   livingIdsFromHonorRows,
   synastryCannotSubstituteHonor,
-} from "./honor-constellation";
+} from "../src/honor-constellation";
 
 const NOW = new Date("2026-07-12T00:00:00.000Z");
 

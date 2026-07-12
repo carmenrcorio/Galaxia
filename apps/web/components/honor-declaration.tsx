@@ -17,9 +17,10 @@ import {
   honorConnectionDiff,
   livingHonorCandidates,
   livingIdsFromHonorRows,
+  shouldShowRemembranceSpace,
   type HonorPerson,
-} from "../lib/honor-constellation";
-import { REMEMBRANCE_CHROME, shouldShowRemembranceSpace } from "../lib/remembrance";
+} from "@galaxia/core";
+import { REMEMBRANCE_CHROME } from "../lib/remembrance";
 
 interface HonorPersonInput {
   id: string;

@@ -1,15 +1,13 @@
 "use client";
 
-import { isMinorForSafety } from "@galaxia/core";
-import { buildVelaContext, detectCrisisLanguage } from "@galaxia/vela";
+import { isMinorForSafety, orderPair } from "@galaxia/core";
+import { buildVelaContext, detectCrisisLanguage, splitVelaReply } from "@galaxia/vela";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { Spinner } from "../../../components/spinner";
 import { publicEnv } from "../../../lib/env";
-import { orderPair } from "../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
-import { splitVelaReply } from "../../../lib/vela-parse";
 
 type VelaMode = "ask" | "shared";
 type Scope     = "person" | "pair" | "group";

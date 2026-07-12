@@ -9,7 +9,7 @@ import {
   relationshipAspectFraming,
   whatTheyNeed,
   type RelationType,
-} from "./compare-guidance";
+} from "@galaxia/astro";
 
 // Fixed "now" so the age-aware minor check is deterministic (matches the
 // packages/core minor-safety suite).

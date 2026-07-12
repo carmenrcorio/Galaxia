@@ -1,6 +1,9 @@
-import { computeNatalChart } from "@galaxia/astro";
+import {
+  computeNatalChart,
+  buildBirthInput,
+  type BirthFormInput,
+} from "@galaxia/astro";
 import { NextResponse } from "next/server";
-import { buildBirthInput, type BirthFormInput } from "../../../lib/birth";
 
 /**
  * Quick Chart — public, no login required. The engine runs here, server-side,

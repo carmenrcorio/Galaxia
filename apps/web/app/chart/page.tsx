@@ -9,7 +9,15 @@
  * name field is local-only — never sent into the shareable URL.
  */
 
-import type { NatalChart } from "@galaxia/astro";
+import {
+  type NatalChart,
+  type BirthFormInput,
+  BODY_DOMAIN,
+  interpretPlacement,
+  interpretRising,
+  type BodyKey,
+  type SignKey,
+} from "@galaxia/astro";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
@@ -19,9 +27,7 @@ import { QuickChartShell } from "../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../components/share-link-button";
 import { Spinner } from "../../components/spinner";
-import type { BirthFormInput } from "../../lib/birth";
 import { BODY_GLYPH, SIGN_GLYPH, signElement } from "../../lib/design";
-import { BODY_DOMAIN, interpretPlacement, interpretRising, type BodyKey, type SignKey } from "../../lib/interpretations";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../lib/quick-chart";
 import { useViewer } from "../../lib/use-viewer";
 

@@ -20,10 +20,12 @@
  * funnel is untouched: nothing here fires unless a real session is found.
  */
 
-import type { NatalChart } from "@galaxia/astro";
+import {
+  type NatalChart,
+  type BirthFormInput,
+} from "@galaxia/astro";
 import { hasAccess } from "@galaxia/core";
 import { useEffect, useState } from "react";
-import type { BirthFormInput } from "./birth";
 import { createSupabaseBrowserClient } from "./supabase/client";
 
 export interface Viewer {

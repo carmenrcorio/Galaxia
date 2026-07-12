@@ -1,6 +1,6 @@
-import type { AspectType, BodyName, TransitHit } from "@galaxia/astro";
+import type { AspectType, BodyName, TransitHit } from "../src/index";
 import { describe, expect, it } from "vitest";
-import { interpretTransit, transitNotation } from "./transit-interpretations";
+import { interpretTransit, transitNotation } from "../src/transit-interpretations";
 
 const BODIES: BodyName[] = [
   "sun", "moon", "mercury", "venus", "mars",

@@ -1,3 +1,4 @@
+import type { RecordKind } from "@galaxia/core";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -11,8 +12,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * deterministic, so we never derive a "trend" from two snapshots — a re-run
  * difference is attributed to an input change (engineVersion / birthFingerprint).
  */
-
-export type RecordKind = "note" | "tending" | "vela_pin" | "compare_reading" | "cohort_reading" | "remembrance";
 
 export interface RecordEntry {
   id: string;
@@ -40,11 +39,6 @@ interface NoteRow {
   id: string; body: string; created_at: string;
   kind: RecordKind | null; payload: Record<string, unknown> | null; source_thread_id: string | null;
   withdrawn_at?: string | null; withdrawn_reason?: string | null;
-}
-
-/** Order a pair id tuple deterministically (matches the edge function). */
-export function orderPair(a: string, b: string): { pairLow: string; pairHigh: string } {
-  return a < b ? { pairLow: a, pairHigh: b } : { pairLow: b, pairHigh: a };
 }
 
 /**

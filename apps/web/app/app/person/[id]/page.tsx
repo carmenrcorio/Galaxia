@@ -3,13 +3,41 @@
 /**
  * /app/person/[id]
  *
- * Interpretation: lib/interpretations.ts + lib/house-interpretations.ts
+ * Interpretation: @galaxia/astro interpretation libraries
  * Wheel: design/reference/galaxia.jsx Wheel()
  * Glyph maps: design/reference/galaxia.jsx
  */
 
-import { computeSynastry, type NatalChart, type Placement } from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
+import {
+  computeSynastry,
+  type NatalChart,
+  type Placement,
+  CHART_ENGINE_VERSION,
+  houseSystemLabelForChart,
+  todayTransitsForChart,
+  BODY_DOMAIN,
+  ELEMENT_ABSENT,
+  ELEMENT_DOMINANT,
+  GENERATIONAL,
+  interpretAspect,
+  interpretPlacement,
+  interpretRising,
+  type AspectKey,
+  type BodyKey,
+  type SignKey,
+  houseMeaning,
+  interpretHouse,
+  STELLIUM_NOTE,
+  type HouseKey,
+  interpretTransit,
+  transitNotation,
+} from "@galaxia/astro";
+import {
+  buildPersonPageNavSections,
+  hasPassed,
+  isMinorForSafety,
+  shouldShowLiveTransits,
+} from "@galaxia/core";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -22,24 +50,8 @@ import { HonorDeclarationBox, HONOR_LIGHT_ANCHOR_ID } from "../../../../componen
 import { RemembranceSpace } from "../../../../components/remembrance-space";
 import { Spinner } from "../../../../components/spinner";
 import { ASPECT_GLYPH, BODY_GLYPH, SIGN_GLYPH, signElement } from "../../../../lib/design";
-import {
-  BODY_DOMAIN, ELEMENT_ABSENT, ELEMENT_DOMINANT, GENERATIONAL,
-  interpretAspect, interpretPlacement, interpretRising,
-  type AspectKey, type BodyKey, type SignKey
-} from "../../../../lib/interpretations";
-import {
-  houseMeaning, interpretHouse, STELLIUM_NOTE,
-  type HouseKey
-} from "../../../../lib/house-interpretations";
-import { CHART_ENGINE_VERSION, getPreferredHouseSystem, houseSystemLabelForChart } from "../../../../lib/house-system";
-import { hasPassed } from "../../../../lib/galaxy-orbit";
-import {
-  buildPersonPageNavSections,
-  shouldShowLiveTransits,
-} from "../../../../lib/person-care";
+import { getPreferredHouseSystem } from "../../../../lib/house-system";
 import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, type RecordEntry } from "../../../../lib/record";
-import { todayTransitsForChart } from "../../../../lib/transits";
-import { interpretTransit, transitNotation } from "../../../../lib/transit-interpretations";
 import { ThreadMenu } from "../../../../components/thread-menu";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 

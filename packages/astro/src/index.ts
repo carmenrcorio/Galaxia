@@ -588,3 +588,7 @@ export * from "./geocode";
 export * from "./house-system";
 
 export * from "./transits";
+
+export * from "./interpretations";
+export * from "./house-interpretations";
+export * from "./transit-interpretations";

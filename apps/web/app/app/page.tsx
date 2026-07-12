@@ -21,6 +21,8 @@ import {
   type NatalChart,
   type TransitHit,
   todayTransitsForChart,
+  interpretTransit,
+  transitNotation,
 } from "@galaxia/astro";
 import {
   HONOR_LINE_STYLE,
@@ -41,7 +43,6 @@ import { InitialAvatar } from "../../components/initial-avatar";
 import { ThreadMenu } from "../../components/thread-menu";
 import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
-import { interpretTransit, transitNotation } from "../../lib/transit-interpretations";
 
 interface PersonRow {
   id: string;

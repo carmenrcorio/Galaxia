@@ -13,6 +13,9 @@
 import {
   type NatalChart,
   type BirthFormInput,
+  interpretAspect,
+  type AspectKey,
+  type BodyKey,
 } from "@galaxia/astro";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -23,7 +26,6 @@ import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
 import { aspectActionLine, sortAspectsForFocus, whatTheyNeed, type RelationType } from "../../../lib/compare-guidance";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
-import { interpretAspect, type AspectKey, type BodyKey } from "../../../lib/interpretations";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
 import { useViewer } from "../../../lib/use-viewer";
 

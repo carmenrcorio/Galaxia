@@ -29,6 +29,9 @@ import {
   type NatalChart,
   type BirthFormInput,
   CHART_ENGINE_VERSION,
+  interpretAspect,
+  type AspectKey,
+  type BodyKey,
 } from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
@@ -37,7 +40,6 @@ import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
 import { sortAspectsForFocus, whatTheyNeed, type RelationType } from "../lib/compare-guidance";
 import { COMPAT_LABELS, compatWord } from "../lib/design";
 import { getPreferredHouseSystem } from "../lib/house-system";
-import { interpretAspect, type AspectKey, type BodyKey } from "../lib/interpretations";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";
 

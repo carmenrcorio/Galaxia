@@ -30,7 +30,7 @@
  * minor — falling through to the neutral composed line.
  */
 
-import type { TransitHit } from "@galaxia/astro";
+import type { TransitHit } from "./index";
 import type { AspectKey, BodyKey, Reading } from "./interpretations";
 
 export interface TransitInterpretOptions {

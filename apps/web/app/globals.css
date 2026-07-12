@@ -75,6 +75,27 @@ textarea:focus-visible {
 }
 @media (max-width: 640px) { .container { padding: 0 22px; } }
 
+/* Remembrance Phase 2 — phone-width safety for reflections + ancient-light chrome */
+.remembrance-space {
+  min-width: 0;
+  overflow-x: hidden;
+}
+.remembrance-space textarea.field {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 480px) {
+  .remembrance-space {
+    padding: 18px 14px;
+    border-radius: 18px;
+  }
+  .remembrance-space .btn-primary,
+  .remembrance-space .pill-link {
+    max-width: 100%;
+  }
+}
+
 /* app screen column — centered, 860px max, z-index 2 above CosmicBackground */
 .app-content {
   width: min(860px, 94vw);

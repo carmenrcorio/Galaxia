@@ -9,6 +9,7 @@
  */
 
 import { computeSynastry, type NatalChart, type Placement } from "@galaxia/astro";
+import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -16,6 +17,7 @@ import { AskBirthData } from "../../../../components/ask-birth-data";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { InitialAvatar } from "../../../../components/initial-avatar";
+import { RemembranceSpace } from "../../../../components/remembrance-space";
 import { Spinner } from "../../../../components/spinner";
 import { ASPECT_GLYPH, BODY_GLYPH, SIGN_GLYPH, signElement } from "../../../../lib/design";
 import {
@@ -209,6 +211,7 @@ const RECORD_META: Record<string, { label: string; color: string }> = {
   vela_pin:        { label: "Pinned from Vela", color: "rgba(183,154,216,.5)" },
   compare_reading: { label: "Saved comparison", color: "rgba(230,174,108,.5)" },
   cohort_reading:  { label: "Saved cohort reading", color: "rgba(111,177,184,.4)" },
+  remembrance:     { label: "Remembrance",     color: "rgba(111,177,184,.55)" },
   conversation:    { label: "Vela conversation", color: "rgba(183,154,216,.4)" },
 };
 
@@ -527,6 +530,15 @@ export default function PersonProfilePage() {
     </main>
   );
 
+  // FOUND HOLE CLOSED: person page previously used raw `person.is_minor` for
+  // transit minorSafe. Every safety gate must call isMinorForSafety (§9) —
+  // same shape as Vela/Compare. A passed minor is still a minor.
+  const personIsMinor = isMinorForSafety({
+    isMinor: person.is_minor,
+    birthDate: person.birth_date,
+    birthPrecision: person.birth_precision,
+  });
+
   // Progressive capture: person exists but has no chart yet.
   if (!chart) return (
     <main className="app-content">
@@ -545,9 +557,19 @@ export default function PersonProfilePage() {
         </div>
       </div>
 
+      {userId ? (
+        <RemembranceSpace
+          person={person}
+          userId={userId}
+          chart={null}
+          subjectIsMinor={personIsMinor}
+          onSaved={() => loadProfile(userId)}
+        />
+      ) : null}
+
       <section className="glass-card fade-in fade-in-delay-1" style={{ display: "grid", gap: 14 }}>
         <div>
-          <p className="eyebrow" style={{ marginBottom: 6 }}>Add {person.display_name}'s birth data</p>
+          <p className="eyebrow" style={{ marginBottom: 6 }}>Add {person.display_name}&apos;s birth data</p>
           <p className="muted" style={{ fontSize: ".84rem", lineHeight: 1.6 }}>
             A birth year adds their generational sky. A full date adds every planetary sign. An exact time and city
             unlock houses, the Ascendant, and the precise Moon. Add whatever you have — you can always refine it later.
@@ -555,7 +577,7 @@ export default function PersonProfilePage() {
         </div>
         <EditPersonPanel person={person} userId={userId ?? ""} onSaved={() => loadProfile(userId ?? "")} onDeleted={() => router.push("/app")} />
         <div style={{ borderTop: "1px solid rgba(183,154,216,.1)", paddingTop: 14 }}>
-          <p className="eyebrow" style={{ marginBottom: 8 }}>Don't know their details?</p>
+          <p className="eyebrow" style={{ marginBottom: 8 }}>Don&apos;t know their details?</p>
           {userId ? <AskBirthData personId={person.id} personName={person.display_name} userId={userId} /> : null}
         </div>
       </section>
@@ -597,18 +619,29 @@ export default function PersonProfilePage() {
         <EditPersonPanel person={person} userId={userId ?? ""} onSaved={() => loadProfile(userId ?? "")} onDeleted={() => router.push("/app")} />
       </div>
 
+      {/* ── Remembrance Phase 2: private owner-only space ── */}
+      {userId ? (
+        <RemembranceSpace
+          person={person}
+          userId={userId}
+          chart={chart}
+          subjectIsMinor={personIsMinor}
+          onSaved={() => loadProfile(userId)}
+        />
+      ) : null}
+
       {/* ── Active today (transit) — deterministic; links back to Vela ── */}
       {todayTransits.length > 0 ? (
         <section className="glass-card fade-in" style={{ borderColor: "rgba(230,174,108,.28)", background: "rgba(230,174,108,.05)" }}>
           <p className="eyebrow" style={{ marginBottom: 8 }}>Active today for {person.display_name}</p>
           {/* Meaning leads; the notation is demoted to a small "receipt" beneath
              it (ENGINEERING §8/§12 — accurate translation, no fabrication).
-             `minorSafe` keeps a minor's reading age-appropriate (§9/§13). */}
+             `minorSafe` uses isMinorForSafety — never raw is_minor (§9/§13). */}
           <div style={{ display: "grid", gap: 12 }}>
             {todayTransits.map((t, i) => (
               <div key={i} style={{ display: "grid", gap: 3 }}>
                 <p style={{ margin: 0, color: "var(--cream)", fontSize: ".92rem", lineHeight: 1.5 }}>
-                  {interpretTransit(t, { possessive: "their", minorSafe: person.is_minor }).short}
+                  {interpretTransit(t, { possessive: "their", minorSafe: personIsMinor }).short}
                 </p>
                 <p style={{ margin: 0, display: "flex", alignItems: "baseline", gap: 6, fontSize: ".72rem", color: "var(--mist2)" }}>
                   <span style={{ color: "var(--gold-soft)", flexShrink: 0 }}>

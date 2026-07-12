@@ -24,7 +24,8 @@ import { InitialAvatar } from "../../components/initial-avatar";
 import { ThreadMenu } from "../../components/thread-menu";
 import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
-import { describeTransit, todayTransitsForChart } from "../../lib/transits";
+import { todayTransitsForChart } from "../../lib/transits";
+import { interpretTransit, transitNotation } from "../../lib/transit-interpretations";
 
 interface PersonRow {
   id: string;
@@ -32,6 +33,7 @@ interface PersonRow {
   relation: string;
   birth_precision: "exact" | "date" | "year";
   is_self: boolean;
+  is_minor: boolean;
 }
 interface LinkRow { fromId: string; toId: string; scoreA: number; elA: string; elB: string; }
 interface ThreadChip { id: string; mode: "ask" | "shared"; preview: string; }
@@ -41,6 +43,7 @@ interface PersonSky {
   id: string;
   name: string;
   isSelf: boolean;
+  isMinor: boolean;
   precision: PersonRow["birth_precision"];
   hasChart: boolean;
   transits: TransitHit[];
@@ -723,7 +726,7 @@ export default function AppHomePage() {
 
       const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }] = await Promise.all([
         supabase.from("profiles").select("display_name").eq("id", uid).single(),
-        supabase.from("people").select("id, display_name, relation, birth_precision, is_self").eq("owner_id", uid).order("created_at", { ascending: true }),
+        supabase.from("people").select("id, display_name, relation, birth_precision, is_self, is_minor").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6)
       ]);
@@ -772,6 +775,7 @@ export default function AppHomePage() {
           id: p.id,
           name: p.display_name,
           isSelf: p.is_self,
+          isMinor: p.is_minor,
           precision: p.birth_precision,
           hasChart: Boolean(chart),
           transits: todayTransitsForChart(chart, now),
@@ -903,14 +907,22 @@ export default function AppHomePage() {
           <div style={{ display: "grid", gap: 2 }}>
             {[...personSkies.filter(s => s.isSelf), ...personSkies.filter(s => !s.isSelf)].map(sky => {
               const top = sky.transits[0];
+              /* Meaning-first: the plain-language line is the headline, the
+                 notation ("Saturn square Uranus · 0.0°") demoted to small proof
+                 beneath it. Accurate translation only — no fabrication (§8/§12);
+                 `minorSafe` keeps a child's reading age-appropriate (§9/§13). */
               const detail: ReactNode = top
                 ? (
                   <>
-                    <span style={{ color: "var(--cream)" }}>{describeTransit(top, sky.isSelf ? "your" : "their")}</span>
-                    <span style={{ color: "var(--gold-soft)", marginLeft: 8, whiteSpace: "nowrap" }}>{top.orb.toFixed(1)}° orb</span>
-                    {sky.transits.length > 1 ? (
-                      <span style={{ color: "var(--mist2)", marginLeft: 8, fontSize: ".72rem" }}>+{sky.transits.length - 1} more</span>
-                    ) : null}
+                    <span style={{ color: "var(--cream)", fontSize: ".84rem", lineHeight: 1.45 }}>
+                      {interpretTransit(top, { possessive: sky.isSelf ? "your" : "their", minorSafe: sky.isMinor }).short}
+                    </span>
+                    <span style={{ display: "block", marginTop: 3, fontSize: ".7rem", color: "var(--mist2)" }}>
+                      <span style={{ color: "var(--gold-soft)" }}>{transitNotation(top)} · {top.orb.toFixed(1)}°</span>
+                      {sky.transits.length > 1 ? (
+                        <span style={{ marginLeft: 8 }}>+{sky.transits.length - 1} more</span>
+                      ) : null}
+                    </span>
                   </>
                 )
                 : sky.precision === "year"

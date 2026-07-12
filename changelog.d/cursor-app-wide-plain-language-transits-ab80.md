@@ -1,0 +1,15 @@
+## Plain-language transits: meaning leads, notation as proof (branch `cursor/app-wide-plain-language-transits-ab80`) — 2026-07-12
+
+**Trigger**: The app computed real, correct transits but showed them only as raw jargon — "Today in your sky" (home) and "Active today" (person page) rendered e.g. "transiting saturn square their natal uranus · 0.0° orb" with no human meaning. For the target audience (including horoscope-readers new to charts) that is unreadable. The data was right; the legibility was missing.
+
+`[ADDED]` **Transit interpretation library (`apps/web/lib/transit-interpretations.ts`).** The transit equivalent of `lib/interpretations.ts` (placements). `interpretTransit(hit, { possessive, minorSafe })` returns a curated `{ short, long }` plain-language meaning for a real transit, and `transitNotation(hit)` returns the compact receipt ("Saturn square Uranus"). Meaning is composed from three authored tables keyed to the REAL bodies the engine reported — what the transiting body is doing (`TRANSIT_FORCE`), the natal domain it touches (`NATAL_AREA`), and what helps (`TRANSIT_GUIDANCE`) — plus a curated `TRANSIT_PAIR` override (keyed by the directional `transit→natal` pair × aspect tone) for the highest-signal transits. Aspect quality is honored exactly: `flow` (trine/sextile) reads as an opening, `friction` (square/opposition) as a workable tension, `fusion` (conjunction) as an amplified theme.
+
+`[CHANGED]` **Home "Today in your sky" and person "Active today" now lead with meaning, notation demoted to small proof.** Both surfaces render the plain-language headline first (e.g. "A day that tests their need for freedom against real limits — patience goes far.") with the notation + orb ("Saturn square Uranus · 0.0°") beneath it in small, muted type — the receipt, not the headline. The raw notation stays for astrology-literate readers; nothing is removed. Home now also loads `is_minor` so its readings can be age-gated.
+
+**No fabrication (§8/§12):** every line is an honest translation of the computed geometry — it never invents significance or overstates, and the composed fallback guarantees every real hit gets an accurate line (so we never show notation we cannot explain). Year-only / chart-less people are still hedged upstream in `lib/transits.ts` — no transit meaning is fabricated for them.
+
+**Minor safety (§9/§13):** `minorSafe` guarantees an age-appropriate, never romance-framed reading. Base Venus wording is authored in warmth/care terms; the few curated lines that could read romantically are flagged `adultOnly` and skipped for a minor (falling through to the neutral composed line). Covered by `lib/transit-interpretations.test.ts` (10 tests, incl. an exhaustive all-combinations no-romantic-language assertion for minors).
+
+**Scope note:** Compare's aspect list already gained per-aspect actionable plain language in `cursor/compare-actionable-guidance-1b47` (`aspectActionLine`), so it is intentionally untouched here to avoid duplication.
+
+**Voice:** every newly authored string is marked `// FOUNDER-REVIEW` for voice refinement. Untouched per §2: `next.config.mjs`, `.npmrc`, Vercel settings.

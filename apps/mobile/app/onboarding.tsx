@@ -1,32 +1,67 @@
-import { computeNatalChart, type Precision } from "@galaxia/astro";
+import {
+  buildBirthInput,
+  computeNatalChart,
+  formatDateForConfirmation,
+  searchPlaces,
+  type BirthFormInput,
+  type GeoCandidate,
+  type Precision
+} from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
-import { buildBirthInput, type BirthFormInput } from "../src/lib/birth";
+import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
 import { supabase } from "../src/lib/supabase";
 import { useAuth } from "../src/providers/auth-provider";
 import { useEntitlement } from "../src/providers/entitlement-provider";
 
 type Relation = "partner" | "child" | "parent" | "grandparent" | "sibling" | "friend" | "ancestor" | "self";
 
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December"
+];
+
 const precisionTiers: { key: Precision; label: string; unlocks: string }[] = [
-  { key: "exact", label: "Exact", unlocks: "Full chart with houses, ascendant, and precise Moon details." },
-  { key: "date", label: "Date only", unlocks: "Reliable planetary signs and generational layer." },
-  { key: "year", label: "Year / decade", unlocks: "Generational layer and broad archetypal context." }
+  { key: "exact", label: "Exact", unlocks: "Full chart with houses, ascendant, and precise Moon details. Requires birth place + timezone." },
+  { key: "date", label: "Date only", unlocks: "Reliable planetary signs and generational layer. No timezone needed." },
+  { key: "year", label: "Year / decade", unlocks: "Generational layer and broad archetypal context. No timezone needed." }
 ];
 
 const relationOptions: Relation[] = ["partner", "child", "parent", "grandparent", "sibling", "friend", "ancestor"];
 
 const baseInput: BirthFormInput = {
   precision: "date",
-  date: "",
-  time: "",
-  year: "",
+  month: undefined,
+  day: undefined,
+  year: undefined,
+  hour: undefined,
+  minute: undefined,
+  yearOnly: undefined,
+  birthPlace: "",
   lat: "",
-  lng: ""
+  lng: "",
+  tzOffsetMin: undefined,
+  tzId: undefined
 };
+
+function parseOptionalInt(value: string, min: number, max: number): number | undefined {
+  if (!value.trim()) return undefined;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < min || n > max) return undefined;
+  return n;
+}
 
 export default function OnboardingScreen() {
   const { session } = useAuth();
@@ -79,6 +114,8 @@ export default function OnboardingScreen() {
       throw new Error("Please sign in first.");
     }
 
+    // Shared buildBirthInput refuses exact precision without a resolved timezone
+    // (never stamps local wall-clock as UTC). Date-only / year-only do not need tz.
     const built = buildBirthInput(input);
     const natal = computeNatalChart({
       ...built.birth,
@@ -90,7 +127,11 @@ export default function OnboardingScreen() {
     // The age backstop runs at save time too, not only when a gate reads the
     // row later — so a child is protected even if the "This person is a
     // minor" switch was left off (it resets after every add on this form).
-    const effectiveIsMinor = isMinorForSafety({ isMinor, birthDate: built.birthDate, birthPrecision: input.precision });
+    const effectiveIsMinor = isMinorForSafety({
+      isMinor,
+      birthDate: built.birthDate,
+      birthPrecision: input.precision === "none" ? "none" : input.precision
+    });
 
     const { data: person, error: personError } = await supabase
       .from("people")
@@ -102,9 +143,11 @@ export default function OnboardingScreen() {
         is_minor: effectiveIsMinor,
         birth_date: built.birthDate,
         birth_time: built.birthTime,
+        birth_place: built.birthPlace,
         birth_precision: input.precision,
-        birth_lat: built.birth.lat,
-        birth_lng: built.birth.lng
+        birth_lat: built.birth.lat ?? null,
+        birth_lng: built.birth.lng ?? null,
+        tz_offset_min: built.tzOffsetMin ?? null
       })
       .select("id")
       .single();
@@ -199,99 +242,14 @@ export default function OnboardingScreen() {
     }
   };
 
-  const PrecisionSelector = ({
-    value,
-    onChange
-  }: {
-    value: Precision;
-    onChange: (next: Precision) => void;
-  }) => (
-    <View style={{ gap: 8 }}>
-      {precisionTiers.map((tier) => (
-        <Pressable
-          key={tier.key}
-          onPress={() => onChange(tier.key)}
-          style={{
-            backgroundColor: value === tier.key ? tokens.colors.ink3 : tokens.colors.ink2,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: value === tier.key ? tokens.colors.gold : tokens.colors.line,
-            padding: 12,
-            gap: 4
-          }}
-        >
-          <Text style={{ color: value === tier.key ? tokens.colors.gold : tokens.colors.cream, fontWeight: "700" }}>{tier.label}</Text>
-          <Text style={{ color: tokens.colors.mist, lineHeight: 18 }}>{tier.unlocks}</Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-
-  const BirthFields = ({
-    input,
-    onChange
-  }: {
-    input: BirthFormInput;
-    onChange: (next: BirthFormInput) => void;
-  }) => (
-    <View style={{ gap: 10 }}>
-      <PrecisionSelector value={input.precision} onChange={(precision) => onChange({ ...input, precision })} />
-      {input.precision === "year" ? (
-        <TextInput
-          value={input.year}
-          onChangeText={(year) => onChange({ ...input, year })}
-          placeholder="Birth year (e.g. 1995)"
-          keyboardType="numeric"
-          placeholderTextColor={tokens.colors.mist2}
-          style={fieldStyle}
-        />
-      ) : (
-        <>
-          <TextInput
-            value={input.date}
-            onChangeText={(date) => onChange({ ...input, date })}
-            placeholder="Birth date (YYYY-MM-DD)"
-            placeholderTextColor={tokens.colors.mist2}
-            style={fieldStyle}
-          />
-          {input.precision === "exact" ? (
-            <TextInput
-              value={input.time}
-              onChangeText={(time) => onChange({ ...input, time })}
-              placeholder="Birth time (HH:MM 24h)"
-              placeholderTextColor={tokens.colors.mist2}
-              style={fieldStyle}
-            />
-          ) : null}
-        </>
-      )}
-      <TextInput
-        value={input.lat}
-        onChangeText={(lat) => onChange({ ...input, lat })}
-        placeholder="Latitude (optional)"
-        placeholderTextColor={tokens.colors.mist2}
-        style={fieldStyle}
-      />
-      <TextInput
-        value={input.lng}
-        onChangeText={(lng) => onChange({ ...input, lng })}
-        placeholder="Longitude (optional)"
-        placeholderTextColor={tokens.colors.mist2}
-        style={fieldStyle}
-      />
-    </View>
-  );
-
   return (
     <ScrollView
       style={{
-        backgroundColor: tokens.colors.ink2,
+        backgroundColor: tokens.colors.ink2
       }}
       contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 60, paddingBottom: 80, gap: 18 }}
     >
-      <Text style={{ color: tokens.colors.cream, fontSize: 28, fontWeight: "700" }}>
-        You first
-      </Text>
+      <Text style={{ color: tokens.colors.cream, fontSize: 28, fontWeight: "700" }}>You first</Text>
       {selfPerson ? (
         <>
           <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>
@@ -306,7 +264,7 @@ export default function OnboardingScreen() {
       ) : (
         <>
           <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>
-            Add your own birth data at any precision. Year-only is first-class for ancestors and loosely known friends.
+            Add your own birth data at any precision. Year-only and date-only stay first-class — timezone is only required for an exact birth time.
           </Text>
           <Text style={{ color: tokens.colors.goldSoft }}>
             Plan: {tier === "plus" ? "Galaxia+" : "Free"} · {tier === "plus" ? "unlimited people" : `${peopleLimit} people max`}
@@ -353,9 +311,7 @@ export default function OnboardingScreen() {
               paddingVertical: 8
             }}
           >
-            <Text style={{ color: personRelation === relation ? tokens.colors.gold : tokens.colors.cream }}>
-              {relation}
-            </Text>
+            <Text style={{ color: personRelation === relation ? tokens.colors.gold : tokens.colors.cream }}>{relation}</Text>
           </Pressable>
         ))}
       </View>
@@ -399,6 +355,251 @@ export default function OnboardingScreen() {
         )}
       </View>
     </ScrollView>
+  );
+}
+
+function BirthFields({
+  input,
+  onChange
+}: {
+  input: BirthFormInput;
+  onChange: (next: BirthFormInput) => void;
+}) {
+  const [cityQuery, setCityQuery] = useState(input.birthPlace ?? "");
+  const [searching, setSearching] = useState(false);
+  const [candidates, setCandidates] = useState<GeoCandidate[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  const daysInMonth = useMemo(() => {
+    if (!input.month || !input.year) return 31;
+    return new Date(input.year, input.month, 0).getDate();
+  }, [input.month, input.year]);
+
+  const dateForGeo =
+    input.year && input.month && input.day
+      ? new Date(Date.UTC(input.year, input.month - 1, input.day, 12, 0, 0))
+      : undefined;
+
+  const displayDate =
+    input.precision !== "year" && input.month && input.day && input.year
+      ? formatDateForConfirmation(input.month, input.day, input.year)
+      : input.precision === "year" && input.yearOnly
+        ? String(input.yearOnly)
+        : null;
+
+  const resolvedPlace = Boolean(input.birthPlace && input.lat && input.lng);
+  const needsPlaceForExact = input.precision === "exact" && (!resolvedPlace || input.tzOffsetMin == null);
+
+  const handleSearch = async () => {
+    const q = cityQuery.trim();
+    if (!q) return;
+    setSearching(true);
+    setCandidates([]);
+    setSearchError(null);
+    try {
+      const results = await searchPlaces(q, dateForGeo);
+      if (!results.length) {
+        setSearchError(`No places found for "${q}". Try adding a region or country (e.g. "Jacksonville, Arkansas").`);
+      } else {
+        setCandidates(results);
+      }
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : "The place search service couldn't be reached.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const selectCandidate = (c: GeoCandidate) => {
+    onChange({
+      ...input,
+      birthPlace: c.label,
+      lat: String(c.lat),
+      lng: String(c.lng),
+      tzOffsetMin: c.tzOffset ?? undefined,
+      tzId: c.tzId
+    });
+    setCandidates([]);
+    setCityQuery(c.label);
+    setSearchError(null);
+  };
+
+  const clearPlace = () => {
+    onChange({ ...input, birthPlace: "", lat: "", lng: "", tzOffsetMin: undefined, tzId: undefined });
+    setCityQuery("");
+    setCandidates([]);
+    setSearchError(null);
+  };
+
+  return (
+    <View style={{ gap: 10 }}>
+      <View style={{ gap: 8 }}>
+        {precisionTiers.map((tier) => (
+          <Pressable
+            key={tier.key}
+            onPress={() => onChange({ ...baseInput, precision: tier.key })}
+            style={{
+              backgroundColor: input.precision === tier.key ? tokens.colors.ink3 : tokens.colors.ink2,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: input.precision === tier.key ? tokens.colors.gold : tokens.colors.line,
+              padding: 12,
+              gap: 4
+            }}
+          >
+            <Text style={{ color: input.precision === tier.key ? tokens.colors.gold : tokens.colors.cream, fontWeight: "700" }}>
+              {tier.label}
+            </Text>
+            <Text style={{ color: tokens.colors.mist, lineHeight: 18 }}>{tier.unlocks}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {input.precision === "year" ? (
+        <TextInput
+          value={input.yearOnly != null ? String(input.yearOnly) : ""}
+          onChangeText={(year) => onChange({ ...input, yearOnly: parseOptionalInt(year, 1800, new Date().getFullYear() + 1) })}
+          placeholder="Birth year (e.g. 1995)"
+          keyboardType="numeric"
+          placeholderTextColor={tokens.colors.mist2}
+          style={fieldStyle}
+        />
+      ) : (
+        <>
+          <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>Month (1–12) · Day · Year</Text>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <TextInput
+              value={input.month != null ? String(input.month) : ""}
+              onChangeText={(month) => onChange({ ...input, month: parseOptionalInt(month, 1, 12) })}
+              placeholder="MM"
+              keyboardType="numeric"
+              placeholderTextColor={tokens.colors.mist2}
+              style={[fieldStyle, { flex: 1 }]}
+            />
+            <TextInput
+              value={input.day != null ? String(input.day) : ""}
+              onChangeText={(day) => onChange({ ...input, day: parseOptionalInt(day, 1, daysInMonth) })}
+              placeholder="DD"
+              keyboardType="numeric"
+              placeholderTextColor={tokens.colors.mist2}
+              style={[fieldStyle, { flex: 1 }]}
+            />
+            <TextInput
+              value={input.year != null ? String(input.year) : ""}
+              onChangeText={(year) => onChange({ ...input, year: parseOptionalInt(year, 1800, new Date().getFullYear() + 1) })}
+              placeholder="YYYY"
+              keyboardType="numeric"
+              placeholderTextColor={tokens.colors.mist2}
+              style={[fieldStyle, { flex: 1.4 }]}
+            />
+          </View>
+          {input.month ? (
+            <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
+              {MONTHS[input.month - 1]}
+              {displayDate ? ` · ${displayDate}` : ""}
+            </Text>
+          ) : null}
+
+          {input.precision === "exact" ? (
+            <>
+              <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>Birth time (24h) — hour · minute</Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <TextInput
+                  value={input.hour != null ? String(input.hour) : ""}
+                  onChangeText={(hour) => onChange({ ...input, hour: parseOptionalInt(hour, 0, 23) })}
+                  placeholder="HH"
+                  keyboardType="numeric"
+                  placeholderTextColor={tokens.colors.mist2}
+                  style={[fieldStyle, { flex: 1 }]}
+                />
+                <TextInput
+                  value={input.minute != null ? String(input.minute) : ""}
+                  onChangeText={(minute) => onChange({ ...input, minute: parseOptionalInt(minute, 0, 59) })}
+                  placeholder="MM"
+                  keyboardType="numeric"
+                  placeholderTextColor={tokens.colors.mist2}
+                  style={[fieldStyle, { flex: 1 }]}
+                />
+              </View>
+            </>
+          ) : null}
+        </>
+      )}
+
+      <Text style={{ color: tokens.colors.cream, fontWeight: "600" }}>
+        Birth place {input.precision === "exact" ? "(required for exact time)" : "(optional)"}
+      </Text>
+      <TextInput
+        value={cityQuery}
+        onChangeText={setCityQuery}
+        placeholder='City (e.g. "Jacksonville, Arkansas")'
+        placeholderTextColor={tokens.colors.mist2}
+        style={fieldStyle}
+      />
+      <Pressable
+        onPress={handleSearch}
+        disabled={searching || !cityQuery.trim()}
+        style={{
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: tokens.colors.line,
+          paddingVertical: 10,
+          paddingHorizontal: 12,
+          opacity: searching || !cityQuery.trim() ? 0.5 : 1
+        }}
+      >
+        {searching ? (
+          <ActivityIndicator color={tokens.colors.gold} />
+        ) : (
+          <Text style={{ color: tokens.colors.cream, fontWeight: "700", textAlign: "center" }}>Search places</Text>
+        )}
+      </Pressable>
+      {searchError ? <Text style={{ color: tokens.colors.rose, fontSize: 12 }}>{searchError}</Text> : null}
+      {candidates.map((c) => (
+        <Pressable
+          key={`${c.label}-${c.lat}-${c.lng}`}
+          onPress={() => selectCandidate(c)}
+          style={{
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: tokens.colors.line,
+            padding: 10,
+            backgroundColor: tokens.colors.ink3
+          }}
+        >
+          <Text style={{ color: tokens.colors.cream }}>{c.label}</Text>
+          <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
+            {c.tzId}
+            {c.tzOffset != null ? ` · UTC${c.tzOffset >= 0 ? "+" : ""}${(c.tzOffset / 60).toFixed(0)}h` : " · timezone unresolved"}
+          </Text>
+        </Pressable>
+      ))}
+      {resolvedPlace ? (
+        <View style={{ gap: 4 }}>
+          <Text style={{ color: tokens.colors.goldSoft, fontSize: 12 }}>
+            {input.birthPlace}
+            {input.tzId
+              ? input.tzOffsetMin != null
+                ? ` · ${input.tzId} (UTC${input.tzOffsetMin >= 0 ? "+" : ""}${(input.tzOffsetMin / 60).toFixed(0)}h)`
+                : ` · ${input.tzId} (timezone offset could not be resolved)`
+              : ""}
+          </Text>
+          <Pressable onPress={clearPlace}>
+            <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>Clear place</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      {needsPlaceForExact ? (
+        <Text style={{ color: tokens.colors.rose, fontSize: 12, lineHeight: 18 }}>
+          Exact birth time needs a birth place with a resolved timezone. Without it, local time cannot be converted to UTC and the chart would be wrong.
+        </Text>
+      ) : null}
+      {input.precision !== "exact" ? (
+        <Text style={{ color: tokens.colors.mist2, fontSize: 12, lineHeight: 18 }}>
+          Date-only and year-only charts do not need a timezone — they stay honestly hedged without Ascendant or houses.
+        </Text>
+      ) : null}
+    </View>
   );
 }
 

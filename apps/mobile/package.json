@@ -6,7 +6,7 @@
     "dev": "expo start",
     "build": "expo export",
     "lint": "echo 'mobile lint pending'",
-    "test": "echo 'mobile tests pending'",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.9"
   }
 }

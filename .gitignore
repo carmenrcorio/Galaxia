@@ -6,5 +6,9 @@ coverage
 .expo
 .next
 .env
-.env.local
+.env.*
+!.env.example
 *.tsbuildinfo
+secrets.json
+.secrets
+credentials.json

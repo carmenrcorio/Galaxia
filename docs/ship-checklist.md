@@ -30,12 +30,15 @@
 ## Supabase / Edge Functions
 
 1. Deploy migrations.
-2. Set secrets:
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `LLM_PROVIDER_KEY`
-   - `OPENROUTER_API_KEY`
-3. Deploy `vela-chat` edge function.
-4. Validate RLS and shared/minor guardrail behavior in staging.
+2. Edge functions auto-inject `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and
+   `SUPABASE_SERVICE_ROLE_KEY` — do **not** manually set secrets with a
+   `SUPABASE_` prefix (they will be rejected / ignored). Read them with
+   `Deno.env.get` inside the function.
+3. Set Vela secrets on the `vela-chat` function (Anthropic only):
+   - `ANTHROPIC_API_KEY`
+   - `ANTHROPIC_MODEL` (optional; defaults to `claude-sonnet-5`)
+4. Deploy `vela-chat` edge function.
+5. Validate RLS and shared/minor guardrail behavior in staging.
 
 ## Store listing assets
 
@@ -45,3 +48,7 @@
 - Terms URL
 - Support URL
 - Age rating questionnaire responses
+
+## Follow-ups (not this checklist)
+
+- Env module public/private split (dedicated pass later).

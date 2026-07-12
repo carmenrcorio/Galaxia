@@ -34,12 +34,15 @@ slotted between friends and the outermost ancestor ("ancient light") tier.
 `[FIXED]` **Spiral now FILLS the canvas (no more centre huddle).** Replaced the
 scalar `ringRadius` (capped at the short side) with an ELLIPTICAL fill: a
 normalised ring radius in [0,1] maps onto separate x/y radii sized to the actual
-canvas (`W/2 − 46`, `H/2 − 54`, the extra bottom room keeping name labels
+canvas (`W/2 − 34`, `H/2 − 50`, the extra bottom room keeping name labels
 inside), so a wide desktop canvas fills horizontally and a tall 375px canvas
 fills vertically. Only the rings actually present are collapsed onto the range,
-with the innermost kept clear of the self core (`RN_MIN = 0.34`) and the
-outermost always reaching the edge margin — so a partner + 4 kids spreads to the
-frame and 14+ people stay inside it, at every size.
+with the innermost kept clear of the self core (`RN_MIN = 0.34`) and an
+outward-biasing exponent (`^0.8`) pushing the arms toward the frame edges while
+preserving the closeness order — so a partner + 4 kids spreads to the frame and
+14+ people stay inside it, at every size. Measured lit-pixel span (Playwright):
+desktop ~90% (few) / ~72% (14) width, 375px mobile ~83% (few) / ~75% (14) width,
+both ~74–83% height — no more centre-third huddle.
 
 `[ADDED]` **Spiral-arm sweep + outward entrance cascade.** Each ring keeps its
 golden-angle rotation and now also gets a continuous radius-scaled twist

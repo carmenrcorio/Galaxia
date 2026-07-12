@@ -365,8 +365,11 @@ export default function AppHomePage() {
     const RN_MIN = 0.34;
     function ringNorm(ord: number): number {
       const n = occupiedRings.length;
-      if (n <= 1) return 0.62; /* one ring: a comfortable single band */
-      return RN_MIN + (1 - RN_MIN) * (ord / (n - 1));
+      if (n <= 1) return 0.66; /* one ring: a comfortable single band */
+      /* exponent < 1 biases rings OUTWARD so the arms reach the frame edges
+         (mid rings sit well out, not bunched near the core) while the order is
+         preserved and the innermost stays clear of the self star. */
+      return RN_MIN + (1 - RN_MIN) * Math.pow(ord / (n - 1), 0.8);
     }
 
     /* ELLIPTICAL fill: the normalised radius maps onto SEPARATE x/y radii sized
@@ -378,8 +381,8 @@ export default function AppHomePage() {
        incl. 375px. */
     function ringGeom() {
       const cxp = W() / 2, cyp = H() / 2;
-      const radX = Math.max(60, W() / 2 - 46);
-      const radY = Math.max(60, H() / 2 - 54); /* extra bottom room for labels */
+      const radX = Math.max(60, W() / 2 - 34);
+      const radY = Math.max(60, H() / 2 - 50); /* extra bottom room for labels */
       return { cxp, cyp, radX, radY };
     }
 

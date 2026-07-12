@@ -86,7 +86,9 @@ export function FaqSection() {
           }
         }
       },
-      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+      // Matches reveal-observer.tsx: fire well before the row enters the
+      // viewport so the fast fade is done by the time it's readable.
+      { threshold: 0, rootMargin: "0px 0px 25% 0px" }
     );
     itemRefs.current.forEach((el) => el && io.observe(el));
     return () => io.disconnect();

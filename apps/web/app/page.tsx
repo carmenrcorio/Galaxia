@@ -25,7 +25,7 @@ export default function HomePage() {
       <CosmicBackground />
       <RevealObserver />
       <MarketingNav />
-      <main style={{ position: "relative", zIndex: 2 }}>
+      <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <Hero />
         <WhySection />
         <FeaturesSection />

@@ -27,7 +27,11 @@ export function RevealObserver() {
           }
         }
       },
-      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+      // Fire well before the element scrolls into view (positive bottom margin
+      // expands the root ~a quarter-viewport downward) so the short fade has
+      // already finished by the time content reaches the reading zone — it's
+      // never caught mid-fade at a hard-to-read opacity during a normal scroll.
+      { threshold: 0, rootMargin: "0px 0px 25% 0px" }
     );
     document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     return () => io.disconnect();

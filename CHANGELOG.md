@@ -6,6 +6,27 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Marketing landing polish pass (branch `cursor/marketing-polish-pass-cf80`) — 2026-07-11
+
+**Trigger**: a design-review polish pass on the rebuilt JSX marketing page (`apps/web/app/page.tsx` + `components/marketing/*`). Styling/refinement only — no copy meaning, pricing, Vela example, or FAQ content changed; existing design tokens reused; **no new font added** (the site's two families, Fraunces + Inter, are unchanged). Untouched per §2: `next.config.mjs`, `.npmrc`, Vercel settings.
+
+**Phase 0 — state confirmed before changing anything.**
+- `FIXED` **The "heavy/blocky" hero was not a Fraunces *weight* problem — the headings weren't Fraunces at all.** The JSX rebuild dropped the reference's global `h1,h2,h3{font-family:var(--serif);font-weight:500;letter-spacing:-.018em}` rule (`design/reference/galaxia-landing-v2.html:77`), so every marketing heading silently fell back to the body's **Inter**. Verified in a live browser: `getComputedStyle('.hero-h1').fontFamily` returned `Inter, system-ui, sans-serif` (and `.edge-h2` the same), while only `.hero-kicker` — which sets `font-family:var(--serif)` inline — was `Fraunces, Georgia, serif`. Confirmed the font finding otherwise: a single Fraunces family (`layout.tsx` loads it once with `style:["normal","italic"]`), the graceful italic *is* that same family's italic cut, and `--serif`/`--sans` resolve to the real next/font-loaded `'Fraunces'`/`'Inter'`.
+- The **footer waitlist CTA** flagged in the brief was **already removed** on `main` (`close-section.tsx` is a single "Start 14 days free" CTA; no email capture anywhere in `components/marketing/*` — grep-confirmed). No change needed; noted so it isn't re-litigated.
+
+**Phase 1 — fixes.**
+1. `CHANGED` **Scroll fade-ins are fast + snappy and trigger early.** `.reveal` dropped from a `.9s` transition + `26px` rise to `.35s` + `10px`, and both IntersectionObservers (`reveal-observer.tsx`, `faq-section.tsx`) now use `threshold:0, rootMargin:"0px 0px 25% 0px"` — firing ~a quarter-viewport *before* the element scrolls in, so the fade is finished by the time content reaches the reading zone instead of sitting at a hard-to-read low opacity mid-scroll (which read like a perf bug). `prefers-reduced-motion` still opts out entirely (unchanged).
+2. `FIXED` **Hero typography.** Restored the reference's `h1,h2,h3 → var(--serif)` rule, scoped to `.marketing` (a class added to `<main>`) so app-screen heading classes are untouched. Hero H1 is now Fraunces at **weight 400** (was an Inter 500 fallback), sized `clamp(2.2rem,5.6vw,3.6rem)` with `line-height:1.1` — graceful, not blocky — and leans into the italic cut: "the people you love" is now `<em>` (Fraunces italic). No font swap; Fraunces was already loaded.
+3. (`#3` already satisfied — see Phase 0.)
+4. `CHANGED` **Container cards → floating glass.** Scoped `.marketing .glass-card` to an ultra-thin white hairline (`rgba(255,255,255,.08)`), lighter fill, and a softer float shadow (keeping the backdrop blur) so the mock graphics float on the starfield instead of reading as stamped boxes; `.how-panel`/`.step`/`.pl-row` hairlines matched to the same treatment for consistent sibling cards. Scoped to `.marketing` so the app + print-PDF `.glass-card` recipe is unchanged.
+5. `CHANGED` **Broke the centre-column blob.** "The Edge" is now a full-width two-column band (copy + generational callout on the left, the cohort card on the right) instead of a narrow centred stripe with dead space either side — deliberate width contrast against the tightly-grouped Add/Understand/Care module, which stays as-is. Section vertical rhythm opened up (`section` padding `clamp(76px,12vh,140px)`; `.steps`/`.how-head` gaps bumped). Collapses to a single stacked column ≤860px.
+
+**Mobile**: no horizontal overflow at 320/375/390 (`scrollWidth>clientWidth` false at all three), the two-column Edge stacks cleanly, and the mobile nav drawer still opens with all links.
+
+**Verified**: `@galaxia/web` `tsc --noEmit` and `next build` pass. Browser QA (live `localhost:3000`): computed `.hero-h1`/`.edge-h2` font-family now `Fraunces, Georgia, serif` with hero weight `400`; a recorded moderate-pace scroll-through confirms body text is fully readable as it enters view (no lingering dim text); floating-glass cards and the widened Edge verified on desktop and at 320/375/390.
+
+---
+
 ## Constellation entrance ignition + living light (branch `feat/galaxy-entrance-and-light`) — 2026-07-11
 
 **Trigger**: `/app` (Galaxia Mea) is the product's signature view and the login moment — correct but visually quiet. Goal: make the galaxy *arrive* on login (a restrained ignition sequence) and make the stars feel alive with light. Pure visual polish of the EXISTING `<canvas>` renderer in `apps/web/app/app/page.tsx` — **no** new rendering library (no PixiJS/Three.js), and **nothing that changes what data means** (§12/§13): relationship→form, element→colour, precision→brightness stay sacred. Only *how* they look and *how* they enter changed.

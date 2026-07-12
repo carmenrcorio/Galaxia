@@ -16,14 +16,15 @@
  * - Duplicate bottom nav row: DELETED per spec
  */
 
-import { computeSynastry, computeTransits, type NatalChart } from "@galaxia/astro";
+import { computeSynastry, type NatalChart, type TransitHit } from "@galaxia/astro";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { ThreadMenu } from "../../components/thread-menu";
 import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
+import { describeTransit, todayTransitsForChart } from "../../lib/transits";
 
 interface PersonRow {
   id: string;
@@ -34,6 +35,16 @@ interface PersonRow {
 }
 interface LinkRow { fromId: string; toId: string; scoreA: number; elA: string; elB: string; }
 interface ThreadChip { id: string; mode: "ask" | "shared"; preview: string; }
+/* One person's real sky today — computed from THEIR OWN natal chart.
+   `transits` is empty for year-only / chart-less people (see `hedge`). */
+interface PersonSky {
+  id: string;
+  name: string;
+  isSelf: boolean;
+  precision: PersonRow["birth_precision"];
+  hasChart: boolean;
+  transits: TransitHit[];
+}
 
 /* element colours from prototype ELEM / landing EL_SOLID */
 const EL_COLOR: Record<string, string> = {
@@ -98,12 +109,18 @@ export default function AppHomePage() {
   const [welcomeName, setWelcomeName] = useState("stargazer");
   const [people, setPeople]           = useState<PersonRow[]>([]);
   const [links, setLinks]             = useState<LinkRow[]>([]);
-  const [activeTransitIds, setActiveTransitIds] = useState<string[]>([]);
-  const [todayTransit, setTodayTransit]         = useState("No notable transits today.");
+  const [personSkies, setPersonSkies]           = useState<PersonSky[]>([]);
   const [threadChips, setThreadChips]           = useState<ThreadChip[]>([]);
   const [homeStatus, setHomeStatus]             = useState<string | null>(null);
   const [loading, setLoading]                   = useState(true);
   const [hoverPerson, setHoverPerson]           = useState<PersonRow | null>(null);
+
+  /* Nodes shimmer when that person has a real tight transit today — derived
+     from each person's own computed sky, never a shared flag. */
+  const activeTransitIds = useMemo(
+    () => personSkies.filter(s => s.transits.length > 0).map(s => s.id),
+    [personSkies]
+  );
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -282,9 +299,13 @@ export default function AppHomePage() {
       if (ign.alpha <= 0.001) return; /* not yet kindled */
       const scale = reduced ? 1 : Math.max(0.001, ign.scale);
       const R     = R0 * scale;
-      /* gentle organic twinkle (two slow summed sines — NOT the old fast blink) */
-      const tw    = reduced ? 1 : (1 + 0.06 * Math.sin(t * 0.0009 * phases[i].sp + phases[i].ph)
-                                     + 0.04 * Math.sin(t * 0.0005 + phases[i].ph * 1.7));
+      /* gentle organic twinkle (two slow summed sines — NOT the old fast blink).
+         Calmed further so it doesn't compound with the background starfield
+         into a busy shimmer: amplitude ~0.065 (was 0.10) and periods stretched
+         to ~14–30s (was ~9–20s). Per-star phase (phases[i].ph) staggers them so
+         they don't pulse in unison. */
+      const tw    = reduced ? 1 : (1 + 0.04 * Math.sin(t * 0.0006 * phases[i].sp + phases[i].ph)
+                                     + 0.025 * Math.sin(t * 0.00035 + phases[i].ph * 1.7));
 
       cx.save();
       cx.globalAlpha = reduced ? globalFade : easeOutCubic(ign.raw);
@@ -535,20 +556,25 @@ export default function AppHomePage() {
       }
       setLinks(calcLinks.sort((a, b) => b.scoreA - a.scoreA).slice(0, 14));
 
-      /* transits */
-      const transitActive: string[] = [];
-      let transitSummary = "No notable transits today.";
+      /* Today's sky — computed PER PERSON against their OWN natal chart.
+         `todayTransitsForChart` uses real ephemeris vs each person's stored
+         longitudes, so every row is that person's own real transit (or, for
+         year-only / chart-less people, an honest hedge rather than a fabricated
+         transit — ENGINEERING §12). This is the same helper the person page
+         ("Active today") uses, so the two surfaces can never disagree. */
       const now = new Date().toISOString();
-      for (const p of castPeople) {
-        if (p.birth_precision === "year") continue;
+      const skies: PersonSky[] = castPeople.map(p => {
         const chart = chartById.get(p.id);
-        if (!chart) continue;
-        const hits = computeTransits(chart, now).filter(h => h.orb <= 1.5);
-        if (hits.length) transitActive.push(p.id);
-        if (p.is_self && hits[0]) transitSummary = `${hits[0].summary} (${hits[0].orb.toFixed(1)}° orb)`;
-      }
-      setActiveTransitIds(transitActive);
-      setTodayTransit(transitSummary);
+        return {
+          id: p.id,
+          name: p.display_name,
+          isSelf: p.is_self,
+          precision: p.birth_precision,
+          hasChart: Boolean(chart),
+          transits: todayTransitsForChart(chart, now),
+        };
+      });
+      setPersonSkies(skies);
 
       /* thread chips */
       const threads = (threadRows ?? []) as Array<{ id: string; mode: "ask" | "shared" }>;
@@ -648,27 +674,56 @@ export default function AppHomePage() {
         ) : null}
       </section>
 
-      {/* ── Today in your sky ── */}
-      {!loading ? (
+      {/* ── Today in your sky ──
+         One row per person, each computed against THAT person's own natal chart.
+         Distinct charts produce distinct transits/orbs; a shared transit only
+         appears when it is genuinely true for both. Year-only / chart-less
+         people are hedged honestly rather than given a fabricated transit. */}
+      {!loading && personSkies.length > 0 ? (
         <section className="glass-card fade-in fade-in-delay-1">
           <p className="eyebrow">Today in your sky</p>
-          <p className="muted">{todayTransit}</p>
-          {activeTransitIds.length > 0 ? (
-            <div style={{ marginTop: 8 }}>
-              <p className="muted" style={{ fontSize: ".78rem", marginBottom: 6 }}>Tight transit touching — open a chart to see it applied:</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {activeTransitIds.map(id => {
-                  const name = people.find(p => p.id === id)?.display_name;
-                  if (!name) return null;
-                  return (
-                    <Link key={id} href={`/app/person/${id}?transit=1`} className="pill-link" style={{ fontSize: ".8rem" }}>
-                      {name}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
+          <p className="muted" style={{ fontSize: ".78rem", marginBottom: 10 }}>
+            {activeTransitIds.length > 0
+              ? "Real transits, computed against each person's own chart — tap a row to see it applied."
+              : "No tight transits touching anyone's chart right now."}
+          </p>
+          <div style={{ display: "grid", gap: 2 }}>
+            {[...personSkies.filter(s => s.isSelf), ...personSkies.filter(s => !s.isSelf)].map(sky => {
+              const top = sky.transits[0];
+              const detail: ReactNode = top
+                ? (
+                  <>
+                    <span style={{ color: "var(--cream)" }}>{describeTransit(top, sky.isSelf ? "your" : "their")}</span>
+                    <span style={{ color: "var(--gold-soft)", marginLeft: 8, whiteSpace: "nowrap" }}>{top.orb.toFixed(1)}° orb</span>
+                    {sky.transits.length > 1 ? (
+                      <span style={{ color: "var(--mist2)", marginLeft: 8, fontSize: ".72rem" }}>+{sky.transits.length - 1} more</span>
+                    ) : null}
+                  </>
+                )
+                : sky.precision === "year"
+                  ? <span style={{ color: "var(--mist2)", fontStyle: "italic" }}>Birth year only — a birth date is needed for daily transits.</span>
+                  : !sky.hasChart
+                    ? <span style={{ color: "var(--mist2)", fontStyle: "italic" }}>No birth data yet — add it to see their sky.</span>
+                    : <span style={{ color: "var(--mist2)" }}>No tight transits today.</span>;
+              return (
+                <Link
+                  key={sky.id}
+                  href={`/app/person/${sky.id}${top ? "?transit=1" : ""}`}
+                  style={{
+                    display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap",
+                    padding: "9px 10px", borderRadius: 10, textDecoration: "none",
+                    borderLeft: top ? "2px solid rgba(230,174,108,.4)" : "2px solid rgba(255,255,255,.06)",
+                    background: top ? "rgba(230,174,108,.05)" : "transparent",
+                  }}
+                >
+                  <span style={{ color: "var(--cream)", fontWeight: 600, fontSize: ".84rem", minWidth: 96 }}>
+                    {sky.isSelf ? "You" : sky.name}
+                  </span>
+                  <span style={{ fontSize: ".8rem", flex: 1, minWidth: 0 }}>{detail}</span>
+                </Link>
+              );
+            })}
+          </div>
         </section>
       ) : null}
 

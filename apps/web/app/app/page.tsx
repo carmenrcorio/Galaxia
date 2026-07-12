@@ -17,11 +17,18 @@
  */
 
 import { computeSynastry, type NatalChart, type TransitHit } from "@galaxia/astro";
+import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { ThreadMenu } from "../../components/thread-menu";
+import {
+  HONOR_LINE_STYLE,
+  HONOR_RELATION_TYPE,
+  honorEdgesFromDeclaredRows,
+  type HonorEdge,
+} from "../../lib/honor-constellation";
 import {
   elementFromRelation,
   formFromRelation,
@@ -37,7 +44,8 @@ interface PersonRow {
   id: string;
   display_name: string;
   relation: string;
-  birth_precision: "exact" | "date" | "year";
+  birth_precision: "exact" | "date" | "year" | "none";
+  birth_date?: string | null;
   is_self: boolean;
   is_minor: boolean;
   /** Remembrance: when marked as passed. NULL = present. Chart data untouched. */
@@ -125,6 +133,9 @@ export default function AppHomePage() {
   const [welcomeName, setWelcomeName] = useState("stargazer");
   const [people, setPeople]           = useState<PersonRow[]>([]);
   const [links, setLinks]             = useState<LinkRow[]>([]);
+  /* Honor-constellation edges — declared relationships rows only (Phase 3).
+     Never derived from synastry scores or people.relation. Empty = no layer. */
+  const [honorEdges, setHonorEdges]   = useState<HonorEdge[]>([]);
   /* personId → Pluto sign: the generational cohort key. Derived from each
      person's computed chart (outer-planet signature); people without a chart
      get no cohort and no nebula — we don't fabricate a generation. */
@@ -560,6 +571,81 @@ export default function AppHomePage() {
       }
     }
 
+    /* ── Honor-constellation stroke (Phase 3) — VISUALLY DISTINCT from synastry
+       drawLink: dashed water→ancient stroke + soft wash, slower ethereal pulse.
+       Synastry uses solid element-coloured gradients + warm cream pulse.
+       Honor never uses synastry scores; source is declared relationships only. */
+    function drawHonorLink(
+      edge: HonorEdge,
+      posA: { x: number; y: number },
+      posB: { x: number; y: number },
+      progress: number,
+      edgeIndex: number
+    ) {
+      /* Defensive: honor layer only draws remembrance continuity edges. */
+      if (edge.relationType !== HONOR_RELATION_TYPE) return;
+      const { cpx, cpy } = bezierCP(posA.x, posA.y, posB.x, posB.y);
+      const water = HONOR_LINE_STYLE.water;
+      const ancient = HONOR_LINE_STYLE.ancient;
+
+      /* soft wash under the dash — ancient-light halo, not an element gradient */
+      const wash = cx.createLinearGradient(posA.x, posA.y, posB.x, posB.y);
+      wash.addColorStop(0,   hexA(water, 0));
+      wash.addColorStop(0.5, hexA(water, HONOR_LINE_STYLE.washAlpha * progress));
+      wash.addColorStop(1,   hexA(ancient, 0));
+      cx.save();
+      cx.strokeStyle = wash;
+      cx.lineWidth = HONOR_LINE_STYLE.lineWidth + 2.2;
+      cx.setLineDash([]);
+      cx.beginPath();
+      cx.moveTo(posA.x, posA.y);
+      cx.quadraticCurveTo(cpx, cpy, posB.x, posB.y);
+      cx.stroke();
+
+      /* dashed continuity stroke — the tell vs solid synastry edges */
+      const stroke = cx.createLinearGradient(posA.x, posA.y, posB.x, posB.y);
+      stroke.addColorStop(0,   hexA(water, HONOR_LINE_STYLE.strokeAlpha * 0.4 * progress));
+      stroke.addColorStop(0.5, hexA(water, HONOR_LINE_STYLE.strokeAlpha * progress));
+      stroke.addColorStop(1,   hexA(ancient, HONOR_LINE_STYLE.strokeAlpha * 0.85 * progress));
+      cx.strokeStyle = stroke;
+      cx.lineWidth = HONOR_LINE_STYLE.lineWidth;
+      cx.setLineDash(progress >= 0.999 ? [...HONOR_LINE_STYLE.dash] : []);
+      cx.lineDashOffset = reduced ? 0 : -t * 0.012;
+      cx.beginPath();
+      if (progress >= 0.999) {
+        cx.moveTo(posA.x, posA.y);
+        cx.quadraticCurveTo(cpx, cpy, posB.x, posB.y);
+      } else {
+        const steps = 22;
+        cx.moveTo(posA.x, posA.y);
+        for (let k = 1; k <= steps; k++) {
+          const tt = (k / steps) * progress;
+          const px = (1 - tt) * (1 - tt) * posA.x + 2 * (1 - tt) * tt * cpx + tt * tt * posB.x;
+          const py = (1 - tt) * (1 - tt) * posA.y + 2 * (1 - tt) * tt * cpy + tt * tt * posB.y;
+          cx.lineTo(px, py);
+        }
+      }
+      cx.stroke();
+      cx.setLineDash([]);
+
+      /* slower water-tinted pulse — never the cream synastry bead */
+      if (!reduced && progress >= 0.999) {
+        const tt = ((t * 0.00011 + edgeIndex * 0.37) % 1);
+        const px = (1 - tt) * (1 - tt) * posA.x + 2 * (1 - tt) * tt * cpx + tt * tt * posB.x;
+        const py = (1 - tt) * (1 - tt) * posA.y + 2 * (1 - tt) * tt * cpy + tt * tt * posB.y;
+        const pr = HONOR_LINE_STYLE.pulseRadius * (0.7 + 0.3 * Math.sin(tt * Math.PI));
+        const pg = cx.createRadialGradient(px, py, 0, px, py, pr * 3);
+        pg.addColorStop(0, hexA(water, 0.55 * Math.sin(tt * Math.PI)));
+        pg.addColorStop(0.5, hexA(ancient, 0.22 * Math.sin(tt * Math.PI)));
+        pg.addColorStop(1, hexA(water, 0));
+        cx.beginPath();
+        cx.arc(px, py, pr * 3, 0, Math.PI * 2);
+        cx.fillStyle = pg;
+        cx.fill();
+      }
+      cx.restore();
+    }
+
     /* ── volumetric generational nebulae ────────────────────────────────
        Each cohort (people sharing a Pluto sign) gets a soft gas cloud sitting
        BEHIND its stars, so those stars glow through it — the visual payoff of
@@ -665,7 +751,7 @@ export default function AppHomePage() {
         cx.restore();
       }
 
-      /* links first — each grows in on its own schedule */
+      /* synastry links first — chart-chemistry (solid element gradients) */
       for (const link of links) {
         const posA = byId.get(link.fromId);
         const posB = byId.get(link.toId);
@@ -675,6 +761,22 @@ export default function AppHomePage() {
         if (progress <= 0.001) continue;
         drawLink(link, posA, posB, progress);
       }
+
+      /* honor-constellation layer — declared remembrance edges only.
+         Dashed water/ancient strokes; never synastry-substituted. Empty = skip. */
+      honorEdges.forEach((edge, edgeIndex) => {
+        const posA = byId.get(edge.fromId);
+        const posB = byId.get(edge.toId);
+        if (!posA || !posB) return;
+        const a = schedule.get(edge.fromId), b = schedule.get(edge.toId);
+        const start = Math.max(
+          (a?.delay ?? 0) + (a?.dur ?? 0) * 0.55,
+          (b?.delay ?? 0) + (b?.dur ?? 0) * 0.55
+        );
+        const progress = reduced ? globalFade : clamp01((elapsed - start) / LINK_DUR);
+        if (progress <= 0.001) return;
+        drawHonorLink(edge, posA, posB, progress, edgeIndex);
+      });
 
       /* nodes */
       for (let i = 0; i < people.length; i++) {
@@ -714,7 +816,7 @@ export default function AppHomePage() {
       canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("click", onClick);
     };
-  }, [loading, people, links, activeTransitIds, hoverPerson, router, cohortByPerson]);
+  }, [loading, people, links, honorEdges, activeTransitIds, hoverPerson, router, cohortByPerson]);
 
   /* ─── data loading ────────────────────────────────────────────── */
   async function loadHome(uid: string, email: string) {
@@ -723,11 +825,16 @@ export default function AppHomePage() {
       const { data: idRows } = await supabase.from("people").select("id").eq("owner_id", uid);
       const personIds = (idRows ?? []).map(r => r.id as string);
 
-      const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }] = await Promise.all([
+      /* FOUND HOLE CLOSED (same class as Phase 2 person-page hole):
+         loadHome previously selected is_minor but NOT birth_date / birth_precision,
+         so isMinorForSafety could not run. Galaxy safety now loads those fields
+         and gates via isMinorForSafety — never raw is_minor alone. */
+      const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }, { data: relRows }] = await Promise.all([
         supabase.from("profiles").select("display_name").eq("id", uid).single(),
-        supabase.from("people").select("id, display_name, relation, birth_precision, is_self, is_minor, passed_at").eq("owner_id", uid).order("created_at", { ascending: true }),
+        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
-        supabase.from("threads").select("id, mode").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6)
+        supabase.from("threads").select("id, mode").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6),
+        supabase.from("relationships").select("person_a, person_b, relation_type").eq("owner_id", uid).eq("relation_type", HONOR_RELATION_TYPE),
       ]);
 
       setWelcomeName(profile?.display_name ?? email.split("@")[0] ?? "stargazer");
@@ -761,6 +868,15 @@ export default function AppHomePage() {
       }
       setLinks(calcLinks.sort((a, b) => b.scoreA - a.scoreA).slice(0, 14));
 
+      /* Honor layer — declared relationships rows ONLY. Empty declaration =
+         empty constellation (no default, no synastry substitution). */
+      setHonorEdges(
+        honorEdgesFromDeclaredRows(
+          (relRows ?? []) as Array<{ person_a: string; person_b: string; relation_type: string }>,
+          castPeople
+        )
+      );
+
       /* Today's sky — computed PER PERSON against their OWN natal chart.
          `todayTransitsForChart` uses real ephemeris vs each person's stored
          longitudes, so every row is that person's own real transit (or, for
@@ -774,7 +890,12 @@ export default function AppHomePage() {
           id: p.id,
           name: p.display_name,
           isSelf: p.is_self,
-          isMinor: p.is_minor,
+          /* FOUND HOLE CLOSED: age-aware gate — never raw is_minor alone. */
+          isMinor: isMinorForSafety({
+            isMinor: p.is_minor,
+            birthDate: p.birth_date,
+            birthPrecision: p.birth_precision,
+          }),
           precision: p.birth_precision,
           hasChart: Boolean(chart),
           transits: todayTransitsForChart(chart, now),
@@ -882,9 +1003,20 @@ export default function AppHomePage() {
               { label: "Parent / fixed star", color: EL_COLOR.water }, { label: "Sibling / star", color: EL_COLOR.air },
               { label: "Friend / star", color: EL_COLOR.fire }, { label: "Colleague / star", color: EL_COLOR.earth },
               { label: "Ancestor / ancient light", color: "#DA8C8C" },
+              ...(honorEdges.length > 0
+                ? [{ label: "Honor / remembrance light", color: HONOR_LINE_STYLE.water }]
+                : []),
             ].map(({ label, color }) => (
               <span key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: ".68rem", color: "var(--mist2)" }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, display: "inline-block", flexShrink: 0 }} />
+                <span style={{
+                  width: label.startsWith("Honor") ? 14 : 8,
+                  height: label.startsWith("Honor") ? 2 : 8,
+                  borderRadius: label.startsWith("Honor") ? 1 : "50%",
+                  background: color,
+                  display: "inline-block",
+                  flexShrink: 0,
+                  borderTop: label.startsWith("Honor") ? `1px dashed ${HONOR_LINE_STYLE.ancient}` : undefined,
+                }} />
                 {label}
               </span>
             ))}

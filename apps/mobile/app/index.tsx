@@ -1,4 +1,11 @@
-import { computeSynastry, computeTransits, type NatalChart, type TransitHit } from "@galaxia/astro";
+import {
+  computeSynastry,
+  describeTransit,
+  todayTransitsForChart,
+  type NatalChart,
+  type TransitHit
+} from "@galaxia/astro";
+import { peopleForTodaySky } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -14,6 +21,8 @@ interface PersonRow {
   display_name: string;
   birth_precision: "exact" | "date" | "year";
   is_self: boolean;
+  /** Remembrance marker — passed people are excluded from live "Today in your sky". */
+  passed_at?: string | null;
 }
 
 interface LinkRow {
@@ -37,19 +46,6 @@ interface PersonSky {
   precision: "exact" | "date" | "year";
   hasChart: boolean;
   transits: TransitHit[];
-}
-
-/* Today's real transits for one chart: real ephemeris vs THIS chart's own
-   stored natal longitudes. Year-only charts are skipped (their mid-year sampled
-   positions would make orbs fabricated — ENGINEERING §12), so distinct charts
-   yield distinct transits and a shared transit only appears when truly shared. */
-function todayTransitsForChart(chart: NatalChart | undefined, whenUTC: string): TransitHit[] {
-  if (!chart || chart.precision === "year") return [];
-  return computeTransits(chart, whenUTC).filter((hit) => hit.orb <= 1.5).slice(0, 3);
-}
-
-function describeTransit(hit: TransitHit, possessive: "your" | "their"): string {
-  return `transiting ${hit.transitBody} ${hit.type} ${possessive} natal ${hit.natalBody}`;
 }
 
 export default function HomeScreen() {
@@ -141,7 +137,7 @@ export default function HomeScreen() {
       const cacheKey = `home_state:${session.user.id}`;
       const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }] = await Promise.all([
       supabase.from("profiles").select("display_name").eq("id", session.user.id).single(),
-      supabase.from("people").select("id, display_name, birth_precision, is_self").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
+      supabase.from("people").select("id, display_name, birth_precision, is_self, passed_at").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
       supabase.from("charts").select("person_id, data").in(
         "person_id",
         (
@@ -173,11 +169,14 @@ export default function HomeScreen() {
       const finalLinks = calculatedLinks.sort((a, b) => b.score - a.score).slice(0, 14);
       setLinks(finalLinks);
 
-      // Today's sky — computed PER PERSON against their OWN natal chart, so
-      // every row is that person's real transit (or an honest hedge for
-      // year-only / chart-less people), never one shared summary line.
+      // Today's sky — living people only (peopleForTodaySky excludes anyone
+      // with passed_at set — same grief-care hole as web). Transits are
+      // computed PER PERSON against their OWN natal chart so every row is
+      // that person's real transit (or an honest hedge for year-only /
+      // chart-less people), never one shared summary line. Passed people
+      // are excluded and their transits are never computed.
       const now = new Date().toISOString();
-      const skies: PersonSky[] = castPeople.map((person) => {
+      const skies: PersonSky[] = peopleForTodaySky(castPeople).map((person) => {
         const chart = chartById.get(person.id);
         return {
           id: person.id,

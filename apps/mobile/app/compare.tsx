@@ -1,19 +1,43 @@
-import { compareGenerational, computeSynastry, type GenSignature, type NatalChart } from "@galaxia/astro";
+import {
+  availableCompareRelationTypes,
+  compareGenerational,
+  computeSynastry,
+  defaultCompareRelationType,
+  isRomanticRelation,
+  type GenSignature,
+  type NatalChart,
+  type RelationType
+} from "@galaxia/astro";
+import { isMinorForSafety } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { supabase } from "../src/lib/supabase";
 import { useAuth } from "../src/providers/auth-provider";
 import { useEntitlement } from "../src/providers/entitlement-provider";
-
-type RelationType = "partners" | "siblings" | "friends" | "parent-child" | "ancestor";
 
 interface PersonLite {
   id: string;
   display_name: string;
   relation: string;
   birth_date: string | null;
-  birth_precision: "exact" | "date" | "year";
+  birth_precision: "exact" | "date" | "year" | "none";
+  is_minor?: boolean;
+}
+
+/**
+ * Single source of truth for minor status on mobile Compare — same as web.
+ * NEVER read person.is_minor directly; always run the age-aware backstop.
+ */
+function minorOf(p: PersonLite | null): boolean {
+  return (
+    Boolean(p) &&
+    isMinorForSafety({
+      isMinor: p!.is_minor ?? false,
+      birthDate: p!.birth_date,
+      birthPrecision: p!.birth_precision
+    })
+  );
 }
 
 export default function CompareScreen() {
@@ -22,7 +46,9 @@ export default function CompareScreen() {
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [personAId, setPersonAId] = useState<string | null>(null);
   const [personBId, setPersonBId] = useState<string | null>(null);
-  const [relationType, setRelationType] = useState<RelationType>("partners");
+  // SAFETY: never default to a romantic type — match web.
+  const [relationType, setRelationType] = useState<RelationType>(defaultCompareRelationType(false));
+  const userChoseTypeRef = useRef(false);
   const [result, setResult] = useState<{
     personA: PersonLite;
     personB: PersonLite;
@@ -42,7 +68,7 @@ export default function CompareScreen() {
     if (!session?.user.id) return;
     const { data, error } = await supabase
       .from("people")
-      .select("id, display_name, relation, birth_date, birth_precision")
+      .select("id, display_name, relation, birth_date, birth_precision, is_minor")
       .eq("owner_id", session.user.id)
       .order("created_at", { ascending: false });
     if (error) {
@@ -57,6 +83,23 @@ export default function CompareScreen() {
 
   const selectedA = useMemo(() => people.find((person) => person.id === personAId) ?? null, [people, personAId]);
   const selectedB = useMemo(() => people.find((person) => person.id === personBId) ?? null, [people, personBId]);
+
+  // Age-aware minor status of the currently-selected pair — never raw is_minor.
+  const selectionHasMinor = minorOf(selectedA) || minorOf(selectedB);
+
+  // Snap away from romantic framing when a minor enters the pairing.
+  useEffect(() => {
+    if (!selectionHasMinor) return;
+    if (isRomanticRelation(relationType)) {
+      setRelationType(defaultCompareRelationType(true));
+      return;
+    }
+    if (!userChoseTypeRef.current) {
+      setRelationType(defaultCompareRelationType(true));
+    }
+  }, [selectionHasMinor, relationType]);
+
+  const availableTypes = availableCompareRelationTypes(selectionHasMinor);
 
   const runCompare = async () => {
     if (!selectedA || !selectedB) {
@@ -81,7 +124,11 @@ export default function CompareScreen() {
     const natalA = chartA.data as NatalChart;
     const natalB = chartB.data as NatalChart;
     const synastry = computeSynastry(natalA, natalB);
-    const generational = compareGenerational(natalA.generational as GenSignature, natalB.generational as GenSignature, estimateYearGap(selectedA, selectedB));
+    const generational = compareGenerational(
+      natalA.generational as GenSignature,
+      natalB.generational as GenSignature,
+      estimateYearGap(selectedA, selectedB)
+    );
 
     const ageGap = estimateYearGap(selectedA, selectedB) ?? 0;
     const ancestralHeadline =
@@ -115,6 +162,10 @@ export default function CompareScreen() {
     setStatus("Private moment logged to this pair.");
   };
 
+  // Defense in depth: refuse to render a romantically framed reading about a minor.
+  const pairHasMinor = minorOf(result?.personA ?? null) || minorOf(result?.personB ?? null);
+  const blockRomanticMinorRender = pairHasMinor && isRomanticRelation(relationType);
+
   return (
     <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink2 }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
       <Text style={{ color: tokens.colors.cream, fontSize: 30, fontWeight: "700" }}>Compare</Text>
@@ -128,10 +179,13 @@ export default function CompareScreen() {
       <View style={cardStyle}>
         <Text style={cardTitle}>Relationship type</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          {(["partners", "siblings", "friends", "parent-child", "ancestor"] as RelationType[]).map((type) => (
+          {availableTypes.map((type) => (
             <Pressable
               key={type}
-              onPress={() => setRelationType(type)}
+              onPress={() => {
+                userChoseTypeRef.current = true;
+                setRelationType(type);
+              }}
               style={{
                 borderRadius: 999,
                 borderWidth: 1,
@@ -144,6 +198,11 @@ export default function CompareScreen() {
             </Pressable>
           ))}
         </View>
+        {selectionHasMinor ? (
+          <Text style={{ color: tokens.colors.mist2, fontSize: 12, lineHeight: 18 }}>
+            A minor is part of this comparison, so only non-romantic readings are available. Romantic and partner framing is turned off for pairings involving a child.
+          </Text>
+        ) : null}
       </View>
 
       <View style={cardStyle}>
@@ -190,7 +249,16 @@ export default function CompareScreen() {
         </Pressable>
       </View>
 
-      {result ? (
+      {result && blockRomanticMinorRender ? (
+        <View style={cardStyle}>
+          <Text style={cardTitle}>Reading unavailable</Text>
+          <Text style={cardBody}>
+            This pairing includes a minor, so romantic / partner framing cannot be shown. Choose a non-romantic relationship type to continue.
+          </Text>
+        </View>
+      ) : null}
+
+      {result && !blockRomanticMinorRender ? (
         <>
           <View style={cardStyle}>
             <Text style={cardTitle}>
@@ -204,7 +272,8 @@ export default function CompareScreen() {
                   : "Growth-heavy dynamic: more intentional care will help."}
             </Text>
             <Text style={cardBody}>
-              Your dynamic: overall {result.synastry.scores.overall} · emotional {result.synastry.scores.emotional} · communication {result.synastry.scores.communication} · warmth {result.synastry.scores.warmth}
+              Your dynamic: overall {result.synastry.scores.overall} · emotional {result.synastry.scores.emotional} · communication{" "}
+              {result.synastry.scores.communication} · warmth {result.synastry.scores.warmth}
             </Text>
           </View>
 

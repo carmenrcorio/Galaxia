@@ -4,11 +4,12 @@ import {
   computeNatalChart,
   buildBirthInput,
   type BirthFormInput,
+  CHART_ENGINE_VERSION,
 } from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CHART_ENGINE_VERSION, getPreferredHouseSystem } from "../lib/house-system";
+import { getPreferredHouseSystem } from "../lib/house-system";
 import { buildWelcomePrefillPath } from "../lib/quick-chart";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";

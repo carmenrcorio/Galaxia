@@ -8,7 +8,13 @@
  * Glyph maps: design/reference/galaxia.jsx
  */
 
-import { computeSynastry, type NatalChart, type Placement } from "@galaxia/astro";
+import {
+  computeSynastry,
+  type NatalChart,
+  type Placement,
+  CHART_ENGINE_VERSION,
+  houseSystemLabelForChart,
+} from "@galaxia/astro";
 import {
   buildPersonPageNavSections,
   hasPassed,
@@ -36,7 +42,7 @@ import {
   houseMeaning, interpretHouse, STELLIUM_NOTE,
   type HouseKey
 } from "../../../../lib/house-interpretations";
-import { CHART_ENGINE_VERSION, getPreferredHouseSystem, houseSystemLabelForChart } from "../../../../lib/house-system";
+import { getPreferredHouseSystem } from "../../../../lib/house-system";
 import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, type RecordEntry } from "../../../../lib/record";
 import { todayTransitsForChart } from "../../../../lib/transits";
 import { interpretTransit, transitNotation } from "../../../../lib/transit-interpretations";

@@ -12,7 +12,13 @@
  * Reference: design/reference/galaxia.jsx DIM_LABEL
  */
 
-import { compareGenerational, computeSynastry, type GenSignature, type NatalChart } from "@galaxia/astro";
+import {
+  compareGenerational,
+  computeSynastry,
+  type GenSignature,
+  type NatalChart,
+  CHART_ENGINE_VERSION,
+} from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -35,7 +41,6 @@ import {
   type RelationType,
 } from "../../../lib/compare-guidance";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
-import { CHART_ENGINE_VERSION } from "../../../lib/house-system";
 import { orderPair } from "../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 

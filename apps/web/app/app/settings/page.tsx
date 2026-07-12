@@ -3,7 +3,7 @@
 import type { HouseSystem } from "@galaxia/astro";
 import { useEffect, useMemo, useState } from "react";
 import { Spinner } from "../../../components/spinner";
-import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "../../../lib/house-system";
+import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "@galaxia/astro";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 interface PersonLite {

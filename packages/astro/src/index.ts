@@ -584,3 +584,5 @@ export function cohortOverlay(people: { name: string; gen: GenSignature }[]): Co
 
 export * from "./birth";
 export * from "./geocode";
+
+export * from "./house-system";

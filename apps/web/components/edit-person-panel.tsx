@@ -7,10 +7,11 @@ import {
   searchPlaces,
   type BirthFormInput,
   type GeoCandidate,
+  CHART_ENGINE_VERSION,
 } from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
 import { useState } from "react";
-import { CHART_ENGINE_VERSION, getPreferredHouseSystem } from "../lib/house-system";
+import { getPreferredHouseSystem } from "../lib/house-system";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { AskBirthData } from "./ask-birth-data";
 import { CustomCheck } from "./custom-check";

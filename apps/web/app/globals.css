@@ -733,26 +733,45 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 }
 
 /* ─── the why (.shift) ────────────────────────────────────────────────────── */
-/* Restore vertical rhythm + centre the column. Same trap as `.close` below:
-   this section is `.shift.container`, and `.container`'s `padding: 0 32px`
-   (specificity 0,1,0) out-specifies the global `section{padding-block}`
-   (0,0,1) and zeroes the top/bottom padding — so the section had no breathing
-   room and the `.how` panel that follows (also a zero-padding `.container`)
-   butted its bordered top edge straight into "…built for them.". `.shift` is
-   a class of equal specificity defined later in source, so its own
-   `padding-block` wins the top/bottom back while `.container` keeps the
-   horizontal gutters (identical mechanism to the `.close` fix). `text-align`
-   + auto-margined body centre the narrower 880px column instead of leaving it
-   left-crammed. `scroll-margin-top` keeps the eyebrow clear of the sticky nav
-   on an in-page anchor jump. */
+/* This is the page's THESIS statement, so it must carry the same visual weight
+   and alignment as its neighbours (the hero and the "Add them…" panel), not
+   read as a shrunken centred island floating in dead space.
+
+   Width/alignment: `.shift` is a `.container` section, so it already inherits
+   the page's standard 1180px content column + 32px gutters — we no longer clamp
+   it to a narrow 880px column or centre it. It is left-aligned within that
+   column, matching the hero and `.how-head` (the established page rhythm), with
+   the body copy held to the shared `--measure` reading width, left-anchored
+   (not `auto`-centred).
+
+   Size: `.shift h2` gets an explicit headline size. The JSX rebuild ported the
+   reference's `h1,h2,h3` family/weight/letter-spacing into `.marketing h1,h2,h3`
+   but dropped the reference's global `h2{font-size:clamp(2.1rem,5vw,3.5rem)}`
+   (`design/reference/galaxia-landing-v2.html`), so `.shift h2` was falling back
+   to the UA default (~1.5em) — the real reason the thesis rendered tiny next to
+   sibling headlines (`.edge-h2`, `.vela-h2`, `.close-h`, which all set their
+   own clamp). Sized here to match/exceed those so it reads as the page's lead
+   statement.
+
+   Vertical space: `.container`'s `padding: 0 32px` (specificity 0,1,0)
+   out-specifies the global `section{padding-block}` (0,0,1) and zeroes
+   top/bottom padding; `.shift` (equal specificity, later in source) restates
+   `padding-block` at the standard section value so it shares the same rhythm as
+   every other section — now that the content has real presence the band no
+   longer reads as empty. `scroll-margin-top` keeps the eyebrow clear of the
+   sticky nav on an in-page anchor jump. */
 .shift {
-  max-width: 880px;
   padding-block: clamp(76px, 12vh, 140px);
-  text-align: center;
   scroll-margin-top: 92px;
 }
-.shift h2 { margin: 20px 0 24px; }
-.shift .body { color: var(--mist); max-width: var(--measure); margin: 22px auto 0; font-weight: 300; line-height: 1.8; }
+.shift h2 {
+  font-size: clamp(2.3rem, 5.5vw, 4.1rem);
+  line-height: 1.04;
+  letter-spacing: -.02em;
+  max-width: 20ch;
+  margin: 20px 0 24px;
+}
+.shift .body { color: var(--mist); max-width: var(--measure); margin: 22px 0 0; font-weight: 300; line-height: 1.8; }
 .shift .body em { color: var(--gold); }
 
 /* ─── core features (how it works) ───────────────────────────────────────────

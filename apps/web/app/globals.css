@@ -85,14 +85,30 @@ textarea:focus-visible {
   max-width: 100%;
   box-sizing: border-box;
 }
+.honor-declare {
+  min-width: 0;
+}
+.honor-declare-option {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
 @media (max-width: 480px) {
   .remembrance-space {
     padding: 18px 14px;
     border-radius: 18px;
   }
   .remembrance-space .btn-primary,
-  .remembrance-space .pill-link {
+  .remembrance-space .pill-link,
+  .honor-declare .btn-primary {
     max-width: 100%;
+  }
+  .honor-declare {
+    padding: 12px 10px;
+    border-radius: 12px;
+  }
+  .honor-declare-option {
+    padding: 14px 12px;
+    min-height: 52px;
   }
 }
 

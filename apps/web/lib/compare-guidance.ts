@@ -169,6 +169,79 @@ const VENUS_NEED: Partial<Record<string, string>> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
+// FOUNDER-REVIEW: authored — refine voice.
+// PHASE 2 "how to deliver it" lines. Each is the concrete, chart-specific move
+// that ACTS ON the same-sign need above — keyed to the person's REAL, engine-
+// computed sign, never shown when the sign is missing/uncertain. These turn a
+// description ("Sarah needs to be seen") into an action ("say the specific
+// thing you admire, out loud, this week"). Every line is specific to the sign
+// it is keyed under — a Leo line could not be swapped onto a Virgo Moon.
+// MOON_HOW pairs with MOON_NEED (all relationship types).
+// ─────────────────────────────────────────────────────────────────────────
+const MOON_HOW: Partial<Record<string, string>> = {
+  Aries:       "match their pace when it spikes — move on it in the moment, then let them cool without a post-mortem",
+  Taurus:      "keep the plan you already made; the follow-through itself is the reassurance, more than any words",
+  Gemini:      "talk it through out loud with them, even the half-formed parts — for them the conversation IS the comfort",
+  Cancer:      "say the bond is safe before you raise the hard thing, so a boundary doesn't read as a door closing",
+  Leo:         "name the specific thing you admire, out loud and where others can hear — not \"good job\" but the actual detail",
+  Virgo:       "notice one small practical thing they did and thank them for it by name; the noticing lands harder than praise",
+  Libra:       "invite instead of instruct, and let them weigh in before you decide — being consulted is how they feel safe",
+  Scorpio:     "give them the unvarnished version even when a softer one is available; the honesty is the intimacy",
+  Sagittarius: "give them room and a clear exit, then trust them to come back — holding loosely is the reassurance",
+  Capricorn:   "let them run it their own way first, and praise the effort over the talent; respect is how they read love",
+  Aquarius:    "give them space to process alone before you ask them to close the distance — don't chase the pause",
+  Pisces:      "mind your tone over your words, and let them feel heard before you move to fixing it",
+};
+
+// FOUNDER-REVIEW: authored — refine voice. Pairs with VENUS_NEED (partner lens only).
+const VENUS_HOW: Partial<Record<string, string>> = {
+  Aries:       "pursue directly — choose them out loud instead of waiting to be chosen",
+  Taurus:      "make it tangible: unhurried time, a made meal, the seat kept for them",
+  Gemini:      "keep the conversation alive — a genuinely curious question reads as a love letter",
+  Cancer:      "fold them into ordinary life — the errand, the small plan — that domestic inclusion is the intimacy they feel",
+  Leo:         "appreciate them in front of others, not only in private; witnessed warmth is the real thing",
+  Virgo:       "let them see you noticed the details of their effort, and name them one by one",
+  Libra:       "return the gesture evenly — they give generously and need to feel it come back",
+  Scorpio:     "give them your full, undistracted presence — depth over frequency",
+  Sagittarius: "share an actual adventure instead of only offering stability — go somewhere with them",
+  Capricorn:   "show up consistently over time; here the reliability IS the romance",
+  Aquarius:    "protect their freedom inside the bond — don't make closeness cost their independence",
+  Pisces:      "offer sincere tenderness over grand gestures — the small true thing lands deepest",
+};
+
+// FOUNDER-REVIEW: authored — refine voice. Pairs with MERCURY_NEED (siblings/friends).
+const MERCURY_HOW: Partial<Record<string, string>> = {
+  Aries:       "get to the point fast and skip the wind-up — they hear directness as respect",
+  Taurus:      "give them time to chew on it, and don't read a slow reply as a no",
+  Gemini:      "let them think out loud without holding the drafts against them",
+  Cancer:      "watch your tone first; how you say it reaches them before what you say does",
+  Leo:         "acknowledge the idea before you edit it, and never correct them in front of others",
+  Virgo:       "bring precise, specific claims — vagueness derails them faster than a hard truth",
+  Libra:       "keep it fair and two-sided; drop the scorekeeping and they stay in the room",
+  Scorpio:     "name the subtext directly — they already sense the thing you're not saying",
+  Sagittarius: "give the big frame first, then the detail, and stay blunt-honest over polite",
+  Capricorn:   "lead with the useful, load-bearing thing; they trust competence over pleasantry",
+  Aquarius:    "let them disagree without making it personal — ideas are how they connect",
+  Pisces:      "leave room for the unspoken; not everything they mean arrives in words",
+};
+
+// FOUNDER-REVIEW: authored — refine voice. Pairs with SATURN_NEED (parent-child).
+const SATURN_HOW: Partial<Record<string, string>> = {
+  Aries:       "set the limit once, then let them push against it — the resistance is how they accept it",
+  Taurus:      "hold the rule consistently; the boundary that never moves is the one they trust",
+  Gemini:      "give the reason behind the rule — they follow what they understand and resent what they don't",
+  Cancer:      "make the authority feel protective, not policing — reassure while you hold the line",
+  Leo:         "give them responsibility in front of others; dignity is how they take a limit",
+  Virgo:       "set clear, meetable standards — a vague expectation feels like being set up to fail",
+  Libra:       "keep every rule visibly fair; an uneven rule reads to them as a broken promise",
+  Scorpio:     "hold the boundary without a power struggle — steady, not a contest of wills",
+  Sagittarius: "give the why and room to roam inside the limit; a cage just breeds escape",
+  Capricorn:   "give them real stakes and take them seriously — they rise to high expectations, not low ones",
+  Aquarius:    "appeal to the principle, not the hierarchy — \"because it's right\" keeps them, \"because I said so\" loses them",
+  Pisces:      "deliver firmness gently — keep the edge kind or they dissolve instead of pushing back",
+};
+
+// ─────────────────────────────────────────────────────────────────────────
 // FOUNDER-REVIEW: authored placeholder — refine voice.
 // Saturn-by-sign "what structure / authority this person needs" lines, used
 // ONLY by the parent-child lens (Saturn is the genuine structure/authority
@@ -293,7 +366,13 @@ export function whatTheyNeed(
 
   const moonLine = moon ? MOON_NEED[moon] : null;
   if (moonLine) {
-    parts.push(`${name}'s ${moon} Moon means they need ${moonLine.replace("NAME", name)}.`);
+    // PHASE 2: description ("they need X") + how to actually deliver it, both
+    // keyed to the same real Moon sign.
+    const moonHow = moon ? MOON_HOW[moon] : null;
+    parts.push(
+      `${name}'s ${moon} Moon means they need ${moonLine.replace("NAME", name)}.` +
+      (moonHow ? ` To actually give it: ${moonHow}.` : "")
+    );
   } else if (scores.emotional < 52) {
     parts.push(`${name} needs reassurance that the bond holds when the conversation gets hard — lead with the feeling, not the verdict.`);
   }
@@ -308,7 +387,12 @@ export function whatTheyNeed(
   const saturn = person.saturn ?? "";
   const venusLine = venus && venus !== moon ? VENUS_NEED[venus] : null;
   if (venusLine && scores.warmth < 62 && isPartnerLens) {
-    parts.push(`With ${venus} Venus, they feel loved through ${venusLine}.`);
+    // PHASE 2: how they feel loved + the concrete way to show it (same Venus sign).
+    const venusHow = venus ? VENUS_HOW[venus] : null;
+    parts.push(
+      `With ${venus} Venus, they feel loved through ${venusLine}.` +
+      (venusHow ? ` The way to show it: ${venusHow}.` : "")
+    );
   }
 
   // Platonic surfaces a real Mercury-domain aspect (communication is the
@@ -332,7 +416,12 @@ export function whatTheyNeed(
     const mercuryLine = MERCURY_NEED[mercury];
     if (mercuryLine) {
       const frame = relType === "siblings" ? "Between siblings" : "As friends";
-      parts.push(`${frame}, ${name}'s ${mercury} Mercury sets how they need to be talked to: ${mercuryLine}.`);
+      // PHASE 2: how they need to be talked to + the concrete practice (same Mercury sign).
+      const mercuryHow = MERCURY_HOW[mercury];
+      parts.push(
+        `${frame}, ${name}'s ${mercury} Mercury sets how they need to be talked to: ${mercuryLine}.` +
+        (mercuryHow ? ` In practice: ${mercuryHow}.` : "")
+      );
     }
   }
 
@@ -344,7 +433,12 @@ export function whatTheyNeed(
   if (relType === "parent-child" && saturn) {
     const saturnLine = SATURN_NEED[saturn];
     if (saturnLine) {
-      parts.push(`In a parent-child bond, ${name}'s ${saturn} Saturn shapes how they meet limits and authority: they need ${saturnLine}.`);
+      // PHASE 2: what structure they need + how to hold it (same Saturn sign).
+      const saturnHow = SATURN_HOW[saturn];
+      parts.push(
+        `In a parent-child bond, ${name}'s ${saturn} Saturn shapes how they meet limits and authority: they need ${saturnLine}.` +
+        (saturnHow ? ` How to hold it: ${saturnHow}.` : "")
+      );
     }
   }
 
@@ -381,6 +475,187 @@ function cap(s: string): string {
   return s.length ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// PHASE 1 — ACTIONABLE, CHART-GROUNDED GUIDANCE PER ASPECT.
+//
+// Every string below is authored to be SPECIFIC to the bodies (and, for the
+// register, the relationship type) it is keyed under — never generic advice.
+// A friction line is a concrete way to MINIMIZE the clash between those two
+// planets' domains; a flow line is a concrete way to NURTURE and USE the ease.
+// Nothing here invents an aspect: `aspectActionLine` reads only the real
+// `from`/`to`/`type`/`harmony` the engine computed for these two charts.
+//
+// MINOR SAFETY (ENGINEERING.md §9/§13): these render only inside the
+// `!blockRomanticMinorRender` branch (see apps/web/app/app/compare/page.tsx),
+// so they inherit the exact same gate as the rest of Compare. For a pairing
+// with a minor, only non-romantic relationship types are reachable, and the
+// non-romantic REGISTERs below are the only ones that fire — so the guidance
+// is never romantic/attraction-framed. The body tactics themselves are written
+// in warmth/values terms (never desire/attraction), so even a Venus aspect
+// surfaced under a family lens stays family-safe.
+// ═════════════════════════════════════════════════════════════════════════
+
+/**
+ * Relationship-type REGISTER: the type-specific lead clause that sets WHO acts
+ * and HOW, so the same real aspect yields different guidance for a parent-child
+ * vs. friends vs. partners. Ends with an em dash; the body tactic continues it.
+ * FOUNDER-REVIEW: authored — refine voice.
+ */
+const RELATION_ACTION_REGISTER: Record<RelationType, { flows: string; catches: string }> = {
+  partners:       { flows: "Don't let this ease go unspoken between you —", catches: "Say the tender thing out loud before it hardens into scorekeeping —" },
+  romantic:       { flows: "Don't let this ease go unspoken between you —", catches: "Say the tender thing out loud before it hardens into scorekeeping —" },
+  "parent-child": { flows: "Use this open channel on purpose —",             catches: "As the parent, lead with backup over correction —" },
+  siblings:       { flows: "Keep the line this open —",                       catches: "Head off the old loop before you're inside it —" },
+  friends:        { flows: "Feed the momentum —",                            catches: "Assume a misread, not a slight —" },
+  platonic:       { flows: "Feed the friendship where it already flows —",    catches: "Assume a misread, not a slight —" },
+  ancestor:       { flows: "Carry this inherited current forward —",          catches: "Bridge the era, not the person —" },
+};
+
+/**
+ * Body-pair TACTICS: the concrete, planet-specific move. Keyed by the unordered
+ * pair (sorted, matching interpretations.ts). `catches` minimizes the clash;
+ * `flows` nurtures the ease. Each is specific to the two domains named — it
+ * could not be swapped onto a different pair. FOUNDER-REVIEW: authored — refine voice.
+ */
+const PAIR_KEY = (a: string, b: string) => [a.toLowerCase(), b.toLowerCase()].sort().join("-");
+const ASPECT_ACTION: Record<string, { flows: string; catches: string }> = {
+  [PAIR_KEY("sun", "moon")]: {
+    catches: "when what they want and what they need split, ask what they need — not what they want — and don't make them justify the gap",
+    flows:   "back their pride and their comfort at once; you rarely have to choose between the two here, so say you see both",
+  },
+  [PAIR_KEY("moon", "venus")]: {
+    catches: "when they reach and then pull back, hold steady instead of chasing — steadiness reads as safety, pursuit reads as pressure",
+    flows:   "let the easy affection show; warmth comes cheap here, so spend it before it gets taken for granted",
+  },
+  [PAIR_KEY("mars", "venus")]: {
+    catches: "when wanting and comfort pull opposite ways, name the pull in words instead of acting it out — handle the friction out loud",
+    flows:   "keep making the deliberate warm gesture that keeps this lit; the pull is easy, so it's the tending that's the work",
+  },
+  [PAIR_KEY("mars", "moon")]: {
+    catches: "when heat comes up fast, give it a beat — the anger is sitting on a hurt, so answer the feeling, not the volume",
+    flows:   "use the quick read you have on each other; act on the feeling early, before it has to be spelled out",
+  },
+  [PAIR_KEY("mercury", "moon")]: {
+    catches: "when the words won't match the feeling, ask in writing or give them quiet — pushing for it out loud makes them go clinical",
+    flows:   "trade the plain naming of feelings you're both good at, and keep asking how it actually landed",
+  },
+  [PAIR_KEY("mercury", "mars")]: {
+    catches: "when a conversation turns into a debate, slow the pace and say \"I want to get this right with you\" before you argue the point — the drive to win is drowning the drive to be understood",
+    flows:   "put your quick, decisive back-and-forth to work; this is a pair that can talk a thing through and move on it fast",
+  },
+  [PAIR_KEY("mercury", "venus")]: {
+    catches: "say what you appreciate before you critique — the correction only lands after the warmth does",
+    flows:   "let the easy, affectionate way you talk carry the harder conversations too",
+  },
+  [PAIR_KEY("saturn", "moon")]: {
+    catches: "they learned early that needing is unsafe, so offer before they ask — they won't ask; unprompted care softens the wall",
+    flows:   "lean on the steadiness here; reliable presence is exactly the reassurance this bond runs on",
+  },
+  [PAIR_KEY("saturn", "venus")]: {
+    catches: "they think warmth has to be earned, so give it when they've done nothing to earn it — the unprompted kind is what lands",
+    flows:   "let commitment and warmth reinforce each other; consistency here reads as the deepest kind of care",
+  },
+  [PAIR_KEY("saturn", "mercury")]: {
+    catches: "when caution meets quick talk, put the ask in writing with a clear why and a timeline they can plan around",
+    flows:   "use how you can be both careful and clear together; this pair makes agreements that hold",
+  },
+  [PAIR_KEY("saturn", "sun")]: {
+    catches: "make the expectation explicit and give it dignity — respect, not management, is what they'll meet",
+    flows:   "name the way you steady each other's ambitions; quiet backing like this is easy to leave unsaid",
+  },
+  [PAIR_KEY("sun", "mercury")]: {
+    catches: "when identity and opinion collide, praise the person before you edit the idea",
+    flows:   "keep thinking out loud together; your minds meet easily, so use it for the real decisions",
+  },
+  [PAIR_KEY("jupiter", "sun")]: {
+    catches: "when one of you sizes it bigger, agree how far this actually goes before you both commit",
+    flows:   "make a plan that stretches a little; shared optimism is a resource — point it at something you both want",
+  },
+  [PAIR_KEY("jupiter", "moon")]: {
+    catches: "when big-picture hope meets a tender mood, don't cheer them out of the feeling — sit in it first, then widen the frame",
+    flows:   "let their warmth and the optimism feed each other; this bond grows by dreaming out loud together",
+  },
+  [PAIR_KEY("moon", "moon")]: {
+    catches: "when both moods spike at once, one of you name it first — two raw feelings need a witness, not a match",
+    flows:   "use the instinctive read you have on each other; check in early, because you feel the shift before it's said",
+  },
+  [PAIR_KEY("mercury", "mercury")]: {
+    catches: "when you talk past each other, slow down and confirm you mean the same thing before you react to it",
+    flows:   "keep the everyday back-and-forth going; this easy channel is the maintenance the whole bond depends on",
+  },
+  [PAIR_KEY("sun", "sun")]: {
+    catches: "when two strong selves collide, make room for each to be seen without turning it into a contest",
+    flows:   "celebrate what you each are, out loud; this natural recognition is easy to assume and leave unsaid",
+  },
+  [PAIR_KEY("venus", "venus")]: {
+    catches: "when what you each treasure differs, name the value under the preference before you negotiate the thing",
+    flows:   "keep giving warmth in the shared language you both read; it's easy here, so don't let it go quiet",
+  },
+  [PAIR_KEY("mars", "mars")]: {
+    catches: "when two drives push at once, decide who leads this one before it becomes a fight over who's in charge",
+    flows:   "aim the shared drive at a real project together; this is momentum you can build with, not just spend",
+  },
+};
+
+/**
+ * Fallback tactics when a specific pair isn't authored — keyed to a SINGLE
+ * body's domain, so the line is still specific to that real planet (never
+ * "communicate better"). `aspectActionLine` picks the more relationship-
+ * relevant of the two bodies as the lead. FOUNDER-REVIEW: authored — refine voice.
+ */
+const BODY_FRICTION_ACTION: Record<string, string> = {
+  sun:     "acknowledge the person before you take issue with the choice — their need to be recognized is what's really bristling",
+  moon:    "treat the flare as a feeling that arrived early, not a verdict; name what's underneath before you answer the words",
+  mercury: "slow the exchange down and play it back in their words before you respond — most of this is a misread, not a disagreement",
+  venus:   "protect what each of you treasures out loud; it eases when neither feels their values got overruled",
+  mars:    "give the drive somewhere to go — decide who leads this one before it turns into a contest over who's in charge",
+  jupiter: "check the scale before you commit — one of you is sizing this bigger, so agree how far it actually goes",
+  saturn:  "make the limit explicit and the reason visible; the wall only becomes a fight when it feels arbitrary",
+  uranus:  "leave room for the unexpected move instead of pinning it down — the tension is a need for freedom, not rejection",
+  neptune: "get specific where things blur — confirm what was actually meant before you fill the gap with a story",
+  pluto:   "don't try to manage the intensity for them; name it plainly and let it move through without a power struggle",
+};
+const BODY_FLOW_ACTION: Record<string, string> = {
+  sun:     "reflect back what you admire in who they are; this natural recognition is easy to leave unsaid",
+  moon:    "lean on the instinctive read you have on each other's moods, and check in early — before either of you has to ask",
+  mercury: "keep talking about the small stuff; this easy back-and-forth is the maintenance the bond runs on",
+  venus:   "say the affection out loud even when it feels obvious — warmth this easy is exactly what gets taken for granted",
+  mars:    "point the shared drive at something real together; this is momentum to build on, not just enjoy",
+  jupiter: "make plans that stretch a little; shared optimism is a resource, so spend it on something you both want",
+  saturn:  "name the reliability you count on in each other; steady support this quiet rarely gets thanked for",
+  uranus:  "protect the freedom you give each other; this easy room to be different is worth guarding",
+  neptune: "make space for the shared imaginative thread; it deepens when you honor it out loud",
+  pluto:   "trust each other with the deep stuff; the capacity to go all the way in is rare, so use it deliberately",
+};
+
+/** Global personal-relevance order, for choosing a lead body when neither is in the type priority. */
+const PERSONAL_RANK = ["moon", "venus", "mars", "mercury", "sun", "saturn", "jupiter", "pluto", "neptune", "uranus"];
+
+/** The more relationship-relevant of the aspect's two bodies (drives the fallback tactic). */
+function leadBody(a: { from: string; to: string }, relType: RelationType): string {
+  const pri = RELATION_BODY_PRIORITY[relType];
+  const score = (b: string) => {
+    const i = pri.indexOf(b.toLowerCase());
+    return i === -1 ? 100 + PERSONAL_RANK.indexOf(b.toLowerCase()) : i;
+  };
+  return score(a.from) <= score(a.to) ? a.from : a.to;
+}
+
+/**
+ * The actionable "what to do" line for one REAL computed aspect: a concrete way
+ * to MINIMIZE the clash (friction) or NURTURE the ease (flow), grounded in the
+ * actual bodies and framed for the relationship type. Never fabricates — reads
+ * only `from`/`to`/`harmony` off the engine's aspect.
+ */
+export function aspectActionLine(a: { from: string; to: string; harmony: number }, relType: RelationType): string {
+  const flows = a.harmony >= 0;
+  const pair = ASPECT_ACTION[PAIR_KEY(a.from, a.to)];
+  const tactic = (pair && (flows ? pair.flows : pair.catches))
+    ?? (flows ? BODY_FLOW_ACTION[leadBody(a, relType).toLowerCase()] : BODY_FRICTION_ACTION[leadBody(a, relType).toLowerCase()]);
+  const register = RELATION_ACTION_REGISTER[relType][flows ? "flows" : "catches"];
+  return `${register} ${tactic}.`;
+}
+
 /**
  * 2-3 aspect-framing lines that read the TIGHTEST type-relevant aspects in
  * relationship terms. Everything factual (bodies, aspect type, orb, harmony
@@ -393,19 +668,36 @@ export function relationshipAspectFraming(
   relType: RelationType,
   nameA: string,
   nameB: string
-): { text: string; flows: boolean; aspect: Aspect }[] {
+): { text: string; action: string; flows: boolean; aspect: Aspect }[] {
   const priority = RELATION_BODY_PRIORITY[relType];
   const frame = RELATION_ASPECT_FRAME[relType];
-  const relevant = synastry.aspects
+  const relevantAll = synastry.aspects
     .filter((a) => priority.includes(a.from) || priority.includes(a.to))
     .slice()
-    .sort((a, b) => a.orb - b.orb)
-    .slice(0, 3);
-  return relevant.map((a) => {
+    .sort((a, b) => a.orb - b.orb);
+
+  // Surface up to 3, but guarantee at least one FLOW (nurture) and one CATCH
+  // (minimize) when both exist — so the user always sees a way to reduce a
+  // clash AND a way to use an ease, not three of one kind.
+  const flowsList = relevantAll.filter((a) => a.harmony >= 0);
+  const catchesList = relevantAll.filter((a) => a.harmony < 0);
+  let picked: Aspect[];
+  if (flowsList.length && catchesList.length) {
+    const chosen: Aspect[] = [catchesList[0] as Aspect, flowsList[0] as Aspect];
+    for (const a of relevantAll) {
+      if (chosen.length >= 3) break;
+      if (!chosen.includes(a as Aspect)) chosen.push(a as Aspect);
+    }
+    picked = chosen.slice(0, 3).sort((a, b) => a.orb - b.orb);
+  } else {
+    picked = relevantAll.slice(0, 3) as Aspect[];
+  }
+
+  return picked.map((a) => {
     const flows = a.harmony >= 0;
     const lens = flows ? frame.flows : frame.catches;
     const text = `${nameA}'s ${cap(a.from)} ${a.type} ${nameB}'s ${cap(a.to)} (${a.orb.toFixed(1)}°) ${lens}`;
-    return { text, flows, aspect: a as Aspect };
+    return { text, action: aspectActionLine(a, relType), flows, aspect: a as Aspect };
   });
 }
 

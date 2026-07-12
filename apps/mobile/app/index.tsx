@@ -1,4 +1,4 @@
-import { computeSynastry, computeTransits, type NatalChart } from "@galaxia/astro";
+import { computeSynastry, computeTransits, type NatalChart, type TransitHit } from "@galaxia/astro";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -28,6 +28,30 @@ interface ThreadChip {
   preview: string;
 }
 
+/* One person's real sky today — computed from THEIR OWN natal chart.
+   `transits` is empty for year-only / chart-less people (hedged in the UI). */
+interface PersonSky {
+  id: string;
+  name: string;
+  isSelf: boolean;
+  precision: "exact" | "date" | "year";
+  hasChart: boolean;
+  transits: TransitHit[];
+}
+
+/* Today's real transits for one chart: real ephemeris vs THIS chart's own
+   stored natal longitudes. Year-only charts are skipped (their mid-year sampled
+   positions would make orbs fabricated — ENGINEERING §12), so distinct charts
+   yield distinct transits and a shared transit only appears when truly shared. */
+function todayTransitsForChart(chart: NatalChart | undefined, whenUTC: string): TransitHit[] {
+  if (!chart || chart.precision === "year") return [];
+  return computeTransits(chart, whenUTC).filter((hit) => hit.orb <= 1.5).slice(0, 3);
+}
+
+function describeTransit(hit: TransitHit, possessive: "your" | "their"): string {
+  return `transiting ${hit.transitBody} ${hit.type} ${possessive} natal ${hit.natalBody}`;
+}
+
 export default function HomeScreen() {
   const { session, loading, signOut } = useAuth();
   const { tier } = useEntitlement();
@@ -39,8 +63,7 @@ export default function HomeScreen() {
   const [welcomeName, setWelcomeName] = useState("stargazer");
   const [people, setPeople] = useState<PersonRow[]>([]);
   const [links, setLinks] = useState<LinkRow[]>([]);
-  const [activeTransitIds, setActiveTransitIds] = useState<string[]>([]);
-  const [todayTransitSummary, setTodayTransitSummary] = useState<string>("No notable transits today.");
+  const [personSkies, setPersonSkies] = useState<PersonSky[]>([]);
   const [threadChips, setThreadChips] = useState<ThreadChip[]>([]);
   const [homeStatus, setHomeStatus] = useState<string | null>(null);
   const [homeLoading, setHomeLoading] = useState(true);
@@ -103,6 +126,13 @@ export default function HomeScreen() {
     [constellationPositions]
   );
 
+  /* Nodes shimmer when that person has a real tight transit today — derived
+     from each person's own computed sky, never a single shared flag. */
+  const activeTransitIds = useMemo(
+    () => personSkies.filter((sky) => sky.transits.length > 0).map((sky) => sky.id),
+    [personSkies]
+  );
+
   const loadHome = async () => {
     if (!session?.user.id) return;
     setHomeLoading(true);
@@ -143,29 +173,27 @@ export default function HomeScreen() {
       const finalLinks = calculatedLinks.sort((a, b) => b.score - a.score).slice(0, 14);
       setLinks(finalLinks);
 
-      const transitActive: string[] = [];
-      let transitSummary = "No notable transits today.";
+      // Today's sky — computed PER PERSON against their OWN natal chart, so
+      // every row is that person's real transit (or an honest hedge for
+      // year-only / chart-less people), never one shared summary line.
       const now = new Date().toISOString();
-      for (const person of castPeople) {
-        if (person.birth_precision === "year") continue;
+      const skies: PersonSky[] = castPeople.map((person) => {
         const chart = chartById.get(person.id);
-        if (!chart) continue;
-        const hits = computeTransits(chart, now);
-        const tightHits = hits.filter((hit) => hit.orb <= 1.5);
-        if (tightHits.length > 0) {
-          transitActive.push(person.id);
-        }
-        if (person.is_self && tightHits[0]) {
-          transitSummary = `${tightHits[0].summary} (${tightHits[0].orb.toFixed(1)}° orb).`;
-        }
-      }
-      setActiveTransitIds(transitActive);
-      setTodayTransitSummary(transitSummary);
+        return {
+          id: person.id,
+          name: person.display_name,
+          isSelf: person.is_self,
+          precision: person.birth_precision,
+          hasChart: Boolean(chart),
+          transits: todayTransitsForChart(chart, now)
+        };
+      });
+      setPersonSkies(skies);
 
       const threads = (threadRows ?? []) as Array<{ id: string; mode: "ask" | "shared" }>;
       if (threads.length === 0) {
         setThreadChips([]);
-        await cacheSet(cacheKey, { welcomeName: profile?.display_name, people: castPeople, links: finalLinks, activeTransitIds: transitActive, todayTransitSummary: transitSummary, threadChips: [] });
+        await cacheSet(cacheKey, { welcomeName: profile?.display_name, people: castPeople, links: finalLinks, personSkies: skies, threadChips: [] });
         return;
       }
       const { data: messages } = await supabase
@@ -195,8 +223,7 @@ export default function HomeScreen() {
         welcomeName: profile?.display_name,
         people: castPeople,
         links: finalLinks,
-        activeTransitIds: transitActive,
-        todayTransitSummary: transitSummary,
+        personSkies: skies,
         threadChips: computedThreadChips
       });
     } catch (error) {
@@ -204,16 +231,14 @@ export default function HomeScreen() {
         welcomeName?: string;
         people: PersonRow[];
         links: LinkRow[];
-        activeTransitIds: string[];
-        todayTransitSummary: string;
+        personSkies: PersonSky[];
         threadChips: ThreadChip[];
       }>(`home_state:${session.user.id}`);
       if (cached) {
         setWelcomeName(cached.welcomeName ?? welcomeName);
         setPeople(cached.people);
         setLinks(cached.links);
-        setActiveTransitIds(cached.activeTransitIds);
-        setTodayTransitSummary(cached.todayTransitSummary);
+        setPersonSkies(cached.personSkies ?? []);
         setThreadChips(cached.threadChips);
         setHomeStatus("Offline mode: showing cached home.");
       } else {
@@ -381,8 +406,44 @@ export default function HomeScreen() {
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Today in your sky</Text>
-        <Text style={cardBody}>{todayTransitSummary}</Text>
         <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
+          {activeTransitIds.length > 0
+            ? "Real transits, computed against each person's own chart."
+            : "No tight transits touching anyone's chart right now."}
+        </Text>
+        {[...personSkies.filter((sky) => sky.isSelf), ...personSkies.filter((sky) => !sky.isSelf)].map((sky) => {
+          const top = sky.transits[0];
+          const detail = top
+            ? `${describeTransit(top, sky.isSelf ? "your" : "their")} · ${top.orb.toFixed(1)}° orb${sky.transits.length > 1 ? ` (+${sky.transits.length - 1} more)` : ""}`
+            : sky.precision === "year"
+              ? "Birth year only — a birth date is needed for daily transits."
+              : !sky.hasChart
+                ? "No birth data yet."
+                : "No tight transits today.";
+          return (
+            <Link key={sky.id} href={{ pathname: "/profile/[personId]", params: { personId: sky.id } }} asChild>
+              <Pressable
+                style={{
+                  paddingVertical: 8,
+                  paddingHorizontal: 10,
+                  borderRadius: 10,
+                  borderLeftWidth: 2,
+                  borderLeftColor: top ? tokens.colors.gold : tokens.colors.line,
+                  backgroundColor: top ? "rgba(230,174,108,0.06)" : "transparent",
+                  gap: 2
+                }}
+              >
+                <Text style={{ color: tokens.colors.cream, fontWeight: "600", fontSize: 13 }}>
+                  {sky.isSelf ? "You" : sky.name}
+                </Text>
+                <Text style={{ color: top ? tokens.colors.mist : tokens.colors.mist2, fontSize: 12, fontStyle: top ? "normal" : "italic" }}>
+                  {detail}
+                </Text>
+              </Pressable>
+            </Link>
+          );
+        })}
+        <Text style={{ color: tokens.colors.mist2, fontSize: 11 }}>
           Nodes shimmer when a person has an active tight transit (orb ≤ 1.5°).
         </Text>
       </View>

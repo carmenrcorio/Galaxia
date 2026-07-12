@@ -81,6 +81,70 @@ describe("computeSynastry and computeTransits", () => {
   });
 });
 
+describe("per-person transits are distinct (home 'Today in your sky')", () => {
+  /**
+   * Regression for fix/home-transit-per-person: the home dashboard must compute
+   * each person's transits against THEIR OWN natal chart. The bug it guards
+   * against is a shared/placeholder transit shown identically for everyone.
+   *
+   * Ground truth: transits = real ephemeris (fixed "today") vs each chart's own
+   * stored natal longitudes. Different natal charts therefore MUST be able to
+   * produce different top transits/orbs; identical charts MUST match exactly.
+   */
+  const TODAY = "2026-07-12T12:00:00.000Z";
+
+  // Seven distinct people (mirrors the reported constellation): different birth
+  // dates/times/places → different natal longitudes.
+  const births = [
+    { dateUTC: "1988-03-14T09:20:00.000Z", lat: 40.7128, lng: -74.006 },
+    { dateUTC: "1990-07-02T22:45:00.000Z", lat: 34.0522, lng: -118.2437 },
+    { dateUTC: "2015-11-09T06:05:00.000Z", lat: 41.8781, lng: -87.6298 },
+    { dateUTC: "2018-01-27T15:30:00.000Z", lat: 29.7604, lng: -95.3698 },
+    { dateUTC: "2012-05-19T03:10:00.000Z", lat: 25.7617, lng: -80.1918 },
+    { dateUTC: "2009-09-30T18:55:00.000Z", lat: 47.6062, lng: -122.3321 },
+    { dateUTC: "1951-12-05T11:40:00.000Z", lat: 19.4326, lng: -99.1332 }
+  ] as const;
+
+  const charts = births.map((b) => computeNatalChart({ ...b, precision: "exact" }));
+
+  it("computes a transit set for each person's own chart", () => {
+    for (const chart of charts) {
+      expect(computeTransits(chart, TODAY).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("does NOT return one identical transit+orb for every person", () => {
+    const topSignatures = charts.map((chart) => {
+      const top = computeTransits(chart, TODAY).filter((h) => h.orb <= 1.5)[0];
+      return top ? `${top.summary}@${top.orb.toFixed(2)}` : "none";
+    });
+    // The whole point: with seven distinct charts, the tightest transit is not
+    // the same line at the same orb for all seven.
+    expect(new Set(topSignatures).size).toBeGreaterThan(1);
+  });
+
+  it("only matches when the charts are genuinely identical", () => {
+    const twin = computeNatalChart({ ...births[0], precision: "exact" });
+    expect(computeTransits(twin, TODAY)).toEqual(computeTransits(charts[0], TODAY));
+    // A different chart must differ somewhere in its transit set.
+    expect(computeTransits(charts[1], TODAY)).not.toEqual(computeTransits(charts[0], TODAY));
+  });
+});
+
+describe("today's-transit UI policy (shared home + person-page helper)", () => {
+  it("skips year-only charts (no fabricated orbs) but keeps exact/date", async () => {
+    const { todayTransitsForChart } = await import("../../../apps/web/lib/transits");
+    const yearOnly = computeNatalChart({ dateUTC: "1995-01-01T00:00:00.000Z", precision: "year" });
+    const exact = computeNatalChart({ dateUTC: "1988-03-14T09:20:00.000Z", precision: "exact", lat: 40.7128, lng: -74.006 });
+
+    expect(todayTransitsForChart(yearOnly, "2026-07-12T12:00:00.000Z")).toEqual([]);
+    expect(todayTransitsForChart(undefined, "2026-07-12T12:00:00.000Z")).toEqual([]);
+    for (const hit of todayTransitsForChart(exact, "2026-07-12T12:00:00.000Z")) {
+      expect(hit.orb).toBeLessThanOrEqual(1.5);
+    }
+  });
+});
+
 describe("Jacksonville, Arkansas regression — 1987-12-29", () => {
   /**
    * User-reported: entering 1987-12-29, Jacksonville, Arkansas produced Sagittarius Sun.

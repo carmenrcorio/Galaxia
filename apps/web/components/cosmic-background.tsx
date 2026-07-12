@@ -69,9 +69,9 @@ export function CosmicBackground() {
     /* three depth planes. far = many tiny dim slow-parallax; near = fewer,
        larger, brighter, more parallax. */
     const layers: Layer[] = [
-      { stars: [], parallax: 3,  density: 5200, rMin: 0.15, rMax: 0.65, aMin: 0.14, aRange: 0.20, twMul: 0.7, ox: 0, oy: 0 },
-      { stars: [], parallax: 8,  density: 12000, rMin: 0.30, rMax: 1.00, aMin: 0.24, aRange: 0.28, twMul: 1.0, ox: 0, oy: 0 },
-      { stars: [], parallax: 16, density: 30000, rMin: 0.50, rMax: 1.45, aMin: 0.34, aRange: 0.36, twMul: 1.3, ox: 0, oy: 0 },
+      { stars: [], parallax: 9,  density: 4200, rMin: 0.15, rMax: 0.65, aMin: 0.14, aRange: 0.20, twMul: 0.7, ox: 0, oy: 0 },
+      { stars: [], parallax: 24, density: 6500, rMin: 0.35, rMax: 1.05, aMin: 0.26, aRange: 0.30, twMul: 1.0, ox: 0, oy: 0 },
+      { stars: [], parallax: 42, density: 9500, rMin: 0.55, rMax: 1.55, aMin: 0.40, aRange: 0.36, twMul: 1.3, ox: 0, oy: 0 },
     ];
     /* adaptive: on a struggling device the farthest (densest) layer is dropped */
     let activeLayers = layers.length;

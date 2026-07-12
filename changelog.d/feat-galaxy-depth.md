@@ -32,6 +32,11 @@ the user's star at centre, plus a very-low-opacity static SVG film-grain overlay
 and are hard-capped (a 375px phone draws a few hundred, not thousands); an EMA
 frame-budget watch drops the densest starfield layer if a device can't sustain
 three, and nebulae fall from three puffs to two under the existing `lowPerf`
-flag. No `ctx.filter` blur anywhere — the soft look is gradients only. All of it
-honours `prefers-reduced-motion` (twinkle, parallax and nebula drift disabled;
-one static frame) and reuses Phase 1's DPR handling.
+flag. The two most expensive fills are amortised offscreen: the static deep-field
+wash/vignette is rasterised once per resize and blitted (`drawImage`) each frame,
+and the slow-drifting nebulae are re-rasterised at most ~11×/s onto a cached
+layer and blitted additively in between. No `ctx.filter` blur anywhere — the soft
+look is gradients only. Measured at a 375px, 4× CPU-throttled profile: the
+starfield holds 60fps and the constellation ~50fps (both 60fps unthrottled). All
+of it honours `prefers-reduced-motion` (twinkle, parallax and nebula drift
+disabled; one static frame) and reuses Phase 1's DPR handling.

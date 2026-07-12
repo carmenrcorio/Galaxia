@@ -143,6 +143,29 @@ export default function AppHomePage() {
     let raf = 0;
     let t   = 0;
 
+    /* the deep-field wash + vignette only changes on resize, so it is
+       rasterised ONCE into an offscreen canvas and blitted each frame
+       (drawImage) instead of re-filling a full-canvas radial gradient every
+       frame — the single biggest per-frame saving on mobile. */
+    const washCanvas = document.createElement("canvas");
+    const washCtx = washCanvas.getContext("2d");
+    const renderWash = () => {
+      if (!washCtx) return;
+      washCanvas.width = canvas.width; washCanvas.height = canvas.height;
+      const w = canvas.width, h = canvas.height;
+      const wg = washCtx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.72);
+      wg.addColorStop(0,   "rgba(22,16,46,0.34)");   /* --ink2 indigo centre */
+      wg.addColorStop(0.6, "rgba(12,8,32,0.55)");
+      wg.addColorStop(1,   "rgba(6,4,18,0.82)");     /* deep-ink edge vignette */
+      washCtx.clearRect(0, 0, w, h);
+      washCtx.fillStyle = wg; washCtx.fillRect(0, 0, w, h);
+    };
+
+    /* offscreen nebula layer — see renderNebulae/draw for the throttle */
+    const nebCanvas = document.createElement("canvas");
+    const nebCtx = nebCanvas.getContext("2d");
+    let lastNebRender = -1e9;
+
     const resize = () => {
       const rect = canvas.parentElement!.getBoundingClientRect();
       canvas.width  = rect.width  * DPR;
@@ -150,6 +173,10 @@ export default function AppHomePage() {
       canvas.style.width  = rect.width  + "px";
       canvas.style.height = rect.height + "px";
       cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      nebCanvas.width = canvas.width; nebCanvas.height = canvas.height;
+      nebCtx?.setTransform(DPR, 0, 0, DPR, 0, 0);
+      lastNebRender = -1e9; /* force a re-render at the new size */
+      renderWash();
     };
     resize();
     window.addEventListener("resize", resize);
@@ -445,13 +472,15 @@ export default function AppHomePage() {
        Each cohort (people sharing a Pluto sign) gets a soft gas cloud sitting
        BEHIND its stars, so those stars glow through it — the visual payoff of
        "the sky you were all born under". Not a flat tint / hard circle: several
-       offset radial puffs of different sizes give an organic edge, and the
-       whole group is drawn with 'lighter' compositing so overlapping cohorts
-       ADD into brighter seams rather than stacking as opaque blobs. Colour is
-       derived from the cohort's outer-planet signature (cohortHsla). Cheap by
-       design — a handful of gradient fills, no ctx.filter blur. */
-    function drawNebulae(positions: { x: number; y: number }[], nebFade: number) {
-      if (nebFade <= 0.001) return;
+       offset radial puffs of different sizes give an organic edge, all built
+       with 'lighter' compositing so overlapping cohorts ADD into brighter seams
+       rather than stacking as opaque blobs. Colour is derived from the cohort's
+       outer-planet signature (cohortHsla). No ctx.filter blur.
+
+       Rendered into a throttled offscreen layer (see draw()): the drift is very
+       slow, so re-rasterising the gradients only a few times a second and
+       blitting the cache in between keeps mobile smooth. */
+    function renderNebulae(tctx: CanvasRenderingContext2D, positions: { x: number; y: number }[], nebFade: number) {
       const groups = new Map<string, number[]>();
       for (let i = 0; i < people.length; i++) {
         const key = cohortByPerson[people[i].id];
@@ -461,8 +490,8 @@ export default function AppHomePage() {
       }
       if (groups.size === 0) return;
 
-      cx.save();
-      cx.globalCompositeOperation = "lighter";
+      tctx.save();
+      tctx.globalCompositeOperation = "lighter";
       groups.forEach((idxs, key) => {
         let cxm = 0, cym = 0;
         for (const i of idxs) { cxm += positions[i].x; cym += positions[i].y; }
@@ -482,14 +511,14 @@ export default function AppHomePage() {
           const ox    = cxm + Math.cos(ang) * dist;
           const oy    = cym + Math.sin(ang) * dist * 0.8;
           const pr    = rad * (k === 0 ? 1 : 0.66) * (1 + (reduced ? 0 : 0.05 * drift));
-          const g = cx.createRadialGradient(ox, oy, 0, ox, oy, pr);
+          const g = tctx.createRadialGradient(ox, oy, 0, ox, oy, pr);
           g.addColorStop(0,    cohortHsla(si, 0.12 * nebFade));
           g.addColorStop(0.5,  cohortHsla(si, 0.05 * nebFade));
           g.addColorStop(1,    cohortHsla(si, 0));
-          cx.beginPath(); cx.arc(ox, oy, pr, 0, Math.PI * 2); cx.fillStyle = g; cx.fill();
+          tctx.beginPath(); tctx.arc(ox, oy, pr, 0, Math.PI * 2); tctx.fillStyle = g; tctx.fill();
         }
       });
-      cx.restore();
+      tctx.restore();
     }
 
     /* ── hit detection ── */
@@ -518,25 +547,31 @@ export default function AppHomePage() {
 
       cx.clearRect(0, 0, W(), H());
 
-      /* ── atmospheric finish: deep-field wash + vignette in one cheap radial
-         fill. A faint indigo centre falling to deep-ink edges gives the card
-         interior real colour depth (not flat black / flat glass) and the
-         darkened rim draws the eye inward to the user's star at centre. Brand
-         tokens: --ink2 #16102e (indigo) → --ink #0a0717 (deep edge). */
-      const cxw = W() / 2, cyw = H() / 2;
-      const wash = cx.createRadialGradient(cxw, cyw, 0, cxw, cyw, Math.max(W(), H()) * 0.72);
-      wash.addColorStop(0,   "rgba(22,16,46,0.34)");
-      wash.addColorStop(0.6, "rgba(12,8,32,0.55)");
-      wash.addColorStop(1,   "rgba(6,4,18,0.82)");
-      cx.fillStyle = wash; cx.fillRect(0, 0, W(), H());
+      /* atmospheric finish: blit the cached deep-field wash + vignette (faint
+         indigo centre → deep-ink edges: colour depth, plus a rim that draws the
+         eye to the user's star at centre). Cached offscreen, so this is a cheap
+         drawImage rather than a per-frame radial-gradient fill. */
+      cx.drawImage(washCanvas, 0, 0, W(), H());
 
       const positions = people.map((_, i) => nodePos(i));
       const byId = new Map(people.map((p, i) => [p.id, positions[i]]));
 
       /* generational nebulae behind everything — bloom in just after the self
-         ignites so the "sky you were born under" arrives with the sky */
+         ignites so the "sky you were born under" arrives with the sky. Redrawn
+         onto the offscreen layer at most ~11×/s (drift is far slower than that)
+         and blitted additively each frame, so the gradient cost is amortised. */
       const nebFade = reduced ? globalFade : clamp01((elapsed - 200) / 1200);
-      drawNebulae(positions, nebFade);
+      if (nebCtx && nebFade > 0.001 && t - lastNebRender > 90) {
+        nebCtx.clearRect(0, 0, W(), H());
+        renderNebulae(nebCtx, positions, nebFade);
+        lastNebRender = t;
+      }
+      if (nebCtx && nebFade > 0.001) {
+        cx.save();
+        cx.globalCompositeOperation = "lighter";
+        cx.drawImage(nebCanvas, 0, 0, W(), H());
+        cx.restore();
+      }
 
       /* links first — each grows in on its own schedule */
       for (const link of links) {

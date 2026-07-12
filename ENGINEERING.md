@@ -130,7 +130,16 @@ These are product promises made on the landing page. Code that violates them is 
 
 ## 11. Changes are recorded
 
-Every meaningful change, decision, or reversal goes in `CHANGELOG.md` with a date and a reason. If we cannot reconstruct why something is the way it is, we will break it again.
+Every meaningful change, decision, or reversal is recorded with a date and a reason. If we cannot reconstruct why something is the way it is, we will break it again.
+
+**How to record it (merge-proof convention):** do **not** edit the top of `CHANGELOG.md`. Every branch used to append to the same spot there, so nearly every PR hit a pointless merge conflict on the changelog. Instead, each change adds its **own file**:
+
+- Create one file per change at `changelog.d/<your-branch-slug>.md` (branch name, slashes → `-`). Because the filename is unique to the branch, parallel branches never touch the same file and never conflict.
+- Write the entry as it should appear in `CHANGELOG.md` — a `## Title (branch …) — YYYY-MM-DD` section using the `[TYPE]` format above (`DECISION`, `FIXED`, `ADDED`, `CHANGED`, `REVERTED`, `BROKEN`, `OPEN`). Copy `changelog.d/_TEMPLATE.md` to start. See `changelog.d/README.md` for the full convention.
+- Commit the fragment on the same branch as the code change.
+- At release, a maintainer runs `pnpm changelog:collate --write`, which folds every fragment into the top of `CHANGELOG.md` (newest first) and deletes the consumed files. `CHANGELOG.md` remains the append-only released history.
+
+**One-line instruction for AI-agent prompts:** *"Record this change by adding a new `changelog.d/<branch-slug>.md` fragment (see `changelog.d/README.md`) — do not edit `CHANGELOG.md` directly."*
 
 ---
 

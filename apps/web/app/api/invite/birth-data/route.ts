@@ -8,6 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { privateEnv, publicEnv } from "../../../../lib/env";
 import { getPreferredHouseSystem } from "../../../../lib/house-system";
+import { invitePersonOwnedByInviter } from "../../../../lib/invite-ownership";
 
 /**
  * Public write-back for a birth_data invite. The invited person is NOT a
@@ -15,6 +16,9 @@ import { getPreferredHouseSystem } from "../../../../lib/house-system";
  * existing data — it only accepts birth details and writes the pending
  * person's chart. All the never-fabricate validation runs through the same
  * buildBirthInput pipeline the app uses (date echo, resolved timezone).
+ *
+ * Ownership: before any write, person_id must belong to invite.from_user.
+ * Service role bypasses RLS, so this check is mandatory (mirrors invites RLS).
  */
 export async function POST(req: Request) {
   if (!publicEnv.supabaseUrl || !privateEnv.serviceRole) {
@@ -47,6 +51,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "This link was already used. Thank you!" }, { status: 409 });
   }
 
+  // Service-role ownership check: person must belong to the inviter.
+  const { data: person } = await supabase
+    .from("people")
+    .select("id, owner_id")
+    .eq("id", invite.person_id)
+    .maybeSingle();
+  if (!invitePersonOwnedByInviter(person, invite.from_user as string)) {
+    return NextResponse.json({ error: "This link is invalid or has expired." }, { status: 404 });
+  }
+
   // Build the chart through the same validated pipeline the app uses.
   let built;
   try {
@@ -66,7 +80,7 @@ export async function POST(req: Request) {
     birth_lat: built.birth.lat ?? null,
     birth_lng: built.birth.lng ?? null,
     tz_offset_min: built.tzOffsetMin ?? null,
-  }).eq("id", invite.person_id);
+  }).eq("id", invite.person_id).eq("owner_id", invite.from_user);
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 400 });
 
   const { error: cErr } = await supabase.from("charts").upsert({

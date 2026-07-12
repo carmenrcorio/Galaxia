@@ -98,3 +98,5 @@ const crisisPattern =
 export function detectCrisisLanguage(text: string): boolean {
   return crisisPattern.test(text);
 }
+
+export * from "./parse";

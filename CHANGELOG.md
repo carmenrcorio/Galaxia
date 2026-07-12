@@ -4,6 +4,8 @@ Every meaningful change, decision, and reversal. Newest first. If a decision is 
 
 Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `ADDED`, `CHANGED`, `REVERTED`, `BROKEN`, `OPEN`.
 
+> **Adding an entry?** Do **not** edit the top of this file — that shared spot is why every PR used to conflict. Instead add one file `changelog.d/<your-branch-slug>.md` (see [`changelog.d/README.md`](changelog.d/README.md)). Fragments are folded in here at release with `pnpm changelog:collate --write`. Everything below is released history.
+
 ---
 
 ## Marketing landing polish pass (branch `cursor/marketing-polish-pass-cf80`) — 2026-07-11

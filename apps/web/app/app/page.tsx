@@ -74,6 +74,36 @@ function formFromRelation(isSelf: boolean, rel: string): string {
   return "star";
 }
 
+/* ── orbital ring, DERIVED from relationship (Galaxy Phase 1) ───────────────
+   A person's DISTANCE from the centre user is computed from their bond type,
+   never random or hand-assigned — closeness of bond = closeness in space. This
+   is the semantic ring; Phase 2 collapses the rings actually present onto radii
+   that fill the canvas (see ringRadius in the renderer). Ordered by closeness:
+     0 self (centre) · 1 partner · 2 children · 3 parents · 4 siblings ·
+     5 friends · 6 grandparents/ancestors ("ancient light, still arriving").
+   Unknown relations orbit with the friends band (5). Grandparents share the
+   ancestor tier because they share the "ancient" celestial form. */
+function ringIndex(isSelf: boolean, rel: string): number {
+  if (isSelf) return 0;
+  const r = rel?.toLowerCase() ?? "";
+  if (r === "partner" || r === "spouse" || r === "wife" || r === "husband") return 1;
+  if (r === "child" || r === "son" || r === "daughter" || r === "kid") return 2;
+  if (r === "parent" || r === "mother" || r === "father" || r.includes("mom") || r.includes("dad")) return 3;
+  if (r === "sibling" || r === "sister" || r === "brother") return 4;
+  if (r === "ancestor" || r === "grandparent" || r.includes("grand")) return 6;
+  if (r === "friend") return 5;
+  return 5;
+}
+
+/* stable per-person value in [0,1) from a string id — deterministic FNV-1a hash,
+   used for organic layout jitter so the galaxy isn't a rigid dartboard while
+   staying identical frame-to-frame (never Math.random per frame). */
+function hash01(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return ((h >>> 0) % 100000) / 100000;
+}
+
 /* precision sharpness (from prototype sharp()) */
 function sharp(precision: string): number {
   if (precision === "exact") return 1;
@@ -280,27 +310,70 @@ export default function AppHomePage() {
       };
     }
 
+    /* ── derived orbital layout (Galaxy Phase 1) ───────────────────────────
+       Each person's semantic ring comes from their relationship (ringIndex);
+       we then collapse the rings ACTUALLY present onto evenly spaced radii that
+       fill the canvas, so the closeness ORDER is always honoured while the
+       galaxy expands/contracts to use available space (Phase 2 responsiveness):
+       partner+kids alone spread out; 14+ people stay inside the frame. Within a
+       ring, people are spaced evenly around the circle; each ring is rotated by
+       the golden angle (spiral-arm feel) and every star gets small, stable
+       radius+angle jitter so it reads as an organic galaxy, not a dartboard. */
+    const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); /* ~2.399 rad */
+    const nonSelf = people.filter(p => !p.is_self);
+    const semanticRing = new Map<string, number>();
+    for (const p of nonSelf) semanticRing.set(p.id, ringIndex(false, p.relation));
+    /* distinct rings present, closest-first → ordinal used for radius + rotation */
+    const occupiedRings = Array.from(new Set(semanticRing.values())).sort((a, b) => a - b);
+    const ringOrdinal = new Map<number, number>(occupiedRings.map((r, i) => [r, i]));
+    /* members per ring (stable people-order) for even angular distribution */
+    const ringMembers = new Map<number, string[]>();
+    for (const p of nonSelf) {
+      const sr = semanticRing.get(p.id)!;
+      const arr = ringMembers.get(sr);
+      if (arr) arr.push(p.id); else ringMembers.set(sr, [p.id]);
+    }
+
+    /* radius for a ring ordinal — scaled to the current canvas (responsive).
+       rMax keeps the outermost ring (glow + label) inside the frame at any size
+       incl. 375px; rMin keeps the innermost ring clear of the self star. */
+    function ringRadius(ord: number): number {
+      const minSide = Math.min(W(), H());
+      const rMax = Math.max(52, minSide / 2 - 48);
+      const rMin = Math.min(rMax * 0.5, minSide * 0.16);
+      const n = occupiedRings.length;
+      if (n <= 1) return rMin + (rMax - rMin) * 0.55; /* one ring: comfortable middle */
+      return rMin + (rMax - rMin) * (ord / (n - 1));
+    }
+
+    /* stable base (pre-drift) position derived from the ring + within-ring slot */
+    function basePos(i: number): { x: number; y: number } {
+      const p = people[i];
+      const cxp = W() / 2, cyp = H() / 2;
+      if (p.is_self) return { x: cxp, y: cyp };
+      const sr = semanticRing.get(p.id)!;
+      const ord = ringOrdinal.get(sr)!;
+      const members = ringMembers.get(sr)!;
+      const slot = members.indexOf(p.id);
+      const count = Math.max(members.length, 1);
+      const jA = hash01(p.id + "a"), jR = hash01(p.id + "r");
+      const spacing = (Math.PI * 2) / count;
+      /* even spread + per-ring golden rotation (spiral arms) + small angle jitter */
+      const angle = -Math.PI / 2 + ord * GOLDEN_ANGLE + slot * spacing + (jA - 0.5) * spacing * 0.3;
+      const r = ringRadius(ord) * (1 + (jR - 0.5) * 0.14); /* ±7% radius jitter */
+      return { x: cxp + r * Math.cos(angle), y: cyp + r * Math.sin(angle) };
+    }
+
     /* compute position with drift — prototype pos() (drift settles in with ignition) */
     function nodePos(i: number): { x: number; y: number } {
       const p = people[i];
-      let baseX: number, baseY: number;
-      if (p.is_self) {
-        baseX = W() / 2;
-        baseY = H() / 2;
-      } else {
-        const others = people.filter(q => !q.is_self);
-        const oi = others.findIndex(q => q.id === p.id);
-        const angle = (oi / Math.max(others.length, 1)) * Math.PI * 2 - Math.PI / 2;
-        const r = Math.min(W(), H()) * 0.36;
-        baseX = W() / 2 + r * Math.cos(angle);
-        baseY = H() / 2 + r * Math.sin(angle);
-      }
-      if (reduced || p.is_self) return { x: baseX, y: baseY };
+      const base = basePos(i);
+      if (reduced || p.is_self) return base;
       const { ph, sp } = phases[i];
       const settle = clamp01(ignition(p.id).raw);
       return {
-        x: baseX + Math.sin(t * 0.00045 * sp + ph) * 7 * settle,
-        y: baseY + Math.cos(t * 0.00038 * sp + ph) * 7 * settle,
+        x: base.x + Math.sin(t * 0.00045 * sp + ph) * 7 * settle,
+        y: base.y + Math.cos(t * 0.00038 * sp + ph) * 7 * settle,
       };
     }
 

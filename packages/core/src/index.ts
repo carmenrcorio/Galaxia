@@ -144,3 +144,5 @@ export function isMinorForSafety(person: MinorSafetyInput, now: Date = new Date(
 }
 
 export * from "./galaxy-orbit";
+
+export * from "./person-care";

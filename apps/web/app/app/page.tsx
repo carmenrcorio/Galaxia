@@ -22,6 +22,7 @@ import {
   formFromRelation,
   hasPassed,
   isMinorForSafety,
+  peopleForTodaySky,
   ringIndex,
 } from "@galaxia/core";
 import Link from "next/link";
@@ -36,7 +37,6 @@ import {
   type HonorEdge,
 } from "../../lib/honor-constellation";
 import { setThreadStatus } from "../../lib/record";
-import { peopleForTodaySky } from "../../lib/person-care";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 import { todayTransitsForChart } from "../../lib/transits";
 import { interpretTransit, transitNotation } from "../../lib/transit-interpretations";

@@ -142,3 +142,5 @@ export function isMinorForSafety(person: MinorSafetyInput, now: Date = new Date(
   const age = minPossibleAge(person.birthDate, person.birthPrecision, now);
   return age !== null && age < 18;
 }
+
+export * from "./galaxy-orbit";

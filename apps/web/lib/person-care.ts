@@ -6,7 +6,7 @@
  * invent a replacement "sky" widget under pressure.
  */
 
-import { hasPassed } from "./galaxy-orbit";
+import { hasPassed } from "@galaxia/core";
 
 /** Live transit / "Active today" / "Today in your sky" — living people only. */
 export function shouldShowLiveTransits(

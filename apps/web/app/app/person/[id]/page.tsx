@@ -9,7 +9,7 @@
  */
 
 import { computeSynastry, type NatalChart, type Placement } from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
+import { hasPassed, isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -32,7 +32,6 @@ import {
   type HouseKey
 } from "../../../../lib/house-interpretations";
 import { CHART_ENGINE_VERSION, getPreferredHouseSystem, houseSystemLabelForChart } from "../../../../lib/house-system";
-import { hasPassed } from "../../../../lib/galaxy-orbit";
 import {
   buildPersonPageNavSections,
   shouldShowLiveTransits,

@@ -9,7 +9,7 @@
  * gate. UI hiding is not enough — see NOTES_OWNER_RLS_POLICY.
  */
 
-import { hasPassed, usesAncientLight } from "./galaxy-orbit";
+import { hasPassed, usesAncientLight } from "@galaxia/core";
 
 /** Documented data-layer policy from `20260629220500_add_owner_rls_policies.sql`. */
 export const NOTES_OWNER_RLS_POLICY = {

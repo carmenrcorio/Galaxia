@@ -17,7 +17,13 @@
  */
 
 import { computeSynastry, type NatalChart, type TransitHit } from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
+import {
+  elementFromRelation,
+  formFromRelation,
+  hasPassed,
+  isMinorForSafety,
+  ringIndex,
+} from "@galaxia/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -29,12 +35,6 @@ import {
   honorEdgesFromDeclaredRows,
   type HonorEdge,
 } from "../../lib/honor-constellation";
-import {
-  elementFromRelation,
-  formFromRelation,
-  hasPassed,
-  ringIndex,
-} from "../../lib/galaxy-orbit";
 import { setThreadStatus } from "../../lib/record";
 import { peopleForTodaySky } from "../../lib/person-care";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
@@ -73,7 +73,7 @@ const EL_COLOR: Record<string, string> = {
 };
 
 /* Orbit helpers (elementFromRelation / formFromRelation / ringIndex) live in
-   lib/galaxy-orbit.ts so Remembrance can reuse ancient light without a new
+   @galaxia/core so Remembrance can reuse ancient light without a new
    visual language, and so the mapping is unit-tested. */
 
 /* stable per-person value in [0,1) from a string id — deterministic FNV-1a hash,

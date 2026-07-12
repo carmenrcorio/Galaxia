@@ -11,8 +11,7 @@
  * bond, never romantic, never guessed from people.relation (owner-relative).
  */
 
-import { isMinorForSafety, type MinorSafetyInput } from "@galaxia/core";
-import { hasPassed } from "./galaxy-orbit";
+import { hasPassed, isMinorForSafety, type MinorSafetyInput } from "@galaxia/core";
 
 /** Fixed continuity type written for every honor edge. Not inferred. */
 export const HONOR_RELATION_TYPE = "remembrance" as const;

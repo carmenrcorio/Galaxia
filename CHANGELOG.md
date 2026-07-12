@@ -8,6 +8,26 @@ Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `AD
 
 ---
 
+## Ship-blocking minor-safety fix on /app/compare (branch `cursor/fix-compare-minor-safety-block-2592`) — 2026-07-12
+
+**Trigger**: SHIP-BLOCKING SAFETY BUG. `/app/compare` defaulted the relationship type to **`partners`**, and `partners` (like `romantic`) produces romantic/attraction framing — Venus "wanting", partnership-house language, "what X needs from you" in a romance register. Running Compare on a pairing that included a **minor** therefore produced romantic content *about a child*, directly violating the family-safe claim and reproducible on the owner's own account (grandmother vs. a child-labeled person). Untouched per §2: `next.config.mjs`, `.npmrc`, Vercel settings. No fabrication (§12): the fix only *withholds* an unsafe framing — it adds no astrological claim.
+
+**Phase 0 — diagnosis (confirmed before changing anything).**
+- **How the type is selected / why it defaulted romantic.** `apps/web/app/app/compare/page.tsx` held the type in `useState<RelationType>("partners")` and rendered a fixed pill list `["partners","siblings","friends","parent-child","ancestor"]`; the first, `partners`, was both the default state and the first pill. Every downstream reading surface (`sortAspectsForFocus`, `relationshipAspectFraming`, `relationLensCaption`, `whatTheyNeed`) keys off that type.
+- **Which types are romantic.** `partners` and `romantic` are the romantic/attraction lenses (`RELATION_ASPECT_FRAME` → "easy attraction — wanting and warmth…", `relationLensCaption` → "attraction and partnership", and `whatTheyNeed`'s `isPartnerLens` branch surfaces `VENUS_NEED` "how they feel loved"). `parent-child`, `siblings`, `friends`, `ancestor` (and `platonic`) are non-romantic (safety/structure, communication, generational registers).
+- **The minor gap.** Compare *did* call `isMinorForSafety` (via `minorOf`), but **only** to show a reassurance note about the Ask-Vela handoff mode. It did **not** use minor status to restrict relationship types, change the default, or block romantic output. So the romantic path was fully reachable for a minor.
+
+**Phase 1 — hard-restrict minor pairings.**
+- New single-source-of-truth helpers in `apps/web/lib/compare-guidance.ts`: `ROMANTIC_RELATION_TYPES` (`partners`, `romantic`), `isRomanticRelation()`, `COMPARE_RELATION_TYPES`, `availableCompareRelationTypes(pairHasMinor)` (drops every romantic type when a minor is present), and `defaultCompareRelationType(pairHasMinor)`.
+- `FIXED` The picker now renders `availableCompareRelationTypes(selectionHasMinor)` — when either selected person is a minor (age-aware `isMinorForSafety`, computed on **selection** so it reacts before "Run"), the romantic/partner pill is **removed entirely**, not merely non-default. A note explains only non-romantic readings are available.
+- `FIXED` A selection effect forces a minor pairing off any romantic type (default or one chosen before the minor entered the pairing) down to the safe non-romantic default, and prefers `parent-child` for an untouched minor pairing.
+- `ADDED` **Defense in depth**: even if a romantic type were somehow reached with a minor present, the result render is blocked (`blockRomanticMinorRender`) and a safe "Reading held" message is shown instead — the romantically framed reading is never generated.
+
+**Phase 2 — fix the default.**
+- `CHANGED` The global default is no longer `partners`. It is `defaultCompareRelationType(false)` = **`friends`** (neutral, non-romantic); a minor pairing defaults to **`parent-child`** (age-appropriate, non-romantic). A user can never land on romantic framing by default.
+
+**Phase 3 — verification.** `@galaxia/web` `tsc --noEmit`, `next build`, and the full turbo `pnpm test` (astro 33, vela 4, **web 7 new**) all pass. `/app/compare` is auth-gated and needs Supabase secrets not present in the cloud VM (documented no-secrets limitation), so the exact reported case (grandmother vs. child-labeled minor) is reproduced as an automated test rather than in a live browser.
+- `ADDED` `apps/web/lib/compare-guidance.test.ts` (Vitest — web gained a real `test` script + `vitest` devDep + a scoped `vitest.config.ts`): asserts romantic types are unselectable and the default is non-romantic for a minor pairing, that adult-only pairings keep all types, that the default is never romantic, and reproduces the grandmother-vs-minor case end to end — including the age-aware path where a real child saved with `is_minor=false` (the Gabriel record) is still gated.
 ## Marketing landing polish pass (branch `cursor/marketing-polish-pass-cf80`) — 2026-07-11
 
 **Trigger**: a design-review polish pass on the rebuilt JSX marketing page (`apps/web/app/page.tsx` + `components/marketing/*`). Styling/refinement only — no copy meaning, pricing, Vela example, or FAQ content changed; existing design tokens reused; **no new font added** (the site's two families, Fraunces + Inter, are unchanged). Untouched per §2: `next.config.mjs`, `.npmrc`, Vercel settings.

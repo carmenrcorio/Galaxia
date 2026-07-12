@@ -26,6 +26,49 @@ import { HOUSE_AREA, SIGN_VIBE } from "./design";
 
 export type RelationType = "partners" | "siblings" | "friends" | "parent-child" | "ancestor" | "romantic" | "platonic";
 
+/**
+ * Relationship types that frame the reading romantically — attraction / Venus
+ * "wanting" / partnership-house language. SAFETY (ENGINEERING.md §9 & §13):
+ * these must never be reachable for a pairing that includes a minor, or the
+ * output becomes romantic content ABOUT a child. This is the single source of
+ * truth read by /app/compare's picker gate, its default, and its defense-in-
+ * depth render guard.
+ */
+export const ROMANTIC_RELATION_TYPES: readonly RelationType[] = ["partners", "romantic"];
+
+/** True when the relationship type produces romantic / attraction framing. */
+export function isRomanticRelation(relType: RelationType): boolean {
+  return ROMANTIC_RELATION_TYPES.includes(relType);
+}
+
+/** The five relationship types the saved-people /app/compare picker offers. */
+export const COMPARE_RELATION_TYPES: readonly RelationType[] = [
+  "partners",
+  "siblings",
+  "friends",
+  "parent-child",
+  "ancestor",
+];
+
+/**
+ * The relationship types selectable in /app/compare for this pairing. When a
+ * minor is present every romantic type is removed entirely — unselectable, not
+ * just non-default — so no code path can reach romantic framing about a child.
+ * Over-restrict, never under-restrict (ENGINEERING.md §13).
+ */
+export function availableCompareRelationTypes(pairHasMinor: boolean): RelationType[] {
+  return COMPARE_RELATION_TYPES.filter((t) => !(pairHasMinor && isRomanticRelation(t)));
+}
+
+/**
+ * The relationship type /app/compare should default to. Never "partners": a
+ * user must never land on romantic framing by default. When a minor is in the
+ * pairing, default to the caregiving, non-romantic parent-child frame.
+ */
+export function defaultCompareRelationType(pairHasMinor: boolean): RelationType {
+  return pairHasMinor ? "parent-child" : "friends";
+}
+
 /** Bodies whose cross-aspects are most relevant to a romantic reading. */
 const ROMANTIC_BODIES = ["venus", "mars", "sun", "moon"];
 /** Bodies whose cross-aspects are most relevant to a platonic reading. */

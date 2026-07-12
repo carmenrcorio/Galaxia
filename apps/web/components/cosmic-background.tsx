@@ -2,13 +2,26 @@
 
 /**
  * CosmicBackground
- * Ported precisely from design/reference/galaxia-landing-v2.html:
- *   - .aura: four-layer radial-gradient fixed background
- *   - .milkyway: rotated blurred radial gradient with parallax
- *   - #stars canvas: ~1 star per 9 000 px², twinkle via accumulating angle (s.a += s.tw),
- *                    depth-based scroll parallax, no motion when prefers-reduced-motion
+ * Ported from design/reference/galaxia-landing-v2.html, then given DEPTH
+ * (galaxy glow-up, Phase 2):
+ *   - .aura: four-layer radial-gradient fixed background (deep indigo/violet —
+ *            the "not pure black" background color depth)
+ *   - .milkyway: rotated blurred radial gradient
+ *   - #stars canvas: the flat single-layer starfield is now split into three
+ *            PARALLAX DEPTH LAYERS (far / mid / near). Each layer has its own
+ *            density, star size, brightness and parallax factor, so on pointer
+ *            move (desktop) and device orientation (mobile, if the sensor
+ *            fires) the nearer layers shift more than the farther ones — a
+ *            gentle, real sense of volume. Twinkle via accumulating angle
+ *            (s.a += s.tw). Scroll parallax preserved. prefers-reduced-motion
+ *            disables twinkle AND all parallax and draws one static frame.
  *   - .grain: fixed SVG noise overlay, opacity .05, mix-blend-mode overlay
- *   - .vignette: inset box-shadow 0 0 240px 60px rgba(5,3,12,.9)
+ *   - .vignette: inset box-shadow — darker edges drawing the eye inward
+ *
+ * PERFORMANCE: the whole field is plain filled arcs (no per-frame blur/filter);
+ * star counts scale with viewport area and are capped so a 375px phone draws a
+ * few hundred, not thousands. An EMA frame-budget watch drops the far layer if
+ * a device can't sustain the full three, so mobile degrades rather than janks.
  */
 
 import { useEffect, useRef } from "react";
@@ -23,6 +36,20 @@ interface Star {
   depth: number;      // for scroll parallax (0.2–0.8)
 }
 
+/* Depth layers, far → near. `parallax` is how far (in CSS px) the layer slides
+   at a full pointer/tilt deflection; nearer layers move more. `density` is the
+   px² per star (smaller = denser). Kept SUBTLE on purpose — a few px of travel,
+   not a swoop. */
+interface Layer {
+  stars: Star[];
+  parallax: number;   // max CSS-px shift at full deflection
+  density: number;    // one star per this many CSS px²
+  rMin: number; rMax: number;   // radius range (× DPR)
+  aMin: number; aRange: number; // resting-brightness range
+  twMul: number;      // twinkle-speed multiplier
+  ox: number; oy: number;       // current (lerped) parallax offset, CSS px
+}
+
 export function CosmicBackground() {
   const starsRef = useRef<HTMLCanvasElement>(null);
 
@@ -35,61 +62,95 @@ export function CosmicBackground() {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
-    let stars: Star[] = [];
     let W = 0, H = 0;
     let scrollY = 0;
     let raf = 0;
+
+    /* three depth planes. far = many tiny dim slow-parallax; near = fewer,
+       larger, brighter, more parallax. */
+    const layers: Layer[] = [
+      { stars: [], parallax: 3,  density: 5200, rMin: 0.15, rMax: 0.65, aMin: 0.14, aRange: 0.20, twMul: 0.7, ox: 0, oy: 0 },
+      { stars: [], parallax: 8,  density: 12000, rMin: 0.30, rMax: 1.00, aMin: 0.24, aRange: 0.28, twMul: 1.0, ox: 0, oy: 0 },
+      { stars: [], parallax: 16, density: 30000, rMin: 0.50, rMax: 1.45, aMin: 0.34, aRange: 0.36, twMul: 1.3, ox: 0, oy: 0 },
+    ];
+    /* adaptive: on a struggling device the farthest (densest) layer is dropped */
+    let activeLayers = layers.length;
+
+    /* pointer / gyro deflection, normalized to roughly −1..1 on each axis,
+       lerped toward its target each frame for smoothness. */
+    let targetX = 0, targetY = 0;
 
     function sizeStars() {
       W = sc!.width  = innerWidth  * DPR;
       H = sc!.height = innerHeight * DPR;
       sc!.style.width  = innerWidth  + "px";
       sc!.style.height = innerHeight + "px";
-      const n = Math.round(innerWidth * innerHeight / 9000);
-      stars = [];
-      for (let i = 0; i < n; i++) {
-        stars.push({
-        x:     Math.random() * W,
-        y:     Math.random() * H,
-        r:     (Math.random() * 1.1 + 0.2) * DPR,
-        a:     Math.random() * Math.PI * 2,
-          // Twinkle speed. History: Math.random()*0.02 + 0.004 flickered fast;
-          // a prior fix slowed it ~5x to *0.004 + 0.0008 (~10–65s/pulse) but
-          // it still read as a busy field because (a) EVERY star twinkled and
-          // (b) the swing was huge (0.25↔0.90) through a sharp abs(sin) trough,
-          // i.e. near on/off. Slowed further here (~2.5x → a full ~55–260s
-          // pulse) AND the swing/participation are cut below via `amp`.
-          // prefers-reduced-motion is honored below (increment skipped; one
-          // static frame draws, with no twinkle offset applied).
-          tw:    Math.random() * 0.0015 + 0.0004,
-          // A star's resting brightness. Most stars now simply sit here,
-          // steady — a calm sky rather than a field of pulsing dots.
-          baseA: Math.random() * 0.34 + 0.28,   // 0.28–0.62
-          // Only ~30% of stars twinkle at all, and only by a gentle ±0.05–0.15
-          // around their resting alpha (smooth sin, never through zero) so the
-          // shimmer is subtle and occasional, never on/off.
-          amp:   Math.random() < 0.30 ? Math.random() * 0.10 + 0.05 : 0,
-          depth: Math.random() * 0.6 + 0.2,
-        });
+      const area = innerWidth * innerHeight;
+      const small = innerWidth < 480;
+      for (const layer of layers) {
+        // fewer stars on small screens; hard cap keeps the densest layer sane
+        const divisor = layer.density * (small ? 1.7 : 1);
+        const n = Math.min(Math.round(area / divisor), 900);
+        layer.stars = [];
+        for (let i = 0; i < n; i++) {
+          layer.stars.push({
+            x:     Math.random() * W,
+            y:     Math.random() * H,
+            r:     (Math.random() * (layer.rMax - layer.rMin) + layer.rMin) * DPR,
+            a:     Math.random() * Math.PI * 2,
+            // Twinkle speed (see history in git): a slow ~55–260s pulse,
+            // scaled per layer so nearer stars breathe a touch faster.
+            tw:    (Math.random() * 0.0015 + 0.0004) * layer.twMul,
+            baseA: Math.random() * layer.aRange + layer.aMin,
+            // Only ~30% of stars twinkle at all, gently, never through zero.
+            amp:   Math.random() < 0.30 ? Math.random() * 0.10 + 0.04 : 0,
+            depth: Math.random() * 0.6 + 0.2,
+          });
+        }
       }
     }
 
+    let emaFrameMs = 16.7, lastFrame = performance.now(), warmup = 0;
+
     function drawStars() {
+      const now = performance.now();
+      const dt = now - lastFrame; lastFrame = now;
+      if (!reduce) {
+        if (warmup > 10) {
+          emaFrameMs = emaFrameMs * 0.9 + dt * 0.1;
+          // sustained <~34fps → shed the densest (far) layer once
+          if (activeLayers === layers.length && emaFrameMs > 29) activeLayers = layers.length - 1;
+        } else { warmup++; }
+      }
+
       sx!.clearRect(0, 0, W, H);
-      for (let i = 0; i < stars.length; i++) {
-        const s = stars[i];
-        if (!reduce) s.a += s.tw;          // accumulating angle (matches landing)
-        // Gentle shimmer around the star's resting brightness. Smooth sin (not
-        // abs) keeps it a soft rise-and-fall instead of a sharp on/off blink,
-        // and `amp` is 0 for most stars so only a few pulse at any moment.
-        const al = s.baseA + (reduce ? 0 : s.amp * Math.sin(s.a));
-        // scroll parallax identical to landing
-        let yy = s.y - scrollY * DPR * s.depth * 0.15;
-        yy = ((yy % H) + H) % H;
-        sx!.beginPath();
-        sx!.arc(s.x, yy, s.r, 0, Math.PI * 2);
-        sx!.fillStyle = `rgba(244,236,219,${al.toFixed(3)})`;
-        sx!.fill();
+      // ease the parallax offset toward the pointer/tilt target
+      for (let li = 0; li < layers.length; li++) {
+        const layer = layers[li];
+        const tox = reduce ? 0 : targetX * layer.parallax;
+        const toy = reduce ? 0 : targetY * layer.parallax;
+        layer.ox += (tox - layer.ox) * 0.06;
+        layer.oy += (toy - layer.oy) * 0.06;
+      }
+
+      // farthest layer first so nearer, brighter stars paint on top
+      for (let li = layers.length - activeLayers; li < layers.length; li++) {
+        const layer = layers[li];
+        const px = layer.ox * DPR, py = layer.oy * DPR;
+        for (let i = 0; i < layer.stars.length; i++) {
+          const s = layer.stars[i];
+          if (!reduce) s.a += s.tw;
+          const al = s.baseA + (reduce ? 0 : s.amp * Math.sin(s.a));
+          // scroll parallax (preserved from landing) + pointer/tilt parallax
+          let yy = s.y - scrollY * DPR * s.depth * 0.15 + py;
+          yy = ((yy % H) + H) % H;
+          let xx = s.x + px;
+          xx = ((xx % W) + W) % W;
+          sx!.beginPath();
+          sx!.arc(xx, yy, s.r, 0, Math.PI * 2);
+          sx!.fillStyle = `rgba(244,236,219,${al.toFixed(3)})`;
+          sx!.fill();
+        }
       }
       if (!reduce) raf = requestAnimationFrame(drawStars);
     }
@@ -100,17 +161,39 @@ export function CosmicBackground() {
       if (reduce) drawStars();
     };
 
+    /* desktop parallax — pointer position relative to viewport centre */
+    const onPointer = (e: PointerEvent) => {
+      if (reduce) return;
+      targetX = (e.clientX / innerWidth  - 0.5) * 2;
+      targetY = (e.clientY / innerHeight - 0.5) * 2;
+    };
+    /* mobile parallax — device tilt, if the sensor fires (no permission prompt;
+       absent sensor simply leaves the field still). gamma = left/right tilt,
+       beta = front/back. Clamped so a small tilt is enough. */
+    const onOrient = (e: DeviceOrientationEvent) => {
+      if (reduce || e.gamma == null || e.beta == null) return;
+      const clamp = (v: number, m: number) => Math.max(-m, Math.min(m, v));
+      targetX = clamp(e.gamma / 25, 1);
+      targetY = clamp((e.beta - 45) / 25, 1);
+    };
+
     sizeStars();
     drawStars();
     if (reduce) drawStars();   // single static frame for reduced-motion
 
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
+    if (!reduce) {
+      window.addEventListener("pointermove", onPointer, { passive: true });
+      window.addEventListener("deviceorientation", onOrient);
+    }
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("pointermove", onPointer);
+      window.removeEventListener("deviceorientation", onOrient);
     };
   }, []);
 

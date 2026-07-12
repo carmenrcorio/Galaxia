@@ -77,6 +77,20 @@ function hexA(hex: string, a: number): string {
   return `rgba(${r},${g},${b},${a})`;
 }
 
+/* ── generational cohort colour, DERIVED from the outer-planet signature ──
+   A cohort is anchored by its Pluto sign (the slowest visible planet, ~12–30
+   yrs/sign — the classic generational band); people who share a Pluto sign
+   share a nebula and a colour. The colour is computed deterministically from
+   the sign, never assigned or tied to app usage (ENGINEERING.md §12/§13): the
+   zodiac order maps onto a tasteful cyan→indigo→violet→rose arc within the
+   brand's cosmic palette, so the hue is a readable fact of the record. */
+const ZODIAC = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"] as const;
+const SIGN_INDEX: Record<string, number> = Object.fromEntries(ZODIAC.map((s, i) => [s, i]));
+function cohortHsla(signIndex: number, alpha: number): string {
+  const hue = 196 + (signIndex / 11) * 132; // 196° teal → 328° rose-magenta
+  return `hsla(${hue.toFixed(1)}, 46%, 66%, ${alpha})`;
+}
+
 /* quadratic bezier control point — same as prototype curve() */
 function bezierCP(ax: number, ay: number, bx: number, by: number) {
   const mx = (ax+bx)/2, my = (ay+by)/2;
@@ -98,6 +112,10 @@ export default function AppHomePage() {
   const [welcomeName, setWelcomeName] = useState("stargazer");
   const [people, setPeople]           = useState<PersonRow[]>([]);
   const [links, setLinks]             = useState<LinkRow[]>([]);
+  /* personId → Pluto sign: the generational cohort key. Derived from each
+     person's computed chart (outer-planet signature); people without a chart
+     get no cohort and no nebula — we don't fabricate a generation. */
+  const [cohortByPerson, setCohortByPerson] = useState<Record<string, string>>({});
   const [activeTransitIds, setActiveTransitIds] = useState<string[]>([]);
   const [todayTransit, setTodayTransit]         = useState("No notable transits today.");
   const [threadChips, setThreadChips]           = useState<ThreadChip[]>([]);
@@ -423,6 +441,57 @@ export default function AppHomePage() {
       }
     }
 
+    /* ── volumetric generational nebulae ────────────────────────────────
+       Each cohort (people sharing a Pluto sign) gets a soft gas cloud sitting
+       BEHIND its stars, so those stars glow through it — the visual payoff of
+       "the sky you were all born under". Not a flat tint / hard circle: several
+       offset radial puffs of different sizes give an organic edge, and the
+       whole group is drawn with 'lighter' compositing so overlapping cohorts
+       ADD into brighter seams rather than stacking as opaque blobs. Colour is
+       derived from the cohort's outer-planet signature (cohortHsla). Cheap by
+       design — a handful of gradient fills, no ctx.filter blur. */
+    function drawNebulae(positions: { x: number; y: number }[], nebFade: number) {
+      if (nebFade <= 0.001) return;
+      const groups = new Map<string, number[]>();
+      for (let i = 0; i < people.length; i++) {
+        const key = cohortByPerson[people[i].id];
+        if (!key) continue; /* no chart → no cohort → no fabricated nebula */
+        const arr = groups.get(key);
+        if (arr) arr.push(i); else groups.set(key, [i]);
+      }
+      if (groups.size === 0) return;
+
+      cx.save();
+      cx.globalCompositeOperation = "lighter";
+      groups.forEach((idxs, key) => {
+        let cxm = 0, cym = 0;
+        for (const i of idxs) { cxm += positions[i].x; cym += positions[i].y; }
+        cxm /= idxs.length; cym /= idxs.length;
+        let rad = 0;
+        for (const i of idxs) rad = Math.max(rad, Math.hypot(positions[i].x - cxm, positions[i].y - cym));
+        rad = Math.max(rad, 54) + 96; /* soft margin so the stars sit inside the cloud */
+        const si = SIGN_INDEX[key] ?? 0;
+
+        /* one broad puff + a couple of smaller offset ones for an organic edge */
+        const puffCount = lowPerf ? 2 : 3;
+        for (let k = 0; k < puffCount; k++) {
+          const seed  = si * 13 + k * 7;
+          const drift = reduced ? 0 : Math.sin(t * 0.0004 + seed);
+          const ang   = seed * 1.7;
+          const dist  = (k === 0 ? 0 : rad * 0.34) * (0.82 + 0.18 * drift);
+          const ox    = cxm + Math.cos(ang) * dist;
+          const oy    = cym + Math.sin(ang) * dist * 0.8;
+          const pr    = rad * (k === 0 ? 1 : 0.66) * (1 + (reduced ? 0 : 0.05 * drift));
+          const g = cx.createRadialGradient(ox, oy, 0, ox, oy, pr);
+          g.addColorStop(0,    cohortHsla(si, 0.12 * nebFade));
+          g.addColorStop(0.5,  cohortHsla(si, 0.05 * nebFade));
+          g.addColorStop(1,    cohortHsla(si, 0));
+          cx.beginPath(); cx.arc(ox, oy, pr, 0, Math.PI * 2); cx.fillStyle = g; cx.fill();
+        }
+      });
+      cx.restore();
+    }
+
     /* ── hit detection ── */
     function hitTest(mx: number, my: number): PersonRow | null {
       const positions = people.map((_, i) => nodePos(i));
@@ -449,8 +518,25 @@ export default function AppHomePage() {
 
       cx.clearRect(0, 0, W(), H());
 
+      /* ── atmospheric finish: deep-field wash + vignette in one cheap radial
+         fill. A faint indigo centre falling to deep-ink edges gives the card
+         interior real colour depth (not flat black / flat glass) and the
+         darkened rim draws the eye inward to the user's star at centre. Brand
+         tokens: --ink2 #16102e (indigo) → --ink #0a0717 (deep edge). */
+      const cxw = W() / 2, cyw = H() / 2;
+      const wash = cx.createRadialGradient(cxw, cyw, 0, cxw, cyw, Math.max(W(), H()) * 0.72);
+      wash.addColorStop(0,   "rgba(22,16,46,0.34)");
+      wash.addColorStop(0.6, "rgba(12,8,32,0.55)");
+      wash.addColorStop(1,   "rgba(6,4,18,0.82)");
+      cx.fillStyle = wash; cx.fillRect(0, 0, W(), H());
+
       const positions = people.map((_, i) => nodePos(i));
       const byId = new Map(people.map((p, i) => [p.id, positions[i]]));
+
+      /* generational nebulae behind everything — bloom in just after the self
+         ignites so the "sky you were born under" arrives with the sky */
+      const nebFade = reduced ? globalFade : clamp01((elapsed - 200) / 1200);
+      drawNebulae(positions, nebFade);
 
       /* links first — each grows in on its own schedule */
       for (const link of links) {
@@ -501,7 +587,7 @@ export default function AppHomePage() {
       canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("click", onClick);
     };
-  }, [loading, people, links, activeTransitIds, hoverPerson, router]);
+  }, [loading, people, links, activeTransitIds, hoverPerson, router, cohortByPerson]);
 
   /* ─── data loading ────────────────────────────────────────────── */
   async function loadHome(uid: string, email: string) {
@@ -522,6 +608,15 @@ export default function AppHomePage() {
       setPeople(castPeople);
 
       const chartById = new Map<string, NatalChart>((chartRows ?? []).map(r => [r.person_id as string, r.data as NatalChart]));
+
+      /* cohort per person = their Pluto sign, straight from the computed chart.
+         No chart → no cohort (the nebula layer simply omits them). */
+      const cohortMap: Record<string, string> = {};
+      for (const p of castPeople) {
+        const plutoSign = chartById.get(p.id)?.generational?.pluto?.sign;
+        if (plutoSign) cohortMap[p.id] = plutoSign;
+      }
+      setCohortByPerson(cohortMap);
 
       /* build links with real synastry scores + element colours */
       const calcLinks: LinkRow[] = [];
@@ -613,10 +708,20 @@ export default function AppHomePage() {
             {/* full-width canvas fills container */}
             <canvas ref={canvasRef} style={{ display: "block", width: "100%", minHeight: 440 }} />
 
+            {/* fine film grain over the focal plane — texture, not static.
+               Static SVG noise (same recipe as CosmicBackground), very low
+               opacity, mix-blend overlay. A CSS overlay, so it costs nothing
+               per frame — the animated canvas never touches it. */}
+            <div aria-hidden style={{
+              position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
+              opacity: 0.045, mixBlendMode: "overlay",
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+            }} />
+
             {/* hover inspector — glass card floating over canvas */}
             {hoverPerson ? (
               <div style={{
-                position: "absolute", top: 16, right: 16,
+                position: "absolute", top: 16, right: 16, zIndex: 2,
                 width: 220, padding: "16px 18px", borderRadius: 16,
                 background: "linear-gradient(165deg, rgba(255,255,255,.065), rgba(255,255,255,.018))",
                 backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",

@@ -282,9 +282,13 @@ export default function AppHomePage() {
       if (ign.alpha <= 0.001) return; /* not yet kindled */
       const scale = reduced ? 1 : Math.max(0.001, ign.scale);
       const R     = R0 * scale;
-      /* gentle organic twinkle (two slow summed sines — NOT the old fast blink) */
-      const tw    = reduced ? 1 : (1 + 0.06 * Math.sin(t * 0.0009 * phases[i].sp + phases[i].ph)
-                                     + 0.04 * Math.sin(t * 0.0005 + phases[i].ph * 1.7));
+      /* gentle organic twinkle (two slow summed sines — NOT the old fast blink).
+         Calmed further so it doesn't compound with the background starfield
+         into a busy shimmer: amplitude ~0.065 (was 0.10) and periods stretched
+         to ~14–30s (was ~9–20s). Per-star phase (phases[i].ph) staggers them so
+         they don't pulse in unison. */
+      const tw    = reduced ? 1 : (1 + 0.04 * Math.sin(t * 0.0006 * phases[i].sp + phases[i].ph)
+                                     + 0.025 * Math.sin(t * 0.00035 + phases[i].ph * 1.7));
 
       cx.save();
       cx.globalAlpha = reduced ? globalFade : easeOutCubic(ign.raw);

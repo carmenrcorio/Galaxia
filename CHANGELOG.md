@@ -4,28 +4,30 @@ Every meaningful change, decision, and reversal. Newest first. If a decision is 
 
 Format: `[TYPE] Summary` followed by the reason. Types: `DECISION`, `FIXED`, `ADDED`, `CHANGED`, `REVERTED`, `BROKEN`, `OPEN`.
 
----
-
-## Calm the star twinkle after Galaxy Phase 1 (branch `cursor/galaxy-star-twinkle-tuning-dcbf`) — 2026-07-12
-
-**Trigger**: after the Galaxy Phase 1 entrance + living-light shipped (`feat/galaxy-entrance-and-light`), `/app` read as busy/flickering — a field of fast-blinking dots, not a calm living sky. Tuning only; no data meaning, positions, forms, colours, or precision→brightness touched (§12/§13). Untouched per §2: `next.config.mjs`, `.npmrc`, Vercel settings.
-
-**Phase 0 — audit (read-only, reported before changing anything).** There are **two** independent twinkle systems, and on `/app` they stack (the constellation `<canvas>` sits at `z-index:2` directly over the full-page starfield at `z-index:0`):
-- `FIXED` **Background starfield — `apps/web/components/cosmic-background.tsx`** (mounted on `/app` via `app/app/layout.tsx`, and on `/welcome`, `/account`, `/subscribe`, `/chart`, marketing home). ~1 star per 9000px² (~150 on desktop), **every** star twinkling. A prior PR (#23) had already slowed the *speed* (`Math.random()*0.004 + 0.0008`, ~10–65s/pulse), but the real busyness was the **amplitude**: alpha `0.25 + Math.abs(Math.sin(a)) * 0.65` — a 0.65 swing through a sharp `abs()` trough, i.e. effectively on↔off, across the whole field at once.
-- `FIXED` **Constellation node "living light" — `apps/web/app/app/page.tsx` (`drawBody`)**, added by Galaxy Phase 2. `tw = 1 + 0.06·sin(t·0.0009·sp) + 0.04·sin(t·0.0005)` — amp ~0.10, ~9–20s periods. Not fast on its own, but it is a **second** shimmer layered on top of the starfield, so the two compounded into the reported flicker. So Phase 1 did **not** re-introduce a fast per-star constant — it stacked a new gentle twinkle on top of the pre-existing (large-amplitude) starfield.
-- `OPEN` (not touched): `components/constellation-hero.tsx` has a genuinely fast twinkle (`0.7 + sin(t·2)·0.3`, ~3s) but is **dead code** — imported nowhere (grep-confirmed). The marketing hero node graph (`components/marketing/hero-graph.tsx`) has a small `0.85 + 0.15·sin(t·0.002)` node pulse on 7 nodes — a different, contained surface, not the "sky"; left as-is. Both noted so they aren't re-litigated.
-
-**Phase 1 — tune down (both systems calmed so they can't compound).**
-1. `CHANGED` **Starfield: subtle, occasional, much slower.** Per-star `tw` slowed ~2.5× further (`Math.random()*0.0015 + 0.0004` → a full ~55–260s pulse). Alpha is now a steady per-star resting brightness `baseA` (0.28–0.62) with a **smooth** `sin` shimmer (not `abs`, never through zero) of amplitude `amp`, and **only ~30% of stars twinkle at all** (`amp` is 0 for the rest) by ±0.05–0.15 — so the sky is mostly still with a few soft, staggered pulses instead of a whole field going on/off.
-2. `CHANGED` **Constellation node twinkle: gentler + slower.** Amplitude cut to ~0.065 (was 0.10) and periods stretched to ~14–30s (`sin(t·0.0006·sp)` + `sin(t·0.00035)`); per-star phase still staggers them out of unison.
-3. **`prefers-reduced-motion`**: still honored on both — the starfield increment is skipped (one static frame, no twinkle offset applied) and the node `tw` collapses to `1`. Unchanged behaviour, just re-confirmed.
-
-**Not touched**: transit pulse ring / moon crescent shimmer / binary orbit / ancient-ring breathing (form-specific, already slow or tied to a real event per §13), and all data-derived meaning.
-
-**Verified**: `@galaxia/web` `tsc --noEmit` and `next build` pass. Visual note: `/app` is auth-gated and needs Supabase secrets not present in the cloud VM (documented no-secrets limitation), so the twinkle was validated by the math above and a static render of the starfield layer; the change is constants/formula only within the existing, already-verified render loops.
+> **Adding an entry?** Do **not** edit the top of this file — that shared spot is why every PR used to conflict. Instead add one file `changelog.d/<your-branch-slug>.md` (see [`changelog.d/README.md`](changelog.d/README.md)). Fragments are folded in here at release with `pnpm changelog:collate --write`. Everything below is released history.
 
 ---
 
+## Ship-blocking minor-safety fix on /app/compare (branch `cursor/fix-compare-minor-safety-block-2592`) — 2026-07-12
+
+**Trigger**: SHIP-BLOCKING SAFETY BUG. `/app/compare` defaulted the relationship type to **`partners`**, and `partners` (like `romantic`) produces romantic/attraction framing — Venus "wanting", partnership-house language, "what X needs from you" in a romance register. Running Compare on a pairing that included a **minor** therefore produced romantic content *about a child*, directly violating the family-safe claim and reproducible on the owner's own account (grandmother vs. a child-labeled person). Untouched per §2: `next.config.mjs`, `.npmrc`, Vercel settings. No fabrication (§12): the fix only *withholds* an unsafe framing — it adds no astrological claim.
+
+**Phase 0 — diagnosis (confirmed before changing anything).**
+- **How the type is selected / why it defaulted romantic.** `apps/web/app/app/compare/page.tsx` held the type in `useState<RelationType>("partners")` and rendered a fixed pill list `["partners","siblings","friends","parent-child","ancestor"]`; the first, `partners`, was both the default state and the first pill. Every downstream reading surface (`sortAspectsForFocus`, `relationshipAspectFraming`, `relationLensCaption`, `whatTheyNeed`) keys off that type.
+- **Which types are romantic.** `partners` and `romantic` are the romantic/attraction lenses (`RELATION_ASPECT_FRAME` → "easy attraction — wanting and warmth…", `relationLensCaption` → "attraction and partnership", and `whatTheyNeed`'s `isPartnerLens` branch surfaces `VENUS_NEED` "how they feel loved"). `parent-child`, `siblings`, `friends`, `ancestor` (and `platonic`) are non-romantic (safety/structure, communication, generational registers).
+- **The minor gap.** Compare *did* call `isMinorForSafety` (via `minorOf`), but **only** to show a reassurance note about the Ask-Vela handoff mode. It did **not** use minor status to restrict relationship types, change the default, or block romantic output. So the romantic path was fully reachable for a minor.
+
+**Phase 1 — hard-restrict minor pairings.**
+- New single-source-of-truth helpers in `apps/web/lib/compare-guidance.ts`: `ROMANTIC_RELATION_TYPES` (`partners`, `romantic`), `isRomanticRelation()`, `COMPARE_RELATION_TYPES`, `availableCompareRelationTypes(pairHasMinor)` (drops every romantic type when a minor is present), and `defaultCompareRelationType(pairHasMinor)`.
+- `FIXED` The picker now renders `availableCompareRelationTypes(selectionHasMinor)` — when either selected person is a minor (age-aware `isMinorForSafety`, computed on **selection** so it reacts before "Run"), the romantic/partner pill is **removed entirely**, not merely non-default. A note explains only non-romantic readings are available.
+- `FIXED` A selection effect forces a minor pairing off any romantic type (default or one chosen before the minor entered the pairing) down to the safe non-romantic default, and prefers `parent-child` for an untouched minor pairing.
+- `ADDED` **Defense in depth**: even if a romantic type were somehow reached with a minor present, the result render is blocked (`blockRomanticMinorRender`) and a safe "Reading held" message is shown instead — the romantically framed reading is never generated.
+
+**Phase 2 — fix the default.**
+- `CHANGED` The global default is no longer `partners`. It is `defaultCompareRelationType(false)` = **`friends`** (neutral, non-romantic); a minor pairing defaults to **`parent-child`** (age-appropriate, non-romantic). A user can never land on romantic framing by default.
+
+**Phase 3 — verification.** `@galaxia/web` `tsc --noEmit`, `next build`, and the full turbo `pnpm test` (astro 33, vela 4, **web 7 new**) all pass. `/app/compare` is auth-gated and needs Supabase secrets not present in the cloud VM (documented no-secrets limitation), so the exact reported case (grandmother vs. child-labeled minor) is reproduced as an automated test rather than in a live browser.
+- `ADDED` `apps/web/lib/compare-guidance.test.ts` (Vitest — web gained a real `test` script + `vitest` devDep + a scoped `vitest.config.ts`): asserts romantic types are unselectable and the default is non-romantic for a minor pairing, that adult-only pairings keep all types, that the default is never romantic, and reproduces the grandmother-vs-minor case end to end — including the age-aware path where a real child saved with `is_minor=false` (the Gabriel record) is still gated.
 ## Marketing landing polish pass (branch `cursor/marketing-polish-pass-cf80`) — 2026-07-11
 
 **Trigger**: a design-review polish pass on the rebuilt JSX marketing page (`apps/web/app/page.tsx` + `components/marketing/*`). Styling/refinement only — no copy meaning, pricing, Vela example, or FAQ content changed; existing design tokens reused; **no new font added** (the site's two families, Fraunces + Inter, are unchanged). Untouched per §2: `next.config.mjs`, `.npmrc`, Vercel settings.

@@ -16,10 +16,13 @@ import { compareGenerational, computeSynastry, type GenSignature, type NatalChar
 import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { Spinner } from "../../../components/spinner";
 import {
+  availableCompareRelationTypes,
+  defaultCompareRelationType,
+  isRomanticRelation,
   narrateHouseOverlay,
   relationElementSignal,
   relationHasHouseLens,
@@ -91,7 +94,14 @@ function ComparePageInner() {
   const [people, setPeople]       = useState<PersonLite[]>([]);
   const [personAId, setPersonAId] = useState<string | null>(null);
   const [personBId, setPersonBId] = useState<string | null>(null);
-  const [relationType, setRelationType] = useState<RelationType>("partners");
+  // SAFETY (ENGINEERING.md §9/§13): never default to a romantic type. A user
+  // must never land on romantic/attraction framing by default; when a minor is
+  // in the pairing the default drops to an age-appropriate non-romantic type
+  // (see the selection effect below).
+  const [relationType, setRelationType] = useState<RelationType>(defaultCompareRelationType(false));
+  // Tracks whether the user has explicitly chosen a relationship type, so the
+  // minor-aware default only overrides an untouched selection.
+  const userChoseTypeRef = useRef(false);
   const [result, setResult]       = useState<any>(null);
   const [running, setRunning]     = useState(false);
   const [saving, setSaving]       = useState(false);
@@ -121,6 +131,31 @@ function ComparePageInner() {
 
   const selectedA = people.find(p => p.id === personAId) ?? null;
   const selectedB = people.find(p => p.id === personBId) ?? null;
+
+  // Age-aware minor status of the CURRENTLY-SELECTED pair (before running), so
+  // the relationship-type gate reacts the moment a minor is picked — never the
+  // raw is_minor flag (see minorOf / isMinorForSafety).
+  const selectionHasMinor = minorOf(selectedA) || minorOf(selectedB);
+
+  // Minor safety gate for the relationship-type picker.
+  // 1. A pairing with a minor can never REST on a romantic type — if we are on
+  //    one (default, or a type chosen before a minor entered the pairing), drop
+  //    to the safe non-romantic default. Romantic framing about a child is
+  //    catastrophic; a re-selected adult pairing is a minor annoyance (§13).
+  // 2. When a minor first enters an untouched pairing, prefer the age-
+  //    appropriate parent-child frame over the neutral adult default.
+  useEffect(() => {
+    if (!selectionHasMinor) return;
+    if (isRomanticRelation(relationType)) {
+      setRelationType(defaultCompareRelationType(true));
+      return;
+    }
+    if (!userChoseTypeRef.current) {
+      setRelationType(defaultCompareRelationType(true));
+    }
+  }, [selectionHasMinor, relationType]);
+
+  const availableTypes = availableCompareRelationTypes(selectionHasMinor);
 
   async function runCompare() {
     if (!selectedA || !selectedB || selectedA.id === selectedB.id) { setStatus("Choose two different people."); return; }
@@ -239,6 +274,10 @@ function ComparePageInner() {
   const elementSignal = result?.synastry ? relationElementSignal(result.synastry, result.personA.display_name, result.personB.display_name) : null;
   // Minor safety: age-aware, never the raw is_minor flag (see minorOf).
   const pairHasMinor = minorOf(result?.personA ?? null) || minorOf(result?.personB ?? null);
+  // Defense in depth (ENGINEERING.md §13): even if a romantic type were somehow
+  // reached with a minor present, refuse to render the (romantically framed)
+  // reading and show a safe message instead — never generate it.
+  const blockRomanticMinorRender = pairHasMinor && isRomanticRelation(relationType);
 
   return (
     <main className="app-content">
@@ -249,14 +288,19 @@ function ComparePageInner() {
       {/* Pickers */}
       <section className="glass-card fade-in">
         <p className="eyebrow" style={{ marginBottom: 12 }}>Relationship type</p>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-          {(["partners","siblings","friends","parent-child","ancestor"] as RelationType[]).map(type => (
-            <button key={type} onClick={() => setRelationType(type)} className="pill-link"
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: selectionHasMinor ? 8 : 16 }}>
+          {availableTypes.map(type => (
+            <button key={type} onClick={() => { userChoseTypeRef.current = true; setRelationType(type); }} className="pill-link"
               style={{ fontSize: ".8rem", padding: "7px 14px", borderColor: relationType === type ? "rgba(230,174,108,.5)" : undefined, color: relationType === type ? "var(--gold)" : undefined }}>
               {type}
             </button>
           ))}
         </div>
+        {selectionHasMinor ? (
+          <p className="muted" style={{ fontSize: ".75rem", lineHeight: 1.55, marginBottom: 16, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+            A minor is part of this comparison, so only non-romantic readings are available. Romantic and partner framing is turned off for pairings involving a child.
+          </p>
+        ) : null}
         <div style={{ display: "grid", gap: 10 }}>
           <div>
             <p className="eyebrow" style={{ fontSize: ".62rem", marginBottom: 5 }}>Person A</p>
@@ -277,7 +321,14 @@ function ComparePageInner() {
         </div>
       </section>
 
-      {result ? (
+      {result && blockRomanticMinorRender ? (
+        <section className="glass-card fade-in">
+          <p className="eyebrow" style={{ marginBottom: 8 }}>Reading held</p>
+          <p className="muted" style={{ fontSize: ".88rem", lineHeight: 1.6 }}>
+            A minor is part of this comparison, so Galaxia won&apos;t produce a romantic or partner reading here. Choose a non-romantic relationship type — parent-child, siblings, friends, or ancestor — to see the comparison.
+          </p>
+        </section>
+      ) : result ? (
         <>
           {/* Headline */}
           <section className="glass-card fade-in">

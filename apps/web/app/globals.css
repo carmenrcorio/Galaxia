@@ -733,9 +733,26 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 }
 
 /* ─── the why (.shift) ────────────────────────────────────────────────────── */
-.shift { max-width: 880px; }
+/* Restore vertical rhythm + centre the column. Same trap as `.close` below:
+   this section is `.shift.container`, and `.container`'s `padding: 0 32px`
+   (specificity 0,1,0) out-specifies the global `section{padding-block}`
+   (0,0,1) and zeroes the top/bottom padding — so the section had no breathing
+   room and the `.how` panel that follows (also a zero-padding `.container`)
+   butted its bordered top edge straight into "…built for them.". `.shift` is
+   a class of equal specificity defined later in source, so its own
+   `padding-block` wins the top/bottom back while `.container` keeps the
+   horizontal gutters (identical mechanism to the `.close` fix). `text-align`
+   + auto-margined body centre the narrower 880px column instead of leaving it
+   left-crammed. `scroll-margin-top` keeps the eyebrow clear of the sticky nav
+   on an in-page anchor jump. */
+.shift {
+  max-width: 880px;
+  padding-block: clamp(76px, 12vh, 140px);
+  text-align: center;
+  scroll-margin-top: 92px;
+}
 .shift h2 { margin: 20px 0 24px; }
-.shift .body { color: var(--mist); max-width: var(--measure); margin-top: 22px; font-weight: 300; line-height: 1.8; }
+.shift .body { color: var(--mist); max-width: var(--measure); margin: 22px auto 0; font-weight: 300; line-height: 1.8; }
 .shift .body em { color: var(--gold); }
 
 /* ─── core features (how it works) ───────────────────────────────────────────
@@ -849,6 +866,19 @@ section { padding-block: clamp(76px, 12vh, 140px); }
    reads as "a conversation," visibly different from the centered Edge band and
    the alternating feature bento above. The card gets a title-bar with Vela's
    avatar (a chat-window affordance) rather than a bare data-card label. */
+/* Same zeroed-padding trap as `.shift`/`.close`: `#vela` is a bare
+   `.container` section, so `.container`'s `padding: 0 32px` out-specified the
+   global `section{padding-block}` and left it with no top/bottom padding. With
+   zero top padding the `.vela-card` sat flush against the section's top edge
+   and the sticky nav (position:sticky; top:0; ~68px) overlaid it — clipping
+   the card's top border and the "An example of how Vela responds" header on
+   scroll / an in-page anchor jump. `.vela-section` (equal specificity, later
+   in source) restores the padding so the card always clears the nav and the
+   section reads centred; `scroll-margin-top` lands anchor jumps below the nav. */
+.vela-section {
+  padding-block: clamp(76px, 12vh, 140px);
+  scroll-margin-top: 92px;
+}
 .vela-grid { display: grid; grid-template-columns: .82fr 1.18fr; gap: clamp(28px, 4vw, 56px); align-items: center; min-width: 0; }
 .vela-grid > * { min-width: 0; }
 .vela-intro { min-width: 0; }

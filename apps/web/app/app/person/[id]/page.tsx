@@ -30,6 +30,7 @@ import {
 import { CHART_ENGINE_VERSION, getPreferredHouseSystem, houseSystemLabelForChart } from "../../../../lib/house-system";
 import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, type RecordEntry } from "../../../../lib/record";
 import { todayTransitsForChart } from "../../../../lib/transits";
+import { interpretTransit, transitNotation } from "../../../../lib/transit-interpretations";
 import { ThreadMenu } from "../../../../components/thread-menu";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 
@@ -586,16 +587,21 @@ export default function PersonProfilePage() {
       {todayTransits.length > 0 ? (
         <section className="glass-card fade-in" style={{ borderColor: "rgba(230,174,108,.28)", background: "rgba(230,174,108,.05)" }}>
           <p className="eyebrow" style={{ marginBottom: 8 }}>Active today for {person.display_name}</p>
-          <div style={{ display: "grid", gap: 6 }}>
+          {/* Meaning leads; the notation is demoted to a small "receipt" beneath
+             it (ENGINEERING §8/§12 — accurate translation, no fabrication).
+             `minorSafe` keeps a minor's reading age-appropriate (§9/§13). */}
+          <div style={{ display: "grid", gap: 12 }}>
             {todayTransits.map((t, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: ".84rem" }}>
-                <span style={{ color: "var(--gold-soft)", flexShrink: 0 }}>
-                  {BODY_GLYPH[t.transitBody] ?? t.transitBody} {ASPECT_GLYPH[t.type] ?? ""} {BODY_GLYPH[t.natalBody] ?? t.natalBody}
-                </span>
-                <span style={{ color: "var(--cream)" }}>
-                  transiting {t.transitBody} {t.type} their natal {t.natalBody}
-                </span>
-                <span style={{ color: "var(--mist2)", fontSize: ".72rem" }}>{t.orb.toFixed(1)}° orb</span>
+              <div key={i} style={{ display: "grid", gap: 3 }}>
+                <p style={{ margin: 0, color: "var(--cream)", fontSize: ".92rem", lineHeight: 1.5 }}>
+                  {interpretTransit(t, { possessive: "their", minorSafe: person.is_minor }).short}
+                </p>
+                <p style={{ margin: 0, display: "flex", alignItems: "baseline", gap: 6, fontSize: ".72rem", color: "var(--mist2)" }}>
+                  <span style={{ color: "var(--gold-soft)", flexShrink: 0 }}>
+                    {BODY_GLYPH[t.transitBody] ?? t.transitBody} {ASPECT_GLYPH[t.type] ?? ""} {BODY_GLYPH[t.natalBody] ?? t.natalBody}
+                  </span>
+                  <span>{transitNotation(t)} · {t.orb.toFixed(1)}°</span>
+                </p>
               </div>
             ))}
           </div>

@@ -13,7 +13,7 @@ import { InitialAvatar } from "../initial-avatar";
  */
 export function VelaExampleSection() {
   return (
-    <section className="container" id="vela">
+    <section className="container vela-section" id="vela">
       <div className="vela-grid">
         <div className="vela-intro reveal">
           <span className="eyebrow">Your guide</span>

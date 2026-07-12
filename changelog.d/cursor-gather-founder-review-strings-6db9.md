@@ -1,0 +1,5 @@
+## Founder-review string inventory (branch `cursor/gather-founder-review-strings-6db9`) — 2026-07-12
+
+**Trigger**: Across several sessions, agent-authored copy was left flagged `FOUNDER-REVIEW` for the founder to rewrite in her own voice. Those strings needed collecting in one place — not rewriting — so a whole voice-area can be rewritten in one pass.
+
+`[ADDED]` **`docs/founder-review-strings.md` — inventory of every `FOUNDER-REVIEW`-flagged user-facing string.** Grepped the repo for `FOUNDER-REVIEW` and near-variants (`FOUNDER_REVIEW`, `founder review`, `TODO(founder)`, `@founder`, `refine voice`, `authored placeholder`). App-source hits only in Compare guidance (`apps/web/lib/compare-guidance.ts`), transit explanations (`apps/web/lib/transit-interpretations.ts`), and onboarding (`apps/web/app/welcome/page.tsx`). **277** strings collected verbatim with file/line, surface context, and where they appear; grouped by area (Compare 176 / Transits 77 / Onboarding 24 / Remembrance 0). Ambiguous unmarked neighbors listed separately. Source markers left in place; no string rewritten. Untouched per §2: `next.config.mjs`, `.npmrc`, Vercel settings.

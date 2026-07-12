@@ -36,6 +36,7 @@ import {
   ringIndex,
 } from "../../lib/galaxy-orbit";
 import { setThreadStatus } from "../../lib/record";
+import { peopleForTodaySky } from "../../lib/person-care";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 import { todayTransitsForChart } from "../../lib/transits";
 import { interpretTransit, transitNotation } from "../../lib/transit-interpretations";
@@ -882,9 +883,11 @@ export default function AppHomePage() {
          longitudes, so every row is that person's own real transit (or, for
          year-only / chart-less people, an honest hedge rather than a fabricated
          transit — ENGINEERING §12). This is the same helper the person page
-         ("Active today") uses, so the two surfaces can never disagree. */
+         ("Active today") uses, so the two surfaces can never disagree.
+         CARE: passed people are excluded — they have no current day. Do not
+         invent a replacement sky widget; hide cleanly. */
       const now = new Date().toISOString();
-      const skies: PersonSky[] = castPeople.map(p => {
+      const skies: PersonSky[] = peopleForTodaySky(castPeople).map(p => {
         const chart = chartById.get(p.id);
         return {
           id: p.id,

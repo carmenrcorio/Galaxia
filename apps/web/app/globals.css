@@ -92,7 +92,34 @@ textarea:focus-visible {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
+
+/* Person / chart quick-nav — sticky chip rail, phone-first (wrap, not sidebar) */
+.chart-section-nav {
+  min-width: 0;
+}
+.chart-section-nav__chip {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.chart-section-nav__chip:hover,
+.chart-section-nav__chip:focus-visible {
+  color: var(--cream);
+  border-color: rgba(230,174,108,.35);
+  background: rgba(230,174,108,.08);
+  outline: none;
+}
 @media (max-width: 480px) {
+  .chart-section-nav {
+    /* Stay under app sticky nav; horizontal chips wrap so phones never need a sidebar */
+    top: 60px;
+    margin-left: -2px;
+    margin-right: -2px;
+  }
+  .chart-section-nav__chip {
+    padding: 7px 10px;
+    font-size: .7rem;
+    min-height: 32px;
+  }
   .remembrance-space {
     padding: 18px 14px;
     border-radius: 18px;

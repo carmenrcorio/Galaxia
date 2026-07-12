@@ -3,17 +3,21 @@
 /**
  * Structured birth data entry, extracted from apps/web/app/welcome/page.tsx so
  * it can be reused by the public Quick Chart forms without re-implementing the
- * never-fabricate rules (BUG A/B/C — see lib/birth.ts).
+ * never-fabricate rules (BUG A/B/C — see @galaxia/astro birth helpers).
  *
  * Never uses free-text fields for date or time. Month/Day/Year selects
  * eliminate format ambiguity; Hour/Minute selects eliminate 12h/24h confusion;
  * city search returns a disambiguation list the user MUST choose from.
  */
 
-import type { Precision } from "@galaxia/astro";
+import {
+  formatDateForConfirmation,
+  searchPlaces,
+  type Precision,
+  type BirthFormInput,
+  type GeoCandidate,
+} from "@galaxia/astro";
 import { useMemo, useState } from "react";
-import { formatDateForConfirmation, type BirthFormInput } from "../lib/birth";
-import { searchPlaces, type GeoCandidate } from "../lib/geocode";
 import { Spinner } from "./spinner";
 
 export const MONTHS = [

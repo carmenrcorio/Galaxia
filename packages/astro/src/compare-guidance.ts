@@ -21,8 +21,30 @@
  * aspects[] for these two actual charts.
  */
 
-import type { Aspect, BodyName, SynastryResult, computeSynastry } from "@galaxia/astro";
-import { HOUSE_AREA, SIGN_VIBE } from "./design";
+import type { Aspect, BodyName, SynastryResult } from "./index";
+
+/* Sign vibe one-liners — from galaxia.jsx VIBE (was apps/web/lib/design.ts) */
+export const SIGN_VIBE: Record<string, string> = {
+  Aries:       "bold, fast, all-in",
+  Taurus:      "steady, sensual, immovable",
+  Gemini:      "quick, curious, talkative",
+  Cancer:      "tender, protective, remembers everything",
+  Leo:         "warm, proud, generous",
+  Virgo:       "precise, caring through usefulness",
+  Libra:       "fair, charming, seeks balance",
+  Scorpio:     "intense, private, all-or-nothing",
+  Sagittarius: "restless, honest, big-picture",
+  Capricorn:   "disciplined, ambitious, quietly loyal",
+  Aquarius:    "independent, inventive, principled",
+  Pisces:      "dreamy, compassionate, absorbent",
+};
+
+/* House meaning summaries — from galaxia.jsx HOUSE_AREA */
+export const HOUSE_AREA = [
+  "self & identity", "money & values", "communication & siblings", "home & roots",
+  "creativity & romance", "work & health", "partnership", "intimacy & transformation",
+  "beliefs & travel", "career & reputation", "friends & community", "solitude & the unconscious"
+];
 
 export type RelationType = "partners" | "siblings" | "friends" | "parent-child" | "ancestor" | "romantic" | "platonic";
 
@@ -349,7 +371,7 @@ export function whatTheyNeed(
   scores: Record<string, number>,
   person: GuidancePerson,
   relType: RelationType,
-  synastry: ReturnType<typeof computeSynastry> | null
+  synastry: SynastryResult | null
 ): string {
   const name = person.display_name;
   const moon = person.moon ?? "";

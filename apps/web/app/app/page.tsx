@@ -16,30 +16,33 @@
  * - Duplicate bottom nav row: DELETED per spec
  */
 
-import { computeSynastry, type NatalChart, type TransitHit } from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
+import {
+  computeSynastry,
+  type NatalChart,
+  type TransitHit,
+  todayTransitsForChart,
+  interpretTransit,
+  transitNotation,
+} from "@galaxia/astro";
+import {
+  HONOR_LINE_STYLE,
+  HONOR_RELATION_TYPE,
+  elementFromRelation,
+  formFromRelation,
+  hasPassed,
+  honorEdgesFromDeclaredRows,
+  isMinorForSafety,
+  peopleForTodaySky,
+  ringIndex,
+  type HonorEdge,
+} from "@galaxia/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { ThreadMenu } from "../../components/thread-menu";
-import {
-  HONOR_LINE_STYLE,
-  HONOR_RELATION_TYPE,
-  honorEdgesFromDeclaredRows,
-  type HonorEdge,
-} from "../../lib/honor-constellation";
-import {
-  elementFromRelation,
-  formFromRelation,
-  hasPassed,
-  ringIndex,
-} from "../../lib/galaxy-orbit";
 import { setThreadStatus } from "../../lib/record";
-import { peopleForTodaySky } from "../../lib/person-care";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
-import { todayTransitsForChart } from "../../lib/transits";
-import { interpretTransit, transitNotation } from "../../lib/transit-interpretations";
 
 interface PersonRow {
   id: string;
@@ -73,7 +76,7 @@ const EL_COLOR: Record<string, string> = {
 };
 
 /* Orbit helpers (elementFromRelation / formFromRelation / ringIndex) live in
-   lib/galaxy-orbit.ts so Remembrance can reuse ancient light without a new
+   @galaxia/core so Remembrance can reuse ancient light without a new
    visual language, and so the mapping is unit-tested. */
 
 /* stable per-person value in [0,1) from a string id — deterministic FNV-1a hash,

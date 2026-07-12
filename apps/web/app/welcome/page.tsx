@@ -1,6 +1,11 @@
 "use client";
 
-import { computeNatalChart } from "@galaxia/astro";
+import {
+  computeNatalChart,
+  buildBirthInput,
+  type BirthFormInput,
+  CHART_ENGINE_VERSION,
+} from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -9,8 +14,7 @@ import { CosmicBackground } from "../../components/cosmic-background";
 import { CustomCheck } from "../../components/custom-check";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { Spinner } from "../../components/spinner";
-import { buildBirthInput, type BirthFormInput } from "../../lib/birth";
-import { CHART_ENGINE_VERSION, getPreferredHouseSystem } from "../../lib/house-system";
+import { getPreferredHouseSystem } from "../../lib/house-system";
 import { decodeBirthQuery } from "../../lib/quick-chart";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 

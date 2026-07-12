@@ -1,4 +1,4 @@
-import type { BirthFormInput } from "./birth";
+import type { BirthFormInput } from "@galaxia/astro";
 
 /**
  * Encode/decode birth data into URL query params, for:

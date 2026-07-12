@@ -1,4 +1,4 @@
-import { computeTransits, type NatalChart, type TransitHit } from "@galaxia/astro";
+import { computeTransits, type NatalChart, type TransitHit } from "./index";
 
 /**
  * Today's real transits for ONE natal chart.

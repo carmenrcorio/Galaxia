@@ -10,7 +10,17 @@
  * unless "Save to your galaxy" is clicked.
  */
 
-import type { NatalChart } from "@galaxia/astro";
+import {
+  type NatalChart,
+  type BirthFormInput,
+  interpretAspect,
+  type AspectKey,
+  type BodyKey,
+  aspectActionLine,
+  sortAspectsForFocus,
+  whatTheyNeed,
+  type RelationType,
+} from "@galaxia/astro";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../../components/birth-fields";
@@ -18,10 +28,7 @@ import { QuickChartShell } from "../../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
-import type { BirthFormInput } from "../../../lib/birth";
-import { aspectActionLine, sortAspectsForFocus, whatTheyNeed, type RelationType } from "../../../lib/compare-guidance";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
-import { interpretAspect, type AspectKey, type BodyKey } from "../../../lib/interpretations";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
 import { useViewer } from "../../../lib/use-viewer";
 
@@ -41,7 +48,7 @@ interface CompareResult {
  * untouched — see CHANGELOG.md for the Phase 0 diagnosis). computeSynastry()
  * itself returns the same aspects/scores regardless of framing, so
  * "romantic"/"platonic" are wired as real RelationType values in
- * lib/compare-guidance.ts that change WHICH already-true data gets
+ * @galaxia/astro compare-guidance that change WHICH already-true data gets
  * surfaced (see sortAspectsForFocus and whatTheyNeed there) — not a
  * cosmetic label on identical output.
  */

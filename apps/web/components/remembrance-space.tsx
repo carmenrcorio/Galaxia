@@ -15,14 +15,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Spinner } from "./spinner";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import {
-  REMEMBRANCE_CHROME,
   REMEMBRANCE_NOTE_KIND,
   buildRemembranceNoteInsert,
   remembranceChartLines,
   remembranceUsesAncientLight,
-  remembranceVelaHref,
   shouldShowRemembranceSpace,
-} from "../lib/remembrance";
+} from "@galaxia/core";
+import { REMEMBRANCE_CHROME, remembranceVelaHref } from "../lib/remembrance";
 
 interface RemembrancePerson {
   id: string;

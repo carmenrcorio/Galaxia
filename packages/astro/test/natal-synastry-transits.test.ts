@@ -133,7 +133,7 @@ describe("per-person transits are distinct (home 'Today in your sky')", () => {
 
 describe("today's-transit UI policy (shared home + person-page helper)", () => {
   it("skips year-only charts (no fabricated orbs) but keeps exact/date", async () => {
-    const { todayTransitsForChart } = await import("../../../apps/web/lib/transits");
+    const { todayTransitsForChart } = await import("../src/transits");
     const yearOnly = computeNatalChart({ dateUTC: "1995-01-01T00:00:00.000Z", precision: "year" });
     const exact = computeNatalChart({ dateUTC: "1988-03-14T09:20:00.000Z", precision: "exact", lat: 40.7128, lng: -74.006 });
 
@@ -205,7 +205,7 @@ describe("Jacksonville, Arkansas regression — 1987-12-29", () => {
   it("geocoding disambiguation: Open-Meteo returns multiple Jacksonville results", async () => {
     // This test documents that searchPlaces returns multiple results for "Jacksonville"
     // including both Florida and Arkansas entries, which the UI must present for user choice.
-    const { searchPlaces } = await import("../../../apps/web/lib/geocode");
+    const { searchPlaces } = await import("../src/geocode");
     const results = await searchPlaces("Jacksonville");
     expect(results.length).toBeGreaterThan(0);
     // Should include at least one Jacksonville result

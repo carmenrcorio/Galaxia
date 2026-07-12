@@ -17,6 +17,8 @@ import { AskBirthData } from "../../../../components/ask-birth-data";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { InitialAvatar } from "../../../../components/initial-avatar";
+import { ChartSectionNav } from "../../../../components/chart-section-nav";
+import { HonorDeclarationBox, HONOR_LIGHT_ANCHOR_ID } from "../../../../components/honor-declaration";
 import { RemembranceSpace } from "../../../../components/remembrance-space";
 import { Spinner } from "../../../../components/spinner";
 import { ASPECT_GLYPH, BODY_GLYPH, SIGN_GLYPH, signElement } from "../../../../lib/design";
@@ -31,6 +33,10 @@ import {
 } from "../../../../lib/house-interpretations";
 import { CHART_ENGINE_VERSION, getPreferredHouseSystem, houseSystemLabelForChart } from "../../../../lib/house-system";
 import { hasPassed } from "../../../../lib/galaxy-orbit";
+import {
+  buildPersonPageNavSections,
+  shouldShowLiveTransits,
+} from "../../../../lib/person-care";
 import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, type RecordEntry } from "../../../../lib/record";
 import { todayTransitsForChart } from "../../../../lib/transits";
 import { interpretTransit, transitNotation } from "../../../../lib/transit-interpretations";
@@ -320,7 +326,11 @@ export default function PersonProfilePage() {
   // vs stored natal positions), skipped for year-only charts whose sampled
   // positions would make transit orbs fabricated. Shared with the home
   // dashboard's "Today in your sky" via one helper so they never disagree.
-  const todayTransits = useMemo(() => todayTransitsForChart(chart), [chart]);
+  // CARE: never run for a passed person — they have no current day (hide, don't reframe).
+  const todayTransits = useMemo(() => {
+    if (!shouldShowLiveTransits(person)) return [];
+    return todayTransitsForChart(chart);
+  }, [chart, person]);
 
   // Balance tallies count only placements whose sign is actually known —
   // an uncertain (year-only) sign must not be tallied as if it were fact.
@@ -539,6 +549,9 @@ export default function PersonProfilePage() {
     birthPrecision: person.birth_precision,
   });
 
+  const personPassed = hasPassed(person);
+  const showHonorBox = personPassed && !person.is_self && Boolean(userId);
+
   // Progressive capture: person exists but has no chart yet.
   if (!chart) return (
     <main className="app-content">
@@ -547,7 +560,7 @@ export default function PersonProfilePage() {
         <div>
           <p className="eyebrow">{person.relation}</p>
           <h1 className="page-title">{person.display_name}</h1>
-          {hasPassed(person) ? (
+          {personPassed ? (
             <p className="muted" style={{ fontSize: ".88rem", margin: "4px 0 0", lineHeight: 1.5, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
               Remembered — their light is still arriving. {person.birth_precision === "none" ? "You can still add birth data when you have it." : ""}
             </p>
@@ -556,6 +569,14 @@ export default function PersonProfilePage() {
           )}
         </div>
       </div>
+
+      {showHonorBox ? (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <a href={`#${HONOR_LIGHT_ANCHOR_ID}`} className="pill-link" style={{ fontSize: ".82rem" }}>
+            Who carries their light ↓
+          </a>
+        </div>
+      ) : null}
 
       {userId ? (
         <RemembranceSpace
@@ -582,12 +603,42 @@ export default function PersonProfilePage() {
         </div>
       </section>
 
+      {showHonorBox ? (
+        <HonorDeclarationBox
+          person={person}
+          userId={userId!}
+          subjectIsMinor={personIsMinor}
+          onSaved={() => loadProfile(userId!)}
+        />
+      ) : null}
+
       {status ? <p className="error">{status}</p> : null}
     </main>
   );
 
   const sun  = chart.placements.find(p => p.body === "sun");
   const moon = chart.placements.find(p => p.body === "moon");
+  const showActiveToday = shouldShowLiveTransits(person) && todayTransits.length > 0;
+  const showHousesSection = hasHouses || person.birth_precision !== "year";
+  const showPastConversations = archivedThreads.length > 0;
+  const showRemembrance = personPassed && !person.is_self && Boolean(userId);
+  const navForPage = buildPersonPageNavSections({
+    hasRemembrance: showRemembrance,
+    hasActiveToday: showActiveToday,
+    hasVelaOnThem: true,
+    hasWheel: true,
+    hasBigThree: true,
+    hasPlacements: true,
+    hasAspects: natalAspects.length > 0,
+    hasHouses: showHousesSection,
+    hasGenerational: true,
+    hasRecord: true,
+    hasPastConversations: showPastConversations,
+    hasHonorBox: showHonorBox,
+  });
+
+  const enduringEyebrow = (label: string) =>
+    personPassed ? `${label} · who they were` : label;
 
   return (
     <main className="app-content">
@@ -596,9 +647,9 @@ export default function PersonProfilePage() {
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }} className="fade-in">
         <InitialAvatar name={person.display_name} size="lg" />
         <div>
-          <p className="eyebrow">{person.relation} · {person.birth_precision} precision{hasPassed(person) ? " · remembered" : ""}</p>
+          <p className="eyebrow">{person.relation} · {person.birth_precision} precision{personPassed ? " · remembered" : ""}</p>
           <h1 className="page-title">{person.display_name}</h1>
-          {hasPassed(person) ? (
+          {personPassed ? (
             <p className="muted" style={{ fontSize: ".84rem", margin: "4px 0 6px", lineHeight: 1.5, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
               Remembered — their chart stays with you. Their light softens into ancient light on your galaxy.
             </p>
@@ -616,10 +667,17 @@ export default function PersonProfilePage() {
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
         <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Ask Vela</Link>
+        {showHonorBox ? (
+          <a href={`#${HONOR_LIGHT_ANCHOR_ID}`} className="pill-link" style={{ fontSize: ".82rem" }}>
+            Who carries their light ↓
+          </a>
+        ) : null}
         <EditPersonPanel person={person} userId={userId ?? ""} onSaved={() => loadProfile(userId ?? "")} onDeleted={() => router.push("/app")} />
       </div>
 
-      {/* ── Remembrance Phase 2: private owner-only space ── */}
+      <ChartSectionNav sections={navForPage} ariaLabel={`Sections on ${person.display_name}'s chart`} />
+
+      {/* ── Remembrance Phase 2: private owner-only space (reflections stay here) ── */}
       {userId ? (
         <RemembranceSpace
           person={person}
@@ -630,9 +688,9 @@ export default function PersonProfilePage() {
         />
       ) : null}
 
-      {/* ── Active today (transit) — deterministic; links back to Vela ── */}
-      {todayTransits.length > 0 ? (
-        <section className="glass-card fade-in" style={{ borderColor: "rgba(230,174,108,.28)", background: "rgba(230,174,108,.05)" }}>
+      {/* ── Active today (transit) — living people only; never for passed ── */}
+      {showActiveToday ? (
+        <section id="active-today" className="glass-card fade-in" style={{ borderColor: "rgba(230,174,108,.28)", background: "rgba(230,174,108,.05)", scrollMarginTop: 92 }}>
           <p className="eyebrow" style={{ marginBottom: 8 }}>Active today for {person.display_name}</p>
           {/* Meaning leads; the notation is demoted to a small "receipt" beneath
              it (ENGINEERING §8/§12 — accurate translation, no fabrication).
@@ -663,7 +721,7 @@ export default function PersonProfilePage() {
       ) : null}
 
       {/* ── Vela has said this about them (B2) ── */}
-      <section className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)" }}>
+      <section id="vela-on-them" className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)", scrollMarginTop: 92 }}>
         <p className="eyebrow" style={{ marginBottom: 8, color: "var(--air)" }}>Vela on {person.display_name}</p>
         {velaPins.length > 0 ? (
           <div style={{ display: "grid", gap: 8 }}>
@@ -691,9 +749,11 @@ export default function PersonProfilePage() {
       </section>
 
       {/* ── Chart Wheel ── */}
-      <section className="glass-card fade-in fade-in-delay-1">
+      <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
         <p className="eyebrow" style={{ marginBottom: 14 }}>
-          {chart.precision === "exact" && chart.asc ? `Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}` : "Zodiac wheel"}
+          {chart.precision === "exact" && chart.asc
+            ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
+            : enduringEyebrow("Zodiac wheel")}
         </p>
         <ChartWheel chart={chart} />
         {chart.houseSystemFallbackReason ? (
@@ -709,8 +769,8 @@ export default function PersonProfilePage() {
       </section>
 
       {/* ── Big Three ── */}
-      <section className="glass-card fade-in fade-in-delay-1">
-        <p className="eyebrow" style={{ marginBottom: 12 }}>The big three</p>
+      <section id="big-three" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
+        <p className="eyebrow" style={{ marginBottom: 12 }}>{enduringEyebrow("The big three")}</p>
         <div style={{ display: "grid", gap: 8 }}>
           {([
             { key: "sun",    label: "Sun",    sign: sun?.sign,  body: "sun",  house: sun?.house,  uncertain: sun?.confident === false,  possibleSigns: sun?.possibleSigns  },
@@ -805,9 +865,9 @@ export default function PersonProfilePage() {
       </section>
 
       {/* ── Placements ── */}
-      <section className="glass-card fade-in fade-in-delay-1">
+      <section id="placements" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <p className="eyebrow" style={{ margin: 0 }}>Placements</p>
+          <p className="eyebrow" style={{ margin: 0 }}>{enduringEyebrow("Placements")}</p>
           <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllPlacements(!placementsAllOpen)}>
             {placementsAllOpen ? "Collapse all" : "Expand all"}
           </button>
@@ -918,9 +978,9 @@ export default function PersonProfilePage() {
 
       {/* ── Key aspects ── */}
       {natalAspects.length > 0 ? (
-        <section className="glass-card fade-in fade-in-delay-2">
+        <section id="aspects" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-            <p className="eyebrow" style={{ margin: 0 }}>Key aspects</p>
+            <p className="eyebrow" style={{ margin: 0 }}>{enduringEyebrow("Key aspects")}</p>
             <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllAspects(!aspectsAllOpen)}>{aspectsAllOpen ? "Collapse all" : "Expand all"}</button>
           </div>
           <p className="muted" style={{ fontSize: ".72rem", marginBottom: 10 }}>Gold border = tight (&lt; 2°) · tightest first</p>
@@ -952,9 +1012,9 @@ export default function PersonProfilePage() {
 
       {/* ── Twelve Houses — only when cusps present ── */}
       {hasHouses ? (
-        <section className="glass-card fade-in fade-in-delay-2">
+        <section id="houses" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <p className="eyebrow" style={{ margin: 0 }}>The twelve houses</p>
+            <p className="eyebrow" style={{ margin: 0 }}>{enduringEyebrow("The twelve houses")}</p>
             <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllHouses(!housesAllOpen)}>{housesAllOpen ? "Collapse all" : "Expand all"}</button>
           </div>
           <p className="muted" style={{ fontSize: ".72rem", marginBottom: 12 }}>{houseSystemLabelForChart(chart, engineVersion)} · click a house to read it</p>
@@ -1020,8 +1080,8 @@ export default function PersonProfilePage() {
       ) : (
         // When no houses: show a note explaining what's needed
         person.birth_precision !== "year" ? (
-          <section className="glass-card fade-in fade-in-delay-2" style={{ borderStyle: "dashed", opacity: .7 }}>
-            <p className="eyebrow" style={{ marginBottom: 6 }}>The twelve houses</p>
+          <section id="houses" className="glass-card fade-in fade-in-delay-2" style={{ borderStyle: "dashed", opacity: .7, scrollMarginTop: 92 }}>
+            <p className="eyebrow" style={{ marginBottom: 6 }}>{enduringEyebrow("The twelve houses")}</p>
             <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>
               The house layer requires an exact birth time and location. Right now only the sign layer is visible — which tells you HOW each planet behaves, but not WHERE it lives in this person's life.
             </p>
@@ -1033,8 +1093,8 @@ export default function PersonProfilePage() {
       )}
 
       {/* ── Generational layer ── */}
-      <section className="glass-card fade-in fade-in-delay-2">
-        <p className="eyebrow" style={{ marginBottom: 6 }}>Generational layer</p>
+      <section id="generational" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
+        <p className="eyebrow" style={{ marginBottom: 6 }}>{enduringEyebrow("Generational layer")}</p>
         <p className="muted" style={{ fontSize: ".8rem", marginBottom: 12 }}>{chart.generational.cohortLabel}</p>
         {(["uranus","neptune","pluto"] as const).map(planet => {
           const data = chart.generational[planet as "uranus"|"neptune"|"pluto"];
@@ -1070,7 +1130,7 @@ export default function PersonProfilePage() {
       </section>
 
       {/* ── The record (B1): notes, tending, Vela pins, saved readings, conversations ── */}
-      <section id="notes" className="glass-card fade-in fade-in-delay-3">
+      <section id="notes" className="glass-card fade-in fade-in-delay-3" style={{ scrollMarginTop: 92 }}>
         <p className="eyebrow" style={{ marginBottom: 4 }}>The record</p>
         <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>
           Owner-only · never shared. The chart never changes — this is the layer that does: everything you note, pin, and discuss about {person.display_name}, in date order.
@@ -1093,7 +1153,7 @@ export default function PersonProfilePage() {
 
       {/* ── Past conversations (archived threads) ── */}
       {archivedThreads.length > 0 ? (
-        <section className="glass-card fade-in fade-in-delay-3">
+        <section id="past-conversations" className="glass-card fade-in fade-in-delay-3" style={{ scrollMarginTop: 92 }}>
           <p className="eyebrow" style={{ marginBottom: 4 }}>Past conversations</p>
           <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>Archived Vela threads about {person.display_name}. Nothing is ever deleted.</p>
           {/* grid-template-columns: minmax(0,1fr) — without it the single implicit
@@ -1119,6 +1179,16 @@ export default function PersonProfilePage() {
             ))}
           </div>
         </section>
+      ) : null}
+
+      {/* ── Phase 3 honor-declaration — quiet optional action, last on the page ── */}
+      {showHonorBox ? (
+        <HonorDeclarationBox
+          person={person}
+          userId={userId!}
+          subjectIsMinor={personIsMinor}
+          onSaved={() => loadProfile(userId!)}
+        />
       ) : null}
 
       {status ? <p className="error">{status}</p> : null}

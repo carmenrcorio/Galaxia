@@ -273,7 +273,7 @@ export function RemembranceSpace({
           the conversation — you open it when you choose.
         </p>
         <Link
-          href={velaHref}
+          href={velaHref as never}
           className="pill-link"
           style={{ fontSize: ".82rem", width: "fit-content", maxWidth: "100%" }}
         >

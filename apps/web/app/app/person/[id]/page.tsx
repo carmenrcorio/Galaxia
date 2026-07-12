@@ -28,6 +28,7 @@ import {
   type HouseKey
 } from "../../../../lib/house-interpretations";
 import { CHART_ENGINE_VERSION, getPreferredHouseSystem, houseSystemLabelForChart } from "../../../../lib/house-system";
+import { hasPassed } from "../../../../lib/galaxy-orbit";
 import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, type RecordEntry } from "../../../../lib/record";
 import { todayTransitsForChart } from "../../../../lib/transits";
 import { interpretTransit, transitNotation } from "../../../../lib/transit-interpretations";
@@ -40,6 +41,8 @@ interface PersonRow {
   birth_date?: string | null; birth_time?: string | null;
   birth_place?: string | null; birth_lat?: number | null; birth_lng?: number | null;
   tz_offset_min?: number | null;
+  passed_at?: string | null;
+  is_self?: boolean;
 }
 /* ─── Normalise engine output to library key conventions ─────────────────── */
 function normaliseBody(b: string): BodyKey { return b.toLowerCase() as BodyKey; }
@@ -426,7 +429,7 @@ export default function PersonProfilePage() {
       : personId;
     if (!actualId) { setStatus("No self profile yet."); setLoading(false); return; }
     const [{ data: pData, error: pErr }, { data: cData, error: cErr }] = await Promise.all([
-      supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min").eq("id", actualId).single(),
+      supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at").eq("id", actualId).single(),
       supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualId).single()
     ]);
     if (pErr || !pData) { setStatus(pErr?.message ?? "Unable to load person."); setLoading(false); return; }
@@ -532,7 +535,13 @@ export default function PersonProfilePage() {
         <div>
           <p className="eyebrow">{person.relation}</p>
           <h1 className="page-title">{person.display_name}</h1>
-          <p className="muted" style={{ fontSize: ".88rem", margin: 0 }}>No birth data yet — their chart is waiting.</p>
+          {hasPassed(person) ? (
+            <p className="muted" style={{ fontSize: ".88rem", margin: "4px 0 0", lineHeight: 1.5, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+              Remembered — their light is still arriving. {person.birth_precision === "none" ? "You can still add birth data when you have it." : ""}
+            </p>
+          ) : (
+            <p className="muted" style={{ fontSize: ".88rem", margin: 0 }}>No birth data yet — their chart is waiting.</p>
+          )}
         </div>
       </div>
 
@@ -565,8 +574,13 @@ export default function PersonProfilePage() {
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }} className="fade-in">
         <InitialAvatar name={person.display_name} size="lg" />
         <div>
-          <p className="eyebrow">{person.relation} · {person.birth_precision} precision</p>
+          <p className="eyebrow">{person.relation} · {person.birth_precision} precision{hasPassed(person) ? " · remembered" : ""}</p>
           <h1 className="page-title">{person.display_name}</h1>
+          {hasPassed(person) ? (
+            <p className="muted" style={{ fontSize: ".84rem", margin: "4px 0 6px", lineHeight: 1.5, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+              Remembered — their chart stays with you. Their light softens into ancient light on your galaxy.
+            </p>
+          ) : null}
           {sun ? (
             <p className="muted" style={{ fontSize: ".88rem", margin: 0 }}>
               {sun.confident !== false ? `${SIGN_GLYPH[sun.sign]} ${sun.sign} Sun` : "Sun sign uncertain (year-only birth data)"}

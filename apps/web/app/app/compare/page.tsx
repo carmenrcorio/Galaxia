@@ -43,6 +43,8 @@ interface PersonLite {
   id: string; display_name: string; relation: string;
   birth_date: string | null; birth_precision: "none" | "exact" | "date" | "year";
   is_minor?: boolean;
+  /** Remembrance marker — does NOT exclude from Compare. Chart/birth fields untouched. */
+  passed_at?: string | null;
   birth_time?: string | null; birth_place?: string | null;
   birth_lat?: number | null; birth_lng?: number | null; tz_offset_min?: number | null;
   // Populated from chart data after comparison runs
@@ -116,7 +118,7 @@ function ComparePageInner() {
       if (!user) return;
       setUserId(user.id);
       const { data } = await supabase.from("people")
-        .select("id, display_name, relation, birth_date, birth_precision, is_minor, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min")
+        .select("id, display_name, relation, birth_date, birth_precision, is_minor, passed_at, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min")
         .eq("owner_id", user.id).order("created_at", { ascending: false });
       const rows = (data ?? []) as PersonLite[];
       setPeople(rows);
@@ -305,13 +307,13 @@ function ComparePageInner() {
           <div>
             <p className="eyebrow" style={{ fontSize: ".62rem", marginBottom: 5 }}>Person A</p>
             <select className="field field--rect" value={personAId ?? ""} onChange={e => setPersonAId(e.target.value)}>
-              {people.map(p => <option key={`a-${p.id}`} value={p.id}>{p.display_name}</option>)}
+              {people.map(p => <option key={`a-${p.id}`} value={p.id}>{p.display_name}{p.passed_at ? " · remembered" : ""}</option>)}
             </select>
           </div>
           <div>
             <p className="eyebrow" style={{ fontSize: ".62rem", marginBottom: 5 }}>Person B</p>
             <select className="field field--rect" value={personBId ?? ""} onChange={e => setPersonBId(e.target.value)}>
-              {people.map(p => <option key={`b-${p.id}`} value={p.id}>{p.display_name}</option>)}
+              {people.map(p => <option key={`b-${p.id}`} value={p.id}>{p.display_name}{p.passed_at ? " · remembered" : ""}</option>)}
             </select>
           </div>
           <button className="btn-primary" onClick={runCompare} disabled={running} style={{ width: "fit-content", gap: 8 }}>

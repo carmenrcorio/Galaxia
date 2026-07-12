@@ -22,6 +22,9 @@ interface PersonRow {
   birth_date?: string|null; birth_time?: string|null;
   birth_place?: string|null; birth_lat?: number|null; birth_lng?: number|null;
   tz_offset_min?: number|null;
+  /** Remembrance: when marked as passed. NULL = present. Reversible; chart untouched. */
+  passed_at?: string|null;
+  is_self?: boolean;
 }
 interface Props { person: PersonRow; userId: string; onSaved: () => void; onDeleted: () => void; }
 
@@ -43,12 +46,15 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
   const supabase = createSupabaseBrowserClient();
   const [open, setOpen]             = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmRemembrance, setConfirmRemembrance] = useState(false);
   const [saving, setSaving]         = useState(false);
   const [deleting, setDeleting]     = useState(false);
+  const [remembranceBusy, setRemembranceBusy] = useState(false);
   const [status, setStatus]         = useState<string|null>(null);
   const [displayName, setDisplayName] = useState(person.display_name);
   const [relation, setRelation]     = useState(person.relation);
   const [isMinor, setIsMinor]       = useState(person.is_minor);
+  const [passedAt, setPassedAt]     = useState<string|null>(person.passed_at ?? null);
 
   // Populate structured fields from stored data
   const storedDate = parseDateStr(person.birth_date);
@@ -139,6 +145,27 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
     setDeleting(false);
     if (error) { setStatus(error.message); return; }
     onDeleted();
+  }
+
+  /**
+   * Remembrance only — updates `passed_at` and leaves birth fields + chart
+   * rows completely untouched. Reversible by clearing the timestamp.
+   */
+  async function setRemembrance(nextPassed: boolean) {
+    setRemembranceBusy(true); setStatus(null);
+    const value = nextPassed ? new Date().toISOString() : null;
+    const { error } = await supabase.from("people")
+      .update({ passed_at: value })
+      .eq("id", person.id)
+      .eq("owner_id", userId);
+    setRemembranceBusy(false);
+    if (error) { setStatus(error.message); return; }
+    setPassedAt(value);
+    setConfirmRemembrance(false);
+    setStatus(nextPassed
+      ? "Their light stays in your galaxy — remembered."
+      : "Restored — they're held as present again.");
+    onSaved();
   }
 
   if (!open) return <button className="pill-link" onClick={() => setOpen(true)} style={{ fontSize: 13 }}>Edit / delete</button>;
@@ -261,6 +288,93 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
         </div>
       ) : null}
 
+      {/* Remembrance — emotional action, never a checkbox beside Minor.
+          Chart data stays; only `passed_at` changes. Hidden for self. */}
+      {!person.is_self ? (
+        <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(183,154,216,.12)" }}>
+          <p className="eyebrow" style={{ marginBottom: 8 }}>Remembrance</p>
+          {passedAt ? (
+            <>
+              <p style={{ margin: "0 0 8px", color: "var(--cream)", fontSize: ".9rem", lineHeight: 1.55, fontFamily: "var(--serif)" }}>
+                Remembered — their light is still arriving.
+              </p>
+              <p className="muted" style={{ fontSize: ".78rem", lineHeight: 1.55, marginBottom: 12 }}>
+                Their chart stays. They remain in your galaxy and in Compare. You can restore them as present anytime.
+              </p>
+              {!confirmRemembrance ? (
+                <button
+                  type="button"
+                  className="pill-link"
+                  style={{ fontSize: ".82rem" }}
+                  onClick={() => setConfirmRemembrance(true)}
+                >
+                  Hold them as present again
+                </button>
+              ) : (
+                <div style={{ display: "grid", gap: 10 }}>
+                  <p className="muted" style={{ fontSize: ".84rem", lineHeight: 1.6, margin: 0, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+                    Restore {displayName.trim() || "them"} as present in your galaxy? Their remembrance mark will clear; nothing else changes.
+                  </p>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={remembranceBusy}
+                      onClick={() => void setRemembrance(false)}
+                      style={{ gap: 8 }}
+                    >
+                      {remembranceBusy && <Spinner size={13} color="#1a1206" />}
+                      {remembranceBusy ? "Restoring…" : "Yes, hold them as present"}
+                    </button>
+                    <button type="button" className="pill-link" onClick={() => setConfirmRemembrance(false)}>
+                      Never mind
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : !confirmRemembrance ? (
+            <>
+              <p className="muted" style={{ fontSize: ".84rem", lineHeight: 1.6, marginBottom: 12 }}>
+                If they&apos;ve passed, you can remember them here. Their chart stays. Their light softens into ancient light on your galaxy — still with you, still comparable.
+              </p>
+              <button
+                type="button"
+                className="pill-link"
+                style={{ fontSize: ".82rem", borderColor: "rgba(230,174,108,.35)", color: "var(--gold-soft)" }}
+                onClick={() => setConfirmRemembrance(true)}
+              >
+                Remember them as passed
+              </button>
+            </>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              <p style={{ margin: 0, fontFamily: "var(--serif)", fontSize: "1.15rem", color: "var(--cream)", lineHeight: 1.35 }}>
+                Remember {displayName.trim() || "them"}?
+              </p>
+              <p className="muted" style={{ fontSize: ".84rem", lineHeight: 1.6, margin: 0, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+                Their chart and place in your galaxy stay. On the constellation they&apos;ll shine as ancient light — soft, still arriving. You can reverse this anytime. This is remembrance, not removal.
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={remembranceBusy}
+                  onClick={() => void setRemembrance(true)}
+                  style={{ gap: 8 }}
+                >
+                  {remembranceBusy && <Spinner size={13} color="#1a1206" />}
+                  {remembranceBusy ? "Holding…" : "Yes — remember them"}
+                </button>
+                <button type="button" className="pill-link" onClick={() => setConfirmRemembrance(false)}>
+                  Not now
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
+
       <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
         <button className="btn-primary" onClick={save} disabled={saving} style={{ gap: 8 }}>
           {saving && <Spinner size={13} color="#1a1206" />}
@@ -278,7 +392,7 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
             </>
         }
       </div>
-      {status ? <p className={status === "Saved." ? "success" : "error"} style={{ fontSize: 13, marginTop: 8 }}>{status}</p> : null}
+      {status ? <p className={status.includes("light") || status.includes("Restored") || status === "Saved." ? "success" : "error"} style={{ fontSize: 13, marginTop: 8 }}>{status}</p> : null}
     </section>
   );
 }

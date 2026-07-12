@@ -22,6 +22,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { ThreadMenu } from "../../components/thread-menu";
+import {
+  elementFromRelation,
+  formFromRelation,
+  hasPassed,
+  ringIndex,
+} from "../../lib/galaxy-orbit";
 import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 import { todayTransitsForChart } from "../../lib/transits";
@@ -34,6 +40,8 @@ interface PersonRow {
   birth_precision: "exact" | "date" | "year";
   is_self: boolean;
   is_minor: boolean;
+  /** Remembrance: when marked as passed. NULL = present. Chart data untouched. */
+  passed_at?: string | null;
 }
 interface LinkRow { fromId: string; toId: string; scoreA: number; elA: string; elB: string; }
 interface ThreadChip { id: string; mode: "ask" | "shared"; preview: string; }
@@ -55,64 +63,9 @@ const EL_COLOR: Record<string, string> = {
   gold: "#E6AE6C" /* self */
 };
 
-/* infer element from relationship as a symbolic register (a proxy until a
-   real chart element is available). Colour is DERIVED, never random. New in
-   this branch: colleagues → earth (the grounded, practical register of shared
-   work). Siblings keep air (the kindred, mental register they share with a
-   partner — differentiated in space by their own celestial form, see below). */
-function elementFromRelation(rel: string): string {
-  const r = rel?.toLowerCase() ?? "";
-  if (r === "partner") return "air";
-  if (r === "child" || r === "son" || r === "daughter") return "earth";
-  if (r === "parent" || r === "mother" || r === "father" || r.includes("mom") || r.includes("dad")) return "water";
-  if (r === "sibling" || r === "sister" || r === "brother") return "air";
-  if (r === "colleague" || r === "coworker" || r === "co-worker") return "earth";
-  if (r === "ancestor" || r === "grandparent" || r.includes("grand")) return "water";
-  return "fire";
-}
-
-/* node form from relation. Forms are the reference legend's celestial bodies
-   (design/reference/galaxia-constellation-prototype.html): binary (partner),
-   moon (child), fixed (parent), ancient (ancestor), star (friend/sibling).
-   New this branch: siblings AND colleagues are Stars — independent
-   main-sequence stars, i.e. peers (the prototype legend already reads
-   "star · friend/sibling"). They fall through to the default `star` below;
-   listed here so the mapping is explicit and searchable. */
-function formFromRelation(isSelf: boolean, rel: string): string {
-  if (isSelf) return "self";
-  const r = rel?.toLowerCase() ?? "";
-  if (r === "partner" || r === "spouse" || r === "wife" || r === "husband") return "binary";
-  if (r === "child" || r === "son" || r === "daughter") return "moon";
-  if (r === "parent" || r === "mother" || r === "father" || r.includes("mom") || r.includes("dad")) return "fixed";
-  if (r === "ancestor" || r === "grandparent" || r.includes("grand")) return "ancient";
-  /* sibling / colleague / friend / unknown → star (peer main-sequence star) */
-  return "star";
-}
-
-/* ── orbital ring, DERIVED from relationship (Galaxy Phase 1) ───────────────
-   A person's DISTANCE from the centre user is computed from their bond type,
-   never random or hand-assigned — closeness of bond = closeness in space. This
-   is the semantic ring; Phase 2 collapses the rings actually present onto radii
-   that fill the canvas (see ringGeom/basePos in the renderer). Ordered by
-   closeness:
-     0 self (centre) · 1 partner · 2 children · 3 parents · 4 siblings ·
-     5 friends · 6 colleagues · 7 grandparents/ancestors ("ancient light, still
-   arriving", outermost). Unknown relations orbit with the friends band (5).
-   Grandparents share the ancestor tier because they share the "ancient"
-   celestial form. Siblings and colleagues (added this branch) get their own
-   tiers so peers-by-blood sit inside chosen work peers, both inside ancestors. */
-function ringIndex(isSelf: boolean, rel: string): number {
-  if (isSelf) return 0;
-  const r = rel?.toLowerCase() ?? "";
-  if (r === "partner" || r === "spouse" || r === "wife" || r === "husband") return 1;
-  if (r === "child" || r === "son" || r === "daughter" || r === "kid") return 2;
-  if (r === "parent" || r === "mother" || r === "father" || r.includes("mom") || r.includes("dad")) return 3;
-  if (r === "sibling" || r === "sister" || r === "brother") return 4;
-  if (r === "friend") return 5;
-  if (r === "colleague" || r === "coworker" || r === "co-worker") return 6;
-  if (r === "ancestor" || r === "grandparent" || r.includes("grand")) return 7;
-  return 5;
-}
+/* Orbit helpers (elementFromRelation / formFromRelation / ringIndex) live in
+   lib/galaxy-orbit.ts so Remembrance can reuse ancient light without a new
+   visual language, and so the mapping is unit-tested. */
 
 /* stable per-person value in [0,1) from a string id — deterministic FNV-1a hash,
    used for organic layout jitter so the galaxy isn't a rigid dartboard while
@@ -273,7 +226,7 @@ export default function AppHomePage() {
     const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); /* ~2.399 rad */
     const nonSelf = people.filter(p => !p.is_self);
     const semanticRing = new Map<string, number>();
-    for (const p of nonSelf) semanticRing.set(p.id, ringIndex(false, p.relation));
+    for (const p of nonSelf) semanticRing.set(p.id, ringIndex(false, p.relation, p.passed_at));
     /* distinct rings present, closest-first → ordinal used for radius + rotation */
     const occupiedRings = Array.from(new Set(semanticRing.values())).sort((a, b) => a - b);
     const ringOrdinal = new Map<number, number>(occupiedRings.map((r, i) => [r, i]));
@@ -427,7 +380,7 @@ export default function AppHomePage() {
     }
 
     function coreR(p: PersonRow): number {
-      const form = formFromRelation(p.is_self, p.relation);
+      const form = formFromRelation(p.is_self, p.relation, p.passed_at);
       const base = form === "self" ? 7 : form === "ancient" ? 3.4 : form === "moon" ? 4.2 : 5;
       return base;
     }
@@ -458,10 +411,10 @@ export default function AppHomePage() {
     /* ── draw a single celestial body (from prototype drawBody) ── */
     function drawBody(i: number, q: { x: number; y: number }, isHovered: boolean, isActive: boolean) {
       const p     = people[i];
-      const col   = p.is_self ? EL_COLOR.gold : (EL_COLOR[elementFromRelation(p.relation)] ?? "#B79AD8");
+      const col   = p.is_self ? EL_COLOR.gold : (EL_COLOR[elementFromRelation(p.relation, p.passed_at)] ?? "#B79AD8");
       const s     = sharp(p.birth_precision);
       const R0    = coreR(p);
-      const form  = formFromRelation(p.is_self, p.relation);
+      const form  = formFromRelation(p.is_self, p.relation, p.passed_at);
       const ign   = ignition(p.id);
       if (ign.alpha <= 0.001) return; /* not yet kindled */
       const scale = reduced ? 1 : Math.max(0.001, ign.scale);
@@ -772,7 +725,7 @@ export default function AppHomePage() {
 
       const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }] = await Promise.all([
         supabase.from("profiles").select("display_name").eq("id", uid).single(),
-        supabase.from("people").select("id, display_name, relation, birth_precision, is_self, is_minor").eq("owner_id", uid).order("created_at", { ascending: true }),
+        supabase.from("people").select("id, display_name, relation, birth_precision, is_self, is_minor, passed_at").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6)
       ]);
@@ -801,8 +754,8 @@ export default function AppHomePage() {
           const score = ca && cb ? computeSynastry(ca, cb).scores.overall : 50;
           calcLinks.push({
             fromId: castPeople[i].id, toId: castPeople[j].id, scoreA: score,
-            elA: elementFromRelation(castPeople[i].relation),
-            elB: elementFromRelation(castPeople[j].relation),
+            elA: elementFromRelation(castPeople[i].relation, castPeople[i].passed_at),
+            elB: elementFromRelation(castPeople[j].relation, castPeople[j].passed_at),
           });
         }
       }
@@ -910,7 +863,8 @@ export default function AppHomePage() {
                 pointerEvents: "none",
               }}>
                 <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 6 }}>
-                  {formFromRelation(hoverPerson.is_self, hoverPerson.relation).replace(/-/g, " ")}
+                  {formFromRelation(hoverPerson.is_self, hoverPerson.relation, hoverPerson.passed_at).replace(/-/g, " ")}
+                  {hasPassed(hoverPerson) ? " · remembered" : ""}
                 </p>
                 <p style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)", marginBottom: 2 }}>{hoverPerson.display_name}</p>
                 <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 10 }}>{hoverPerson.relation} · {hoverPerson.birth_precision}</p>

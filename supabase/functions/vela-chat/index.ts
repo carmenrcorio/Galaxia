@@ -189,12 +189,15 @@ Deno.serve(async (req) => {
 
   try {
     // ── Env / config ─────────────────────────────────────────────────────────
+    // User-scoped client (anon key + caller JWT) so RLS enforces owner isolation.
+    // Do NOT use service_role here — it bypasses RLS and previously allowed IDOR
+    // reads of other users' people/charts when foreign IDs were supplied.
     const supabaseUrl    = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const anonKey        = Deno.env.get("SUPABASE_ANON_KEY");
     const anthropicKey   = Deno.env.get("ANTHROPIC_API_KEY");
     const anthropicModel = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-5";
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (!supabaseUrl || !anonKey) {
       return jsonResponse(500, { error: "Missing Supabase environment variables." });
     }
     if (!anthropicKey) {
@@ -207,8 +210,9 @@ Deno.serve(async (req) => {
     const token = extractToken(req);
     if (!token) return jsonResponse(401, { error: "Missing bearer token." });
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } }
+    const supabase = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false }
     });
 
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
@@ -243,6 +247,34 @@ Deno.serve(async (req) => {
       if (!thread) return jsonResponse(404, { error: "Thread not found." });
     } else {
       const pairIds = payload.pairPersonIds ? [...payload.pairPersonIds].sort() : null;
+      const createScopeIds = [
+        payload.subjectPersonId,
+        ...(pairIds ?? []),
+      ].filter((id): id is string => typeof id === "string" && id.length > 0);
+
+      if (createScopeIds.length > 0) {
+        const { data: ownedForCreate } = await supabase
+          .from("people")
+          .select("id")
+          .in("id", createScopeIds)
+          .eq("owner_id", user.id);
+        if (!ownedForCreate || ownedForCreate.length !== new Set(createScopeIds).size) {
+          return jsonResponse(404, { error: "People not found for this thread." });
+        }
+      }
+
+      if (payload.groupId) {
+        const { data: ownedGroup } = await supabase
+          .from("groups")
+          .select("id")
+          .eq("id", payload.groupId)
+          .eq("owner_id", user.id)
+          .maybeSingle();
+        if (!ownedGroup) {
+          return jsonResponse(404, { error: "Group not found for this thread." });
+        }
+      }
+
       const { data, error } = await supabase
         .from("threads")
         .insert({
@@ -265,14 +297,26 @@ Deno.serve(async (req) => {
       { onConflict: "thread_id,user_id" }
     );
 
-    // ── Scope resolution ─────────────────────────────────────────────────────
+    // ── Scope resolution (owner-scoped; reject any foreign person/group) ─────
     const scopedIds = new Set<string>();
     if (thread.subject_person) scopedIds.add(thread.subject_person);
     if (thread.pair_low)       scopedIds.add(thread.pair_low);
     if (thread.pair_high)      scopedIds.add(thread.pair_high);
     if (thread.group_id) {
+      // Confirm the caller owns the group before expanding members.
+      const { data: ownedGroup } = await supabase
+        .from("groups")
+        .select("id")
+        .eq("id", thread.group_id)
+        .eq("owner_id", user.id)
+        .maybeSingle();
+      if (!ownedGroup) {
+        return jsonResponse(404, { error: "Group not found for this thread." });
+      }
       const { data: members } = await supabase
-        .from("group_members").select("person_id").eq("group_id", thread.group_id);
+        .from("group_members")
+        .select("person_id")
+        .eq("group_id", thread.group_id);
       for (const m of members ?? []) scopedIds.add(m.person_id as string);
     }
 
@@ -281,11 +325,16 @@ Deno.serve(async (req) => {
       return jsonResponse(400, { error: "Scope requires at least one person, pair, or group." });
     }
 
+    // Explicit owner_id filter (belt-and-suspenders with RLS on the user-scoped client).
+    // If any requested id is not owned by the caller, refuse — do not silently omit.
     const { data: people } = await supabase
       .from("people")
       .select("id, display_name, relation, is_minor, birth_date, birth_precision")
-      .in("id", personIds);
-    if (!people?.length) return jsonResponse(404, { error: "People not found for this thread." });
+      .in("id", personIds)
+      .eq("owner_id", user.id);
+    if (!people?.length || people.length !== personIds.length) {
+      return jsonResponse(404, { error: "People not found for this thread." });
+    }
 
     // ── Safety checks ────────────────────────────────────────────────────────
     // The line is shared-mode, not minor-as-subject. A parent asking Vela
@@ -331,9 +380,12 @@ Deno.serve(async (req) => {
     const userMessage = payload.userMessage?.trim();
     if (!userMessage) return jsonResponse(400, { error: "userMessage is required for chat." });
 
-    // ── Charts ───────────────────────────────────────────────────────────────
+    // ── Charts (only for people already proven owned above) ──────────────────
+    const ownedPersonIds = people.map((p) => p.id as string);
     const { data: chartRows } = await supabase
-      .from("charts").select("person_id, data").in("person_id", personIds);
+      .from("charts")
+      .select("person_id, data")
+      .in("person_id", ownedPersonIds);
     const chartById = new Map<string, any>(
       (chartRows ?? []).map((r) => [r.person_id as string, r.data])
     );

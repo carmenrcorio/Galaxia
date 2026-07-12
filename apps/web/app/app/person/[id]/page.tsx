@@ -8,7 +8,7 @@
  * Glyph maps: design/reference/galaxia.jsx
  */
 
-import { computeSynastry, computeTransits, type NatalChart, type Placement } from "@galaxia/astro";
+import { computeSynastry, type NatalChart, type Placement } from "@galaxia/astro";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -29,6 +29,7 @@ import {
 } from "../../../../lib/house-interpretations";
 import { CHART_ENGINE_VERSION, getPreferredHouseSystem, houseSystemLabelForChart } from "../../../../lib/house-system";
 import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, type RecordEntry } from "../../../../lib/record";
+import { todayTransitsForChart } from "../../../../lib/transits";
 import { ThreadMenu } from "../../../../components/thread-menu";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 
@@ -309,12 +310,10 @@ export default function PersonProfilePage() {
   const hasHouses = useMemo(() => Boolean(chart?.cusps?.length === 12), [chart]);
 
   // Today's transits against this natal chart. Deterministic (real ephemeris
-  // vs stored natal positions). Skipped for year-only charts, whose sampled
-  // positions would make transit orbs fabricated.
-  const todayTransits = useMemo(() => {
-    if (!chart || chart.precision === "year") return [];
-    return computeTransits(chart, new Date().toISOString()).filter(h => h.orb <= 1.5).slice(0, 3);
-  }, [chart]);
+  // vs stored natal positions), skipped for year-only charts whose sampled
+  // positions would make transit orbs fabricated. Shared with the home
+  // dashboard's "Today in your sky" via one helper so they never disagree.
+  const todayTransits = useMemo(() => todayTransitsForChart(chart), [chart]);
 
   // Balance tallies count only placements whose sign is actually known —
   // an uncertain (year-only) sign must not be tallied as if it were fact.

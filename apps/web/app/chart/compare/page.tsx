@@ -48,7 +48,7 @@ interface CompareResult {
  * untouched — see CHANGELOG.md for the Phase 0 diagnosis). computeSynastry()
  * itself returns the same aspects/scores regardless of framing, so
  * "romantic"/"platonic" are wired as real RelationType values in
- * lib/compare-guidance.ts that change WHICH already-true data gets
+ * @galaxia/astro compare-guidance that change WHICH already-true data gets
  * surfaced (see sortAspectsForFocus and whatTheyNeed there) — not a
  * cosmetic label on identical output.
  */

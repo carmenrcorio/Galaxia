@@ -80,7 +80,7 @@ interface SavedReading {
   scores?: Record<string, number>;
 }
 
-// whatTheyNeed extracted to lib/compare-guidance.ts (also used by the public Quick Compare).
+// whatTheyNeed extracted to @galaxia/astro compare-guidance (also used by the public Quick Compare).
 
 export default function ComparePage() {
   // useSearchParams requires a Suspense boundary for this route.

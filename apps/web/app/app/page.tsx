@@ -18,24 +18,22 @@
 
 import { computeSynastry, type NatalChart, type TransitHit } from "@galaxia/astro";
 import {
+  HONOR_LINE_STYLE,
+  HONOR_RELATION_TYPE,
   elementFromRelation,
   formFromRelation,
   hasPassed,
+  honorEdgesFromDeclaredRows,
   isMinorForSafety,
   peopleForTodaySky,
   ringIndex,
+  type HonorEdge,
 } from "@galaxia/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { ThreadMenu } from "../../components/thread-menu";
-import {
-  HONOR_LINE_STYLE,
-  HONOR_RELATION_TYPE,
-  honorEdgesFromDeclaredRows,
-  type HonorEdge,
-} from "../../lib/honor-constellation";
 import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 import { todayTransitsForChart } from "../../lib/transits";

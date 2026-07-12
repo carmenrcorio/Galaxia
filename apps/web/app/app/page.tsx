@@ -52,25 +52,37 @@ const EL_COLOR: Record<string, string> = {
   gold: "#E6AE6C" /* self */
 };
 
-/* infer element from person's stored chart data if available, else from id hash */
+/* infer element from relationship as a symbolic register (a proxy until a
+   real chart element is available). Colour is DERIVED, never random. New in
+   this branch: colleagues → earth (the grounded, practical register of shared
+   work). Siblings keep air (the kindred, mental register they share with a
+   partner — differentiated in space by their own celestial form, see below). */
 function elementFromRelation(rel: string): string {
   const r = rel?.toLowerCase() ?? "";
   if (r === "partner") return "air";
   if (r === "child" || r === "son" || r === "daughter") return "earth";
   if (r === "parent" || r === "mother" || r === "father" || r.includes("mom") || r.includes("dad")) return "water";
   if (r === "sibling" || r === "sister" || r === "brother") return "air";
+  if (r === "colleague" || r === "coworker" || r === "co-worker") return "earth";
   if (r === "ancestor" || r === "grandparent" || r.includes("grand")) return "water";
   return "fire";
 }
 
-/* node form from relation */
+/* node form from relation. Forms are the reference legend's celestial bodies
+   (design/reference/galaxia-constellation-prototype.html): binary (partner),
+   moon (child), fixed (parent), ancient (ancestor), star (friend/sibling).
+   New this branch: siblings AND colleagues are Stars — independent
+   main-sequence stars, i.e. peers (the prototype legend already reads
+   "star · friend/sibling"). They fall through to the default `star` below;
+   listed here so the mapping is explicit and searchable. */
 function formFromRelation(isSelf: boolean, rel: string): string {
   if (isSelf) return "self";
   const r = rel?.toLowerCase() ?? "";
-  if (r === "partner") return "binary";
+  if (r === "partner" || r === "spouse" || r === "wife" || r === "husband") return "binary";
   if (r === "child" || r === "son" || r === "daughter") return "moon";
   if (r === "parent" || r === "mother" || r === "father" || r.includes("mom") || r.includes("dad")) return "fixed";
   if (r === "ancestor" || r === "grandparent" || r.includes("grand")) return "ancient";
+  /* sibling / colleague / friend / unknown → star (peer main-sequence star) */
   return "star";
 }
 
@@ -78,11 +90,14 @@ function formFromRelation(isSelf: boolean, rel: string): string {
    A person's DISTANCE from the centre user is computed from their bond type,
    never random or hand-assigned — closeness of bond = closeness in space. This
    is the semantic ring; Phase 2 collapses the rings actually present onto radii
-   that fill the canvas (see ringRadius in the renderer). Ordered by closeness:
+   that fill the canvas (see ringGeom/basePos in the renderer). Ordered by
+   closeness:
      0 self (centre) · 1 partner · 2 children · 3 parents · 4 siblings ·
-     5 friends · 6 grandparents/ancestors ("ancient light, still arriving").
-   Unknown relations orbit with the friends band (5). Grandparents share the
-   ancestor tier because they share the "ancient" celestial form. */
+     5 friends · 6 colleagues · 7 grandparents/ancestors ("ancient light, still
+   arriving", outermost). Unknown relations orbit with the friends band (5).
+   Grandparents share the ancestor tier because they share the "ancient"
+   celestial form. Siblings and colleagues (added this branch) get their own
+   tiers so peers-by-blood sit inside chosen work peers, both inside ancestors. */
 function ringIndex(isSelf: boolean, rel: string): number {
   if (isSelf) return 0;
   const r = rel?.toLowerCase() ?? "";
@@ -90,8 +105,9 @@ function ringIndex(isSelf: boolean, rel: string): number {
   if (r === "child" || r === "son" || r === "daughter" || r === "kid") return 2;
   if (r === "parent" || r === "mother" || r === "father" || r.includes("mom") || r.includes("dad")) return 3;
   if (r === "sibling" || r === "sister" || r === "brother") return 4;
-  if (r === "ancestor" || r === "grandparent" || r.includes("grand")) return 6;
   if (r === "friend") return 5;
+  if (r === "colleague" || r === "coworker" || r === "co-worker") return 6;
+  if (r === "ancestor" || r === "grandparent" || r.includes("grand")) return 7;
   return 5;
 }
 
@@ -240,11 +256,40 @@ export default function AppHomePage() {
       return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
     };
 
+    /* ── derived orbital layout (Galaxy Phase 1) ───────────────────────────
+       Each person's semantic ring comes from their relationship (ringIndex);
+       we then collapse the rings ACTUALLY present onto radii that FILL the
+       canvas, so the closeness ORDER is always honoured while the galaxy
+       expands/contracts to use available space (Phase 2/3 responsiveness):
+       partner+kids alone spread out; 14+ people stay inside the frame. Within a
+       ring, people are spaced evenly around the circle; each ring is rotated by
+       the golden angle (spiral-arm feel) and every star gets small, stable
+       radius+angle jitter so it reads as an organic galaxy, not a dartboard.
+       Computed here (before the entrance timeline) so the arrival can cascade
+       OUTWARD along the spiral, inner rings first. */
+    const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); /* ~2.399 rad */
+    const nonSelf = people.filter(p => !p.is_self);
+    const semanticRing = new Map<string, number>();
+    for (const p of nonSelf) semanticRing.set(p.id, ringIndex(false, p.relation));
+    /* distinct rings present, closest-first → ordinal used for radius + rotation */
+    const occupiedRings = Array.from(new Set(semanticRing.values())).sort((a, b) => a - b);
+    const ringOrdinal = new Map<number, number>(occupiedRings.map((r, i) => [r, i]));
+    /* members per ring (stable people-order) for even angular distribution */
+    const ringMembers = new Map<number, string[]>();
+    for (const p of nonSelf) {
+      const sr = semanticRing.get(p.id)!;
+      const arr = ringMembers.get(sr);
+      if (arr) arr.push(p.id); else ringMembers.set(sr, [p.id]);
+    }
+    const ordOf = (id: string) => ringOrdinal.get(semanticRing.get(id) ?? -1) ?? 0;
+
     /* ── entrance timeline ─────────────────────────────────────────────
-       The constellation ARRIVES: the self star ignites first, people kindle
-       in sequence (strongest bonds → self first), lines draw themselves in
-       behind them. Persisted via refs so it plays once on data load, not on
-       every hover/state re-run of this effect. */
+       The constellation ARRIVES: the self star (galactic core) ignites first,
+       then people kindle CASCADING OUTWARD along the spiral — inner rings
+       (partner, children) light before the outer arms (colleagues, ancestors),
+       and within a ring the strongest synastry to self leads. Lines draw
+       themselves in behind them. Persisted via refs so it plays once on data
+       load, not on every hover/state re-run of this effect. */
     const selfP  = people.find(p => p.is_self);
     const selfId = selfP?.id ?? people[0]?.id;
     const scoreToSelf = (id: string) => {
@@ -252,9 +297,9 @@ export default function AppHomePage() {
         (k.fromId === selfId && k.toId === id) || (k.toId === selfId && k.fromId === id));
       return l ? l.scoreA : 0;
     };
-    /* inner bonds (strongest synastry to self) kindle first */
+    /* inner rings kindle first (outward cascade); strongest bond leads within a ring */
     const ordered = people.filter(p => !p.is_self)
-      .sort((a, b) => scoreToSelf(b.id) - scoreToSelf(a.id));
+      .sort((a, b) => ordOf(a.id) - ordOf(b.id) || scoreToSelf(b.id) - scoreToSelf(a.id));
 
     const SELF_DUR = 650, NODE_DUR = 520, NODE_GAP = 130, NODE_LEAD = 440, LINK_DUR = 480;
     const schedule = new Map<string, { delay: number; dur: number }>();
@@ -310,46 +355,43 @@ export default function AppHomePage() {
       };
     }
 
-    /* ── derived orbital layout (Galaxy Phase 1) ───────────────────────────
-       Each person's semantic ring comes from their relationship (ringIndex);
-       we then collapse the rings ACTUALLY present onto evenly spaced radii that
-       fill the canvas, so the closeness ORDER is always honoured while the
-       galaxy expands/contracts to use available space (Phase 2 responsiveness):
-       partner+kids alone spread out; 14+ people stay inside the frame. Within a
-       ring, people are spaced evenly around the circle; each ring is rotated by
-       the golden angle (spiral-arm feel) and every star gets small, stable
-       radius+angle jitter so it reads as an organic galaxy, not a dartboard. */
-    const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); /* ~2.399 rad */
-    const nonSelf = people.filter(p => !p.is_self);
-    const semanticRing = new Map<string, number>();
-    for (const p of nonSelf) semanticRing.set(p.id, ringIndex(false, p.relation));
-    /* distinct rings present, closest-first → ordinal used for radius + rotation */
-    const occupiedRings = Array.from(new Set(semanticRing.values())).sort((a, b) => a - b);
-    const ringOrdinal = new Map<number, number>(occupiedRings.map((r, i) => [r, i]));
-    /* members per ring (stable people-order) for even angular distribution */
-    const ringMembers = new Map<number, string[]>();
-    for (const p of nonSelf) {
-      const sr = semanticRing.get(p.id)!;
-      const arr = ringMembers.get(sr);
-      if (arr) arr.push(p.id); else ringMembers.set(sr, [p.id]);
-    }
-
-    /* radius for a ring ordinal — scaled to the current canvas (responsive).
-       rMax keeps the outermost ring (glow + label) inside the frame at any size
-       incl. 375px; rMin keeps the innermost ring clear of the self star. */
-    function ringRadius(ord: number): number {
-      const minSide = Math.min(W(), H());
-      const rMax = Math.max(52, minSide / 2 - 48);
-      const rMin = Math.min(rMax * 0.5, minSide * 0.16);
+    /* NORMALISED ring radius in [0,1] for a ring ordinal — 0 = at the core,
+       1 = at the canvas margin. Only the rings ACTUALLY present are collapsed
+       onto this range, so the closeness ORDER is always preserved while the
+       galaxy expands to fill whatever space exists (few people spread out; 14+
+       stay inside the frame). `RN_MIN` keeps the innermost ring clear of the
+       self star; the outermost occupied ring always reaches 1 (the edge
+       margin) so the spiral fills the frame instead of huddling in the centre. */
+    const RN_MIN = 0.34;
+    function ringNorm(ord: number): number {
       const n = occupiedRings.length;
-      if (n <= 1) return rMin + (rMax - rMin) * 0.55; /* one ring: comfortable middle */
-      return rMin + (rMax - rMin) * (ord / (n - 1));
+      if (n <= 1) return 0.62; /* one ring: a comfortable single band */
+      return RN_MIN + (1 - RN_MIN) * (ord / (n - 1));
     }
 
-    /* stable base (pre-drift) position derived from the ring + within-ring slot */
+    /* ELLIPTICAL fill: the normalised radius maps onto SEPARATE x/y radii sized
+       to the actual canvas (not min(W,H)), so a wide desktop canvas fills
+       HORIZONTALLY and a tall mobile canvas fills VERTICALLY — the old scalar
+       radius capped everything at the short side and left the wide edges dead
+       (the "centre-third huddle"). Comfortable margins keep glow haloes + the
+       name labels (which hang below each node) inside the frame at any size,
+       incl. 375px. */
+    function ringGeom() {
+      const cxp = W() / 2, cyp = H() / 2;
+      const radX = Math.max(60, W() / 2 - 46);
+      const radY = Math.max(60, H() / 2 - 54); /* extra bottom room for labels */
+      return { cxp, cyp, radX, radY };
+    }
+
+    /* stable base (pre-drift) position derived from the ring + within-ring slot.
+       The angle gets a per-ring golden-angle rotation PLUS a continuous twist
+       that grows with radius, so the arms sweep outward as a spiral rather than
+       lining up into concentric bullseyes; small stable hash jitter keeps it a
+       living galaxy, not a rigid dartboard. */
+    const SPIRAL_TWIST = 1.15; /* rad of extra sweep from core to rim */
     function basePos(i: number): { x: number; y: number } {
       const p = people[i];
-      const cxp = W() / 2, cyp = H() / 2;
+      const { cxp, cyp, radX, radY } = ringGeom();
       if (p.is_self) return { x: cxp, y: cyp };
       const sr = semanticRing.get(p.id)!;
       const ord = ringOrdinal.get(sr)!;
@@ -358,10 +400,11 @@ export default function AppHomePage() {
       const count = Math.max(members.length, 1);
       const jA = hash01(p.id + "a"), jR = hash01(p.id + "r");
       const spacing = (Math.PI * 2) / count;
-      /* even spread + per-ring golden rotation (spiral arms) + small angle jitter */
-      const angle = -Math.PI / 2 + ord * GOLDEN_ANGLE + slot * spacing + (jA - 0.5) * spacing * 0.3;
-      const r = ringRadius(ord) * (1 + (jR - 0.5) * 0.14); /* ±7% radius jitter */
-      return { x: cxp + r * Math.cos(angle), y: cyp + r * Math.sin(angle) };
+      const rn = ringNorm(ord) * (1 + (jR - 0.5) * 0.12); /* ±6% radius jitter */
+      /* even spread + per-ring golden rotation + radius-scaled spiral twist + jitter */
+      const angle = -Math.PI / 2 + ord * GOLDEN_ANGLE + rn * SPIRAL_TWIST
+                  + slot * spacing + (jA - 0.5) * spacing * 0.3;
+      return { x: cxp + rn * radX * Math.cos(angle), y: cyp + rn * radY * Math.sin(angle) };
     }
 
     /* compute position with drift — prototype pos() (drift settles in with ignition) */
@@ -874,8 +917,10 @@ export default function AppHomePage() {
         {people.length > 0 ? (
           <div style={{ padding: "12px 24px 18px", borderTop: "1px solid rgba(255,255,255,.05)", display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
             {[
-              { label: "Partner", color: "#B79AD8" }, { label: "Child / moon", color: "#cdbd7a" },
-              { label: "Parent / fixed star", color: "#6FB1B8" }, { label: "Ancestor / ancient light", color: "#DA8C8C" },
+              { label: "Partner / binary star", color: EL_COLOR.air }, { label: "Child / moon", color: EL_COLOR.earth },
+              { label: "Parent / fixed star", color: EL_COLOR.water }, { label: "Sibling / star", color: EL_COLOR.air },
+              { label: "Friend / star", color: EL_COLOR.fire }, { label: "Colleague / star", color: EL_COLOR.earth },
+              { label: "Ancestor / ancient light", color: "#DA8C8C" },
             ].map(({ label, color }) => (
               <span key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: ".68rem", color: "var(--mist2)" }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, display: "inline-block", flexShrink: 0 }} />

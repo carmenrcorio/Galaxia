@@ -48,6 +48,7 @@ export type RelationshipType =
   | "grandparent"
   | "sibling"
   | "friend"
+  | "colleague"
   | "ancestor"
   | "self";
 

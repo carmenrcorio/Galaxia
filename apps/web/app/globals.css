@@ -686,17 +686,20 @@ section { padding-block: clamp(76px, 12vh, 140px); }
    rule above and its lighter weight actually wins. */
 .marketing .hero-h1 {
   font-family: var(--serif);
-  /* Lighter than the old 500: upright Fraunces at 400 reads graceful rather
-     than blocky, closer in spirit to the italic cut used above and below. */
-  font-weight: 400;
+  /* Weight 400 still read as a chunky grotesque next to the delicate italic
+     intro. Dropping to 340 + optical sizing (opsz now variable, see layout.tsx)
+     renders the large upright statement in Fraunces' graceful display cut, so it
+     reads as the same family as the cursive line above it. */
+  font-weight: 340;
+  font-optical-sizing: auto;
   font-size: clamp(2.2rem, 5.6vw, 3.6rem);
-  line-height: 1.1;
+  line-height: 1.12;
   margin: 14px 0 0;
-  letter-spacing: -.018em;
+  letter-spacing: -.014em;
   max-width: 22ch;
 }
 /* Lean into the italic cut for the emotional core of the line. */
-.marketing .hero-h1 em { font-style: italic; font-weight: 500; color: var(--cream); }
+.marketing .hero-h1 em { font-style: italic; font-weight: 400; color: var(--cream); }
 
 .hero-actions { margin-top: 30px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .hero-scroll-cue {

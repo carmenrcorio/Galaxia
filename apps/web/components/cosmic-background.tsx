@@ -18,6 +18,8 @@ interface Star {
   r: number;          // physical radius in DPR pixels
   a: number;          // accumulating twinkle angle
   tw: number;         // twinkle speed
+  baseA: number;      // steady per-star brightness (the star's resting alpha)
+  amp: number;        // twinkle amplitude — 0 for the majority (steady) stars
   depth: number;      // for scroll parallax (0.2–0.8)
 }
 
@@ -47,16 +49,26 @@ export function CosmicBackground() {
       stars = [];
       for (let i = 0; i < n; i++) {
         stars.push({
-          x:     Math.random() * W,
-          y:     Math.random() * H,
-          r:     (Math.random() * 1.1 + 0.2) * DPR,
-          a:     Math.random() * Math.PI * 2,
-          // Twinkle speed. Was Math.random()*0.02 + 0.004 (a full min↔max
-          // pulse every ~2–13s per star) — reported as a fast flicker across
-          // many stars at once. ~5x slower: a gentle shimmer, ~10–65s per
-          // pulse. prefers-reduced-motion is already honored below (this
-          // increment is skipped entirely, and only one static frame draws).
-          tw:    Math.random() * 0.004 + 0.0008,
+        x:     Math.random() * W,
+        y:     Math.random() * H,
+        r:     (Math.random() * 1.1 + 0.2) * DPR,
+        a:     Math.random() * Math.PI * 2,
+          // Twinkle speed. History: Math.random()*0.02 + 0.004 flickered fast;
+          // a prior fix slowed it ~5x to *0.004 + 0.0008 (~10–65s/pulse) but
+          // it still read as a busy field because (a) EVERY star twinkled and
+          // (b) the swing was huge (0.25↔0.90) through a sharp abs(sin) trough,
+          // i.e. near on/off. Slowed further here (~2.5x → a full ~55–260s
+          // pulse) AND the swing/participation are cut below via `amp`.
+          // prefers-reduced-motion is honored below (increment skipped; one
+          // static frame draws, with no twinkle offset applied).
+          tw:    Math.random() * 0.0015 + 0.0004,
+          // A star's resting brightness. Most stars now simply sit here,
+          // steady — a calm sky rather than a field of pulsing dots.
+          baseA: Math.random() * 0.34 + 0.28,   // 0.28–0.62
+          // Only ~30% of stars twinkle at all, and only by a gentle ±0.05–0.15
+          // around their resting alpha (smooth sin, never through zero) so the
+          // shimmer is subtle and occasional, never on/off.
+          amp:   Math.random() < 0.30 ? Math.random() * 0.10 + 0.05 : 0,
           depth: Math.random() * 0.6 + 0.2,
         });
       }
@@ -67,7 +79,10 @@ export function CosmicBackground() {
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i];
         if (!reduce) s.a += s.tw;          // accumulating angle (matches landing)
-        const al = 0.25 + Math.abs(Math.sin(s.a)) * 0.65;
+        // Gentle shimmer around the star's resting brightness. Smooth sin (not
+        // abs) keeps it a soft rise-and-fall instead of a sharp on/off blink,
+        // and `amp` is 0 for most stars so only a few pulse at any moment.
+        const al = s.baseA + (reduce ? 0 : s.amp * Math.sin(s.a));
         // scroll parallax identical to landing
         let yy = s.y - scrollY * DPR * s.depth * 0.15;
         yy = ((yy % H) + H) % H;

@@ -82,3 +82,5 @@ export * from "./person-care";
 export * from "./honor-constellation";
 
 export * from "./remembrance";
+
+export * from "./record";

@@ -12,7 +12,7 @@ import type { SubscriptionStatus } from "@galaxia/core";
  */
 
 /** The single entitlement that unlocks the product. Checked client-side after a purchase. */
-export const RC_ENTITLEMENT_ID = "GalaxiaMea App Pro";
+export const RC_ENTITLEMENT_ID = "GalaxiaMea App Unlimited";
 
 /** We launch monthly-only; annual/lifetime are not set up in RevenueCat yet. */
 export const RC_PLAN = "monthly";

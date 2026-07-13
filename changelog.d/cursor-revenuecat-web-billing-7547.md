@@ -14,7 +14,7 @@ required by the REST v2 cancel path). Stripe keys are not read by the app.
 `[DECISION]` **RevenueCat App User ID = Supabase `user.id`.** Both the client
 SDK (`Purchases.configure`) and the webhook key on `app_user_id = profiles.id`,
 so web and future mobile map to ONE RevenueCat customer / ONE entitlement
-(`GalaxiaMea App Pro`).
+(`GalaxiaMea App Unlimited`, matching the RevenueCat dashboard entitlement id exactly).
 
 `[CHANGED]` **`paywall.tsx` no longer calls `POST /api/checkout`.** It does a
 client-side RevenueCat purchase of the single Monthly product. The annual card

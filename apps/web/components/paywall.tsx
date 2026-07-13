@@ -1,48 +1,39 @@
 "use client";
 
 import { trialDaysRemaining } from "@galaxia/core";
+import {
+  ErrorCode,
+  Purchases,
+  PurchasesError,
+  type Package
+} from "@revenuecat/purchases-js";
 import { useState } from "react";
 import { publicEnv } from "../lib/env";
+import { RC_ENTITLEMENT_ID } from "../lib/revenuecat";
+import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";
 
 /**
  * The paywall. Copy for the genuinely-trial-ended state is verbatim from
- * design/galaxia-pricing-copy.md §1 (and §2 for the founding-member block).
- * Do not paraphrase that one.
+ * design/galaxia-pricing-copy.md §1.
  *
- * BUG (fixed here): this component used to render "YOUR TRIAL HAS ENDED"
- * unconditionally, regardless of subscription_status/trial_ends_at. The spec
- * only ever describes this page as "shown at trial end" — it never
- * anticipated someone reaching it mid-trial, subscribed, or previously
- * canceled, but the app lets all of those happen (direct navigation, an old
- * link, /account's "Subscribe" pill for a canceled account). The header copy
- * below is now derived from the real subscriptionStatus/trialEndsAt passed
- * in from the server component — never asserted. An unrecognized/missing
- * status renders neutral copy that claims nothing, per ENGINEERING.md §12.
+ * Billing (RevenueCat Web Billing): the purchase is driven client-side by the
+ * RevenueCat Web SDK. We launch MONTHLY-ONLY — annual/lifetime are not set up in
+ * RevenueCat yet, so they are not offered here. Payment status is NEVER set by
+ * this component; the RevenueCat webhook is the single source of truth and flips
+ * profiles.subscription_status. After a successful purchase we only READ the
+ * profile to know when the webhook has landed, then send the user into the app.
  *
- * Card-optional trial (Amendment 1): the card is collected here, at trial end
- * or when the user chooses to subscribe — never at signup.
- * Founding members capped at 300 (Amendment 2); the count is read from the DB.
+ * Header copy is derived from the real subscriptionStatus/trialEndsAt passed in
+ * from the server component — never asserted. An unrecognized/missing status
+ * renders neutral copy that claims nothing, per ENGINEERING.md §12.
  */
 
-const PLANS = [
-  {
-    id: "annual" as const,
-    name: "Yearly",
-    badge: "Best value",
-    price: "$89",
-    unit: "/year",
-    sub: "$7.42 a month · save 26%",
-  },
-  {
-    id: "monthly" as const,
-    name: "Monthly",
-    badge: null,
-    price: "$9.99",
-    unit: "/month",
-    sub: null,
-  },
-];
+const MONTHLY_PLAN = {
+  name: "Monthly",
+  price: "$9.99",
+  unit: "/month"
+};
 
 const INCLUDED: { title: string; body: string }[] = [
   { title: "Everyone you love.", body: "No limit on how many people you add. Your grandmother should not cost extra." },
@@ -117,41 +108,112 @@ export function deriveHeaderCopy(subscriptionStatus: string | null, trialEndsAt:
   };
 }
 
+/**
+ * Poll the user's profile until the webhook has flipped their status to a state
+ * with access. Read-only — the client never writes status. Bounded so we never
+ * hang; if it doesn't land in time the caller falls back to a manual link.
+ */
+async function waitForAccess(userId: string, attempts = 12, delayMs = 1500): Promise<boolean> {
+  const supabase = createSupabaseBrowserClient();
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("subscription_status")
+        .eq("id", userId)
+        .maybeSingle();
+      const status = (data?.subscription_status as string | null) ?? null;
+      if (status === "active" || status === "lifetime") return true;
+    } catch {
+      // Ignore transient read errors and keep polling.
+    }
+    await new Promise((r) => setTimeout(r, delayMs));
+  }
+  return false;
+}
+
 export function Paywall({
-  foundingRemaining,
+  userId = null,
   subscriptionStatus = null,
   trialEndsAt = null,
 }: {
-  foundingRemaining?: number | null;
+  userId?: string | null;
   subscriptionStatus?: string | null;
   trialEndsAt?: string | null;
 }) {
-  const [selected, setSelected] = useState<"annual" | "monthly">("annual"); // annual pre-selected
   const [submitting, setSubmitting] = useState(false);
+  const [purchased, setPurchased] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const foundingEnabled = publicEnv.foundingEnabled && subscriptionStatus !== "lifetime";
   const copy = deriveHeaderCopy(subscriptionStatus, trialEndsAt);
 
-  async function checkout(plan: "annual" | "monthly" | "lifetime") {
-    setSubmitting(true);
+  async function subscribe() {
     setError(null);
+
+    if (!publicEnv.revenueCatPublicKey) {
+      setError("Payments aren't available yet. Please try again later.");
+      return;
+    }
+    if (!userId) {
+      setError("Please sign in again to continue.");
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
-      });
-      if (res.ok) {
-        const { url } = (await res.json()) as { url?: string };
-        if (url) { window.location.href = url; return; }
+      // Identify the RevenueCat customer by the Supabase user.id so web (and
+      // future mobile) map to ONE RevenueCat customer and ONE entitlement.
+      if (!Purchases.isConfigured()) {
+        Purchases.configure({ apiKey: publicEnv.revenueCatPublicKey, appUserId: userId });
       }
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Something went wrong. Please try again.");
-    } catch {
-      setError("Network error. Please try again.");
+
+      const offerings = await Purchases.getSharedInstance().getOfferings();
+      const monthly: Package | null =
+        offerings.current?.monthly ?? offerings.current?.availablePackages?.[0] ?? null;
+      if (!monthly) {
+        setError("No plan is available right now. Please try again later.");
+        return;
+      }
+
+      const { customerInfo } = await Purchases.getSharedInstance().purchase({ rcPackage: monthly });
+
+      if (customerInfo.entitlements.active[RC_ENTITLEMENT_ID]) {
+        setPurchased(true);
+        setSyncing(true);
+        // The webhook is the source of truth; wait for it to flip our status,
+        // then continue into the app. Fall back to a manual link if it's slow.
+        const ready = await waitForAccess(userId);
+        setSyncing(false);
+        if (ready) {
+          window.location.href = "/app";
+        }
+      } else {
+        setError("Your purchase went through but access is still syncing. Refresh in a moment.");
+      }
+    } catch (e) {
+      if (e instanceof PurchasesError && e.errorCode === ErrorCode.UserCancelledError) {
+        // User closed the purchase flow — not an error.
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (purchased) {
+    return (
+      <div className="glass-card" style={{ maxWidth: 520, margin: "0 auto", display: "grid", gap: 14, textAlign: "center" }}>
+        <p style={{ color: "var(--gold)", fontFamily: "var(--serif)", fontSize: "1.6rem", margin: 0 }}>✦ You're in.</p>
+        <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
+          Thank you for subscribing. {syncing ? "Setting up your account…" : "Your galaxy is ready."}
+        </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", alignItems: "center" }}>
+          {syncing ? <Spinner size={14} color="var(--gold)" /> : null}
+          <a className="btn-primary" href="/app">Open Galaxia</a>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -172,46 +234,21 @@ export function Paywall({
         </div>
       ) : (
       <>
-      {/* Price cards — annual pre-selected, marked Best value */}
-      <div style={{ display: "grid", gap: 10 }}>
-        {PLANS.map((plan) => {
-          const active = selected === plan.id;
-          return (
-            <button
-              key={plan.id}
-              type="button"
-              onClick={() => setSelected(plan.id)}
-              aria-pressed={active}
-              className="glass-card"
-              style={{
-                textAlign: "left", cursor: "pointer", padding: "16px 18px",
-                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-                border: active ? "1px solid var(--gold)" : "1px solid rgba(183,154,216,.16)",
-                background: active ? "rgba(230,174,108,.07)" : "rgba(255,255,255,.02)",
-              }}
-            >
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)" }}>{plan.name}</span>
-                  {plan.badge ? (
-                    <span style={{ fontSize: ".64rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "#1a1206", background: "var(--gold)", borderRadius: 100, padding: "2px 8px" }}>
-                      {plan.badge}
-                    </span>
-                  ) : null}
-                </div>
-                {plan.sub ? <div className="muted" style={{ fontSize: ".8rem", marginTop: 2 }}>{plan.sub}</div> : null}
-              </div>
-              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <span style={{ fontFamily: "var(--serif)", fontSize: "1.5rem", color: "var(--cream)", fontWeight: 600 }}>{plan.price}</span>
-                <span className="muted" style={{ fontSize: ".8rem" }}> {plan.unit}</span>
-              </div>
-            </button>
-          );
-        })}
+      {/* Single monthly plan — annual/lifetime aren't set up yet, so aren't offered. */}
+      <div className="glass-card" style={{
+        textAlign: "left", padding: "16px 18px",
+        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+        border: "1px solid var(--gold)", background: "rgba(230,174,108,.07)",
+      }}>
+        <div style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)" }}>{MONTHLY_PLAN.name}</div>
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <span style={{ fontFamily: "var(--serif)", fontSize: "1.5rem", color: "var(--cream)", fontWeight: 600 }}>{MONTHLY_PLAN.price}</span>
+          <span className="muted" style={{ fontSize: ".8rem" }}> {MONTHLY_PLAN.unit}</span>
+        </div>
       </div>
 
       <div style={{ textAlign: "center" }}>
-        <button className="btn-primary" onClick={() => checkout(selected)} disabled={submitting} style={{ gap: 8, minWidth: 240 }}>
+        <button className="btn-primary" onClick={() => void subscribe()} disabled={submitting} style={{ gap: 8, minWidth: 240 }}>
           {submitting && <Spinner size={13} color="#1a1206" />}
           {submitting ? "One moment…" : "Continue with Galaxia"}
         </button>
@@ -232,24 +269,6 @@ export function Paywall({
           </div>
         ))}
       </div>
-
-      {/* Founding member offer (optional, behind flag). Cap 300 (Amendment 2). Real count only. */}
-      {foundingEnabled ? (
-        <div className="glass-card" style={{ textAlign: "center", display: "grid", gap: 8, border: "1px solid rgba(230,174,108,.28)" }}>
-          <p className="eyebrow">FOUNDING MEMBERS · 300 ONLY</p>
-          <h2 style={{ fontFamily: "var(--serif)", fontSize: "1.5rem", color: "var(--cream)", margin: 0 }}>Pay once. Stay forever.</h2>
-          <p className="muted" style={{ fontSize: ".88rem", lineHeight: 1.55, maxWidth: "44ch", margin: "0 auto" }}>
-            Galaxia is new, and you're early. Three hundred people can buy it outright — one payment, no subscription, for as long as Galaxia exists. You'll shape what it becomes.
-          </p>
-          <div style={{ fontFamily: "var(--serif)", fontSize: "1.4rem", color: "var(--cream)" }}>$149 once</div>
-          <button className="btn-primary" onClick={() => checkout("lifetime")} disabled={submitting} style={{ margin: "4px auto 0", gap: 8 }}>
-            Become a founding member
-          </button>
-          {typeof foundingRemaining === "number" ? (
-            <p className="muted" style={{ fontSize: ".78rem" }}>{Math.max(0, 300 - foundingRemaining)} of 300 remaining.</p>
-          ) : null}
-        </div>
-      ) : null}
       </>
       )}
     </div>

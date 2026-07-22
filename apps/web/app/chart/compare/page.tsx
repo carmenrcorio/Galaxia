@@ -28,11 +28,11 @@ import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../../components/birth-fields";
 import { DynamicTableSection } from "../../../components/dynamic-table-section";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
+import { GenerationalSection } from "../../../components/generational-section";
 import { QuickChartShell } from "../../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
-import { SIGN_GLYPH } from "../../../lib/design";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
 import {
   QUICK_COMPARE_HELD_READING,
@@ -338,15 +338,7 @@ export default function QuickComparePage() {
           )}
 
           {!blockRomanticMinorRender ? (
-            <section className="glass-card fade-in fade-in-delay-2">
-              <p className="eyebrow" style={{ marginBottom: 8 }}>Generational call-out</p>
-              <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>{result.generational.theme}</p>
-              {result.generational.shared.length > 0 ? (
-                <p className="muted" style={{ fontSize: ".8rem", marginTop: 8 }}>
-                  Shared sky: {result.generational.shared.map((s) => `${SIGN_GLYPH[s.sign] ?? ""} ${s.planet} in ${s.sign}`).join(" · ")}
-                </p>
-              ) : null}
-            </section>
+            <GenerationalSection generational={result.generational} />
           ) : null}
 
           <section className="glass-card fade-in fade-in-delay-2" style={{ textAlign: "center", display: "grid", gap: 12 }}>

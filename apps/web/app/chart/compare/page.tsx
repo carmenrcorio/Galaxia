@@ -26,12 +26,13 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../../components/birth-fields";
+import { DynamicTableSection } from "../../../components/dynamic-table-section";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { QuickChartShell } from "../../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
-import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
+import { SIGN_GLYPH } from "../../../lib/design";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
 import {
   QUICK_COMPARE_HELD_READING,
@@ -316,20 +317,7 @@ export default function QuickComparePage() {
             </section>
           ) : (
             <>
-              <section className="glass-card fade-in fade-in-delay-1">
-                <p className="eyebrow" style={{ marginBottom: 12 }}>Your dynamic</p>
-                <div style={{ borderRadius: 14, background: "rgba(111,177,184,.06)", border: "1px solid rgba(111,177,184,.15)", padding: "4px 0", marginBottom: 14 }}>
-                  {Object.entries(result.synastry.scores).map(([key, score]) => {
-                    const { word, cls } = compatWord(score as number);
-                    return (
-                      <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 16px", borderTop: key === "overall" ? "none" : "1px solid rgba(255,255,255,.04)" }}>
-                        <span style={{ fontSize: ".82rem", color: "var(--mist)" }}>{COMPAT_LABELS[key] ?? key}</span>
-                        <span className={`compat-word ${cls}`} style={{ fontSize: ".88rem", fontFamily: "var(--serif)" }}>{word}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-
+              <DynamicTableSection scores={result.synastry.scores}>
                 {[personA!, personB!].map((person) => (
                   <div key={person.display_name} style={{ marginBottom: 10, padding: "13px 15px", borderRadius: 13, background: "linear-gradient(165deg, rgba(255,255,255,.025), rgba(255,255,255,.008))", border: "1px solid rgba(183,154,216,.12)" }}>
                     <p style={{ fontSize: ".7rem", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 6 }}>
@@ -340,7 +328,7 @@ export default function QuickComparePage() {
                     </p>
                   </div>
                 ))}
-              </section>
+              </DynamicTableSection>
 
               <FlowsAndCatchesSection
                 aspects={result.synastry.aspects}

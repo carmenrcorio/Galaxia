@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ShareSnapshotView } from "../../../components/share-snapshot-view";
-import { getQuickShareByToken } from "../../../lib/quick-share";
+import { getQuickShareByToken } from "../../../lib/quick-share-server";
 
 export const metadata: Metadata = {
   title: "Shared reading · Galaxia",

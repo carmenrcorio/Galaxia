@@ -44,8 +44,11 @@ function placementProof(planet: string, sign: string): string {
 
 function sideProof(planet: string, sign: string, essence: string | null): string {
   const label = planetLabel(planet);
-  if (essence) return `${label} in ${sign} (${essence})`;
-  return `${label} in ${sign}`;
+  if (!essence) return `${label} in ${sign}`;
+  // Essences are authored as full sentences ending in "."; strip that when nested
+  // inside the proof parenthetical so we do not render ".)."
+  const nested = essence.replace(/\.\s*$/, "");
+  return `${label} in ${sign} (${nested})`;
 }
 
 function logMiss(planet: string, sign: string) {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { insertQuickShareSnapshot, validateQuickSharePersistBody } from "../../../lib/quick-share";
+import { validateQuickSharePersistBody } from "../../../lib/quick-share";
+import { insertQuickShareSnapshot } from "../../../lib/quick-share-server";
 
 /**
  * Persist a Quick Chart / Quick Compare reading as a tokenized snapshot.

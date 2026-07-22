@@ -9,7 +9,7 @@
 
 import {
   aspectActionParts,
-  interpretAspect,
+  interpretSynastryAspect,
   orbStrength,
   sortAspectsForFocus,
   type AspectKey,
@@ -55,7 +55,7 @@ export function FlowsAndCatchesSection({ aspects, relationType }: Props) {
   let seenFlowsOpener = false;
   let seenCatchesOpener = false;
   const rows = ordered.map((a, idx) => {
-    const reading = interpretAspect(
+    const reading = interpretSynastryAspect(
       a.from.toLowerCase() as BodyKey,
       a.to.toLowerCase() as BodyKey,
       a.type.toLowerCase() as AspectKey

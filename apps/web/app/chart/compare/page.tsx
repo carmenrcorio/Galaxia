@@ -37,6 +37,10 @@ import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
+import {
+  QUICK_COMPARE_HELD_READING,
+  QUICK_COMPARE_MINOR_NOTICE,
+} from "../../../lib/quick-share";
 import { useViewer } from "../../../lib/use-viewer";
 
 // Local shape matching @galaxia/astro's SynastryResult (avoids importing computeSynastry just for its type).
@@ -65,17 +69,6 @@ const FOCUS_TYPES: { key: RelationType; label: string }[] = [
   { key: "romantic", label: "Romantic" },
   { key: "platonic", label: "Platonic" },
 ];
-
-// FOUNDER-REVIEW: authored — Quick Compare only offers Romantic/Platonic, so
-// the saved-Compare held-reading string (which lists parent-child/siblings/
-// friends/ancestor) does not fit. Names Platonic as the only available lens.
-const QUICK_COMPARE_HELD_READING =
-  "A minor is part of this comparison, so Galaxia won't produce a romantic reading here. Only a platonic reading is available for this pairing.";
-
-// FOUNDER-REVIEW: authored — mirror of /app/compare's picker notice, adapted
-// to this surface's Romantic/Platonic choice.
-const QUICK_COMPARE_MINOR_NOTICE =
-  "A minor is part of this comparison, so only a platonic reading is available. Romantic framing is turned off for pairings involving a child.";
 
 export default function QuickComparePage() {
   const viewer = useViewer();
@@ -163,7 +156,36 @@ export default function QuickComparePage() {
     }
   }
 
-  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  async function createShareUrl(): Promise<string> {
+    if (!result) throw new Error("Compare two charts before sharing.");
+    // Persist the post-block safe framing. Never send romantic when pairHasMinor.
+    const safeRelationType =
+      result.pairHasMinor && isRomanticRelation(relationType) ? "platonic" : relationType;
+    const res = await fetch("/api/quick-share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "compare",
+        payload: {
+          nameA: nameA.trim() || undefined,
+          nameB: nameB.trim() || undefined,
+          relationType: safeRelationType,
+          pairHasMinor: result.pairHasMinor,
+          romanticHeldNotice: romanticHeldNotice || undefined,
+          chartA: result.chartA,
+          chartB: result.chartB,
+          synastry: result.synastry
+            ? { scores: result.synastry.scores, aspects: result.synastry.aspects }
+            : null,
+          generational: result.generational,
+        },
+      }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? "Could not create share link.");
+    // Token URL only — no birth date, time, or coordinates.
+    return `${window.location.origin}/s/${body.token as string}`;
+  }
 
   const getSign = (chart: NatalChart, body: string) => {
     const p = chart.placements.find((pl) => pl.body === body);
@@ -369,7 +391,7 @@ export default function QuickComparePage() {
           <section className="glass-card fade-in fade-in-delay-2" style={{ textAlign: "center", display: "grid", gap: 12 }}>
             {!usingMyChart ? <SaveToGalaxyButton birthInput={inputA} defaultName={nameA || undefined} /> : null}
             <SaveToGalaxyButton birthInput={inputB} defaultName={nameB || undefined} />
-            <ShareLinkButton url={shareUrl} />
+            <ShareLinkButton createShareUrl={createShareUrl} />
             <button type="button" className="pill-link" onClick={() => { setResult(null); setFromShareLink(false); setRomanticHeldNotice(false); }}>
               Try another comparison
             </button>

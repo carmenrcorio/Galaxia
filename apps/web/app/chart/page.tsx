@@ -92,7 +92,27 @@ export default function QuickChartPage() {
     }
   }
 
-  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  async function createShareUrl(): Promise<string> {
+    if (!result) throw new Error("Compute a chart before sharing.");
+    const res = await fetch("/api/quick-share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "single",
+        payload: {
+          name: name.trim() || undefined,
+          displayDate: result.displayDate,
+          birthPlace: result.birthPlace,
+          chart: result.chart,
+        },
+      }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? "Could not create share link.");
+    // Token URL only — no birth date, time, or coordinates.
+    return `${window.location.origin}/s/${body.token as string}`;
+  }
+
   const sun = result?.chart.placements.find((p) => p.body === "sun");
   const moon = result?.chart.placements.find((p) => p.body === "moon");
   const rising = result?.chart.asc;
@@ -219,7 +239,7 @@ export default function QuickChartPage() {
             {viewer.isSubscriber ? (
               <ChartPdfExport chart={result.chart} name={name || undefined} displayDate={result.displayDate} birthPlace={result.birthPlace} />
             ) : null}
-            <ShareLinkButton url={shareUrl} />
+            <ShareLinkButton createShareUrl={createShareUrl} />
             <button type="button" className="pill-link" onClick={() => { setResult(null); setFromShareLink(false); setUsingMyChart(false); }}>
               Try another chart
             </button>

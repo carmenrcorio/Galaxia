@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   ROMANTIC_RELATION_TYPES,
   aspectActionLine,
+  aspectActionParts,
   availableCompareRelationTypes,
   defaultCompareRelationType,
   isRomanticRelation,
+  orbStrength,
   relationshipAspectFraming,
   whatTheyNeed,
   type RelationType,
@@ -147,6 +149,22 @@ describe("PHASE 1: actionable per-aspect guidance", () => {
     const outputs = (["partners", "parent-child", "friends", "siblings"] as RelationType[]).map((t) => aspectActionLine(a, t));
     expect(new Set(outputs).size).toBeGreaterThanOrEqual(3);
     expect(aspectActionLine(a, "parent-child")).toContain("parent");
+  });
+
+  it("aspectActionParts splits opener + tactic without changing aspectActionLine", () => {
+    const a = { from: "venus", to: "moon", harmony: 0.7 };
+    const parts = aspectActionParts(a, "romantic");
+    expect(parts.flows).toBe(true);
+    expect(parts.opener).toBe("Don't let this ease go unspoken between you —");
+    expect(parts.tactic.length).toBeGreaterThan(10);
+    expect(aspectActionLine(a, "romantic")).toBe(`${parts.opener} ${parts.tactic}.`);
+  });
+
+  it("orbStrength maps thresholds: under 1 strong, 1–2.5 clear, over 2.5 subtle", () => {
+    expect(orbStrength(0.9)).toBe("strong");
+    expect(orbStrength(1.0)).toBe("clear");
+    expect(orbStrength(2.5)).toBe("clear");
+    expect(orbStrength(2.6)).toBe("subtle");
   });
 });
 

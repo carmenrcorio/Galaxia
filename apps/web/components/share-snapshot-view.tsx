@@ -32,6 +32,7 @@ import { ChartPdfExport } from "./chart-pdf-export";
 import { ChartWheel } from "./chart-wheel";
 import { DynamicTableSection } from "./dynamic-table-section";
 import { FlowsAndCatchesSection } from "./flows-and-catches-section";
+import { GenerationalSection } from "./generational-section";
 import { QuickChartShell } from "./quick-chart-shell";
 
 function getSign(chart: NatalChart, body: string) {
@@ -278,18 +279,7 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
       )}
 
       {!framing.blockRomanticMinorRender ? (
-        <section className="glass-card fade-in fade-in-delay-2">
-          <p className="eyebrow" style={{ marginBottom: 8 }}>Generational call-out</p>
-          <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>
-            {payload.generational.theme}
-          </p>
-          {payload.generational.shared.length > 0 ? (
-            <p className="muted" style={{ fontSize: ".8rem", marginTop: 8 }}>
-              Shared sky:{" "}
-              {payload.generational.shared.map((s) => `${SIGN_GLYPH[s.sign] ?? ""} ${s.planet} in ${s.sign}`).join(" · ")}
-            </p>
-          ) : null}
-        </section>
+        <GenerationalSection generational={payload.generational} />
       ) : null}
     </>
   );

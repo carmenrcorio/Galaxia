@@ -592,5 +592,6 @@ export * from "./transits";
 export * from "./interpretations";
 export * from "./house-interpretations";
 export * from "./transit-interpretations";
+export * from "./generational-interpretations";
 
 export * from "./compare-guidance";

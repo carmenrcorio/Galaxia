@@ -26,10 +26,11 @@ import {
   type QuickSharePayload,
   type SingleSharePayload,
 } from "../lib/quick-share";
-import { BODY_GLYPH, COMPAT_LABELS, SIGN_GLYPH, compatWord, signElement } from "../lib/design";
+import { BODY_GLYPH, SIGN_GLYPH, signElement } from "../lib/design";
 import { useViewer } from "../lib/use-viewer";
 import { ChartPdfExport } from "./chart-pdf-export";
 import { ChartWheel } from "./chart-wheel";
+import { DynamicTableSection } from "./dynamic-table-section";
 import { FlowsAndCatchesSection } from "./flows-and-catches-section";
 import { QuickChartShell } from "./quick-chart-shell";
 
@@ -238,39 +239,7 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
         </section>
       ) : (
         <>
-          <section className="glass-card fade-in fade-in-delay-1">
-            <p className="eyebrow" style={{ marginBottom: 12 }}>Your dynamic</p>
-            <div
-              style={{
-                borderRadius: 14,
-                background: "rgba(111,177,184,.06)",
-                border: "1px solid rgba(111,177,184,.15)",
-                padding: "4px 0",
-                marginBottom: 14,
-              }}
-            >
-              {Object.entries(payload.synastry.scores).map(([key, score]) => {
-                const { word, cls } = compatWord(score as number);
-                return (
-                  <div
-                    key={key}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "9px 16px",
-                      borderTop: key === "overall" ? "none" : "1px solid rgba(255,255,255,.04)",
-                    }}
-                  >
-                    <span style={{ fontSize: ".82rem", color: "var(--mist)" }}>{COMPAT_LABELS[key] ?? key}</span>
-                    <span className={`compat-word ${cls}`} style={{ fontSize: ".88rem", fontFamily: "var(--serif)" }}>
-                      {word}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
+          <DynamicTableSection scores={payload.synastry.scores}>
             {[personA, personB].map((person) => (
               <div
                 key={person.display_name}
@@ -299,7 +268,7 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
                 </p>
               </div>
             ))}
-          </section>
+          </DynamicTableSection>
 
           <FlowsAndCatchesSection
             aspects={payload.synastry.aspects}

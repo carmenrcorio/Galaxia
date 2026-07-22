@@ -8,6 +8,12 @@
  * pre-fills Person A (read from their existing people/charts rows — no
  * recomputation of a person that already exists). Nothing new is stored
  * unless "Save to your galaxy" is clicked.
+ *
+ * Minor safety: `pairHasMinor` comes from the API (isMinorForSafety on both
+ * people). This page never re-derives age. When a minor is in the pairing,
+ * romantic/attraction framing is stripped the same way /app/compare does —
+ * force a non-romantic lens, remove the Romantic toggle, and keep a
+ * render-time backstop so a romantic lens can never paint.
  */
 
 import {
@@ -17,6 +23,7 @@ import {
   type AspectKey,
   type BodyKey,
   aspectActionLine,
+  isRomanticRelation,
   sortAspectsForFocus,
   whatTheyNeed,
   type RelationType,
@@ -40,6 +47,8 @@ interface CompareResult {
   chartB: NatalChart;
   synastry: SynastryShape | null;
   generational: { theme: string; shared: { planet: string; sign: string }[]; diverged: { planet: string; signA: string; signB: string }[] };
+  /** From /api/quick-compare via packages/core isMinorForSafety — never re-derived here. */
+  pairHasMinor: boolean;
 }
 
 /**
@@ -57,6 +66,17 @@ const FOCUS_TYPES: { key: RelationType; label: string }[] = [
   { key: "platonic", label: "Platonic" },
 ];
 
+// FOUNDER-REVIEW: authored — Quick Compare only offers Romantic/Platonic, so
+// the saved-Compare held-reading string (which lists parent-child/siblings/
+// friends/ancestor) does not fit. Names Platonic as the only available lens.
+const QUICK_COMPARE_HELD_READING =
+  "A minor is part of this comparison, so Galaxia won't produce a romantic reading here. Only a platonic reading is available for this pairing.";
+
+// FOUNDER-REVIEW: authored — mirror of /app/compare's picker notice, adapted
+// to this surface's Romantic/Platonic choice.
+const QUICK_COMPARE_MINOR_NOTICE =
+  "A minor is part of this comparison, so only a platonic reading is available. Romantic framing is turned off for pairings involving a child.";
+
 export default function QuickComparePage() {
   const viewer = useViewer();
   const [inputA, setInputA] = useState<BirthFormInput>(BASE_BIRTH_INPUT);
@@ -69,6 +89,9 @@ export default function QuickComparePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromShareLink, setFromShareLink] = useState(false);
+  // True when the visitor asked for Romantic and the API reported a minor —
+  // keeps the held-reading copy visible after we force the lens to Platonic.
+  const [romanticHeldNotice, setRomanticHeldNotice] = useState(false);
 
   // Shared link: a_*/b_* birth params in the URL, no names.
   useEffect(() => {
@@ -98,6 +121,15 @@ export default function QuickComparePage() {
     }
   }, [viewer.selfInput, viewer.selfName, fromShareLink, result]);
 
+  // Mirror /app/compare: when a minor is in the pairing, never REST on a
+  // romantic type. Force Platonic (this surface's only non-romantic lens).
+  useEffect(() => {
+    if (!result?.pairHasMinor) return;
+    if (isRomanticRelation(relationType)) {
+      setRelationType("platonic");
+    }
+  }, [result?.pairHasMinor, relationType]);
+
   async function runCompare(a: BirthFormInput, b: BirthFormInput, opts: { updateUrl: boolean } = { updateUrl: true }) {
     setLoading(true); setError(null);
     try {
@@ -108,7 +140,15 @@ export default function QuickComparePage() {
       });
       const body = await res.json();
       if (!res.ok) { setError(body.error ?? "Could not compare those two."); return; }
-      setResult(body);
+      const minor = Boolean(body.pairHasMinor);
+      setRomanticHeldNotice(minor && isRomanticRelation(relationType));
+      setResult({
+        chartA: body.chartA,
+        chartB: body.chartB,
+        synastry: body.synastry,
+        generational: body.generational,
+        pairHasMinor: minor,
+      });
       if (opts.updateUrl) {
         const qs = new URLSearchParams([
           ...birthQueryToSearchParams(a, "a_"),
@@ -132,6 +172,16 @@ export default function QuickComparePage() {
 
   const personA = result ? { display_name: nameA || "Person A", sun: getSign(result.chartA, "sun"), moon: getSign(result.chartA, "moon"), venus: getSign(result.chartA, "venus"), mars: getSign(result.chartA, "mars") } : null;
   const personB = result ? { display_name: nameB || "Person B", sun: getSign(result.chartB, "sun"), moon: getSign(result.chartB, "moon"), venus: getSign(result.chartB, "venus"), mars: getSign(result.chartB, "mars") } : null;
+
+  // Same gate as /app/compare: strip romantic types when a minor is present
+  // (API signal only — never re-derive age on the client).
+  const pairHasMinor = Boolean(result?.pairHasMinor);
+  const availableFocusTypes = pairHasMinor
+    ? FOCUS_TYPES.filter((t) => !isRomanticRelation(t.key))
+    : FOCUS_TYPES;
+  // Defense in depth: even if romantic somehow remains selected with a minor,
+  // refuse to render attraction framing — never generate it.
+  const blockRomanticMinorRender = pairHasMinor && isRomanticRelation(relationType);
 
   return (
     <QuickChartShell eyebrow="Quick Compatibility" title={fromShareLink ? "A compatibility reading" : viewer.userId ? "Check your compatibility." : "Check your compatibility, free."} authed={!!viewer.userId}>
@@ -202,10 +252,44 @@ export default function QuickComparePage() {
             <p style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)", margin: "0 0 4px" }}>
               {personA!.display_name} &amp; {personB!.display_name}
             </p>
-            <p className="muted" style={{ fontSize: ".78rem" }}>{relationType}</p>
+            <p className="muted" style={{ fontSize: ".78rem", marginBottom: 12 }}>{relationType}</p>
+            {/* Mirror /app/compare: romantic types are removed entirely when a
+                minor is present — unselectable, not merely non-default. */}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center", marginBottom: pairHasMinor ? 8 : 0 }}>
+              {availableFocusTypes.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  className="pill-link"
+                  onClick={() => setRelationType(t.key)}
+                  style={{
+                    fontSize: ".8rem",
+                    padding: "6px 13px",
+                    borderColor: relationType === t.key ? "rgba(230,174,108,.5)" : undefined,
+                    color: relationType === t.key ? "var(--gold)" : undefined,
+                  }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            {pairHasMinor && !romanticHeldNotice ? (
+              <p className="muted" style={{ fontSize: ".75rem", lineHeight: 1.55, marginTop: 8, textAlign: "left", borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+                {QUICK_COMPARE_MINOR_NOTICE}
+              </p>
+            ) : null}
           </section>
 
-          {!result.synastry ? (
+          {romanticHeldNotice || blockRomanticMinorRender ? (
+            <section className="glass-card fade-in">
+              <p className="eyebrow" style={{ marginBottom: 8 }}>Reading held</p>
+              <p className="muted" style={{ fontSize: ".88rem", lineHeight: 1.6 }}>
+                {QUICK_COMPARE_HELD_READING}
+              </p>
+            </section>
+          ) : null}
+
+          {blockRomanticMinorRender ? null : !result.synastry ? (
             <section className="glass-card fade-in fade-in-delay-1">
               <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>
                 One of you has year-only birth data, so a full synastry read isn't possible — the planet-to-planet aspects would be guesses.
@@ -270,21 +354,23 @@ export default function QuickComparePage() {
             </>
           )}
 
-          <section className="glass-card fade-in fade-in-delay-2">
-            <p className="eyebrow" style={{ marginBottom: 8 }}>Generational call-out</p>
-            <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>{result.generational.theme}</p>
-            {result.generational.shared.length > 0 ? (
-              <p className="muted" style={{ fontSize: ".8rem", marginTop: 8 }}>
-                Shared sky: {result.generational.shared.map((s) => `${SIGN_GLYPH[s.sign] ?? ""} ${s.planet} in ${s.sign}`).join(" · ")}
-              </p>
-            ) : null}
-          </section>
+          {!blockRomanticMinorRender ? (
+            <section className="glass-card fade-in fade-in-delay-2">
+              <p className="eyebrow" style={{ marginBottom: 8 }}>Generational call-out</p>
+              <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>{result.generational.theme}</p>
+              {result.generational.shared.length > 0 ? (
+                <p className="muted" style={{ fontSize: ".8rem", marginTop: 8 }}>
+                  Shared sky: {result.generational.shared.map((s) => `${SIGN_GLYPH[s.sign] ?? ""} ${s.planet} in ${s.sign}`).join(" · ")}
+                </p>
+              ) : null}
+            </section>
+          ) : null}
 
           <section className="glass-card fade-in fade-in-delay-2" style={{ textAlign: "center", display: "grid", gap: 12 }}>
             {!usingMyChart ? <SaveToGalaxyButton birthInput={inputA} defaultName={nameA || undefined} /> : null}
             <SaveToGalaxyButton birthInput={inputB} defaultName={nameB || undefined} />
             <ShareLinkButton url={shareUrl} />
-            <button type="button" className="pill-link" onClick={() => { setResult(null); setFromShareLink(false); }}>
+            <button type="button" className="pill-link" onClick={() => { setResult(null); setFromShareLink(false); setRomanticHeldNotice(false); }}>
               Try another comparison
             </button>
           </section>

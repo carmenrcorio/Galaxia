@@ -664,18 +664,47 @@ function leadBody(a: { from: string; to: string }, relType: RelationType): strin
 }
 
 /**
+ * Split the actionable line into the shared register opener (same for every
+ * flows row / every catches row of a relation type) and the body-pair tactic
+ * tail (row-specific). Same strings `aspectActionLine` concatenates — never
+ * reworded. Used by FlowsAndCatchesSection so openers render once per group.
+ */
+export function aspectActionParts(
+  a: { from: string; to: string; harmony: number },
+  relType: RelationType
+): { flows: boolean; opener: string; tactic: string } {
+  const flows = a.harmony >= 0;
+  const pair = ASPECT_ACTION[PAIR_KEY(a.from, a.to)];
+  const tactic = (pair && (flows ? pair.flows : pair.catches))
+    ?? (flows ? BODY_FLOW_ACTION[leadBody(a, relType).toLowerCase()] : BODY_FRICTION_ACTION[leadBody(a, relType).toLowerCase()])
+    ?? "";
+  const opener = RELATION_ACTION_REGISTER[relType][flows ? "flows" : "catches"];
+  return { flows, opener, tactic };
+}
+
+/**
  * The actionable "what to do" line for one REAL computed aspect: a concrete way
  * to MINIMIZE the clash (friction) or NURTURE the ease (flow), grounded in the
  * actual bodies and framed for the relationship type. Never fabricates — reads
  * only `from`/`to`/`harmony` off the engine's aspect.
  */
 export function aspectActionLine(a: { from: string; to: string; harmony: number }, relType: RelationType): string {
-  const flows = a.harmony >= 0;
-  const pair = ASPECT_ACTION[PAIR_KEY(a.from, a.to)];
-  const tactic = (pair && (flows ? pair.flows : pair.catches))
-    ?? (flows ? BODY_FLOW_ACTION[leadBody(a, relType).toLowerCase()] : BODY_FRICTION_ACTION[leadBody(a, relType).toLowerCase()]);
-  const register = RELATION_ACTION_REGISTER[relType][flows ? "flows" : "catches"];
-  return `${register} ${tactic}.`;
+  const { opener, tactic } = aspectActionParts(a, relType);
+  return `${opener} ${tactic}.`;
+}
+
+/**
+ * FOUNDER-REVIEW: strength words from orb thresholds (one shared source).
+ * Derives a human-readable strength from an already-computed/stored orb —
+ * never recomputes the orb. Thresholds: under 1.0 deg = strong,
+ * 1.0 to 2.5 deg = clear, over 2.5 deg = subtle.
+ */
+export type OrbStrength = "strong" | "clear" | "subtle";
+
+export function orbStrength(orb: number): OrbStrength {
+  if (orb < 1.0) return "strong";
+  if (orb <= 2.5) return "clear";
+  return "subtle";
 }
 
 /**

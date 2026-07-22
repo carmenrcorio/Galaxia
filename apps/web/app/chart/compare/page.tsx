@@ -19,18 +19,14 @@
 import {
   type NatalChart,
   type BirthFormInput,
-  interpretAspect,
-  type AspectKey,
-  type BodyKey,
-  aspectActionLine,
   isRomanticRelation,
-  sortAspectsForFocus,
   whatTheyNeed,
   type RelationType,
 } from "@galaxia/astro";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../../components/birth-fields";
+import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { QuickChartShell } from "../../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../../components/share-link-button";
@@ -346,33 +342,10 @@ export default function QuickComparePage() {
                 ))}
               </section>
 
-              <section className="glass-card fade-in fade-in-delay-2">
-                <p className="eyebrow" style={{ marginBottom: 10 }}>Where it flows and catches</p>
-                <p className="muted" style={{ fontSize: ".72rem", marginBottom: 8 }}>
-                  {relationType === "romantic"
-                    ? "Leading with attraction and partnership aspects (Venus, Mars, Sun–Moon) first."
-                    : "Leading with communication and understanding aspects (Mercury, Moon, Jupiter) first."}
-                </p>
-                {sortAspectsForFocus(result.synastry.aspects.filter((a) => a.from !== a.to).sort((a, b) => a.orb - b.orb), relationType === "romantic" || relationType === "platonic" ? relationType : null).slice(0, 6).map((a, idx) => {
-                  const reading = interpretAspect(a.from.toLowerCase() as BodyKey, a.to.toLowerCase() as BodyKey, a.type.toLowerCase() as AspectKey);
-                  const flows = a.harmony >= 0;
-                  return (
-                    <div key={`${a.from}-${a.to}-${idx}`} style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                        <span style={{ fontSize: ".8rem", color: flows ? "var(--teal)" : "var(--rose)", flexShrink: 0 }}>{flows ? "↑ flows" : "↓ catches"}</span>
-                        <span className="muted" style={{ fontSize: ".82rem" }}>{a.from} {a.type} {a.to}</span>
-                        <span className="muted" style={{ fontSize: ".74rem", fontStyle: "italic" }}>{reading.short}</span>
-                        <span className="muted" style={{ fontSize: ".72rem", marginLeft: "auto", flexShrink: 0 }}>{a.orb.toFixed(1)}°</span>
-                      </div>
-                      {/* Reading → action: minimize the clash / nurture the ease, grounded in these two bodies. */}
-                      <p style={{ fontSize: ".78rem", color: "var(--cream)", lineHeight: 1.55, margin: "5px 0 0" }}>
-                        <span style={{ color: flows ? "var(--teal)" : "var(--gold)", fontWeight: 600 }}>{flows ? "Nurture it: " : "Ease it: "}</span>
-                        {aspectActionLine(a, relationType)}
-                      </p>
-                    </div>
-                  );
-                })}
-              </section>
+              <FlowsAndCatchesSection
+                aspects={result.synastry.aspects}
+                relationType={relationType}
+              />
             </>
           )}
 

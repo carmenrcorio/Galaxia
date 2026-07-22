@@ -9,13 +9,9 @@
 
 import {
   BODY_DOMAIN,
-  interpretAspect,
   interpretPlacement,
   interpretRising,
   whatTheyNeed,
-  sortAspectsForFocus,
-  aspectActionLine,
-  type AspectKey,
   type BodyKey,
   type NatalChart,
   type SignKey,
@@ -34,6 +30,7 @@ import { BODY_GLYPH, COMPAT_LABELS, SIGN_GLYPH, compatWord, signElement } from "
 import { useViewer } from "../lib/use-viewer";
 import { ChartPdfExport } from "./chart-pdf-export";
 import { ChartWheel } from "./chart-wheel";
+import { FlowsAndCatchesSection } from "./flows-and-catches-section";
 import { QuickChartShell } from "./quick-chart-shell";
 
 function getSign(chart: NatalChart, body: string) {
@@ -304,53 +301,10 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
             ))}
           </section>
 
-          <section className="glass-card fade-in fade-in-delay-2">
-            <p className="eyebrow" style={{ marginBottom: 10 }}>Where it flows and catches</p>
-            <p className="muted" style={{ fontSize: ".72rem", marginBottom: 8 }}>
-              {relationType === "romantic"
-                ? "Leading with attraction and partnership aspects (Venus, Mars, Sun–Moon) first."
-                : "Leading with communication and understanding aspects (Mercury, Moon, Jupiter) first."}
-            </p>
-            {sortAspectsForFocus(
-              payload.synastry.aspects
-                .filter((a) => a.from !== a.to)
-                .sort((a, b) => a.orb - b.orb),
-              relationType === "romantic" || relationType === "platonic" ? relationType : null
-            )
-              .slice(0, 6)
-              .map((a, idx) => {
-                const reading = interpretAspect(
-                  a.from.toLowerCase() as BodyKey,
-                  a.to.toLowerCase() as BodyKey,
-                  a.type.toLowerCase() as AspectKey
-                );
-                const flows = a.harmony >= 0;
-                return (
-                  <div key={`${a.from}-${a.to}-${idx}`} style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                      <span style={{ fontSize: ".8rem", color: flows ? "var(--teal)" : "var(--rose)", flexShrink: 0 }}>
-                        {flows ? "↑ flows" : "↓ catches"}
-                      </span>
-                      <span className="muted" style={{ fontSize: ".82rem" }}>
-                        {a.from} {a.type} {a.to}
-                      </span>
-                      <span className="muted" style={{ fontSize: ".74rem", fontStyle: "italic" }}>
-                        {reading.short}
-                      </span>
-                      <span className="muted" style={{ fontSize: ".72rem", marginLeft: "auto", flexShrink: 0 }}>
-                        {a.orb.toFixed(1)}°
-                      </span>
-                    </div>
-                    <p style={{ fontSize: ".78rem", color: "var(--cream)", lineHeight: 1.55, margin: "5px 0 0" }}>
-                      <span style={{ color: flows ? "var(--teal)" : "var(--gold)", fontWeight: 600 }}>
-                        {flows ? "Nurture it: " : "Ease it: "}
-                      </span>
-                      {aspectActionLine(a, relationType)}
-                    </p>
-                  </div>
-                );
-              })}
-          </section>
+          <FlowsAndCatchesSection
+            aspects={payload.synastry.aspects}
+            relationType={relationType}
+          />
         </>
       )}
 

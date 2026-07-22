@@ -41,6 +41,7 @@ type Props = {
 export function FlowsAndCatchesSection({ aspects, relationType }: Props) {
   const focus =
     relationType === "romantic" || relationType === "platonic" ? relationType : null;
+  // Same sort as before: cross-aspects only, orb-ascending, then focus reorder, top 6.
   const ordered = sortAspectsForFocus(
     aspects.filter((a) => a.from !== a.to).sort((a, b) => a.orb - b.orb),
     focus
@@ -48,8 +49,9 @@ export function FlowsAndCatchesSection({ aspects, relationType }: Props) {
 
   const intro = relationType === "romantic" ? INTRO_ROMANTIC : INTRO_PLATONIC;
 
-  // Preserve sort order. Show each register opener once before the first row
-  // of its harmony group; rows render only the tactic tail.
+  // Keep aspect order identical. Show each register opener once at the top of
+  // its logical group (before the first flows row / first catches row); every
+  // subsequent row in that group renders only the tactic tail.
   let seenFlowsOpener = false;
   let seenCatchesOpener = false;
   const rows = ordered.map((a, idx) => {
@@ -65,7 +67,7 @@ export function FlowsAndCatchesSection({ aspects, relationType }: Props) {
     return {
       key: `${a.from}-${a.to}-${idx}`,
       a,
-      reading,
+      readingShort: reading.short,
       flows,
       opener,
       tactic,
@@ -113,7 +115,7 @@ export function FlowsAndCatchesSection({ aspects, relationType }: Props) {
                 {row.a.from} {row.a.type} {row.a.to}
               </span>
               <span className="muted" style={{ fontSize: ".74rem", fontStyle: "italic" }}>
-                {row.reading.short}
+                {row.readingShort}
               </span>
               <span
                 style={{

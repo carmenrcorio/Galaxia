@@ -91,6 +91,64 @@ export function defaultCompareRelationType(pairHasMinor: boolean): RelationType 
   return pairHasMinor ? "parent-child" : "friends";
 }
 
+/**
+ * Exact `people.relation` tags (user-relative) that map to a Compare type when
+ * the OTHER person in the pair is tagged `self`. Tags are unconstrained text
+ * in the DB — unrecognized values are unmapped (no fuzzy match).
+ *
+ * `people.relation` describes each person's relation to the USER, not to each
+ * other. Mapping is only sound when one side is the user (`self`); two
+ * user-relative tags must never be inferred into a pair relation (e.g. two
+ * `child` tags are not evidence of siblings; two `parent` tags are not
+ * partners). Romantic (`partners`) may only come from an explicit `partner`
+ * tag next to `self` — never from any other combination.
+ */
+const SELF_OTHER_TO_COMPARE: Readonly<Record<string, RelationType>> = {
+  partner: "partners",
+  sibling: "siblings",
+  friend: "friends",
+  parent: "parent-child",
+  child: "parent-child",
+  ancestor: "ancestor",
+  // grandparent, colleague, self, and any other string: unmapped
+};
+
+/**
+ * Suggest a Compare relationType from two saved `people.relation` tags.
+ * Returns a type only when exactly one side is `self` and the other maps
+ * confidently; otherwise null (caller falls back to
+ * `defaultCompareRelationType(false)`). Never fabricates from names, ages,
+ * gender, or two non-self user-relative tags.
+ *
+ * Minor safety is NOT applied here — callers must run the existing
+ * `selectionHasMinor` clamp AFTER this suggestion so romantic framing is
+ * always stripped when a minor is present.
+ */
+export function suggestCompareRelationType(
+  relationA: string | null | undefined,
+  relationB: string | null | undefined
+): RelationType | null {
+  const a = typeof relationA === "string" ? relationA : "";
+  const b = typeof relationB === "string" ? relationB : "";
+  if (!a || !b) return null;
+
+  const aSelf = a === "self";
+  const bSelf = b === "self";
+  if (aSelf === bSelf) return null; // neither self, or both self — no sound pair mapping
+
+  const other = aSelf ? b : a;
+  return SELF_OTHER_TO_COMPARE[other] ?? null;
+}
+
+/**
+ * FOUNDER-REVIEW: authored — refine voice.
+ * Shown next to the Compare relationship-type selector only when
+ * `suggestCompareRelationType` returned a real mapping that is currently
+ * selected. Never shown on fallback (there is no reason to state).
+ */
+export const COMPARE_RELATION_SUGGESTION_HINT =
+  "Preselected from how you saved them.";
+
 /** Bodies whose cross-aspects are most relevant to a romantic reading. */
 const ROMANTIC_BODIES = ["venus", "mars", "sun", "moon"];
 /** Bodies whose cross-aspects are most relevant to a platonic reading. */

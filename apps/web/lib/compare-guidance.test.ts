@@ -5,10 +5,12 @@ import {
   aspectActionLine,
   aspectActionParts,
   availableCompareRelationTypes,
+  COMPARE_RELATION_SUGGESTION_HINT,
   defaultCompareRelationType,
   isRomanticRelation,
   orbStrength,
   relationshipAspectFraming,
+  suggestCompareRelationType,
   whatTheyNeed,
   type RelationType,
 } from "@galaxia/astro";
@@ -54,6 +56,23 @@ describe("MINOR SAFETY: /app/compare cannot select romantic framing for a minor"
     expect(isRomanticRelation(defaultCompareRelationType(true))).toBe(false);
     expect(defaultCompareRelationType(false)).toBe("friends");
     expect(defaultCompareRelationType(true)).toBe("parent-child");
+  });
+
+  it("tag suggestion is self-only; two user-relative tags never invent partners/siblings", () => {
+    expect(suggestCompareRelationType("self", "partner")).toBe("partners");
+    expect(suggestCompareRelationType("child", "child")).toBeNull();
+    expect(suggestCompareRelationType("parent", "parent")).toBeNull();
+    expect(COMPARE_RELATION_SUGGESTION_HINT).not.toContain("—");
+  });
+
+  it("self + partner suggestion is clamped by the minor default (order: suggest, then clamp)", () => {
+    let relationType =
+      suggestCompareRelationType("self", "partner") ?? defaultCompareRelationType(false);
+    expect(relationType).toBe("partners");
+    if (isRomanticRelation(relationType)) {
+      relationType = defaultCompareRelationType(true);
+    }
+    expect(relationType).toBe("parent-child");
   });
 });
 

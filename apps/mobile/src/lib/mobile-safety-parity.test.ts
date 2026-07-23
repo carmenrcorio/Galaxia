@@ -3,8 +3,10 @@ import { resolve } from "node:path";
 import {
   availableCompareRelationTypes,
   buildBirthInput,
+  COMPARE_RELATION_SUGGESTION_HINT,
   defaultCompareRelationType,
   isRomanticRelation,
+  suggestCompareRelationType,
   type BirthFormInput
 } from "@galaxia/astro";
 import { isMinorForSafety, peopleForTodaySky } from "@galaxia/core";
@@ -58,12 +60,32 @@ describe("BUG 1 — mobile Compare blocks romantic framing when either person is
     expect(src).toContain("availableCompareRelationTypes");
     expect(src).toContain("defaultCompareRelationType");
     expect(src).toContain("isRomanticRelation");
+    expect(src).toContain("suggestCompareRelationType");
+    expect(src).toContain("COMPARE_RELATION_SUGGESTION_HINT");
     expect(src).toContain("defaultCompareRelationType(false)");
     expect(src).toMatch(/\.select\([^)]*is_minor/);
     expect(src).toContain("birth_date");
     expect(src).toContain("birth_precision");
     expect(src).not.toMatch(/useState<RelationType>\("partners"\)/);
     expect(src).toContain("blockRomanticMinorRender");
+  });
+
+  it("self + partner suggestion is clamped when the pair includes a minor", () => {
+    let relationType =
+      suggestCompareRelationType("self", "partner") ?? defaultCompareRelationType(false);
+    expect(relationType).toBe("partners");
+    const pairHasMinor = true;
+    if (pairHasMinor && isRomanticRelation(relationType)) {
+      relationType = defaultCompareRelationType(true);
+    }
+    expect(relationType).toBe("parent-child");
+    expect(isRomanticRelation(relationType)).toBe(false);
+  });
+
+  it("two non-self tags never invent a pair relation (no siblings/partners guess)", () => {
+    expect(suggestCompareRelationType("child", "child")).toBeNull();
+    expect(suggestCompareRelationType("parent", "parent")).toBeNull();
+    expect(COMPARE_RELATION_SUGGESTION_HINT).not.toContain("—");
   });
 });
 

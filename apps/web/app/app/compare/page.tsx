@@ -19,8 +19,10 @@ import {
   type NatalChart,
   CHART_ENGINE_VERSION,
   availableCompareRelationTypes,
+  COMPARE_RELATION_SUGGESTION_HINT,
   defaultCompareRelationType,
   isRomanticRelation,
+  suggestCompareRelationType,
   narrateHouseOverlay,
   relationElementSignal,
   relationHasHouseLens,
@@ -101,10 +103,12 @@ function ComparePageInner() {
   // SAFETY (ENGINEERING.md §9/§13): never default to a romantic type. A user
   // must never land on romantic/attraction framing by default; when a minor is
   // in the pairing the default drops to an age-appropriate non-romantic type
-  // (see the selection effect below).
+  // (see the selection effect below). Tag suggestion (self + other) may set
+  // partners only from an explicit saved `partner` tag — then the minor clamp
+  // below still wins.
   const [relationType, setRelationType] = useState<RelationType>(defaultCompareRelationType(false));
-  // Tracks whether the user has explicitly chosen a relationship type, so the
-  // minor-aware default only overrides an untouched selection.
+  // Tracks whether the user has explicitly chosen a relationship type, so tag
+  // suggestions and the minor-aware default never override an untouched pick.
   const userChoseTypeRef = useRef(false);
   const [result, setResult]       = useState<any>(null);
   const [running, setRunning]     = useState(false);
@@ -136,16 +140,31 @@ function ComparePageInner() {
   const selectedA = people.find(p => p.id === personAId) ?? null;
   const selectedB = people.find(p => p.id === personBId) ?? null;
 
+  // Tag-based suggestion: only when one side is the user (`self`). Two
+  // user-relative tags are never inferred into a pair relation.
+  const suggestedRelationType = suggestCompareRelationType(
+    selectedA?.relation,
+    selectedB?.relation
+  );
+
+  // Apply tag suggestion (or the adult fallback) when the pair changes —
+  // never overrides an explicit user choice. Minor clamp runs AFTER this.
+  useEffect(() => {
+    if (userChoseTypeRef.current) return;
+    setRelationType(suggestedRelationType ?? defaultCompareRelationType(false));
+  }, [personAId, personBId, suggestedRelationType]);
+
   // Age-aware minor status of the CURRENTLY-SELECTED pair (before running), so
   // the relationship-type gate reacts the moment a minor is picked — never the
   // raw is_minor flag (see minorOf / isMinorForSafety).
   const selectionHasMinor = minorOf(selectedA) || minorOf(selectedB);
 
-  // Minor safety gate for the relationship-type picker.
+  // Minor safety gate for the relationship-type picker — runs LAST and always
+  // wins over tag suggestions.
   // 1. A pairing with a minor can never REST on a romantic type — if we are on
-  //    one (default, or a type chosen before a minor entered the pairing), drop
-  //    to the safe non-romantic default. Romantic framing about a child is
-  //    catastrophic; a re-selected adult pairing is a minor annoyance (§13).
+  //    one (suggestion, or a type chosen before a minor entered the pairing),
+  //    drop to the safe non-romantic default. Romantic framing about a child
+  //    is catastrophic; a re-selected adult pairing is a minor annoyance (§13).
   // 2. When a minor first enters an untouched pairing, prefer the age-
   //    appropriate parent-child frame over the neutral adult default.
   useEffect(() => {
@@ -160,6 +179,10 @@ function ComparePageInner() {
   }, [selectionHasMinor, relationType]);
 
   const availableTypes = availableCompareRelationTypes(selectionHasMinor);
+  // Hint only when a real mapping is the currently selected type (not after
+  // fallback, minor clamp, or a user override to a different type).
+  const showSuggestionHint =
+    suggestedRelationType !== null && relationType === suggestedRelationType;
 
   async function runCompare() {
     if (!selectedA || !selectedB || selectedA.id === selectedB.id) { setStatus("Choose two different people."); return; }
@@ -292,7 +315,7 @@ function ComparePageInner() {
       {/* Pickers */}
       <section className="glass-card fade-in">
         <p className="eyebrow" style={{ marginBottom: 12 }}>Relationship type</p>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: selectionHasMinor ? 8 : 16 }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: (selectionHasMinor || showSuggestionHint) ? 8 : 16 }}>
           {availableTypes.map(type => (
             <button key={type} onClick={() => { userChoseTypeRef.current = true; setRelationType(type); }} className="pill-link"
               style={{ fontSize: ".8rem", padding: "7px 14px", borderColor: relationType === type ? "rgba(230,174,108,.5)" : undefined, color: relationType === type ? "var(--gold)" : undefined }}>
@@ -300,6 +323,12 @@ function ComparePageInner() {
             </button>
           ))}
         </div>
+        {showSuggestionHint ? (
+          <p className="muted" style={{ fontSize: ".75rem", lineHeight: 1.55, marginBottom: selectionHasMinor ? 8 : 16 }}>
+            {/* FOUNDER-REVIEW: authored — refine voice. */}
+            {COMPARE_RELATION_SUGGESTION_HINT}
+          </p>
+        ) : null}
         {selectionHasMinor ? (
           <p className="muted" style={{ fontSize: ".75rem", lineHeight: 1.55, marginBottom: 16, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
             A minor is part of this comparison, so only non-romantic readings are available. Romantic and partner framing is turned off for pairings involving a child.

@@ -1,9 +1,11 @@
 import {
   availableCompareRelationTypes,
+  COMPARE_RELATION_SUGGESTION_HINT,
   compareGenerational,
   computeSynastry,
   defaultCompareRelationType,
   isRomanticRelation,
+  suggestCompareRelationType,
   type GenSignature,
   type NatalChart,
   type RelationType
@@ -84,10 +86,25 @@ export default function CompareScreen() {
   const selectedA = useMemo(() => people.find((person) => person.id === personAId) ?? null, [people, personAId]);
   const selectedB = useMemo(() => people.find((person) => person.id === personBId) ?? null, [people, personBId]);
 
+  // Tag-based suggestion: only when one side is the user (`self`). Two
+  // user-relative tags are never inferred into a pair relation.
+  const suggestedRelationType = suggestCompareRelationType(
+    selectedA?.relation,
+    selectedB?.relation
+  );
+
+  // Apply tag suggestion (or the adult fallback) when the pair changes —
+  // never overrides an explicit user choice. Minor clamp runs AFTER this.
+  useEffect(() => {
+    if (userChoseTypeRef.current) return;
+    setRelationType(suggestedRelationType ?? defaultCompareRelationType(false));
+  }, [personAId, personBId, suggestedRelationType]);
+
   // Age-aware minor status of the currently-selected pair — never raw is_minor.
   const selectionHasMinor = minorOf(selectedA) || minorOf(selectedB);
 
-  // Snap away from romantic framing when a minor enters the pairing.
+  // Snap away from romantic framing when a minor enters the pairing — runs
+  // LAST and always wins over tag suggestions.
   useEffect(() => {
     if (!selectionHasMinor) return;
     if (isRomanticRelation(relationType)) {
@@ -100,6 +117,9 @@ export default function CompareScreen() {
   }, [selectionHasMinor, relationType]);
 
   const availableTypes = availableCompareRelationTypes(selectionHasMinor);
+  // Hint only when a real mapping is the currently selected type.
+  const showSuggestionHint =
+    suggestedRelationType !== null && relationType === suggestedRelationType;
 
   const runCompare = async () => {
     if (!selectedA || !selectedB) {
@@ -198,6 +218,12 @@ export default function CompareScreen() {
             </Pressable>
           ))}
         </View>
+        {showSuggestionHint ? (
+          // FOUNDER-REVIEW: authored — refine voice.
+          <Text style={{ color: tokens.colors.mist2, fontSize: 12, lineHeight: 18 }}>
+            {COMPARE_RELATION_SUGGESTION_HINT}
+          </Text>
+        ) : null}
         {selectionHasMinor ? (
           <Text style={{ color: tokens.colors.mist2, fontSize: 12, lineHeight: 18 }}>
             A minor is part of this comparison, so only non-romantic readings are available. Romantic and partner framing is turned off for pairings involving a child.

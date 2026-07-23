@@ -39,6 +39,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
+import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
@@ -232,7 +233,17 @@ function ComparePageInner() {
       mercury: getSign(natalB, "mercury"), saturn: getSign(natalB, "saturn")
     };
 
-    setResult({ personA: personAWithChart, personB: personBWithChart, synastry, generational, ancestralHeadline });
+    // Retain already-loaded charts on the result so share can POST a
+    // CompareSharePayload without recomputing placements/orbs/confidence.
+    setResult({
+      personA: personAWithChart,
+      personB: personBWithChart,
+      chartA: natalA,
+      chartB: natalB,
+      synastry,
+      generational,
+      ancestralHeadline,
+    });
 
     // Load prior saved readings for this pair (immutable, dated snapshots).
     const { pairLow, pairHigh } = orderPair(selectedA.id, selectedB.id);
@@ -266,6 +277,53 @@ function ComparePageInner() {
     if (error) { setStatus(error.message); return; }
     setStatus("Reading saved to both people's records.");
     await runCompare();
+  }
+
+  /**
+   * Share the live comparison via the existing Quick Compare snapshot stack
+   * (POST /api/quick-share → /s/<token>). Maps the full RelationType picker to
+   * romantic|platonic for the share schema; never recomputes astrology.
+   */
+  async function createShareUrl(): Promise<string> {
+    if (!result?.chartA || !result?.chartB || !result?.synastry) {
+      throw new Error("Run a comparison before sharing.");
+    }
+    // Live pairHasMinor (isMinorForSafety); not stored on the compare_reading note.
+    const sharePairHasMinor = minorOf(result.personA) || minorOf(result.personB);
+    // Share schema is romantic|platonic only; do not widen it here.
+    const mapped: "romantic" | "platonic" = isRomanticRelation(relationType)
+      ? "romantic"
+      : "platonic";
+    // Post-block framing: never send romantic when a minor is in the pairing.
+    // Persist also refuses romantic + pairHasMinor with 400.
+    const safeRelationType =
+      sharePairHasMinor && mapped === "romantic" ? "platonic" : mapped;
+    const romanticHeldNotice = sharePairHasMinor && mapped === "romantic";
+    const res = await fetch("/api/quick-share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "compare",
+        payload: {
+          nameA: result.personA.display_name,
+          nameB: result.personB.display_name,
+          relationType: safeRelationType,
+          pairHasMinor: sharePairHasMinor,
+          romanticHeldNotice: romanticHeldNotice || undefined,
+          chartA: result.chartA,
+          chartB: result.chartB,
+          synastry: {
+            scores: result.synastry.scores,
+            aspects: result.synastry.aspects,
+          },
+          generational: result.generational,
+        },
+      }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? "Could not create share link.");
+    // Token URL only: no birth date, time, or coordinates.
+    return `${window.location.origin}/s/${body.token as string}`;
   }
 
   // Attribution: a prior reading with the same engine but a different birth
@@ -553,6 +611,14 @@ function ComparePageInner() {
               {savingReading && <Spinner size={13} color="#1a1206" />}
               {savingReading ? "Saving…" : "Save this reading"}
             </button>
+
+            {/* Free share link: same /api/quick-share + /s/<token> stack as Quick Compare. */}
+            <div style={{ marginTop: 14, display: "grid", gap: 8, justifyItems: "start" }}>
+              <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>
+                Share a read-only snapshot. The link carries a token only, with no birth details.
+              </p>
+              <ShareLinkButton createShareUrl={createShareUrl} />
+            </div>
 
             {changedReading ? (
               <p className="muted" style={{ fontSize: ".78rem", marginTop: 12, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>

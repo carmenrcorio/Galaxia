@@ -24,6 +24,7 @@ export default function AccountPage() {
   const [savingName, setSavingName]   = useState(false);
   const [nameStatus, setNameStatus]   = useState<string | null>(null);
   const [subStatus, setSubStatus]   = useState<string | null>(null);
+  const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false);
   const [peopleCount, setPeopleCount] = useState(0);
   const [sampleNames, setSampleNames] = useState<string[]>([]);
   const siteUrl = publicEnv.siteUrl || "";
@@ -40,7 +41,7 @@ export default function AccountPage() {
       setUserId(user.id);
       setEmail(user.email ?? "");
       const [{ data: profile }, { count }, { data: sample }, { data: self }] = await Promise.all([
-        supabase.from("profiles").select("display_name, subscription_status").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("display_name, subscription_status, cancel_at_period_end").eq("id", user.id).maybeSingle(),
         supabase.from("people").select("id", { count: "exact", head: true }).eq("owner_id", user.id),
         supabase.from("people").select("display_name").eq("owner_id", user.id).limit(5),
         supabase.from("people").select("display_name").eq("owner_id", user.id).eq("is_self", true).maybeSingle()
@@ -53,6 +54,7 @@ export default function AccountPage() {
       // one tap — but never pre-fill it with the email.
       setNameDraft(pName || sName);
       setSubStatus((profile?.subscription_status as string | null) ?? null);
+      setCancelAtPeriodEnd(Boolean(profile?.cancel_at_period_end));
       setPeopleCount(count ?? 0);
       setSampleNames((sample ?? []).map(r => r.display_name as string));
     };
@@ -155,9 +157,9 @@ export default function AccountPage() {
           <p className="eyebrow" style={{ marginBottom: 12 }}>Quick actions</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
             <Link className="btn-primary" href="/app">Open Galaxia Mea</Link>
-            {subStatus === "active" || subStatus === "past_due" ? (
+            {(subStatus === "active" || subStatus === "past_due") && !cancelAtPeriodEnd ? (
               <Link className="pill-link" href="/account/cancel">Cancel subscription</Link>
-            ) : subStatus === "lifetime" ? null : (
+            ) : subStatus === "lifetime" || cancelAtPeriodEnd ? null : (
               <Link className="pill-link" href="/subscribe">Subscribe</Link>
             )}
             <Link className="pill-link" href="/account/data">Your data</Link>

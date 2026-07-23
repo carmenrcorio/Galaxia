@@ -34,7 +34,7 @@ export async function POST() {
     return NextResponse.json({ error: missingEnvMessage("REVENUECAT_PROJECT_ID") }, { status: 503 });
   }
 
-  const { user } = await requireUser("/account");
+  const { supabase, user } = await requireUser("/account");
   const customerId = user.id;
 
   const base = "https://api.revenuecat.com/v2";
@@ -93,6 +93,11 @@ export async function POST() {
     );
   }
 
-  // The webhook will flip subscription_status; access continues until period end.
+  // Optimistic UI flag so Settings can show "Canceled. Access until …" before
+  // the CANCELLATION webhook lands. The webhook remains the source of truth for
+  // subscription_status (stays active until EXPIRATION) and will reaffirm this
+  // flag. Access is unchanged — hasAccess still reads subscription_status.
+  await supabase.from("profiles").update({ cancel_at_period_end: true }).eq("id", customerId);
+
   return NextResponse.json({ ok: true });
 }

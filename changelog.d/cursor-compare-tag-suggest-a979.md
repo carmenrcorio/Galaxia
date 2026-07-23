@@ -1,0 +1,7 @@
+## Compare preselects relation type from self + saved tag (branch `cursor/compare-tag-suggest-a979`) — 2026-07-23
+
+**Trigger**: Compare always defaulted to `friends` (or `parent-child` when a minor was present) and ignored saved `people.relation` tags, so a self + partner pairing opened on the wrong frame with no explanation.
+
+`[ADDED]` **`suggestCompareRelationType` in `@galaxia/astro`.** Suggests a Compare `relationType` only when exactly one person is tagged `self` and the other has a confident exact-match tag (`partner` → `partners`, `sibling` → `siblings`, `friend` → `friends`, `parent`/`child` → `parent-child`, `ancestor` → `ancestor`). Unmapped tags (`grandparent`, `colleague`, free text) and any pair where neither side is `self` return null so callers fall back to `defaultCompareRelationType(false)`. Two user-relative tags are never inferred into a pair relation (two `child` tags do not become siblings; two `parent` tags never become partners). Romantic is only suggested from an explicit `self` + `partner` pairing.
+
+`[CHANGED]` **Web and mobile `/app/compare` apply the shared suggestion before the minor clamp.** Hint copy (`COMPARE_RELATION_SUGGESTION_HINT`, FOUNDER-REVIEW) renders only when a real mapping is the selected type. Explicit user choice (`userChoseTypeRef`) is never overridden by a tag suggestion. The existing `selectionHasMinor` effect still runs last and always wins: `self` + `partner` with a minor clamps to `parent-child` and strips romantic framing. `isMinorForSafety` remains the sole minor authority.

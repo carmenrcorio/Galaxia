@@ -29,7 +29,7 @@ import {
   type NatalChart,
   type BirthFormInput,
   CHART_ENGINE_VERSION,
-  interpretAspect,
+  interpretSynastryAspect,
   type AspectKey,
   type BodyKey,
   sortAspectsForFocus,
@@ -220,7 +220,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
                 <div>
                   <p className="eyebrow" style={{ marginBottom: 6 }}>Where it flows and catches</p>
                   {sortAspectsForFocus(result.synastry.aspects.filter((a) => a.from !== a.to).sort((a, b) => a.orb - b.orb), focus).slice(0, 4).map((a, idx) => {
-                    const reading = interpretAspect(a.from.toLowerCase() as BodyKey, a.to.toLowerCase() as BodyKey, a.type.toLowerCase() as AspectKey);
+                    const reading = interpretSynastryAspect(a.from.toLowerCase() as BodyKey, a.to.toLowerCase() as BodyKey, a.type.toLowerCase() as AspectKey);
                     return (
                       <div key={`${a.from}-${a.to}-${idx}`} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
                         <span style={{ fontSize: ".76rem", color: a.harmony >= 0 ? "var(--teal)" : "var(--rose)", flexShrink: 0 }}>{a.harmony >= 0 ? "↑" : "↓"}</span>

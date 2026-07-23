@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { validateQuickSharePersistBody } from "../../../lib/quick-share";
 import { insertQuickShareSnapshot } from "../../../lib/quick-share-server";
+import { createSupabaseServerClient } from "../../../lib/supabase/server";
 
 /**
  * Persist a Quick Chart / Quick Compare reading as a tokenized snapshot.
- * Public POST — no auth. Returns { token } for /s/<token>.
+ * Public POST — auth optional. Returns { token } for /s/<token>.
+ * When a session exists, created_by is set so account deletion can clear the link.
+ * Anonymous inserts stay created_by NULL and keep working with no auth.
  *
  * STRUCTURAL GUARANTEE: compare + pairHasMinor + romantic → 400, no insert.
  * Payload is sanitized to display fields + computed engine output only
@@ -23,8 +26,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: validated.error }, { status: validated.status });
   }
 
+  let createdBy: string | null = null;
   try {
-    const { token } = await insertQuickShareSnapshot(validated.kind, validated.payload);
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    createdBy = user?.id ?? null;
+  } catch {
+    createdBy = null;
+  }
+
+  try {
+    const { token } = await insertQuickShareSnapshot(validated.kind, validated.payload, createdBy);
     return NextResponse.json({ token });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not create share link.";

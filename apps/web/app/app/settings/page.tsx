@@ -116,6 +116,10 @@ export default function SettingsPage() {
         <h2 className="card-title">Privacy</h2>
         <p className="muted">Your private notes are visible only to you — never shared with the person they're about and never included in shared-space Vela conversations.</p>
         <p className="muted">Shared spaces require consent from all participants and are blocked when any participant is a minor.</p>
+        <p className="muted" style={{ marginTop: 10 }}>
+          Export your data or delete your account from{" "}
+          <a href="/account/data" style={{ color: "var(--gold)" }}>Your data</a>.
+        </p>
       </section>
 
       <section className="glass-card">

@@ -81,6 +81,14 @@ function isMinorForSafety(person: { is_minor?: boolean | null; birth_date?: stri
   return age !== null && age < 18;
 }
 
+// Mirror packages/astro `isRomanticRelation` / `ROMANTIC_RELATION_TYPES`
+// (edge cannot import the workspace). Keep in sync. Also treat free-text
+// "partner" (Vela's relationship-type field) as romantic.
+const ROMANTIC_RELATION_TYPES = ["partners", "romantic", "partner"] as const;
+function isRomanticRelation(relType: string): boolean {
+  return (ROMANTIC_RELATION_TYPES as readonly string[]).includes(relType.trim().toLowerCase());
+}
+
 /**
  * Split a Vela reply into the answer body and the "→ " suggested follow-ups.
  * Mirrors apps/web/lib/vela-parse.ts (edge functions cannot import from apps).
@@ -222,7 +230,8 @@ Deno.serve(async (req) => {
     const payload = (await req.json()) as VelaRequest;
     const action  = payload.action ?? "chat";
     const mode    = payload.mode;
-    const relType = payload.relationshipType ?? "general";
+    // May be clamped later when a group thread includes a minor.
+    let relType = payload.relationshipType ?? "general";
 
     if (mode !== "ask" && mode !== "shared") {
       return jsonResponse(400, { error: "mode must be 'ask' or 'shared'." });
@@ -302,17 +311,19 @@ Deno.serve(async (req) => {
     if (thread.subject_person) scopedIds.add(thread.subject_person);
     if (thread.pair_low)       scopedIds.add(thread.pair_low);
     if (thread.pair_high)      scopedIds.add(thread.pair_high);
+    let groupName: string | null = null;
     if (thread.group_id) {
       // Confirm the caller owns the group before expanding members.
       const { data: ownedGroup } = await supabase
         .from("groups")
-        .select("id")
+        .select("id, name")
         .eq("id", thread.group_id)
         .eq("owner_id", user.id)
         .maybeSingle();
       if (!ownedGroup) {
         return jsonResponse(404, { error: "Group not found for this thread." });
       }
+      groupName = (ownedGroup.name as string) ?? null;
       const { data: members } = await supabase
         .from("group_members")
         .select("person_id")
@@ -346,6 +357,13 @@ Deno.serve(async (req) => {
     // isMinorForSafety(), never `p.is_minor` directly — this is the single
     // authoritative safety enforcement point (the client's own check is
     // belt-and-suspenders UX only). See comment above isMinorForSafety.
+    const groupHasMinor = Boolean(thread.group_id) && people.some((p) => isMinorForSafety(p));
+    // Group + minor: never let romantic/attraction framing reach the prompt.
+    // Mirrors Compare's isRomanticRelation clamp (see ROMANTIC_RELATION_TYPES above).
+    if (groupHasMinor && isRomanticRelation(relType)) {
+      relType = "general";
+    }
+
     if (mode === "shared" && people.some((p) => isMinorForSafety(p))) {
       return jsonResponse(400, {
         error: "Shared spaces are turned off when a minor is involved. Ask about them privately in ask mode instead."
@@ -448,12 +466,60 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Group cohort: read the persisted overlay (path a). Never recompute shared
+    // sky / fault lines here (that would drift from @galaxia/astro cohortOverlay).
+    // Prefer the current row written by POST /api/groups/cohort; fall back to the
+    // latest saved cohort_reading from the Groups page.
+    let cohort:
+      | {
+          sharedSky: { planet: string; sign: string }[];
+          faultLines: { planet: string; groups: { sign: string; names: string[] }[] }[];
+          members: string[];
+        }
+      | undefined;
+    if (thread.group_id) {
+      const { data: cohortNotes } = await supabase
+        .from("notes")
+        .select("payload, created_at")
+        .eq("owner_id", user.id)
+        .eq("group_id", thread.group_id)
+        .eq("kind", "cohort_reading")
+        .order("created_at", { ascending: false })
+        .limit(30);
+      type CohortPayload = {
+        source?: string;
+        overlay?: {
+          sharedSky?: { planet: string; sign: string }[];
+          faultLines?: { planet: string; groups: { sign: string; names: string[] }[] }[];
+        };
+        memberNames?: string[];
+      };
+      const rows = (cohortNotes ?? []) as Array<{ payload: CohortPayload | null }>;
+      const current =
+        rows.find((r) => r.payload?.source === "vela_cohort_current" && r.payload?.overlay) ??
+        rows.find((r) => r.payload?.overlay);
+      if (!current?.payload?.overlay) {
+        return jsonResponse(409, {
+          error: "This group's cohort overlay is not ready yet. Open the group and tap Ask Vela about this group again."
+        });
+      }
+      const overlay = current.payload.overlay;
+      cohort = {
+        sharedSky: overlay.sharedSky ?? [],
+        faultLines: overlay.faultLines ?? [],
+        members: current.payload.memberNames?.length
+          ? current.payload.memberNames
+          : peopleCtx.map((p) => p.name)
+      };
+    }
+
     // Private notes (ask mode only)
     const noteFilters: string[] = [];
     if (thread.subject_person) noteFilters.push(`about_person.eq.${thread.subject_person}`);
     if (thread.pair_low && thread.pair_high) {
       noteFilters.push(`and(pair_low.eq.${thread.pair_low},pair_high.eq.${thread.pair_high})`);
     }
+    if (thread.group_id) noteFilters.push(`group_id.eq.${thread.group_id}`);
     // Ask mode only. Caps at 5 — Vela does not have full recall of every
     // remembrance reflection. Prefer recent remembrance notes, then others.
     let notes: Array<{ body: string }> = [];
@@ -466,8 +532,11 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: false })
         .limit(20);
       const rows = (noteRows ?? []) as Array<{ body: string; kind?: string | null }>;
-      const remembrance = rows.filter((n) => n.kind === "remembrance");
-      const other = rows.filter((n) => n.kind !== "remembrance");
+      // Cohort overlays are attached as structured `cohort` context above —
+      // do not also stuff their body text into the private-notes digest.
+      const usable = rows.filter((n) => n.kind !== "cohort_reading");
+      const remembrance = usable.filter((n) => n.kind === "remembrance");
+      const other = usable.filter((n) => n.kind !== "remembrance");
       notes = [...remembrance, ...other].slice(0, 5);
     }
 
@@ -496,16 +565,21 @@ Deno.serve(async (req) => {
       parenting:      peopleCtx.some((p) => p.isMinor),
       relationshipType: relType,
       user:           { name: user.user_metadata?.display_name ?? user.email?.split("@")[0] ?? "friend" },
+      ...(groupName ? { group: { name: groupName } } : {}),
       people:         peopleCtx,
       synastry,
       generationalRelation: genRelation,
+      ...(cohort ? { cohort } : {}),
       privateNotesDigest:   mode === "ask" ? notes.map((n) => n.body) : undefined
     };
 
     const crisisDetected = CRISIS_PATTERN.test(userMessage);
+    const groupFrame = groupName
+      ? `You are answering about the group "${groupName}". "We" and "this group" mean every member listed in people and cohort.members. Speak about all of them by name. Never ask who "we" refers to.\n\n`
+      : "";
     const userContent = crisisDetected
-      ? `The user message contains potential crisis language. Lead with compassionate safety guidance.\n\nAstrology context:\n${JSON.stringify(ctx, null, 2)}\n\nUser: ${userMessage}`
-      : `Astrology context:\n${JSON.stringify(ctx, null, 2)}\n\nUser: ${userMessage}`;
+      ? `The user message contains potential crisis language. Lead with compassionate safety guidance.\n\n${groupFrame}Astrology context:\n${JSON.stringify(ctx, null, 2)}\n\nUser: ${userMessage}`
+      : `${groupFrame}Astrology context:\n${JSON.stringify(ctx, null, 2)}\n\nUser: ${userMessage}`;
 
     // Messages array: only user/assistant turns — system is top-level
     const messages = [

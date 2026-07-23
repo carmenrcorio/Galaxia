@@ -25,6 +25,8 @@ export interface VelaContext {
   parenting: boolean;
   relationshipType: string;
   user: { name: string };
+  /** Present when focus is a named group — answers must cover the whole group. */
+  group?: { name: string };
   people: VelaContextPerson[];
   synastry?: {
     scores: Record<string, number>;
@@ -79,6 +81,7 @@ export function buildVelaPrompt(context: VelaContext): string {
       mode: context.mode,
       parenting: context.parenting,
       relationshipType: context.relationshipType,
+      group: context.group,
       people: context.people,
       synastry: context.synastry,
       generationalRelation: context.generationalRelation,

@@ -1,6 +1,7 @@
 "use client";
 
 import { cohortOverlay, compareGenerational, type GenSignature, type NatalChart } from "@galaxia/astro";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { Spinner } from "../../../components/spinner";
@@ -29,6 +30,7 @@ function planetLine(sign: string): string { return PLANET_LINES[sign] ?? "A dist
 
 export default function GroupsPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const router = useRouter();
   const [userId, setUserId]               = useState<string|null>(null);
   const [people, setPeople]               = useState<PersonLite[]>([]);
   const [groups, setGroups]               = useState<GroupRow[]>([]);
@@ -42,6 +44,7 @@ export default function GroupsPage() {
   const [buildingOverlay, setBuildingOverlay] = useState(false);
   const [savingReading, setSavingReading] = useState(false);
   const [readingSaved, setReadingSaved]   = useState(false);
+  const [askingVela, setAskingVela]       = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -137,6 +140,31 @@ export default function GroupsPage() {
     setReadingSaved(true); setStatus("Reading saved to this group.");
   }
 
+  /**
+   * Persist a server-computed current overlay (POST /api/groups/cohort runs
+   * @galaxia/astro cohortOverlay), then open Vela focused on this group.
+   */
+  async function askVelaAboutGroup() {
+    if (!selectedGroupId || askingVela) return;
+    setAskingVela(true);
+    setStatus(null);
+    try {
+      const res = await fetch("/api/groups/cohort", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId: selectedGroupId })
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string };
+        setStatus(body.error ?? "Could not prepare this group's cohort for Vela.");
+        return;
+      }
+      router.push(`/app/vela?scope=group&groupId=${selectedGroupId}`);
+    } finally {
+      setAskingVela(false);
+    }
+  }
+
   return (
     <main className="app-content">
       <p className="eyebrow">Cohorts</p>
@@ -220,7 +248,9 @@ export default function GroupsPage() {
                     {savingReading && <Spinner size={12} />}
                     {readingSaved ? "✓ Reading saved" : savingReading ? "Saving…" : "Save this reading"}
                   </button>
-                  <a className="pill-link" href={`/app/vela?scope=group&groupId=${selectedGroupId}`}>Ask Vela about this group</a>
+                  <button className="pill-link" type="button" onClick={() => void askVelaAboutGroup()} disabled={askingVela}>
+                    {askingVela ? "Opening Vela…" : "Ask Vela about this group"}
+                  </button>
                 </>
               ) : (
                 <span className="muted" style={{ fontSize: ".76rem" }}>Save this cohort as a group to keep this reading and ask Vela about it.</span>

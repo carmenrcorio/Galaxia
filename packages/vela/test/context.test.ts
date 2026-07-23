@@ -86,3 +86,31 @@ describe("crisis language detection", () => {
     expect(detectCrisisLanguage("I feel disconnected from my partner")).toBe(false);
   });
 });
+
+describe("group focus context", () => {
+  it("includes group name and cohort in the prompt payload", () => {
+    const context = buildVelaContext({
+      ...baseInput,
+      group: { name: "Siblings" },
+      cohort: {
+        sharedSky: [{ planet: "pluto", sign: "Scorpio" }],
+        faultLines: [
+          {
+            planet: "uranus",
+            groups: [
+              { sign: "Capricorn", names: ["Ari", "Bea"] },
+              { sign: "Aquarius", names: ["Cy"] }
+            ]
+          }
+        ],
+        members: ["Ari", "Bea", "Cy"]
+      }
+    });
+    const prompt = buildVelaPrompt(context);
+    expect(prompt).toContain("Siblings");
+    expect(prompt).toContain("sharedSky");
+    expect(prompt).toContain("faultLines");
+    expect(prompt).toContain("Ari");
+    expect(prompt).toContain("Cy");
+  });
+});

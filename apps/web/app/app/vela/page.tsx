@@ -1,7 +1,7 @@
 "use client";
 
 import { isMinorForSafety, orderPair } from "@galaxia/core";
-import { buildVelaContext, detectCrisisLanguage, splitVelaReply } from "@galaxia/vela";
+import { detectCrisisLanguage, splitVelaReply } from "@galaxia/vela";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
@@ -77,6 +77,7 @@ export default function VelaPage() {
 
   const selectedSubject = people.find(p => p.id === subjectId) ?? null;
   const selectedPair    = people.find(p => p.id === pairId)    ?? null;
+  const selectedGroup   = groups.find(g => g.id === groupId)   ?? null;
 
   // ── Minor safety gate ─────────────────────────────────────────────────────
   // The line is NOT "minor as subject = blocked". A parent asking Vela PRIVATELY
@@ -254,26 +255,21 @@ export default function VelaPage() {
       setStatus("If anyone is in immediate danger, contact local emergency services now.");
     }
 
-    const ctx = buildVelaContext({
-      mode,
-      // subjectIsMinor already uses the age-aware minorOf() backstop above.
-      parenting: mode === "ask" && subjectIsMinor,
-      relationshipType: relType,
-      user: { name: userName },
-      // Note: this client-built context is NOT what the edge function acts
-      // on for safety — the server rebuilds people/parenting context itself
-      // from the database (supabase/functions/vela-chat/index.ts) and is
-      // authoritative. isMinor here reflects real computed status (never
-      // hardcoded) so this payload cannot mislead a future reader.
-      people: [
-        ...(selectedSubject ? [{ name: selectedSubject.display_name, role: "subject", isMinor: minorOf(selectedSubject), precision: "date" as const, sun: "Unknown", moon: null, rising: null, venus: "Unknown", mars: "Unknown", traits: "", generational: { uranus: "Unknown", neptune: "Unknown", pluto: "Unknown", cohortLabel: "" } }] : []),
-        ...(selectedPair    ? [{ name: selectedPair.display_name,    role: "pair",    isMinor: minorOf(selectedPair),    precision: "date" as const, sun: "Unknown", moon: null, rising: null, venus: "Unknown", mars: "Unknown", traits: "", generational: { uranus: "Unknown", neptune: "Unknown", pluto: "Unknown", cohortLabel: "" } }] : [])
-      ],
-      history: lines.map(l => ({
-        role: l.role === "vela" ? "vela" as const : "user" as const, text: l.text
-      })),
-      userMessage: userText
-    });
+    // Group threads: refresh the persisted cohort overlay via the Next.js route
+    // that runs @galaxia/astro cohortOverlay. The edge reads that row only —
+    // never client-built context, never a Deno reimplementation of the math.
+    if (scope === "group" && groupId) {
+      const cohortRes = await fetch("/api/groups/cohort", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId })
+      });
+      if (!cohortRes.ok) {
+        const body = await cohortRes.json().catch(() => ({})) as { error?: string };
+        setStatus(body.error ?? "Could not refresh this group's cohort overlay.");
+        return;
+      }
+    }
 
     setMessage(""); setSending(true); setStatus(null);
     setLines(prev => [...prev, { role: "user", text: userText }]);
@@ -287,7 +283,7 @@ export default function VelaPage() {
           subjectPersonId: scope !== "group" ? subjectId : undefined,
           pairPersonIds: scope === "pair" && subjectId && pairId ? [subjectId, pairId] : undefined,
           groupId: scope === "group" ? groupId : undefined,
-          userMessage: userText, context: ctx
+          userMessage: userText
         })
       });
       const nextTid = res.headers.get("x-thread-id");
@@ -358,8 +354,17 @@ export default function VelaPage() {
     else setStatus(error.message);
   }
 
-  const scopeSubject = selectedSubject ?? people[0] ?? null;
+  // Person/pair header only — never fall through to people[0] for group focus.
+  const scopeSubject = scope === "group" ? null : (selectedSubject ?? people[0] ?? null);
   const hasMessages  = lines.some(l => l.role === "user");
+  const askingAboutHeader = scope === "group"
+    ? (selectedGroup?.name ?? null)
+    : scopeSubject
+      ? `${scopeSubject.display_name}${scope === "pair" && selectedPair ? ` & ${selectedPair.display_name}` : ""}`
+      : null;
+  const askingAboutAvatar = scope === "group"
+    ? (selectedGroup?.name ?? null)
+    : (scopeSubject?.display_name ?? null);
 
   return (
     <main className="app-content">
@@ -450,17 +455,16 @@ export default function VelaPage() {
       {/* Chat section */}
       <section className="glass-card fade-in" style={{ display: "flex", flexDirection: "column" }}>
         <div style={{ marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid rgba(183,154,216,.1)" }}>
-          {scopeSubject ? (
+          {askingAboutHeader && askingAboutAvatar ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <InitialAvatar name={scopeSubject.display_name} size="sm" />
+              <InitialAvatar name={askingAboutAvatar} size="sm" />
               <p className="eyebrow" style={{ margin: 0 }}>
-                Asking about {scopeSubject.display_name}
-                {scope === "pair" && selectedPair ? ` & ${selectedPair.display_name}` : ""}
+                Asking about {askingAboutHeader}
               </p>
             </div>
           ) : null}
           {/* One quiet caption for the whole thread — never a per-message line */}
-          <p style={{ margin: scopeSubject ? "8px 0 0" : 0, fontSize: ".7rem", color: "var(--mist2)" }}>
+          <p style={{ margin: askingAboutHeader ? "8px 0 0" : 0, fontSize: ".7rem", color: "var(--mist2)" }}>
             {PRIVACY_CAPTION}
           </p>
         </div>

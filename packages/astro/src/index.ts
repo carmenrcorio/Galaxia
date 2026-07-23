@@ -563,6 +563,17 @@ export function compareGenerational(a: GenSignature, b: GenSignature, birthYearG
   };
 }
 
+// FOUNDER-REVIEW: authored — Groups cohort summary headline.
+// Keyed to sharedSky.length (same field Shared Sky renders). Fail-safe: anything
+// other than 1/2/3 (empty/unclear) uses shared_0. Never fabricate from faultLines.
+const COHORT_SHARED_SKY_LABELS = {
+  shared_3: "Everyone here came up under the same generational sky.",
+  shared_2: "Mostly one generation, with one place where your eras part.",
+  shared_1: "One thread of generational sky runs through all of you, and the rest is split.",
+  shared_0:
+    "No single generation runs through this whole group. Instincts about change, trust, and power were set by different eras here."
+} as const;
+
 export function cohortOverlay(people: { name: string; gen: GenSignature }[]): CohortOverlay {
   if (people.length < 2) throw new Error("cohortOverlay requires at least two people");
   const planets: Planet[] = ["uranus", "neptune", "pluto"];
@@ -577,8 +588,15 @@ export function cohortOverlay(people: { name: string; gen: GenSignature }[]): Co
     if (grouped.size === 1) sharedSky.push({ planet, sign: [...grouped.keys()][0] as Sign });
     else faultLines.push({ planet, groups: [...grouped.entries()].map(([sign, names]) => ({ sign, names })) });
   }
+  const sharedCount = Array.isArray(sharedSky) ? sharedSky.length : 0;
   const label =
-    faultLines.length === 0 ? "One shared generation across outer planets." : faultLines.length === 1 ? "Mostly one generation, with one meaningful split." : "Multiple generational signatures are active in this group.";
+    sharedCount === 3
+      ? COHORT_SHARED_SKY_LABELS.shared_3
+      : sharedCount === 2
+        ? COHORT_SHARED_SKY_LABELS.shared_2
+        : sharedCount === 1
+          ? COHORT_SHARED_SKY_LABELS.shared_1
+          : COHORT_SHARED_SKY_LABELS.shared_0;
   return { sharedSky, faultLines, label };
 }
 

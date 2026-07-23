@@ -260,24 +260,20 @@ export default function GroupsScreen() {
     setGroupKind(row.kind);
     setSelectedPersonIds(ids);
     setStatus(null);
-    // Trivial parity with web: auto-build overlay when members are ready.
-    if (ids.length >= 3 && canUseGroups) {
-      await buildOverlay(ids);
-    } else {
-      setCohort(null);
-    }
+    // Local overlay only (charts already on-device). Do not gate on canUseGroups:
+    // hasAccess defaults false until profile refresh, so a fast tap would clear
+    // the overlay for a paying user. Save stays gated below.
+    if (ids.length >= 3) await buildOverlay(ids);
+    else setCohort(null);
   };
 
   /**
    * Build the overlay locally only (no DB write). Accepts an explicit id list so
    * load/save can run without waiting for setState to propagate. Preview title
    * is derived at render from loadedGroup + form dirty state (never fabricated).
+   * Ungated: compute uses charts the user already has; save/paywall is separate.
    */
   const buildOverlay = async (idsArg?: string[]) => {
-    if (!canUseGroups) {
-      setStatus("Groups are available on Galaxia+.");
-      return;
-    }
     const ids = idsArg ?? selectedPersonIds;
     if (ids.length < 3) {
       setStatus("Pick at least 3 people to build cohort overlay.");

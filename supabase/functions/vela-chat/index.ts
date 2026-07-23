@@ -241,7 +241,7 @@ Deno.serve(async (req) => {
     const payload = (await req.json()) as VelaRequest;
     const action  = payload.action ?? "chat";
     const mode    = payload.mode;
-    // May be clamped later when a group thread includes a minor.
+    // May be allowlist-coerced later when any scoped person is a minor.
     let relType = payload.relationshipType ?? "general";
 
     if (mode !== "ask" && mode !== "shared") {

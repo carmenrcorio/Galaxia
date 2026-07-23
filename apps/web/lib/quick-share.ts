@@ -29,7 +29,11 @@ export type GenerationalShareShape = {
   diverged: { planet: string; signA: string; signB: string }[];
 };
 
-/** Fields the single-chart reading visibly displays + computed engine output. */
+/**
+ * Fields the single-chart reading visibly displays + computed engine output.
+ * `name` is legacy/read-only for older rows: new single-chart snapshots are
+ * nameless by design (HARD BOUNDARY — never persist a name on kind=single).
+ */
 export type SingleSharePayload = {
   name?: string;
   displayDate: string;
@@ -195,13 +199,14 @@ export function validateQuickSharePersistBody(body: unknown): PersistValidation 
     if (!chart || !displayDate) {
       return { ok: false, status: 400, error: "A computed chart and display date are required." };
     }
+    // HARD BOUNDARY: single-chart share snapshots stay nameless. Even if a
+    // client smuggles `name`, drop it before persist. (Compare may still carry
+    // nameA/nameB for the two-person reading labels.)
     const payload: SingleSharePayload = {
       displayDate,
       birthPlace: typeof rawPayload.birthPlace === "string" ? rawPayload.birthPlace : null,
       chart,
     };
-    const name = asString(rawPayload.name);
-    if (name) payload.name = name;
     return { ok: true, kind, payload };
   }
 

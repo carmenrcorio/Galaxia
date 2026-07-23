@@ -91,7 +91,7 @@ describe("validateQuickSharePersistBody — romantic-minor structural guarantee"
     });
   });
 
-  it("single payload keeps displayDate/birthPlace/chart only", () => {
+  it("single payload keeps displayDate/birthPlace/chart only and strips name", () => {
     const result = validateQuickSharePersistBody({
       kind: "single",
       payload: {
@@ -108,12 +108,12 @@ describe("validateQuickSharePersistBody — romantic-minor structural guarantee"
     expect(result.ok).toBe(true);
     if (result.ok && result.kind === "single") {
       expect(result.payload).toEqual({
-        name: "Ada",
         displayDate: "April 3, 2017",
         birthPlace: "Austin",
         chart: expect.objectContaining({ precision: "date" }),
       });
-      expect(JSON.stringify(result.payload)).not.toMatch(/birthDate|tzOffsetMin|"lat"|"lng"/);
+      expect(result.payload).not.toHaveProperty("name");
+      expect(JSON.stringify(result.payload)).not.toMatch(/Ada|birthDate|tzOffsetMin|"lat"|"lng"/);
     }
   });
 });

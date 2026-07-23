@@ -796,6 +796,130 @@ section { padding-block: clamp(76px, 12vh, 140px); }
   .constellation { aspect-ratio: 1 / .8; }
 }
 
+/* ─── hero Quick Chart mini-form ─────────────────────────────────────────── */
+.quick-chart-entry {
+  margin-top: clamp(28px, 4vw, 44px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: clamp(18px, 3vw, 36px);
+  align-items: end;
+  padding: clamp(18px, 2.4vw, 28px) clamp(18px, 2.6vw, 30px);
+}
+.quick-chart-entry-h {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(1.35rem, 2.6vw, 1.85rem);
+  line-height: 1.2;
+  margin: 10px 0 0;
+  max-width: 22ch;
+}
+.quick-chart-entry-lede {
+  color: var(--mist);
+  font-weight: 300;
+  font-size: .92rem;
+  line-height: 1.55;
+  margin: 10px 0 0;
+  max-width: 42ch;
+}
+.quick-chart-entry-form {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.quick-chart-entry-dates {
+  display: grid;
+  grid-template-columns: 1.4fr .8fr 1fr;
+  gap: 8px;
+  min-width: 0;
+}
+.quick-chart-entry-form .btn-primary {
+  justify-self: start;
+  margin-top: 4px;
+}
+.quick-chart-entry-error {
+  font-size: .82rem;
+  margin: 0;
+}
+@media (max-width: 860px) {
+  .quick-chart-entry {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .quick-chart-entry-dates {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .quick-chart-entry-form .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ─── why not a horoscope app ────────────────────────────────────────────── */
+.why-not {
+  padding-block: clamp(64px, 10vh, 110px);
+  scroll-margin-top: 92px;
+}
+.why-not h2 {
+  font-size: clamp(1.9rem, 4.2vw, 3rem);
+  line-height: 1.08;
+  letter-spacing: -.018em;
+  max-width: 18ch;
+  margin: 18px 0 18px;
+}
+.why-not .body {
+  color: var(--mist);
+  max-width: var(--measure);
+  margin: 0;
+  font-weight: 300;
+  line-height: 1.75;
+}
+.why-not-list {
+  list-style: none;
+  padding: 0;
+  margin: 28px 0 0;
+  display: grid;
+  gap: 16px;
+  max-width: 62ch;
+}
+.why-not-list li {
+  color: var(--mist);
+  font-weight: 300;
+  line-height: 1.65;
+  padding-left: 14px;
+  border-left: 2px solid rgba(230, 174, 108, .35);
+}
+.why-not-list strong {
+  color: var(--cream);
+  font-weight: 600;
+}
+
+/* ─── social proof placeholder (EMPTY: do not invent content) ───────────── */
+.social-proof-placeholder {
+  padding-block: clamp(48px, 8vh, 88px);
+}
+.social-proof-placeholder-inner {
+  border: 1px dashed rgba(183, 154, 216, .28);
+  border-radius: 22px;
+  padding: clamp(22px, 3vw, 36px);
+  background: rgba(255, 255, 255, .015);
+  max-width: 52ch;
+}
+.social-proof-placeholder h2 {
+  margin: 14px 0 12px;
+  font-size: clamp(1.6rem, 3.2vw, 2.2rem);
+}
+.social-proof-placeholder .lede {
+  margin: 0;
+  font-size: .95rem;
+}
+.social-proof-placeholder-mark {
+  margin: 18px 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .78rem;
+  letter-spacing: .02em;
+  color: var(--mist2);
+}
+
 /* ─── the why (.shift) ────────────────────────────────────────────────────── */
 /* This is the page's THESIS statement, so it must carry the same visual weight
    and alignment as its neighbours (the hero and the "Add them…" panel), not

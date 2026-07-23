@@ -60,14 +60,23 @@ export default function QuickChartPage() {
     setUsingMyChart(true);
   }
 
-  // Opening a shared link: birth params are in the URL, no name (never encoded).
+  // URL hand-off: birth params auto-run the chart. Optional `name` is local
+  // display state only — never written into share URLs or share snapshots, and
+  // stripped from the address bar when the chart URL is normalized (birth
+  // query params only; see birthQueryToSearchParams).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const nameParam = params.get("name")?.trim();
+    if (nameParam) setName(nameParam);
+
     const decoded = decodeBirthQuery(params);
     if (!decoded) return;
     setInput(decoded);
-    setFromShareLink(true);
-    void runChart(decoded, { updateUrl: false });
+    // Landing mini-form carries optional name; birth-only URLs keep the
+    // quieter "shared link" framing.
+    if (!nameParam) setFromShareLink(true);
+    // updateUrl: true rewrites to birth params only (drops name from the bar).
+    void runChart(decoded, { updateUrl: true });
   }, []);
 
   async function runChart(birthInput: BirthFormInput, opts: { updateUrl: boolean } = { updateUrl: true }) {
@@ -94,13 +103,15 @@ export default function QuickChartPage() {
 
   async function createShareUrl(): Promise<string> {
     if (!result) throw new Error("Compute a chart before sharing.");
+    // HARD BOUNDARY: single-chart shares are nameless. `name` may be in local
+    // state (including via ?name= from the landing mini-form) but must never
+    // enter the persisted snapshot or the copied URL.
     const res = await fetch("/api/quick-share", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         kind: "single",
         payload: {
-          name: name.trim() || undefined,
           displayDate: result.displayDate,
           birthPlace: result.birthPlace,
           chart: result.chart,
@@ -109,7 +120,7 @@ export default function QuickChartPage() {
     });
     const body = await res.json();
     if (!res.ok) throw new Error(body.error ?? "Could not create share link.");
-    // Token URL only — no birth date, time, or coordinates.
+    // Token URL only — no name, birth date, time, or coordinates.
     return `${window.location.origin}/s/${body.token as string}`;
   }
 

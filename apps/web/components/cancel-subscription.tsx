@@ -9,13 +9,16 @@ import { Spinner } from "./spinner";
  * No retention offer, no discount, no pause, no survey before the button,
  * no multi-step flow. The optional question appears only AFTER confirmation.
  */
+type CancelBackHref = "/account" | "/app/settings";
+
 export function CancelSubscription({
   periodEndLabel,
   backHref = "/account",
   backLabel = "Back to account"
 }: {
   periodEndLabel: string;
-  backHref?: string;
+  /** Typed-route literals only — Next `typedRoutes` rejects a plain string href. */
+  backHref?: CancelBackHref;
   backLabel?: string;
 }) {
   const [submitting, setSubmitting] = useState(false);

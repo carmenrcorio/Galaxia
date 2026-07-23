@@ -102,4 +102,42 @@ export function detectCrisisLanguage(text: string): boolean {
   return crisisPattern.test(text);
 }
 
+/**
+ * Safe Vela `relationshipType` values when any person in scope is a minor.
+ * Allowlist (not denylist): free-text input is coerced to one of these, or
+ * "general". Keep in sync with `supabase/functions/vela-chat/index.ts`.
+ * Mirrors Compare's non-romantic RelationType set plus Vela's "general" default
+ * and "platonic".
+ */
+export const SAFE_VELA_RELATIONSHIP_TYPES_WITH_MINOR = [
+  "general",
+  "siblings",
+  "friends",
+  "parent-child",
+  "ancestor",
+  "platonic"
+] as const;
+
+export type SafeVelaRelationshipTypeWithMinor =
+  (typeof SAFE_VELA_RELATIONSHIP_TYPES_WITH_MINOR)[number];
+
+/**
+ * When a minor is in scope, coerce free-text relationshipType to the allowlist.
+ * Anything outside the safe set becomes "general" — including romantic labels,
+ * slang ("bf", "novio"), and misspellings. Adults-only scope is unchanged.
+ * Mirror in `supabase/functions/vela-chat/index.ts` (edge cannot import workspace).
+ */
+export function coerceVelaRelationshipTypeForMinorScope(relType: string): SafeVelaRelationshipTypeWithMinor {
+  const key = relType.trim().toLowerCase();
+  return (SAFE_VELA_RELATIONSHIP_TYPES_WITH_MINOR as readonly string[]).includes(key)
+    ? (key as SafeVelaRelationshipTypeWithMinor)
+    : "general";
+}
+
+/** Edge-equivalent: apply allowlist coerce only when scope includes a minor. */
+export function resolveVelaRelationshipType(relType: string, scopeHasMinor: boolean): string {
+  if (!scopeHasMinor) return relType;
+  return coerceVelaRelationshipTypeForMinorScope(relType);
+}
+
 export * from "./parse";

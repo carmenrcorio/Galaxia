@@ -81,12 +81,23 @@ function isMinorForSafety(person: { is_minor?: boolean | null; birth_date?: stri
   return age !== null && age < 18;
 }
 
-// Mirror packages/astro `isRomanticRelation` / `ROMANTIC_RELATION_TYPES`
-// (edge cannot import the workspace). Keep in sync. Also treat free-text
-// "partner" (Vela's relationship-type field) as romantic.
-const ROMANTIC_RELATION_TYPES = ["partners", "romantic", "partner"] as const;
-function isRomanticRelation(relType: string): boolean {
-  return (ROMANTIC_RELATION_TYPES as readonly string[]).includes(relType.trim().toLowerCase());
+// Mirror packages/vela `SAFE_VELA_RELATIONSHIP_TYPES_WITH_MINOR` /
+// `coerceVelaRelationshipTypeForMinorScope` (edge cannot import the workspace).
+// Allowlist — not denylist. Free-text relationshipType must never reach the
+// model as romantic/slang when a minor is in scope; unknown → "general".
+const SAFE_VELA_RELATIONSHIP_TYPES_WITH_MINOR = [
+  "general",
+  "siblings",
+  "friends",
+  "parent-child",
+  "ancestor",
+  "platonic"
+] as const;
+function coerceVelaRelationshipTypeForMinorScope(relType: string): string {
+  const key = relType.trim().toLowerCase();
+  return (SAFE_VELA_RELATIONSHIP_TYPES_WITH_MINOR as readonly string[]).includes(key)
+    ? key
+    : "general";
 }
 
 /**
@@ -357,11 +368,12 @@ Deno.serve(async (req) => {
     // isMinorForSafety(), never `p.is_minor` directly — this is the single
     // authoritative safety enforcement point (the client's own check is
     // belt-and-suspenders UX only). See comment above isMinorForSafety.
-    const groupHasMinor = Boolean(thread.group_id) && people.some((p) => isMinorForSafety(p));
-    // Group + minor: never let romantic/attraction framing reach the prompt.
-    // Mirrors Compare's isRomanticRelation clamp (see ROMANTIC_RELATION_TYPES above).
-    if (groupHasMinor && isRomanticRelation(relType)) {
-      relType = "general";
+    // Any minor in scope (1:1, pair, or group): coerce free-text relationshipType
+    // to the safe allowlist before it reaches Anthropic context. Denylist is
+    // insufficient — "bf" / "novio" / misspellings must not slip through.
+    // Safety only; does not change parenting / conversational framing.
+    if (people.some((p) => isMinorForSafety(p))) {
+      relType = coerceVelaRelationshipTypeForMinorScope(relType);
     }
 
     if (mode === "shared" && people.some((p) => isMinorForSafety(p))) {

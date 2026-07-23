@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { HeroGraph } from "./hero-graph";
+import { QuickChartEntry } from "./quick-chart-entry";
 
 /**
  * Hero — restructured per spec: the poetic line is shrunk to a kicker
  * (was the full clamp(3rem,8.4vw,6.6rem) headline; a line that size filled
  * the mobile viewport before a visitor reached anything that says what the
  * product actually is) and a plain-language subheadline now carries the H1.
- * One CTA. No email capture.
+ * Existing CTAs stay (signup + see how it works). Quick Chart mini-form sits
+ * under the grid as the primary try-it entry (no signup).
  *
  * Uses .fade-in (a CSS-only keyframe that plays on mount), not the
  * scroll-triggered .reveal + IntersectionObserver pattern used further down
@@ -47,6 +49,7 @@ export function Hero() {
           <HeroGraph />
         </div>
       </div>
+      <QuickChartEntry />
     </header>
   );
 }

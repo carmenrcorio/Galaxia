@@ -1,9 +1,12 @@
 "use client";
 
 import type { HouseSystem } from "@galaxia/astro";
+import { Purchases } from "@revenuecat/purchases-js";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Spinner } from "../../../components/spinner";
 import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "@galaxia/astro";
+import { publicEnv } from "../../../lib/env";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 interface PersonLite {
@@ -18,6 +21,26 @@ interface GroupLite {
   kind: string;
 }
 
+function formatDate(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+}
+
+async function fetchManagementUrl(userId: string): Promise<string | null> {
+  if (!publicEnv.revenueCatPublicKey) return null;
+  try {
+    if (!Purchases.isConfigured()) {
+      Purchases.configure({ apiKey: publicEnv.revenueCatPublicKey, appUserId: userId });
+    }
+    const info = await Purchases.getSharedInstance().getCustomerInfo();
+    return info.managementURL;
+  } catch {
+    return null;
+  }
+}
+
 export default function SettingsPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [people, setPeople] = useState<PersonLite[]>([]);
@@ -29,19 +52,38 @@ export default function SettingsPage() {
   const [savingHouseSystem, setSavingHouseSystem] = useState(false);
   const [houseSystemStatus, setHouseSystemStatus] = useState<string | null>(null);
 
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
+  const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false);
+  const [managementUrl, setManagementUrl] = useState<string | null>(null);
+  const [managementLoaded, setManagementLoaded] = useState(false);
+
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
       const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
-        supabase.from("profiles").select("house_system").eq("id", user.id).maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("house_system, subscription_status, trial_ends_at, current_period_end, cancel_at_period_end")
+          .eq("id", user.id)
+          .maybeSingle(),
         supabase.from("people").select("id, display_name, relation").eq("owner_id", user.id).order("display_name", { ascending: true }),
         supabase.from("groups").select("id, name, kind").eq("owner_id", user.id).order("created_at", { ascending: false })
       ]);
       if (isHouseSystem(profile?.house_system)) setHouseSystem(profile.house_system);
+      setSubscriptionStatus((profile?.subscription_status as string | null) ?? null);
+      setTrialEndsAt((profile?.trial_ends_at as string | null) ?? null);
+      setCurrentPeriodEnd((profile?.current_period_end as string | null) ?? null);
+      setCancelAtPeriodEnd(Boolean(profile?.cancel_at_period_end));
       setPeople((peopleRows ?? []) as PersonLite[]);
       setGroups((groupRows ?? []) as GroupLite[]);
+
+      const url = await fetchManagementUrl(user.id);
+      setManagementUrl(url);
+      setManagementLoaded(true);
     };
     void load();
   }, [supabase]);
@@ -64,6 +106,42 @@ export default function SettingsPage() {
     window.location.href = "/login";
   };
 
+  const trialLabel = formatDate(trialEndsAt);
+  const periodLabel = formatDate(currentPeriodEnd);
+  const canCancel =
+    (subscriptionStatus === "active" || subscriptionStatus === "past_due") && !cancelAtPeriodEnd;
+  const showBillingControls =
+    subscriptionStatus === "active" ||
+    subscriptionStatus === "past_due" ||
+    (subscriptionStatus === "canceled" && Boolean(managementUrl));
+
+  let subscriptionCopy: string;
+  if (subscriptionStatus === "trialing") {
+    subscriptionCopy = trialLabel
+      ? `Trial ends ${trialLabel}.`
+      : "You're on a trial.";
+  } else if (subscriptionStatus === "active" && cancelAtPeriodEnd) {
+    subscriptionCopy = periodLabel
+      ? `Canceled. Access until ${periodLabel}.`
+      : "Canceled. Access continues until the end of your current period.";
+  } else if (subscriptionStatus === "active") {
+    subscriptionCopy = periodLabel
+      ? `Active. Renews ${periodLabel}.`
+      : "Active.";
+  } else if (subscriptionStatus === "past_due") {
+    subscriptionCopy = "Past due. Update your payment method to keep access.";
+  } else if (subscriptionStatus === "canceled") {
+    subscriptionCopy = periodLabel
+      ? `Your subscription ended ${periodLabel}.`
+      : "Your subscription has ended.";
+  } else if (subscriptionStatus === "lifetime") {
+    subscriptionCopy = "Lifetime access.";
+  } else if (subscriptionStatus) {
+    subscriptionCopy = `Status: ${subscriptionStatus}.`;
+  } else {
+    subscriptionCopy = "Loading subscription…";
+  }
+
   return (
     <main className="app-content">
       <p className="eyebrow">Account</p>
@@ -71,8 +149,36 @@ export default function SettingsPage() {
 
       <section className="glass-card">
         <h2 className="card-title">Subscription</h2>
-        <p className="muted">Nothing here is locked. This is the whole product.</p>
-        <p className="muted">14 days, everything included. We'll remind you before the trial ends.</p>
+        <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>{subscriptionCopy}</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14 }}>
+          {canCancel ? (
+            <Link className="btn-primary" href="/account/cancel?from=settings">
+              Cancel subscription
+            </Link>
+          ) : null}
+          {subscriptionStatus === "trialing" || subscriptionStatus === "canceled" ? (
+            <Link className="pill-link" href="/subscribe">Subscribe</Link>
+          ) : null}
+          {showBillingControls && managementLoaded ? (
+            managementUrl ? (
+              <a className="pill-link" href={managementUrl} target="_blank" rel="noopener noreferrer">
+                Manage billing
+              </a>
+            ) : (
+              <a
+                className="pill-link"
+                href="mailto:support@galaxia.app?subject=Manage%20billing"
+              >
+                Email support about billing
+              </a>
+            )
+          ) : null}
+        </div>
+        {subscriptionStatus === "active" && cancelAtPeriodEnd && managementUrl ? (
+          <p className="muted" style={{ fontSize: ".78rem", marginTop: 10, marginBottom: 0 }}>
+            Changed your mind? You can turn renewal back on in Manage billing.
+          </p>
+        ) : null}
       </section>
 
       <section className="glass-card">

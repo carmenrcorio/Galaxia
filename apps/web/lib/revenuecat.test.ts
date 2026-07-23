@@ -18,35 +18,46 @@ describe("mapRevenueCatEvent", () => {
     expect(mapRevenueCatEvent(ev("INITIAL_PURCHASE"))).toEqual({
       subscription_status: "active",
       current_period_end: EXP_ISO,
-      plan: RC_PLAN
+      plan: RC_PLAN,
+      cancel_at_period_end: false
     });
   });
 
-  it("keeps access active on RENEWAL", () => {
-    expect(mapRevenueCatEvent(ev("RENEWAL"))?.subscription_status).toBe("active");
+  it("keeps access active on RENEWAL and clears cancel_at_period_end", () => {
+    const update = mapRevenueCatEvent(ev("RENEWAL"));
+    expect(update?.subscription_status).toBe("active");
+    expect(update?.cancel_at_period_end).toBe(false);
   });
 
-  it("keeps access active on PRODUCT_CHANGE", () => {
-    expect(mapRevenueCatEvent(ev("PRODUCT_CHANGE"))?.subscription_status).toBe("active");
+  it("keeps access active on PRODUCT_CHANGE and clears cancel_at_period_end", () => {
+    const update = mapRevenueCatEvent(ev("PRODUCT_CHANGE"));
+    expect(update?.subscription_status).toBe("active");
+    expect(update?.cancel_at_period_end).toBe(false);
   });
 
-  it("keeps access active on UNCANCELLATION", () => {
-    expect(mapRevenueCatEvent(ev("UNCANCELLATION"))?.subscription_status).toBe("active");
+  it("keeps access active on UNCANCELLATION and clears cancel_at_period_end", () => {
+    const update = mapRevenueCatEvent(ev("UNCANCELLATION"));
+    expect(update?.subscription_status).toBe("active");
+    expect(update?.cancel_at_period_end).toBe(false);
   });
 
   it("keeps the user ACTIVE on CANCELLATION (access continues until period end)", () => {
     // Critical: cancelling auto-renew must not lock the user out immediately.
     // hasAccess (unchanged) is false for `canceled`, so CANCELLATION must stay
-    // `active`; only EXPIRATION downgrades.
+    // `active`; only EXPIRATION downgrades. The cancel_at_period_end flag is
+    // UI-only so Settings can show "Canceled. Access until …".
     expect(mapRevenueCatEvent(ev("CANCELLATION"))).toEqual({
       subscription_status: "active",
       current_period_end: EXP_ISO,
-      plan: RC_PLAN
+      plan: RC_PLAN,
+      cancel_at_period_end: true
     });
   });
 
-  it("revokes access (canceled) on EXPIRATION", () => {
-    expect(mapRevenueCatEvent(ev("EXPIRATION"))?.subscription_status).toBe("canceled");
+  it("revokes access (canceled) on EXPIRATION and clears cancel_at_period_end", () => {
+    const update = mapRevenueCatEvent(ev("EXPIRATION"));
+    expect(update?.subscription_status).toBe("canceled");
+    expect(update?.cancel_at_period_end).toBe(false);
   });
 
   it("returns null for events it does not act on", () => {

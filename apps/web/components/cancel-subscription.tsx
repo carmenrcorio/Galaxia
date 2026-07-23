@@ -9,7 +9,15 @@ import { Spinner } from "./spinner";
  * No retention offer, no discount, no pause, no survey before the button,
  * no multi-step flow. The optional question appears only AFTER confirmation.
  */
-export function CancelSubscription({ periodEndLabel }: { periodEndLabel: string }) {
+export function CancelSubscription({
+  periodEndLabel,
+  backHref = "/account",
+  backLabel = "Back to account"
+}: {
+  periodEndLabel: string;
+  backHref?: string;
+  backLabel?: string;
+}) {
   const [submitting, setSubmitting] = useState(false);
   const [canceled, setCanceled] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +60,7 @@ export function CancelSubscription({ periodEndLabel }: { periodEndLabel: string 
             </button>
           </div>
         )}
-        <Link href="/account" className="pill-link" style={{ width: "fit-content" }}>Back to account</Link>
+        <Link href={backHref} className="pill-link" style={{ width: "fit-content" }}>{backLabel}</Link>
       </div>
     );
   }
@@ -75,7 +83,7 @@ export function CancelSubscription({ periodEndLabel }: { periodEndLabel: string 
           {submitting && <Spinner size={13} color="#1a1206" />}
           {submitting ? "Cancelling…" : "Cancel subscription"}
         </button>
-        <Link href="/account" style={{ color: "var(--gold-soft)", fontSize: ".9rem" }}>Never mind, keep Galaxia</Link>
+        <Link href={backHref} style={{ color: "var(--gold-soft)", fontSize: ".9rem" }}>Never mind, keep Galaxia</Link>
       </div>
       {error ? <p className="error" style={{ fontSize: ".82rem" }}>{error}</p> : null}
     </div>

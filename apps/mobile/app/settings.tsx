@@ -1,6 +1,6 @@
 import { tokens } from "@galaxia/ui";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { supabase } from "../src/lib/supabase";
 import { useAuth } from "../src/providers/auth-provider";
 import { useEntitlement } from "../src/providers/entitlement-provider";
@@ -17,12 +17,21 @@ interface GroupLite {
   kind: string;
 }
 
+function formatDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+}
+
 export default function SettingsScreen() {
   const { session } = useAuth();
   const { status: subStatus, trialDaysLeft } = useEntitlement();
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [groups, setGroups] = useState<GroupLite[]>([]);
   const [status, setStatus] = useState<string | null>(null);
+  const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false);
+  const [periodEndLabel, setPeriodEndLabel] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -31,13 +40,33 @@ export default function SettingsScreen() {
 
   const loadSettingsData = async () => {
     if (!session?.user.id) return;
-    const [{ data: peopleRows }, { data: groupRows }] = await Promise.all([
+    const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("cancel_at_period_end, current_period_end")
+        .eq("id", session.user.id)
+        .maybeSingle(),
       supabase.from("people").select("id, display_name, relation").eq("owner_id", session.user.id).order("display_name", { ascending: true }),
       supabase.from("groups").select("id, name, kind").eq("owner_id", session.user.id).order("created_at", { ascending: false })
     ]);
+    setCancelAtPeriodEnd(Boolean(profile?.cancel_at_period_end));
+    setPeriodEndLabel(formatDate((profile?.current_period_end as string | null) ?? null));
     setPeople((peopleRows ?? []) as PersonLite[]);
     setGroups((groupRows ?? []) as GroupLite[]);
   };
+
+  let subscriptionBody: string;
+  if (subStatus === "trialing") {
+    subscriptionBody = `14 days, everything included. ${trialDaysLeft} left in your trial.`;
+  } else if (subStatus === "active" && cancelAtPeriodEnd) {
+    subscriptionBody = periodEndLabel
+      ? `Canceled. Access until ${periodEndLabel}. Manage billing on the web.`
+      : "Canceled. Access continues until the end of your current period. Manage billing on the web.";
+  } else if (subStatus === "canceled" || subStatus === "past_due") {
+    subscriptionBody = "Your subscription has ended. Manage it on the web to continue.";
+  } else {
+    subscriptionBody = "You're subscribed. Cancel or manage billing on the web in Settings.";
+  }
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink2 }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
@@ -45,14 +74,7 @@ export default function SettingsScreen() {
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Subscription</Text>
-        <Text style={cardBody}>Nothing here is locked. This is the whole product.</Text>
-        <Text style={cardBody}>
-          {subStatus === "trialing"
-            ? `14 days, everything included. ${trialDaysLeft} left in your trial.`
-            : subStatus === "canceled" || subStatus === "past_due"
-              ? "Your subscription has ended. Manage it on the web to continue."
-              : "You're subscribed. Manage your plan on the web."}
-        </Text>
+        <Text style={cardBody}>{subscriptionBody}</Text>
       </View>
 
       <View style={cardStyle}>
@@ -112,12 +134,6 @@ const cardTitle = {
 const cardBody = {
   color: tokens.colors.mist,
   lineHeight: 20
-} as const;
-
-const primaryButton = {
-  backgroundColor: tokens.colors.gold,
-  borderRadius: 999,
-  paddingVertical: 12
 } as const;
 
 const listItem = {

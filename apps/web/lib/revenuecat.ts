@@ -43,6 +43,12 @@ export interface ProfileSubscriptionUpdate {
   /** ISO string written to profiles.current_period_end, or null when unknown. */
   current_period_end: string | null;
   plan: string | null;
+  /**
+   * Auto-renew is off, but access continues until current_period_end.
+   * UI-only: hasAccess still keys off subscription_status (stays `active`
+   * through CANCELLATION). Cleared when they renew or the period expires.
+   */
+  cancel_at_period_end: boolean;
 }
 
 function msToIso(ms: number | null | undefined): string | null {
@@ -75,12 +81,28 @@ export function mapRevenueCatEvent(
     case "RENEWAL":
     case "PRODUCT_CHANGE":
     case "UNCANCELLATION":
-      return { subscription_status: "active", current_period_end: periodEnd, plan: RC_PLAN };
+      return {
+        subscription_status: "active",
+        current_period_end: periodEnd,
+        plan: RC_PLAN,
+        cancel_at_period_end: false
+      };
     case "CANCELLATION":
       // Auto-renew off, but still entitled until the period ends. See doc above.
-      return { subscription_status: "active", current_period_end: periodEnd, plan: RC_PLAN };
+      // Flag the scheduled cancel for Settings UI without flipping hasAccess.
+      return {
+        subscription_status: "active",
+        current_period_end: periodEnd,
+        plan: RC_PLAN,
+        cancel_at_period_end: true
+      };
     case "EXPIRATION":
-      return { subscription_status: "canceled", current_period_end: periodEnd, plan: RC_PLAN };
+      return {
+        subscription_status: "canceled",
+        current_period_end: periodEnd,
+        plan: RC_PLAN,
+        cancel_at_period_end: false
+      };
     default:
       // BILLING_ISSUE, TRANSFER, TEST, SUBSCRIBER_ALIAS, etc. — no status change.
       return null;

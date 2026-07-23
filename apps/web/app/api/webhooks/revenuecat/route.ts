@@ -89,7 +89,8 @@ export async function POST(req: Request) {
     .update({
       subscription_status: update.subscription_status,
       current_period_end: update.current_period_end,
-      plan: update.plan
+      plan: update.plan,
+      cancel_at_period_end: update.cancel_at_period_end
     })
     .eq("id", appUserId);
 

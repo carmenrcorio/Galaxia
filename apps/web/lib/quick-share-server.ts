@@ -27,15 +27,24 @@ function serviceClient() {
 
 export async function insertQuickShareSnapshot(
   kind: QuickShareKind,
-  payload: QuickSharePayload
+  payload: QuickSharePayload,
+  createdBy?: string | null
 ): Promise<{ token: string }> {
   const supabase = serviceClient();
   const share_token = generateShareToken();
-  const { error } = await supabase.from("quick_share_snapshots").insert({
+  const row: {
+    share_token: string;
+    kind: QuickShareKind;
+    payload: QuickSharePayload;
+    created_by?: string;
+  } = {
     share_token,
     kind,
     payload,
-  });
+  };
+  // Anonymous funnel inserts stay null; only set when the request has a session.
+  if (createdBy) row.created_by = createdBy;
+  const { error } = await supabase.from("quick_share_snapshots").insert(row);
   if (error) throw new Error(error.message);
   return { token: share_token };
 }

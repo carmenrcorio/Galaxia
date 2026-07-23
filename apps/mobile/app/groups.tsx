@@ -19,11 +19,44 @@ interface GroupRow {
   kind: GroupKind;
 }
 
+/** Single source of truth for the currently loaded saved group (or null = new draft). */
+interface LoadedGroup {
+  id: string;
+  name: string;
+  kind: GroupKind;
+  memberIds: string[];
+}
+
 interface CohortState {
-  groupLabel: string;
   memberNames: string[];
+  memberIds: string[];
   overlay: ReturnType<typeof cohortOverlay>;
   pairHighlights: Array<{ pair: string; summary: string }>;
+}
+
+function sameMembers(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const set = new Set(a);
+  return b.every((id) => set.has(id));
+}
+
+/**
+ * FOUNDER-REVIEW preview titles. Never title an unsaved composition as a saved group.
+ * - dirty + loaded: "Unsaved preview, based on {group name}"
+ * - dirty / no loaded: "Unsaved preview"
+ * - clean + loaded: saved group name
+ */
+function previewTitle(
+  loaded: LoadedGroup | null,
+  form: { name: string; kind: GroupKind; memberIds: string[] }
+): string {
+  if (!loaded) return "Unsaved preview";
+  const dirty =
+    form.name.trim() !== loaded.name ||
+    form.kind !== loaded.kind ||
+    !sameMembers(form.memberIds, loaded.memberIds);
+  if (dirty) return `Unsaved preview, based on ${loaded.name}`;
+  return loaded.name;
 }
 
 export default function GroupsScreen() {
@@ -31,7 +64,7 @@ export default function GroupsScreen() {
   const { canUseGroups } = useEntitlement();
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [groups, setGroups] = useState<GroupRow[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [loadedGroup, setLoadedGroup] = useState<LoadedGroup | null>(null);
   const [selectedPersonIds, setSelectedPersonIds] = useState<string[]>([]);
   const [groupName, setGroupName] = useState("");
   const [groupKind, setGroupKind] = useState<GroupKind>("group");
@@ -42,6 +75,13 @@ export default function GroupsScreen() {
     if (!session?.user.id) return;
     void Promise.all([fetchPeople(), fetchGroups()]);
   }, [session?.user.id]);
+
+  const formComposition = useMemo(
+    () => ({ name: groupName, kind: groupKind, memberIds: selectedPersonIds }),
+    [groupName, groupKind, selectedPersonIds]
+  );
+
+  const cohortTitle = previewTitle(loadedGroup, formComposition);
 
   const selectedNames = useMemo(
     () => people.filter((person) => selectedPersonIds.includes(person.id)).map((person) => person.display_name),
@@ -82,6 +122,16 @@ export default function GroupsScreen() {
     );
   };
 
+  /** Explicit new-group state: clears loaded group so the next Save creates. */
+  const startNewGroup = () => {
+    setLoadedGroup(null);
+    setGroupName("");
+    setGroupKind("group");
+    setSelectedPersonIds([]);
+    setCohort(null);
+    setStatus(null);
+  };
+
   const saveGroup = async () => {
     if (!canUseGroups) {
       setStatus("Groups are available on Galaxia+. Upgrade in settings.");
@@ -97,11 +147,67 @@ export default function GroupsScreen() {
       return;
     }
 
+    const name = groupName.trim();
+    const userId = session.user.id;
+
+    if (loadedGroup) {
+      // UPDATE existing group (same id). Never silently insert a duplicate.
+      const { error: groupError } = await supabase
+        .from("groups")
+        .update({ name, kind: groupKind })
+        .eq("id", loadedGroup.id)
+        .eq("owner_id", userId);
+      if (groupError) {
+        setStatus(groupError.message);
+        return;
+      }
+
+      const prev = new Set(loadedGroup.memberIds);
+      const next = new Set(selectedPersonIds);
+      const toRemove = loadedGroup.memberIds.filter((id) => !next.has(id));
+      const toAdd = selectedPersonIds.filter((id) => !prev.has(id));
+
+      if (toRemove.length > 0) {
+        const { error: delError } = await supabase
+          .from("group_members")
+          .delete()
+          .eq("group_id", loadedGroup.id)
+          .in("person_id", toRemove);
+        if (delError) {
+          setStatus(delError.message);
+          return;
+        }
+      }
+      if (toAdd.length > 0) {
+        const { error: addError } = await supabase.from("group_members").insert(
+          toAdd.map((personId) => ({ group_id: loadedGroup.id, person_id: personId }))
+        );
+        if (addError) {
+          setStatus(addError.message);
+          return;
+        }
+      }
+
+      const updated: LoadedGroup = {
+        id: loadedGroup.id,
+        name,
+        kind: groupKind,
+        memberIds: [...selectedPersonIds],
+      };
+      setLoadedGroup(updated);
+      setGroupName(name);
+      await fetchGroups();
+      await buildOverlay(selectedPersonIds);
+      setStatus("Group updated.");
+      return;
+    }
+
+    // CREATE: only when no group is loaded (explicit new-group state).
     const { data: createdGroup, error: groupError } = await supabase
       .from("groups")
       .insert({
-        owner_id: session.user.id,
-        name: groupName.trim(),
+        owner_id: userId,
+        name,
         kind: groupKind
       })
       .select("id, name, kind")
@@ -119,35 +225,66 @@ export default function GroupsScreen() {
       return;
     }
 
-    setGroupName("");
-    setGroupKind("group");
-    setSelectedPersonIds([]);
-    setSelectedGroupId(createdGroup.id);
+    const created: LoadedGroup = {
+      id: createdGroup.id,
+      name: createdGroup.name,
+      kind: createdGroup.kind as GroupKind,
+      memberIds: [...selectedPersonIds],
+    };
+    setLoadedGroup(created);
+    setGroupName(created.name);
+    setGroupKind(created.kind);
     await fetchGroups();
+    await buildOverlay(selectedPersonIds);
     setStatus("Group saved.");
   };
 
-  const loadGroupMembers = async (groupId: string) => {
-    setSelectedGroupId(groupId);
+  const loadGroup = async (groupId: string) => {
+    const row = groups.find((group) => group.id === groupId);
+    if (!row) return;
     const { data, error } = await supabase.from("group_members").select("person_id").eq("group_id", groupId);
     if (error) {
       setStatus(error.message);
       return;
     }
-    setSelectedPersonIds((data ?? []).map((row) => row.person_id as string));
+    const ids = (data ?? []).map((rowData) => rowData.person_id as string);
+    const next: LoadedGroup = {
+      id: groupId,
+      name: row.name,
+      kind: row.kind,
+      memberIds: ids,
+    };
+    // Load populates the full model + form (id, name, kind, members).
+    setLoadedGroup(next);
+    setGroupName(row.name);
+    setGroupKind(row.kind);
+    setSelectedPersonIds(ids);
+    setStatus(null);
+    // Trivial parity with web: auto-build overlay when members are ready.
+    if (ids.length >= 3 && canUseGroups) {
+      await buildOverlay(ids);
+    } else {
+      setCohort(null);
+    }
   };
 
-  const buildOverlay = async () => {
+  /**
+   * Build the overlay locally only (no DB write). Accepts an explicit id list so
+   * load/save can run without waiting for setState to propagate. Preview title
+   * is derived at render from loadedGroup + form dirty state (never fabricated).
+   */
+  const buildOverlay = async (idsArg?: string[]) => {
     if (!canUseGroups) {
       setStatus("Groups are available on Galaxia+.");
       return;
     }
-    if (selectedPersonIds.length < 3) {
+    const ids = idsArg ?? selectedPersonIds;
+    if (ids.length < 3) {
       setStatus("Pick at least 3 people to build cohort overlay.");
       return;
     }
 
-    const selectedPeople = people.filter((person) => selectedPersonIds.includes(person.id));
+    const selectedPeople = people.filter((person) => ids.includes(person.id));
     const chartResponses = await Promise.all(
       selectedPeople.map(async (person) => {
         const { data } = await supabase.from("charts").select("data").eq("person_id", person.id).single();
@@ -158,6 +295,7 @@ export default function GroupsScreen() {
     const missing = chartResponses.find((response) => !response.chart?.generational);
     if (missing) {
       setStatus(`Missing chart for ${missing.person.display_name}.`);
+      setCohort(null);
       return;
     }
 
@@ -184,10 +322,9 @@ export default function GroupsScreen() {
       }
     }
 
-    const groupLabel = groups.find((group) => group.id === selectedGroupId)?.name ?? "Ad-hoc cohort";
     setCohort({
-      groupLabel,
       memberNames: selectedPeople.map((person) => person.display_name),
+      memberIds: selectedPeople.map((person) => person.id),
       overlay,
       pairHighlights: pairHighlights.slice(0, 3)
     });
@@ -210,15 +347,15 @@ export default function GroupsScreen() {
           groups.map((group) => (
             <Pressable
               key={group.id}
-              onPress={() => loadGroupMembers(group.id)}
+              onPress={() => loadGroup(group.id)}
               style={{
                 borderRadius: 10,
                 borderWidth: 1,
-                borderColor: selectedGroupId === group.id ? tokens.colors.gold : tokens.colors.line,
+                borderColor: loadedGroup?.id === group.id ? tokens.colors.gold : tokens.colors.line,
                 padding: 10
               }}
             >
-              <Text style={{ color: selectedGroupId === group.id ? tokens.colors.gold : tokens.colors.cream, fontWeight: "700" }}>{group.name}</Text>
+              <Text style={{ color: loadedGroup?.id === group.id ? tokens.colors.gold : tokens.colors.cream, fontWeight: "700" }}>{group.name}</Text>
               <Text style={{ color: tokens.colors.mist }}>{group.kind}</Text>
             </Pressable>
           ))
@@ -226,7 +363,23 @@ export default function GroupsScreen() {
       </View>
 
       <View style={cardStyle}>
-        <Text style={cardTitle}>Create / edit cohort</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <Text style={cardTitle}>{loadedGroup ? "Edit cohort" : "Create cohort"}</Text>
+          {loadedGroup ? (
+            <Pressable
+              onPress={startNewGroup}
+              style={{
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: tokens.colors.line,
+                paddingHorizontal: 12,
+                paddingVertical: 6
+              }}
+            >
+              <Text style={{ color: tokens.colors.cream, fontSize: 13 }}>New group</Text>
+            </Pressable>
+          ) : null}
+        </View>
         <TextInput
           value={groupName}
           onChangeText={setGroupName}
@@ -274,10 +427,10 @@ export default function GroupsScreen() {
         </View>
         <Text style={cardBody}>Selected: {selectedNames.length > 0 ? selectedNames.join(", ") : "none"}</Text>
         <Pressable onPress={saveGroup} style={primaryButtonStyle}>
-          <Text style={primaryLabelStyle}>Save group</Text>
+          <Text style={primaryLabelStyle}>{loadedGroup ? "Update group" : "Save group"}</Text>
         </Pressable>
         <Pressable
-          onPress={buildOverlay}
+          onPress={() => buildOverlay()}
           style={{ ...primaryButtonStyle, backgroundColor: tokens.colors.ink, borderWidth: 1, borderColor: tokens.colors.goldSoft }}
         >
           <Text style={{ ...primaryLabelStyle, color: tokens.colors.cream }}>Generate cohort overlay</Text>
@@ -287,7 +440,7 @@ export default function GroupsScreen() {
       {cohort ? (
         <>
           <View style={cardStyle}>
-            <Text style={cardTitle}>{cohort.groupLabel}</Text>
+            <Text style={cardTitle}>{cohortTitle}</Text>
             <Text style={cardBody}>Members: {cohort.memberNames.join(", ")}</Text>
             <Text style={[cardBody, { color: tokens.colors.goldSoft }]}>{cohort.overlay.label}</Text>
           </View>

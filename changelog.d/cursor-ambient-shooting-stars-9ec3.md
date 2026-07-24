@@ -33,3 +33,24 @@ throttle; temporary `__demo` seed + middleware bypass removed before commit):
 Ship gate: shipping path adds no draw work on the phone `lowPerf` profile
 (streaks already shed). Forced denser load stayed within a few fps of shed —
 particle budget is not the limiter. Prior 31–34 @ 4× was not reproduced here.
+
+### Diagnose (why streaks never appear) — 2026-07-24
+
+`[OPEN]` **Root cause = #2 lowPerf shed, not spawn timing.**
+`meteorsOff = reduced || lowPerf` at init; EMA also kills streaks at ≈24ms
+before the glow stack at ≈26ms. Measured:
+
+| Viewport | Initial `lowPerf` | After ~9s | `meteorsOff` |
+|---|---|---|---|
+| 375px · DPR-2 | **true** (heuristic: `min(W,H)<380` and `DPR>=2 && W<430`) | true | **true from frame 0** |
+| 1450px · DPR-2 | false | **true** (EMA ≈35ms on this canvas) | **true before/around first spawn** |
+
+On a 31–34fps machine the EMA path sheds the layer within a second of warmup;
+the first spawn opportunity is 5.2–8s later — so nothing is ever drawn.
+Spawn cadence itself is not "every few minutes" (cap 2; E[first] ≈20s if the
+layer were allowed). `prefers-reduced-motion` is a correct `matchMedia` read and
+only blocks when the OS setting is on.
+
+`[ADDED]` **Temp draw-path probe:** `?meteors=force` on `/app` — one streak
+every 2s, uncapped, ignores `lowPerf` shed (still honors reduced-motion).
+Remove after confirm. Console: `window.__meteorDiag`.

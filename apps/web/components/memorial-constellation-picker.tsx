@@ -103,14 +103,15 @@ export function MemorialConstellationPicker({
         {MEMORIAL_CONSTELLATION_PICKER_COPY.label}
       </p>
 
-      {/* Collapsed selection row — glyph + name + Change. No myths here. */}
+      {/* Collapsed selection row — glyph + name + summary + myth + Change.
+          Folklore stays visible without expanding — the whimsy of the feature. */}
       <div
         className="memorial-constellation-collapsed"
         style={{
           display: "grid",
           gridTemplateColumns: "48px minmax(0, 1fr) auto",
           gap: 12,
-          alignItems: "center",
+          alignItems: "start",
           padding: "10px 12px",
           borderRadius: 14,
           border: `1px solid ${REMEMBRANCE_CHROME.border}`,
@@ -132,22 +133,47 @@ export function MemorialConstellationPicker({
               height: 44,
               borderRadius: "50%",
               justifySelf: "center",
+              marginTop: 2,
               background:
                 "radial-gradient(circle, rgba(111,177,184,.40) 0%, rgba(218,140,140,.16) 45%, transparent 70%)",
               boxShadow: "inset 0 0 0 1px rgba(111,177,184,.25)",
             }}
           />
         )}
-        <span
-          style={{
-            fontSize: ".92rem",
-            color: pattern ? "var(--gold)" : "var(--cream)",
-            minWidth: 0,
-            overflowWrap: "anywhere",
-          }}
-        >
-          {/* FOUNDER-REVIEW: pattern.name / MEMORIAL_CONSTELLATION_PICKER_COPY.noneLabel */}
-          {selectedName}
+        <span style={{ display: "grid", gap: 4, minWidth: 0 }}>
+          <span
+            style={{
+              fontSize: ".92rem",
+              color: pattern ? "var(--gold)" : "var(--cream)",
+              overflowWrap: "anywhere",
+            }}
+          >
+            {/* FOUNDER-REVIEW: pattern.name / MEMORIAL_CONSTELLATION_PICKER_COPY.noneLabel */}
+            {selectedName}
+          </span>
+          {pattern ? (
+            <>
+              {/* FOUNDER-REVIEW: pattern.summary */}
+              <span className="muted" style={{ fontSize: ".76rem", lineHeight: 1.45 }}>
+                {pattern.summary}
+              </span>
+              {/* FOUNDER-REVIEW: pattern.myth — curated Greco-Roman mythology only */}
+              <span style={{ fontSize: ".76rem", lineHeight: 1.45, color: "var(--mist)", fontFamily: "var(--serif)" }}>
+                {pattern.myth}
+              </span>
+            </>
+          ) : (
+            <>
+              {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.noneHelper */}
+              <span className="muted" style={{ fontSize: ".76rem", lineHeight: 1.45 }}>
+                {MEMORIAL_CONSTELLATION_PICKER_COPY.noneHelper}
+              </span>
+              {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.noneMyth */}
+              <span style={{ fontSize: ".76rem", lineHeight: 1.45, color: "var(--mist)", fontFamily: "var(--serif)" }}>
+                {MEMORIAL_CONSTELLATION_PICKER_COPY.noneMyth}
+              </span>
+            </>
+          )}
         </span>
         <button
           ref={changeButtonRef}
@@ -160,7 +186,7 @@ export function MemorialConstellationPicker({
             setError(null);
             setOpen(true);
           }}
-          style={{ fontSize: ".76rem", padding: "5px 12px", flexShrink: 0 }}
+          style={{ fontSize: ".76rem", padding: "5px 12px", flexShrink: 0, alignSelf: "center" }}
         >
           Change
         </button>

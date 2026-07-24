@@ -678,10 +678,13 @@ export default function PersonProfilePage() {
   const showHousesSection = hasHouses || person.birth_precision !== "year";
   const showPastConversations = archivedThreads.length > 0;
   const showRemembrance = personPassed && !person.is_self && Boolean(userId);
+  // Remembrance keeps a single Vela entry in RemembranceSpace — hide the
+  // "Vela on {name}" module (and its nav chip) unless pinned insights exist.
+  const showVelaOnThem = !showRemembrance || velaPins.length > 0;
   const navForPage = buildPersonPageNavSections({
     hasRemembrance: showRemembrance,
     hasActiveToday: showActiveToday,
-    hasVelaOnThem: true,
+    hasVelaOnThem: showVelaOnThem,
     hasWheel: true,
     hasBigThree: true,
     hasPlacements: true,
@@ -794,38 +797,39 @@ export default function PersonProfilePage() {
       ) : null}
 
       {/* ── Vela has said this about them (B2) ──
-          Remembrance pages already expose one Ask Vela entry in RemembranceSpace;
-          keep this module as pins / reopen only — no second CTA. */}
-      <section id="vela-on-them" className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)", scrollMarginTop: 92 }}>
-        <p className="eyebrow" style={{ marginBottom: 8, color: "var(--air)" }}>Vela on {person.display_name}</p>
-        {velaPins.length > 0 ? (
-          <div style={{ display: "grid", gap: 8 }}>
-            {velaPins.map(pin => (
-              <div key={pin.id} style={{ borderLeft: `2px solid ${pin.withdrawnReason ? "rgba(183,154,216,.15)" : "rgba(183,154,216,.35)"}`, paddingLeft: 12, opacity: pin.withdrawnReason ? .7 : 1 }}>
-                <p style={{ margin: "0 0 4px", color: pin.withdrawnReason ? "var(--mist2)" : "var(--mist)", fontStyle: pin.withdrawnReason ? "italic" : "normal", fontSize: ".86rem", lineHeight: 1.55 }}>{pin.body}</p>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <small className="muted" style={{ fontSize: ".68rem" }}>{new Date(pin.createdAt).toLocaleDateString()}</small>
-                  {pin.sourceThreadId ? (
-                    <Link href={`/app/vela?threadId=${pin.sourceThreadId}`} style={{ fontSize: ".7rem", color: "var(--gold-soft)" }}>Reopen conversation →</Link>
-                  ) : null}
+          Remembrance pages already expose one Ask Vela entry in RemembranceSpace.
+          Do not mount the empty "Vela on {name}" card there — it reads as a second
+          entry point even without a CTA. Pins / reopen still render when present. */}
+      {showVelaOnThem ? (
+        <section id="vela-on-them" className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)", scrollMarginTop: 92 }}>
+          <p className="eyebrow" style={{ marginBottom: 8, color: "var(--air)" }}>Vela on {person.display_name}</p>
+          {velaPins.length > 0 ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              {velaPins.map(pin => (
+                <div key={pin.id} style={{ borderLeft: `2px solid ${pin.withdrawnReason ? "rgba(183,154,216,.15)" : "rgba(183,154,216,.35)"}`, paddingLeft: 12, opacity: pin.withdrawnReason ? .7 : 1 }}>
+                  <p style={{ margin: "0 0 4px", color: pin.withdrawnReason ? "var(--mist2)" : "var(--mist)", fontStyle: pin.withdrawnReason ? "italic" : "normal", fontSize: ".86rem", lineHeight: 1.55 }}>{pin.body}</p>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <small className="muted" style={{ fontSize: ".68rem" }}>{new Date(pin.createdAt).toLocaleDateString()}</small>
+                    {pin.sourceThreadId ? (
+                      <Link href={`/app/vela?threadId=${pin.sourceThreadId}`} style={{ fontSize: ".7rem", color: "var(--gold-soft)" }}>Reopen conversation →</Link>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            ))}
-            {!showRemembrance ? (
-              <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".78rem", width: "fit-content", marginTop: 2 }}>Ask Vela more</Link>
-            ) : null}
-          </div>
-        ) : (
-          <div>
-            <p className="muted" style={{ fontSize: ".82rem", marginBottom: showRemembrance ? 0 : 10 }}>
-              Nothing pinned yet. Ask Vela about {person.display_name}, then pin any insight worth keeping — it will live here.
-            </p>
-            {!showRemembrance ? (
+              ))}
+              {!showRemembrance ? (
+                <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".78rem", width: "fit-content", marginTop: 2 }}>Ask Vela more</Link>
+              ) : null}
+            </div>
+          ) : (
+            <div>
+              <p className="muted" style={{ fontSize: ".82rem", marginBottom: 10 }}>
+                Nothing pinned yet. Ask Vela about {person.display_name}, then pin any insight worth keeping — it will live here.
+              </p>
               <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".8rem" }}>Ask Vela about {person.display_name}</Link>
-            ) : null}
-          </div>
-        )}
-      </section>
+            </div>
+          )}
+        </section>
+      ) : null}
 
       {/* ── Chart Wheel ── */}
       <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>

@@ -28,6 +28,7 @@ import {
   transitNotation,
 } from "@galaxia/astro";
 import {
+  ELEMENT_NODE_COLORS,
   GALAXY_GUIDE_RINGS,
   HONOR_LINE_STYLE,
   HONOR_RELATION_TYPE,
@@ -41,6 +42,7 @@ import {
   honorEdgesFromDeclaredRows,
   isMinorForSafety,
   peopleForTodaySky,
+  resolveNodeColor,
   ringIndex,
   ringNormsOccupied,
   type HonorEdge,
@@ -63,6 +65,10 @@ interface PersonRow {
   is_minor: boolean;
   /** Remembrance: when marked as passed. NULL = present. Chart data untouched. */
   passed_at?: string | null;
+  /** Curated palette hex; null = element-derived node color. */
+  star_color?: string | null;
+  /** Reserved for P3 memorial drawing — loaded, not rendered in P2. */
+  memorial_constellation?: string | null;
 }
 interface LinkRow { fromId: string; toId: string; scoreA: number; elA: string; elB: string; }
 interface ThreadChip { id: string; mode: "ask" | "shared"; preview: string; }
@@ -78,16 +84,13 @@ interface PersonSky {
   transits: TransitHit[];
 }
 
-/* element colours from prototype ELEM / landing EL_SOLID */
-const EL_COLOR: Record<string, string> = {
-  fire: "#E0825C", earth: "#cdbd7a", air: "#B79AD8", water: "#6FB1B8",
-  gold: "#E6AE6C" /* self */
-};
+/* Element / legend colours — shared with resolveNodeColor in @galaxia/core. */
+const EL_COLOR = ELEMENT_NODE_COLORS;
 
-/* Orbit helpers (elementFromRelation / formFromRelation / ringIndex) and
-   stable seats (galaxySeatsResolved / hash01) live in @galaxia/core so
-   Remembrance can reuse ancient light without a new visual language, seats
-   are shared with mobile home, and the mapping is unit-tested. */
+/* Orbit helpers (elementFromRelation / formFromRelation / ringIndex /
+   resolveNodeColor) and stable seats (galaxySeatsResolved / hash01) live in
+   @galaxia/core so Remembrance can reuse ancient light without a new visual
+   language, seats are shared with mobile home, and the mapping is unit-tested. */
 
 /* precision sharpness (from prototype sharp()) */
 function sharp(precision: string): number {
@@ -442,7 +445,8 @@ export default function AppHomePage() {
       labelPos: { x: number; y: number },
     ) {
       const p     = people[i];
-      const col   = p.is_self ? EL_COLOR.gold : (EL_COLOR[elementFromRelation(p.relation, p.passed_at)] ?? "#B79AD8");
+      /* Single resolution point — star_color ?? element/self gold. */
+      const col   = resolveNodeColor(p);
       const s     = sharp(p.birth_precision);
       const R0    = coreR(p);
       const form  = formFromRelation(p.is_self, p.relation, p.passed_at);
@@ -907,7 +911,7 @@ export default function AppHomePage() {
          and gates via isMinorForSafety — never raw is_minor alone. */
       const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }, { data: relRows }] = await Promise.all([
         supabase.from("profiles").select("display_name").eq("id", uid).single(),
-        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at").eq("owner_id", uid).order("created_at", { ascending: true }),
+        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6),
         supabase.from("relationships").select("person_a, person_b, relation_type").eq("owner_id", uid).eq("relation_type", HONOR_RELATION_TYPE),

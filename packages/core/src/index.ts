@@ -98,6 +98,8 @@ export * from "./minor-safety";
 
 export * from "./galaxy-orbit";
 
+export * from "./star-color";
+
 export * from "./galaxy-seat";
 
 export * from "./person-care";

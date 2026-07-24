@@ -11,9 +11,11 @@ import {
 } from "@galaxia/astro";
 import {
   OWNED_DELETE_COPY,
+  STAR_COLOR_PALETTE,
   formatPersonDeleteConfirmation,
   groupsCollapsedByMemberRemoval,
-  isMinorForSafety
+  isMinorForSafety,
+  normalizeStarColorForWrite,
 } from "@galaxia/core";
 import { useState } from "react";
 import { getPreferredHouseSystem } from "../lib/house-system";
@@ -35,6 +37,8 @@ interface PersonRow {
   tz_offset_min?: number|null;
   /** Remembrance: when marked as passed. NULL = present. Reversible; chart untouched. */
   passed_at?: string|null;
+  /** Curated palette hex; null = element-derived node color on the constellation. */
+  star_color?: string|null;
   is_self?: boolean;
 }
 interface Props { person: PersonRow; userId: string; onSaved: () => void; onDeleted: () => void; }
@@ -67,6 +71,9 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
   const [relation, setRelation]     = useState(person.relation);
   const [isMinor, setIsMinor]       = useState(person.is_minor);
   const [passedAt, setPassedAt]     = useState<string|null>(person.passed_at ?? null);
+  const [starColor, setStarColor]   = useState<string|null>(
+    normalizeStarColorForWrite(person.star_color)
+  );
 
   // Populate structured fields from stored data
   const storedDate = parseDateStr(person.birth_date);
@@ -139,6 +146,7 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
         birth_precision: fi.precision,
         birth_lat: built.birth.lat ?? null, birth_lng: built.birth.lng ?? null,
         tz_offset_min: built.tzOffsetMin ?? null,
+        star_color: normalizeStarColorForWrite(starColor),
       }).eq("id", person.id).eq("owner_id", userId);
       if (pErr) throw new Error(pErr.message);
       const { error: cErr } = await supabase.from("charts").upsert({ person_id: person.id, house_system: natal.houseSystem ?? null, data: natal, engine_version: CHART_ENGINE_VERSION });
@@ -255,6 +263,81 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
         <p className="muted" style={{ fontSize: ".72rem", marginTop: -4 }}>
           Anyone whose birth date shows they're under 18 is automatically protected regardless of this box.
         </p>
+
+        {/* Star color — curated palette only; Default clears to null (element-derived). */}
+        <div>
+          <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginBottom: 6 }}>Star color</p>
+          <p className="muted" style={{ fontSize: ".72rem", lineHeight: 1.5, marginBottom: 8 }}>
+            On your constellation. Default follows their bond colour.
+          </p>
+          <div
+            role="radiogroup"
+            aria-label="Star color"
+            style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={starColor === null}
+              aria-label="Default — bond colour"
+              onClick={() => setStarColor(null)}
+              style={{
+                fontSize: 12,
+                padding: "6px 12px",
+                borderRadius: 999,
+                border: starColor === null
+                  ? "1px solid rgba(230,174,108,.55)"
+                  : "1px solid rgba(183,154,216,.22)",
+                background: starColor === null ? "rgba(230,174,108,.12)" : "transparent",
+                color: starColor === null ? "var(--gold)" : "var(--mist)",
+                cursor: "pointer",
+                fontFamily: "var(--sans)",
+              }}
+            >
+              Default
+            </button>
+            {STAR_COLOR_PALETTE.map((swatch) => {
+              const selected = starColor === swatch.hex;
+              return (
+                <button
+                  key={swatch.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  /* FOUNDER-REVIEW: swatch.label */
+                  aria-label={swatch.label}
+                  title={swatch.label}
+                  onClick={() => setStarColor(swatch.hex)}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    padding: 0,
+                    cursor: "pointer",
+                    background: swatch.hex,
+                    border: selected
+                      ? "2px solid var(--cream)"
+                      : "2px solid rgba(255,255,255,.18)",
+                    boxShadow: selected
+                      ? `0 0 0 1px ${swatch.hex}, 0 0 12px ${swatch.hex}99`
+                      : `0 0 10px ${swatch.hex}55`,
+                    outline: "none",
+                  }}
+                />
+              );
+            })}
+          </div>
+          {starColor ? (
+            <p style={{ fontSize: ".72rem", color: "var(--mist)", marginTop: 6 }}>
+              {/* FOUNDER-REVIEW: palette label */}
+              {STAR_COLOR_PALETTE.find((s) => s.hex === starColor)?.label ?? "Custom"}
+            </p>
+          ) : (
+            <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginTop: 6 }}>
+              Using bond colour
+            </p>
+          )}
+        </div>
 
         {/* Precision */}
         <div style={{ display: "flex", gap: 6 }}>

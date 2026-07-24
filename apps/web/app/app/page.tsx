@@ -414,7 +414,7 @@ export default function AppHomePage() {
         const form = formFromRelation(p.is_self, p.relation, p.passed_at);
         const memorial = usesMemorialGlyph(p);
         const R0 = memorial
-          ? 11
+          ? 17
           : form === "self" ? 7 : form === "ancient" ? 3.4 : form === "moon" ? 4.2 : 5;
         const below = form === "fixed" ? R0 * 3.9 + 12 : R0 * 2.9 + 12;
         const above = form === "fixed" ? R0 * 3.9 + 14 : R0 * 2.9 + 14;
@@ -464,7 +464,7 @@ export default function AppHomePage() {
     }
 
     function coreR(p: PersonRow): number {
-      if (usesMemorialGlyph(p)) return 11; /* glyph half-extent for labels / flare */
+      if (usesMemorialGlyph(p)) return 17; /* glyph half-extent for labels / flare (≥+50%) */
       const form = formFromRelation(p.is_self, p.relation, p.passed_at);
       const base = form === "self" ? 7 : form === "ancient" ? 3.4 : form === "moon" ? 4.2 : 5;
       return base;
@@ -473,6 +473,8 @@ export default function AppHomePage() {
     /**
      * Memorial constellation glyph — stroke-light point-and-line pattern centered
      * on the seat (centroid). No per-star glow stack. Honor edges attach here.
+     * Radius ≥+50% vs. the prior 12/14 seat so patterns read on the galaxy;
+     * lineW / starR stay thin so the frame budget does not grow with area.
      * lowPerf: thinner stroke, skip soft wash. reduced: no shimmer.
      */
     function drawMemorialGlyph(
@@ -483,9 +485,10 @@ export default function AppHomePage() {
       twinkle: number,
       isHovered: boolean,
     ) {
-      const radius = (lowPerf ? 12 : 14) * scale * (isHovered ? 1.08 : 1);
+      const radius = (lowPerf ? 18 : 21) * scale * (isHovered ? 1.08 : 1);
+      /* stroke-light on purpose — larger seat, not thicker ink */
       const lineW = lowPerf ? 0.85 : 1.05;
-      const starR = (lowPerf ? 1.15 : 1.35) * scale;
+      const starR = (lowPerf ? 1.25 : 1.45) * scale;
       const lineA = (isHovered ? 0.78 : 0.58) * (reduced ? 1 : twinkle);
       const starA = (isHovered ? 0.95 : 0.82) * (reduced ? 1 : twinkle);
 
@@ -572,13 +575,13 @@ export default function AppHomePage() {
       if (ign.alpha <= 0.001) return; /* not yet kindled */
       const scale = reduced ? 1 : Math.max(0.001, ign.scale);
       const R     = R0 * scale;
-      /* gentle organic twinkle (two slow summed sines — NOT the old fast blink).
-         Calmed further so it doesn't compound with the background starfield
-         into a busy shimmer: amplitude ~0.065 (was 0.10) and periods stretched
-         to ~14–30s (was ~9–20s). Per-star phase (phases[i].ph) staggers them so
-         they don't pulse in unison. */
-      const tw    = reduced ? 1 : (1 + 0.04 * Math.sin(t * 0.0006 * phases[i].sp + phases[i].ph)
-                                     + 0.025 * Math.sin(t * 0.00035 + phases[i].ph * 1.7));
+      /* gentle organic twinkle (two slow summed sines — NOT a flicker).
+         Periods stretched again so living light reads as calm shimmer, not
+         pulse: ~45–100s (was ~14–30s). Amplitude unchanged (~0.065). Same
+         rate under lowPerf — no faster path on small viewports. Per-star
+         phase (phases[i].ph) staggers them so they don't pulse in unison. */
+      const tw    = reduced ? 1 : (1 + 0.04 * Math.sin(t * 0.00018 * phases[i].sp + phases[i].ph)
+                                     + 0.025 * Math.sin(t * 0.0001 + phases[i].ph * 1.7));
 
       cx.save();
       cx.globalAlpha = reduced ? globalFade : easeOutCubic(ign.raw);

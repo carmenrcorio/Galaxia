@@ -723,7 +723,7 @@ export default function PersonProfilePage() {
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
         {/* Remembrance keeps a single Ask Vela entry inside RemembranceSpace — no header duplicate. */}
-        {!personPassed ? (
+        {!showRemembrance ? (
           <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Ask Vela</Link>
         ) : null}
         {showHonorBox ? (

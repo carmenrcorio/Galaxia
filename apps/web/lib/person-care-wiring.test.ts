@@ -69,9 +69,10 @@ describe("source wiring — person page + home hide live sky for passed", () => 
       resolve(__dirname, "../components/remembrance-space.tsx"),
       "utf8"
     );
-    expect(page).toContain("!personPassed");
     expect(page).toContain("app-content--remembrance");
+    // Header Ask Vela and Vela-on-them CTAs are gated off when RemembranceSpace mounts.
     expect(page).toContain("!showRemembrance");
+    expect(page).toContain("Remembrance keeps a single Ask Vela entry inside RemembranceSpace");
     expect(remembrance).toContain("Ask Vela about {person.display_name}");
     expect(remembrance).toContain("remembranceVelaHref");
   });

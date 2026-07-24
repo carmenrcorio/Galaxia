@@ -8,7 +8,7 @@
  */
 
 import {
-  BODY_DOMAIN,
+  bodyDomain,
   interpretPlacement,
   whatTheyNeed,
   type BodyKey,
@@ -43,10 +43,13 @@ function getSign(chart: NatalChart, body: string) {
 function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
   const viewer = useViewer();
   const [expanded, setExpanded] = useState(false);
+  // /s cannot prove adult (birth PII stripped). Always curated Venus — fail
+  // safe, not fail closed. No compute, no persist, no branch on age.
+  const minorSafe = true;
 
   return (
     <>
-      {/* No birthDate: single shares strip birth PII; isMinorForSafety is not called. */}
+      {/* No birthDate: single shares strip birth PII; NatalSignReveal fail-safes. */}
       <NatalSignReveal
         chart={payload.chart}
         displayDate={payload.displayDate}
@@ -81,7 +84,7 @@ function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
                   </div>
                 );
               }
-              const reading = interpretPlacement(p.body as BodyKey, p.sign as SignKey);
+              const reading = interpretPlacement(p.body as BodyKey, p.sign as SignKey, { minorSafe });
               return (
                 <div
                   key={p.body}
@@ -113,7 +116,7 @@ function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
                         color: "var(--mist2)",
                       }}
                     >
-                      {BODY_DOMAIN[p.body as BodyKey]}
+                      {bodyDomain(p.body as BodyKey, { minorSafe })}
                     </div>
                     <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>
                       {p.body[0].toUpperCase() + p.body.slice(1)} in {p.sign}
@@ -130,13 +133,14 @@ function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
       </section>
 
       <section className="glass-card fade-in fade-in-delay-2" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>
-        {/* PDF stays a paid perk — same gate as /chart. */}
+        {/* PDF stays a paid perk — same gate as /chart. /s always passes true. */}
         {viewer.isSubscriber ? (
           <ChartPdfExport
             chart={payload.chart}
             name={payload.name}
             displayDate={payload.displayDate}
             birthPlace={payload.birthPlace}
+            minorSafe={minorSafe}
           />
         ) : null}
       </section>

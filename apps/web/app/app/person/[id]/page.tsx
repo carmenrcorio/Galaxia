@@ -18,7 +18,7 @@ import {
   houseSystemLabelForChart,
   placementsLongitudeChanged,
   todayTransitsForChart,
-  BODY_DOMAIN,
+  bodyDomain,
   ELEMENT_ABSENT,
   ELEMENT_DOMINANT,
   GENERATIONAL,
@@ -861,9 +861,10 @@ export default function PersonProfilePage() {
               </div>
             );
             const el = signElement(sign);
-            const signReading = body ? interpretPlacement(normaliseBody(body), normaliseSign(sign)) : interpretRising(normaliseSign(sign));
+            const safety = { minorSafe: personIsMinor };
+            const signReading = body ? interpretPlacement(normaliseBody(body), normaliseSign(sign), safety) : interpretRising(normaliseSign(sign));
             const houseR = (body && house && hasHouses)
-              ? (() => { const hr = interpretHouse(normaliseBody(body), house as HouseKey); const hm = houseMeaning(house as HouseKey); return hm && hr.long ? { houseName: hm.name, houseDomain: hm.domain, long: hr.long } : null; })()
+              ? (() => { const hr = interpretHouse(normaliseBody(body), house as HouseKey, safety); const hm = houseMeaning(house as HouseKey); return hm && hr.long ? { houseName: hm.name, houseDomain: hm.domain, long: hr.long } : null; })()
               : null;
             const bodyAspects = body ? (aspectsByBody.get(body)?.map(a => ({
               from: a.from, to: a.to, type: a.type, orb: a.orb, tight: a.orb < 2,
@@ -957,7 +958,8 @@ export default function PersonProfilePage() {
           const sk  = normaliseSign(p.sign);
           const el  = signElement(p.sign);
           const gly = BODY_GLYPH[p.body] ?? p.body[0].toUpperCase();
-          const domain = BODY_DOMAIN[bk];
+          const safety = { minorSafe: personIsMinor };
+          const domain = bodyDomain(bk, safety);
           if (p.confident === false) {
             // Year-only data: the sign is not known. Say so — never interpret a guess.
             return (
@@ -973,10 +975,10 @@ export default function PersonProfilePage() {
               </div>
             );
           }
-          const signR = interpretPlacement(bk, sk);
+          const signR = interpretPlacement(bk, sk, safety);
           if (process.env.NODE_ENV !== "production" && !signR.short) console.warn(`[interpretations] missing: ${bk} in ${sk}`);
           const houseR = (p.house && hasHouses)
-            ? (() => { const hr = interpretHouse(bk, p.house as HouseKey); const hm = houseMeaning(p.house as HouseKey); return hm && hr.long ? { houseName: hm.name, houseDomain: hm.domain, long: hr.long } : null; })()
+            ? (() => { const hr = interpretHouse(bk, p.house as HouseKey, safety); const hm = houseMeaning(p.house as HouseKey); return hm && hr.long ? { houseName: hm.name, houseDomain: hm.domain, long: hr.long } : null; })()
             : null;
           const bodyAspects = (aspectsByBody.get(p.body) ?? []).map(a => ({
             from: a.from, to: a.to, type: a.type, orb: a.orb, tight: a.orb < 2,
@@ -1126,7 +1128,7 @@ export default function PersonProfilePage() {
                       <div style={{ display:"grid",gap:4 }}>
                         {occupants.map(p => {
                           const bk2 = normaliseBody(p.body);
-                          const hr2 = interpretHouse(bk2, hk);
+                          const hr2 = interpretHouse(bk2, hk, { minorSafe: personIsMinor });
                           return hr2.short ? (
                             <div key={p.body} style={{ display:"flex",alignItems:"baseline",gap:6 }}>
                               <span style={{ fontSize:".9rem",color:EL_SOLID[signElement(p.sign)]??"#b9aede",flexShrink:0 }}>{BODY_GLYPH[p.body]??p.body[0]}</span>
@@ -1171,7 +1173,7 @@ export default function PersonProfilePage() {
               <div key={planet} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65 }}>
                 <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{BODY_GLYPH[planet] ?? planet[0].toUpperCase()}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{BODY_DOMAIN[bk]}</div>
+                  <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{bodyDomain(bk, { minorSafe: personIsMinor })}</div>
                   <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{planet.charAt(0).toUpperCase() + planet.slice(1)} — sign uncertain</div>
                 </div>
                 <span style={{ fontSize: ".76rem", color: "var(--mist2)", fontStyle: "italic", textAlign: "right" }}>
@@ -1181,12 +1183,12 @@ export default function PersonProfilePage() {
             );
           }
           const sk = normaliseSign(data.sign);
-          const reading = interpretPlacement(bk, sk);
+          const reading = interpretPlacement(bk, sk, { minorSafe: personIsMinor });
           const rowKey = `gen-${planet}`;
           return (
             <ExpandRow key={planet} open={openRows.has(rowKey)} onToggle={() => toggleRow(rowKey)}
               label={`${planet.charAt(0).toUpperCase() + planet.slice(1)} in ${data.sign}`}
-              domain={BODY_DOMAIN[bk]} el={signElement(data.sign)}
+              domain={bodyDomain(bk, { minorSafe: personIsMinor })} el={signElement(data.sign)}
               glyph={BODY_GLYPH[planet] ?? planet[0].toUpperCase()}
               short={reading.short} long={reading.long}
               hasHouses={false}

@@ -77,6 +77,8 @@ export * from "./minor-safety";
 
 export * from "./galaxy-orbit";
 
+export * from "./galaxy-seat";
+
 export * from "./person-care";
 
 export * from "./honor-constellation";

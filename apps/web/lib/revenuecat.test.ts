@@ -76,6 +76,54 @@ describe("mapRevenueCatEvent", () => {
     expect(mapRevenueCatEvent({ type: "INITIAL_PURCHASE", expiration_at_ms: null })?.current_period_end).toBeNull();
     expect(mapRevenueCatEvent({ type: "INITIAL_PURCHASE" })?.current_period_end).toBeNull();
   });
+
+  it("never includes comped in any mapped update (webhook must not touch it)", () => {
+    const types = [
+      "INITIAL_PURCHASE",
+      "RENEWAL",
+      "PRODUCT_CHANGE",
+      "UNCANCELLATION",
+      "CANCELLATION",
+      "EXPIRATION"
+    ];
+    for (const type of types) {
+      const update = mapRevenueCatEvent(ev(type));
+      expect(update).not.toBeNull();
+      expect(Object.keys(update!).sort()).toEqual([
+        "cancel_at_period_end",
+        "current_period_end",
+        "plan",
+        "subscription_status"
+      ]);
+      expect(update).not.toHaveProperty("comped");
+    }
+  });
+});
+
+describe("comped survives billing expiration (resolution contract)", () => {
+  // Mirrors the webhook write + hasAccess read: EXPIRATION cancels billing
+  // columns only; hasAccess still grants when comped remains true on the row.
+  it("comped + EXPIRATION-mapped status still has access; non-comped does not", async () => {
+    const { hasAccess } = await import("@galaxia/core");
+    const expiration = mapRevenueCatEvent(ev("EXPIRATION"));
+    expect(expiration?.subscription_status).toBe("canceled");
+    expect(expiration).not.toHaveProperty("comped");
+
+    expect(
+      hasAccess({
+        status: expiration!.subscription_status,
+        trialEndsAt: null,
+        comped: true
+      })
+    ).toBe(true);
+    expect(
+      hasAccess({
+        status: expiration!.subscription_status,
+        trialEndsAt: null,
+        comped: false
+      })
+    ).toBe(false);
+  });
 });
 
 describe("verifyWebhookAuth (security-critical)", () => {

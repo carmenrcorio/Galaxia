@@ -26,7 +26,7 @@ function formatDate(iso: string | null): string | null {
 
 export default function SettingsScreen() {
   const { session } = useAuth();
-  const { status: subStatus, trialDaysLeft } = useEntitlement();
+  const { status: subStatus, trialDaysLeft, comped } = useEntitlement();
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [groups, setGroups] = useState<GroupLite[]>([]);
   const [status, setStatus] = useState<string | null>(null);
@@ -55,8 +55,12 @@ export default function SettingsScreen() {
     setGroups((groupRows ?? []) as GroupLite[]);
   };
 
+  // FOUNDER-REVIEW: Settings subscription card copy — refine voice.
   let subscriptionBody: string;
-  if (subStatus === "trialing") {
+  if (comped) {
+    // FOUNDER-REVIEW: permanent comp access — not a subscription, not a trial.
+    subscriptionBody = "Permanent access. This account is complimentary — you are not billed.";
+  } else if (subStatus === "trialing") {
     subscriptionBody = `14 days, everything included. ${trialDaysLeft} left in your trial.`;
   } else if (subStatus === "active" && cancelAtPeriodEnd) {
     subscriptionBody = periodEndLabel

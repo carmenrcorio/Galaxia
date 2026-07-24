@@ -15,7 +15,8 @@ export const EXPORT_PROFILE_FIELDS = [
   "trial_ends_at",
   "plan",
   "current_period_end",
-  "cancel_at_period_end"
+  "cancel_at_period_end",
+  "comped"
 ] as const;
 
 export type ExportProfileField = (typeof EXPORT_PROFILE_FIELDS)[number];

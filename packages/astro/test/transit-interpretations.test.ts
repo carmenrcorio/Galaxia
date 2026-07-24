@@ -1,6 +1,12 @@
 import type { AspectType, BodyName, TransitHit } from "../src/index";
 import { describe, expect, it } from "vitest";
-import { interpretTransit, transitNotation } from "../src/transit-interpretations";
+import {
+  applyPronounSlots,
+  curatedTransitTemplates,
+  interpretTransit,
+  pronounSlotsFor,
+  transitNotation,
+} from "../src/transit-interpretations";
 
 const BODIES: BodyName[] = [
   "sun", "moon", "mercury", "venus", "mars",
@@ -30,14 +36,108 @@ describe("interpretTransit — coverage (never fabricates an empty line, §12)",
           expect(r.short.length, `${t} ${a} ${n} short`).toBeGreaterThan(0);
           expect(r.long.length, `${t} ${a} ${n} long`).toBeGreaterThan(0);
           // No unresolved template token leaks to the UI.
+          expect(r.short).not.toContain("{subj}");
           expect(r.short).not.toContain("{poss}");
+          expect(r.short).not.toContain("{obj}");
+          expect(r.long).not.toContain("{subj}");
           expect(r.long).not.toContain("{poss}");
+          expect(r.long).not.toContain("{obj}");
           // Raw engine notation must not appear in the plain-language headline.
           expect(r.short.toLowerCase()).not.toContain("transiting");
           expect(r.short.toLowerCase()).not.toContain("natal");
         }
       }
     }
+  });
+});
+
+/**
+ * Structural guarantee: a possessive must never land in a subject/object slot,
+ * and subject verbs must be base-form so you/they both conjugate. Extending this
+ * list is how new members of the bug class stay impossible.
+ */
+const FORBIDDEN_PRONOUN_BIGRAMS = [
+  // Wrong conjugation after subject pronoun
+  "they is", "you is",
+  "they feels", "you feels",
+  "they needs", "you needs",
+  "they has", "you has",
+  "they was", "you was",
+  // Possessive jammed into a subject clause
+  "your is", "their is",
+  "your are", "their are",
+  "your feels", "their feels",
+  "your feel", "their feel", // word-boundary matched (won't hit "your feelings")
+  "your may", "their may",
+  "who your", "who their",
+  "what your is", "what their is",
+  "how your", "how their",
+  "how safe your", "how safe their",
+  // Possessive jammed into an object slot
+  "for their to", "for your to",
+  "for they",
+  "for their —", "for your —",
+  "tell they", "tell their", "tell your",
+  "puts their", "puts your",
+  "puts they",
+] as const;
+
+/** Word-boundary match so "your feel" does not hit the legitimate "your feelings". */
+function containsForbiddenBigram(haystack: string, bigram: string): boolean {
+  const escaped = bigram.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:^|[^a-z])${escaped}(?:[^a-z]|$)`, "i").test(haystack);
+}
+
+describe("interpretTransit — typed pronoun slots (structural)", () => {
+  it("pronounSlotsFor maps possessive mode to distinct subj/poss/obj cases", () => {
+    expect(pronounSlotsFor("your")).toEqual({ subj: "you", poss: "your", obj: "you" });
+    expect(pronounSlotsFor("their")).toEqual({ subj: "they", poss: "their", obj: "them" });
+  });
+
+  it("applyPronounSlots substitutes each slot independently", () => {
+    const template = "{subj} may feel restless in {poss} bonds — tell {obj}.";
+    expect(applyPronounSlots(template, pronounSlotsFor("their"))).toBe(
+      "they may feel restless in their bonds — tell them."
+    );
+    expect(applyPronounSlots(template, pronounSlotsFor("your"))).toBe(
+      "you may feel restless in your bonds — tell you."
+    );
+  });
+
+  it("renders every curated TRANSIT_PAIR entry in self and other modes without forbidden bigrams", () => {
+    const templates = curatedTransitTemplates();
+    expect(templates.length).toBeGreaterThan(0);
+
+    for (const entry of templates) {
+      for (const mode of ["your", "their"] as const) {
+        const slots = pronounSlotsFor(mode);
+        const short = applyPronounSlots(entry.short, slots);
+        const long = entry.long ? applyPronounSlots(entry.long, slots) : "";
+        const rendered = `${short}\n${long}`;
+
+        expect(rendered, `${entry.pair} ${entry.tone} ${mode}`).not.toContain("{subj}");
+        expect(rendered, `${entry.pair} ${entry.tone} ${mode}`).not.toContain("{poss}");
+        expect(rendered, `${entry.pair} ${entry.tone} ${mode}`).not.toContain("{obj}");
+
+        for (const bad of FORBIDDEN_PRONOUN_BIGRAMS) {
+          expect(
+            containsForbiddenBigram(rendered, bad),
+            `${entry.pair} ${entry.tone} ${mode} contains "${bad}": ${rendered}`,
+          ).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("QA flagship: saturn→sun fusion reads correctly for self and other", () => {
+    const other = interpretTransit(hit("saturn", "sun", "conjunction"), { possessive: "their" }).short;
+    const self = interpretTransit(hit("saturn", "sun", "conjunction"), { possessive: "your" }).short;
+    expect(other).toBe(
+      "A serious, consolidating day for who they are — less flash, more foundation."
+    );
+    expect(self).toBe(
+      "A serious, consolidating day for who you are — less flash, more foundation."
+    );
   });
 });
 

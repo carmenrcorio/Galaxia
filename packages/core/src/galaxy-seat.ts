@@ -1,16 +1,18 @@
 /**
  * Stable constellation seats for `/app` (and mobile home).
  *
- * Angle is a pure function of person id. Radius comes from the person's own
- * semantic ring, mapped through the *occupied* ring set so guides and seats
- * span the full canvas (empty rings do not reserve space).
+ * ONE radius function: `ringBandRadius(ring)`. Person seats and guide rings
+ * both use it — a parent sits on the parents band, at the same normalised
+ * radius the guide stroke uses.
+ *
+ * Angle is a pure function of person id. Radius is the ring's fixed band
+ * radius plus id-stable within-band jitter (never enough to cross into a
+ * neighbouring band).
  *
  * Learnable-map contract:
  *   - same account, two loads, no data change → identical seats
- *   - adding a person onto an already-occupied ring → only that person (or
- *     their same-ring collision cluster) moves
- *   - opening a *new* occupied ring redistributes radii across the set — the
- *     one allowed peer-aware shift so four occupied rings use the whole card
+ *   - adding a person → only that person (or their same-ring collision
+ *     cluster) moves; other people's radii never change
  *
  * Near-hash collisions on the same ring are separated by `galaxySeatsResolved`.
  */
@@ -28,14 +30,9 @@ export const GALAXY_MAX_RING = 6;
 export const GALAXY_RING_MIN = 0.46;
 
 /**
- * Inner edge for the first occupied non-partner band when radii are spread
- * across the card. Partner stays at GALAXY_RING_MIN inside this.
- */
-export const GALAXY_OCCUPIED_INNER = 0.58;
-
-/**
- * Fallback absolute norms (used only when an occupied map is not supplied).
- * Prefer `ringNormsOccupied` for rendering.
+ * Fixed band radii — the single source of truth for seats AND guide strokes.
+ * Sketch legend: Ring 1 = children (2) · Ring 2 = parents/sibs (3) ·
+ * Ring 3 = friends (4) · Ring 4 = colleagues (5).
  */
 export const GALAXY_RING_NORMS: Readonly<Record<number, number>> = {
   0: 0,
@@ -47,8 +44,15 @@ export const GALAXY_RING_NORMS: Readonly<Record<number, number>> = {
   6: 1.0,
 };
 
-/** Semantic rings that may draw soft concentric guides (sketch Rings 1–4). */
+/** Semantic rings that draw soft concentric guides (sketch Rings 1–4). */
 export const GALAXY_GUIDE_RINGS = [2, 3, 4, 5] as const;
+
+/**
+ * Nominal radial jitter amplitude as a fraction of band radius (±).
+ * Kept tiny so seats read as ON the guide stroke, not in the gap; still
+ * clamped to the band half-gap (see `ringSeatRadius`).
+ */
+export const GALAXY_RING_JITTER = 0.012;
 
 /**
  * Raw angular proximity (radians) that joins two seats on the same ring into a
@@ -77,42 +81,60 @@ export function hash01(s: string): number {
 }
 
 /**
- * Fallback normalised radius from own semantic ring (absolute table).
- * Rendering should prefer `ringNormsOccupied`.
+ * THE radius function. Person seats and guide rings both call this.
+ * Self / ring 0 → 0. Every other semantic ring → its fixed band radius.
  */
-export function ringNormAbsolute(ring: number): number {
+export function ringBandRadius(ring: number): number {
   if (ring <= 0) return 0;
   const r = Math.min(Math.max(Math.round(ring), 1), GALAXY_MAX_RING);
   return GALAXY_RING_NORMS[r] ?? 1;
 }
 
+/** @deprecated Alias of `ringBandRadius` — kept for call-site clarity in older tests. */
+export function ringNormAbsolute(ring: number): number {
+  return ringBandRadius(ring);
+}
+
 /**
- * Spread occupied semantic rings across the full canvas radius.
- *
- * - 0 (self) → 0
- * - 1 (partner) → GALAXY_RING_MIN (fixed; not redistributed)
- * - every other occupied ring, sorted → evenly from GALAXY_OCCUPIED_INNER to 1
- *
- * Empty rings get no entry (callers skip their guides). Same occupied set →
- * same map. Opening a new ring remaps the non-partner bands.
+ * Half-gap (normalised) from `ring` toward its nearer neighbour band.
+ * Jitter must stay inside this so a seat never crosses into another band.
+ */
+export function ringBandHalfGap(ring: number): number {
+  const r = Math.min(Math.max(Math.round(ring), 1), GALAXY_MAX_RING);
+  const base = ringBandRadius(r);
+  if (base <= 0) return 0;
+  const prev = r <= 1 ? 0 : ringBandRadius(r - 1);
+  const next = r >= GALAXY_MAX_RING ? base + (base - prev) : ringBandRadius(r + 1);
+  return Math.min(base - prev, next - base) / 2;
+}
+
+/**
+ * Seat radius for a person: band radius + id-stable within-band jitter.
+ * Jitter is clamped so the seat cannot cross into a neighbouring band.
+ */
+export function ringSeatRadius(id: string, ring: number): number {
+  if (ring <= 0) return 0;
+  const base = ringBandRadius(ring);
+  const jR = hash01(`${id}\0r`);
+  const nominal = base * GALAXY_RING_JITTER; /* ±3% of band */
+  const maxDelta = ringBandHalfGap(ring) * 0.85; /* stay clearly inside band */
+  const delta = (jR - 0.5) * 2 * Math.min(nominal, maxDelta);
+  return base + delta;
+}
+
+/**
+ * Occupied-ring → band-radius map (fixed norms, no redistribution).
+ * Empty rings are omitted so callers can skip their guides if desired.
+ * Prefer `ringBandRadius` directly for seat/guide drawing.
  */
 export function ringNormsOccupied(occupiedRings: Iterable<number>): Map<number, number> {
-  const set = new Set<number>();
-  for (const raw of occupiedRings) {
-    const r = Math.round(raw);
-    if (r > 0) set.add(Math.min(Math.max(r, 1), GALAXY_MAX_RING));
-  }
   const out = new Map<number, number>();
   out.set(0, 0);
-  if (set.has(1)) {
-    out.set(1, GALAXY_RING_MIN);
-    set.delete(1);
-  }
-  const bands = [...set].sort((a, b) => a - b);
-  if (bands.length === 0) return out;
-  for (let i = 0; i < bands.length; i++) {
-    const t = bands.length === 1 ? 1 : i / (bands.length - 1);
-    out.set(bands[i], GALAXY_OCCUPIED_INNER + (1 - GALAXY_OCCUPIED_INNER) * t);
+  for (const raw of occupiedRings) {
+    const r = Math.round(raw);
+    if (r <= 0) continue;
+    const ring = Math.min(Math.max(r, 1), GALAXY_MAX_RING);
+    out.set(ring, ringBandRadius(ring));
   }
   return out;
 }
@@ -130,7 +152,7 @@ export interface GalaxySeatNorm {
   ny: number;
   /** Radians; 0 = +x (canvas right), grows clockwise-down with canvas y. */
   angle: number;
-  /** Normalised radius in [0, 1]. */
+  /** Normalised radius in [0, 1] (+ small within-band jitter). */
   rn: number;
 }
 
@@ -144,21 +166,19 @@ function seatFromAngleRn(angle: number, rn: number): GalaxySeatNorm {
 }
 
 /**
- * Seat as a pure function of (id, own ring) using the absolute fallback table.
- * Prefer `galaxySeatsResolved` for occupied-set radii + collision separation.
+ * Seat as a pure function of (id, own ring) using the fixed band table.
+ * Prefer `galaxySeatsResolved` when same-ring collision separation is needed.
  */
 export function galaxySeatNorm(input: GalaxySeatInput): GalaxySeatNorm {
   if (input.isSelf || input.ring <= 0) {
     return { nx: 0, ny: 0, angle: 0, rn: 0 };
   }
-  const jA = hash01(`${input.id}\0a`);
-  const jR = hash01(`${input.id}\0r`);
-  const rn = ringNormAbsolute(input.ring) * (1 + (jR - 0.5) * 0.08); /* ±4% */
-  const angle = -Math.PI / 2 + jA * Math.PI * 2;
+  const rn = ringSeatRadius(input.id, input.ring);
+  const angle = galaxySeatAngle(input.id);
   return seatFromAngleRn(angle, rn);
 }
 
-/** Angle from id only — independent of ring / occupied set. */
+/** Angle from id only — independent of ring. */
 export function galaxySeatAngle(id: string): number {
   return -Math.PI / 2 + hash01(`${id}\0a`) * Math.PI * 2;
 }
@@ -239,8 +259,9 @@ function clusterIds(members: readonly RawMember[], join: number): string[][] {
 /**
  * Resolve seats for a whole constellation.
  *
- * Angle = f(id). Radius = occupied-ring spread of own ring + id-stable jitter.
- * Same-ring near-collisions are re-spaced by id order.
+ * Angle = f(id). Radius = ringBandRadius(own ring) + within-band jitter.
+ * Same-ring near-collisions are re-spaced by id order. Adding a person on a
+ * new or existing ring never changes another person's radius.
  */
 export function galaxySeatsResolved(
   people: readonly GalaxySeatInput[],
@@ -248,7 +269,6 @@ export function galaxySeatsResolved(
 ): Map<string, GalaxySeatNorm> {
   const join = opts?.join ?? GALAXY_COLLISION_JOIN;
   const sep = opts?.sep ?? GALAXY_COLLISION_SEP;
-  const norms = ringNormsOccupied(people.map((p) => (p.isSelf ? 0 : p.ring)));
   const out = new Map<string, GalaxySeatNorm>();
   const byRing = new Map<number, RawMember[]>();
 
@@ -257,9 +277,7 @@ export function galaxySeatsResolved(
       out.set(p.id, { nx: 0, ny: 0, angle: 0, rn: 0 });
       continue;
     }
-    const jR = hash01(`${p.id}\0r`);
-    const baseRn = norms.get(p.ring) ?? ringNormAbsolute(p.ring);
-    const rn = baseRn * (1 + (jR - 0.5) * 0.08);
+    const rn = ringSeatRadius(p.id, p.ring);
     const angle = galaxySeatAngle(p.id);
     const raw = seatFromAngleRn(angle, rn);
     out.set(p.id, raw);

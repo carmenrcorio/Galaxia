@@ -1,6 +1,11 @@
 "use client";
 
 import { cohortOverlay, compareGenerational, type GenSignature, type NatalChart } from "@galaxia/astro";
+import {
+  OWNED_DELETE_COPY,
+  formatGroupDeleteConfirmation,
+  isBelowGroupMinimum
+} from "@galaxia/core";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
@@ -79,6 +84,9 @@ export default function GroupsPage() {
   const [savingReading, setSavingReading] = useState(false);
   const [readingSaved, setReadingSaved]   = useState(false);
   const [askingVela, setAskingVela]       = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteWarning, setDeleteWarning] = useState<string | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -112,8 +120,9 @@ export default function GroupsPage() {
 
   const cohortTitle = previewTitle(loadedGroup, formComposition);
   const selectedNames = people.filter(p => selectedPersonIds.includes(p.id)).map(p => p.display_name);
-  /** Persist reading / Ask Vela only when the form matches a real saved group. */
-  const canPersistAgainstLoaded = Boolean(loadedGroup) && !dirty;
+  const loadedBelowMinimum = Boolean(loadedGroup && isBelowGroupMinimum(loadedGroup.memberIds.length));
+  /** Persist reading / Ask Vela only for a clean saved group at the create minimum. */
+  const canPersistAgainstLoaded = Boolean(loadedGroup) && !dirty && !loadedBelowMinimum;
 
   async function fetchPeople(uid: string) {
     const { data } = await supabase.from("people").select("id, display_name").eq("owner_id", uid).order("display_name");
@@ -134,6 +143,38 @@ export default function GroupsPage() {
     setCohort(null);
     setReadingSaved(false);
     setStatus(null);
+    setConfirmDelete(false);
+    setDeleteWarning(null);
+  }
+
+  async function beginDeleteGroup() {
+    if (!loadedGroup) return;
+    const { count, error } = await supabase
+      .from("threads")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", loadedGroup.id);
+    if (error) {
+      setStatus(error.message);
+      return;
+    }
+    // FOUNDER-REVIEW: formatGroupDeleteConfirmation
+    setDeleteWarning(formatGroupDeleteConfirmation(loadedGroup.name, count ?? 0));
+    setConfirmDelete(true);
+  }
+
+  async function confirmDeleteGroup() {
+    if (!loadedGroup || !userId) return;
+    setDeletingGroup(true);
+    setStatus(null);
+    const { error } = await supabase.rpc("delete_own_group", { p_group_id: loadedGroup.id });
+    setDeletingGroup(false);
+    if (error) {
+      setStatus(error.message || OWNED_DELETE_COPY.groupErrorGeneric);
+      return;
+    }
+    startNewGroup();
+    await fetchGroups(userId);
+    setStatus("Group deleted.");
   }
 
   async function saveGroup() {
@@ -233,8 +274,13 @@ export default function GroupsPage() {
     setSelectedPersonIds(ids);
     setReadingSaved(false);
     setStatus(null);
+    setConfirmDelete(false);
+    setDeleteWarning(null);
     if (ids.length >= 3) await buildOverlay(ids, row.name);
-    else setCohort(null);
+    else {
+      setCohort(null);
+      if (isBelowGroupMinimum(ids.length)) setStatus(OWNED_DELETE_COPY.belowMinimumNotice);
+    }
   }
 
   /**
@@ -374,16 +420,55 @@ export default function GroupsPage() {
             {selectedPersonIds.length > 6 ? <span style={{ fontSize: 11, color: "var(--mist2)", marginLeft: 8 }}>+{selectedPersonIds.length - 6}</span> : null}
           </div>
         ) : null}
+        {loadedBelowMinimum ? (
+          <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>{OWNED_DELETE_COPY.belowMinimumNotice}</p>
+        ) : null}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="btn-primary" onClick={saveGroup} disabled={savingGroup} style={{ gap: 8 }}>
             {savingGroup && <Spinner size={13} color="#1a1206" />}
             {savingGroup ? (loadedGroup ? "Updating…" : "Saving…") : loadedGroup ? "Update group" : "Save group"}
           </button>
-          <button className="pill-link" onClick={() => buildOverlay()} disabled={buildingOverlay} style={{ gap: 8 }}>
+          <button
+            className="pill-link"
+            onClick={() => buildOverlay()}
+            disabled={buildingOverlay || loadedBelowMinimum}
+            style={{ gap: 8 }}
+          >
             {buildingOverlay && <Spinner size={12} />}
             {buildingOverlay ? "Building…" : "Generate cohort overlay"}
           </button>
+          {loadedGroup ? (
+            !confirmDelete ? (
+              <button
+                type="button"
+                className="pill-link"
+                style={{ borderColor: "rgba(218,140,140,.4)", color: "var(--rose)" }}
+                onClick={() => void beginDeleteGroup()}
+              >
+                Delete group
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="pill-link"
+                  style={{ background: "rgba(218,140,140,.15)", borderColor: "var(--rose)", color: "var(--rose)", gap: 8 }}
+                  onClick={() => void confirmDeleteGroup()}
+                  disabled={deletingGroup}
+                >
+                  {deletingGroup && <Spinner size={12} color="var(--rose)" />}
+                  {deletingGroup ? OWNED_DELETE_COPY.groupConfirmingButton : OWNED_DELETE_COPY.groupConfirmButton}
+                </button>
+                <button type="button" className="pill-link" onClick={() => { setConfirmDelete(false); setDeleteWarning(null); }}>
+                  Cancel
+                </button>
+              </>
+            )
+          ) : null}
         </div>
+        {confirmDelete && deleteWarning ? (
+          <p className="muted" style={{ fontSize: 13, marginTop: 10, color: "var(--rose)" }}>{deleteWarning}</p>
+        ) : null}
       </section>
 
       {/* Cohort results: title is derived from loadedGroup + dirty, never fabricated */}

@@ -6,7 +6,13 @@ import {
   type NatalChart,
   type TransitHit
 } from "@galaxia/astro";
-import { isMinorForSafety, peopleForTodaySky } from "@galaxia/core";
+import {
+  galaxySeatXY,
+  galaxySeatsResolved,
+  isMinorForSafety,
+  peopleForTodaySky,
+  ringIndex,
+} from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -107,14 +113,21 @@ export default function HomeScreen() {
     return () => loop.stop();
   }, [reduceMotion, shimmer]);
 
+  /* Same learnable seats as web `/app`: f(id, own ring) via galaxySeatsResolved
+     (near-collision nudge on the ring by stable id order). Fixed ellipse geom
+     for the home glance card — not the full canvas, but the same norms. */
   const constellationPositions = useMemo(() => {
-    const radius = 120;
-    const centerX = 170;
-    const centerY = 170;
-    return people.map((person, index) => {
-      const angle = (index / Math.max(people.length, 1)) * Math.PI * 2 - Math.PI / 2;
-      const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle);
+    const geom = { cx: 170, cy: 170, radX: 120, radY: 120 };
+    const seats = galaxySeatsResolved(
+      people.map((person) => ({
+        id: person.id,
+        isSelf: person.is_self,
+        ring: ringIndex(person.is_self, person.relation, person.passed_at),
+      })),
+    );
+    return people.map((person) => {
+      const seat = seats.get(person.id) ?? { nx: 0, ny: 0, angle: 0, rn: 0 };
+      const { x, y } = galaxySeatXY(seat, geom);
       return { personId: person.id, x, y };
     });
   }, [people]);

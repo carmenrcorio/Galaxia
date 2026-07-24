@@ -29,8 +29,8 @@ import {
   HONOR_RELATION_TYPE,
   elementFromRelation,
   formFromRelation,
-  galaxySeatNorm,
   galaxySeatXY,
+  galaxySeatsResolved,
   hash01,
   hasPassed,
   honorEdgesFromDeclaredRows,
@@ -79,9 +79,9 @@ const EL_COLOR: Record<string, string> = {
 };
 
 /* Orbit helpers (elementFromRelation / formFromRelation / ringIndex) and
-   stable seats (galaxySeatNorm / hash01) live in @galaxia/core so Remembrance
-   can reuse ancient light without a new visual language, seats can be shared
-   with mobile later, and the mapping is unit-tested. */
+   stable seats (galaxySeatsResolved / hash01) live in @galaxia/core so
+   Remembrance can reuse ancient light without a new visual language, seats
+   are shared with mobile home, and the mapping is unit-tested. */
 
 /* precision sharpness (from prototype sharp()) */
 function sharp(precision: string): number {
@@ -223,15 +223,23 @@ export default function AppHomePage() {
     };
 
     /* ── derived orbital seats (learnable map) ─────────────────────────────
-       Seat = f(person id, own semantic ring) via @galaxia/core galaxySeatNorm.
-       No peer set, no fetch-order slots, no occupied-ring collapse — so two
-       loads with unchanged data put everyone in the same seat, and adding one
-       person moves only that person. Computed before the entrance timeline so
-       arrival can still cascade outward by own ring (animation only). */
+       Seat = f(person id, own semantic ring) via @galaxia/core, then
+       galaxySeatsResolved separates near-hash collisions on the same ring by
+       a stable id order. No fetch-order slots, no occupied-ring collapse —
+       two loads with unchanged data put everyone in the same seat; adding an
+       unrelated person moves only that person. Computed before the entrance
+       timeline so arrival can still cascade outward by own ring (animation). */
     const semanticRing = new Map<string, number>();
     for (const p of people) {
       semanticRing.set(p.id, ringIndex(!!p.is_self, p.relation, p.passed_at));
     }
+    const seatsById = galaxySeatsResolved(
+      people.map((p) => ({
+        id: p.id,
+        isSelf: !!p.is_self,
+        ring: semanticRing.get(p.id) ?? 5,
+      })),
+    );
 
     /* ── entrance timeline ─────────────────────────────────────────────
        The constellation ARRIVES: the self star (galactic core) ignites first,
@@ -328,16 +336,13 @@ export default function AppHomePage() {
     const LABEL_PAD_TOP = 22;
     const LABEL_PAD_BOTTOM = 26;
 
-    /* stable base (pre-drift) seat — pure f(id, own ring), then clamped so the
-       node + label stay inside the canvas. Clamp is also peer-free (canvas only). */
+    /* stable base (pre-drift) seat — resolved f(id, own ring) with same-ring
+       collision separation, then clamped so the node + label stay inside the
+       canvas. Clamp is canvas-only (does not reshuffle peers). */
     function basePos(i: number): { x: number; y: number } {
       const p = people[i];
       const geom = ringGeom();
-      const seat = galaxySeatNorm({
-        id: p.id,
-        isSelf: !!p.is_self,
-        ring: semanticRing.get(p.id) ?? 5,
-      });
+      const seat = seatsById.get(p.id) ?? { nx: 0, ny: 0, angle: 0, rn: 0 };
       let { x, y } = galaxySeatXY(seat, geom);
       x = Math.min(W() - LABEL_PAD_X, Math.max(LABEL_PAD_X, x));
       y = Math.min(H() - LABEL_PAD_BOTTOM, Math.max(LABEL_PAD_TOP, y));

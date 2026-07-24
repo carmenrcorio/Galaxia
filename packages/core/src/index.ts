@@ -100,6 +100,8 @@ export * from "./galaxy-orbit";
 
 export * from "./star-color";
 
+export * from "./memorial-constellations";
+
 export * from "./galaxy-seat";
 
 export * from "./person-care";

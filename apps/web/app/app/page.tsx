@@ -38,6 +38,7 @@ import {
   galaxySeatXY,
   galaxySeatsResolved,
   hash01,
+  getMemorialConstellation,
   hasPassed,
   honorEdgesFromDeclaredRows,
   isMinorForSafety,
@@ -45,7 +46,9 @@ import {
   resolveNodeColor,
   ringIndex,
   ringNormsOccupied,
+  usesMemorialGlyph,
   type HonorEdge,
+  type MemorialConstellation,
 } from "@galaxia/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -67,7 +70,7 @@ interface PersonRow {
   passed_at?: string | null;
   /** Curated palette hex; null = element-derived node color. */
   star_color?: string | null;
-  /** Reserved for P3 memorial drawing — loaded, not rendered in P2. */
+  /** Assigned memorial pattern id; null = ancient light when passed. */
   memorial_constellation?: string | null;
 }
 interface LinkRow { fromId: string; toId: string; scoreA: number; elA: string; elB: string; }
@@ -365,7 +368,10 @@ export default function AppHomePage() {
         const p = people[i];
         const q = positions[i];
         const form = formFromRelation(p.is_self, p.relation, p.passed_at);
-        const R0 = form === "self" ? 7 : form === "ancient" ? 3.4 : form === "moon" ? 4.2 : 5;
+        const memorial = usesMemorialGlyph(p);
+        const R0 = memorial
+          ? 11
+          : form === "self" ? 7 : form === "ancient" ? 3.4 : form === "moon" ? 4.2 : 5;
         const below = form === "fixed" ? R0 * 3.9 + 12 : R0 * 2.9 + 12;
         const above = form === "fixed" ? R0 * 3.9 + 14 : R0 * 2.9 + 14;
         /* Self below the core; partner label radially outward through its seat
@@ -408,9 +414,68 @@ export default function AppHomePage() {
     }
 
     function coreR(p: PersonRow): number {
+      if (usesMemorialGlyph(p)) return 11; /* glyph half-extent for labels / flare */
       const form = formFromRelation(p.is_self, p.relation, p.passed_at);
       const base = form === "self" ? 7 : form === "ancient" ? 3.4 : form === "moon" ? 4.2 : 5;
       return base;
+    }
+
+    /**
+     * Memorial constellation glyph — stroke-light point-and-line pattern centered
+     * on the seat (centroid). No per-star glow stack. Honor edges attach here.
+     * lowPerf: thinner stroke, skip soft wash. reduced: no shimmer.
+     */
+    function drawMemorialGlyph(
+      q: { x: number; y: number },
+      col: string,
+      pattern: MemorialConstellation,
+      scale: number,
+      twinkle: number,
+      isHovered: boolean,
+    ) {
+      const radius = (lowPerf ? 12 : 14) * scale * (isHovered ? 1.08 : 1);
+      const lineW = lowPerf ? 0.85 : 1.05;
+      const starR = (lowPerf ? 1.15 : 1.35) * scale;
+      const lineA = (isHovered ? 0.78 : 0.58) * (reduced ? 1 : twinkle);
+      const starA = (isHovered ? 0.95 : 0.82) * (reduced ? 1 : twinkle);
+
+      /* single soft wash behind the whole glyph — not a per-star glow stack */
+      if (!lowPerf) {
+        const wash = cx.createRadialGradient(q.x, q.y, 0, q.x, q.y, radius * 1.55);
+        wash.addColorStop(0, hexA(col, 0.14 * (isHovered ? 1.35 : 1)));
+        wash.addColorStop(1, hexA(col, 0));
+        cx.beginPath();
+        cx.arc(q.x, q.y, radius * 1.55, 0, Math.PI * 2);
+        cx.fillStyle = wash;
+        cx.fill();
+      }
+
+      const pts = pattern.stars.map(([nx, ny]) => ({
+        x: q.x + nx * radius,
+        /* Dec-north up → canvas y down */
+        y: q.y - ny * radius,
+      }));
+
+      cx.strokeStyle = hexA(col, lineA);
+      cx.lineWidth = lineW;
+      cx.lineCap = "round";
+      cx.lineJoin = "round";
+      for (const [a, b] of pattern.lines) {
+        const pa = pts[a];
+        const pb = pts[b];
+        if (!pa || !pb) continue;
+        cx.beginPath();
+        cx.moveTo(pa.x, pa.y);
+        cx.lineTo(pb.x, pb.y);
+        cx.stroke();
+      }
+
+      for (const pt of pts) {
+        cx.beginPath();
+        cx.arc(pt.x, pt.y, starR, 0, Math.PI * 2);
+        cx.fillStyle = hexA(col, starA);
+        cx.fill();
+      }
     }
 
     /* ── layered radial glow: soft element-hued halo + a bright inner core.
@@ -450,6 +515,9 @@ export default function AppHomePage() {
       const s     = sharp(p.birth_precision);
       const R0    = coreR(p);
       const form  = formFromRelation(p.is_self, p.relation, p.passed_at);
+      const memorialPattern = usesMemorialGlyph(p)
+        ? getMemorialConstellation(p.memorial_constellation)
+        : null;
       const ign   = ignition(p.id);
       if (ign.alpha <= 0.001) return; /* not yet kindled */
       const scale = reduced ? 1 : Math.max(0.001, ign.scale);
@@ -464,6 +532,35 @@ export default function AppHomePage() {
 
       cx.save();
       cx.globalAlpha = reduced ? globalFade : easeOutCubic(ign.raw);
+
+      /* Memorial glyph replaces ancient-light body — no drawGlow stack. */
+      if (memorialPattern) {
+        if (ign.flare > 0 && !lowPerf) {
+          const fr = R0 * 2.2 * (1.1 + 0.5 * ign.flare);
+          const fg = cx.createRadialGradient(q.x, q.y, 0, q.x, q.y, fr);
+          fg.addColorStop(0, hexA(col, 0.22 * ign.flare));
+          fg.addColorStop(1, hexA(col, 0));
+          cx.beginPath(); cx.arc(q.x, q.y, fr, 0, Math.PI * 2); cx.fillStyle = fg; cx.fill();
+        }
+        drawMemorialGlyph(q, col, memorialPattern, scale, tw, isHovered);
+        if (isActive && !reduced) {
+          cx.beginPath();
+          cx.arc(q.x, q.y, R0 * (1.55 + 0.25 * Math.sin(t * 0.025 + phases[i].ph)), 0, Math.PI * 2);
+          cx.strokeStyle = hexA(col, 0.22); cx.lineWidth = 1; cx.stroke();
+        }
+        const litM = isHovered ? 0.96 : Math.max(0.78, 0.45 + 0.4 * s);
+        const uncertainM = !p.is_self && s < 1;
+        cx.font = `${isHovered ? "500" : "400"}${uncertainM ? " italic" : ""} 11px Inter, sans-serif`;
+        cx.fillStyle = uncertainM
+          ? `rgba(168,160,198,${litM})`
+          : `rgba(185,174,222,${litM})`;
+        cx.textAlign = "center";
+        const lxM = Math.min(W() - 8, Math.max(8, labelPos.x));
+        const lyM = Math.min(H() - 6, Math.max(12, labelPos.y));
+        cx.fillText(p.display_name, lxM, lyM);
+        cx.restore();
+        return;
+      }
 
       /* layered glow */
       drawGlow(q, col, R0, s, tw, isHovered, scale);
@@ -606,9 +703,10 @@ export default function AppHomePage() {
       }
     }
 
-    /* ── Honor-constellation stroke (Phase 3) — VISUALLY DISTINCT from synastry
-       drawLink: dashed water→ancient stroke + soft wash, slower ethereal pulse.
-       Synastry uses solid element-coloured gradients + warm cream pulse.
+    /* ── Honor-constellation stroke — VISUALLY DISTINCT from synastry drawLink:
+       dashed water→ancient stroke + soft wash, slower ethereal pulse.
+       Attachment is the node / memorial-glyph seat centroid (same nodePos).
+       Declaration data unchanged. Synastry uses solid element gradients + cream.
        Honor never uses synastry scores; source is declared relationships only. */
     function drawHonorLink(
       edge: HonorEdge,
@@ -739,7 +837,8 @@ export default function AppHomePage() {
       const positions = people.map((_, i) => nodePos(i));
       for (let i = 0; i < people.length; i++) {
         const q = positions[i];
-        if (Math.hypot(mx - q.x, my - q.y) < 22) return people[i];
+        const hitR = usesMemorialGlyph(people[i]) ? 28 : 22;
+        if (Math.hypot(mx - q.x, my - q.y) < hitR) return people[i];
       }
       return null;
     }

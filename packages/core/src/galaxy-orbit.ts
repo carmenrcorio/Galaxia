@@ -8,7 +8,7 @@
  *   3 parents, siblings, grandparents     ← sketch Ring 2
  *   4 friends / relatives / unknown       ← sketch Ring 3
  *   5 colleagues / outer tracked          ← sketch Ring 4
- *   6 passed + relation `ancestor`        ← outer ancient band until P3
+ *   6 passed + relation `ancestor`        ← outer ancient band (P3 glyphs seat here too)
  *
  * Resolution is whole-value only (trimmed, lowercased). No substring matches —
  * "granddaughter" is a child-generation synonym, never an ancestor.
@@ -234,7 +234,7 @@ export function formFromRelation(
  * Orbital ring from bond type (P1 sketch numbering).
  *   0 self · 1 partner (tight binary) · 2 children · 3 family ·
  *   4 circle/unknown · 5 outer tracked · 6 passed/ancestor ("ancient light").
- * `passed_at` wins over living relation for the outer band until P3.
+ * `passed_at` wins over living relation for the outer band (memorial glyphs keep this seat).
  */
 export function ringIndex(
   isSelf: boolean,

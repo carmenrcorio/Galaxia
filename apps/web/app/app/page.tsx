@@ -9,9 +9,11 @@
  *
  * Key reference decisions:
  * - Node forms derived from bond type (self / binary-partner / moon-child / fixed-parent / star-sibling / ancient-ancestor)
- * - P1 concentric rings: soft elliptical guides at sketch Rings 1–4; partner is a
+ * - P1 concentric rings: soft circular guides at sketch Rings 1–4; partner is a
  *   tight binary at the core (not a guide). Seat radius = guide radius =
  *   ringBandRadius(own ring) (+ small within-band jitter). Angle = f(id).
+ *   Geometry is a true circle (radX === radY) so co-ring parents share one
+ *   Euclidean pixel radius — an ellipse made Mommy/Daddy read as different bands.
  * - Radial glow halo: createRadialGradient, 5-11×R depending on data precision (sharp=crisp, year=diffuse)
  * - Links: quadratic bezier + gradient between node element colours + travelling light pulse
  * - Gentle tangential drift (stays on band), disabled under prefers-reduced-motion
@@ -358,15 +360,14 @@ export default function AppHomePage() {
       };
     }
 
-    /* Near-circular geometry. Cap eccentricity both ways so rings read as
-       rings — not a flat desktop band and not a tall phone sausage. */
+    /* TRUE CIRCLES — radX === radY. An ellipse makes the same seat `rn` land
+       at different Euclidean distances by angle, so co-ring parents (Mommy at
+       ~−25° / Daddy at ~104°) read as different bands: one near the guide,
+       one "dropped" toward the rim. Same rn must mean the same pixel radius. */
     function ringGeom() {
       const cx = W() / 2, cy = H() / 2;
-      let radX = Math.max(70, W() / 2 - 44);
-      let radY = Math.max(70, H() / 2 - 48);
-      if (radX > radY * 1.1) radX = radY * 1.1;
-      if (radY > radX * 1.1) radY = radX * 1.1;
-      return { cx, cy, radX, radY };
+      const rad = Math.max(70, Math.min(W() / 2 - 44, H() / 2 - 48));
+      return { cx, cy, radX: rad, radY: rad };
     }
 
     /* Label clearance used when clamping seats into the frame (CSS px). */
@@ -417,9 +418,12 @@ export default function AppHomePage() {
           : form === "self" ? 7 : form === "ancient" ? 3.4 : form === "moon" ? 4.2 : 5;
         const below = form === "fixed" ? R0 * 3.9 + 12 : R0 * 2.9 + 12;
         const above = form === "fixed" ? R0 * 3.9 + 14 : R0 * 2.9 + 14;
-        /* Self below the core; partner label radially outward through its seat
-           so the binary pair's names never stack into one smudge. */
-        let flip = q.y + below > H() - 8;
+        /* Prefer labels toward the core so a Ring-2 parent at the bottom
+           (Daddy) is not named past the outer bands. Edge clamp still wins. */
+        const geom = ringGeom();
+        const preferAbove = q.y >= geom.cy;
+        let flip = preferAbove || q.y + below > H() - 8;
+        if (!preferAbove && q.y - above < 8) flip = false;
         let dy = flip ? -above : below;
         if (p.is_self) {
           /* Self name always under the core. */
@@ -974,20 +978,22 @@ export default function AppHomePage() {
 
       /* soft concentric guides — sketch Rings 1–4 at ringBandRadius (same
          function as person seats). Always drawn so the legend's four bands
-         stay readable even when a band is empty. */
+         stay readable even when a band is empty. Alpha kept high enough on
+         lowPerf (375px phones) that Ring 2 is actually countable — 0.10 was
+         invisible against the wash, so parents looked "outer" by landmarks. */
       {
         const { cx: rcx, cy: rcy, radX, radY } = ringGeom();
         const breath = (!reduced && !lowPerf)
           ? 0.012 * Math.sin(t * 0.00035)
           : 0;
-        const baseAlpha = lowPerf ? 0.10 : 0.11;
+        const baseAlpha = lowPerf ? 0.22 : 0.20;
         cx.save();
         for (const ring of GALAXY_GUIDE_RINGS) {
           const rn = ringBandRadius(ring) * (1 + breath);
           cx.beginPath();
           cx.ellipse(rcx, rcy, radX * rn, radY * rn, 0, 0, Math.PI * 2);
           cx.strokeStyle = `rgba(183,154,216,${baseAlpha})`;
-          cx.lineWidth = lowPerf ? 0.85 : 1;
+          cx.lineWidth = lowPerf ? 1 : 1.15;
           cx.stroke();
         }
         cx.restore();

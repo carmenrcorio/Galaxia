@@ -28,7 +28,7 @@ import {
 import { BODY_GLYPH, signElement } from "../lib/design";
 import { useViewer } from "../lib/use-viewer";
 import { ChartPdfExport } from "./chart-pdf-export";
-import { ChartWheel } from "./chart-wheel";
+import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES } from "./chart-wheel";
 import { DynamicTableSection } from "./dynamic-table-section";
 import { FlowsAndCatchesSection } from "./flows-and-catches-section";
 import { GenerationalSection } from "./generational-section";
@@ -183,6 +183,21 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
           >
             {QUICK_COMPARE_MINOR_NOTICE}
           </p>
+        ) : null}
+        {!framing.blockRomanticMinorRender && payload.synastry ? (
+          payload.chartA.cusps ? (
+            <div style={{ marginTop: 16 }}>
+              <ChartWheel
+                chart={payload.chartA}
+                overlayChart={payload.chartB}
+                aspects={payload.synastry.aspects}
+              />
+            </div>
+          ) : (
+            <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
+              {COMPARE_WHEEL_NEEDS_HOUSES}
+            </p>
+          )
         ) : null}
       </section>
 

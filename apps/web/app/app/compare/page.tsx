@@ -28,9 +28,6 @@ import {
   relationHasHouseLens,
   relationHouseHint,
   relationHouseOverlays,
-  relationLensCaption,
-  relationshipAspectFraming,
-  sortAspectsForFocus,
   whatTheyNeed,
   type RelationType,
 } from "@galaxia/astro";
@@ -38,6 +35,8 @@ import { isMinorForSafety, orderPair } from "@galaxia/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES, orientSynastryWheel } from "../../../components/chart-wheel";
+import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
@@ -407,17 +406,20 @@ function ComparePageInner() {
   }
 
   // ── Relationship-type-aware engine data (derived; recomputes on type switch) ──
-  // The aspect list is reordered so the bodies that matter MOST for the chosen
-  // type surface first (real aspects, orb-sorted within groups — nothing added
-  // or altered). Framing/house/element lines all read only real computed data.
-  const orderedAspects: any[] = result?.synastry
-    ? sortAspectsForFocus([...result.synastry.aspects].sort((a: any, b: any) => a.orb - b.orb), relationType)
-    : [];
-  const aspectFraming = result?.synastry
-    ? relationshipAspectFraming(result.synastry, relationType, result.personA.display_name, result.personB.display_name)
-    : [];
+  // Flows/catches sort + framing live in FlowsAndCatchesSection (shared path).
+  // House/element lines still read only real computed data here.
   const houseOverlay = result?.synastry ? relationHouseOverlays(result.synastry, relationType) : null;
   const elementSignal = result?.synastry ? relationElementSignal(result.synastry, result.personA.display_name, result.personB.display_name) : null;
+  // Self owns the inner house frame regardless of picker A/B order.
+  const wheel = result?.synastry
+    ? orientSynastryWheel(
+        result.personA,
+        result.personB,
+        result.chartA as NatalChart,
+        result.chartB as NatalChart,
+        result.synastry.aspects
+      )
+    : null;
   // Minor safety: age-aware, never the raw is_minor flag (see minorOf).
   const pairHasMinor = minorOf(result?.personA ?? null) || minorOf(result?.personB ?? null);
   // Defense in depth (ENGINEERING.md §13): even if a romantic type were somehow
@@ -502,6 +504,21 @@ function ComparePageInner() {
                 ? "Balanced — ease and growth in equal measure."
                 : "Growth-heavy — real warmth under intentional care."}
             </p>
+            {wheel ? (
+              wheel.chart.cusps ? (
+                <div style={{ marginTop: 16 }}>
+                  <ChartWheel
+                    chart={wheel.chart}
+                    overlayChart={wheel.overlayChart}
+                    aspects={wheel.aspects}
+                  />
+                </div>
+              ) : (
+                <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
+                  {COMPARE_WHEEL_NEEDS_HOUSES}
+                </p>
+              )
+            ) : null}
           </section>
 
           {/* ── Compat labels (not scores) — from landing .dyn-row + galaxia.jsx sdesc() ── */}
@@ -550,50 +567,16 @@ function ComparePageInner() {
             ))}
           </section>
 
-          {/* Flow / catches — reordered for the selected relationship type */}
-          <section className="glass-card fade-in fade-in-delay-2">
-            <p className="eyebrow" style={{ marginBottom: 6 }}>Where it flows and catches</p>
-            <p className="muted" style={{ fontSize: ".72rem", marginBottom: 10 }}>{relationLensCaption(relationType)}</p>
-            {orderedAspects.slice(0, 8).map((a: any, idx: number) => {
-              const tight = a.orb < 2;
-              const mid   = a.orb < 4;
-              const cls   = tight ? "aspect-tight" : mid ? "aspect-mid" : "aspect-loose";
-              return (
-                <div key={`${a.from}-${a.to}-${idx}`} className={cls} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
-                  <span style={{ fontSize: ".8rem", color: a.harmony >= 0 ? "var(--teal)" : "var(--rose)", minWidth: 60, flexShrink: 0 }}>
-                    {a.harmony >= 0 ? "↑ flows" : "↓ catches"}
-                  </span>
-                  <span className="muted" style={{ fontSize: ".82rem" }}>{a.from} {a.type} {a.to}</span>
-                  <span className="muted" style={{ fontSize: ".72rem", marginLeft: "auto" }}>{a.orb.toFixed(1)}°</span>
-                </div>
-              );
-            })}
-
-            {/* Type-framed reading of the tightest type-relevant aspects (real
-                data only), each followed by an actionable "what to do" line —
-                friction → a way to minimize the clash, flow → a way to nurture
-                and use the ease. Both are grounded in the specific bodies. */}
-            {aspectFraming.length > 0 ? (
-              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-                {aspectFraming.map((f, idx) => (
-                  <div key={`frame-${idx}`} style={{ borderLeft: `2px solid ${f.flows ? "rgba(111,177,184,.4)" : "rgba(200,120,120,.4)"}`, paddingLeft: 12 }}>
-                    <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.6, fontStyle: "italic", margin: 0 }}>
-                      {f.text}
-                    </p>
-                    <p style={{ fontSize: ".8rem", color: "var(--cream)", lineHeight: 1.6, margin: "6px 0 0" }}>
-                      <span style={{ color: f.flows ? "var(--teal)" : "var(--gold)", fontWeight: 600 }}>{f.flows ? "Nurture it: " : "Ease it: "}</span>
-                      {f.action}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            {/* Element balance — read from real elementBalance counts */}
-            {elementSignal ? (
-              <p className="muted" style={{ fontSize: ".8rem", marginTop: 14, lineHeight: 1.6 }}>{elementSignal}</p>
-            ) : null}
-          </section>
+          {/* Flow / catches — shared path with /chart/compare and /s */}
+          <FlowsAndCatchesSection
+            aspects={result.synastry.aspects}
+            relationType={relationType}
+          />
+          {elementSignal ? (
+            <section className="glass-card fade-in fade-in-delay-2">
+              <p className="muted" style={{ fontSize: ".8rem", lineHeight: 1.6, margin: 0 }}>{elementSignal}</p>
+            </section>
+          ) : null}
 
           {/* House overlays — only where houses exist; hedges honestly otherwise (§12) */}
           {houseOverlay && relationHasHouseLens(relationType) ? (

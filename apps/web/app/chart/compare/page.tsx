@@ -26,6 +26,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../../components/birth-fields";
+import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES } from "../../../components/chart-wheel";
 import { DynamicTableSection } from "../../../components/dynamic-table-section";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { GenerationalSection } from "../../../components/generational-section";
@@ -296,6 +297,21 @@ export default function QuickComparePage() {
               <p className="muted" style={{ fontSize: ".75rem", lineHeight: 1.55, marginTop: 8, textAlign: "left", borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
                 {QUICK_COMPARE_MINOR_NOTICE}
               </p>
+            ) : null}
+            {!blockRomanticMinorRender && result.synastry ? (
+              result.chartA.cusps ? (
+                <div style={{ marginTop: 16 }}>
+                  <ChartWheel
+                    chart={result.chartA}
+                    overlayChart={result.chartB}
+                    aspects={result.synastry.aspects}
+                  />
+                </div>
+              ) : (
+                <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
+                  {COMPARE_WHEEL_NEEDS_HOUSES}
+                </p>
+              )
             ) : null}
           </section>
 

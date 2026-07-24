@@ -1,0 +1,5 @@
+## Fix edge-function parity false SOURCE DIVERGENCE (branch `cursor/fix-edge-parity-trailing-nl-7318`) — 2026-07-24
+
+**Trigger**: Parity CI could never go green. `repo_sha256` matched the laptop file, but `deployed_sha256` was stuck at a one-byte-off digest (`e7315c3b…` = source with its final `\n` removed) across runs — a parser bug, not a deploy gap (`version` and deploys were landing).
+
+`[FIXED]` **`scripts/edge-function-parity.mjs` multipart body extract.** `GET …/functions/{slug}/body` with `Accept: multipart/form-data` returns real source parts (not the eszip). The old parser stripped the part framing CRLF **and then** stripped another trailing newline from the file body, so every committed `index.ts` (ends in `\n`) diverged forever from the extracted deploy body. Framing is stripped once; both sides then normalize CRLF→LF and trailing newlines before hashing. `--dump-raw` prints first/last 500 chars of the raw API body and each extracted part; `--self-test` locks the multipart regression.

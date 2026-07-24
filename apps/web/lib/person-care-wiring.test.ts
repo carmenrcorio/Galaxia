@@ -49,9 +49,10 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     expect(src).toContain("Change");
     expect(src).toContain('role="dialog"');
     expect(src).toContain("aria-haspopup=\"dialog\"");
-    // Myths live in the expanded library, not the collapsed row.
+    // Collapsed row keeps summary + myth visible (whimsy always on).
+    expect(src).toContain("pattern.summary");
     expect(src).toContain("pattern.myth");
-    expect(src).toMatch(/Collapsed selection row[\s\S]*No myths here/);
+    expect(src).toMatch(/Collapsed selection row[\s\S]*pattern\.summary[\s\S]*pattern\.myth/);
     // Collapsed until Change — open starts false; library gated on `open`.
     expect(src).toMatch(/\{open \? \(/);
   });
@@ -87,10 +88,14 @@ describe("source wiring — person page + home hide live sky for passed", () => 
       "utf8"
     );
     expect(page).toContain("app-content--remembrance");
-    // Header Ask Vela and Vela-on-them CTAs are gated off when RemembranceSpace mounts.
-    expect(page).toContain("!showRemembrance");
-    expect(page).toContain("Remembrance keeps a single Ask Vela entry inside RemembranceSpace");
+    // Empty "Vela on {name}" card is not mounted on remembrance — sole entry is RemembranceSpace.
+    expect(page).toContain("showVelaOnThem");
+    expect(page).toContain("!showRemembrance || velaPins.length > 0");
+    expect(page).toContain("Remembrance keeps a single Vela entry in RemembranceSpace");
     expect(remembrance).toContain("Ask Vela about {person.display_name}");
     expect(remembrance).toContain("remembranceVelaHref");
+    // Only one Ask Vela about {name} CTA source on remembrance: RemembranceSpace.
+    const remembranceAskCount = (remembrance.match(/Ask Vela about \{person\.display_name\}/g) ?? []).length;
+    expect(remembranceAskCount).toBe(1);
   });
 });

@@ -19,6 +19,17 @@ the viewport already enters the lowPerf profile, and the EMA frame-budget watch
 kills them (≈24ms) before flipping the existing lowPerf stack (≈26ms glow /
 nebula / ring breath). No existing layer degrades before meteors are gone.
 
-`[TESTED]` **375px · DPR-2 · 4× CPU throttle** constellation FPS re-measured
-after this pass (see PR / walkthrough). Ship gate: must not fall below the
-post-ring-guides 31–34fps bar; if it does, the particle budget is too high.
+`[TESTED]` **375px · DPR-2 constellation draw-loop FPS** (Playwright + CDP CPU
+throttle; temporary `__demo` seed + middleware bypass removed before commit):
+
+| Profile | FPS | Notes |
+|---|---|---|
+| 4× throttle, shipping path (`meteorsOff` via phone `lowPerf`) | **60** | Streaks shed; no spawn. This VM’s 4× does not reproduce the prior 31–34 bar. |
+| 4× throttle, force-dense streaks (test-only, denser than ship) | **57** | Peak 1 live; ~3fps vs shed — budget holds. |
+| 6× throttle, shipping path | **44** | Closer stress stand-in for the prior mid-phone bar. |
+| 6× throttle, force-dense streaks | **42** | −2fps vs shed under denser-than-ship load. |
+| `prefers-reduced-motion: reduce` | static | 0 pixel change after fade; meteors never spawn. |
+
+Ship gate: shipping path adds no draw work on the phone `lowPerf` profile
+(streaks already shed). Forced denser load stayed within a few fps of shed —
+particle budget is not the limiter. Prior 31–34 @ 4× was not reproduced here.

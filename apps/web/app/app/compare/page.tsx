@@ -17,13 +17,13 @@ import {
   computeSynastry,
   type GenSignature,
   type NatalChart,
-  CHART_ENGINE_VERSION,
   availableCompareRelationTypes,
   COMPARE_RELATION_SUGGESTION_HINT,
   defaultCompareRelationType,
   isRomanticRelation,
   suggestCompareRelationType,
   narrateHouseOverlay,
+  pairChartFingerprint,
   relationElementSignal,
   relationHasHouseLens,
   relationHouseHint,
@@ -68,19 +68,43 @@ function minorOf(p: PersonLite | null): boolean {
 }
 
 /**
- * Stable fingerprint of a person's birth inputs. Two saved readings with the
- * same engine version but different fingerprints changed because the birth data
- * changed — never because the (deterministic) relationship "moved".
+ * Stable fingerprint of a person's birth *inputs* (people row fields).
+ * Distinguishes a user edit from a silent chart rewrite. Comparability of
+ * scores also requires chartFingerprint (placement longitudes).
  */
 function birthFingerprint(p: PersonLite): string {
   return [p.birth_date, p.birth_time, p.birth_place, p.birth_lat, p.birth_lng, p.tz_offset_min, p.birth_precision]
     .map(v => (v === null || v === undefined ? "" : String(v))).join("|");
 }
 
+type ReadingComparability =
+  | "comparable"
+  | "birth_changed"
+  | "chart_rewritten"
+  | "provenance_missing";
+
 interface SavedReading {
-  id: string; createdAt: string;
-  engineVersion: number; fingerprint: string;
+  id: string;
+  createdAt: string;
+  /** DB engine_version of chart A at save time (legacy: single app-constant stamp). */
+  engineVersionA: number | null;
+  engineVersionB: number | null;
+  birthFingerprint: string;
+  /** Placement-longitude fingerprint; absent on legacy saves. */
+  chartFingerprint: string | null;
   scores?: Record<string, number>;
+  comparability: ReadingComparability;
+}
+
+function comparabilityFor(
+  reading: Omit<SavedReading, "comparability">,
+  currentBirthFp: string,
+  currentChartFp: string
+): ReadingComparability {
+  if (!reading.chartFingerprint) return "provenance_missing";
+  if (reading.chartFingerprint !== currentChartFp) return "chart_rewritten";
+  if (reading.birthFingerprint && reading.birthFingerprint !== currentBirthFp) return "birth_changed";
+  return "comparable";
 }
 
 // whatTheyNeed extracted to @galaxia/astro compare-guidance (also used by the public Quick Compare).
@@ -189,13 +213,15 @@ function ComparePageInner() {
     if (!selectedA || !selectedB || selectedA.id === selectedB.id) { setStatus("Choose two different people."); return; }
     setRunning(true); setStatus(null);
     const [{ data: chartA }, { data: chartB }] = await Promise.all([
-      supabase.from("charts").select("data").eq("person_id", selectedA.id).single(),
-      supabase.from("charts").select("data").eq("person_id", selectedB.id).single()
+      supabase.from("charts").select("data, engine_version").eq("person_id", selectedA.id).single(),
+      supabase.from("charts").select("data, engine_version").eq("person_id", selectedB.id).single()
     ]);
     setRunning(false);
     if (!chartA?.data || !chartB?.data) { setStatus("Missing chart data for one or both people."); return; }
     const natalA = chartA.data as NatalChart;
     const natalB = chartB.data as NatalChart;
+    const engineVersionA = (chartA.engine_version as number | null) ?? 1;
+    const engineVersionB = (chartB.engine_version as number | null) ?? 1;
     // Year-only charts have sampled (mid-year) planet positions, so aspect
     // orbs and synastry scores computed from them would be fabricated. The
     // generational layer is the honest comparison for year-only data.
@@ -233,6 +259,17 @@ function ComparePageInner() {
       mercury: getSign(natalB, "mercury"), saturn: getSign(natalB, "saturn")
     };
 
+    // Provenance for saved readings: stamp the charts actually scored.
+    // Chart fingerprint order follows orderPair (pairLow // pairHigh), not UI A/B.
+    const { pairLow, pairHigh } = orderPair(selectedA.id, selectedB.id);
+    const personLow = selectedA.id === pairLow ? selectedA : selectedB;
+    const personHigh = selectedA.id === pairLow ? selectedB : selectedA;
+    const chartLow = selectedA.id === pairLow ? natalA : natalB;
+    const chartHigh = selectedA.id === pairLow ? natalB : natalA;
+    // Both fingerprints use pairLow // pairHigh order so A/B swap does not break match.
+    const chartFp = pairChartFingerprint(chartLow, chartHigh);
+    const birthFp = `${birthFingerprint(personLow)}//${birthFingerprint(personHigh)}`;
+
     // Retain already-loaded charts on the result so share can POST a
     // CompareSharePayload without recomputing placements/orbs/confidence.
     setResult({
@@ -240,20 +277,41 @@ function ComparePageInner() {
       personB: personBWithChart,
       chartA: natalA,
       chartB: natalB,
+      engineVersionA,
+      engineVersionB,
+      chartFingerprint: chartFp,
+      birthFingerprint: birthFp,
       synastry,
       generational,
       ancestralHeadline,
     });
 
     // Load prior saved readings for this pair (immutable, dated snapshots).
-    const { pairLow, pairHigh } = orderPair(selectedA.id, selectedB.id);
     const { data: priorRows } = await supabase.from("notes")
       .select("id, created_at, payload").eq("owner_id", userId!)
       .eq("kind", "compare_reading").eq("pair_low", pairLow).eq("pair_high", pairHigh)
       .order("created_at", { ascending: false }).limit(5);
     setSavedReadings((priorRows ?? []).map(r => {
-      const pl = (r.payload ?? {}) as { engineVersion?: number; birthFingerprint?: string; scores?: Record<string, number> };
-      return { id: r.id as string, createdAt: r.created_at as string, engineVersion: pl.engineVersion ?? 1, fingerprint: pl.birthFingerprint ?? "", scores: pl.scores };
+      const pl = (r.payload ?? {}) as {
+        engineVersion?: number;
+        engineVersionA?: number;
+        engineVersionB?: number;
+        birthFingerprint?: string;
+        chartFingerprint?: string;
+        scores?: Record<string, number>;
+      };
+      // Legacy rows stamped the app CHART_ENGINE_VERSION constant into
+      // engineVersion — not the charts' DB versions. Prefer per-chart fields.
+      const base = {
+        id: r.id as string,
+        createdAt: r.created_at as string,
+        engineVersionA: pl.engineVersionA ?? null,
+        engineVersionB: pl.engineVersionB ?? null,
+        birthFingerprint: pl.birthFingerprint ?? "",
+        chartFingerprint: pl.chartFingerprint ?? null,
+        scores: pl.scores,
+      };
+      return { ...base, comparability: comparabilityFor(base, birthFp, chartFp) };
     }));
   }
 
@@ -262,12 +320,16 @@ function ComparePageInner() {
     setSavingReading(true);
     const a: PersonLite = result.personA, b: PersonLite = result.personB;
     const { pairLow, pairHigh } = orderPair(a.id, b.id);
-    const fingerprint = `${birthFingerprint(a)}//${birthFingerprint(b)}`;
+    // Stamp DB engine_version of each chart actually scored — never the app constant.
     const payload = {
-      relationType, scores: result.synastry.scores,
+      relationType,
+      scores: result.synastry.scores,
       topAspects: result.synastry.aspects.slice(0, 8),
       generational: result.generational,
-      engineVersion: CHART_ENGINE_VERSION, birthFingerprint: fingerprint
+      engineVersionA: result.engineVersionA as number,
+      engineVersionB: result.engineVersionB as number,
+      birthFingerprint: result.birthFingerprint as string,
+      chartFingerprint: result.chartFingerprint as string,
     };
     const body = `Compared as ${relationType} — overall ${result.synastry.scores.overall}. A dated snapshot of this reading.`;
     const { error } = await supabase.from("notes").insert({
@@ -326,11 +388,10 @@ function ComparePageInner() {
     return `${window.location.origin}/s/${body.token as string}`;
   }
 
-  // Attribution: a prior reading with the same engine but a different birth
-  // fingerprint means the inputs changed — never a relationship "trend".
-  const currentFingerprint = result ? `${birthFingerprint(result.personA)}//${birthFingerprint(result.personB)}` : "";
-  const changedReading = savedReadings.find(r => r.fingerprint && r.fingerprint !== currentFingerprint);
-  const engineChangedReading = savedReadings.find(r => r.fingerprint === currentFingerprint && r.engineVersion !== CHART_ENGINE_VERSION);
+  // Attribution: never present an input/chart change as a relationship "trend".
+  const chartRewrittenReading = savedReadings.find(r => r.comparability === "chart_rewritten");
+  const birthChangedReading = savedReadings.find(r => r.comparability === "birth_changed");
+  const provenanceMissingReading = savedReadings.find(r => r.comparability === "provenance_missing");
 
   async function saveMoment() {
     if (!userId || !result || !noteDraft.trim()) return;
@@ -603,9 +664,10 @@ function ComparePageInner() {
           {/* Save this reading — an immutable, dated snapshot (never a trend) */}
           <section className="glass-card fade-in fade-in-delay-2">
             <p className="eyebrow" style={{ marginBottom: 8 }}>Save this reading</p>
+            {/* FOUNDER-REVIEW: authored — save-reading framing (deterministic when charts match). */}
             <p className="muted" style={{ fontSize: ".8rem", marginBottom: 10 }}>
-              A comparison between two birth charts is the same every time — so a saved reading is a dated record, not a trend.
-              It lives on both {result.personA.display_name}'s and {result.personB.display_name}'s pages.
+              With the same chart positions, a comparison is the same every time — so a saved reading is a dated record, not a trend.
+              It lives on both {result.personA.display_name}&apos;s and {result.personB.display_name}&apos;s pages.
             </p>
             <button className="btn-primary" onClick={saveReading} disabled={savingReading} style={{ gap: 8 }}>
               {savingReading && <Spinner size={13} color="#1a1206" />}
@@ -620,13 +682,20 @@ function ComparePageInner() {
               <ShareLinkButton createShareUrl={createShareUrl} />
             </div>
 
-            {changedReading ? (
+            {chartRewrittenReading ? (
+              // FOUNDER-REVIEW: authored — saved reading vs chart rewrite (not a relationship trend).
               <p className="muted" style={{ fontSize: ".78rem", marginTop: 12, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
-                A reading saved on {new Date(changedReading.createdAt).toLocaleDateString()} differs from this one because the birth data changed since — not because the relationship did. The chart math is identical for identical inputs.
+                A reading saved on {new Date(chartRewrittenReading.createdAt).toLocaleDateString()} is not comparable to this re-run — the planet positions in one or both charts were corrected since it was saved. That is a chart update, not the relationship moving.
               </p>
-            ) : engineChangedReading ? (
+            ) : birthChangedReading ? (
+              // FOUNDER-REVIEW: authored — saved reading vs birth-field edit.
               <p className="muted" style={{ fontSize: ".78rem", marginTop: 12, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
-                A reading saved on {new Date(engineChangedReading.createdAt).toLocaleDateString()} differs because the astrology engine was updated since — the birth data is unchanged.
+                A reading saved on {new Date(birthChangedReading.createdAt).toLocaleDateString()} differs from this one because the birth data changed since — not because the relationship did.
+              </p>
+            ) : provenanceMissingReading ? (
+              // FOUNDER-REVIEW: authored — legacy saved reading without chart fingerprint.
+              <p className="muted" style={{ fontSize: ".78rem", marginTop: 12, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+                A reading saved on {new Date(provenanceMissingReading.createdAt).toLocaleDateString()} has no chart provenance, so its score cannot be checked against this re-run. Treat it as a dated snapshot only.
               </p>
             ) : null}
 
@@ -635,7 +704,16 @@ function ComparePageInner() {
                 <p className="muted" style={{ fontSize: ".72rem" }}>Saved readings for this pair:</p>
                 {savedReadings.map(r => (
                   <div key={r.id} style={{ fontSize: ".78rem", color: "var(--mist)" }}>
-                    Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""}
+                    {/* FOUNDER-REVIEW: authored — history-row provenance labels. */}
+                    {r.comparability === "comparable" ? (
+                      <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""}</>
+                    ) : r.comparability === "chart_rewritten" ? (
+                      <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""} · not comparable to this re-run — chart positions were corrected since</>
+                    ) : r.comparability === "birth_changed" ? (
+                      <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""} · not comparable — birth data changed since</>
+                    ) : (
+                      <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""} · snapshot only — no chart provenance to compare</>
+                    )}
                   </div>
                 ))}
               </div>

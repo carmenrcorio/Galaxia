@@ -605,6 +605,8 @@ export * from "./geocode";
 
 export * from "./house-system";
 
+export * from "./chart-fingerprint";
+
 export * from "./transits";
 
 export * from "./interpretations";

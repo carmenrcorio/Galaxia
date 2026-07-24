@@ -10,7 +10,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  *
  * Honesty note: saved readings are dated snapshots. computeSynastry is
  * deterministic, so we never derive a "trend" from two snapshots — a re-run
- * difference is attributed to an input change (engineVersion / birthFingerprint).
+ * difference is attributed via chartFingerprint (placement longitudes) and
+ * birthFingerprint, plus the DB engine_version of each chart actually scored.
  */
 
 export interface RecordEntry {

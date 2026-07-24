@@ -34,4 +34,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Compare deployed source bodies to main
-        run: node scripts/edge-function-parity.mjs
+        # --dump-raw prints first/last 500 chars of the Management API …/body
+        # response so a bad extract (multipart framing / eszip) is obvious in logs.
+        run: node scripts/edge-function-parity.mjs --dump-raw

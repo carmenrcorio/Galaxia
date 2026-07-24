@@ -268,4 +268,27 @@ describe("galaxySeatXY", () => {
     expect(x).toBeCloseTo(200 + seat.nx * 180, 5);
     expect(y).toBeCloseTo(100 + seat.ny * 80, 5);
   });
+
+  it("on a circle, Mommy and Daddy share Ring 2 Euclidean radius", () => {
+    /* Carmen's parents — opposite angles; an ellipse made their px radii diverge. */
+    const mommyId = "a9545b9f-06bb-45df-b4ef-8880695fcb53";
+    const daddyId = "0d07cca1-e57c-4f32-bc84-7ed3ae5d0663";
+    const resolved = galaxySeatsResolved([
+      { id: mommyId, isSelf: false, ring: 3 },
+      { id: daddyId, isSelf: false, ring: 3 },
+    ]);
+    const geom = { cx: 172, cy: 192, radX: 127.5, radY: 127.5 }; /* circular */
+    const m = galaxySeatXY(resolved.get(mommyId)!, geom);
+    const d = galaxySeatXY(resolved.get(daddyId)!, geom);
+    const mR = Math.hypot(m.x - geom.cx, m.y - geom.cy);
+    const dR = Math.hypot(d.x - geom.cx, d.y - geom.cy);
+    const ring2 = ringBandRadius(3) * geom.radX;
+    const ring4 = ringBandRadius(5) * geom.radX;
+    /* Both on Ring 2 band (within jitter), not colleague Ring 4. */
+    expect(Math.abs(mR - ring2)).toBeLessThan(ring2 * GALAXY_RING_JITTER + 1.5);
+    expect(Math.abs(dR - ring2)).toBeLessThan(ring2 * GALAXY_RING_JITTER + 1.5);
+    expect(Math.abs(mR - dR)).toBeLessThan(3); /* co-ring: nearly equal px radius */
+    expect(Math.abs(mR - ring2)).toBeLessThan(Math.abs(mR - ring4));
+    expect(Math.abs(dR - ring2)).toBeLessThan(Math.abs(dR - ring4));
+  });
 });

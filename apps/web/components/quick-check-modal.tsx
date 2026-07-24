@@ -36,7 +36,7 @@ import {
   whatTheyNeed,
   type RelationType,
 } from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
+import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
@@ -45,7 +45,8 @@ import { getPreferredHouseSystem } from "../lib/house-system";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";
 
-const RELATIONS = ["partner", "friend", "sibling", "parent", "child", "ancestor"] as const;
+// FOUNDER-REVIEW: picker labels — refine voice before merge.
+const RELATIONS = GALAXY_RELATION_PICKER_OPTIONS;
 const FOCUS_TYPES: { key: RelationType; label: string }[] = [
   { key: "romantic", label: "Romantic" },
   { key: "platonic", label: "Platonic" },
@@ -87,7 +88,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
 
   const [result, setResult] = useState<{ otherChart: NatalChart; synastry: ReturnType<typeof computeSynastry> | null } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [relation, setRelation] = useState<typeof RELATIONS[number]>("partner");
+  const [relation, setRelation] = useState<(typeof RELATIONS)[number]["value"]>("partner");
   const [savedId, setSavedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -234,10 +235,11 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
             )}
 
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {RELATIONS.map((r) => (
-                <button key={r} type="button" className="pill-link" onClick={() => setRelation(r)}
-                  style={{ fontSize: ".76rem", padding: "4px 10px", borderColor: relation === r ? "rgba(230,174,108,.5)" : undefined, color: relation === r ? "var(--gold)" : undefined }}>
-                  {r}
+              {RELATIONS.map(({ value, label }) => (
+                <button key={value} type="button" className="pill-link" onClick={() => setRelation(value)}
+                  style={{ fontSize: ".76rem", padding: "4px 10px", borderColor: relation === value ? "rgba(230,174,108,.5)" : undefined, color: relation === value ? "var(--gold)" : undefined }}>
+                  {/* FOUNDER-REVIEW: picker label */}
+                  {label}
                 </button>
               ))}
             </div>

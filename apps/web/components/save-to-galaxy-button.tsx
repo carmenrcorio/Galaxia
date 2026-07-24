@@ -6,7 +6,7 @@ import {
   type BirthFormInput,
   CHART_ENGINE_VERSION,
 } from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
+import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getPreferredHouseSystem } from "../lib/house-system";
@@ -14,7 +14,8 @@ import { buildWelcomePrefillPath } from "../lib/quick-chart";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";
 
-const RELATIONS = ["partner", "child", "parent", "grandparent", "sibling", "friend", "ancestor"] as const;
+// FOUNDER-REVIEW: picker labels — refine voice before merge.
+const RELATIONS = GALAXY_RELATION_PICKER_OPTIONS;
 
 /**
  * The Quick Chart "Save to your galaxy" CTA.
@@ -35,7 +36,7 @@ export function SaveToGalaxyButton({
   const [userId, setUserId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(defaultName ?? "");
-  const [relation, setRelation] = useState<typeof RELATIONS[number]>("friend");
+  const [relation, setRelation] = useState<(typeof RELATIONS)[number]["value"]>("friend");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedPersonId, setSavedPersonId] = useState<string | null>(null);
@@ -117,10 +118,11 @@ export function SaveToGalaxyButton({
     <div className="glass-card" style={{ maxWidth: 380, margin: "0 auto", display: "grid", gap: 10 }}>
       <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Their name" />
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {RELATIONS.map((r) => (
-          <button key={r} type="button" className="pill-link" onClick={() => setRelation(r)}
-            style={{ fontSize: ".78rem", padding: "5px 11px", borderColor: relation === r ? "rgba(230,174,108,.5)" : undefined, color: relation === r ? "var(--gold)" : undefined }}>
-            {r}
+        {RELATIONS.map(({ value, label }) => (
+          <button key={value} type="button" className="pill-link" onClick={() => setRelation(value)}
+            style={{ fontSize: ".78rem", padding: "5px 11px", borderColor: relation === value ? "rgba(230,174,108,.5)" : undefined, color: relation === value ? "var(--gold)" : undefined }}>
+            {/* FOUNDER-REVIEW: picker label */}
+            {label}
           </button>
         ))}
       </div>

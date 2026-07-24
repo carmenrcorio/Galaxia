@@ -97,5 +97,6 @@ constellation `lighter` blit is.
 
 Not recommended as the first cut: glow sprite atlas, dropping synastry, removing nebulae entirely — wrong layer or low payoff.
 
-`[OPEN]` Steady-state `lowPerf=false` on a normal phone is the gate before P4
-meteors return on existing timing. Do not force meteors over a struggling frame.
+`[DONE]` Steady-state `lowPerf=false` landed in `cursor-constellation-frame-budget-b21f`
+(atmosphere on its own DPR-1 canvas; phone heuristic removed; meteors return on
+existing timing).

@@ -19,7 +19,9 @@
  * - Gentle tangential drift (stays on band), disabled under prefers-reduced-motion
  * - Ambient shooting stars: short calm streaks, max 1–2 live, infrequent; decoration
  *   only (never aimed at a person / never a transit signal). Off under reduced-motion;
- *   shed first under lowPerf before any existing layer degrades.
+ *   shed first under lowPerf before any existing layer degrades. Atmosphere
+ *   (wash + nebulae) is a separate DPR-1 canvas refreshed ~4×/s so the motion
+ *   path stays under budget and meteors are not shed on a normal phone.
  * - Hover: inspector panel slides in (glass-card style) from right; click routes to /app/person/[id]
  * - Duplicate bottom nav row: DELETED per spec
  */
@@ -141,6 +143,9 @@ export default function AppHomePage() {
   const supabase  = useMemo(() => createSupabaseBrowserClient(), []);
   const router    = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  /* Atmosphere (wash + nebulae) lives on its own DPR-1 canvas, refreshed ~4×/s,
+     so the motion canvas never pays a per-frame atmosphere blit. */
+  const atmCanvasRef = useRef<HTMLCanvasElement>(null);
   /* entrance ignition timeline — persists across effect re-runs (e.g. hover)
      so the arrival sequence plays once on data load, not on every state change */
   const entranceStartRef = useRef<number | null>(null);
@@ -180,37 +185,56 @@ export default function AppHomePage() {
   useEffect(() => {
     if (loading || people.length === 0) return;
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const atmCanvas = atmCanvasRef.current;
+    if (!canvas || !atmCanvas) return;
     const cx = canvas.getContext("2d");
-    if (!cx) return;
+    const atmCtx = atmCanvas.getContext("2d");
+    if (!cx || !atmCtx) return;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const DPR     = Math.min(window.devicePixelRatio || 1, 2);
     let raf = 0;
     let t   = 0;
 
-    /* the deep-field wash + vignette only changes on resize, so it is
-       rasterised ONCE into an offscreen canvas and blitted each frame
-       (drawImage) instead of re-filling a full-canvas radial gradient every
-       frame — the single biggest per-frame saving on mobile. */
+    /* Atmosphere (wash + generational nebulae) is soft gas — it does not need
+       retina sharpness. It lives on its OWN visible canvas at ATM_DPR=1,
+       refreshed ~4×/s. The motion canvas above it clears to transparent and
+       never blits atmosphere. The prior path did a full-buffer `lighter`
+       drawImage every frame (≈87–99% of constellation draw). Wash is static
+       between resizes and lives in its own offscreen cache. */
+    const ATM_DPR = 1;
+    const ATM_BAKE_MS = 240; /* drift is ~sin(t*0.0004); 4Hz is plenty */
     const washCanvas = document.createElement("canvas");
     const washCtx = washCanvas.getContext("2d");
-    const renderWash = () => {
+    let lastAtmBake = -1e9;
+    let atmDirty = true;
+
+    const renderWash = (cssW: number, cssH: number) => {
       if (!washCtx) return;
-      washCanvas.width = canvas.width; washCanvas.height = canvas.height;
-      const w = canvas.width, h = canvas.height;
-      const wg = washCtx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.72);
-      wg.addColorStop(0,   "rgba(22,16,46,0.34)");   /* --ink2 indigo centre */
+      washCanvas.width = Math.max(1, Math.round(cssW * ATM_DPR));
+      washCanvas.height = Math.max(1, Math.round(cssH * ATM_DPR));
+      washCtx.setTransform(ATM_DPR, 0, 0, ATM_DPR, 0, 0);
+      const wg = washCtx.createRadialGradient(
+        cssW / 2, cssH / 2, 0, cssW / 2, cssH / 2, Math.max(cssW, cssH) * 0.72
+      );
+      wg.addColorStop(0,   "rgba(22,16,46,0.34)");
       wg.addColorStop(0.6, "rgba(12,8,32,0.55)");
-      wg.addColorStop(1,   "rgba(6,4,18,0.82)");     /* deep-ink edge vignette */
-      washCtx.clearRect(0, 0, w, h);
-      washCtx.fillStyle = wg; washCtx.fillRect(0, 0, w, h);
+      wg.addColorStop(1,   "rgba(6,4,18,0.82)");
+      washCtx.clearRect(0, 0, cssW, cssH);
+      washCtx.fillStyle = wg;
+      washCtx.fillRect(0, 0, cssW, cssH);
     };
 
-    /* offscreen nebula layer — see renderNebulae/draw for the throttle */
-    const nebCanvas = document.createElement("canvas");
-    const nebCtx = nebCanvas.getContext("2d");
-    let lastNebRender = -1e9;
+    const resizeAtm = (cssW: number, cssH: number) => {
+      atmCanvas.width = Math.max(1, Math.round(cssW * ATM_DPR));
+      atmCanvas.height = Math.max(1, Math.round(cssH * ATM_DPR));
+      atmCanvas.style.width = cssW + "px";
+      atmCanvas.style.height = cssH + "px";
+      atmCtx.setTransform(ATM_DPR, 0, 0, ATM_DPR, 0, 0);
+      renderWash(cssW, cssH);
+      atmDirty = true;
+      lastAtmBake = -1e9;
+    };
 
     const resize = () => {
       const rect = canvas.parentElement!.getBoundingClientRect();
@@ -219,10 +243,7 @@ export default function AppHomePage() {
       canvas.style.width  = rect.width  + "px";
       canvas.style.height = rect.height + "px";
       cx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      nebCanvas.width = canvas.width; nebCanvas.height = canvas.height;
-      nebCtx?.setTransform(DPR, 0, 0, DPR, 0, 0);
-      lastNebRender = -1e9; /* force a re-render at the new size */
-      renderWash();
+      resizeAtm(rect.width, rect.height);
     };
     resize();
     window.addEventListener("resize", resize);
@@ -310,36 +331,25 @@ export default function AppHomePage() {
 
     /* ── adaptive performance: drop the extra bloom layer if a frame budget
        is blown, so mobile degrades (fewer glow layers) rather than janks.
-       Ambient shooting stars shed FIRST — before any existing layer degrades. ── */
-    let lowPerf = Math.min(W(), H()) < 380 || DPR >= 2 && W() < 430;
+       Ambient shooting stars shed FIRST — before any existing layer degrades.
+       Do NOT force lowPerf from a phone-size heuristic — that shed meteors
+       (and inner glow / nebula puffs) on every retina phone before EMA had a
+       vote. Atmosphere bake keeps the full path under budget; EMA still sheds
+       if a device can't hold ~38fps. ── */
+    let lowPerf = false;
     /* Meteors are the cheapest atmosphere to drop — EMA kills them before
        flipping lowPerf, and they stay off once any lowPerf path is active. */
-    let meteorsOff = reduced || lowPerf;
-    /* TEMP-DEMO: ?meteors=force — one streak every 2s, uncapped, ignores lowPerf
-       shed so draw path can be confirmed separate from spawn timing. */
-    const forceMeteors = typeof window !== "undefined"
-      && new URLSearchParams(window.location.search).get("meteors") === "force";
-    if (forceMeteors && !reduced) meteorsOff = false;
+    let meteorsOff = reduced;
     let emaFrameMs = 16.7;
     let lastFrame = performance.now();
     let warmup = 0;
+    let lastLowPerf = lowPerf; /* re-bake atmosphere when puff count changes */
 
     /* Ambient shooting stars — decoration only. Not aimed at seats, not
        element-coloured, not a transit signal. Cap 2; short life; infrequent. */
     type Meteor = { x0: number; y0: number; x1: number; y1: number; born: number; life: number };
     const meteors: Meteor[] = [];
     let nextMeteorAt = 0; /* set on first draw once entrance has settled */
-
-    /* TEMP-DEMO: expose shed/spawn state for Playwright diagnose */
-    const publishDemo = () => {
-      const w = window as unknown as { __meteorDiag?: Record<string, unknown> };
-      w.__meteorDiag = {
-        lowPerf, meteorsOff, reduced, forceMeteors,
-        meteorCount: meteors.length, emaFrameMs,
-        canvasCssW: W(), canvasCssH: H(), dpr: DPR,
-        initialLowPerfHeuristic: Math.min(W(), H()) < 380 || DPR >= 2 && W() < 430,
-      };
-    };
 
     /* per-person stable phase for drift/twinkle — seeded from id, not index */
     const phases = people.map((p) => ({
@@ -838,9 +848,9 @@ export default function AppHomePage() {
        rather than stacking as opaque blobs. Colour is derived from the cohort's
        outer-planet signature (cohortHsla). No ctx.filter blur.
 
-       Rendered into a throttled offscreen layer (see draw()): the drift is very
-       slow, so re-rasterising the gradients only a few times a second and
-       blitting the cache in between keeps mobile smooth. */
+       Baked with the wash into the DPR-1 atmosphere cache (see draw()): the
+       drift is very slow, so re-rasterising ~4×/s and opaque-blitting each
+       frame keeps mobile under budget — never a per-frame `lighter` blit. */
     function renderNebulae(tctx: CanvasRenderingContext2D, positions: { x: number; y: number }[], nebFade: number) {
       const groups = new Map<string, number[]>();
       for (let i = 0; i < people.length; i++) {
@@ -885,7 +895,7 @@ export default function AppHomePage() {
     /* ── ambient shooting stars (atmosphere, not data) ── */
     function spawnMeteor() {
       if (reduced || meteorsOff) return;
-      if (!forceMeteors && meteors.length >= 2) return;
+      if (meteors.length >= 2) return;
       const w = W(), h = H();
       /* Short diagonal across a quiet patch of sky — never toward a person. */
       const x0 = w * (0.08 + Math.random() * 0.84);
@@ -907,14 +917,13 @@ export default function AppHomePage() {
         if (meteors.length) meteors.length = 0;
         return;
       }
-      /* Shipping: first try ~5.2–8s after draw starts, then every ~7–15s at 45%.
-         TEMP-DEMO ?meteors=force: one every 2s, uncapped. */
+      /* First try ~5.2–8s after draw starts, then every ~7–15s at 45%. */
       if (nextMeteorAt === 0) {
-        nextMeteorAt = forceMeteors ? t + 200 : t + 5200 + Math.random() * 2800;
+        nextMeteorAt = t + 5200 + Math.random() * 2800;
       }
       if (t >= nextMeteorAt) {
-        nextMeteorAt = t + (forceMeteors ? 2000 : 7000 + Math.random() * 8000);
-        if (forceMeteors || Math.random() < 0.45) spawnMeteor();
+        nextMeteorAt = t + 7000 + Math.random() * 8000;
+        if (Math.random() < 0.45) spawnMeteor();
       }
       for (let i = meteors.length - 1; i >= 0; i--) {
         const m = meteors[i];
@@ -955,49 +964,37 @@ export default function AppHomePage() {
       elapsed = t - entranceStartRef.current;
       globalFade = reduced ? clamp01(elapsed / REDUCED_FADE) : 1;
 
-      /* adaptive frame-budget tracking (skip warmup frames).
-         Shed order: ambient meteors first, then existing lowPerf stack. */
+      /* adaptive frame-budget tracking. Skip entrance + a short settle so the
+         ignition cascade (extra glow flares) cannot permanently shed the home
+         sky. Shed order: ambient meteors first, then existing lowPerf stack.
+         Recover with hysteresis when the EMA drops back under budget. */
       const dt = t - lastFrame; lastFrame = t;
-      if (warmup > 8) {
-        emaFrameMs = emaFrameMs * 0.9 + dt * 0.1;
-        if (!forceMeteors && !meteorsOff && emaFrameMs > 24) meteorsOff = true; /* first: drop streaks */
-        if (!lowPerf && emaFrameMs > 26) {
-          lowPerf = true; /* ~<38fps: shed a glow layer */
-          if (!forceMeteors) meteorsOff = true;
+      const budgetArmed = reduced
+        ? elapsed > REDUCED_FADE + 200
+        : elapsed > totalDuration + 400;
+      if (budgetArmed) {
+        if (warmup < 12) { warmup++; }
+        else {
+          emaFrameMs = emaFrameMs * 0.9 + dt * 0.1;
+          if (!meteorsOff && emaFrameMs > 24) meteorsOff = true;
+          if (!lowPerf && emaFrameMs > 26) {
+            lowPerf = true; /* ~<38fps: shed a glow layer */
+            meteorsOff = true;
+          }
+          /* recover with tight hysteresis when steady-state is back under budget */
+          if (lowPerf && emaFrameMs < 23) lowPerf = false;
+          if (!reduced && meteorsOff && !lowPerf && emaFrameMs < 21) {
+            meteorsOff = false;
+          }
         }
-      } else { warmup++; }
-      publishDemo();
-
-      cx.clearRect(0, 0, W(), H());
-
-      /* atmospheric finish: blit the cached deep-field wash + vignette (faint
-         indigo centre → deep-ink edges: colour depth, plus a rim that draws the
-         eye to the user's star at centre). Cached offscreen, so this is a cheap
-         drawImage rather than a per-frame radial-gradient fill. */
-      cx.drawImage(washCanvas, 0, 0, W(), H());
-
-      /* soft concentric guides — sketch Rings 1–4 at ringBandRadius (same
-         function as person seats). Always drawn so the legend's four bands
-         stay readable even when a band is empty. Alpha kept high enough on
-         lowPerf (375px phones) that Ring 2 is actually countable — 0.10 was
-         invisible against the wash, so parents looked "outer" by landmarks. */
-      {
-        const { cx: rcx, cy: rcy, radX, radY } = ringGeom();
-        const breath = (!reduced && !lowPerf)
-          ? 0.012 * Math.sin(t * 0.00035)
-          : 0;
-        const baseAlpha = lowPerf ? 0.22 : 0.20;
-        cx.save();
-        for (const ring of GALAXY_GUIDE_RINGS) {
-          const rn = ringBandRadius(ring) * (1 + breath);
-          cx.beginPath();
-          cx.ellipse(rcx, rcy, radX * rn, radY * rn, 0, 0, Math.PI * 2);
-          cx.strokeStyle = `rgba(183,154,216,${baseAlpha})`;
-          cx.lineWidth = lowPerf ? 1 : 1.15;
-          cx.stroke();
-        }
-        cx.restore();
       }
+      if (lowPerf !== lastLowPerf) {
+        lastLowPerf = lowPerf;
+        atmDirty = true; /* puff count / breath quality changes with lowPerf */
+      }
+
+      /* Motion canvas is transparent over the atmosphere canvas — clear only. */
+      cx.clearRect(0, 0, W(), H());
 
       const positions = people.map((_, i) => nodePos(i));
       const byId = new Map(people.map((p, i) => [p.id, positions[i]]));
@@ -1026,20 +1023,44 @@ export default function AppHomePage() {
         }
       }
 
-      /* generational nebulae behind everything — bloom in just after the self
-         ignites so the "sky you were born under" arrives with the sky. Redrawn
-         onto the offscreen layer at most ~11×/s (drift is far slower than that)
-         and blitted additively each frame, so the gradient cost is amortised. */
+      /* Refresh the visible DPR-1 atmosphere canvas ~4×/s (wash blit + lighter
+         nebulae). Motion canvas never composites atmosphere. */
       const nebFade = reduced ? globalFade : clamp01((elapsed - 200) / 1200);
-      if (nebCtx && nebFade > 0.001 && t - lastNebRender > 90) {
-        nebCtx.clearRect(0, 0, W(), H());
-        renderNebulae(nebCtx, positions, nebFade);
-        lastNebRender = t;
+      const bakeEvery = nebFade < 0.999 ? 120 : ATM_BAKE_MS;
+      if (atmDirty || t - lastAtmBake > bakeEvery) {
+        const aw = W(), ah = H();
+        atmCtx.clearRect(0, 0, aw, ah);
+        atmCtx.drawImage(washCanvas, 0, 0, aw, ah);
+        if (nebFade > 0.001) {
+          atmCtx.save();
+          atmCtx.globalCompositeOperation = "lighter";
+          renderNebulae(atmCtx, positions, nebFade);
+          atmCtx.restore();
+        }
+        lastAtmBake = t;
+        atmDirty = false;
       }
-      if (nebCtx && nebFade > 0.001) {
+
+      /* soft concentric guides — sketch Rings 1–4 at ringBandRadius (same
+         function as person seats). Always drawn so the legend's four bands
+         stay readable even when a band is empty. Alpha kept high enough on
+         lowPerf (375px phones) that Ring 2 is actually countable — 0.10 was
+         invisible against the wash, so parents looked "outer" by landmarks. */
+      {
+        const { cx: rcx, cy: rcy, radX, radY } = ringGeom();
+        const breath = (!reduced && !lowPerf)
+          ? 0.012 * Math.sin(t * 0.00035)
+          : 0;
+        const baseAlpha = lowPerf ? 0.22 : 0.20;
         cx.save();
-        cx.globalCompositeOperation = "lighter";
-        cx.drawImage(nebCanvas, 0, 0, W(), H());
+        for (const ring of GALAXY_GUIDE_RINGS) {
+          const rn = ringBandRadius(ring) * (1 + breath);
+          cx.beginPath();
+          cx.ellipse(rcx, rcy, radX * rn, radY * rn, 0, 0, Math.PI * 2);
+          cx.strokeStyle = `rgba(183,154,216,${baseAlpha})`;
+          cx.lineWidth = lowPerf ? 1 : 1.15;
+          cx.stroke();
+        }
         cx.restore();
       }
 
@@ -1266,7 +1287,15 @@ export default function AppHomePage() {
             minHeight: 380,
             maxHeight: "min(72vh, 680px)",
           }}>
-            <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%" }} />
+            <canvas
+              ref={atmCanvasRef}
+              aria-hidden
+              style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%" }}
+            />
+            <canvas
+              ref={canvasRef}
+              style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%" }}
+            />
 
             {/* fine film grain over the focal plane — texture, not static.
                Static SVG noise (same recipe as CosmicBackground), very low

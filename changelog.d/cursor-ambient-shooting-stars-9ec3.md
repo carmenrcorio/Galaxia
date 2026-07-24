@@ -51,6 +51,5 @@ Spawn cadence itself is not "every few minutes" (cap 2; E[first] ≈20s if the
 layer were allowed). `prefers-reduced-motion` is a correct `matchMedia` read and
 only blocks when the OS setting is on.
 
-`[ADDED]` **Temp draw-path probe:** `?meteors=force` on `/app` — one streak
-every 2s, uncapped, ignores `lowPerf` shed (still honors reduced-motion).
-Remove after confirm. Console: `window.__meteorDiag`.
+`[REMOVED]` Temp draw-path probe (`?meteors=force` / `__meteorDiag`) — confirm
+done; shed gate fixed in `cursor-constellation-frame-budget-b21f`.

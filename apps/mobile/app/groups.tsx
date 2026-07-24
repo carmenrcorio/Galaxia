@@ -1,7 +1,12 @@
 import { cohortOverlay, compareGenerational, type GenSignature, type NatalChart } from "@galaxia/astro";
+import {
+  OWNED_DELETE_COPY,
+  formatGroupDeleteConfirmation,
+  isBelowGroupMinimum
+} from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { supabase } from "../src/lib/supabase";
 import { useAuth } from "../src/providers/auth-provider";
 import { useEntitlement } from "../src/providers/entitlement-provider";
@@ -122,6 +127,8 @@ export default function GroupsScreen() {
     );
   };
 
+  const loadedBelowMinimum = Boolean(loadedGroup && isBelowGroupMinimum(loadedGroup.memberIds.length));
+
   /** Explicit new-group state: clears loaded group so the next Save creates. */
   const startNewGroup = () => {
     setLoadedGroup(null);
@@ -130,6 +137,39 @@ export default function GroupsScreen() {
     setSelectedPersonIds([]);
     setCohort(null);
     setStatus(null);
+  };
+
+  const deleteLoadedGroup = async () => {
+    if (!loadedGroup || !session?.user.id) return;
+    const { count, error: countError } = await supabase
+      .from("threads")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", loadedGroup.id);
+    if (countError) {
+      setStatus(countError.message);
+      return;
+    }
+    // FOUNDER-REVIEW: formatGroupDeleteConfirmation
+    const warning = formatGroupDeleteConfirmation(loadedGroup.name, count ?? 0);
+    Alert.alert("Delete group", warning, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: OWNED_DELETE_COPY.groupConfirmButton,
+        style: "destructive",
+        onPress: () => {
+          void (async () => {
+            const { error } = await supabase.rpc("delete_own_group", { p_group_id: loadedGroup.id });
+            if (error) {
+              setStatus(error.message || OWNED_DELETE_COPY.groupErrorGeneric);
+              return;
+            }
+            startNewGroup();
+            await fetchGroups();
+            setStatus("Group deleted.");
+          })();
+        }
+      }
+    ]);
   };
 
   const saveGroup = async () => {
@@ -264,7 +304,10 @@ export default function GroupsScreen() {
     // hasAccess defaults false until profile refresh, so a fast tap would clear
     // the overlay for a paying user. Save stays gated below.
     if (ids.length >= 3) await buildOverlay(ids);
-    else setCohort(null);
+    else {
+      setCohort(null);
+      if (isBelowGroupMinimum(ids.length)) setStatus(OWNED_DELETE_COPY.belowMinimumNotice);
+    }
   };
 
   /**
@@ -422,15 +465,36 @@ export default function GroupsScreen() {
           })}
         </View>
         <Text style={cardBody}>Selected: {selectedNames.length > 0 ? selectedNames.join(", ") : "none"}</Text>
+        {loadedBelowMinimum ? <Text style={cardBody}>{OWNED_DELETE_COPY.belowMinimumNotice}</Text> : null}
         <Pressable onPress={saveGroup} style={primaryButtonStyle}>
           <Text style={primaryLabelStyle}>{loadedGroup ? "Update group" : "Save group"}</Text>
         </Pressable>
         <Pressable
           onPress={() => buildOverlay()}
-          style={{ ...primaryButtonStyle, backgroundColor: tokens.colors.ink, borderWidth: 1, borderColor: tokens.colors.goldSoft }}
+          disabled={loadedBelowMinimum}
+          style={{
+            ...primaryButtonStyle,
+            backgroundColor: tokens.colors.ink,
+            borderWidth: 1,
+            borderColor: tokens.colors.goldSoft,
+            opacity: loadedBelowMinimum ? 0.45 : 1
+          }}
         >
           <Text style={{ ...primaryLabelStyle, color: tokens.colors.cream }}>Generate cohort overlay</Text>
         </Pressable>
+        {loadedGroup ? (
+          <Pressable
+            onPress={() => void deleteLoadedGroup()}
+            style={{
+              ...primaryButtonStyle,
+              backgroundColor: tokens.colors.ink,
+              borderWidth: 1,
+              borderColor: "rgba(218,140,140,.55)"
+            }}
+          >
+            <Text style={{ ...primaryLabelStyle, color: "#da8c8c" }}>{OWNED_DELETE_COPY.groupConfirmButton}</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {cohort ? (

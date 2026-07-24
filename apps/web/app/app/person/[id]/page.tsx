@@ -821,7 +821,7 @@ export default function PersonProfilePage() {
             ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
             : enduringEyebrow("Zodiac wheel")}
         </p>
-        <ChartWheel chart={chart} />
+        <ChartWheel chart={chart} aspects={natalAspects} />
         {chart.houseSystemFallbackReason ? (
           <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
             {chart.houseSystemFallbackReason}

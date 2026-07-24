@@ -610,7 +610,7 @@ export default function PersonProfilePage() {
 
   // Progressive capture: person exists but has no chart yet.
   if (!chart) return (
-    <main className="app-content">
+    <main className={`app-content${personPassed ? " app-content--remembrance" : ""}`}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }} className="fade-in">
         <InitialAvatar name={person.display_name} size="lg" />
         <div>
@@ -697,7 +697,7 @@ export default function PersonProfilePage() {
     personPassed ? `${label} · who they were` : label;
 
   return (
-    <main className="app-content">
+    <main className={`app-content${personPassed ? " app-content--remembrance" : ""}`}>
 
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }} className="fade-in">
@@ -722,7 +722,10 @@ export default function PersonProfilePage() {
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
-        <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Ask Vela</Link>
+        {/* Remembrance keeps a single Ask Vela entry inside RemembranceSpace — no header duplicate. */}
+        {!showRemembrance ? (
+          <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Ask Vela</Link>
+        ) : null}
         {showHonorBox ? (
           <a href={`#${HONOR_LIGHT_ANCHOR_ID}`} className="pill-link" style={{ fontSize: ".82rem" }}>
             Who carries their light ↓
@@ -790,7 +793,9 @@ export default function PersonProfilePage() {
         </section>
       ) : null}
 
-      {/* ── Vela has said this about them (B2) ── */}
+      {/* ── Vela has said this about them (B2) ──
+          Remembrance pages already expose one Ask Vela entry in RemembranceSpace;
+          keep this module as pins / reopen only — no second CTA. */}
       <section id="vela-on-them" className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)", scrollMarginTop: 92 }}>
         <p className="eyebrow" style={{ marginBottom: 8, color: "var(--air)" }}>Vela on {person.display_name}</p>
         {velaPins.length > 0 ? (
@@ -806,14 +811,18 @@ export default function PersonProfilePage() {
                 </div>
               </div>
             ))}
-            <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".78rem", width: "fit-content", marginTop: 2 }}>Ask Vela more</Link>
+            {!showRemembrance ? (
+              <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".78rem", width: "fit-content", marginTop: 2 }}>Ask Vela more</Link>
+            ) : null}
           </div>
         ) : (
           <div>
-            <p className="muted" style={{ fontSize: ".82rem", marginBottom: 10 }}>
+            <p className="muted" style={{ fontSize: ".82rem", marginBottom: showRemembrance ? 0 : 10 }}>
               Nothing pinned yet. Ask Vela about {person.display_name}, then pin any insight worth keeping — it will live here.
             </p>
-            <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".8rem" }}>Ask Vela about {person.display_name}</Link>
+            {!showRemembrance ? (
+              <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".8rem" }}>Ask Vela about {person.display_name}</Link>
+            ) : null}
           </div>
         )}
       </section>

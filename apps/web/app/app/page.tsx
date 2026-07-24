@@ -726,14 +726,15 @@ export default function AppHomePage() {
         const breath = (!reduced && !lowPerf)
           ? 0.012 * Math.sin(t * 0.00035)
           : 0;
-        const baseAlpha = lowPerf ? 0.055 : 0.09;
+        /* lowPerf path is the phone card — keep guides readable, not loud */
+        const baseAlpha = lowPerf ? 0.10 : 0.11;
         cx.save();
         for (const ring of GALAXY_GUIDE_RINGS) {
           const rn = ringNormAbsolute(ring) * (1 + breath);
           cx.beginPath();
           cx.ellipse(rcx, rcy, radX * rn, radY * rn, 0, 0, Math.PI * 2);
           cx.strokeStyle = `rgba(183,154,216,${baseAlpha})`;
-          cx.lineWidth = lowPerf ? 0.7 : 1;
+          cx.lineWidth = lowPerf ? 0.85 : 1;
           cx.stroke();
         }
         cx.restore();

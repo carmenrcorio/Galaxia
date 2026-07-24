@@ -34,3 +34,9 @@ light on ring 3, not ancient.
 `[DECISION]` **Web `/app` constellation card only for guides.** Today in Your
 Sky / Resume regions untouched. Mobile home already shares `ringIndex` seats;
 picker parity only on mobile this PR.
+
+`[TESTED]` **375px · DPR-2 · 4× CPU throttle** (Playwright, demo seed removed
+before commit): 4/4 guide rings hit on a horizontal ray sample; reduced-motion
+pixels stable (diff 0). Sustained rAF ~31–34fps in headless with CosmicBackground
+also running — below the prior ~50–60 canvas-only bar; guides are four cheap
+ellipse strokes and did not require a render-loop rewrite.

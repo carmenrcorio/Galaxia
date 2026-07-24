@@ -1,12 +1,17 @@
 /**
- * ChartWheel seam + aspect-list consistency.
+ * ChartWheel visibility + main biwheel API (#88) composition.
  * No React Testing Library — renderToStaticMarkup is enough for SVG structure.
  */
-import { computeNatalChart, computeSynastry, type Aspect, type NatalChart } from "@galaxia/astro";
+import { computeNatalChart, computeSynastry, type NatalChart } from "@galaxia/astro";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
-import { describe, expect, it } from "vitest";
-import { ChartWheel, internalNatalAspects } from "../components/chart-wheel";
+import { describe, expect, it, vi } from "vitest";
+import {
+  ChartWheel,
+  OVERLAY_ASPECTS_MISSING_NOTE,
+  orientSynastryWheel,
+  type WheelAspect,
+} from "../components/chart-wheel";
 
 const EXACT_A = {
   dateUTC: "1990-05-04T14:20:00.000Z",
@@ -24,7 +29,7 @@ const EXACT_B = {
 };
 
 /** Mirrors person page natalAspects (orb-sorted, slice 14, no orb < 5 cut). */
-function personPageNatalAspects(chart: NatalChart): Aspect[] {
+function personPageNatalAspects(chart: NatalChart): WheelAspect[] {
   if (!chart || chart.precision === "year") return [];
   const dedupe = new Set<string>();
   return computeSynastry(chart, chart).aspects
@@ -39,61 +44,88 @@ function personPageNatalAspects(chart: NatalChart): Aspect[] {
     .slice(0, 14);
 }
 
-describe("ChartWheel aspect list vs person page", () => {
-  it("internal wheel filter and person-page list disagreed on the same chart (pre-prop)", () => {
+describe("ChartWheel aspects prop (natal)", () => {
+  it("person-page list and historical wheel filter disagreed before the shared prop", () => {
     const chart = computeNatalChart(EXACT_A);
-    const wheel = internalNatalAspects(chart);
     const page = personPageNatalAspects(chart);
-
-    expect(page.length).toBeGreaterThan(0);
-    expect(wheel.length).toBeGreaterThan(0);
-
-    const wheelKeys = new Set(wheel.map((a) => [a.from, a.to].sort().join(":") + ":" + a.type));
+    const engine = computeSynastry(chart, chart).aspects
+      .filter((a) => a.from !== a.to)
+      .filter((a, idx, arr) => arr.findIndex((b) => [b.from, b.to].sort().join() === [a.from, a.to].sort().join() && b.type === a.type) === idx)
+      .filter((a) => a.orb < 5)
+      .slice(0, 12);
     const pageKeys = new Set(page.map((a) => [a.from, a.to].sort().join(":") + ":" + a.type));
-    const onlyPage = [...pageKeys].filter((k) => !wheelKeys.has(k));
-    const onlyWheel = [...wheelKeys].filter((k) => !pageKeys.has(k));
-
-    // Divergence on this fixture: page = orb-sorted top 14; historical wheel =
-    // orb < 5 then first 12 in engine order (not orb-sorted). Sets differ.
+    const wheelKeys = new Set(engine.map((a) => [a.from, a.to].sort().join(":") + ":" + a.type));
     expect(page.length).toBe(14);
-    expect(wheel.length).toBe(12);
-    expect(onlyPage.length).toBeGreaterThan(0);
-    expect(onlyWheel.length).toBeGreaterThan(0);
+    expect(engine.length).toBe(12);
+    expect([...pageKeys].filter((k) => !wheelKeys.has(k)).length).toBeGreaterThan(0);
   });
 
   it("passing aspects renders exactly those lines (no internal recompute)", () => {
     const chart = computeNatalChart(EXACT_A);
-    const only: Aspect[] = [
+    const only: WheelAspect[] = [
       { from: "sun", to: "moon", type: "square", orb: 1.1, harmony: -1 },
     ];
     const html = renderToStaticMarkup(createElement(ChartWheel, { chart, aspects: only, interactive: false }));
     expect(html).toContain('data-asp="sun-moon"');
-    // A single forced aspect — not the full internal set.
     expect((html.match(/data-asp="/g) ?? []).length).toBe(1);
     expect(html).toContain('stroke="var(--rose)"');
   });
 });
 
-describe("ChartWheel biwheel seam", () => {
-  it("renders outer-chart planets with owner-prefixed keys and no second house ring", () => {
+describe("ChartWheel biwheel (main API)", () => {
+  it("renders overlay planets with a-/b- keys and lines from A ring to B ring", () => {
     const inner = computeNatalChart(EXACT_A);
     const outer = computeNatalChart(EXACT_B);
-    expect(inner.cusps?.length).toBe(12);
+    const aspects = computeSynastry(inner, outer).aspects;
 
     const html = renderToStaticMarkup(
-      createElement(ChartWheel, { chart: inner, outerChart: outer, interactive: false })
+      createElement(ChartWheel, {
+        chart: inner,
+        overlayChart: outer,
+        aspects,
+        interactive: false,
+      })
     );
 
-    expect(html).toContain('data-planet="inner-sun"');
-    expect(html).toContain('data-planet="outer-sun"');
-    expect(html).toContain('data-planet="outer-moon"');
+    expect(html).toContain('data-planet="a-sun"');
+    expect(html).toContain('data-planet="b-sun"');
+    expect(html).toContain('data-planet="b-moon"');
+    expect(html).not.toContain("inner-");
+    expect(html).not.toContain("outer-");
 
-    // House numbers 1–12 once (inner frame only).
     const houseLabels = html.match(/fill="var\(--mist2\)"[^>]*>\d+<\/text>/g) ?? [];
     expect(houseLabels.length).toBe(12);
-
-    // Cross-aspect lines present when both charts are exact.
     expect(html).toMatch(/data-asp="/);
+  });
+
+  it("overlay without aspects is loud — note + console.warn", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const inner = computeNatalChart(EXACT_A);
+    const outer = computeNatalChart(EXACT_B);
+    const html = renderToStaticMarkup(
+      createElement(ChartWheel, { chart: inner, overlayChart: outer, interactive: false })
+    );
+    expect(html).toContain(OVERLAY_ASPECTS_MISSING_NOTE);
+    expect(html).toContain("data-overlay-aspects-missing");
+    expect(html).not.toContain("data-asp=");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("overlayChart was mounted without aspects"));
+    warn.mockRestore();
+  });
+
+  it("orientSynastryWheel still exports and flips when B is self", () => {
+    const chartA = computeNatalChart(EXACT_A);
+    const chartB = computeNatalChart(EXACT_B);
+    const aspects: WheelAspect[] = [{ from: "sun", to: "moon", type: "square", orb: 0.5, harmony: -1 }];
+    const oriented = orientSynastryWheel(
+      { relation: "parent" },
+      { relation: "self" },
+      chartA,
+      chartB,
+      aspects
+    );
+    expect(oriented.chart).toBe(chartB);
+    expect(oriented.overlayChart).toBe(chartA);
+    expect(oriented.aspects[0]?.from).toBe("moon");
   });
 });
 
@@ -107,14 +139,13 @@ describe("ChartWheel year precision empty center", () => {
 });
 
 describe("ChartWheel PDF / non-interactive", () => {
-  it("uses CSS vars (print path) and cream planet glyphs", () => {
+  it("uses CSS vars (print path) and cream planet glyphs; no pointer cursor", () => {
     const chart = computeNatalChart(EXACT_A);
     const html = renderToStaticMarkup(createElement(ChartWheel, { chart, interactive: false }));
     expect(html).toContain("var(--cream)");
     expect(html).toContain("var(--teal)");
     expect(html).toContain("var(--rose)");
     expect(html).toContain("var(--fire)");
-    // No pointer cursor when interactive=false
     expect(html).not.toContain("cursor:pointer");
   });
 });

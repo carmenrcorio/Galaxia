@@ -5,45 +5,91 @@
  * so it can be reused by the public Quick Chart (/chart) without duplicating
  * the SVG geometry. Reference: design/reference/galaxia.jsx Wheel().
  *
- * Aspect web: when `aspects` is passed, those lines are drawn exactly (one list
- * with the person page Aspects tab). When absent, falls back to the historical
- * internal filter (self-synastry, orb < 5, max 12) so existing call sites stay
- * unchanged. With `outerChart` and no `aspects`, cross-chart synastry is used
- * so the biwheel seam is real for Compare without mounting Compare here.
+ * Optional `overlayChart` draws a synastry bi-wheel: `chart` is the inner ring
+ * and owns the house frame; overlay planets sit on the outer ring. When
+ * `aspects` are passed (Compare), those lines are used — never recomputed.
+ * Overlay without `aspects` is a loud empty state (note + dev warning), never
+ * a silent void. Single-chart call sites stay one-arg and keep the internal
+ * natal fallback when `aspects` is omitted; when `aspects` is passed (person
+ * page), that list is drawn exactly.
  *
- * Colours: CSS custom properties from globals.css (`--fire` / `--earth` /
- * `--air` / `--water` / `--cream` / `--teal` / `--rose` / `--mist`). Verified
- * to survive the PDF print path — chart-pdf-export already paints glyphs with
- * `var(--${element})` in the same portal'd document, and print uses the live
- * DOM (not a var-stripping serializer). Planet glyph *text* uses `--cream` for
- * contrast on the dark disc; element colour stays on the planet ring stroke
- * (air at `--air` #B79AD8 is unreadable as glyph fill).
+ * Colours: CSS custom properties from globals.css. Verified to survive the PDF
+ * print path — chart-pdf-export already paints with `var(--${element})` in the
+ * same portal'd document, and print uses the live DOM (not a var-stripping
+ * serializer). Planet glyph *text* uses `--cream` for contrast; A/natal ring
+ * stroke uses element colour, B (overlay) uses `--teal` so the two charts stay
+ * distinct.
  */
 
-import { computeSynastry, type Aspect, type BodyName, type NatalChart } from "@galaxia/astro";
-import React, { useState, type PointerEvent as ReactPointerEvent } from "react";
+import { computeSynastry, type NatalChart } from "@galaxia/astro";
+import React, { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { BODY_GLYPH, SIGN_GLYPH, signElement } from "../lib/design";
 
 const SIGNS_ORDER = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
 const S = 300, CX = S / 2, CY = S / 2;
 const R_OUT = 140, R_SIGN_IN = 112, R_SIGN_GL = 126, R_HOUSE_GL = 99, R_INNER = 62, R_PLANET = 84;
-/** Second ring for biwheel outer-chart planets — inside the sign ring, outside the inner planets. */
-const R_PLANET_OUTER = 102;
+/** Inner (A / house-frame) planet ring for synastry overlay mode. */
+const R_PLANET_A = 72;
+/** Outer (B) planet ring for synastry overlay mode. */
+const R_PLANET_B = 96;
 const LINE_COLOR = "rgba(230,174,108,.13)";
 
-type ChartOwner = "inner" | "outer";
+// FOUNDER-REVIEW: authored — compare bi-wheel missing-houses hedge (all Compare surfaces).
+export const COMPARE_WHEEL_NEEDS_HOUSES =
+  "Add an exact birth time and city for the house-frame person to unlock the synastry wheel.";
+
+// FOUNDER-REVIEW — overlay mounted without aspects (call-site bug, not year precision).
+export const OVERLAY_ASPECTS_MISSING_NOTE =
+  "Aspect lines need the compare aspects — none were passed to this wheel.";
+
+export type WheelAspect = {
+  from: string;
+  to: string;
+  type: string;
+  orb: number;
+  harmony: number;
+};
 
 export type ChartWheelProps = {
   chart: NatalChart;
-  /** When set, drawn exactly — no internal recompute/filter. */
-  aspects?: Aspect[];
-  /** Biwheel seam: second person's placements on an outer ring. Houses stay on `chart`. */
-  outerChart?: NatalChart;
+  /** Second chart for synastry bi-wheel. Natal call sites omit this. */
+  overlayChart?: NatalChart;
+  /**
+   * Already-computed aspects. Required path for overlay (Compare): from → chart
+   * (inner/A), to → overlayChart (outer/B). Single-chart falls back to internal
+   * natal self-aspects when omitted; when passed, drawn exactly (person page).
+   */
+  aspects?: WheelAspect[];
   /**
    * Pointer highlight (tap/hover). PDF/print passes false so highlight degrades
    * to a static wheel — no handlers, no focus state.
    */
   interactive?: boolean;
+};
+
+type ChartOwner = "a" | "b";
+
+type PlanetGlyph = {
+  key: string;
+  owner: ChartOwner;
+  body: string;
+  px: number;
+  py: number;
+  stroke: string;
+  gly: string;
+  /** Outer-ring (B) glyphs use a teal stroke so the two charts stay distinct. */
+  overlay: boolean;
+};
+
+type AspectLine = {
+  from: string;
+  to: string;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  stroke: string;
+  alpha: number;
 };
 
 function pt(r: number, deg: number): [number, number] {
@@ -60,31 +106,6 @@ function elVar(sign: string): string {
   return `var(--${signElement(sign)})`;
 }
 
-/** Historical internal natal filter — kept for call sites that omit `aspects`. */
-export function internalNatalAspects(chart: NatalChart): Aspect[] {
-  if (chart.precision !== "exact" && chart.precision !== "date") return [];
-  return computeSynastry(chart, chart).aspects
-    .filter((a) => a.from !== a.to)
-    .filter((a, idx, arr) => arr.findIndex((b) => [b.from, b.to].sort().join() === [a.from, a.to].sort().join() && b.type === a.type) === idx)
-    .filter((a) => a.orb < 5)
-    .slice(0, 12);
-}
-
-function internalBiwheelAspects(inner: NatalChart, outer: NatalChart): Aspect[] {
-  if (inner.precision === "year" || outer.precision === "year") return [];
-  return computeSynastry(inner, outer).aspects
-    .filter((a) => a.from !== a.to)
-    .filter((a, idx, arr) => arr.findIndex((b) => [b.from, b.to].sort().join() === [a.from, a.to].sort().join() && b.type === a.type) === idx)
-    .filter((a) => a.orb < 5)
-    .slice(0, 12);
-}
-
-function resolveAspects(chart: NatalChart, aspects: Aspect[] | undefined, outerChart: NatalChart | undefined): Aspect[] {
-  if (aspects !== undefined) return aspects;
-  if (outerChart) return internalBiwheelAspects(chart, outerChart);
-  return internalNatalAspects(chart);
-}
-
 function harmonyStroke(harmony: number): string {
   if (harmony >= 1.2) return "var(--teal)";
   if (harmony < 0) return "var(--rose)";
@@ -92,76 +113,134 @@ function harmonyStroke(harmony: number): string {
 }
 
 function aspectAlpha(orb: number, harmony: number): number {
-  // Legible on the dark inner disc; tighter orbs read stronger.
-  // Neutral (mist) lines need a little extra weight — lavender washes out on near-black.
+  // Retuned for main's 72/96 geometry on the dark disc.
   const base = Math.max(0.55, 0.88 - orb * 0.04);
   if (harmony >= 0 && harmony < 1.2) return Math.min(0.92, base + 0.1);
   return base;
 }
 
-type PlanetPlot = {
-  key: string;
-  owner: ChartOwner;
-  body: BodyName;
-  px: number;
-  py: number;
-  stroke: string;
-  gly: string;
-};
-
-function plotPlanets(
-  chart: NatalChart,
-  owner: ChartOwner,
+function planetRing(
+  placements: NatalChart["placements"],
+  ascLon: number | null,
   baseR: number,
-  ascLon: number | null
-): PlanetPlot[] {
-  const sorted = [...chart.placements].filter((p) => p.confident !== false).sort((a, b) => a.lon - b.lon);
+  owner: ChartOwner,
+): PlanetGlyph[] {
+  const sorted = [...placements].filter((p) => p.confident !== false).sort((a, b) => a.lon - b.lon);
   return sorted.map((p, idx) => {
     const a = svgAngle(p.lon, ascLon);
     const near = sorted.filter((q) => q.body !== p.body && Math.abs(q.lon - p.lon) < 14);
     const rr = near.length > 0 && idx % 2 === 1 ? baseR - 15 : baseR;
     const [px, py] = pt(rr, a);
+    const overlay = owner === "b";
     return {
       key: `${owner}-${p.body}`,
       owner,
       body: p.body,
       px,
       py,
-      stroke: elVar(p.sign),
+      // B ring: teal so overlay stays distinct from A/natal element strokes.
+      stroke: overlay ? "var(--teal)" : elVar(p.sign),
       gly: BODY_GLYPH[p.body] ?? p.body[0].toUpperCase(),
+      overlay,
     };
   });
 }
 
-export function ChartWheel({ chart, aspects, outerChart, interactive = true }: ChartWheelProps) {
+/**
+ * Orient a compare pair so a person tagged `self` owns the inner house frame
+ * as A, regardless of picker display order. Aspects are flipped when charts swap
+ * so from→inner and to→overlay still hold.
+ */
+export function orientSynastryWheel(
+  personA: { relation?: string | null },
+  personB: { relation?: string | null },
+  chartA: NatalChart,
+  chartB: NatalChart,
+  aspects: WheelAspect[],
+): { chart: NatalChart; overlayChart: NatalChart; aspects: WheelAspect[] } {
+  const bIsSelf = personB.relation === "self";
+  const aIsSelf = personA.relation === "self";
+  if (bIsSelf && !aIsSelf) {
+    return {
+      chart: chartB,
+      overlayChart: chartA,
+      aspects: aspects.map((a) => ({ ...a, from: a.to, to: a.from })),
+    };
+  }
+  return { chart: chartA, overlayChart: chartB, aspects };
+}
+
+export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interactive = true }: ChartWheelProps) {
   const hasHouses = chart.cusps != null && chart.cusps.length >= 12;
   const ascLon: number | null = hasHouses ? (chart.cusps![0] ?? null) : null;
-  const resolvedAspects = resolveAspects(chart, aspects, outerChart);
+  const isOverlay = overlayChart != null;
+  const overlayMissingAspects = isOverlay && aspectsProp == null;
+  const overlayWarnOnce = useRef(false);
+  if (overlayMissingAspects && !overlayWarnOnce.current) {
+    overlayWarnOnce.current = true;
+    console.warn(
+      "[ChartWheel] overlayChart was mounted without aspects — synastry lines will not draw. Pass the already-computed Compare aspects."
+    );
+  }
 
-  const innerPlanets = plotPlanets(chart, "inner", R_PLANET, ascLon);
-  const outerPlanets = outerChart ? plotPlanets(outerChart, "outer", R_PLANET_OUTER, ascLon) : [];
-  const planetPositions = [...innerPlanets, ...outerPlanets];
+  const planetPositions: PlanetGlyph[] = isOverlay
+    ? [
+        ...planetRing(chart.placements, ascLon, R_PLANET_A, "a"),
+        ...planetRing(overlayChart.placements, ascLon, R_PLANET_B, "b"),
+      ]
+    : planetRing(chart.placements, ascLon, R_PLANET, "a");
 
-  // Natal / passed self-aspects: both ends on `chart`. Biwheel synastry: from=inner, to=outer.
-  const toChart = outerChart ?? chart;
-  const aspectLines = resolvedAspects.map((a) => {
-    const endA = chart.placements.find((p) => p.body === a.from);
-    const endB = toChart.placements.find((p) => p.body === a.to);
-    if (!endA || !endB) return null;
-    const [x0, y0] = pt(R_INNER, svgAngle(endA.lon, ascLon));
-    const [x1, y1] = pt(R_INNER, svgAngle(endB.lon, ascLon));
-    return {
-      from: a.from,
-      to: a.to,
-      x0, y0, x1, y1,
-      stroke: harmonyStroke(a.harmony),
-      alpha: aspectAlpha(a.orb, a.harmony),
-    };
-  }).filter(Boolean) as Array<{
-    from: BodyName; to: BodyName;
-    x0: number; y0: number; x1: number; y1: number;
-    stroke: string; alpha: number;
-  }>;
+  const natalPrecisionOk = chart.precision === "exact" || chart.precision === "date";
+  const aspectLines: AspectLine[] = (() => {
+    if (isOverlay) {
+      // Overlay: only draw when Compare passes already-computed aspects.
+      if (!aspectsProp) return [];
+      return aspectsProp
+        .filter((a) => a.from !== a.to)
+        .filter((a) => a.orb < 5)
+        .slice(0, 12)
+        .map((a) => {
+          const pa = chart.placements.find((p) => p.body === a.from);
+          const pb = overlayChart.placements.find((p) => p.body === a.to);
+          if (!pa || !pb || pa.confident === false || pb.confident === false) return null;
+          const [x0, y0] = pt(R_PLANET_A, svgAngle(pa.lon, ascLon));
+          const [x1, y1] = pt(R_PLANET_B, svgAngle(pb.lon, ascLon));
+          return {
+            from: a.from,
+            to: a.to,
+            x0, y0, x1, y1,
+            stroke: harmonyStroke(a.harmony),
+            alpha: aspectAlpha(a.orb, a.harmony),
+          };
+        })
+        .filter(Boolean) as AspectLine[];
+    }
+    if (!natalPrecisionOk) return [];
+    // Person page passes aspects — draw exactly that list. Otherwise historical filter.
+    const list: WheelAspect[] = aspectsProp
+      ? aspectsProp.filter((a) => a.from !== a.to)
+      : computeSynastry(chart, chart).aspects
+        .filter((a) => a.from !== a.to)
+        .filter((a, idx, arr) => arr.findIndex((b) => [b.from, b.to].sort().join() === [a.from, a.to].sort().join() && b.type === a.type) === idx)
+        .filter((a) => a.orb < 5)
+        .slice(0, 12);
+    return list
+      .map((a) => {
+        const pa = chart.placements.find((p) => p.body === a.from);
+        const pb = chart.placements.find((p) => p.body === a.to);
+        if (!pa || !pb) return null;
+        const [x0, y0] = pt(R_INNER, svgAngle(pa.lon, ascLon));
+        const [x1, y1] = pt(R_INNER, svgAngle(pb.lon, ascLon));
+        return {
+          from: a.from,
+          to: a.to,
+          x0, y0, x1, y1,
+          stroke: harmonyStroke(a.harmony),
+          alpha: aspectAlpha(a.orb, a.harmony),
+        };
+      })
+      .filter(Boolean) as AspectLine[];
+  })();
 
   const houseCusps = hasHouses
     ? Array.from({ length: 12 }, (_, i) => {
@@ -174,23 +253,21 @@ export function ChartWheel({ chart, aspects, outerChart, interactive = true }: C
       })
     : [];
 
-  const [focus, setFocus] = useState<{ owner: ChartOwner; body: BodyName } | null>(null);
-  const showYearNote = chart.precision === "year" && aspectLines.length === 0;
+  const [focus, setFocus] = useState<{ owner: ChartOwner; body: string } | null>(null);
+  const showYearNote = !isOverlay && chart.precision === "year" && aspectLines.length === 0;
 
-  function lineDimmed(from: BodyName, to: BodyName): boolean {
+  function lineDimmed(from: string, to: string): boolean {
     if (!interactive || !focus) return false;
-    if (outerChart) {
-      // Synastry shape: from = inner body, to = outer body.
-      if (focus.owner === "inner") return focus.body !== from;
+    if (isOverlay) {
+      // Synastry shape: from = A (inner), to = B (outer).
+      if (focus.owner === "a") return focus.body !== from;
       return focus.body !== to;
     }
     return focus.body !== from && focus.body !== to;
   }
 
-  function onPlanetPointerEnter(owner: ChartOwner, body: BodyName, e: ReactPointerEvent) {
+  function onPlanetPointerEnter(owner: ChartOwner, body: string, e: ReactPointerEvent) {
     if (!interactive) return;
-    // Hover path (mouse/pen). Touch uses pointerup toggle below — a click after
-    // pointerenter would otherwise clear the hover focus immediately.
     if (e.pointerType === "touch") return;
     setFocus({ owner, body });
   }
@@ -201,11 +278,15 @@ export function ChartWheel({ chart, aspects, outerChart, interactive = true }: C
     setFocus(null);
   }
 
-  function onPlanetPointerUp(owner: ChartOwner, body: BodyName, e: ReactPointerEvent) {
+  function onPlanetPointerUp(owner: ChartOwner, body: string, e: ReactPointerEvent) {
     if (!interactive) return;
     if (e.pointerType !== "touch") return;
     setFocus((prev) => (prev && prev.owner === owner && prev.body === body ? null : { owner, body }));
   }
+
+  // Glyph size retuned for main's 72/96 rings (closer to each other and the sign band).
+  const glyphR = isOverlay ? 11 : 12;
+  const glyphFs = isOverlay ? 13 : 14;
 
   return (
     <div style={{ width: "100%", maxWidth: 290, margin: "0 auto" }}>
@@ -227,9 +308,12 @@ export function ChartWheel({ chart, aspects, outerChart, interactive = true }: C
           );
         })}
         {SIGNS_ORDER.map((sign, i) => {
-          const a0 = svgAngle(i * 30, ascLon), a1 = svgAngle(i * 30 + 30, ascLon);
-          const [qx0, qy0] = pt(R_OUT, a0), [qx1, qy1] = pt(R_OUT, a1);
-          const [qi1, qi1y] = pt(R_SIGN_IN, a1), [qi0, qi0y] = pt(R_SIGN_IN, a0);
+          const a0 = svgAngle(i * 30, ascLon);
+          const a1 = svgAngle(i * 30 + 30, ascLon);
+          const [qx0, qy0] = pt(R_OUT, a0);
+          const [qx1, qy1] = pt(R_OUT, a1);
+          const [qi1, qi1y] = pt(R_SIGN_IN, a1);
+          const [qi0, qi0y] = pt(R_SIGN_IN, a0);
           const [gx, gy] = pt(R_SIGN_GL, (a0 + a1) / 2);
           return (
             <g key={sign}>
@@ -239,20 +323,46 @@ export function ChartWheel({ chart, aspects, outerChart, interactive = true }: C
                 fillOpacity={0.18}
               />
               <line x1={qx0} y1={qy0} x2={qi0} y2={qi0y} stroke={LINE_COLOR} strokeWidth="1" />
-              <text x={gx} y={gy} fill="var(--cream)" fontSize="13" textAnchor="middle" dominantBaseline="central">{SIGN_GLYPH[sign]}</text>
+              <text x={gx} y={gy} fill="var(--cream)" fontSize="13" textAnchor="middle" dominantBaseline="central">
+                {SIGN_GLYPH[sign]}
+              </text>
             </g>
           );
         })}
         {hasHouses ? (
           <>
-            <text x={pt(R_OUT + 10, 180)[0]} y={pt(R_OUT + 10, 180)[1]} fill="var(--gold)" fontSize="8" textAnchor="middle" dominantBaseline="central" fontWeight="700">ASC</text>
-            {chart.mc ? <text x={pt(R_OUT + 10, svgAngle(chart.cusps![9]!, ascLon))[0]} y={pt(R_OUT + 10, svgAngle(chart.cusps![9]!, ascLon))[1]} fill="var(--gold)" fontSize="8" textAnchor="middle" dominantBaseline="central" fontWeight="700">MC</text> : null}
+            <text
+              x={pt(R_OUT + 10, 180)[0]}
+              y={pt(R_OUT + 10, 180)[1]}
+              fill="var(--gold)"
+              fontSize="8"
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontWeight="700"
+            >
+              ASC
+            </text>
+            {chart.mc ? (
+              <text
+                x={pt(R_OUT + 10, svgAngle(chart.cusps![9]!, ascLon))[0]}
+                y={pt(R_OUT + 10, svgAngle(chart.cusps![9]!, ascLon))[1]}
+                fill="var(--gold)"
+                fontSize="8"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontWeight="700"
+              >
+                MC
+              </text>
+            ) : null}
           </>
         ) : null}
         {houseCusps.map(({ i, x0, y0, x1, y1, hx, hy }) => (
           <g key={i}>
             <line x1={x0} y1={y0} x2={x1} y2={y1} stroke={LINE_COLOR} strokeWidth="0.8" />
-            <text x={hx} y={hy} fill="var(--mist2)" fontSize="8" textAnchor="middle" dominantBaseline="central">{i + 1}</text>
+            <text x={hx} y={hy} fill="var(--mist2)" fontSize="8" textAnchor="middle" dominantBaseline="central">
+              {i + 1}
+            </text>
           </g>
         ))}
         {planetPositions.map(({ key, owner, body, px, py, stroke, gly }) => {
@@ -268,13 +378,15 @@ export function ChartWheel({ chart, aspects, outerChart, interactive = true }: C
               style={{ cursor: interactive ? "pointer" : undefined, opacity: dimPlanet ? 0.35 : 1 }}
             >
               <circle
-                cx={px} cy={py} r="13"
+                cx={px} cy={py} r={glyphR}
                 fill="rgba(10,7,23,.92)"
                 stroke={stroke}
                 strokeWidth={isFocus ? 1.75 : 1.25}
               />
-              {/* Cream glyph fill: element-coloured air (#B79AD8) was unreadable at mobile width. */}
-              <text x={px} y={py} fill="var(--cream)" fontSize="15" textAnchor="middle" dominantBaseline="central">{gly}</text>
+              {/* Cream glyph fill: element-coloured air was unreadable at mobile width. */}
+              <text x={px} y={py} fill="var(--cream)" fontSize={glyphFs} textAnchor="middle" dominantBaseline="central">
+                {gly}
+              </text>
             </g>
           );
         })}
@@ -286,6 +398,15 @@ export function ChartWheel({ chart, aspects, outerChart, interactive = true }: C
           style={{ fontSize: ".72rem", marginTop: 8, textAlign: "center", maxWidth: "36ch", marginLeft: "auto", marginRight: "auto", lineHeight: 1.45 }}
         >
           Aspect lines need a birth date — a year alone can&apos;t place them honestly.
+        </p>
+      ) : null}
+      {overlayMissingAspects ? (
+        <p
+          className="muted"
+          data-overlay-aspects-missing=""
+          style={{ fontSize: ".72rem", marginTop: 8, textAlign: "center", maxWidth: "36ch", marginLeft: "auto", marginRight: "auto", lineHeight: 1.45 }}
+        >
+          {OVERLAY_ASPECTS_MISSING_NOTE}
         </p>
       ) : null}
     </div>

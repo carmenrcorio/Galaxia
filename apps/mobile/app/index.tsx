@@ -1,11 +1,12 @@
 import {
   computeSynastry,
-  describeTransit,
+  interpretTransit,
   todayTransitsForChart,
+  transitNotation,
   type NatalChart,
   type TransitHit
 } from "@galaxia/astro";
-import { peopleForTodaySky } from "@galaxia/core";
+import { isMinorForSafety, peopleForTodaySky } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -19,8 +20,11 @@ import { useEntitlement } from "../src/providers/entitlement-provider";
 interface PersonRow {
   id: string;
   display_name: string;
-  birth_precision: "exact" | "date" | "year";
+  relation: string;
+  birth_precision: "exact" | "date" | "year" | "none";
+  birth_date?: string | null;
   is_self: boolean;
+  is_minor: boolean;
   /** Remembrance marker — passed people are excluded from live "Today in your sky". */
   passed_at?: string | null;
 }
@@ -43,7 +47,8 @@ interface PersonSky {
   id: string;
   name: string;
   isSelf: boolean;
-  precision: "exact" | "date" | "year";
+  isMinor: boolean;
+  precision: PersonRow["birth_precision"];
   hasChart: boolean;
   transits: TransitHit[];
 }
@@ -135,9 +140,14 @@ export default function HomeScreen() {
     setHomeStatus(null);
     try {
       const cacheKey = `home_state:${session.user.id}`;
+      /* FOUND HOLE CLOSED (web home parity): loadHome previously selected
+         birth_precision but NOT is_minor / birth_date, so isMinorForSafety
+         could not run on the sky module — a surface that renders content
+         about a person. Galaxy safety now loads those fields (+ relation)
+         and gates via isMinorForSafety — never raw is_minor alone. */
       const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }] = await Promise.all([
       supabase.from("profiles").select("display_name").eq("id", session.user.id).single(),
-      supabase.from("people").select("id, display_name, birth_precision, is_self, passed_at").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
+      supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
       supabase.from("charts").select("person_id, data").in(
         "person_id",
         (
@@ -146,7 +156,7 @@ export default function HomeScreen() {
           ).data ?? []
         ).map((row) => row.id)
       ),
-      supabase.from("threads").select("id, mode").eq("owner_id", session.user.id).order("created_at", { ascending: false }).limit(8)
+      supabase.from("threads").select("id, mode").eq("owner_id", session.user.id).eq("status", "active").order("created_at", { ascending: false }).limit(8)
       ]);
 
       setWelcomeName(profile?.display_name ?? session.user.email?.split("@")[0] ?? "stargazer");
@@ -182,6 +192,12 @@ export default function HomeScreen() {
           id: person.id,
           name: person.display_name,
           isSelf: person.is_self,
+          /* Age-aware gate — never raw is_minor alone (ENGINEERING §9). */
+          isMinor: isMinorForSafety({
+            isMinor: person.is_minor,
+            birthDate: person.birth_date,
+            birthPrecision: person.birth_precision
+          }),
           precision: person.birth_precision,
           hasChart: Boolean(chart),
           transits: todayTransitsForChart(chart, now)
@@ -412,9 +428,19 @@ export default function HomeScreen() {
         </Text>
         {[...personSkies.filter((sky) => sky.isSelf), ...personSkies.filter((sky) => !sky.isSelf)].map((sky) => {
           const top = sky.transits[0];
-          const detail = top
-            ? `${describeTransit(top, sky.isSelf ? "your" : "their")} · ${top.orb.toFixed(1)}° orb${sky.transits.length > 1 ? ` (+${sky.transits.length - 1} more)` : ""}`
-            : sky.precision === "year"
+          /* Same shared interpretTransit path as web home — minorSafe keeps
+             a child's reading age-appropriate (§9/§13). No mobile-only copy. */
+          const meaning = top
+            ? interpretTransit(top, {
+                possessive: sky.isSelf ? "your" : "their",
+                minorSafe: sky.isMinor
+              }).short
+            : null;
+          const proof = top
+            ? `${transitNotation(top)} · ${top.orb.toFixed(1)}°${sky.transits.length > 1 ? ` (+${sky.transits.length - 1} more)` : ""}`
+            : null;
+          const hedge =
+            sky.precision === "year"
               ? "Birth year only — a birth date is needed for daily transits."
               : !sky.hasChart
                 ? "No birth data yet."
@@ -435,9 +461,14 @@ export default function HomeScreen() {
                 <Text style={{ color: tokens.colors.cream, fontWeight: "600", fontSize: 13 }}>
                   {sky.isSelf ? "You" : sky.name}
                 </Text>
-                <Text style={{ color: top ? tokens.colors.mist : tokens.colors.mist2, fontSize: 12, fontStyle: top ? "normal" : "italic" }}>
-                  {detail}
-                </Text>
+                {meaning && proof ? (
+                  <>
+                    <Text style={{ color: tokens.colors.cream, fontSize: 12, lineHeight: 17 }}>{meaning}</Text>
+                    <Text style={{ color: tokens.colors.mist2, fontSize: 11 }}>{proof}</Text>
+                  </>
+                ) : (
+                  <Text style={{ color: tokens.colors.mist2, fontSize: 12, fontStyle: "italic" }}>{hedge}</Text>
+                )}
               </Pressable>
             </Link>
           );

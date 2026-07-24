@@ -105,13 +105,21 @@ describe("BUG 2 — passed person excluded from mobile Today in your sky", () =>
     const src = readFileSync(resolve(__dirname, "../../app/index.tsx"), "utf8");
     expect(src).toContain("peopleForTodaySky");
     expect(src).toContain("todayTransitsForChart");
-    expect(src).toContain("describeTransit");
+    expect(src).toContain("interpretTransit");
+    expect(src).toContain("transitNotation");
+    expect(src).toContain("isMinorForSafety");
     expect(src).toContain('from "@galaxia/core"');
     expect(src).toMatch(/peopleForTodaySky\(castPeople\)/);
     expect(src).toMatch(/\.select\([^)]*passed_at/);
-    // No local reimplementation of today's transit helper.
+    expect(src).toMatch(/\.select\([^)]*is_minor/);
+    expect(src).toContain("birth_date");
+    expect(src).toContain("birth_precision");
+    expect(src).toContain("minorSafe");
+    expect(src).toMatch(/\.eq\("status", "active"\)/);
+    // No local reimplementation of today's transit / safety helpers.
     expect(src).not.toMatch(/function todayTransitsForChart/);
-    expect(src).not.toMatch(/function describeTransit/);
+    expect(src).not.toMatch(/function interpretTransit/);
+    expect(src).not.toContain("describeTransit");
     expect(src).toContain("passed people are excluded");
   });
 });

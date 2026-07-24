@@ -183,9 +183,11 @@ export function MemorialConstellationPicker({
             background: "rgba(10,7,23,.75)",
             backdropFilter: "blur(6px)",
             display: "flex",
-            alignItems: "center",
+            /* flex-start + overlay scroll — tall library must not clip the header. */
+            alignItems: "flex-start",
             justifyContent: "center",
-            padding: 16,
+            padding: "24px 16px",
+            overflowY: "auto",
           }}
           onClick={() => {
             if (!busy) setOpen(false);
@@ -199,14 +201,30 @@ export function MemorialConstellationPicker({
             style={{
               maxWidth: 480,
               width: "100%",
-              maxHeight: "88vh",
-              overflowY: "auto",
+              maxHeight: "min(88vh, 100%)",
+              display: "flex",
+              flexDirection: "column",
               borderColor: REMEMBRANCE_CHROME.border,
               background: REMEMBRANCE_CHROME.background,
+              margin: "0 auto",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 8,
+                flexShrink: 0,
+                position: "sticky",
+                top: 0,
+                zIndex: 1,
+                background: REMEMBRANCE_CHROME.background,
+                paddingBottom: 4,
+              }}
+            >
               {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.label */}
               <p id={dialogTitleId} className="eyebrow" style={{ margin: 0, color: REMEMBRANCE_CHROME.ancient }}>
                 {MEMORIAL_CONSTELLATION_PICKER_COPY.label}
@@ -214,22 +232,21 @@ export function MemorialConstellationPicker({
               <button
                 ref={closeButtonRef}
                 type="button"
+                className="pill-link"
                 onClick={() => setOpen(false)}
                 disabled={busy}
                 aria-label="Close constellation library"
                 style={{
-                  background: "none",
-                  border: "none",
-                  color: "var(--mist2)",
-                  fontSize: "1.2rem",
+                  fontSize: ".76rem",
+                  padding: "5px 12px",
+                  flexShrink: 0,
                   cursor: busy ? "wait" : "pointer",
-                  lineHeight: 1,
-                  padding: 4,
                 }}
               >
-                ×
+                Close
               </button>
             </div>
+            <div style={{ overflowY: "auto", minHeight: 0, flex: 1 }}>
             {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.helper */}
             <p className="muted" style={{ fontSize: ".78rem", lineHeight: 1.55, margin: "0 0 14px", maxWidth: "52ch" }}>
               {MEMORIAL_CONSTELLATION_PICKER_COPY.helper}
@@ -362,6 +379,7 @@ export function MemorialConstellationPicker({
               </p>
             ) : null}
             {error ? <p className="error" style={{ fontSize: ".82rem", marginTop: 12 }}>{error}</p> : null}
+            </div>
           </div>
         </div>
       ) : null}

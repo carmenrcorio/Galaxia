@@ -39,6 +39,23 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     expect(src).not.toContain("livingHonorCandidates");
   });
 
+  it("MemorialConstellationPicker is collapsed by default; library opens on Change", () => {
+    const src = readFileSync(
+      resolve(__dirname, "../components/memorial-constellation-picker.tsx"),
+      "utf8"
+    );
+    expect(src).toContain('useState(false)');
+    expect(src).toContain("memorial-constellation-collapsed");
+    expect(src).toContain("Change");
+    expect(src).toContain('role="dialog"');
+    expect(src).toContain("aria-haspopup=\"dialog\"");
+    // Myths live in the expanded library, not the collapsed row.
+    expect(src).toContain("pattern.myth");
+    expect(src).toMatch(/Collapsed selection row[\s\S]*No myths here/);
+    // Collapsed until Change — open starts false; library gated on `open`.
+    expect(src).toMatch(/\{open \? \(/);
+  });
+
   it("HonorDeclarationBox owns the bottom honor section id", () => {
     const src = readFileSync(
       resolve(__dirname, "../components/honor-declaration.tsx"),

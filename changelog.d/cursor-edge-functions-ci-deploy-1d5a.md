@@ -1,0 +1,13 @@
+## Edge functions deploy + parity on merge (branch `cursor/edge-functions-ci-deploy-1d5a`) — 2026-07-24
+
+**Trigger**: PR #74 merged with a real `vela-chat` fix; users kept hitting deployed v10 (~11 days old) until a laptop redeploy. Merge to `main` only triggered Vercel (`apps/web`). There was no CI for `supabase/functions/*`, and silence was the actual root cause of the gap.
+
+`[ADDED]` **GitHub Actions deploy for changed edge functions** (`.github/workflows/deploy-edge-functions.yml`). On push to `main` with path filter `supabase/functions/**` (plus config/workflow), deploys each changed slug to `eigfvribtntbxyjutsma` with `supabase functions deploy … --no-verify-jwt`. Missing `SUPABASE_ACCESS_TOKEN` or a failed deploy fails the run loudly (`::error::`). Concurrency group `supabase-edge-functions-deploy` with `cancel-in-progress: true` so parallel merges cannot land an older bundle over a newer one.
+
+`[ADDED]` **`verify_jwt` post-deploy assertion.** Live custom bearer flow requires `verify_jwt: false`. After every deploy the workflow GETs the function metadata and fails if `verify_jwt` is not still `false`. `supabase/config.toml` pins `[functions.vela-chat] verify_jwt = false` so CLI defaults match.
+
+`[ADDED]` **Source-body parity check** (`scripts/edge-function-parity.mjs` + `.github/workflows/edge-functions-parity.yml`). Compares Management API multipart **source body text** (`GET …/functions/{slug}/body`) to `supabase/functions/<slug>/…` — **not** `ezbr_sha256` (eszip bundle hash; a raw `index.ts` SHA will never equal it). Runs on every merge to `main` (no path filter) and on a daily cron (`17 13 * * *`), plus `workflow_dispatch`. Also asserts expected `verify_jwt` when talking to the live API. Proven before rely: matching fixture → exit 0; deliberate one-line divergence → exit 1 with `SOURCE DIVERGENCE`.
+
+`[CHANGED]` **`docs/ship-checklist.md` step 4** — edge deploy is CI, not a manual laptop step. Break-glass manual deploy must keep `--no-verify-jwt`. Closed the stale `[OPEN] vela-chat v10` line in `changelog.d/cursor-mobile-overlay-entitlement-race-ae3e.md`.
+
+`[OPEN]` **CI token + notifications (human).** Create a **new** Supabase personal access token named for CI (e.g. `galaxia-github-actions-edge-ci`) at https://supabase.com/dashboard/account/tokens — do **not** reuse the laptop CLI token — and set it as the repo Actions secret `SUPABASE_ACCESS_TOKEN`. Default GitHub Actions failure mail goes only to the pushing actor (merge) or the workflow creator (cron); that is not enough for this failure mode — wire Slack/email to the Actions failure signal separately.

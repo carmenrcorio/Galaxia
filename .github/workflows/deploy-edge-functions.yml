@@ -1,0 +1,121 @@
+# Deploy changed Supabase Edge Functions on merge to main.
+# Vercel only ships apps/web — edge code never left the laptop without this.
+name: Deploy Edge Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+      - ".github/workflows/deploy-edge-functions.yml"
+      - "scripts/edge-function-parity.mjs"
+  workflow_dispatch:
+
+# Parallel merges this week: never let an older in-flight deploy finish after a
+# newer one. cancel-in-progress drops the stale run; the newest checkout wins.
+concurrency:
+  group: supabase-edge-functions-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: eigfvribtntbxyjutsma
+    steps:
+      - name: Require SUPABASE_ACCESS_TOKEN
+        run: |
+          if [ -z "${SUPABASE_ACCESS_TOKEN}" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN repo secret is not set. Create a CI-dedicated Supabase personal access token (do not reuse the laptop CLI token) named e.g. galaxia-github-actions-edge-ci and add it as the SUPABASE_ACCESS_TOKEN Actions secret."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Resolve functions to deploy
+        id: targets
+        run: |
+          set -euo pipefail
+          ALL="$(find supabase/functions -mindepth 1 -maxdepth 1 -type d ! -name '_*' -printf '%f\n' | sort | tr '\n' ' ')"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "functions=${ALL}" >> "$GITHUB_OUTPUT"
+            echo "Deploying all (workflow_dispatch): ${ALL}"
+            exit 0
+          fi
+          BEFORE="${{ github.event.before }}"
+          if [ -z "${BEFORE}" ] || [ "${BEFORE}" = "0000000000000000000000000000000000000000" ]; then
+            echo "functions=${ALL}" >> "$GITHUB_OUTPUT"
+            echo "Deploying all (no usable before SHA): ${ALL}"
+            exit 0
+          fi
+          CHANGED="$(git diff --name-only "${BEFORE}" "${{ github.sha }}" -- supabase/functions \
+            | awk -F/ 'NF>=3 {print $3}' | sort -u | tr '\n' ' ')"
+          # config.toml / workflow / parity script changes → redeploy all so
+          # verify_jwt and check logic stay aligned with repo.
+          META_CHANGED="$(git diff --name-only "${BEFORE}" "${{ github.sha }}" -- \
+            supabase/config.toml \
+            .github/workflows/deploy-edge-functions.yml \
+            scripts/edge-function-parity.mjs || true)"
+          if [ -n "${META_CHANGED}" ]; then
+            echo "functions=${ALL}" >> "$GITHUB_OUTPUT"
+            echo "Deploying all (config/workflow change): ${ALL}"
+            exit 0
+          fi
+          if [ -z "${CHANGED// }" ]; then
+            echo "functions=${ALL}" >> "$GITHUB_OUTPUT"
+            echo "Path filter matched but no per-function diff; deploying all: ${ALL}"
+            exit 0
+          fi
+          echo "functions=${CHANGED}" >> "$GITHUB_OUTPUT"
+          echo "Deploying changed: ${CHANGED}"
+
+      - name: Deploy functions (--no-verify-jwt)
+        run: |
+          set -euo pipefail
+          FAILED=0
+          for slug in ${{ steps.targets.outputs.functions }}; do
+            echo "=== Deploying ${slug} ==="
+            if ! supabase functions deploy "${slug}" \
+              --project-ref "${PROJECT_REF}" \
+              --no-verify-jwt; then
+              echo "::error::supabase functions deploy ${slug} FAILED"
+              FAILED=1
+            fi
+          done
+          if [ "${FAILED}" -ne 0 ]; then
+            echo "::error::One or more edge function deploys failed. This run is red on purpose."
+            exit 1
+          fi
+
+      - name: Assert verify_jwt still false
+        run: |
+          set -euo pipefail
+          FAILED=0
+          for slug in ${{ steps.targets.outputs.functions }}; do
+            echo "=== verify_jwt check: ${slug} ==="
+            RESP="$(curl -fsS \
+              -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+              "https://api.supabase.com/v1/projects/${PROJECT_REF}/functions/${slug}")"
+            ACTUAL="$(node -e 'const j=JSON.parse(process.argv[1]); process.stdout.write(String(j.verify_jwt))' "${RESP}")"
+            echo "deployed verify_jwt=${ACTUAL}"
+            if [ "${ACTUAL}" != "false" ]; then
+              echo "::error::${slug} verify_jwt flipped to ${ACTUAL} after deploy (expected false). Custom bearer auth is broken if platform JWT verification is on. Failing loudly."
+              FAILED=1
+            fi
+          done
+          if [ "${FAILED}" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Source-body parity after deploy
+        run: node scripts/edge-function-parity.mjs --project-ref "${PROJECT_REF}"

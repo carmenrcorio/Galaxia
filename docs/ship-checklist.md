@@ -37,7 +37,17 @@
 3. Set Vela secrets on the `vela-chat` function (Anthropic only):
    - `ANTHROPIC_API_KEY`
    - `ANTHROPIC_MODEL` (optional; defaults to `claude-sonnet-5`)
-4. Deploy `vela-chat` edge function.
+4. Edge function deploy is **CI**, not a laptop step. On merge to `main`,
+   `.github/workflows/deploy-edge-functions.yml` deploys changed functions under
+   `supabase/functions/**` to project `eigfvribtntbxyjutsma` with
+   `--no-verify-jwt`, then asserts live `verify_jwt` is still `false`.
+   `.github/workflows/edge-functions-parity.yml` compares deployed source bodies
+   to `main` on every merge and on a daily cron (no path filter). Requires repo
+   secret `SUPABASE_ACCESS_TOKEN` — a **CI-dedicated** Supabase personal access
+   token (create at https://supabase.com/dashboard/account/tokens; do **not**
+   reuse the laptop CLI token). Manual `supabase functions deploy` is break-glass
+   only; if you use it, keep `--no-verify-jwt` and confirm the parity workflow
+   stays green.
 5. Validate RLS and shared/minor guardrail behavior in staging.
 
 ## Store listing assets

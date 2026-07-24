@@ -6,10 +6,4 @@
 
 `[CONFIRMED UNTOUCHED]` **Save gating stays.** `saveGroup` still checks `canUseGroups`. Entitlement banner and Galaxia+ copy unchanged. `isMinorForSafety` untouched on all group surfaces.
 
-`[OPEN]` **vela-chat on `eigfvribtntbxyjutsma` is stale (deployed v10).** Live function lacks the #74 group cohort context and `group_id` private-notes filter present on main. Edge does not ship on merge. Deploy when approved (do not run without go-ahead):
-
-```bash
-supabase functions deploy vela-chat --project-ref eigfvribtntbxyjutsma --no-verify-jwt
-```
-
-(or redeploy via Supabase MCP `deploy_edge_function` with the same `verify_jwt: false` the live function already uses).
+`[FIXED]` **vela-chat stale-v10 gap closed.** Live was redeployed past v10 (group cohort context + later framing fixes are on the project). Ongoing: merge-to-main edge deploy + daily source-body parity in GitHub Actions (see `cursor/edge-functions-ci-deploy-1d5a`) so this class of silence cannot recur.

@@ -219,7 +219,7 @@ Ordered by structural leverage; each stage ships independently. No calendar esti
 | **R5 (rest)** | E2 Vela capture card, E4 entry points | vela page + edge function (extraction) | E2 sandboxed behind the confirmation card |
 | **Parallel** | **Phase 1 pricing/Stripe** per `galaxia-pricing-implementation-spec.md` | — | Independent; A6 becomes moot when it lands |
 
-Risk notes: R1's migration is additive-only (safe); B5's canvas hit-testing is the only genuinely fiddly UI work in the plan; E2 is the only place an LLM touches structured data and it is sandboxed behind the confirmation card; the Vela edge function changes (B6 hint context, E2 extraction) each require a `supabase functions deploy vela-chat`.
+Risk notes: R1's migration is additive-only (safe); B5's canvas hit-testing is the only genuinely fiddly UI work in the plan; E2 is the only place an LLM touches structured data and it is sandboxed behind the confirmation card; Vela edge function changes (B6 hint context, E2 extraction) ship via the merge-to-main GitHub Action (`.github/workflows/deploy-edge-functions.yml`) — not a laptop `supabase functions deploy`.
 
 Mobile: everything here is web-first (the live product). The mobile app inherits the data model for free — the Record, pins, and saved readings are plain rows; mobile surfaces follow in a later pass and are explicitly out of scope here.
 

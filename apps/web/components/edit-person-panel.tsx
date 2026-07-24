@@ -10,23 +10,18 @@ import {
   CHART_ENGINE_VERSION,
 } from "@galaxia/astro";
 import {
-  MEMORIAL_CONSTELLATIONS,
-  MEMORIAL_CONSTELLATION_PICKER_COPY,
   OWNED_DELETE_COPY,
   STAR_COLOR_PALETTE,
   formatPersonDeleteConfirmation,
   groupsCollapsedByMemberRemoval,
   isMinorForSafety,
-  normalizeMemorialConstellationForWrite,
   normalizeStarColorForWrite,
-  type MemorialConstellationId,
 } from "@galaxia/core";
 import { useState } from "react";
 import { getPreferredHouseSystem } from "../lib/house-system";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { AskBirthData } from "./ask-birth-data";
 import { CustomCheck } from "./custom-check";
-import { MemorialConstellationGlyph } from "./memorial-constellation-glyph";
 import { Spinner } from "./spinner";
 
 const MONTHS = [
@@ -44,8 +39,6 @@ interface PersonRow {
   passed_at?: string|null;
   /** Curated palette hex; null = element-derived node color on the constellation. */
   star_color?: string|null;
-  /** Assigned memorial pattern id; null = ancient light (unassigned deceased). */
-  memorial_constellation?: string|null;
   is_self?: boolean;
 }
 interface Props { person: PersonRow; userId: string; onSaved: () => void; onDeleted: () => void; }
@@ -81,10 +74,6 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
   const [starColor, setStarColor]   = useState<string|null>(
     normalizeStarColorForWrite(person.star_color)
   );
-  const [memorialConstellation, setMemorialConstellation] = useState<MemorialConstellationId | null>(
-    normalizeMemorialConstellationForWrite(person.memorial_constellation)
-  );
-  const [memorialBusy, setMemorialBusy] = useState(false);
 
   // Populate structured fields from stored data
   const storedDate = parseDateStr(person.birth_date);
@@ -158,7 +147,6 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
         birth_lat: built.birth.lat ?? null, birth_lng: built.birth.lng ?? null,
         tz_offset_min: built.tzOffsetMin ?? null,
         star_color: normalizeStarColorForWrite(starColor),
-        memorial_constellation: normalizeMemorialConstellationForWrite(memorialConstellation),
       }).eq("id", person.id).eq("owner_id", userId);
       if (pErr) throw new Error(pErr.message);
       const { error: cErr } = await supabase.from("charts").upsert({ person_id: person.id, house_system: natal.houseSystem ?? null, data: natal, engine_version: CHART_ENGINE_VERSION });
@@ -253,20 +241,6 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
     setStatus(nextPassed
       ? "Their light stays in your galaxy — remembered."
       : "Restored — they're held as present again.");
-    onSaved();
-  }
-
-  /** Persist memorial pattern immediately (Remembrance-gated; chart untouched). */
-  async function setMemorialPattern(next: MemorialConstellationId | null) {
-    setMemorialBusy(true); setStatus(null);
-    const value = normalizeMemorialConstellationForWrite(next);
-    const { error } = await supabase.from("people")
-      .update({ memorial_constellation: value })
-      .eq("id", person.id)
-      .eq("owner_id", userId);
-    setMemorialBusy(false);
-    if (error) { setStatus(error.message); return; }
-    setMemorialConstellation(value);
     onSaved();
   }
 
@@ -477,111 +451,9 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
               </p>
               <p className="muted" style={{ fontSize: ".78rem", lineHeight: 1.55, marginBottom: 12 }}>
                 Their chart stays. They remain in your galaxy and in Compare. You can restore them as present anytime.
+                {/* FOUNDER-REVIEW */}
+                {" "}Choose their constellation in the Remembrance space on this page.
               </p>
-
-              {/* Memorial constellation — gated on passed_at like Remembrance. */}
-              <div style={{ marginBottom: 14 }}>
-                {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.label */}
-                <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginBottom: 4 }}>
-                  {MEMORIAL_CONSTELLATION_PICKER_COPY.label}
-                </p>
-                {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.helper */}
-                <p className="muted" style={{ fontSize: ".72rem", lineHeight: 1.5, marginBottom: 10 }}>
-                  {MEMORIAL_CONSTELLATION_PICKER_COPY.helper}
-                </p>
-                <div
-                  role="radiogroup"
-                  /* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.label */
-                  aria-label={MEMORIAL_CONSTELLATION_PICKER_COPY.label}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))",
-                    gap: 8,
-                  }}
-                >
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={memorialConstellation === null}
-                    /* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.noneLabel */
-                    aria-label={MEMORIAL_CONSTELLATION_PICKER_COPY.noneLabel}
-                    disabled={memorialBusy}
-                    onClick={() => void setMemorialPattern(null)}
-                    style={{
-                      display: "grid",
-                      justifyItems: "center",
-                      gap: 6,
-                      padding: "10px 8px",
-                      borderRadius: 12,
-                      cursor: memorialBusy ? "wait" : "pointer",
-                      border: memorialConstellation === null
-                        ? "1px solid rgba(230,174,108,.55)"
-                        : "1px solid rgba(183,154,216,.18)",
-                      background: memorialConstellation === null
-                        ? "rgba(230,174,108,.10)"
-                        : "rgba(23,17,48,.45)",
-                      color: memorialConstellation === null ? "var(--gold)" : "var(--mist)",
-                      fontFamily: "var(--sans)",
-                    }}
-                  >
-                    <span
-                      aria-hidden
-                      style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: "50%",
-                        background: "radial-gradient(circle, rgba(111,177,184,.35) 0%, rgba(111,177,184,.08) 55%, transparent 70%)",
-                      }}
-                    />
-                    {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.noneLabel */}
-                    <span style={{ fontSize: 11, textAlign: "center", lineHeight: 1.3 }}>
-                      {MEMORIAL_CONSTELLATION_PICKER_COPY.noneLabel}
-                    </span>
-                  </button>
-                  {MEMORIAL_CONSTELLATIONS.map((pattern) => {
-                    const selected = memorialConstellation === pattern.id;
-                    return (
-                      <button
-                        key={pattern.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={selected}
-                        /* FOUNDER-REVIEW: pattern.name */
-                        aria-label={pattern.name}
-                        disabled={memorialBusy}
-                        onClick={() => void setMemorialPattern(pattern.id as MemorialConstellationId)}
-                        style={{
-                          display: "grid",
-                          justifyItems: "center",
-                          gap: 6,
-                          padding: "10px 8px",
-                          borderRadius: 12,
-                          cursor: memorialBusy ? "wait" : "pointer",
-                          border: selected
-                            ? "1px solid rgba(230,174,108,.55)"
-                            : "1px solid rgba(183,154,216,.18)",
-                          background: selected
-                            ? "rgba(230,174,108,.10)"
-                            : "rgba(23,17,48,.45)",
-                          color: selected ? "var(--gold)" : "var(--mist)",
-                          fontFamily: "var(--sans)",
-                        }}
-                      >
-                        <MemorialConstellationGlyph
-                          pattern={pattern}
-                          size={56}
-                          color={selected ? "var(--gold)" : "var(--gold-soft)"}
-                          title={pattern.name}
-                        />
-                        {/* FOUNDER-REVIEW: pattern.name */}
-                        <span style={{ fontSize: 11, textAlign: "center", lineHeight: 1.3 }}>
-                          {pattern.name}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
 
               {!confirmRemembrance ? (
                 <button

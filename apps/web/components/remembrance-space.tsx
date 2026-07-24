@@ -22,12 +22,15 @@ import {
   shouldShowRemembranceSpace,
 } from "@galaxia/core";
 import { REMEMBRANCE_CHROME, remembranceVelaHref } from "../lib/remembrance";
+import { MemorialConstellationPicker } from "./memorial-constellation-picker";
 
 interface RemembrancePerson {
   id: string;
   display_name: string;
   relation?: string | null;
   passed_at?: string | null;
+  /** Assigned memorial pattern id; null = ancient light on `/app`. */
+  memorial_constellation?: string | null;
   is_self?: boolean;
 }
 
@@ -132,6 +135,15 @@ export function RemembranceSpace({
         A private space for {person.display_name} — only you see this. Their chart stays with you;
         nothing here is shared.
       </p>
+
+      {/* Memorial constellation — top of Remembrance; writes people.memorial_constellation
+          which `/app` already reads via usesMemorialGlyph → getMemorialConstellation. */}
+      <MemorialConstellationPicker
+        personId={person.id}
+        userId={userId}
+        value={person.memorial_constellation}
+        onChanged={() => onSaved?.()}
+      />
 
       {/* Chart framing — existing placements only, honest hedging */}
       {chartLines.length > 0 ? (

@@ -1,29 +1,16 @@
 "use client";
 
-import {
-  computeNatalChart,
-  buildBirthInput,
-  type BirthFormInput,
-  CHART_ENGINE_VERSION,
-} from "@galaxia/astro";
-import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety, type GalaxyPickerRelation } from "@galaxia/core";
+import { type BirthFormInput } from "@galaxia/astro";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { AddPersonForm } from "../../components/add-person-form";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
 import { CosmicBackground } from "../../components/cosmic-background";
-import { CustomCheck } from "../../components/custom-check";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { Spinner } from "../../components/spinner";
-import { getPreferredHouseSystem } from "../../lib/house-system";
+import { persistPerson } from "../../lib/persist-person";
 import { decodeBirthQuery } from "../../lib/quick-chart";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
-
-type Relation = GalaxyPickerRelation | "self";
-
-// Ordered by galaxy closeness (inner → outer). Shared with mobile / save /
-// quick-check via GALAXY_RELATION_PICKER_OPTIONS (P1 ring remap).
-// FOUNDER-REVIEW: picker labels — refine voice before merge.
-const relationOptions = GALAXY_RELATION_PICKER_OPTIONS;
 
 const baseInput: BirthFormInput = BASE_BIRTH_INPUT;
 
@@ -34,6 +21,9 @@ const baseInput: BirthFormInput = BASE_BIRTH_INPUT;
  * story is framed positively at every turn — more data = more resolution,
  * never "you're missing something." A faint star is not less loved, only less
  * known. Nothing here ever implies missing data breaks the product.
+ *
+ * Field-level add-person copy (minor checkbox, etc.) lives on AddPersonForm so
+ * the standalone /app/add-person page stays in sync — do not duplicate it here.
  * ────────────────────────────────────────────────────────────────────────── */
 
 // FOUNDER-REVIEW: authored onboarding copy — refine voice.
@@ -49,7 +39,7 @@ const COPY = {
     "Your birth time unlocks your Rising sign and your houses — the specific, personal way your chart is yours, not just your Sun sign. Don't know it? That's completely fine. You'll still get your Sun, your Moon, and real, accurate readings — we just leave out the parts a time would decide, rather than guessing them.",
   selfSaved: "You're in your sky",
 
-  // Step 2 — Your first person
+  // Step 2 — Your first person (chrome only — fields are AddPersonForm)
   personEyebrow: "Step 2 · Add someone you love",
   personTitle: "Now add someone who matters to you",
   personLede:
@@ -63,11 +53,6 @@ const COPY = {
     "Only the year: that's the generational layer — the slow outer planets that shaped their whole era. Even just a birth year places your grandmother in your sky.",
   precisionNone:
     "Don't know their birthday yet? Add their name now and fill in the rest whenever you have it — or ask them. Nothing is lost by starting light.",
-
-  // Minor
-  minorLabel: "This person is a minor (under 18)",
-  minorExplain:
-    "If you're adding a child, check this. Galaxia keeps guidance about a minor private to you — there's never any two-way AI chat with a child. As a backstop, we also protect anyone whose birth date shows they're under 18 even if this is left unchecked, but checking it makes your intent clear from the start.",
 
   // Step 3 — What you got
   doneEyebrow: "Step 3 · Your constellation is live",
@@ -127,20 +112,16 @@ export default function WelcomePage() {
 
   const [selfName, setSelfName] = useState("");
   const [selfInput, setSelfInput] = useState<BirthFormInput>(baseInput);
-  const [personName, setPersonName] = useState("");
-  const [personRelation, setPersonRelation] = useState<Relation>("friend");
-  const [personMinor, setPersonMinor] = useState(false);
-  const [personInput, setPersonInput] = useState<BirthFormInput>(baseInput);
+  const [prefillName, setPrefillName] = useState("");
+  const [prefillBirth, setPrefillBirth] = useState<BirthFormInput | undefined>(undefined);
   const [people, setPeople] = useState<
     Array<{ id: string; display_name: string; relation: string; birth_precision: string; is_self: boolean }>
   >([]);
   const [savingSelf, setSavingSelf] = useState(false);
-  const [savingPerson, setSavingPerson] = useState(false);
   const [status, setStatus] = useState<{ text: string; ok: boolean } | null>(null);
 
   // No people cap. Value compounds with every person added; nothing is gated.
   const canSaveSelf = selfName.trim().length > 1;
-  const canSavePerson = personName.trim().length > 1;
 
   // BUG A: never show the create-self form to someone who already has a self.
   const selfPerson = people.find((p) => p.is_self) ?? null;
@@ -150,6 +131,7 @@ export default function WelcomePage() {
   // an established constellation → the "what you got" recap. The /start
   // resolver normally sends established users straight to /app, but if they do
   // reach here we still land them on the recap rather than the empty step 1.
+  // Returning users who want to add someone use /app/add-person — not this flow.
   const resolveStep = (rows: typeof people): 1 | 2 | 3 => {
     const hasSelf = rows.some((p) => p.is_self);
     const hasOther = rows.some((p) => !p.is_self);
@@ -190,8 +172,8 @@ export default function WelcomePage() {
     const prefill = decodeBirthQuery(params);
     if (!prefill) return;
     const name = params.get("name");
-    if (name) setPersonName(name);
-    setPersonInput(prefill);
+    if (name) setPrefillName(name);
+    setPrefillBirth(prefill);
   }, []);
 
   const fetchPeople = async (): Promise<typeof people> => {
@@ -204,87 +186,6 @@ export default function WelcomePage() {
     const rows = data ?? [];
     setPeople(rows);
     return rows;
-  };
-
-  const persistPerson = async ({
-    displayName,
-    relation,
-    isSelf,
-    isMinor,
-    input
-  }: {
-    displayName: string;
-    relation: Relation;
-    isSelf: boolean;
-    isMinor: boolean;
-    input: BirthFormInput;
-  }) => {
-    if (!userId) throw new Error("Please sign in first.");
-
-    // ── Progressive capture: name + relation only, no birth data yet ────────
-    // No birth date exists to compute an age backstop from, so the manual
-    // flag is the only signal here — isMinorForSafety still runs it through
-    // the single source of truth rather than trusting the raw value inline.
-    if (input.precision === "none") {
-      const { error: personError } = await supabase.from("people").insert({
-        owner_id: userId,
-        is_self: isSelf,
-        display_name: displayName.trim(),
-        relation,
-        is_minor: isMinorForSafety({ isMinor, birthPrecision: "none" }),
-        birth_precision: "none",
-        birth_date: null,
-        birth_time: null,
-        birth_place: null,
-        birth_lat: null,
-        birth_lng: null,
-        tz_offset_min: null
-      });
-      if (personError) throw new Error(personError.message);
-      return null; // no chart computed — none exists yet
-    }
-
-    // buildBirthInput now throws clearly if timezone is missing for exact precision (BUG C)
-    const built = buildBirthInput(input);
-    const houseSystem = await getPreferredHouseSystem(supabase, userId);
-    const natal = computeNatalChart({ ...built.birth, houseSystem });
-
-    // The age backstop runs at save time too, not only when a gate reads the
-    // row later — so a child is protected even if the "This person is a
-    // minor" checkbox was left unchecked (it resets to unchecked after every
-    // add on this form; a real child slipped through unprotected this way).
-    const effectiveIsMinor = isMinorForSafety({ isMinor, birthDate: built.birthDate, birthPrecision: input.precision });
-
-    const { data: person, error: personError } = await supabase
-      .from("people")
-      .insert({
-        owner_id: userId,
-        is_self: isSelf,
-        display_name: displayName.trim(),
-        relation,
-        is_minor: effectiveIsMinor,
-        birth_date: built.birthDate,
-        birth_time: built.birthTime,
-        birth_place: built.birthPlace,
-        birth_precision: input.precision,
-        birth_lat: built.birth.lat ?? null,
-        birth_lng: built.birth.lng ?? null,
-        tz_offset_min: built.tzOffsetMin ?? null
-      })
-      .select("id")
-      .single();
-
-    if (personError || !person) throw new Error(personError?.message ?? "Failed to save person.");
-
-    const { error: chartError } = await supabase.from("charts").upsert({
-      // house_system records what was actually computed — never a claim the engine didn't fulfil
-      person_id: person.id,
-      house_system: natal.houseSystem ?? null,
-      data: natal,
-      engine_version: CHART_ENGINE_VERSION
-    });
-    if (chartError) throw new Error(chartError.message);
-    return natal;
   };
 
   const saveSelf = async () => {
@@ -311,12 +212,13 @@ export default function WelcomePage() {
         setStatus({ text: "You're already in your sky. Let's add the people around you.", ok: true });
         return;
       }
-      const natal = await persistPerson({
+      const { natal } = await persistPerson(supabase, {
         displayName: selfName,
         relation: "self",
         isSelf: true,
         isMinor: false,
-        input: selfInput
+        input: selfInput,
+        userId
       });
       await fetchPeople();
       const risingNote = natal?.asc
@@ -341,37 +243,6 @@ export default function WelcomePage() {
       }
     } finally {
       setSavingSelf(false);
-    }
-  };
-
-  const savePerson = async () => {
-    setSavingPerson(true);
-    setStatus(null);
-    try {
-      const deferred = personInput.precision === "none";
-      await persistPerson({
-        displayName: personName,
-        relation: personRelation,
-        isSelf: false,
-        isMinor: personMinor,
-        input: personInput
-      });
-      const savedName = personName;
-      setPersonName("");
-      setPersonMinor(false);
-      setPersonRelation("friend");
-      setPersonInput(baseInput);
-      await fetchPeople();
-      setStatus({
-        text: deferred
-          ? `${savedName} is in your sky — open their profile to add a date, or ask them, whenever you're ready.`
-          : `${savedName} is in your constellation. Add another, or continue.`,
-        ok: true
-      });
-    } catch (error) {
-      setStatus({ text: error instanceof Error ? error.message : "Unable to add person.", ok: false });
-    } finally {
-      setSavingPerson(false);
     }
   };
 
@@ -464,54 +335,26 @@ export default function WelcomePage() {
                     </ul>
                   </div>
 
-                  <input
-                    className="field"
-                    value={personName}
-                    onChange={(e) => setPersonName(e.target.value)}
-                    placeholder="Their name"
-                    style={{ marginBottom: 10, borderRadius: 14 }}
-                  />
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-                    {relationOptions.map(({ value, label }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        className="pill-link"
-                        onClick={() => setPersonRelation(value)}
-                        style={{
-                          fontSize: 13,
-                          padding: "6px 13px",
-                          borderColor: personRelation === value ? "rgba(230,174,108,.5)" : undefined,
-                          color: personRelation === value ? "var(--gold)" : undefined
-                        }}
-                      >
-                        {/* FOUNDER-REVIEW: picker label */}
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Minor: checkbox + a clearly visible explanation (§9). The
-                      age backstop protects regardless, but the intent is made
-                      explicit here, especially when adding a child. */}
-                  <div style={{ marginBottom: 12 }}>
-                    <CustomCheck checked={personMinor} onChange={setPersonMinor} label={COPY.minorLabel} />
-                    {/* FOUNDER-REVIEW: authored minor-safety copy — refine voice. */}
-                    <p className="muted" style={{ fontSize: ".74rem", marginTop: 6, lineHeight: 1.5 }}>
-                      {COPY.minorExplain}
-                    </p>
-                  </div>
-
-                  <BirthFields input={personInput} onChange={setPersonInput} allowNone />
-                  <button
-                    className="btn-primary"
-                    style={{ marginTop: 14, gap: 8 }}
-                    disabled={!canSavePerson || savingPerson}
-                    onClick={savePerson}
-                  >
-                    {savingPerson && <Spinner size={13} color="#1a1206" />}
-                    {savingPerson ? "Adding…" : "Add to constellation"}
-                  </button>
+                  {userId ? (
+                    <AddPersonForm
+                      userId={userId}
+                      initialName={prefillName}
+                      initialBirth={prefillBirth}
+                      showStatus={false}
+                      onSaved={async ({ displayName, deferred }) => {
+                        await fetchPeople();
+                        setStatus({
+                          text: deferred
+                            ? `${displayName} is in your sky — open their profile to add a date, or ask them, whenever you're ready.`
+                            : `${displayName} is in your constellation. Add another, or continue.`,
+                          ok: true
+                        });
+                      }}
+                      onError={(message) => setStatus({ text: message, ok: false })}
+                    />
+                  ) : (
+                    <p className="error">Please sign in first.</p>
+                  )}
                 </section>
 
                 {status ? <p className={status.ok ? "success" : "error"}>{status.text}</p> : null}
@@ -623,16 +466,9 @@ export default function WelcomePage() {
                     <Link className="btn-primary" href="/app">
                       Open Galaxia Mea
                     </Link>
-                    <button
-                      type="button"
-                      className="pill-link"
-                      onClick={() => {
-                        setStatus(null);
-                        setStep(2);
-                      }}
-                    >
+                    <Link href="/app/add-person" className="pill-link">
                       Add more people
-                    </button>
+                    </Link>
                   </div>
                 </section>
               </>

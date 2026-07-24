@@ -840,6 +840,33 @@ section { padding-block: clamp(76px, 12vh, 140px); }
   font-size: .82rem;
   margin: 0;
 }
+.quick-chart-entry-result {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  align-content: start;
+}
+/* Nested inside the hero glass card — strip the inner card chrome. */
+.quick-chart-entry-reveal.glass-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
+}
+.quick-chart-entry-again {
+  justify-self: start;
+  font-size: .78rem;
+}
+.natal-sign-reveal__full-chart-link {
+  color: var(--gold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.natal-sign-reveal__signup .btn-primary {
+  display: inline-flex;
+}
 @media (max-width: 860px) {
   .quick-chart-entry {
     grid-template-columns: 1fr;
@@ -849,7 +876,8 @@ section { padding-block: clamp(76px, 12vh, 140px); }
     /* Month needs the widest column so "Month" / "September" do not clip. */
     grid-template-columns: minmax(0, 1.55fr) minmax(0, .85fr) minmax(0, 1.1fr);
   }
-  .quick-chart-entry-form .btn-primary {
+  .quick-chart-entry-form .btn-primary,
+  .natal-sign-reveal__signup .btn-primary {
     width: 100%;
     justify-content: center;
   }

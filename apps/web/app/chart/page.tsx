@@ -14,7 +14,6 @@ import {
   type BirthFormInput,
   BODY_DOMAIN,
   interpretPlacement,
-  interpretRising,
   type BodyKey,
   type SignKey,
 } from "@galaxia/astro";
@@ -23,11 +22,12 @@ import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
 import { ChartPdfExport } from "../../components/chart-pdf-export";
 import { ChartWheel } from "../../components/chart-wheel";
+import { NatalSignReveal } from "../../components/natal-sign-reveal";
 import { QuickChartShell } from "../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../components/share-link-button";
 import { Spinner } from "../../components/spinner";
-import { BODY_GLYPH, SIGN_GLYPH, signElement } from "../../lib/design";
+import { BODY_GLYPH, signElement } from "../../lib/design";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../lib/quick-chart";
 import { useViewer } from "../../lib/use-viewer";
 
@@ -35,6 +35,7 @@ interface QuickResult {
   chart: NatalChart;
   displayDate: string;
   birthPlace: string | null;
+  birthDate: string;
 }
 
 export default function QuickChartPage() {
@@ -124,10 +125,6 @@ export default function QuickChartPage() {
     return `${window.location.origin}/s/${body.token as string}`;
   }
 
-  const sun = result?.chart.placements.find((p) => p.body === "sun");
-  const moon = result?.chart.placements.find((p) => p.body === "moon");
-  const rising = result?.chart.asc;
-
   const title = fromShareLink
     ? "A birth chart"
     : viewer.userId
@@ -181,40 +178,22 @@ export default function QuickChartPage() {
         </>
       ) : (
         <>
-          <section className="glass-card fade-in" style={{ textAlign: "center" }}>
-            <p className="muted" style={{ fontSize: ".8rem", marginBottom: 4 }}>
-              {name ? name : "This chart"} · {result.displayDate}{result.birthPlace ? ` · ${result.birthPlace}` : ""}
-            </p>
-            <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", margin: "14px 0" }}>
-              {[
-                { label: "Sun", body: sun, sign: sun?.sign },
-                { label: "Moon", body: moon, sign: moon?.sign },
-                { label: "Rising", body: null, sign: rising }
-              ].map(({ label, body, sign }) => {
-                if (!sign) return (
-                  <div key={label} className="sign-chip" style={{ opacity: .45 }}>
-                    <span className="sign-chip__glyph">—</span>
-                    <span className="sign-chip__label">{label}</span>
-                    <span className="sign-chip__value">{label === "Rising" ? "Needs time + city" : "—"}</span>
-                  </div>
-                );
-                const reading = body ? interpretPlacement(body.body as BodyKey, sign as SignKey) : interpretRising(sign as SignKey);
-                return (
-                  <div key={label} className="sign-chip">
-                    <span className="sign-chip__glyph" style={{ color: `var(--${signElement(sign)})` }}>{SIGN_GLYPH[sign]}</span>
-                    <span className="sign-chip__label">{label}</span>
-                    <span className="sign-chip__value">{sign}</span>
-                    <span className="muted" style={{ fontSize: ".7rem", fontStyle: "italic", display: "block", marginTop: 3 }}>{reading.short}</span>
-                  </div>
-                );
-              })}
-            </div>
-            {result.chart.cusps ? <ChartWheel chart={result.chart} /> : (
-              <p className="muted" style={{ fontSize: ".76rem", marginTop: 8 }}>Add an exact time and city to unlock the full wheel, houses, and Rising sign.</p>
-            )}
-          </section>
+          <NatalSignReveal
+            chart={result.chart}
+            displayDate={result.displayDate}
+            birthPlace={result.birthPlace}
+            name={name || undefined}
+            birthDate={result.birthDate}
+            birthPrecision={input.precision}
+          />
 
-          <section className="glass-card fade-in fade-in-delay-1">
+          {result.chart.cusps ? (
+            <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
+              <ChartWheel chart={result.chart} />
+            </section>
+          ) : null}
+
+          <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
             <button className="pill-link" onClick={() => setExpanded((e) => !e)} style={{ fontSize: ".82rem", marginBottom: expanded ? 12 : 0 }}>
               {expanded ? "▼ Hide full chart" : "▶ See full chart"}
             </button>
@@ -243,7 +222,7 @@ export default function QuickChartPage() {
             ) : null}
           </section>
 
-          <section className="glass-card fade-in fade-in-delay-2" style={{ textAlign: "center", display: "grid", gap: 12 }}>
+          <section className="glass-card fade-in fade-in-delay-2" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>
             <SaveToGalaxyButton birthInput={input} defaultName={name || undefined} />
             {/* Paid perk: only a real subscriber/trialing user sees this. The
                 share link below stays free for everyone (acquisition funnel). */}

@@ -139,29 +139,30 @@ export default function PersonProfileScreen() {
     }
     const collapsing = groupsCollapsedByMemberRemoval(memberCounts);
 
-    let conversationCount = 0;
     const { count: personThreadCount } = await supabase
       .from("threads")
       .select("id", { count: "exact", head: true })
       .eq("owner_id", session.user.id)
       .or(`subject_person.eq.${person.id},pair_low.eq.${person.id},pair_high.eq.${person.id}`);
-    conversationCount += personThreadCount ?? 0;
-    if (collapsing.length > 0) {
+
+    const collapsingGroups = [];
+    for (const g of collapsing) {
       const { count: groupThreadCount } = await supabase
         .from("threads")
         .select("id", { count: "exact", head: true })
-        .in(
-          "group_id",
-          collapsing.map((g) => g.groupId)
-        );
-      conversationCount += groupThreadCount ?? 0;
+        .eq("group_id", g.groupId);
+      collapsingGroups.push({
+        groupId: g.groupId,
+        name: g.name,
+        conversationCount: groupThreadCount ?? 0
+      });
     }
 
     // FOUNDER-REVIEW: formatPersonDeleteConfirmation
     const warning = formatPersonDeleteConfirmation({
       personName: person.display_name,
-      collapsingGroupNames: collapsing.map((g) => g.name),
-      conversationCount
+      collapsingGroups,
+      personConversationCount: personThreadCount ?? 0
     });
 
     Alert.alert("Delete person", warning, [

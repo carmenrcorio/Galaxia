@@ -46,21 +46,27 @@ describe("formatGroupDeleteConfirmation", () => {
 });
 
 describe("formatPersonDeleteConfirmation", () => {
-  it("names collapsing groups and conversation count", () => {
+  it("names each collapsing group with its own conversation count", () => {
     expect(
       formatPersonDeleteConfirmation({
         personName: "Ada",
-        collapsingGroupNames: ["Siblings"],
-        conversationCount: 2
+        collapsingGroups: [
+          { groupId: "a", name: "Siblings", conversationCount: 2 },
+          { groupId: "b", name: "Friends", conversationCount: 0 }
+        ],
+        personConversationCount: 1
       })
     ).toBe(
-      "This deletes Ada, and the group “Siblings” (it would drop below three people), plus 2 saved conversations."
+      "This deletes Ada and 1 saved conversation about them. This also deletes Siblings and 2 saved conversations. This also deletes Friends. There are no saved conversations on this group."
     );
+  });
+
+  it("works with no collapsing groups and no person conversations", () => {
     expect(
       formatPersonDeleteConfirmation({
         personName: "Ada",
-        collapsingGroupNames: [],
-        conversationCount: 0
+        collapsingGroups: [],
+        personConversationCount: 0
       })
     ).toBe("This deletes Ada.");
   });

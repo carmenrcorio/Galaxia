@@ -13,6 +13,13 @@ export interface GroupMemberCount {
   memberCount: number;
 }
 
+/** A group that will be destroyed as a side effect of person delete. */
+export interface CollapsingGroupPreview {
+  groupId: string;
+  name: string;
+  conversationCount: number;
+}
+
 /**
  * Groups that would fall below GROUP_MIN_MEMBERS after removing one member.
  * Matching `delete_own_person`: those groups are deleted with their threads.
@@ -44,33 +51,38 @@ export function formatGroupDeleteConfirmation(
 }
 
 /**
- * Person-delete confirmation when one or more cohorts collapse with them.
- * FOUNDER-REVIEW: authored — person delete side-effect on groups.
+ * Person-delete confirmation. Names the person, each collapsing group with its
+ * own conversation count (same voice as formatGroupDeleteConfirmation), and
+ * any person/pair conversations that go with them.
+ *
+ * FOUNDER-REVIEW: authored — person delete side-effect on groups; each
+ * collapsing group named with its saved conversation count.
  */
 export function formatPersonDeleteConfirmation(input: {
   personName: string;
-  collapsingGroupNames: string[];
-  conversationCount: number;
+  collapsingGroups: CollapsingGroupPreview[];
+  personConversationCount: number;
 }): string {
   const who = input.personName.trim() || "this person";
-  const parts: string[] = [`This deletes ${who}`];
+  const sentences: string[] = [];
 
-  if (input.collapsingGroupNames.length === 1) {
-    parts.push(`and the group “${input.collapsingGroupNames[0]}” (it would drop below three people)`);
-  } else if (input.collapsingGroupNames.length > 1) {
-    const listed = input.collapsingGroupNames.map((n) => `“${n}”`).join(", ");
-    parts.push(
-      `and ${input.collapsingGroupNames.length} groups that would drop below three people (${listed})`
+  if (input.personConversationCount <= 0) {
+    sentences.push(`This deletes ${who}.`);
+  } else if (input.personConversationCount === 1) {
+    sentences.push(`This deletes ${who} and 1 saved conversation about them.`);
+  } else {
+    sentences.push(
+      `This deletes ${who} and ${input.personConversationCount} saved conversations about them.`
     );
   }
 
-  if (input.conversationCount === 1) {
-    parts.push("plus 1 saved conversation");
-  } else if (input.conversationCount > 1) {
-    parts.push(`plus ${input.conversationCount} saved conversations`);
+  for (const group of input.collapsingGroups) {
+    // Same sentences as formatGroupDeleteConfirmation; "also" marks the side effect.
+    const groupLine = formatGroupDeleteConfirmation(group.name, group.conversationCount);
+    sentences.push(groupLine.replace(/^This deletes /, "This also deletes "));
   }
 
-  return `${parts.join(", ")}.`;
+  return sentences.join(" ");
 }
 
 export const OWNED_DELETE_COPY = {

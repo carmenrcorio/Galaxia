@@ -15,6 +15,9 @@
  * - Radial glow halo: createRadialGradient, 5-11×R depending on data precision (sharp=crisp, year=diffuse)
  * - Links: quadratic bezier + gradient between node element colours + travelling light pulse
  * - Gentle drift: sin/cos phase per person, disabled under prefers-reduced-motion
+ * - Ambient shooting stars: short calm streaks, max 1–2 live, infrequent; decoration
+ *   only (never aimed at a person / never a transit signal). Off under reduced-motion;
+ *   shed first under lowPerf before any existing layer degrades.
  * - Hover: inspector panel slides in (glass-card style) from right; click routes to /app/person/[id]
  * - Duplicate bottom nav row: DELETED per spec
  */
@@ -307,11 +310,21 @@ export default function AppHomePage() {
     let globalFade = 1;   /* reduced-motion fade progress */
 
     /* ── adaptive performance: drop the extra bloom layer if a frame budget
-       is blown, so mobile degrades (fewer glow layers) rather than janks ── */
+       is blown, so mobile degrades (fewer glow layers) rather than janks.
+       Ambient shooting stars shed FIRST — before any existing layer degrades. ── */
     let lowPerf = Math.min(W(), H()) < 380 || DPR >= 2 && W() < 430;
+    /* Meteors are the cheapest atmosphere to drop — EMA kills them before
+       flipping lowPerf, and they stay off once any lowPerf path is active. */
+    let meteorsOff = reduced || lowPerf;
     let emaFrameMs = 16.7;
     let lastFrame = performance.now();
     let warmup = 0;
+
+    /* Ambient shooting stars — decoration only. Not aimed at seats, not
+       element-coloured, not a transit signal. Cap 2; short life; infrequent. */
+    type Meteor = { x0: number; y0: number; x1: number; y1: number; born: number; life: number };
+    const meteors: Meteor[] = [];
+    let nextMeteorAt = 0; /* set on first draw once entrance has settled */
 
     /* per-person stable phase for drift/twinkle — seeded from id, not index */
     const phases = people.map((p) => ({
@@ -832,6 +845,57 @@ export default function AppHomePage() {
       tctx.restore();
     }
 
+    /* ── ambient shooting stars (atmosphere, not data) ── */
+    function spawnMeteor() {
+      if (reduced || meteorsOff || meteors.length >= 2) return;
+      const w = W(), h = H();
+      /* Short diagonal across a quiet patch of sky — never toward a person. */
+      const x0 = w * (0.08 + Math.random() * 0.84);
+      const y0 = h * (0.06 + Math.random() * 0.42);
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      const ang = 0.35 + Math.random() * 0.55; /* gentle downward diagonal */
+      const len = 56 + Math.random() * 48;     /* short path — calm, not a show */
+      meteors.push({
+        x0, y0,
+        x1: x0 + Math.cos(ang) * len * dir,
+        y1: y0 + Math.sin(ang) * len,
+        born: t,
+        life: 620 + Math.random() * 420,
+      });
+    }
+
+    function drawMeteors() {
+      if (reduced || meteorsOff) {
+        if (meteors.length) meteors.length = 0;
+        return;
+      }
+      /* First opportunity after the entrance settles; then sparse 7–15s gaps. */
+      if (nextMeteorAt === 0) nextMeteorAt = t + 5200 + Math.random() * 2800;
+      if (t >= nextMeteorAt) {
+        nextMeteorAt = t + 7000 + Math.random() * 8000;
+        if (Math.random() < 0.45) spawnMeteor();
+      }
+      for (let i = meteors.length - 1; i >= 0; i--) {
+        const m = meteors[i];
+        const u = (t - m.born) / m.life;
+        if (u >= 1) { meteors.splice(i, 1); continue; }
+        const cxp = m.x0 + (m.x1 - m.x0) * u;
+        const cyp = m.y0 + (m.y1 - m.y0) * u;
+        const trail = 0.07;
+        const pxp = m.x0 + (m.x1 - m.x0) * Math.max(0, u - trail);
+        const pyp = m.y0 + (m.y1 - m.y0) * Math.max(0, u - trail);
+        const fade = Math.sin(u * Math.PI);
+        /* Soft cream only — no element hue (that would imply a person/transit). */
+        const g = cx.createLinearGradient(pxp, pyp, cxp, cyp);
+        g.addColorStop(0, "rgba(244,236,219,0)");
+        g.addColorStop(1, `rgba(244,236,219,${0.38 * fade})`);
+        cx.beginPath(); cx.moveTo(pxp, pyp); cx.lineTo(cxp, cyp);
+        cx.strokeStyle = g; cx.lineWidth = 1.05; cx.stroke();
+        cx.beginPath(); cx.arc(cxp, cyp, 1.05, 0, Math.PI * 2);
+        cx.fillStyle = `rgba(244,236,219,${0.55 * fade})`; cx.fill();
+      }
+    }
+
     /* ── hit detection ── */
     function hitTest(mx: number, my: number): PersonRow | null {
       const positions = people.map((_, i) => nodePos(i));
@@ -850,11 +914,16 @@ export default function AppHomePage() {
       elapsed = t - entranceStartRef.current;
       globalFade = reduced ? clamp01(elapsed / REDUCED_FADE) : 1;
 
-      /* adaptive frame-budget tracking (skip warmup frames) */
+      /* adaptive frame-budget tracking (skip warmup frames).
+         Shed order: ambient meteors first, then existing lowPerf stack. */
       const dt = t - lastFrame; lastFrame = t;
       if (warmup > 8) {
         emaFrameMs = emaFrameMs * 0.9 + dt * 0.1;
-        if (!lowPerf && emaFrameMs > 26) lowPerf = true; /* ~<38fps: shed a glow layer */
+        if (!meteorsOff && emaFrameMs > 24) meteorsOff = true; /* first: drop streaks */
+        if (!lowPerf && emaFrameMs > 26) {
+          lowPerf = true; /* ~<38fps: shed a glow layer */
+          meteorsOff = true;
+        }
       } else { warmup++; }
 
       cx.clearRect(0, 0, W(), H());
@@ -955,6 +1024,9 @@ export default function AppHomePage() {
         if (progress <= 0.001) return;
         drawHonorLink(edge, posA, posB, progress, edgeIndex);
       });
+
+      /* ambient streaks behind the stars — atmosphere only, never data */
+      drawMeteors();
 
       /* nodes */
       for (let i = 0; i < people.length; i++) {

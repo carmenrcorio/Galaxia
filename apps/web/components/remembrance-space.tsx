@@ -115,17 +115,17 @@ export function RemembranceSpace({
         scrollMarginTop: 92,
       }}
     >
-      <p className="eyebrow" style={{ marginBottom: 6, color: REMEMBRANCE_CHROME.water }}>
+      <p className="eyebrow" style={{ marginBottom: 8, color: REMEMBRANCE_CHROME.water }}>
         Remembrance{ancient ? " · ancient light" : ""}
       </p>
       <p
         className="muted"
         style={{
           fontSize: ".84rem",
-          lineHeight: 1.55,
-          margin: "0 0 14px",
+          lineHeight: 1.6,
+          margin: "0 0 20px",
           borderLeft: REMEMBRANCE_CHROME.accentBorder,
-          paddingLeft: 10,
+          paddingLeft: 12,
           maxWidth: "52ch",
         }}
       >
@@ -137,8 +137,8 @@ export function RemembranceSpace({
       {chartLines.length > 0 ? (
         <div
           style={{
-            marginBottom: 16,
-            padding: "12px 14px",
+            marginBottom: 22,
+            padding: "14px 16px",
             borderRadius: 14,
             border: `1px solid ${REMEMBRANCE_CHROME.border}`,
             background: "rgba(10,7,23,.28)",
@@ -180,15 +180,15 @@ export function RemembranceSpace({
           </p>
         </div>
       ) : (
-        <p className="muted" style={{ fontSize: ".8rem", marginBottom: 14, lineHeight: 1.5 }}>
+        <p className="muted" style={{ fontSize: ".8rem", marginBottom: 20, lineHeight: 1.55 }}>
           No chart data yet — you can still write reflections below.
         </p>
       )}
 
       {/* Reflections — owner-authored free text (stay here; honor box is at page bottom) */}
-      <div style={{ display: "grid", gap: 10, gridTemplateColumns: "minmax(0, 1fr)", minWidth: 0 }}>
+      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "minmax(0, 1fr)", minWidth: 0 }}>
         <p className="eyebrow" style={{ margin: 0 }}>Your reflections</p>
-        <p className="muted" style={{ fontSize: ".75rem", margin: 0, lineHeight: 1.5 }}>
+        <p className="muted" style={{ fontSize: ".75rem", margin: 0, lineHeight: 1.55 }}>
           Write what you want to hold. Nothing is generated for you.
           {subjectIsMinor
             ? " Guidance about a young person stays parenting-framed — never romantic."
@@ -216,13 +216,13 @@ export function RemembranceSpace({
       </div>
 
       {loading ? (
-        <p className="muted" style={{ fontSize: ".8rem", marginTop: 14 }}>Loading reflections…</p>
+        <p className="muted" style={{ fontSize: ".8rem", marginTop: 18 }}>Loading reflections…</p>
       ) : reflections.length > 0 ? (
         <div
           style={{
-            marginTop: 16,
+            marginTop: 20,
             display: "grid",
-            gap: 8,
+            gap: 10,
             gridTemplateColumns: "minmax(0, 1fr)",
             minWidth: 0,
           }}
@@ -257,24 +257,24 @@ export function RemembranceSpace({
           ))}
         </div>
       ) : (
-        <p className="muted" style={{ fontSize: ".8rem", marginTop: 14, lineHeight: 1.5 }}>
+        <p className="muted" style={{ fontSize: ".8rem", marginTop: 18, lineHeight: 1.55 }}>
           No reflections yet — when you&apos;re ready, write one above.
         </p>
       )}
 
-      {/* Vela on request only — never auto-opens, never sends first */}
+      {/* Sole Ask Vela entry on remembrance pages — never auto-opens, never sends first */}
       <div
         style={{
-          marginTop: 18,
-          paddingTop: 14,
+          marginTop: 24,
+          paddingTop: 18,
           borderTop: "1px solid rgba(111,177,184,.18)",
           display: "grid",
-          gap: 8,
+          gap: 10,
           gridTemplateColumns: "minmax(0, 1fr)",
           minWidth: 0,
         }}
       >
-        <p className="muted" style={{ fontSize: ".75rem", margin: 0, lineHeight: 1.5 }}>
+        <p className="muted" style={{ fontSize: ".75rem", margin: 0, lineHeight: 1.55 }}>
           Vela is available if you want company with their chart and your own words. Vela never starts
           the conversation — you open it when you choose.
         </p>

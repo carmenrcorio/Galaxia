@@ -6,6 +6,7 @@
  * Lives at the BOTTOM of the person page (quiet, optional). Private
  * Remembrance reflections stay in RemembranceSpace higher up.
  * Writes relationships rows; galaxy draws them — no second canvas here.
+ * Collapsed by default so the memorial page stays calm until opened.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -148,7 +149,7 @@ export function HonorDeclarationBox({
   }
 
   return (
-    <section
+    <details
       id={HONOR_LIGHT_ANCHOR_ID}
       aria-label={`Who carries ${person.display_name}'s light`}
       className="glass-card fade-in honor-declare"
@@ -156,117 +157,128 @@ export function HonorDeclarationBox({
         borderColor: REMEMBRANCE_CHROME.border,
         background: REMEMBRANCE_CHROME.background,
         minWidth: 0,
-        display: "grid",
-        gap: 10,
-        gridTemplateColumns: "minmax(0, 1fr)",
         scrollMarginTop: 92,
       }}
     >
-      <p className="eyebrow" style={{ margin: 0, color: REMEMBRANCE_CHROME.ancient }}>
-        Who carries their light?
-      </p>
-      <p className="muted" style={{ fontSize: ".75rem", margin: 0, lineHeight: 1.5 }}>
-        Choose the living people in your galaxy who hold a thread of continuity with{" "}
-        {person.display_name}. Only what you pick is drawn — nothing is guessed.
-        {subjectIsMinor ? " This is remembrance light, never romantic." : ""}
-      </p>
-
-      {honorLoading ? (
-        <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>Loading…</p>
-      ) : candidates.length === 0 ? (
-        <p className="muted" style={{ fontSize: ".8rem", margin: 0, lineHeight: 1.5 }}>
-          Add someone living to your galaxy first — then you can connect their light here.
+      <summary className="honor-declare-summary">
+        <p className="eyebrow" style={{ margin: 0, color: REMEMBRANCE_CHROME.ancient }}>
+          Who carries their light?
         </p>
-      ) : (
-        <ul
-          className="honor-declare-list"
-          role="group"
-          aria-label={`Living people who carry ${person.display_name}'s light`}
-          style={{
-            margin: 0,
-            padding: 0,
-            listStyle: "none",
-            display: "grid",
-            gap: 8,
-            gridTemplateColumns: "minmax(0, 1fr)",
-          }}
-        >
-          {candidates.map((c) => {
-            const checked = selectedIds.includes(c.id);
-            return (
-              <li key={c.id} style={{ minWidth: 0 }}>
-                <label
-                  className={`honor-declare-option${checked ? " is-selected" : ""}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    width: "100%",
-                    maxWidth: "100%",
-                    boxSizing: "border-box",
-                    padding: "12px 14px",
-                    borderRadius: 12,
-                    border: checked
-                      ? `1px solid ${REMEMBRANCE_CHROME.water}`
-                      : "1px solid rgba(255,255,255,.08)",
-                    background: checked
-                      ? "rgba(111,177,184,.12)"
-                      : "rgba(255,255,255,.03)",
-                    cursor: "pointer",
-                    minHeight: 48,
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleCarrier(c.id)}
-                    style={{ width: 18, height: 18, flexShrink: 0, accentColor: REMEMBRANCE_CHROME.water }}
-                    aria-label={`${c.display_name}${c.is_self ? " (you)" : ""}`}
-                  />
-                  <span
+      </summary>
+
+      <div
+        className="honor-declare-body"
+        style={{
+          display: "grid",
+          gap: 10,
+          gridTemplateColumns: "minmax(0, 1fr)",
+          marginTop: 12,
+          minWidth: 0,
+        }}
+      >
+        <p className="muted" style={{ fontSize: ".75rem", margin: 0, lineHeight: 1.5 }}>
+          Choose the living people in your galaxy who hold a thread of continuity with{" "}
+          {person.display_name}. Only what you pick is drawn — nothing is guessed.
+          {subjectIsMinor ? " This is remembrance light, never romantic." : ""}
+        </p>
+
+        {honorLoading ? (
+          <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>Loading…</p>
+        ) : candidates.length === 0 ? (
+          <p className="muted" style={{ fontSize: ".8rem", margin: 0, lineHeight: 1.5 }}>
+            Add someone living to your galaxy first — then you can connect their light here.
+          </p>
+        ) : (
+          <ul
+            className="honor-declare-list"
+            role="group"
+            aria-label={`Living people who carry ${person.display_name}'s light`}
+            style={{
+              margin: 0,
+              padding: 0,
+              listStyle: "none",
+              display: "grid",
+              gap: 8,
+              gridTemplateColumns: "minmax(0, 1fr)",
+            }}
+          >
+            {candidates.map((c) => {
+              const checked = selectedIds.includes(c.id);
+              return (
+                <li key={c.id} style={{ minWidth: 0 }}>
+                  <label
+                    className={`honor-declare-option${checked ? " is-selected" : ""}`}
                     style={{
-                      color: "var(--cream)",
-                      fontSize: ".9rem",
-                      lineHeight: 1.35,
-                      overflowWrap: "anywhere",
-                      minWidth: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      width: "100%",
+                      maxWidth: "100%",
+                      boxSizing: "border-box",
+                      padding: "12px 14px",
+                      borderRadius: 12,
+                      border: checked
+                        ? `1px solid ${REMEMBRANCE_CHROME.water}`
+                        : "1px solid rgba(255,255,255,.08)",
+                      background: checked
+                        ? "rgba(111,177,184,.12)"
+                        : "rgba(255,255,255,.03)",
+                      cursor: "pointer",
+                      minHeight: 48,
                     }}
                   >
-                    {c.is_self ? "You" : c.display_name}
-                  </span>
-                </label>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleCarrier(c.id)}
+                      style={{ width: 18, height: 18, flexShrink: 0, accentColor: REMEMBRANCE_CHROME.water }}
+                      aria-label={`${c.display_name}${c.is_self ? " (you)" : ""}`}
+                    />
+                    <span
+                      style={{
+                        color: "var(--cream)",
+                        fontSize: ".9rem",
+                        lineHeight: 1.35,
+                        overflowWrap: "anywhere",
+                        minWidth: 0,
+                      }}
+                    >
+                      {c.is_self ? "You" : c.display_name}
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        )}
 
-      {candidates.length > 0 ? (
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={() => void saveHonorConnections()}
-          disabled={honorSaving || !honorDirty}
-          style={{ gap: 8, width: "fit-content", maxWidth: "100%" }}
-        >
-          {honorSaving && <Spinner size={13} color="#1a1206" />}
-          {honorSaving
-            ? "Saving…"
-            : selectedIds.length === 0 && savedIds.length > 0
-              ? "Clear connections"
-              : "Save connections"}
-        </button>
-      ) : null}
+        {candidates.length > 0 ? (
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => void saveHonorConnections()}
+            disabled={honorSaving || !honorDirty}
+            style={{ gap: 8, width: "fit-content", maxWidth: "100%" }}
+          >
+            {honorSaving && <Spinner size={13} color="#1a1206" />}
+            {honorSaving
+              ? "Saving…"
+              : selectedIds.length === 0 && savedIds.length > 0
+                ? "Clear connections"
+                : "Save connections"}
+          </button>
+        ) : null}
 
-      {honorStatus ? (
-        <p
-          className="muted"
-          style={{ fontSize: ".78rem", margin: 0, lineHeight: 1.5, color: REMEMBRANCE_CHROME.water }}
-          role="status"
-        >
-          {honorStatus}
-        </p>
-      ) : null}
-    </section>
+        {honorStatus ? (
+          <p
+            className="muted"
+            style={{ fontSize: ".78rem", margin: 0, lineHeight: 1.5, color: REMEMBRANCE_CHROME.water }}
+            role="status"
+          >
+            {honorStatus}
+          </p>
+        ) : null}
+      </div>
+    </details>
   );
 }

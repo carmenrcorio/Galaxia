@@ -88,6 +88,32 @@ textarea:focus-visible {
 .honor-declare {
   min-width: 0;
 }
+.honor-declare-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.honor-declare-summary::-webkit-details-marker {
+  display: none;
+}
+.honor-declare-summary::marker {
+  content: "";
+}
+.honor-declare-summary::after {
+  content: "▶";
+  flex-shrink: 0;
+  color: var(--mist2);
+  font-size: .72rem;
+  transition: transform .2s;
+}
+.honor-declare[open] > .honor-declare-summary::after {
+  transform: rotate(90deg);
+}
 .honor-declare-option {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -148,6 +174,12 @@ textarea:focus-visible {
   gap: 18px;
   position: relative;
   z-index: 2;
+}
+
+/* Memorial / remembrance person pages — calmer vertical rhythm */
+.app-content--remembrance {
+  gap: 28px;
+  padding-bottom: 112px;
 }
 
 /* ─── Glass card (exact recipe from galaxia-landing-v2.html .glass) ──────── */
@@ -592,6 +624,7 @@ select.field--rect {
      phones. width:100% + an explicit 16px horizontal padding gives every
      phone the same predictable gutter regardless of exact viewport width. */
   .app-content  { width: 100%; padding: 20px 16px 80px; gap: 14px; }
+  .app-content--remembrance { gap: 22px; padding-bottom: 96px; }
   .bubble       { max-width: 94%; font-size: .84rem; }
   .compat-grid  { grid-template-columns: repeat(2, 1fr); }
 }

@@ -98,9 +98,10 @@ export function CosmicBackground() {
             y:     Math.random() * H,
             r:     (Math.random() * (layer.rMax - layer.rMin) + layer.rMin) * DPR,
             a:     Math.random() * Math.PI * 2,
-            // Twinkle speed (see history in git): a slow ~55–260s pulse,
-            // scaled per layer so nearer stars breathe a touch faster.
-            tw:    (Math.random() * 0.0015 + 0.0004) * layer.twMul,
+            // Twinkle speed: calm ~160–780s pulse at 60fps (was ~55–260s) —
+            // shimmer, not flicker. Scaled per layer so nearer stars breathe
+            // a touch faster. Same rate when the far layer sheds under load.
+            tw:    (Math.random() * 0.0005 + 0.00015) * layer.twMul,
             baseA: Math.random() * layer.aRange + layer.aMin,
             // Only ~30% of stars twinkle at all, gently, never through zero.
             amp:   Math.random() < 0.30 ? Math.random() * 0.10 + 0.04 : 0,

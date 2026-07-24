@@ -451,7 +451,8 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
               </p>
               <p className="muted" style={{ fontSize: ".78rem", lineHeight: 1.55, marginBottom: 12 }}>
                 Their chart stays. They remain in your galaxy and in Compare. You can restore them as present anytime.
-                Choose their constellation in the Remembrance space on this page.
+                {/* FOUNDER-REVIEW */}
+                {" "}Choose their constellation in the Remembrance space on this page.
               </p>
 
               {!confirmRemembrance ? (

@@ -1213,7 +1213,7 @@ export default function AppHomePage() {
         <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <p className="eyebrow" style={{ margin: 0 }}>Your constellation</p>
           {!loading && people.length > 0 ? (
-            <Link href="/welcome" className="pill-link pill-link--gold" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
+            <Link href="/app/add-person" className="pill-link pill-link--gold" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
               + Add person
             </Link>
           ) : null}
@@ -1386,11 +1386,10 @@ export default function AppHomePage() {
       ) : null}
 
       {/* ── Contextual actions (global nav lives in the header — A7: no duplicate row) ──
-         "Add person" now lives as a prominent button in the constellation card
-         header, so the only natural next step left here is opening your own
-         chart. Compare/Groups/Vela/Quick Chart are one tap away in the sticky
-         header. The old floating "Quick check" launcher was removed — it
-         duplicated the header's Quick Chart with no distinct purpose. */}
+         "+ Add person" lives in the constellation card header and routes to
+         /app/add-person (standalone form — not /welcome onboarding). The only
+         natural next step left here is opening your own chart. Compare/Groups/
+         Vela/Quick Chart are one tap away in the sticky header. */}
       {!loading && selfPerson ? (
         <div className="fade-in fade-in-delay-2">
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

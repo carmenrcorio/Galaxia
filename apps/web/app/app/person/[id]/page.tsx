@@ -13,7 +13,10 @@ import {
   type NatalChart,
   type Placement,
   CHART_ENGINE_VERSION,
+  bodiesWithMovedLongitudes,
+  formatMovedBodies,
   houseSystemLabelForChart,
+  placementsLongitudeChanged,
   todayTransitsForChart,
   BODY_DOMAIN,
   ELEMENT_ABSENT,
@@ -230,6 +233,8 @@ const RECORD_META: Record<string, { label: string; color: string }> = {
   compare_reading: { label: "Saved comparison", color: "rgba(230,174,108,.5)" },
   cohort_reading:  { label: "Saved cohort reading", color: "rgba(111,177,184,.4)" },
   remembrance:     { label: "Remembrance",     color: "rgba(111,177,184,.55)" },
+  // FOUNDER-REVIEW: authored — Record label for longitude-changing chart rewrite.
+  chart_correction:{ label: "Chart corrected", color: "rgba(230,174,108,.55)" },
   conversation:    { label: "Vela conversation", color: "rgba(183,154,216,.4)" },
 };
 
@@ -304,6 +309,8 @@ export default function PersonProfilePage() {
   const [noteSaving, setNoteSaving] = useState(false);
   const [status, setStatus]         = useState<string | null>(null);
   const [loading, setLoading]       = useState(true);
+  /** Session banner after a longitude-changing chart rewrite (also persisted to Record). */
+  const [chartCorrectionNotice, setChartCorrectionNotice] = useState<string | null>(null);
 
   const [openRows, setOpenRows]     = useState<Set<string>>(new Set(["sun","moon","rising"]));
   const [placementsAllOpen, setPlacementsAllOpen] = useState(false);
@@ -472,6 +479,7 @@ export default function PersonProfilePage() {
 
     const preferred = await getPreferredHouseSystem(supabase, uid);
     const stale = version < CHART_ENGINE_VERSION || (chartData.houseSystemRequested ?? "placidus") !== preferred;
+    let longitudeCorrectionBody: string | null = null;
     if (stale) {
       const dateUTC = rebuildDateUTC(personRow);
       const canRecompute = dateUTC !== null && personRow.birth_precision !== "none" &&
@@ -486,18 +494,50 @@ export default function PersonProfilePage() {
           tzOffsetMin: personRow.tz_offset_min ?? undefined,
           houseSystem: preferred
         });
-        await supabase.from("charts").upsert({ person_id: actualId, house_system: recomputed.houseSystem ?? null, data: recomputed, engine_version: CHART_ENGINE_VERSION });
+        const lonChanged = placementsLongitudeChanged(chartData, recomputed);
+        // House-only / label rewrites do not move synastry scores — apply quietly.
+        // Longitude changes must be recorded: a silent mutate of positions already
+        // shown to the user is a fabrication under ENGINEERING §12.
+        await supabase.from("charts").upsert({
+          person_id: actualId,
+          house_system: recomputed.houseSystem ?? null,
+          data: recomputed,
+          engine_version: CHART_ENGINE_VERSION,
+        });
+        if (lonChanged) {
+          const moved = bodiesWithMovedLongitudes(chartData, recomputed);
+          const movedList = formatMovedBodies(moved);
+          // FOUNDER-REVIEW: authored — chart longitude correction Record body.
+          longitudeCorrectionBody = movedList
+            ? `Planet positions were corrected from the birth details already on file — not from a new edit. Bodies that moved: ${movedList}.`
+            : `Planet positions were corrected from the birth details already on file — not from a new edit.`;
+          await supabase.from("notes").insert({
+            owner_id: uid,
+            about_person: actualId,
+            kind: "chart_correction",
+            body: longitudeCorrectionBody,
+            payload: {
+              fromEngineVersion: version,
+              toEngineVersion: CHART_ENGINE_VERSION,
+              bodiesMoved: moved,
+              houseSystemRequested: preferred,
+              correctedAt: new Date().toISOString(),
+            },
+          });
+        }
         chartData = recomputed;
         version = CHART_ENGINE_VERSION;
       } else if (version < CHART_ENGINE_VERSION && cData.house_system !== "equal" && chartData.cusps) {
         // Legacy chart (engine v1) that cannot be recomputed from its stored
         // fields. Its cusps were computed as Equal House but stored under the
         // label "placidus" — correct the label to what the data actually is.
+        // Label-only: no longitude change, no Record entry.
         chartData = { ...chartData, houseSystem: "equal", houseSystemRequested: preferred };
         await supabase.from("charts").upsert({ person_id: actualId, house_system: "equal", data: chartData, engine_version: version });
       }
     }
     setPerson(personRow); setChart(chartData); setEngineVersion(version);
+    setChartCorrectionNotice(longitudeCorrectionBody);
     await loadRecord(uid, actualId);
     setLoading(false);
   }
@@ -686,6 +726,20 @@ export default function PersonProfilePage() {
         ) : null}
         <EditPersonPanel person={person} userId={userId ?? ""} onSaved={() => loadProfile(userId ?? "")} onDeleted={() => router.push("/app")} />
       </div>
+
+      {chartCorrectionNotice ? (
+        // FOUNDER-REVIEW: authored — person-page banner after longitude-changing rewrite.
+        <div
+          className="glass-card fade-in"
+          role="status"
+          style={{ borderColor: "rgba(230,174,108,.35)", background: "rgba(230,174,108,.06)", padding: "12px 14px" }}
+        >
+          <p className="eyebrow" style={{ marginBottom: 6 }}>Chart updated</p>
+          <p className="muted" style={{ margin: 0, fontSize: ".84rem", lineHeight: 1.55 }}>
+            {chartCorrectionNotice} A note was added to their Record with the time of the correction.
+          </p>
+        </div>
+      ) : null}
 
       <ChartSectionNav sections={navForPage} ariaLabel={`Sections on ${person.display_name}'s chart`} />
 

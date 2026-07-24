@@ -9,7 +9,8 @@ export type RecordKind =
   | "vela_pin"
   | "compare_reading"
   | "cohort_reading"
-  | "remembrance";
+  | "remembrance"
+  | "chart_correction";
 
 /** Order a pair id tuple deterministically (matches the edge function). */
 export function orderPair(a: string, b: string): { pairLow: string; pairHigh: string } {

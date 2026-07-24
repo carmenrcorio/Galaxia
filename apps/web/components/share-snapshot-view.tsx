@@ -10,7 +10,6 @@
 import {
   BODY_DOMAIN,
   interpretPlacement,
-  interpretRising,
   whatTheyNeed,
   type BodyKey,
   type NatalChart,
@@ -26,13 +25,14 @@ import {
   type QuickSharePayload,
   type SingleSharePayload,
 } from "../lib/quick-share";
-import { BODY_GLYPH, SIGN_GLYPH, signElement } from "../lib/design";
+import { BODY_GLYPH, signElement } from "../lib/design";
 import { useViewer } from "../lib/use-viewer";
 import { ChartPdfExport } from "./chart-pdf-export";
 import { ChartWheel } from "./chart-wheel";
 import { DynamicTableSection } from "./dynamic-table-section";
 import { FlowsAndCatchesSection } from "./flows-and-catches-section";
 import { GenerationalSection } from "./generational-section";
+import { NatalSignReveal } from "./natal-sign-reveal";
 import { QuickChartShell } from "./quick-chart-shell";
 
 function getSign(chart: NatalChart, body: string) {
@@ -43,60 +43,24 @@ function getSign(chart: NatalChart, body: string) {
 function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
   const viewer = useViewer();
   const [expanded, setExpanded] = useState(false);
-  const sun = payload.chart.placements.find((p) => p.body === "sun");
-  const moon = payload.chart.placements.find((p) => p.body === "moon");
-  const rising = payload.chart.asc;
-  const label = payload.name || "This chart";
 
   return (
     <>
-      <section className="glass-card fade-in" style={{ textAlign: "center" }}>
-        <p className="muted" style={{ fontSize: ".8rem", marginBottom: 4 }}>
-          {label} · {payload.displayDate}
-          {payload.birthPlace ? ` · ${payload.birthPlace}` : ""}
-        </p>
-        <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", margin: "14px 0" }}>
-          {[
-            { label: "Sun", body: sun, sign: sun?.sign },
-            { label: "Moon", body: moon, sign: moon?.sign },
-            { label: "Rising", body: null, sign: rising },
-          ].map(({ label: chipLabel, body, sign }) => {
-            if (!sign) {
-              return (
-                <div key={chipLabel} className="sign-chip" style={{ opacity: 0.45 }}>
-                  <span className="sign-chip__glyph">—</span>
-                  <span className="sign-chip__label">{chipLabel}</span>
-                  <span className="sign-chip__value">{chipLabel === "Rising" ? "Needs time + city" : "—"}</span>
-                </div>
-              );
-            }
-            const reading = body
-              ? interpretPlacement(body.body as BodyKey, sign as SignKey)
-              : interpretRising(sign as SignKey);
-            return (
-              <div key={chipLabel} className="sign-chip">
-                <span className="sign-chip__glyph" style={{ color: `var(--${signElement(sign)})` }}>
-                  {SIGN_GLYPH[sign]}
-                </span>
-                <span className="sign-chip__label">{chipLabel}</span>
-                <span className="sign-chip__value">{sign}</span>
-                <span className="muted" style={{ fontSize: ".7rem", fontStyle: "italic", display: "block", marginTop: 3 }}>
-                  {reading.short}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        {payload.chart.cusps ? (
-          <ChartWheel chart={payload.chart} />
-        ) : (
-          <p className="muted" style={{ fontSize: ".76rem", marginTop: 8 }}>
-            Add an exact time and city to unlock the full wheel, houses, and Rising sign.
-          </p>
-        )}
-      </section>
+      {/* No birthDate: single shares strip birth PII; isMinorForSafety is not called. */}
+      <NatalSignReveal
+        chart={payload.chart}
+        displayDate={payload.displayDate}
+        birthPlace={payload.birthPlace}
+        name={payload.name}
+      />
 
-      <section className="glass-card fade-in fade-in-delay-1">
+      {payload.chart.cusps ? (
+        <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
+          <ChartWheel chart={payload.chart} />
+        </section>
+      ) : null}
+
+      <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
         <button
           className="pill-link"
           onClick={() => setExpanded((e) => !e)}
@@ -165,7 +129,7 @@ function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
         ) : null}
       </section>
 
-      <section className="glass-card fade-in fade-in-delay-2" style={{ textAlign: "center", display: "grid", gap: 12 }}>
+      <section className="glass-card fade-in fade-in-delay-2" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>
         {/* PDF stays a paid perk — same gate as /chart. */}
         {viewer.isSubscriber ? (
           <ChartPdfExport

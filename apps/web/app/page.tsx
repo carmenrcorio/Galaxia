@@ -21,9 +21,9 @@ import { WhySection } from "../components/marketing/why-section";
  * restructure). Every section below is a real component; there is no
  * dangerouslySetInnerHTML anywhere on this page anymore.
  *
- * Conversion order: Hero (with Quick Chart mini-form) → The Edge → The shift
- * → why-not-a-horoscope-app → How it works → Vela → Trust → empty social-proof
- * placeholder → Pricing → FAQ → Close.
+ * Conversion order: Hero (with Quick Chart mini-form + inline natal sign reveal)
+ * → The Edge → The shift → why-not-a-horoscope-app → How it works → Vela → Trust
+ * → empty social-proof placeholder → Pricing → FAQ → Close.
  */
 export default function HomePage() {
   return (

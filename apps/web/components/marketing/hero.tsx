@@ -8,7 +8,8 @@ import { QuickChartEntry } from "./quick-chart-entry";
  * the mobile viewport before a visitor reached anything that says what the
  * product actually is) and a plain-language subheadline now carries the H1.
  * Existing CTAs stay (signup + see how it works). Quick Chart mini-form sits
- * under the grid as the primary try-it entry (no signup).
+ * under the grid as the primary try-it entry (no signup); submit reveals
+ * Sun/Moon inline via NatalSignReveal — no navigation off the marketing page.
  *
  * Uses .fade-in (a CSS-only keyframe that plays on mount), not the
  * scroll-triggered .reveal + IntersectionObserver pattern used further down

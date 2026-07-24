@@ -316,6 +316,11 @@ export default function AppHomePage() {
     /* Meteors are the cheapest atmosphere to drop — EMA kills them before
        flipping lowPerf, and they stay off once any lowPerf path is active. */
     let meteorsOff = reduced || lowPerf;
+    /* TEMP-DEMO: ?meteors=force — one streak every 2s, uncapped, ignores lowPerf
+       shed so draw path can be confirmed separate from spawn timing. */
+    const forceMeteors = typeof window !== "undefined"
+      && new URLSearchParams(window.location.search).get("meteors") === "force";
+    if (forceMeteors && !reduced) meteorsOff = false;
     let emaFrameMs = 16.7;
     let lastFrame = performance.now();
     let warmup = 0;
@@ -325,6 +330,17 @@ export default function AppHomePage() {
     type Meteor = { x0: number; y0: number; x1: number; y1: number; born: number; life: number };
     const meteors: Meteor[] = [];
     let nextMeteorAt = 0; /* set on first draw once entrance has settled */
+
+    /* TEMP-DEMO: expose shed/spawn state for Playwright diagnose */
+    const publishDemo = () => {
+      const w = window as unknown as { __meteorDiag?: Record<string, unknown> };
+      w.__meteorDiag = {
+        lowPerf, meteorsOff, reduced, forceMeteors,
+        meteorCount: meteors.length, emaFrameMs,
+        canvasCssW: W(), canvasCssH: H(), dpr: DPR,
+        initialLowPerfHeuristic: Math.min(W(), H()) < 380 || DPR >= 2 && W() < 430,
+      };
+    };
 
     /* per-person stable phase for drift/twinkle — seeded from id, not index */
     const phases = people.map((p) => ({
@@ -847,7 +863,8 @@ export default function AppHomePage() {
 
     /* ── ambient shooting stars (atmosphere, not data) ── */
     function spawnMeteor() {
-      if (reduced || meteorsOff || meteors.length >= 2) return;
+      if (reduced || meteorsOff) return;
+      if (!forceMeteors && meteors.length >= 2) return;
       const w = W(), h = H();
       /* Short diagonal across a quiet patch of sky — never toward a person. */
       const x0 = w * (0.08 + Math.random() * 0.84);
@@ -869,11 +886,14 @@ export default function AppHomePage() {
         if (meteors.length) meteors.length = 0;
         return;
       }
-      /* First opportunity after the entrance settles; then sparse 7–15s gaps. */
-      if (nextMeteorAt === 0) nextMeteorAt = t + 5200 + Math.random() * 2800;
+      /* Shipping: first try ~5.2–8s after draw starts, then every ~7–15s at 45%.
+         TEMP-DEMO ?meteors=force: one every 2s, uncapped. */
+      if (nextMeteorAt === 0) {
+        nextMeteorAt = forceMeteors ? t + 200 : t + 5200 + Math.random() * 2800;
+      }
       if (t >= nextMeteorAt) {
-        nextMeteorAt = t + 7000 + Math.random() * 8000;
-        if (Math.random() < 0.45) spawnMeteor();
+        nextMeteorAt = t + (forceMeteors ? 2000 : 7000 + Math.random() * 8000);
+        if (forceMeteors || Math.random() < 0.45) spawnMeteor();
       }
       for (let i = meteors.length - 1; i >= 0; i--) {
         const m = meteors[i];
@@ -919,12 +939,13 @@ export default function AppHomePage() {
       const dt = t - lastFrame; lastFrame = t;
       if (warmup > 8) {
         emaFrameMs = emaFrameMs * 0.9 + dt * 0.1;
-        if (!meteorsOff && emaFrameMs > 24) meteorsOff = true; /* first: drop streaks */
+        if (!forceMeteors && !meteorsOff && emaFrameMs > 24) meteorsOff = true; /* first: drop streaks */
         if (!lowPerf && emaFrameMs > 26) {
           lowPerf = true; /* ~<38fps: shed a glow layer */
-          meteorsOff = true;
+          if (!forceMeteors) meteorsOff = true;
         }
       } else { warmup++; }
+      publishDemo();
 
       cx.clearRect(0, 0, W(), H());
 

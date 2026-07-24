@@ -42,6 +42,28 @@ export const BODY_DOMAIN: Record<BodyKey, string> = {
   pluto:   "Where they transform",
 };
 
+/**
+ * Required at every placement / house / domain lookup that can surface Venus.
+ * Call sites pass the boolean; this module chooses the table. A call site that
+ * can omit the flag has the wrong shape (ENGINEERING.md §9).
+ */
+export interface PlacementSafetyOpts {
+  /** When true, Venus returns curated age-appropriate copy (never attraction-framed). */
+  minorSafe: boolean;
+}
+
+// FOUNDER-REVIEW: authored — minor-safe Venus domain label.
+const VENUS_DOMAIN_MINOR = "How they care";
+
+/**
+ * Domain label for a body. Venus swaps to care-framed wording when minorSafe.
+ * Prefer this over reading BODY_DOMAIN directly anywhere Venus can render.
+ */
+export function bodyDomain(body: BodyKey, opts: PlacementSafetyOpts): string {
+  if (body === "venus" && opts.minorSafe) return VENUS_DOMAIN_MINOR;
+  return BODY_DOMAIN[body];
+}
+
 /** Outer planets move slowly — flag them as generational in the UI. */
 export const GENERATIONAL: BodyKey[] = ["uranus", "neptune", "pluto"];
 
@@ -284,8 +306,36 @@ export function interpretAspect(a: BodyKey, b: BodyKey, aspect: AspectKey): Read
   return { short: nature.short, long: nature.long };
 }
 
-/** Resolve a placement reading. Never returns empty. */
-export function interpretPlacement(body: BodyKey, sign: SignKey): Reading {
+/**
+ * Curated Venus-in-sign copy for minors. Same voice as PLANET_IN_SIGN.venus;
+ * friendship / care / loyalty framed — never chase, devotion-as-romance, or merge.
+ * Lookup only via interpretPlacement(..., { minorSafe: true }).
+ */
+// FOUNDER-REVIEW: authored — all twelve minor Venus shorts + longs.
+export const VENUS_IN_SIGN_MINOR: Record<SignKey, Reading> = {
+  Aries:       { short: "cares by going first", long: "They show liking by starting — the invite, the plan, the dare. Waiting around for someone else to begin feels like being left out." },
+  Taurus:      { short: "cares by staying", long: "Loyalty looks like the same snack, the same spot, showing up again tomorrow. They prove it by not disappearing." },
+  Gemini:      { short: "cares by talking", long: "Attention is the affection; a stream of jokes and links is the whole point. Being ignored lands harder than a disagreement." },
+  Cancer:      { short: "cares by looking after", long: "They fold people into their care and remember what you like. Quiet distance scares them more than a frank talk." },
+  Leo:         { short: "cares big, needs it said", long: "They give warmth loudly and need it named back. A specific compliment steadies them more than a shrug." },
+  Virgo:       { short: "cares by noticing", long: "They show it in the small fix and the errand nobody asked for. Thank the tiny ones out loud or they quietly stop." },
+  Libra:       { short: "cares about the we", long: "They feel best when things between people are fair and kind, and will smooth over a fight to keep the peace. Ask twice what they actually want." },
+  Scorpio:     { short: "cares all the way, or not", long: "Trust is the gate. Once you're in, it's loyal and serious — and they expect the same care back." },
+  Sagittarius: { short: "cares with room to roam", long: "They stay close when they're free to explore. Holding too tight gets you less of them, not more." },
+  Capricorn:   { short: "cares by being reliable", long: "Not the loudest about feelings; the ride, the plan, the kept promise is the letter. Count on what they do." },
+  Aquarius:    { short: "cares as friend first", long: "Companionship and shared ideas matter more than intensity. Space usually means trust, not rejection." },
+  Pisces:      { short: "cares without hard edges", long: "They take on other people's feelings easily. Help them name what's theirs, or they carry more than they should." },
+};
+
+/**
+ * Resolve a placement reading. Never returns empty.
+ * Venus uses VENUS_IN_SIGN_MINOR when opts.minorSafe — call sites pass the
+ * boolean; they do not choose the table.
+ */
+export function interpretPlacement(body: BodyKey, sign: SignKey, opts: PlacementSafetyOpts): Reading {
+  if (body === "venus" && opts.minorSafe) {
+    return VENUS_IN_SIGN_MINOR[sign] ?? { short: "", long: "" };
+  }
   return PLANET_IN_SIGN[body]?.[sign] ?? { short: "", long: "" };
 }
 

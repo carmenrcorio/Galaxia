@@ -21,13 +21,17 @@
  * uncertain placements are hedged exactly as the on-screen chart hedges them,
  * the wheel is omitted when there are no house cusps, and the house-system
  * label is derived from the chart data, never asserted.
+ *
+ * Minor safety: props carry no birth fields. Callers pass the already-computed
+ * `minorSafe` boolean (/chart: real isMinorForSafety; /s: always true). This
+ * component does not recompute age.
  */
 
 import {
   NatalChart,
   CHART_ENGINE_VERSION,
   houseSystemLabelForChart,
-  BODY_DOMAIN,
+  bodyDomain,
   interpretPlacement,
   interpretRising,
   type BodyKey,
@@ -44,9 +48,11 @@ interface ChartPdfExportProps {
   displayDate: string;
   birthPlace: string | null;
   engineVersion?: number;
+  /** Already-computed by the caller — never recomputed here. */
+  minorSafe: boolean;
 }
 
-export function ChartPdfExport({ chart, name, displayDate, birthPlace, engineVersion = CHART_ENGINE_VERSION }: ChartPdfExportProps) {
+export function ChartPdfExport({ chart, name, displayDate, birthPlace, engineVersion = CHART_ENGINE_VERSION, minorSafe }: ChartPdfExportProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -55,12 +61,12 @@ export function ChartPdfExport({ chart, name, displayDate, birthPlace, engineVer
       {/* Secondary styling (pill, not the gold gradient): "Save to your galaxy"
           is the primary action on the results card; PDF export is a subordinate
           convenience, so it should not compete for the same visual weight. */}
-      <button type="button" className="pill-link no-print" onClick={() => window.print()} style={{ gap: 8, justifySelf: "center" }}>
+      <button type="button" className="pill-link no-print" onClick={() => window.print()} style={{ gap: 8, alignSelf: "center" }}>
         Download as PDF
       </button>
       {mounted
         ? createPortal(
-            <ChartPdfDocument chart={chart} name={name} displayDate={displayDate} birthPlace={birthPlace} engineVersion={engineVersion} />,
+            <ChartPdfDocument chart={chart} name={name} displayDate={displayDate} birthPlace={birthPlace} engineVersion={engineVersion} minorSafe={minorSafe} />,
             document.body
           )
         : null}
@@ -68,15 +74,16 @@ export function ChartPdfExport({ chart, name, displayDate, birthPlace, engineVer
   );
 }
 
-function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion }: Required<Pick<ChartPdfExportProps, "chart" | "displayDate" | "engineVersion">> & Pick<ChartPdfExportProps, "name" | "birthPlace">) {
+function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion, minorSafe }: Required<Pick<ChartPdfExportProps, "chart" | "displayDate" | "engineVersion" | "minorSafe">> & Pick<ChartPdfExportProps, "name" | "birthPlace">) {
   const sun = chart.placements.find((p) => p.body === "sun");
   const moon = chart.placements.find((p) => p.body === "moon");
   const rising = chart.asc;
   const hasHouses = chart.cusps != null && chart.cusps.length >= 12;
+  const safety = { minorSafe };
 
   const bigThree: { label: string; sign?: string; reading?: string }[] = [
-    { label: "Sun", sign: sun && sun.confident !== false ? sun.sign : undefined, reading: sun && sun.confident !== false ? interpretPlacement("sun", sun.sign as SignKey).short : undefined },
-    { label: "Moon", sign: moon && moon.confident !== false ? moon.sign : undefined, reading: moon && moon.confident !== false ? interpretPlacement("moon", moon.sign as SignKey).short : undefined },
+    { label: "Sun", sign: sun && sun.confident !== false ? sun.sign : undefined, reading: sun && sun.confident !== false ? interpretPlacement("sun", sun.sign as SignKey, safety).short : undefined },
+    { label: "Moon", sign: moon && moon.confident !== false ? moon.sign : undefined, reading: moon && moon.confident !== false ? interpretPlacement("moon", moon.sign as SignKey, safety).short : undefined },
     { label: "Rising", sign: rising, reading: rising ? interpretRising(rising as SignKey).short : undefined },
   ];
 
@@ -125,12 +132,12 @@ function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion 
                 </div>
               );
             }
-            const reading = interpretPlacement(p.body as BodyKey, p.sign as SignKey);
+            const reading = interpretPlacement(p.body as BodyKey, p.sign as SignKey, safety);
             return (
               <div key={p.body} className="pdf-placement">
                 <span className="pdf-placement-glyph" style={{ color: `var(--${signElement(p.sign)})` }}>{BODY_GLYPH[p.body] ?? p.body[0]}</span>
                 <div className="pdf-placement-body">
-                  <div className="pdf-placement-domain">{BODY_DOMAIN[p.body as BodyKey]}</div>
+                  <div className="pdf-placement-domain">{bodyDomain(p.body as BodyKey, safety)}</div>
                   <div className="pdf-placement-name">{p.body[0].toUpperCase() + p.body.slice(1)} in {p.sign}</div>
                   {reading.short ? <div className="pdf-placement-reading">{reading.short}</div> : null}
                 </div>

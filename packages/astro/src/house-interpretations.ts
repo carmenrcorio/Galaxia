@@ -13,7 +13,7 @@
  * traits; a chart with houses is a biography.
  */
 
-import type { BodyKey, Reading } from "./interpretations";
+import type { BodyKey, PlacementSafetyOpts, Reading } from "./interpretations";
 
 export type HouseKey = 1|2|3|4|5|6|7|8|9|10|11|12;
 
@@ -183,7 +183,35 @@ export const PLANET_IN_HOUSE: Record<BodyKey, Record<HouseKey, Reading>> = {
   },
 };
 
-export function interpretHouse(body: BodyKey, house: HouseKey): Reading {
+/**
+ * Curated Venus-in-house copy for minors. Care / friendship framed — never
+ * romance, attraction, courtship, or merge-as-intimacy.
+ * Lookup only via interpretHouse(..., { minorSafe: true }).
+ */
+// FOUNDER-REVIEW: authored — all twelve minor Venus-in-house shorts + longs.
+export const VENUS_IN_HOUSE_MINOR: Record<HouseKey, Reading> = {
+  1:  { short: "liked for how they show up",     long: "Warmth arrives with them. People notice them first — make sure they still feel seen for who they are underneath." },
+  2:  { short: "cares about what lasts",         long: "Affection shows up in things kept, shared, and made comfortable. They care with their hands and with what they give." },
+  3:  { short: "cares through talk",             long: "Being interesting to each other is the bond. Boredom, not conflict, is what cools it." },
+  4:  { short: "cares by making a home",         long: "Care looks like a kitchen, a routine, a door that's open. Ordinary closeness is the whole point here." },
+  5:  { short: "cares through play and delight", long: "Play, creativity, delight. They need joy to stay in it — help them keep some lightness." },
+  6:  { short: "cares by doing the small thing", long: "Care shows up as the quiet errand and the thing fixed before anyone asked. Thank the tiny ones or they go quiet." },
+  7:  { short: "cares about the close bond",     long: "They take close bonds seriously and will work to keep them fair. Watch that they don't serve the idea of the bond over the person." },
+  8:  { short: "cares all the way, or not",      long: "Real closeness means being changed by another person. They can't do half-hearted, and pretending costs them." },
+  9:  { short: "cares what widens them",         long: "They warm to a mind, a place, a belief. Show them something they hadn't considered." },
+  10: { short: "cares what they respect",        long: "Warmth is bound up with esteem. Be someone they can look up to — and be soft with them too." },
+  11: { short: "cares as friend first",          long: "The bond grows out of companionship or it doesn't grow. They need to like you." },
+  12: { short: "cares privately, quietly",       long: "Their tenderness runs quiet and they may not say it first. Ask directly; they'll tell you, once." },
+};
+
+/**
+ * Resolve a planet-in-house reading. Venus uses VENUS_IN_HOUSE_MINOR when
+ * opts.minorSafe — call sites pass the boolean; they do not choose the table.
+ */
+export function interpretHouse(body: BodyKey, house: HouseKey, opts: PlacementSafetyOpts): Reading {
+  if (body === "venus" && opts.minorSafe) {
+    return VENUS_IN_HOUSE_MINOR[house] ?? { short: "", long: "" };
+  }
   return PLANET_IN_HOUSE[body]?.[house] ?? { short: "", long: "" };
 }
 

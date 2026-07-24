@@ -7,11 +7,11 @@
  * share snapshots (/s). Labels only placements the chart actually has; an
  * absent Rising is never presented as a third computed sign.
  *
- * Minor safety: when `birthDate` is provided, calls isMinorForSafety so any
- * future adults-only reveal content has one gate. Natal Sun/Moon copy is not
- * adults-only — a minor currently renders identically to an adult. /s single
- * shares pass no birthDate (PII stripped by design); do not persist a minor
- * flag on single shares.
+ * Minor safety: when `birthDate` is provided, calls isMinorForSafety and passes
+ * the result into interpretPlacement's required minorSafe flag. Natal Sun/Moon
+ * copy is not adults-only — minor and adult render identically today. /s single
+ * shares pass no birthDate (PII stripped by design) and therefore pass
+ * minorSafe: true (fail-safe). Do not persist a minor flag on single shares.
  */
 
 import {
@@ -65,15 +65,16 @@ export function NatalSignReveal({
   className,
   style,
 }: NatalSignRevealProps) {
-  // Reserved gate for future adults-only reveal content. Sun/Moon natal copy
-  // is age-appropriate for all subjects — no notice, no withheld readings.
-  if (birthDate) {
-    isMinorForSafety({
-      isMinor: false,
-      birthDate,
-      birthPrecision: birthPrecision ?? "date",
-    });
-  }
+  // Fail-safe when birthDate is omitted (/s strips birth PII): treat as minor
+  // for the required PlacementSafetyOpts flag. Sun/Moon copy is identical either
+  // way today; Venus never renders here.
+  const minorSafe = birthDate
+    ? isMinorForSafety({
+        isMinor: false,
+        birthDate,
+        birthPrecision: birthPrecision ?? "date",
+      })
+    : true;
 
   const sun = chart.placements.find((p) => p.body === "sun");
   const moon = chart.placements.find((p) => p.body === "moon");
@@ -84,14 +85,14 @@ export function NatalSignReveal({
     chips.push({
       label: "Sun",
       sign: sun.sign,
-      reading: interpretPlacement(sun.body as BodyKey, sun.sign as SignKey).short,
+      reading: interpretPlacement(sun.body as BodyKey, sun.sign as SignKey, { minorSafe }).short,
     });
   }
   if (moon?.sign) {
     chips.push({
       label: "Moon",
       sign: moon.sign,
-      reading: interpretPlacement(moon.body as BodyKey, moon.sign as SignKey).short,
+      reading: interpretPlacement(moon.body as BodyKey, moon.sign as SignKey, { minorSafe }).short,
     });
   }
   if (rising) {

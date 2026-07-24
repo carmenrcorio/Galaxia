@@ -12,11 +12,12 @@
 import {
   type NatalChart,
   type BirthFormInput,
-  BODY_DOMAIN,
+  bodyDomain,
   interpretPlacement,
   type BodyKey,
   type SignKey,
 } from "@galaxia/astro";
+import { isMinorForSafety } from "@galaxia/core";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
@@ -131,6 +132,15 @@ export default function QuickChartPage() {
       ? "See anyone's real chart."
       : "See anyone's real chart, free.";
 
+  // birthDate is on the result — gate Venus for real (adults keep adult copy).
+  const chartMinorSafe = result
+    ? isMinorForSafety({
+        isMinor: false,
+        birthDate: result.birthDate,
+        birthPrecision: input.precision,
+      })
+    : false;
+
   return (
     <QuickChartShell eyebrow="Quick Chart" title={title} authed={!!viewer.userId}>
       <p className="lede" style={{ marginBottom: 20 }}>
@@ -206,12 +216,12 @@ export default function QuickChartPage() {
                       <span className="muted" style={{ fontSize: ".82rem" }}>{p.body[0].toUpperCase() + p.body.slice(1)} — sign uncertain, add a birth date to settle it</span>
                     </div>
                   );
-                  const reading = interpretPlacement(p.body as BodyKey, p.sign as SignKey);
+                  const reading = interpretPlacement(p.body as BodyKey, p.sign as SignKey, { minorSafe: chartMinorSafe });
                   return (
                     <div key={p.body} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "6px 0", borderBottom: "1px solid rgba(183,154,216,.08)" }}>
                       <span style={{ width: 20, textAlign: "center", flexShrink: 0, color: `var(--${signElement(p.sign)})` }}>{BODY_GLYPH[p.body] ?? p.body[0]}</span>
                       <div>
-                        <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--mist2)" }}>{BODY_DOMAIN[p.body as BodyKey]}</div>
+                        <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--mist2)" }}>{bodyDomain(p.body as BodyKey, { minorSafe: chartMinorSafe })}</div>
                         <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{p.body[0].toUpperCase() + p.body.slice(1)} in {p.sign}</div>
                         <div className="muted" style={{ fontSize: ".78rem", fontStyle: "italic" }}>{reading.short}</div>
                       </div>
@@ -227,7 +237,13 @@ export default function QuickChartPage() {
             {/* Paid perk: only a real subscriber/trialing user sees this. The
                 share link below stays free for everyone (acquisition funnel). */}
             {viewer.isSubscriber ? (
-              <ChartPdfExport chart={result.chart} name={name || undefined} displayDate={result.displayDate} birthPlace={result.birthPlace} />
+              <ChartPdfExport
+                chart={result.chart}
+                name={name || undefined}
+                displayDate={result.displayDate}
+                birthPlace={result.birthPlace}
+                minorSafe={chartMinorSafe}
+              />
             ) : null}
             <ShareLinkButton createShareUrl={createShareUrl} />
             <button type="button" className="pill-link" onClick={() => { setResult(null); setFromShareLink(false); setUsingMyChart(false); }}>

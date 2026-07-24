@@ -1,3 +1,6 @@
+import type { VelaFramingMode } from "./framing";
+import { velaFramingBlock } from "./framing";
+
 export type VelaMode = "ask" | "shared";
 export type Precision = "exact" | "date" | "year";
 
@@ -22,7 +25,8 @@ export interface VelaContextPerson {
 
 export interface VelaContext {
   mode: VelaMode;
-  parenting: boolean;
+  /** Single discriminated framing mode — never parallel parenting/group flags. */
+  framing: VelaFramingMode;
   relationshipType: string;
   user: { name: string };
   /** Present when focus is a named group — answers must cover the whole group. */
@@ -57,11 +61,11 @@ export interface BuildVelaContextInput extends Omit<VelaContext, "privateNotesDi
 export const VELA_REMEMBRANCE_GUARDRAIL =
   "Draw only on the computed chart facts you are given and the owner's own saved reflections in the private notes digest. Never fabricate memories, events, or facts about the person. Do not invent what they said, did, or felt.";
 
+/** No always-on parenting rule — framing is injected per-request via `velaFramingBlock`. */
 export const VELA_SYSTEM_PROMPT = `You are Vela, the guide inside Galaxia — a warm, perceptive astrologer and practical relationship coach.
 You interpret computed astrology facts only and never invent positions.
 Blend chart meaning with concrete relationship moves in plain language.
 In shared mode, stay neutral and never expose private notes.
-If someone is a minor, use parenting framing and never address the child directly.
 ${VELA_REMEMBRANCE_GUARDRAIL}
 Note: the private notes digest is a short recent sample (at most five), not full recall of every reflection.
 If risk-of-harm language appears, deprioritize astrology and encourage immediate real-world support.
@@ -75,11 +79,13 @@ export function buildVelaContext(input: BuildVelaContextInput): VelaContext {
 }
 
 export function buildVelaPrompt(context: VelaContext): string {
+  const framingBlock = velaFramingBlock(context.framing);
   return JSON.stringify(
     {
       system: VELA_SYSTEM_PROMPT,
+      framing: context.framing,
+      framingBlock: framingBlock || undefined,
       mode: context.mode,
-      parenting: context.parenting,
       relationshipType: context.relationshipType,
       group: context.group,
       people: context.people,
@@ -105,9 +111,8 @@ export function detectCrisisLanguage(text: string): boolean {
 /**
  * Safe Vela `relationshipType` values when any person in scope is a minor.
  * Allowlist (not denylist): free-text input is coerced to one of these, or
- * "general". Keep in sync with `supabase/functions/vela-chat/index.ts`.
- * Mirrors Compare's non-romantic RelationType set plus Vela's "general" default
- * and "platonic".
+ * "general". Keep in sync with `supabase/functions/vela-chat/index.ts` —
+ * enforced by `test/safe-relationship-types-parity.test.ts`.
  */
 export const SAFE_VELA_RELATIONSHIP_TYPES_WITH_MINOR = [
   "general",
@@ -115,7 +120,9 @@ export const SAFE_VELA_RELATIONSHIP_TYPES_WITH_MINOR = [
   "friends",
   "parent-child",
   "ancestor",
-  "platonic"
+  "platonic",
+  "grandparent",
+  "grandchild"
 ] as const;
 
 export type SafeVelaRelationshipTypeWithMinor =
@@ -139,5 +146,19 @@ export function resolveVelaRelationshipType(relType: string, scopeHasMinor: bool
   if (!scopeHasMinor) return relType;
   return coerceVelaRelationshipTypeForMinorScope(relType);
 }
+
+export type {
+  ResolveVelaFramingModeInput,
+  VelaFramingMode,
+  VelaFramingSubject
+} from "./framing";
+export {
+  groupFramingBlock,
+  isUserChildTag,
+  parentingFramingBlock,
+  resolveVelaFramingMode,
+  thirdPersonMinorFramingBlock,
+  velaFramingBlock
+} from "./framing";
 
 export * from "./parse";

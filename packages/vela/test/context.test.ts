@@ -3,7 +3,7 @@ import { buildVelaContext, buildVelaPrompt, detectCrisisLanguage, VELA_REMEMBRAN
 
 const baseInput = {
   mode: "ask" as const,
-  parenting: false,
+  framing: { kind: "default" as const },
   relationshipType: "partner",
   user: { name: "Carmen" },
   people: [

@@ -86,3 +86,5 @@ export * from "./honor-constellation";
 export * from "./remembrance";
 
 export * from "./record";
+
+export * from "./owned-delete";

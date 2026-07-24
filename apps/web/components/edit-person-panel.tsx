@@ -9,7 +9,12 @@ import {
   type GeoCandidate,
   CHART_ENGINE_VERSION,
 } from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
+import {
+  OWNED_DELETE_COPY,
+  formatPersonDeleteConfirmation,
+  groupsCollapsedByMemberRemoval,
+  isMinorForSafety
+} from "@galaxia/core";
 import { useState } from "react";
 import { getPreferredHouseSystem } from "../lib/house-system";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
@@ -52,6 +57,7 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
   const supabase = createSupabaseBrowserClient();
   const [open, setOpen]             = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteWarning, setDeleteWarning] = useState<string | null>(null);
   const [confirmRemembrance, setConfirmRemembrance] = useState(false);
   const [saving, setSaving]         = useState(false);
   const [deleting, setDeleting]     = useState(false);
@@ -142,14 +148,67 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
     finally { setSaving(false); }
   }
 
+  async function beginDeletePerson() {
+    setStatus(null);
+    const { data: memberships, error: memErr } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .eq("person_id", person.id);
+    if (memErr) { setStatus(memErr.message); return; }
+
+    const groupIds = [...new Set((memberships ?? []).map((r) => r.group_id as string))];
+    const memberCounts: Array<{ groupId: string; name: string; memberCount: number }> = [];
+    for (const gid of groupIds) {
+      const [{ data: gRow }, { count }] = await Promise.all([
+        supabase.from("groups").select("id, name").eq("id", gid).eq("owner_id", userId).maybeSingle(),
+        supabase.from("group_members").select("person_id", { count: "exact", head: true }).eq("group_id", gid)
+      ]);
+      if (gRow) {
+        memberCounts.push({
+          groupId: gid,
+          name: gRow.name as string,
+          memberCount: count ?? 0
+        });
+      }
+    }
+    const collapsing = groupsCollapsedByMemberRemoval(memberCounts);
+
+    const collapsingIds = collapsing.map((g) => g.groupId);
+    let conversationCount = 0;
+    const { count: personThreadCount } = await supabase
+      .from("threads")
+      .select("id", { count: "exact", head: true })
+      .eq("owner_id", userId)
+      .or(`subject_person.eq.${person.id},pair_low.eq.${person.id},pair_high.eq.${person.id}`);
+    conversationCount += personThreadCount ?? 0;
+    if (collapsingIds.length > 0) {
+      const { count: groupThreadCount } = await supabase
+        .from("threads")
+        .select("id", { count: "exact", head: true })
+        .in("group_id", collapsingIds);
+      conversationCount += groupThreadCount ?? 0;
+    }
+
+    // FOUNDER-REVIEW: formatPersonDeleteConfirmation
+    setDeleteWarning(
+      formatPersonDeleteConfirmation({
+        personName: person.display_name,
+        collapsingGroupNames: collapsing.map((g) => g.name),
+        conversationCount
+      })
+    );
+    setConfirmDelete(true);
+  }
+
   async function deletePerson() {
     setDeleting(true);
-    await supabase.from("notes").delete().eq("about_person", person.id);
-    await supabase.from("group_members").delete().eq("person_id", person.id);
-    await supabase.from("charts").delete().eq("person_id", person.id);
-    const { error } = await supabase.from("people").delete().eq("id", person.id).eq("owner_id", userId);
+    setStatus(null);
+    const { error } = await supabase.rpc("delete_own_person", { p_person_id: person.id });
     setDeleting(false);
-    if (error) { setStatus(error.message); return; }
+    if (error) {
+      setStatus(error.message || OWNED_DELETE_COPY.personErrorGeneric);
+      return;
+    }
     onDeleted();
   }
 
@@ -388,16 +447,19 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
         </button>
         <button className="pill-link" onClick={() => setOpen(false)}>Cancel</button>
         {!confirmDelete
-          ? <button className="pill-link" style={{ borderColor: "rgba(218,140,140,.4)", color: "var(--rose)" }} onClick={() => setConfirmDelete(true)}>Delete</button>
+          ? <button className="pill-link" style={{ borderColor: "rgba(218,140,140,.4)", color: "var(--rose)" }} onClick={() => void beginDeletePerson()}>Delete</button>
           : <>
-              <button className="pill-link" style={{ background: "rgba(218,140,140,.15)", borderColor: "var(--rose)", color: "var(--rose)", gap: 8 }} onClick={deletePerson} disabled={deleting}>
+              <button className="pill-link" style={{ background: "rgba(218,140,140,.15)", borderColor: "var(--rose)", color: "var(--rose)", gap: 8 }} onClick={() => void deletePerson()} disabled={deleting}>
                 {deleting && <Spinner size={12} color="var(--rose)" />}
-                {deleting ? "Deleting…" : "Confirm delete"}
+                {deleting ? OWNED_DELETE_COPY.personConfirmingButton : OWNED_DELETE_COPY.personConfirmButton}
               </button>
-              <button className="pill-link" onClick={() => setConfirmDelete(false)}>Cancel</button>
+              <button className="pill-link" onClick={() => { setConfirmDelete(false); setDeleteWarning(null); }}>Cancel</button>
             </>
         }
       </div>
+      {confirmDelete && deleteWarning ? (
+        <p className="muted" style={{ fontSize: 13, marginTop: 8, color: "var(--rose)" }}>{deleteWarning}</p>
+      ) : null}
       {status ? <p className={status.includes("light") || status.includes("Restored") || status === "Saved." ? "success" : "error"} style={{ fontSize: 13, marginTop: 8 }}>{status}</p> : null}
     </section>
   );

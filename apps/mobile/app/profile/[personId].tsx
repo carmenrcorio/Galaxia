@@ -1,9 +1,14 @@
 import type { NatalChart } from "@galaxia/astro";
-import { describeGenerationalArchetype } from "@galaxia/core";
+import {
+  OWNED_DELETE_COPY,
+  describeGenerationalArchetype,
+  formatPersonDeleteConfirmation,
+  groupsCollapsedByMemberRemoval
+} from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
-import { Link, useLocalSearchParams } from "expo-router";
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { supabase } from "../../src/lib/supabase";
 import { useAuth } from "../../src/providers/auth-provider";
 
@@ -11,7 +16,8 @@ interface PersonRow {
   id: string;
   display_name: string;
   relation: string;
-  birth_precision: "exact" | "date" | "year";
+  birth_precision: "exact" | "date" | "year" | "none";
+  is_self?: boolean;
 }
 
 interface NoteRow {
@@ -30,6 +36,7 @@ function elementForSign(sign: string): "fire" | "earth" | "air" | "water" {
 export default function PersonProfileScreen() {
   const { personId } = useLocalSearchParams<{ personId: string }>();
   const { session } = useAuth();
+  const router = useRouter();
   const [person, setPerson] = useState<PersonRow | null>(null);
   const [chart, setChart] = useState<NatalChart | null>(null);
   const [notes, setNotes] = useState<NoteRow[]>([]);
@@ -66,7 +73,7 @@ export default function PersonProfileScreen() {
     }
 
     const [{ data: personData, error: personError }, { data: chartData, error: chartError }, { data: noteData, error: noteError }] = await Promise.all([
-      supabase.from("people").select("id, display_name, relation, birth_precision").eq("id", actualPersonId).single(),
+      supabase.from("people").select("id, display_name, relation, birth_precision, is_self").eq("id", actualPersonId).single(),
       supabase.from("charts").select("data").eq("person_id", actualPersonId).single(),
       supabase.from("notes").select("id, body, created_at").eq("about_person", actualPersonId).order("created_at", { ascending: false }).limit(20)
     ]);
@@ -101,6 +108,79 @@ export default function PersonProfileScreen() {
     }
     setNoteDraft("");
     await loadProfile();
+  };
+
+  const deletePerson = async () => {
+    if (!session?.user.id || !person?.id || person.is_self) return;
+
+    const { data: memberships, error: memErr } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .eq("person_id", person.id);
+    if (memErr) {
+      setStatus(memErr.message);
+      return;
+    }
+
+    const groupIds = [...new Set((memberships ?? []).map((row) => row.group_id as string))];
+    const memberCounts: Array<{ groupId: string; name: string; memberCount: number }> = [];
+    for (const gid of groupIds) {
+      const [{ data: gRow }, { count }] = await Promise.all([
+        supabase.from("groups").select("id, name").eq("id", gid).eq("owner_id", session.user.id).maybeSingle(),
+        supabase.from("group_members").select("person_id", { count: "exact", head: true }).eq("group_id", gid)
+      ]);
+      if (gRow) {
+        memberCounts.push({
+          groupId: gid,
+          name: gRow.name as string,
+          memberCount: count ?? 0
+        });
+      }
+    }
+    const collapsing = groupsCollapsedByMemberRemoval(memberCounts);
+
+    let conversationCount = 0;
+    const { count: personThreadCount } = await supabase
+      .from("threads")
+      .select("id", { count: "exact", head: true })
+      .eq("owner_id", session.user.id)
+      .or(`subject_person.eq.${person.id},pair_low.eq.${person.id},pair_high.eq.${person.id}`);
+    conversationCount += personThreadCount ?? 0;
+    if (collapsing.length > 0) {
+      const { count: groupThreadCount } = await supabase
+        .from("threads")
+        .select("id", { count: "exact", head: true })
+        .in(
+          "group_id",
+          collapsing.map((g) => g.groupId)
+        );
+      conversationCount += groupThreadCount ?? 0;
+    }
+
+    // FOUNDER-REVIEW: formatPersonDeleteConfirmation
+    const warning = formatPersonDeleteConfirmation({
+      personName: person.display_name,
+      collapsingGroupNames: collapsing.map((g) => g.name),
+      conversationCount
+    });
+
+    Alert.alert("Delete person", warning, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: OWNED_DELETE_COPY.personConfirmButton,
+        style: "destructive",
+        onPress: () => {
+          void (async () => {
+            const { error } = await supabase.rpc("delete_own_person", { p_person_id: person.id });
+            if (error) {
+              setStatus(error.message || OWNED_DELETE_COPY.personErrorGeneric);
+              return;
+            }
+            router.replace("/");
+          })();
+        }
+      }
+    ]);
   };
 
   const elementBalance = useMemo(() => {
@@ -241,6 +321,23 @@ export default function PersonProfileScreen() {
           ))
         )}
       </View>
+
+      {!person.is_self ? (
+        <Pressable
+          onPress={() => void deletePerson()}
+          style={{
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: "rgba(218,140,140,.55)",
+            paddingVertical: 12,
+            paddingHorizontal: 14
+          }}
+        >
+          <Text style={{ color: "#da8c8c", fontWeight: "700", textAlign: "center" }}>
+            {OWNED_DELETE_COPY.personConfirmButton}
+          </Text>
+        </Pressable>
+      ) : null}
 
       {status ? <Text style={{ color: tokens.colors.gold }}>{status}</Text> : null}
     </ScrollView>

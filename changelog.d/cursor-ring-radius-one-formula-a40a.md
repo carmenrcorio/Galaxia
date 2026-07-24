@@ -13,8 +13,8 @@ those exact same band radii (sketch Rings 1–4 always visible).
 pull living bands outward. Adding a person never changes another person's
 radius (same-ring collision separation still may nudge angles in a cluster).
 
-`[CHANGED]` **Within-band jitter** (`ringSeatRadius`) clamped to ≤85% of the
-half-gap to the neighbouring band — never enough to cross into another ring.
+`[CHANGED]` **Within-band jitter** (`ringSeatRadius`, ±1.2%) clamped to ≤85% of
+the half-gap to the neighbouring band — never enough to cross into another ring.
 
 `[CHANGED]` **Tangential drift only** on `/app` — motion stays on the band;
 radial clamp preserves angle so edge padding cannot shove a node into a gap.

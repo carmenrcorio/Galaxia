@@ -44,6 +44,8 @@ An agent reported "implemented, build passes" for the entire web app. The work s
 4. Vercel deploy from `main` reaches **Ready**.
 5. The change is verified on the live URL by loading it.
 
+For changes under `supabase/functions/**`, also required: the **Deploy Edge Functions** GitHub Action on that merge is green (Vercel does not ship Deno edge code). Do not treat a laptop `supabase functions deploy` as the happy path — see `docs/ship-checklist.md`.
+
 "The build passes locally" is not done. "I implemented it" is not done. An agent claiming completion must report: branch name, PR link, files changed, deploy status, live URL.
 
 ---

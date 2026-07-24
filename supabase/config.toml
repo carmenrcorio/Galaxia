@@ -1,0 +1,11 @@
+# Galaxia Supabase project config (CLI + CI).
+# Remote project ref is always passed explicitly (`--project-ref`); do not rely on
+# this file alone for targeting. See ENGINEERING.md §5.
+
+project_id = "galaxia"
+
+# Live vela-chat uses a custom bearer flow inside the function. Platform JWT
+# verification must stay off — CI deploys with --no-verify-jwt and asserts this
+# after every deploy.
+[functions.vela-chat]
+verify_jwt = false

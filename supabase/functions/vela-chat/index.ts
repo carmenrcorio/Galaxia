@@ -26,6 +26,8 @@ const CORS_HEADERS = {
 const VELA_REMEMBRANCE_GUARDRAIL =
   "Draw only on the computed chart facts you are given and the owner's own saved reflections in the private notes digest. Never fabricate memories, events, or facts about the person. Do not invent what they said, did, or felt.";
 
+// Framing (group / parenting / third-person-minor) is injected per-request via
+// a single discriminated mode block — never as an always-on system rule.
 const VELA_SYSTEM_PROMPT =
   `You are Vela, the guide inside Galaxia — a warm, perceptive astrologer and practical relationship coach who helps someone understand and tend the people they love.
 
@@ -33,7 +35,6 @@ HOW YOU THINK
 - You are given COMPUTED astrology facts (planets, signs, aspects, generational signatures). Treat them as ground truth; never invent a placement.
 - Blend chart meaning with concrete relationship advice in plain, jargon-free language.
 - In shared mode, stay neutral and never reference private notes.
-- In parenting mode (any person is a minor), coach the parent — never address the child directly.
 - ${VELA_REMEMBRANCE_GUARDRAIL}
 - The private notes digest is a short recent sample (at most five), not full recall of every reflection.
 
@@ -91,7 +92,9 @@ const SAFE_VELA_RELATIONSHIP_TYPES_WITH_MINOR = [
   "friends",
   "parent-child",
   "ancestor",
-  "platonic"
+  "platonic",
+  "grandparent",
+  "grandchild"
 ] as const;
 function coerceVelaRelationshipTypeForMinorScope(relType: string): string {
   const key = relType.trim().toLowerCase();
@@ -100,9 +103,52 @@ function coerceVelaRelationshipTypeForMinorScope(relType: string): string {
     : "general";
 }
 
+// Mirror packages/vela/src/framing.ts (edge cannot import the workspace).
+// Exactly one framing mode per request — bad dual-instruction states are
+// unconstructable. Person tags are user-relative; parenting requires "child".
+type VelaFramingMode =
+  | { kind: "group"; groupName: string }
+  | { kind: "parenting"; subjectName: string }
+  | { kind: "third_person_minor"; subjectName: string }
+  | { kind: "default" };
+
+function resolveVelaFramingMode(input: {
+  isGroupScope: boolean;
+  groupName: string | null;
+  subject: { name: string; relation: string | null | undefined; isMinor: boolean } | null;
+}): VelaFramingMode {
+  if (input.isGroupScope) {
+    const name = (input.groupName ?? "").trim();
+    return { kind: "group", groupName: name || "this group" };
+  }
+  const subject = input.subject;
+  if (subject?.isMinor) {
+    const tag = (subject.relation ?? "").trim().toLowerCase();
+    if (tag === "child") {
+      return { kind: "parenting", subjectName: subject.name };
+    }
+    return { kind: "third_person_minor", subjectName: subject.name };
+  }
+  return { kind: "default" };
+}
+
+// FOUNDER-REVIEW: authored — Vela framing blocks (prompt injection).
+function velaFramingBlock(mode: VelaFramingMode): string {
+  switch (mode.kind) {
+    case "group":
+      return `You are answering about the group "${mode.groupName}". "We" and "this group" mean every member listed in people and cohort.members. Speak about all of them by name. Never ask who "we" refers to.`;
+    case "parenting":
+      return `This is a parenting conversation about ${mode.subjectName}, who is a minor and tagged as the user's child. Coach the user as their parent. Never address ${mode.subjectName} directly.`;
+    case "third_person_minor":
+      return `You are speaking with the user about ${mode.subjectName}, who is a minor. Speak about ${mode.subjectName} in the third person. Never address them directly. Do not assume the user is their parent and do not coach the user as a parent.`;
+    case "default":
+      return "";
+  }
+}
+
 /**
  * Split a Vela reply into the answer body and the "→ " suggested follow-ups.
- * Mirrors apps/web/lib/vela-parse.ts (edge functions cannot import from apps).
+ * Mirrors packages/vela/src/parse.ts (edge functions cannot import the workspace).
  * Body and suggestions are persisted separately so resumed threads render
  * the answer bubble and the suggestion chips correctly.
  */
@@ -359,9 +405,9 @@ Deno.serve(async (req) => {
     }
 
     // ── Safety checks ────────────────────────────────────────────────────────
-    // The line is shared-mode, not minor-as-subject. A parent asking Vela
-    // PRIVATELY about their child is the core parenting use case; the `parenting`
-    // flag below puts Vela in coach-the-parent mode (never addressing the child).
+    // The line is shared-mode, not minor-as-subject. Private ask-mode about a
+    // minor is allowed; conversational framing is a separate discriminated mode
+    // computed later (group / parenting / third-person-minor / default).
     // What must never happen is a minor being a participant in a real-time
     // two-way (shared) session.
     //
@@ -371,7 +417,7 @@ Deno.serve(async (req) => {
     // Any minor in scope (1:1, pair, or group): coerce free-text relationshipType
     // to the safe allowlist before it reaches Anthropic context. Denylist is
     // insufficient — "bf" / "novio" / misspellings must not slip through.
-    // Safety only; does not change parenting / conversational framing.
+    // Safety only; does not change conversational framing.
     if (people.some((p) => isMinorForSafety(p))) {
       relType = coerceVelaRelationshipTypeForMinorScope(relType);
     }
@@ -571,10 +617,30 @@ Deno.serve(async (req) => {
     // Persist the user message
     await supabase.from("messages").insert({ thread_id: threadId, sender: "user", body: userMessage });
 
+    // ── Framing mode (exactly one) ───────────────────────────────────────────
+    // Uses peopleCtx[].isMinor (already computed) + people.relation tags.
+    // Does not call isMinorForSafety again; safety sites above stay untouched.
+    const subjectIdx = thread.subject_person
+      ? people.findIndex((p) => p.id === thread.subject_person)
+      : -1;
+    const framing = resolveVelaFramingMode({
+      isGroupScope: Boolean(thread.group_id),
+      groupName,
+      subject: subjectIdx >= 0
+        ? {
+            name: peopleCtx[subjectIdx].name as string,
+            relation: people[subjectIdx].relation as string | null,
+            isMinor: peopleCtx[subjectIdx].isMinor as boolean
+          }
+        : null
+    });
+    const framingBlock = velaFramingBlock(framing);
+    const framingPrefix = framingBlock ? `${framingBlock}\n\n` : "";
+
     // ── Build Anthropic request ──────────────────────────────────────────────
     const ctx = {
       mode,
-      parenting:      peopleCtx.some((p) => p.isMinor),
+      framing,
       relationshipType: relType,
       user:           { name: user.user_metadata?.display_name ?? user.email?.split("@")[0] ?? "friend" },
       ...(groupName ? { group: { name: groupName } } : {}),
@@ -586,12 +652,9 @@ Deno.serve(async (req) => {
     };
 
     const crisisDetected = CRISIS_PATTERN.test(userMessage);
-    const groupFrame = groupName
-      ? `You are answering about the group "${groupName}". "We" and "this group" mean every member listed in people and cohort.members. Speak about all of them by name. Never ask who "we" refers to.\n\n`
-      : "";
     const userContent = crisisDetected
-      ? `The user message contains potential crisis language. Lead with compassionate safety guidance.\n\n${groupFrame}Astrology context:\n${JSON.stringify(ctx, null, 2)}\n\nUser: ${userMessage}`
-      : `${groupFrame}Astrology context:\n${JSON.stringify(ctx, null, 2)}\n\nUser: ${userMessage}`;
+      ? `The user message contains potential crisis language. Lead with compassionate safety guidance.\n\n${framingPrefix}Astrology context:\n${JSON.stringify(ctx, null, 2)}\n\nUser: ${userMessage}`
+      : `${framingPrefix}Astrology context:\n${JSON.stringify(ctx, null, 2)}\n\nUser: ${userMessage}`;
 
     // Messages array: only user/assistant turns — system is top-level
     const messages = [

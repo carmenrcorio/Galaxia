@@ -35,7 +35,7 @@ const minorPerson = {
 function ctxWithRelType(relationshipType: string) {
   return buildVelaContext({
     mode: "ask",
-    parenting: false,
+    framing: { kind: "third_person_minor", subjectName: "Gabriel" },
     relationshipType,
     user: { name: "Carmen" },
     people: [minorPerson],
@@ -89,7 +89,7 @@ describe("resolveVelaRelationshipType — scope gate (asserts coerced value in c
     expect(relationshipType).toBe("general");
     const ctx = buildVelaContext({
       mode: "ask",
-      parenting: false,
+      framing: { kind: "group", groupName: "QATEST Group1" },
       relationshipType,
       user: { name: "Carmen" },
       group: { name: "QATEST Group1" },
@@ -114,7 +114,7 @@ describe("resolveVelaRelationshipType — scope gate (asserts coerced value in c
     expect(relationshipType).toBe("partner");
     const ctx = buildVelaContext({
       mode: "ask",
-      parenting: false,
+      framing: { kind: "default" },
       relationshipType,
       user: { name: "Carmen" },
       people: [adultPerson],
@@ -122,5 +122,10 @@ describe("resolveVelaRelationshipType — scope gate (asserts coerced value in c
       userMessage: "How do we reconnect?"
     });
     expect(ctx.relationshipType).toBe("partner");
+  });
+
+  it("grandchild relationshipType stays when a minor is in scope", () => {
+    expect(resolveVelaRelationshipType("grandchild", true)).toBe("grandchild");
+    expect(resolveVelaRelationshipType("grandparent", true)).toBe("grandparent");
   });
 });

@@ -49,9 +49,10 @@ export const GALAXY_GUIDE_RINGS = [2, 3, 4, 5] as const;
 
 /**
  * Nominal radial jitter amplitude as a fraction of band radius (±).
- * Actual jitter is clamped to stay inside the band (see `ringSeatRadius`).
+ * Kept tiny so seats read as ON the guide stroke, not in the gap; still
+ * clamped to the band half-gap (see `ringSeatRadius`).
  */
-export const GALAXY_RING_JITTER = 0.03;
+export const GALAXY_RING_JITTER = 0.012;
 
 /**
  * Raw angular proximity (radians) that joins two seats on the same ring into a

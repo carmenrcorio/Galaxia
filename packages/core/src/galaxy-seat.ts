@@ -1,18 +1,18 @@
 /**
  * Stable constellation seats for `/app` (and mobile home).
  *
- * A seat starts as a pure function of (person id, own semantic ring) — never of
- * fetch order or which other rings happen to be occupied. That is what makes
- * the map learnable:
- *   - same account, two loads, no data change → identical seats
- *   - adding one unrelated person → only that person appears; everyone else
- *     stays put
+ * Angle is a pure function of person id. Radius comes from the person's own
+ * semantic ring, mapped through the *occupied* ring set so guides and seats
+ * span the full canvas (empty rings do not reserve space).
  *
- * Near-hash collisions on the same ring (two ids mapping to nearly the same
- * angle) are separated by `galaxySeatsResolved`: within a raw-proximity cluster
- * we nudge along the ring by a stable id ordering. Adding someone outside the
- * cluster cannot move cluster members; adding someone into the cluster may
- * re-spread that cluster only.
+ * Learnable-map contract:
+ *   - same account, two loads, no data change → identical seats
+ *   - adding a person onto an already-occupied ring → only that person (or
+ *     their same-ring collision cluster) moves
+ *   - opening a *new* occupied ring redistributes radii across the set — the
+ *     one allowed peer-aware shift so four occupied rings use the whole card
+ *
+ * Near-hash collisions on the same ring are separated by `galaxySeatsResolved`.
  */
 
 /**
@@ -22,26 +22,32 @@
 export const GALAXY_MAX_RING = 6;
 
 /**
- * Partner tight-binary radius (semantic ring 1). Not a guide stroke — sits
- * inside sketch Ring 1 so self remains the visual anchor.
+ * Partner binary radius (semantic ring 1). Far enough from self that both
+ * nodes and both labels stay legible at 375px — two distinct stars, not a smudge.
  */
-export const GALAXY_RING_MIN = 0.13;
+export const GALAXY_RING_MIN = 0.46;
 
 /**
- * Absolute normalised radii for each semantic ring. Partner is deliberately
- * inward of the four guide bands (rings 2–5).
+ * Inner edge for the first occupied non-partner band when radii are spread
+ * across the card. Partner stays at GALAXY_RING_MIN inside this.
+ */
+export const GALAXY_OCCUPIED_INNER = 0.58;
+
+/**
+ * Fallback absolute norms (used only when an occupied map is not supplied).
+ * Prefer `ringNormsOccupied` for rendering.
  */
 export const GALAXY_RING_NORMS: Readonly<Record<number, number>> = {
   0: 0,
   1: GALAXY_RING_MIN,
-  2: 0.36, /* sketch Ring 1 — children */
-  3: 0.54, /* sketch Ring 2 — parents / siblings / grandparents */
-  4: 0.72, /* sketch Ring 3 — friends / relatives / unknown */
-  5: 0.88, /* sketch Ring 4 — colleagues / outer tracked */
-  6: 1.0,  /* passed / ancestor — ancient band until P3 */
+  2: 0.58,
+  3: 0.72,
+  4: 0.84,
+  5: 0.93,
+  6: 1.0,
 };
 
-/** Semantic rings that draw soft concentric guides (sketch Rings 1–4). */
+/** Semantic rings that may draw soft concentric guides (sketch Rings 1–4). */
 export const GALAXY_GUIDE_RINGS = [2, 3, 4, 5] as const;
 
 /**
@@ -57,10 +63,10 @@ export const GALAXY_COLLISION_JOIN = (14 * Math.PI) / 180;
  */
 export const GALAXY_COLLISION_SEP = (20 * Math.PI) / 180;
 
-/**
- * Stable value in [0, 1) from a string — full 32-bit FNV-1a (not truncated to
- * 1e5 buckets). Same input → same output on every load.
- */
+/** Label centres closer than this (CSS px) get deterministic push-apart. */
+export const GALAXY_LABEL_JOIN_PX = 36;
+
+/** Stable value in [0, 1) from a string — full 32-bit FNV-1a. */
 export function hash01(s: string): number {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) {
@@ -71,15 +77,44 @@ export function hash01(s: string): number {
 }
 
 /**
- * Normalised ring radius in [0, 1] from the person's OWN semantic ring
- * (0 = self at the core). Absolute — does not collapse over occupied rings.
- * Ring 1 (partner) sits at GALAXY_RING_MIN (tight binary); ring 6 (ancient)
- * at the rim. Guide strokes use rings 2–5 via GALAXY_GUIDE_RINGS.
+ * Fallback normalised radius from own semantic ring (absolute table).
+ * Rendering should prefer `ringNormsOccupied`.
  */
 export function ringNormAbsolute(ring: number): number {
   if (ring <= 0) return 0;
   const r = Math.min(Math.max(Math.round(ring), 1), GALAXY_MAX_RING);
   return GALAXY_RING_NORMS[r] ?? 1;
+}
+
+/**
+ * Spread occupied semantic rings across the full canvas radius.
+ *
+ * - 0 (self) → 0
+ * - 1 (partner) → GALAXY_RING_MIN (fixed; not redistributed)
+ * - every other occupied ring, sorted → evenly from GALAXY_OCCUPIED_INNER to 1
+ *
+ * Empty rings get no entry (callers skip their guides). Same occupied set →
+ * same map. Opening a new ring remaps the non-partner bands.
+ */
+export function ringNormsOccupied(occupiedRings: Iterable<number>): Map<number, number> {
+  const set = new Set<number>();
+  for (const raw of occupiedRings) {
+    const r = Math.round(raw);
+    if (r > 0) set.add(Math.min(Math.max(r, 1), GALAXY_MAX_RING));
+  }
+  const out = new Map<number, number>();
+  out.set(0, 0);
+  if (set.has(1)) {
+    out.set(1, GALAXY_RING_MIN);
+    set.delete(1);
+  }
+  const bands = [...set].sort((a, b) => a - b);
+  if (bands.length === 0) return out;
+  for (let i = 0; i < bands.length; i++) {
+    const t = bands.length === 1 ? 1 : i / (bands.length - 1);
+    out.set(bands[i], GALAXY_OCCUPIED_INNER + (1 - GALAXY_OCCUPIED_INNER) * t);
+  }
+  return out;
 }
 
 export interface GalaxySeatInput {
@@ -109,10 +144,8 @@ function seatFromAngleRn(angle: number, rn: number): GalaxySeatNorm {
 }
 
 /**
- * Seat as a pure function of (id, own ring). Angle from hash(id); radius from
- * own ring plus a tiny id-stable radial jitter. No peer inputs — for the
- * learnable raw seat. Call `galaxySeatsResolved` when rendering a set so
- * near-collisions on a ring are separated.
+ * Seat as a pure function of (id, own ring) using the absolute fallback table.
+ * Prefer `galaxySeatsResolved` for occupied-set radii + collision separation.
  */
 export function galaxySeatNorm(input: GalaxySeatInput): GalaxySeatNorm {
   if (input.isSelf || input.ring <= 0) {
@@ -121,9 +154,13 @@ export function galaxySeatNorm(input: GalaxySeatInput): GalaxySeatNorm {
   const jA = hash01(`${input.id}\0a`);
   const jR = hash01(`${input.id}\0r`);
   const rn = ringNormAbsolute(input.ring) * (1 + (jR - 0.5) * 0.08); /* ±4% */
-  /* −π/2 so hash 0 sits at 12 o'clock — familiar top-of-ring default. */
   const angle = -Math.PI / 2 + jA * Math.PI * 2;
   return seatFromAngleRn(angle, rn);
+}
+
+/** Angle from id only — independent of ring / occupied set. */
+export function galaxySeatAngle(id: string): number {
+  return -Math.PI / 2 + hash01(`${id}\0a`) * Math.PI * 2;
 }
 
 /** Smallest absolute angle between two radians on the circle. */
@@ -151,12 +188,6 @@ interface RawMember {
   raw: GalaxySeatNorm;
 }
 
-/**
- * Union-find helpers for collision clusters on one ring.
- * Path compression + union-by-rank; deterministic unions (always attach the
- * lexicographically larger root under the smaller) so component shape does not
- * depend on encounter order.
- */
 function clusterIds(members: readonly RawMember[], join: number): string[][] {
   const parent = new Map<string, string>();
   const rank = new Map<string, number>();
@@ -177,7 +208,6 @@ function clusterIds(members: readonly RawMember[], join: number): string[][] {
     let ra = find(a);
     let rb = find(b);
     if (ra === rb) return;
-    /* Deterministic: smaller id is always the root preference via rank+id. */
     if (rank.get(ra)! < rank.get(rb)! || (rank.get(ra) === rank.get(rb) && ra > rb)) {
       const tmp = ra;
       ra = rb;
@@ -203,18 +233,14 @@ function clusterIds(members: readonly RawMember[], join: number): string[][] {
     if (list) list.push(m.id);
     else groups.set(root, [m.id]);
   }
-  /* Stable cluster order: by lexicographically smallest member id. */
   return [...groups.values()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
 /**
  * Resolve seats for a whole constellation.
  *
- * Raw seat = f(id, own ring). On each semantic ring, people whose raw angles
- * fall within `GALAXY_COLLISION_JOIN` form a cluster; within a cluster we
- * re-space by `GALAXY_COLLISION_SEP` around the circular mean, ordered by id.
- * People outside a cluster are untouched — adding an unrelated person cannot
- * move them.
+ * Angle = f(id). Radius = occupied-ring spread of own ring + id-stable jitter.
+ * Same-ring near-collisions are re-spaced by id order.
  */
 export function galaxySeatsResolved(
   people: readonly GalaxySeatInput[],
@@ -222,13 +248,21 @@ export function galaxySeatsResolved(
 ): Map<string, GalaxySeatNorm> {
   const join = opts?.join ?? GALAXY_COLLISION_JOIN;
   const sep = opts?.sep ?? GALAXY_COLLISION_SEP;
+  const norms = ringNormsOccupied(people.map((p) => (p.isSelf ? 0 : p.ring)));
   const out = new Map<string, GalaxySeatNorm>();
   const byRing = new Map<number, RawMember[]>();
 
   for (const p of people) {
-    const raw = galaxySeatNorm(p);
+    if (p.isSelf || p.ring <= 0) {
+      out.set(p.id, { nx: 0, ny: 0, angle: 0, rn: 0 });
+      continue;
+    }
+    const jR = hash01(`${p.id}\0r`);
+    const baseRn = norms.get(p.ring) ?? ringNormAbsolute(p.ring);
+    const rn = baseRn * (1 + (jR - 0.5) * 0.08);
+    const angle = galaxySeatAngle(p.id);
+    const raw = seatFromAngleRn(angle, rn);
     out.set(p.id, raw);
-    if (p.isSelf || p.ring <= 0) continue;
     const list = byRing.get(p.ring);
     const member = { id: p.id, ring: p.ring, raw };
     if (list) list.push(member);
@@ -240,7 +274,6 @@ export function galaxySeatsResolved(
     const byId = new Map(members.map((m) => [m.id, m]));
     for (const ids of clusterIds(members, join)) {
       if (ids.length < 2) continue;
-      /* ids already sorted lexicographically from clusterIds. */
       const angles = ids.map((id) => byId.get(id)!.raw.angle);
       const mean = circularMean(angles);
       const mid = (ids.length - 1) / 2;
@@ -255,7 +288,7 @@ export function galaxySeatsResolved(
   return out;
 }
 
-/** Map a normalised seat onto an elliptical canvas geometry. */
+/** Map a normalised seat onto canvas geometry (circular or elliptical). */
 export function galaxySeatXY(
   seat: GalaxySeatNorm,
   geom: { cx: number; cy: number; radX: number; radY: number },
@@ -264,4 +297,55 @@ export function galaxySeatXY(
     x: geom.cx + seat.nx * geom.radX,
     y: geom.cy + seat.ny * geom.radY,
   };
+}
+
+export interface GalaxyLabelAnchor {
+  id: string;
+  /** Default label centre (CSS px), before offset. */
+  x: number;
+  y: number;
+}
+
+/**
+ * Deterministic label push-apart for neighbouring anchors.
+ * Same input → same offsets. Lexicographically smaller id is nudged one way,
+ * larger the other — no fetch-order dependence. Several passes so chains settle.
+ */
+export function galaxyLabelOffsets(
+  anchors: readonly GalaxyLabelAnchor[],
+  opts?: { join?: number; passes?: number },
+): Map<string, { dx: number; dy: number }> {
+  const join = opts?.join ?? GALAXY_LABEL_JOIN_PX;
+  const passes = opts?.passes ?? 6;
+  const offsets = new Map<string, { dx: number; dy: number }>();
+  for (const a of anchors) offsets.set(a.id, { dx: 0, dy: 0 });
+  const sorted = [...anchors].sort((a, b) => a.id.localeCompare(b.id));
+
+  for (let pass = 0; pass < passes; pass++) {
+    for (let i = 0; i < sorted.length; i++) {
+      for (let j = i + 1; j < sorted.length; j++) {
+        const a = sorted[i];
+        const b = sorted[j];
+        const oa = offsets.get(a.id)!;
+        const ob = offsets.get(b.id)!;
+        const ax = a.x + oa.dx;
+        const ay = a.y + oa.dy;
+        const bx = b.x + ob.dx;
+        const by = b.y + ob.dy;
+        const dx = bx - ax;
+        const dy = by - ay;
+        const dist = Math.hypot(dx, dy);
+        if (dist >= join) continue;
+        const gap = join - (dist || 0.001);
+        const push = gap / 2 + 0.25;
+        const ux = dist < 1e-6 ? 1 : dx / dist;
+        const uy = dist < 1e-6 ? 0 : dy / dist;
+        oa.dx -= ux * push;
+        oa.dy -= uy * push;
+        ob.dx += ux * push;
+        ob.dy += uy * push;
+      }
+    }
+  }
+  return offsets;
 }

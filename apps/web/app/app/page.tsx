@@ -33,6 +33,7 @@ import {
   HONOR_RELATION_TYPE,
   elementFromRelation,
   formFromRelation,
+  galaxyLabelOffsets,
   galaxySeatXY,
   galaxySeatsResolved,
   hash01,
@@ -41,7 +42,7 @@ import {
   isMinorForSafety,
   peopleForTodaySky,
   ringIndex,
-  ringNormAbsolute,
+  ringNormsOccupied,
   type HonorEdge,
 } from "@galaxia/core";
 import Link from "next/link";
@@ -228,23 +229,22 @@ export default function AppHomePage() {
     };
 
     /* ── derived orbital seats (learnable map) ─────────────────────────────
-       Seat = f(person id, own semantic ring) via @galaxia/core, then
-       galaxySeatsResolved separates near-hash collisions on the same ring by
-       a stable id order. No fetch-order slots, no occupied-ring collapse —
-       two loads with unchanged data put everyone in the same seat; adding an
-       unrelated person moves only that person. Computed before the entrance
-       timeline so arrival can still cascade outward by own ring (animation). */
+       Angle = f(id). Radius = occupied-ring spread (empty rings reserve no
+       space) + same-ring collision separation. Same data → same seats; adding
+       onto an already-occupied ring moves only that person / cluster; opening
+       a new ring redistributes radii (the allowed spread shift). */
     const semanticRing = new Map<string, number>();
     for (const p of people) {
       semanticRing.set(p.id, ringIndex(!!p.is_self, p.relation, p.passed_at));
     }
-    const seatsById = galaxySeatsResolved(
-      people.map((p) => ({
-        id: p.id,
-        isSelf: !!p.is_self,
-        ring: semanticRing.get(p.id) ?? 4, /* unknown fallback = sketch Ring 3 */
-      })),
-    );
+    const seatInputs = people.map((p) => ({
+      id: p.id,
+      isSelf: !!p.is_self,
+      ring: semanticRing.get(p.id) ?? 4, /* unknown fallback = sketch Ring 3 */
+    }));
+    const seatsById = galaxySeatsResolved(seatInputs);
+    const occupiedNorms = ringNormsOccupied(seatInputs.map((p) => (p.isSelf ? 0 : p.ring)));
+    const occupiedGuideRings = GALAXY_GUIDE_RINGS.filter((r) => occupiedNorms.has(r));
 
     /* ── entrance timeline ─────────────────────────────────────────────
        The constellation ARRIVES: the self star (galactic core) ignites first,
@@ -326,13 +326,14 @@ export default function AppHomePage() {
       };
     }
 
-    /* ELLIPTICAL geometry: normalised seat radius maps onto separate x/y radii
-       sized to the canvas. Margins leave room for glow + a name label (below
-       or flipped above near the bottom edge). */
+    /* Near-circular geometry. Cap eccentricity both ways so rings read as
+       rings — not a flat desktop band and not a tall phone sausage. */
     function ringGeom() {
       const cx = W() / 2, cy = H() / 2;
-      const radX = Math.max(60, W() / 2 - 40);
-      const radY = Math.max(60, H() / 2 - 44);
+      let radX = Math.max(70, W() / 2 - 44);
+      let radY = Math.max(70, H() / 2 - 48);
+      if (radX > radY * 1.1) radX = radY * 1.1;
+      if (radY > radX * 1.1) radY = radX * 1.1;
       return { cx, cy, radX, radY };
     }
 
@@ -341,9 +342,9 @@ export default function AppHomePage() {
     const LABEL_PAD_TOP = 22;
     const LABEL_PAD_BOTTOM = 26;
 
-    /* stable base (pre-drift) seat — resolved f(id, own ring) with same-ring
-       collision separation, then clamped so the node + label stay inside the
-       canvas. Clamp is canvas-only (does not reshuffle peers). */
+    /* stable base (pre-drift) seat — resolved with occupied-ring radii +
+       same-ring collision separation, then clamped so the node + label stay
+       inside the canvas. Clamp is canvas-only (does not reshuffle peers). */
     function basePos(i: number): { x: number; y: number } {
       const p = people[i];
       const geom = ringGeom();
@@ -352,6 +353,42 @@ export default function AppHomePage() {
       x = Math.min(W() - LABEL_PAD_X, Math.max(LABEL_PAD_X, x));
       y = Math.min(H() - LABEL_PAD_BOTTOM, Math.max(LABEL_PAD_TOP, y));
       return { x, y };
+    }
+
+    /* Default label centres (pre neighbor-offset), then deterministic push-apart. */
+    function labelAnchors(positions: { x: number; y: number }[]): Map<string, { x: number; y: number; baseDy: number; flip: boolean }> {
+      const map = new Map<string, { x: number; y: number; baseDy: number; flip: boolean }>();
+      for (let i = 0; i < people.length; i++) {
+        const p = people[i];
+        const q = positions[i];
+        const form = formFromRelation(p.is_self, p.relation, p.passed_at);
+        const R0 = form === "self" ? 7 : form === "ancient" ? 3.4 : form === "moon" ? 4.2 : 5;
+        const below = form === "fixed" ? R0 * 3.9 + 12 : R0 * 2.9 + 12;
+        const above = form === "fixed" ? R0 * 3.9 + 14 : R0 * 2.9 + 14;
+        /* Self below the core; partner label radially outward through its seat
+           so the binary pair's names never stack into one smudge. */
+        let flip = q.y + below > H() - 8;
+        let dy = flip ? -above : below;
+        if (p.is_self) {
+          /* Self name always under the core. */
+          map.set(p.id, { x: q.x, y: q.y + below + 6, baseDy: below + 6, flip: false });
+          continue;
+        }
+        if (form === "binary" || (semanticRing.get(p.id) ?? 4) === 1) {
+          const seat = seatsById.get(p.id);
+          const ang = seat?.angle ?? 0;
+          /* Partner name always ABOVE its node (+ slight outward), opposite self. */
+          map.set(p.id, {
+            x: q.x + Math.cos(ang) * 10,
+            y: q.y - above - 2,
+            baseDy: -(above + 2),
+            flip: true,
+          });
+          continue;
+        }
+        map.set(p.id, { x: q.x, y: q.y + dy, baseDy: dy, flip });
+      }
+      return map;
     }
 
     /* compute position with drift — prototype pos() (drift settles in with ignition) */
@@ -397,7 +434,13 @@ export default function AppHomePage() {
     }
 
     /* ── draw a single celestial body (from prototype drawBody) ── */
-    function drawBody(i: number, q: { x: number; y: number }, isHovered: boolean, isActive: boolean) {
+    function drawBody(
+      i: number,
+      q: { x: number; y: number },
+      isHovered: boolean,
+      isActive: boolean,
+      labelPos: { x: number; y: number },
+    ) {
       const p     = people[i];
       const col   = p.is_self ? EL_COLOR.gold : (EL_COLOR[elementFromRelation(p.relation, p.passed_at)] ?? "#B79AD8");
       const s     = sharp(p.birth_precision);
@@ -433,20 +476,23 @@ export default function AppHomePage() {
 
       /* celestial form body */
       if (form === "binary") {
-        /* two bodies slowly orbit their shared centre — very slow (~22s period),
-           because that is what a binary star does */
-        const sep = 8.5, a = reduced ? 0 : t * 0.000286;
-        const ax = q.x + Math.cos(a) * sep, ay = q.y + Math.sin(a) * sep * 0.55;
-        const bx = q.x - Math.cos(a) * sep, by = q.y - Math.sin(a) * sep * 0.55;
-        cx.strokeStyle = hexA(col, 0.30); cx.lineWidth = 1;
+        /* Primary body + thin orbit + one smaller companion on the OUTWARD side
+           of the seat (never toward self) so the core stays two distinct stars. */
+        const seat = seatsById.get(p.id);
+        const baseAng = seat?.angle ?? 0;
+        const a = reduced ? baseAng : baseAng + t * 0.000286;
+        const sep = 10;
+        const cx2 = q.x + Math.cos(a) * sep;
+        const cy2 = q.y + Math.sin(a) * sep * 0.55;
+        cx.strokeStyle = hexA(col, 0.34); cx.lineWidth = 1;
         cx.beginPath(); cx.ellipse(q.x, q.y, sep, sep * 0.55, 0, 0, Math.PI * 2); cx.stroke();
-        [[ax, ay, R * 0.72], [bx, by, R * 0.56]].forEach(([ox, oy, or_]) => {
-          const bg = cx.createRadialGradient(ox, oy, 0, ox, oy, or_ * 2.4);
-          bg.addColorStop(0, hexA(col, 0.5 * tw)); bg.addColorStop(1, hexA(col, 0));
-          cx.beginPath(); cx.arc(ox, oy, or_ * 2.4, 0, Math.PI * 2); cx.fillStyle = bg; cx.fill();
-          cx.beginPath(); cx.arc(ox, oy, or_, 0, Math.PI * 2); cx.fillStyle = col; cx.fill();
-          cx.beginPath(); cx.arc(ox, oy, or_ * 0.42, 0, Math.PI * 2); cx.fillStyle = "rgba(255,255,255,.92)"; cx.fill();
-        });
+        cx.beginPath(); cx.arc(q.x, q.y, R * 0.92, 0, Math.PI * 2); cx.fillStyle = col; cx.fill();
+        cx.beginPath(); cx.arc(q.x, q.y, R * 0.4, 0, Math.PI * 2); cx.fillStyle = "rgba(255,255,255,.92)"; cx.fill();
+        const or_ = R * 0.48;
+        const bg = cx.createRadialGradient(cx2, cy2, 0, cx2, cy2, or_ * 2.2);
+        bg.addColorStop(0, hexA(col, 0.45 * tw)); bg.addColorStop(1, hexA(col, 0));
+        cx.beginPath(); cx.arc(cx2, cy2, or_ * 2.2, 0, Math.PI * 2); cx.fillStyle = bg; cx.fill();
+        cx.beginPath(); cx.arc(cx2, cy2, or_, 0, Math.PI * 2); cx.fillStyle = col; cx.fill();
       } else if (form === "moon") {
         cx.beginPath(); cx.arc(q.x, q.y, R, 0, Math.PI * 2); cx.fillStyle = hexA(col, 0.30); cx.fill();
         cx.save(); cx.beginPath(); cx.arc(q.x, q.y, R, 0, Math.PI * 2); cx.clip();
@@ -492,7 +538,7 @@ export default function AppHomePage() {
 
       /* name label — every ignited node keeps its name. Floor alpha so year/none
          stay legible (uncertainty is the softer mist colour + italic, not fade).
-         Flip above the node near the bottom edge so the card cannot clip it. */
+         Position comes from deterministic neighbor offsets (not only edge flip). */
       const lit = isHovered ? 0.96 : Math.max(0.78, 0.45 + 0.4 * s);
       const uncertain = !p.is_self && s < 1;
       cx.font = `${isHovered ? "500" : "400"}${uncertain ? " italic" : ""} 11px Inter, sans-serif`;
@@ -502,11 +548,9 @@ export default function AppHomePage() {
           ? `rgba(168,160,198,${lit})`
           : `rgba(185,174,222,${lit})`;
       cx.textAlign = "center";
-      const below = form === "fixed" ? R0 * 3.9 + 12 : R0 * 2.9 + 12;
-      const above = form === "fixed" ? R0 * 3.9 + 14 : R0 * 2.9 + 14;
-      const labelBelow = q.y + below;
-      const labelY = labelBelow > H() - 8 ? q.y - above : labelBelow;
-      cx.fillText(p.display_name, q.x, labelY);
+      const lx = Math.min(W() - 8, Math.max(8, labelPos.x));
+      const ly = Math.min(H() - 6, Math.max(12, labelPos.y));
+      cx.fillText(p.display_name, lx, ly);
 
       cx.restore();
     }
@@ -718,19 +762,17 @@ export default function AppHomePage() {
          drawImage rather than a per-frame radial-gradient fill. */
       cx.drawImage(washCanvas, 0, 0, W(), H());
 
-      /* soft concentric guides — sketch Rings 1–4 (semantic 2–5). Partner sits
-         inside Ring 1 as a tight binary; passed stay on the outer ancient band
-         with no extra guide until P3. Cheap strokes; lowPerf sheds the breath. */
+      /* soft concentric guides — only for occupied sketch rings, at the
+         occupied-spread radii so empty bands do not bunch the structure. */
       {
         const { cx: rcx, cy: rcy, radX, radY } = ringGeom();
         const breath = (!reduced && !lowPerf)
           ? 0.012 * Math.sin(t * 0.00035)
           : 0;
-        /* lowPerf path is the phone card — keep guides readable, not loud */
         const baseAlpha = lowPerf ? 0.10 : 0.11;
         cx.save();
-        for (const ring of GALAXY_GUIDE_RINGS) {
-          const rn = ringNormAbsolute(ring) * (1 + breath);
+        for (const ring of occupiedGuideRings) {
+          const rn = (occupiedNorms.get(ring) ?? 1) * (1 + breath);
           cx.beginPath();
           cx.ellipse(rcx, rcy, radX * rn, radY * rn, 0, 0, Math.PI * 2);
           cx.strokeStyle = `rgba(183,154,216,${baseAlpha})`;
@@ -742,6 +784,30 @@ export default function AppHomePage() {
 
       const positions = people.map((_, i) => nodePos(i));
       const byId = new Map(people.map((p, i) => [p.id, positions[i]]));
+      const anchors = labelAnchors(positions);
+      const labelOff = galaxyLabelOffsets(
+        [...anchors.entries()].map(([id, a]) => ({ id, x: a.x, y: a.y })),
+      );
+      const labelPosById = new Map<string, { x: number; y: number }>();
+      for (const [id, a] of anchors) {
+        const o = labelOff.get(id) ?? { dx: 0, dy: 0 };
+        labelPosById.set(id, { x: a.x + o.dx, y: a.y + o.dy });
+      }
+      /* Extra core guarantee: self + partner names stay ≥40px apart. */
+      {
+        const selfId = people.find((p) => p.is_self)?.id;
+        const partnerId = people.find((p) => !p.is_self && semanticRing.get(p.id) === 1)?.id;
+        if (selfId && partnerId) {
+          const a = labelPosById.get(selfId);
+          const b = labelPosById.get(partnerId);
+          if (a && b && Math.hypot(a.x - b.x, a.y - b.y) < 40) {
+            const ang = seatsById.get(partnerId)?.angle ?? 0;
+            b.x += Math.cos(ang) * 20;
+            b.y += Math.sin(ang) * 20;
+            a.y += 10;
+          }
+        }
+      }
 
       /* generational nebulae behind everything — bloom in just after the self
          ignites so the "sky you were born under" arrives with the sky. Redrawn
@@ -792,7 +858,8 @@ export default function AppHomePage() {
         const q     = positions[i];
         const isHov = hoverPerson?.id === people[i].id;
         const isAct = activeTransitIds.includes(people[i].id);
-        drawBody(i, q, isHov, isAct);
+        const lp    = labelPosById.get(people[i].id) ?? { x: q.x, y: q.y + 20 };
+        drawBody(i, q, isHov, isAct, lp);
       }
 
       /* keep animating: idle life forever when not reduced; under reduced motion
@@ -969,9 +1036,17 @@ export default function AppHomePage() {
             <Link href="/welcome" className="btn-primary">Add yourself &amp; your people</Link>
           </div>
         ) : (
-          <div style={{ position: "relative", width: "100%", minHeight: 440 }}>
-            {/* full-width canvas fills container */}
-            <canvas ref={canvasRef} style={{ display: "block", width: "100%", minHeight: 440 }} />
+          /* Near-square card: phone gets mild vertical room without a tall
+             skinny ellipse; desktop grows with width but caps at 680 so a
+             full-bleed row does not eat the viewport (see changelog). */
+          <div style={{
+            position: "relative",
+            width: "100%",
+            aspectRatio: "1 / 1.12",
+            minHeight: 380,
+            maxHeight: "min(72vh, 680px)",
+          }}>
+            <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%" }} />
 
             {/* fine film grain over the focal plane — texture, not static.
                Static SVG noise (same recipe as CosmicBackground), very low

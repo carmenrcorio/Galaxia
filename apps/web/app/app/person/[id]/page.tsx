@@ -821,7 +821,7 @@ export default function PersonProfilePage() {
             ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
             : enduringEyebrow("Zodiac wheel")}
         </p>
-        <ChartWheel chart={chart} />
+        <ChartWheel chart={chart} aspects={natalAspects} />
         {chart.houseSystemFallbackReason ? (
           <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
             {chart.houseSystemFallbackReason}
@@ -1232,9 +1232,21 @@ export default function PersonProfilePage() {
               at the container width so the ellipsis truncation actually engages. */}
           <div style={{ display: "grid", gap: 8, gridTemplateColumns: "minmax(0, 1fr)" }}>
             {archivedThreads.map(entry => (
-              <div key={entry.id} style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: "2px solid rgba(183,154,216,.25)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <div key={entry.id} style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: "2px solid rgba(183,154,216,.25)", display: "flex", justifyContent: "space-between", alignItems: entry.withdrawnReason ? "flex-start" : "center", gap: 8 }}>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: 0, color: entry.withdrawnReason ? "var(--mist2)" : "var(--mist)", fontStyle: entry.withdrawnReason ? "italic" : "normal", fontSize: ".84rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.body}</p>
+                  {/* Withdrawn previews are already user-facing (formatWithdrawnReasonForDisplay
+                      in lib/record.ts) — wrap so asserted / chart / when stay readable.
+                      Ordinary previews keep single-line ellipsis. */}
+                  <p style={{
+                    margin: 0,
+                    color: entry.withdrawnReason ? "var(--mist2)" : "var(--mist)",
+                    fontStyle: entry.withdrawnReason ? "italic" : "normal",
+                    fontSize: ".84rem",
+                    lineHeight: entry.withdrawnReason ? 1.45 : undefined,
+                    overflow: "hidden",
+                    textOverflow: entry.withdrawnReason ? undefined : "ellipsis",
+                    whiteSpace: entry.withdrawnReason ? "normal" : "nowrap",
+                  }}>{entry.body}</p>
                   <small className="muted" style={{ fontSize: ".68rem" }}>{new Date(entry.createdAt).toLocaleDateString()}</small>
                 </div>
                 <span style={{ display: "flex", gap: 8, flexShrink: 0 }}>

@@ -16,6 +16,7 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     expect(src).toContain("HONOR_LIGHT_ANCHOR_ID");
     expect(src).toContain("RemembranceSpace");
     expect(src).toContain("ChartWheel");
+    expect(src).toContain("aspects={natalAspects}");
     expect(src).toContain("The big three");
     expect(src).toContain("Placements");
     expect(src).toContain("ChartSectionNav");

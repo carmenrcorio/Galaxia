@@ -95,7 +95,7 @@ function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion 
 
         {hasHouses ? (
           <div className="pdf-wheel-panel">
-            <ChartWheel chart={chart} />
+            <ChartWheel chart={chart} interactive={false} />
           </div>
         ) : null}
 

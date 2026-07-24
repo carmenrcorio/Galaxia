@@ -29,6 +29,9 @@ import {
   HONOR_RELATION_TYPE,
   elementFromRelation,
   formFromRelation,
+  galaxySeatNorm,
+  galaxySeatXY,
+  hash01,
   hasPassed,
   honorEdgesFromDeclaredRows,
   isMinorForSafety,
@@ -75,18 +78,10 @@ const EL_COLOR: Record<string, string> = {
   gold: "#E6AE6C" /* self */
 };
 
-/* Orbit helpers (elementFromRelation / formFromRelation / ringIndex) live in
-   @galaxia/core so Remembrance can reuse ancient light without a new
-   visual language, and so the mapping is unit-tested. */
-
-/* stable per-person value in [0,1) from a string id — deterministic FNV-1a hash,
-   used for organic layout jitter so the galaxy isn't a rigid dartboard while
-   staying identical frame-to-frame (never Math.random per frame). */
-function hash01(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return ((h >>> 0) % 100000) / 100000;
-}
+/* Orbit helpers (elementFromRelation / formFromRelation / ringIndex) and
+   stable seats (galaxySeatNorm / hash01) live in @galaxia/core so Remembrance
+   can reuse ancient light without a new visual language, seats can be shared
+   with mobile later, and the mapping is unit-tested. */
 
 /* precision sharpness (from prototype sharp()) */
 function sharp(precision: string): number {
@@ -227,32 +222,16 @@ export default function AppHomePage() {
       return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
     };
 
-    /* ── derived orbital layout (Galaxy Phase 1) ───────────────────────────
-       Each person's semantic ring comes from their relationship (ringIndex);
-       we then collapse the rings ACTUALLY present onto radii that FILL the
-       canvas, so the closeness ORDER is always honoured while the galaxy
-       expands/contracts to use available space (Phase 2/3 responsiveness):
-       partner+kids alone spread out; 14+ people stay inside the frame. Within a
-       ring, people are spaced evenly around the circle; each ring is rotated by
-       the golden angle (spiral-arm feel) and every star gets small, stable
-       radius+angle jitter so it reads as an organic galaxy, not a dartboard.
-       Computed here (before the entrance timeline) so the arrival can cascade
-       OUTWARD along the spiral, inner rings first. */
-    const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); /* ~2.399 rad */
-    const nonSelf = people.filter(p => !p.is_self);
+    /* ── derived orbital seats (learnable map) ─────────────────────────────
+       Seat = f(person id, own semantic ring) via @galaxia/core galaxySeatNorm.
+       No peer set, no fetch-order slots, no occupied-ring collapse — so two
+       loads with unchanged data put everyone in the same seat, and adding one
+       person moves only that person. Computed before the entrance timeline so
+       arrival can still cascade outward by own ring (animation only). */
     const semanticRing = new Map<string, number>();
-    for (const p of nonSelf) semanticRing.set(p.id, ringIndex(false, p.relation, p.passed_at));
-    /* distinct rings present, closest-first → ordinal used for radius + rotation */
-    const occupiedRings = Array.from(new Set(semanticRing.values())).sort((a, b) => a - b);
-    const ringOrdinal = new Map<number, number>(occupiedRings.map((r, i) => [r, i]));
-    /* members per ring (stable people-order) for even angular distribution */
-    const ringMembers = new Map<number, string[]>();
-    for (const p of nonSelf) {
-      const sr = semanticRing.get(p.id)!;
-      const arr = ringMembers.get(sr);
-      if (arr) arr.push(p.id); else ringMembers.set(sr, [p.id]);
+    for (const p of people) {
+      semanticRing.set(p.id, ringIndex(!!p.is_self, p.relation, p.passed_at));
     }
-    const ordOf = (id: string) => ringOrdinal.get(semanticRing.get(id) ?? -1) ?? 0;
 
     /* ── entrance timeline ─────────────────────────────────────────────
        The constellation ARRIVES: the self star (galactic core) ignites first,
@@ -268,9 +247,13 @@ export default function AppHomePage() {
         (k.fromId === selfId && k.toId === id) || (k.toId === selfId && k.fromId === id));
       return l ? l.scoreA : 0;
     };
-    /* inner rings kindle first (outward cascade); strongest bond leads within a ring */
+    /* inner rings kindle first (outward cascade); strongest bond leads within a
+       ring; id break so the sequence is stable when scores tie. */
     const ordered = people.filter(p => !p.is_self)
-      .sort((a, b) => ordOf(a.id) - ordOf(b.id) || scoreToSelf(b.id) - scoreToSelf(a.id));
+      .sort((a, b) =>
+        (semanticRing.get(a.id) ?? 5) - (semanticRing.get(b.id) ?? 5)
+        || scoreToSelf(b.id) - scoreToSelf(a.id)
+        || a.id.localeCompare(b.id));
 
     const SELF_DUR = 650, NODE_DUR = 520, NODE_GAP = 130, NODE_LEAD = 440, LINK_DUR = 480;
     const schedule = new Map<string, { delay: number; dur: number }>();
@@ -293,8 +276,9 @@ export default function AppHomePage() {
     }
     const REDUCED_FADE = 900; /* reduced-motion: a single gentle fade, no sequence */
 
-    /* reset the entrance only when the actual set of people changes */
-    const entranceKey = people.map(p => p.id).join(",");
+    /* reset the entrance only when the actual set of people changes (sorted
+       so fetch order cannot re-trigger the arrival sequence). */
+    const entranceKey = [...people.map(p => p.id)].sort().join(",");
     if (entranceKey !== entranceKeyRef.current) {
       entranceKeyRef.current = entranceKey;
       entranceStartRef.current = null;
@@ -310,8 +294,11 @@ export default function AppHomePage() {
     let lastFrame = performance.now();
     let warmup = 0;
 
-    /* per-person stable phase for drift/twinkle */
-    const phases = people.map((_, i) => ({ ph: i * 1.7, sp: 0.35 + (i * 0.17 % 0.4) }));
+    /* per-person stable phase for drift/twinkle — seeded from id, not index */
+    const phases = people.map((p) => ({
+      ph: hash01(`${p.id}\0ph`) * Math.PI * 2,
+      sp: 0.35 + hash01(`${p.id}\0sp`) * 0.4,
+    }));
 
     /* ignition state for a person this frame */
     function ignition(id: string): { alpha: number; scale: number; flare: number; raw: number } {
@@ -326,59 +313,35 @@ export default function AppHomePage() {
       };
     }
 
-    /* NORMALISED ring radius in [0,1] for a ring ordinal — 0 = at the core,
-       1 = at the canvas margin. Only the rings ACTUALLY present are collapsed
-       onto this range, so the closeness ORDER is always preserved while the
-       galaxy expands to fill whatever space exists (few people spread out; 14+
-       stay inside the frame). `RN_MIN` keeps the innermost ring clear of the
-       self star; the outermost occupied ring always reaches 1 (the edge
-       margin) so the spiral fills the frame instead of huddling in the centre. */
-    const RN_MIN = 0.34;
-    function ringNorm(ord: number): number {
-      const n = occupiedRings.length;
-      if (n <= 1) return 0.66; /* one ring: a comfortable single band */
-      /* exponent < 1 biases rings OUTWARD so the arms reach the frame edges
-         (mid rings sit well out, not bunched near the core) while the order is
-         preserved and the innermost stays clear of the self star. */
-      return RN_MIN + (1 - RN_MIN) * Math.pow(ord / (n - 1), 0.8);
-    }
-
-    /* ELLIPTICAL fill: the normalised radius maps onto SEPARATE x/y radii sized
-       to the actual canvas (not min(W,H)), so a wide desktop canvas fills
-       HORIZONTALLY and a tall mobile canvas fills VERTICALLY — the old scalar
-       radius capped everything at the short side and left the wide edges dead
-       (the "centre-third huddle"). Comfortable margins keep glow haloes + the
-       name labels (which hang below each node) inside the frame at any size,
-       incl. 375px. */
+    /* ELLIPTICAL geometry: normalised seat radius maps onto separate x/y radii
+       sized to the canvas. Margins leave room for glow + a name label (below
+       or flipped above near the bottom edge). */
     function ringGeom() {
-      const cxp = W() / 2, cyp = H() / 2;
-      const radX = Math.max(60, W() / 2 - 34);
-      const radY = Math.max(60, H() / 2 - 50); /* extra bottom room for labels */
-      return { cxp, cyp, radX, radY };
+      const cx = W() / 2, cy = H() / 2;
+      const radX = Math.max(60, W() / 2 - 40);
+      const radY = Math.max(60, H() / 2 - 44);
+      return { cx, cy, radX, radY };
     }
 
-    /* stable base (pre-drift) position derived from the ring + within-ring slot.
-       The angle gets a per-ring golden-angle rotation PLUS a continuous twist
-       that grows with radius, so the arms sweep outward as a spiral rather than
-       lining up into concentric bullseyes; small stable hash jitter keeps it a
-       living galaxy, not a rigid dartboard. */
-    const SPIRAL_TWIST = 1.15; /* rad of extra sweep from core to rim */
+    /* Label clearance used when clamping seats into the frame (CSS px). */
+    const LABEL_PAD_X = 36;
+    const LABEL_PAD_TOP = 22;
+    const LABEL_PAD_BOTTOM = 26;
+
+    /* stable base (pre-drift) seat — pure f(id, own ring), then clamped so the
+       node + label stay inside the canvas. Clamp is also peer-free (canvas only). */
     function basePos(i: number): { x: number; y: number } {
       const p = people[i];
-      const { cxp, cyp, radX, radY } = ringGeom();
-      if (p.is_self) return { x: cxp, y: cyp };
-      const sr = semanticRing.get(p.id)!;
-      const ord = ringOrdinal.get(sr)!;
-      const members = ringMembers.get(sr)!;
-      const slot = members.indexOf(p.id);
-      const count = Math.max(members.length, 1);
-      const jA = hash01(p.id + "a"), jR = hash01(p.id + "r");
-      const spacing = (Math.PI * 2) / count;
-      const rn = ringNorm(ord) * (1 + (jR - 0.5) * 0.12); /* ±6% radius jitter */
-      /* even spread + per-ring golden rotation + radius-scaled spiral twist + jitter */
-      const angle = -Math.PI / 2 + ord * GOLDEN_ANGLE + rn * SPIRAL_TWIST
-                  + slot * spacing + (jA - 0.5) * spacing * 0.3;
-      return { x: cxp + rn * radX * Math.cos(angle), y: cyp + rn * radY * Math.sin(angle) };
+      const geom = ringGeom();
+      const seat = galaxySeatNorm({
+        id: p.id,
+        isSelf: !!p.is_self,
+        ring: semanticRing.get(p.id) ?? 5,
+      });
+      let { x, y } = galaxySeatXY(seat, geom);
+      x = Math.min(W() - LABEL_PAD_X, Math.max(LABEL_PAD_X, x));
+      y = Math.min(H() - LABEL_PAD_BOTTOM, Math.max(LABEL_PAD_TOP, y));
+      return { x, y };
     }
 
     /* compute position with drift — prototype pos() (drift settles in with ignition) */
@@ -517,12 +480,22 @@ export default function AppHomePage() {
         cx.strokeStyle = hexA(col, 0.25); cx.lineWidth = 1; cx.stroke();
       }
 
-      /* name label */
-      const lit = isHovered ? 0.96 : (0.30 + 0.5 * s);
-      cx.font = (isHovered ? "500 " : "400 ") + "11px Inter, sans-serif";
-      cx.fillStyle = p.is_self ? `rgba(244,236,219,${Math.max(lit, 0.9)})` : `rgba(185,174,222,${lit})`;
+      /* name label — every ignited node keeps its name. Floor alpha so year/none
+         stay legible (uncertainty is the softer mist colour + italic, not fade).
+         Flip above the node near the bottom edge so the card cannot clip it. */
+      const lit = isHovered ? 0.96 : Math.max(0.78, 0.45 + 0.4 * s);
+      const uncertain = !p.is_self && s < 1;
+      cx.font = `${isHovered ? "500" : "400"}${uncertain ? " italic" : ""} 11px Inter, sans-serif`;
+      cx.fillStyle = p.is_self
+        ? `rgba(244,236,219,${Math.max(lit, 0.9)})`
+        : uncertain
+          ? `rgba(168,160,198,${lit})`
+          : `rgba(185,174,222,${lit})`;
       cx.textAlign = "center";
-      const labelY = form === "fixed" ? q.y + R0 * 3.9 + 12 : q.y + R0 * 2.9 + 12;
+      const below = form === "fixed" ? R0 * 3.9 + 12 : R0 * 2.9 + 12;
+      const above = form === "fixed" ? R0 * 3.9 + 14 : R0 * 2.9 + 14;
+      const labelBelow = q.y + below;
+      const labelY = labelBelow > H() - 8 ? q.y - above : labelBelow;
       cx.fillText(p.display_name, q.x, labelY);
 
       cx.restore();

@@ -15,11 +15,34 @@
  * re-spread that cluster only.
  */
 
-/** Outermost semantic ring from `ringIndex` (ancestors / passed). */
-export const GALAXY_MAX_RING = 7;
+/**
+ * Outermost semantic ring from `ringIndex` (passed / ancestor tag).
+ * P1 sketch: 0 self · 1 partner · 2–5 guide rings · 6 ancient outer.
+ */
+export const GALAXY_MAX_RING = 6;
 
-/** Innermost non-self normalised radius — keeps partners clear of the core. */
-export const GALAXY_RING_MIN = 0.34;
+/**
+ * Partner tight-binary radius (semantic ring 1). Not a guide stroke — sits
+ * inside sketch Ring 1 so self remains the visual anchor.
+ */
+export const GALAXY_RING_MIN = 0.13;
+
+/**
+ * Absolute normalised radii for each semantic ring. Partner is deliberately
+ * inward of the four guide bands (rings 2–5).
+ */
+export const GALAXY_RING_NORMS: Readonly<Record<number, number>> = {
+  0: 0,
+  1: GALAXY_RING_MIN,
+  2: 0.36, /* sketch Ring 1 — children */
+  3: 0.54, /* sketch Ring 2 — parents / siblings / grandparents */
+  4: 0.72, /* sketch Ring 3 — friends / relatives / unknown */
+  5: 0.88, /* sketch Ring 4 — colleagues / outer tracked */
+  6: 1.0,  /* passed / ancestor — ancient band until P3 */
+};
+
+/** Semantic rings that draw soft concentric guides (sketch Rings 1–4). */
+export const GALAXY_GUIDE_RINGS = [2, 3, 4, 5] as const;
 
 /**
  * Raw angular proximity (radians) that joins two seats on the same ring into a
@@ -50,12 +73,13 @@ export function hash01(s: string): number {
 /**
  * Normalised ring radius in [0, 1] from the person's OWN semantic ring
  * (0 = self at the core). Absolute — does not collapse over occupied rings.
- * Ring 1 (partner) sits at GALAXY_RING_MIN; ring 7 (ancient light) at the rim.
+ * Ring 1 (partner) sits at GALAXY_RING_MIN (tight binary); ring 6 (ancient)
+ * at the rim. Guide strokes use rings 2–5 via GALAXY_GUIDE_RINGS.
  */
 export function ringNormAbsolute(ring: number): number {
   if (ring <= 0) return 0;
-  const r = Math.min(Math.max(ring, 1), GALAXY_MAX_RING);
-  return GALAXY_RING_MIN + (1 - GALAXY_RING_MIN) * ((r - 1) / (GALAXY_MAX_RING - 1));
+  const r = Math.min(Math.max(Math.round(ring), 1), GALAXY_MAX_RING);
+  return GALAXY_RING_NORMS[r] ?? 1;
 }
 
 export interface GalaxySeatInput {

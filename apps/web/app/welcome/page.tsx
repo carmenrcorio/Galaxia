@@ -6,7 +6,7 @@ import {
   type BirthFormInput,
   CHART_ENGINE_VERSION,
 } from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
+import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety, type GalaxyPickerRelation } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
@@ -18,13 +18,12 @@ import { getPreferredHouseSystem } from "../../lib/house-system";
 import { decodeBirthQuery } from "../../lib/quick-chart";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 
-type Relation = "partner" | "child" | "parent" | "grandparent" | "sibling" | "friend" | "colleague" | "ancestor" | "self";
+type Relation = GalaxyPickerRelation | "self";
 
-// Ordered by galaxy closeness (inner → outer): partner → child → parent →
-// sibling → friend → colleague → grandparent/ancestor. Keeps the add-person
-// picker in sync with the constellation's ring order (see ringIndex in
-// apps/web/app/app/page.tsx).
-const relationOptions: Relation[] = ["partner", "child", "parent", "sibling", "friend", "colleague", "grandparent", "ancestor"];
+// Ordered by galaxy closeness (inner → outer). Shared with mobile / save /
+// quick-check via GALAXY_RELATION_PICKER_OPTIONS (P1 ring remap).
+// FOUNDER-REVIEW: picker labels — refine voice before merge.
+const relationOptions = GALAXY_RELATION_PICKER_OPTIONS;
 
 const baseInput: BirthFormInput = BASE_BIRTH_INPUT;
 
@@ -473,20 +472,21 @@ export default function WelcomePage() {
                     style={{ marginBottom: 10, borderRadius: 14 }}
                   />
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-                    {relationOptions.map((r) => (
+                    {relationOptions.map(({ value, label }) => (
                       <button
-                        key={r}
+                        key={value}
                         type="button"
                         className="pill-link"
-                        onClick={() => setPersonRelation(r)}
+                        onClick={() => setPersonRelation(value)}
                         style={{
                           fontSize: 13,
                           padding: "6px 13px",
-                          borderColor: personRelation === r ? "rgba(230,174,108,.5)" : undefined,
-                          color: personRelation === r ? "var(--gold)" : undefined
+                          borderColor: personRelation === value ? "rgba(230,174,108,.5)" : undefined,
+                          color: personRelation === value ? "var(--gold)" : undefined
                         }}
                       >
-                        {r}
+                        {/* FOUNDER-REVIEW: picker label */}
+                        {label}
                       </button>
                     ))}
                   </div>

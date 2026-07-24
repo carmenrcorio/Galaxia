@@ -1,16 +1,17 @@
 /**
  * Galaxy orbital / celestial-form helpers for `/app`.
  *
- * Extracted so Remembrance ("passed") can reuse the EXISTING ancient-light
- * visual language without inventing a new one, and so the mapping is unit-
- * testable. Source of truth for forms/rings:
- *   design/reference/galaxia-constellation-prototype.html
- *   apps/web/app/app/page.tsx (renderer)
+ * P1 ring model (founder sketch — one allowed seat remap after #91):
+ *   0 self (visual anchor)
+ *   1 partner — tight binary at the core (not a guide ring)
+ *   2 children (+ grandchildren)          ← sketch Ring 1
+ *   3 parents, siblings, grandparents     ← sketch Ring 2
+ *   4 friends / relatives / unknown       ← sketch Ring 3
+ *   5 colleagues / outer tracked          ← sketch Ring 4
+ *   6 passed + relation `ancestor`        ← outer ancient band until P3
  *
- * A passed person adopts the ancestor/"ancient light" treatment — soft,
- * diffuse outer-ring light — regardless of their living relation (parent,
- * friend, etc.). Relation is preserved for Compare and the person page;
- * only the constellation form/ring/element register changes.
+ * Resolution is whole-value only (trimmed, lowercased). No substring matches —
+ * "granddaughter" is a child-generation synonym, never an ancestor.
  */
 
 export interface OrbitPerson {
@@ -20,21 +21,169 @@ export interface OrbitPerson {
   passed_at?: string | null;
 }
 
+/** Normalise free-text relation for exact set membership. */
+export function normalizeRelation(rel: string | null | undefined): string {
+  return (rel ?? "").trim().toLowerCase();
+}
+
 /** True when remembrance has been set (reversible; null clears it). */
 export function hasPassed(person: { passed_at?: string | null } | null | undefined): boolean {
   return Boolean(person?.passed_at);
 }
 
-/** Ancestor / grandparent bond — the original ancient-light cohort. */
+/**
+ * Deceased-forebear tag. Whole value only — never `grandparent` / `grandchild`.
+ * Display treats this as outer ancient light; does NOT write `passed_at`.
+ */
 export function isAncestorRelation(rel: string | null | undefined): boolean {
-  const r = rel?.toLowerCase() ?? "";
-  return r === "ancestor" || r === "grandparent" || r.includes("grand");
+  return normalizeRelation(rel) === "ancestor";
+}
+
+/* ── whole-value synonym sets (explicit resolution; no substring) ─────────── */
+
+const PARTNER_RELS = new Set(["partner", "spouse", "wife", "husband"]);
+const CHILD_RELS = new Set([
+  "child",
+  "son",
+  "daughter",
+  "kid",
+  "stepchild",
+  "grandchild",
+  "granddaughter",
+  "grandson",
+]);
+const FAMILY_RELS = new Set([
+  "parent",
+  "sibling",
+  "grandparent",
+  "mother",
+  "father",
+  "mom",
+  "dad",
+  "sister",
+  "brother",
+  "stepparent",
+  "stepsibling",
+]);
+const CIRCLE_RELS = new Set([
+  "friend",
+  "cousin",
+  "relative",
+  "ex",
+  "in-law",
+  "aunt",
+  "uncle",
+  "niece",
+  "nephew",
+]);
+const OUTER_RELS = new Set([
+  "colleague",
+  "coworker",
+  "co-worker",
+  "boss",
+  "professor",
+  "mentor",
+  "acquaintance",
+]);
+const PARENT_FORM_RELS = new Set([
+  "parent",
+  "mother",
+  "father",
+  "mom",
+  "dad",
+  "stepparent",
+]);
+
+/**
+ * Canonical picker values for add/edit flows (web + mobile), ordered inner → outer.
+ * `self` is handled separately (is_self). `ancestor` is a deceased-forebear tag.
+ * `pet` is intentionally absent — own branch later.
+ */
+// FOUNDER-REVIEW: picker labels — refine voice before merge.
+export const GALAXY_RELATION_PICKER_OPTIONS = [
+  { value: "partner", label: "Partner" },
+  { value: "child", label: "Child" },
+  { value: "grandchild", label: "Grandchild" },
+  { value: "parent", label: "Parent" },
+  { value: "sibling", label: "Sibling" },
+  { value: "grandparent", label: "Grandparent" },
+  { value: "friend", label: "Friend" },
+  { value: "cousin", label: "Cousin" },
+  { value: "relative", label: "Relative" },
+  { value: "aunt", label: "Aunt" },
+  { value: "uncle", label: "Uncle" },
+  { value: "niece", label: "Niece" },
+  { value: "nephew", label: "Nephew" },
+  { value: "in-law", label: "In-law" },
+  { value: "ex", label: "Ex" },
+  { value: "colleague", label: "Colleague" },
+  { value: "boss", label: "Boss" },
+  { value: "professor", label: "Professor" },
+  { value: "mentor", label: "Mentor" },
+  { value: "acquaintance", label: "Acquaintance" },
+  { value: "ancestor", label: "Ancestor" },
+] as const;
+
+export type GalaxyPickerRelation = (typeof GALAXY_RELATION_PICKER_OPTIONS)[number]["value"];
+
+export type GalaxyRelationBand =
+  | "self"
+  | "partner"
+  | "children"
+  | "family"
+  | "circle"
+  | "outer"
+  | "passed"
+  | "unknown";
+
+export type ResolvedGalaxyRelation = {
+  /** Trimmed lowercased input (empty string when missing). */
+  normalized: string;
+  /** True when the value is a known synonym or picker value (not the fallback). */
+  known: boolean;
+  band: GalaxyRelationBand;
+  /** Semantic ring id for seats / guides (0–6). */
+  ring: number;
+};
+
+/**
+ * Explicit whole-value resolution. Unknown free-text → band `unknown`, ring 4
+ * (sketch Ring 3 — same as friend), `known: false`. Never substring-matches.
+ */
+export function resolveGalaxyRelation(rel: string | null | undefined): ResolvedGalaxyRelation {
+  const normalized = normalizeRelation(rel);
+  if (!normalized) {
+    return { normalized, known: false, band: "unknown", ring: 4 };
+  }
+  if (normalized === "self") {
+    return { normalized, known: true, band: "self", ring: 0 };
+  }
+  if (PARTNER_RELS.has(normalized)) {
+    return { normalized, known: true, band: "partner", ring: 1 };
+  }
+  if (CHILD_RELS.has(normalized)) {
+    return { normalized, known: true, band: "children", ring: 2 };
+  }
+  if (FAMILY_RELS.has(normalized)) {
+    return { normalized, known: true, band: "family", ring: 3 };
+  }
+  if (CIRCLE_RELS.has(normalized)) {
+    return { normalized, known: true, band: "circle", ring: 4 };
+  }
+  if (OUTER_RELS.has(normalized)) {
+    return { normalized, known: true, band: "outer", ring: 5 };
+  }
+  if (normalized === "ancestor") {
+    /* Deceased forebear — outer ancient band; does not imply writing passed_at. */
+    return { normalized, known: true, band: "passed", ring: 6 };
+  }
+  return { normalized, known: false, band: "unknown", ring: 4 };
 }
 
 /**
  * Whether this person should render as ancient light on the constellation.
- * Passed people share the ancestor visual — same soft disc + outer pulse —
- * without changing their stored relation or chart.
+ * Passed people and the `ancestor` tag share soft outer-band light.
+ * Living grandparents are family (ring 3), not ancient.
  */
 export function usesAncientLight(person: OrbitPerson): boolean {
   if (person.is_self) return false;
@@ -44,46 +193,55 @@ export function usesAncientLight(person: OrbitPerson): boolean {
 /* element colours from prototype ELEM / landing EL_SOLID — symbolic register
    from relationship (a proxy until a real chart element is available). */
 export function elementFromRelation(rel: string | null | undefined, passedAt?: string | null): string {
-  if (passedAt) return "water";
-  const r = rel?.toLowerCase() ?? "";
-  if (r === "partner") return "air";
-  if (r === "child" || r === "son" || r === "daughter") return "earth";
-  if (r === "parent" || r === "mother" || r === "father" || r.includes("mom") || r.includes("dad")) return "water";
-  if (r === "sibling" || r === "sister" || r === "brother") return "air";
-  if (r === "colleague" || r === "coworker" || r === "co-worker") return "earth";
-  if (isAncestorRelation(r)) return "water";
-  return "fire";
+  if (passedAt || isAncestorRelation(rel)) return "water";
+  const resolved = resolveGalaxyRelation(rel);
+  switch (resolved.band) {
+    case "partner":
+      return "air";
+    case "children":
+      return "earth";
+    case "family":
+      return PARENT_FORM_RELS.has(resolved.normalized) || resolved.normalized === "grandparent"
+        ? "water"
+        : "air";
+    case "outer":
+      return "earth";
+    case "circle":
+    case "unknown":
+    default:
+      return "fire";
+  }
 }
 
 /* node form from relation (+ remembrance). Forms are the reference legend's
-   celestial bodies: binary (partner), moon (child), fixed (parent), ancient
-   (ancestor / passed), star (friend/sibling/colleague). */
-export function formFromRelation(isSelf: boolean, rel: string | null | undefined, passedAt?: string | null): string {
+   celestial bodies: binary (partner), moon (child/grandchild), fixed (parent),
+   ancient (passed / ancestor tag), star (everyone else). */
+export function formFromRelation(
+  isSelf: boolean,
+  rel: string | null | undefined,
+  passedAt?: string | null
+): string {
   if (isSelf) return "self";
-  if (passedAt) return "ancient";
-  const r = rel?.toLowerCase() ?? "";
-  if (r === "partner" || r === "spouse" || r === "wife" || r === "husband") return "binary";
-  if (r === "child" || r === "son" || r === "daughter") return "moon";
-  if (r === "parent" || r === "mother" || r === "father" || r.includes("mom") || r.includes("dad")) return "fixed";
-  if (isAncestorRelation(r)) return "ancient";
-  /* sibling / colleague / friend / unknown → star (peer main-sequence star) */
+  if (passedAt || isAncestorRelation(rel)) return "ancient";
+  const resolved = resolveGalaxyRelation(rel);
+  if (resolved.band === "partner") return "binary";
+  if (resolved.band === "children") return "moon";
+  if (PARENT_FORM_RELS.has(resolved.normalized)) return "fixed";
   return "star";
 }
 
-/* Orbital ring from bond type. Closeness of bond = closeness in space.
-     0 self · 1 partner · 2 children · 3 parents · 4 siblings ·
-     5 friends · 6 colleagues · 7 grandparents/ancestors/passed ("ancient light").
-   Passed people share ring 7 with ancestors — light still arriving. */
-export function ringIndex(isSelf: boolean, rel: string | null | undefined, passedAt?: string | null): number {
+/**
+ * Orbital ring from bond type (P1 sketch numbering).
+ *   0 self · 1 partner (tight binary) · 2 children · 3 family ·
+ *   4 circle/unknown · 5 outer tracked · 6 passed/ancestor ("ancient light").
+ * `passed_at` wins over living relation for the outer band until P3.
+ */
+export function ringIndex(
+  isSelf: boolean,
+  rel: string | null | undefined,
+  passedAt?: string | null
+): number {
   if (isSelf) return 0;
-  if (passedAt) return 7;
-  const r = rel?.toLowerCase() ?? "";
-  if (r === "partner" || r === "spouse" || r === "wife" || r === "husband") return 1;
-  if (r === "child" || r === "son" || r === "daughter" || r === "kid") return 2;
-  if (r === "parent" || r === "mother" || r === "father" || r.includes("mom") || r.includes("dad")) return 3;
-  if (r === "sibling" || r === "sister" || r === "brother") return 4;
-  if (r === "friend") return 5;
-  if (r === "colleague" || r === "coworker" || r === "co-worker") return 6;
-  if (isAncestorRelation(r)) return 7;
-  return 5;
+  if (passedAt) return 6;
+  return resolveGalaxyRelation(rel).ring;
 }

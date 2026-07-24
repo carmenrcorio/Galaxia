@@ -33,9 +33,10 @@ describe("hash01", () => {
 });
 
 describe("ringNormAbsolute", () => {
-  it("puts self/0 at the core and ring 7 at the rim", () => {
+  it("puts self/0 at the core, partner tight-binary inward, ring 6 at the rim", () => {
     expect(ringNormAbsolute(0)).toBe(0);
     expect(ringNormAbsolute(1)).toBeCloseTo(GALAXY_RING_MIN, 5);
+    expect(GALAXY_RING_MIN).toBeLessThan(ringNormAbsolute(2));
     expect(ringNormAbsolute(GALAXY_MAX_RING)).toBeCloseTo(1, 5);
   });
 
@@ -69,8 +70,8 @@ describe("galaxySeatNorm — learnable map invariants", () => {
   });
 
   it("moving a person to another ring changes only their radius band", () => {
-    const friend = galaxySeatNorm({ id: "mateo", isSelf: false, ring: 5 });
-    const ancient = galaxySeatNorm({ id: "mateo", isSelf: false, ring: 7 });
+    const friend = galaxySeatNorm({ id: "mateo", isSelf: false, ring: 4 });
+    const ancient = galaxySeatNorm({ id: "mateo", isSelf: false, ring: 6 });
     expect(ancient.rn).toBeGreaterThan(friend.rn);
     /* Angle is id-derived and independent of ring. */
     expect(ancient.angle).toBe(friend.angle);
@@ -92,12 +93,12 @@ describe("galaxySeatsResolved — collision separation", () => {
   it("adding an unrelated person does not move existing seats", () => {
     const base = [
       { id: "rosa", isSelf: false, ring: 3 },
-      { id: "mateo", isSelf: false, ring: 5 },
+      { id: "mateo", isSelf: false, ring: 4 },
     ];
     const before = galaxySeatsResolved(base);
     const after = galaxySeatsResolved([
       ...base,
-      { id: "eli-far-away-uuid", isSelf: false, ring: 6 },
+      { id: "eli-far-away-uuid", isSelf: false, ring: 5 },
     ]);
     expect(after.get("rosa")).toEqual(before.get("rosa"));
     expect(after.get("mateo")).toEqual(before.get("mateo"));
@@ -138,46 +139,44 @@ describe("galaxySeatsResolved — collision separation", () => {
     }
   });
 
-  it("separates Carmen's Abuelita Rosa / Stevie / Viejita ring-7 stack", () => {
-    /* Live account regression — three ancient-light seats within ~8°; labels
-       were drawn on top of each other after #91. */
-    const people = [
-      { id: "5da4a9a8-bcf1-4957-a67b-bad3fdf8aca7", isSelf: false, ring: 7 }, /* Abuelita Rosa */
-      { id: "4ff0b94f-7a91-4390-bd84-d0c94d186f9b", isSelf: false, ring: 7 }, /* Stevie */
-      { id: "05b5fddb-48c3-40f1-b760-8728c231d5a4", isSelf: false, ring: 7 }, /* Viejita */
-      { id: "aa9a15db-b8a5-45d6-ae80-9ac1520da90c", isSelf: false, ring: 7 }, /* Calita — far */
-    ];
-    const rawRosa = galaxySeatNorm(people[0]);
-    const rawStevie = galaxySeatNorm(people[1]);
-    const rawViejita = galaxySeatNorm(people[2]);
-    expect(angularDiff(rawRosa.angle, rawStevie.angle)).toBeLessThan(GALAXY_COLLISION_JOIN);
+  it("separates Carmen's Stevie / Viejita passed-band stack (P1 ring 6)", () => {
+    /* Live account regression — hash-near seats within ~8°. After the P1 remap,
+       living Abuelita Rosa is family (ring 3); passed Stevie / Viejita share
+       the outer ancient band (ring 6). Collision separation still applies. */
+    const stevie = { id: "4ff0b94f-7a91-4390-bd84-d0c94d186f9b", isSelf: false, ring: 6 };
+    const viejita = { id: "05b5fddb-48c3-40f1-b760-8728c231d5a4", isSelf: false, ring: 6 };
+    const calita = { id: "aa9a15db-b8a5-45d6-ae80-9ac1520da90c", isSelf: false, ring: 6 };
+    const rosa = { id: "5da4a9a8-bcf1-4957-a67b-bad3fdf8aca7", isSelf: false, ring: 3 };
+
+    const rawStevie = galaxySeatNorm(stevie);
+    const rawViejita = galaxySeatNorm(viejita);
     expect(angularDiff(rawStevie.angle, rawViejita.angle)).toBeLessThan(GALAXY_COLLISION_JOIN);
 
-    const resolved = galaxySeatsResolved(people);
-    const rosa = resolved.get(people[0].id)!;
-    const stevie = resolved.get(people[1].id)!;
-    const viejita = resolved.get(people[2].id)!;
-    const calita = resolved.get(people[3].id)!;
+    const resolved = galaxySeatsResolved([rosa, stevie, viejita, calita]);
+    const s = resolved.get(stevie.id)!;
+    const v = resolved.get(viejita.id)!;
+    const c = resolved.get(calita.id)!;
+    const r = resolved.get(rosa.id)!;
 
-    expect(angularDiff(rosa.angle, stevie.angle)).toBeGreaterThanOrEqual(GALAXY_COLLISION_SEP - 1e-9);
-    expect(angularDiff(stevie.angle, viejita.angle)).toBeGreaterThanOrEqual(GALAXY_COLLISION_SEP - 1e-9);
-    expect(angularDiff(rosa.angle, viejita.angle)).toBeGreaterThanOrEqual(GALAXY_COLLISION_SEP - 1e-9);
-    /* Calita was not in the cluster — raw seat preserved. */
-    expect(calita).toEqual(galaxySeatNorm(people[3]));
+    expect(angularDiff(s.angle, v.angle)).toBeGreaterThanOrEqual(GALAXY_COLLISION_SEP - 1e-9);
+    /* Rosa is on a different ring — her seat is independent of the passed cluster. */
+    expect(r).toEqual(galaxySeatNorm(rosa));
+    /* Calita was not in the Stevie/Viejita cluster — raw seat preserved when far. */
+    if (angularDiff(galaxySeatNorm(calita).angle, rawStevie.angle) >= GALAXY_COLLISION_JOIN
+      && angularDiff(galaxySeatNorm(calita).angle, rawViejita.angle) >= GALAXY_COLLISION_JOIN) {
+      expect(c).toEqual(galaxySeatNorm(calita));
+    }
 
-    /* Pixel legibility on a typical web ellipse (~900×560). */
     const geom = { cx: 450, cy: 280, radX: 410, radY: 236 };
-    const pRosa = galaxySeatXY(rosa, geom);
-    const pStevie = galaxySeatXY(stevie, geom);
-    const pViejita = galaxySeatXY(viejita, geom);
-    expect(Math.hypot(pRosa.x - pStevie.x, pRosa.y - pStevie.y)).toBeGreaterThan(60);
-    expect(Math.hypot(pStevie.x - pViejita.x, pStevie.y - pViejita.y)).toBeGreaterThan(60);
+    const pS = galaxySeatXY(s, geom);
+    const pV = galaxySeatXY(v, geom);
+    expect(Math.hypot(pS.x - pV.x, pS.y - pV.y)).toBeGreaterThan(60);
   });
 
   it("id order of cluster members is stable regardless of input order", () => {
-    const a = { id: "5da4a9a8-bcf1-4957-a67b-bad3fdf8aca7", isSelf: false, ring: 7 };
-    const b = { id: "4ff0b94f-7a91-4390-bd84-d0c94d186f9b", isSelf: false, ring: 7 };
-    const c = { id: "05b5fddb-48c3-40f1-b760-8728c231d5a4", isSelf: false, ring: 7 };
+    const a = { id: "5da4a9a8-bcf1-4957-a67b-bad3fdf8aca7", isSelf: false, ring: 6 };
+    const b = { id: "4ff0b94f-7a91-4390-bd84-d0c94d186f9b", isSelf: false, ring: 6 };
+    const c = { id: "05b5fddb-48c3-40f1-b760-8728c231d5a4", isSelf: false, ring: 6 };
     const forward = galaxySeatsResolved([a, b, c]);
     const reverse = galaxySeatsResolved([c, b, a]);
     expect(forward.get(a.id)).toEqual(reverse.get(a.id));

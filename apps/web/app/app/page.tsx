@@ -9,6 +9,9 @@
  *
  * Key reference decisions:
  * - Node forms derived from bond type (self / binary-partner / moon-child / fixed-parent / star-sibling / ancient-ancestor)
+ * - P1 concentric rings: soft elliptical guides at sketch Rings 1–4; partner is a
+ *   tight binary at the core (not a guide). Seat = f(id, own ring) — #91 contract
+ *   under the one allowed remap (see changelog).
  * - Radial glow halo: createRadialGradient, 5-11×R depending on data precision (sharp=crisp, year=diffuse)
  * - Links: quadratic bezier + gradient between node element colours + travelling light pulse
  * - Gentle drift: sin/cos phase per person, disabled under prefers-reduced-motion
@@ -25,6 +28,7 @@ import {
   transitNotation,
 } from "@galaxia/astro";
 import {
+  GALAXY_GUIDE_RINGS,
   HONOR_LINE_STYLE,
   HONOR_RELATION_TYPE,
   elementFromRelation,
@@ -37,6 +41,7 @@ import {
   isMinorForSafety,
   peopleForTodaySky,
   ringIndex,
+  ringNormAbsolute,
   type HonorEdge,
 } from "@galaxia/core";
 import Link from "next/link";
@@ -237,7 +242,7 @@ export default function AppHomePage() {
       people.map((p) => ({
         id: p.id,
         isSelf: !!p.is_self,
-        ring: semanticRing.get(p.id) ?? 5,
+        ring: semanticRing.get(p.id) ?? 4, /* unknown fallback = sketch Ring 3 */
       })),
     );
 
@@ -259,7 +264,7 @@ export default function AppHomePage() {
        ring; id break so the sequence is stable when scores tie. */
     const ordered = people.filter(p => !p.is_self)
       .sort((a, b) =>
-        (semanticRing.get(a.id) ?? 5) - (semanticRing.get(b.id) ?? 5)
+        (semanticRing.get(a.id) ?? 4) - (semanticRing.get(b.id) ?? 4)
         || scoreToSelf(b.id) - scoreToSelf(a.id)
         || a.id.localeCompare(b.id));
 
@@ -713,6 +718,27 @@ export default function AppHomePage() {
          drawImage rather than a per-frame radial-gradient fill. */
       cx.drawImage(washCanvas, 0, 0, W(), H());
 
+      /* soft concentric guides — sketch Rings 1–4 (semantic 2–5). Partner sits
+         inside Ring 1 as a tight binary; passed stay on the outer ancient band
+         with no extra guide until P3. Cheap strokes; lowPerf sheds the breath. */
+      {
+        const { cx: rcx, cy: rcy, radX, radY } = ringGeom();
+        const breath = (!reduced && !lowPerf)
+          ? 0.012 * Math.sin(t * 0.00035)
+          : 0;
+        const baseAlpha = lowPerf ? 0.055 : 0.09;
+        cx.save();
+        for (const ring of GALAXY_GUIDE_RINGS) {
+          const rn = ringNormAbsolute(ring) * (1 + breath);
+          cx.beginPath();
+          cx.ellipse(rcx, rcy, radX * rn, radY * rn, 0, 0, Math.PI * 2);
+          cx.strokeStyle = `rgba(183,154,216,${baseAlpha})`;
+          cx.lineWidth = lowPerf ? 0.7 : 1;
+          cx.stroke();
+        }
+        cx.restore();
+      }
+
       const positions = people.map((_, i) => nodePos(i));
       const byId = new Map(people.map((p, i) => [p.id, positions[i]]));
 
@@ -983,10 +1009,12 @@ export default function AppHomePage() {
         {people.length > 0 ? (
           <div style={{ padding: "12px 24px 18px", borderTop: "1px solid rgba(255,255,255,.05)", display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
             {[
-              { label: "Partner / binary star", color: EL_COLOR.air }, { label: "Child / moon", color: EL_COLOR.earth },
-              { label: "Parent / fixed star", color: EL_COLOR.water }, { label: "Sibling / star", color: EL_COLOR.air },
-              { label: "Friend / star", color: EL_COLOR.fire }, { label: "Colleague / star", color: EL_COLOR.earth },
-              { label: "Ancestor / ancient light", color: "#DA8C8C" },
+              { label: "Partner / binary at core", color: EL_COLOR.air },
+              { label: "Ring 1 · children", color: EL_COLOR.earth },
+              { label: "Ring 2 · parents & siblings", color: EL_COLOR.water },
+              { label: "Ring 3 · friends & relatives", color: EL_COLOR.fire },
+              { label: "Ring 4 · colleagues", color: EL_COLOR.earth },
+              { label: "Remembered / ancient light", color: "#DA8C8C" },
               ...(honorEdges.length > 0
                 ? [{ label: "Honor / remembrance light", color: HONOR_LINE_STYLE.water }]
                 : []),

@@ -7,7 +7,7 @@ import {
   type GeoCandidate,
   type Precision
 } from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
+import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety, type GalaxyPickerRelation } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -16,7 +16,7 @@ import { supabase } from "../src/lib/supabase";
 import { useAuth } from "../src/providers/auth-provider";
 import { useEntitlement } from "../src/providers/entitlement-provider";
 
-type Relation = "partner" | "child" | "parent" | "grandparent" | "sibling" | "friend" | "ancestor" | "self";
+type Relation = GalaxyPickerRelation | "self";
 
 const MONTHS = [
   "January",
@@ -39,7 +39,8 @@ const precisionTiers: { key: Precision; label: string; unlocks: string }[] = [
   { key: "year", label: "Year / decade", unlocks: "Generational layer and broad archetypal context. No timezone needed." }
 ];
 
-const relationOptions: Relation[] = ["partner", "child", "parent", "grandparent", "sibling", "friend", "ancestor"];
+// FOUNDER-REVIEW: picker labels — refine voice before merge.
+const relationOptions = GALAXY_RELATION_PICKER_OPTIONS;
 
 const baseInput: BirthFormInput = {
   precision: "date",
@@ -299,19 +300,20 @@ export default function OnboardingScreen() {
         style={fieldStyle}
       />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-        {relationOptions.map((relation) => (
+        {relationOptions.map(({ value, label }) => (
           <Pressable
-            key={relation}
-            onPress={() => setPersonRelation(relation)}
+            key={value}
+            onPress={() => setPersonRelation(value)}
             style={{
               borderRadius: 999,
               borderWidth: 1,
-              borderColor: personRelation === relation ? tokens.colors.gold : tokens.colors.line,
+              borderColor: personRelation === value ? tokens.colors.gold : tokens.colors.line,
               paddingHorizontal: 12,
               paddingVertical: 8
             }}
           >
-            <Text style={{ color: personRelation === relation ? tokens.colors.gold : tokens.colors.cream }}>{relation}</Text>
+            {/* FOUNDER-REVIEW: picker label */}
+            <Text style={{ color: personRelation === value ? tokens.colors.gold : tokens.colors.cream }}>{label}</Text>
           </Pressable>
         ))}
       </View>

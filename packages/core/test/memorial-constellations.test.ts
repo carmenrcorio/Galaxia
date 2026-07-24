@@ -31,11 +31,13 @@ describe("MEMORIAL_CONSTELLATIONS library", () => {
     expect(MEMORIAL_CONSTELLATIONS.map((c) => c.id)).toEqual([...EXPECTED_IDS]);
   });
 
-  it("gives each entry a stable id, display name, IAU abbrev, stars, and lines", () => {
+  it("gives each entry a stable id, display name, IAU abbrev, summary, myth, stars, and lines", () => {
     for (const entry of MEMORIAL_CONSTELLATIONS) {
       expect(entry.id).toMatch(/^[a-z_]+$/);
       expect(entry.name.length).toBeGreaterThan(2);
       expect(entry.iau).toMatch(/^[A-Z][a-zA-Z]{1,2}$/);
+      expect(entry.summary.length).toBeGreaterThan(12);
+      expect(entry.myth.length).toBeGreaterThan(24);
       expect(entry.stars.length).toBeGreaterThanOrEqual(5);
       expect(entry.lines.length).toBeGreaterThanOrEqual(4);
     }

@@ -10,11 +10,11 @@
  * Key reference decisions:
  * - Node forms derived from bond type (self / binary-partner / moon-child / fixed-parent / star-sibling / ancient-ancestor)
  * - P1 concentric rings: soft elliptical guides at sketch Rings 1–4; partner is a
- *   tight binary at the core (not a guide). Seat = f(id, own ring) — #91 contract
- *   under the one allowed remap (see changelog).
+ *   tight binary at the core (not a guide). Seat radius = guide radius =
+ *   ringBandRadius(own ring) (+ small within-band jitter). Angle = f(id).
  * - Radial glow halo: createRadialGradient, 5-11×R depending on data precision (sharp=crisp, year=diffuse)
  * - Links: quadratic bezier + gradient between node element colours + travelling light pulse
- * - Gentle drift: sin/cos phase per person, disabled under prefers-reduced-motion
+ * - Gentle tangential drift (stays on band), disabled under prefers-reduced-motion
  * - Ambient shooting stars: short calm streaks, max 1–2 live, infrequent; decoration
  *   only (never aimed at a person / never a transit signal). Off under reduced-motion;
  *   shed first under lowPerf before any existing layer degrades.
@@ -47,8 +47,8 @@ import {
   isMinorForSafety,
   peopleForTodaySky,
   resolveNodeColor,
+  ringBandRadius,
   ringIndex,
-  ringNormsOccupied,
   usesMemorialGlyph,
   type HonorEdge,
   type MemorialConstellation,
@@ -238,10 +238,9 @@ export default function AppHomePage() {
     };
 
     /* ── derived orbital seats (learnable map) ─────────────────────────────
-       Angle = f(id). Radius = occupied-ring spread (empty rings reserve no
-       space) + same-ring collision separation. Same data → same seats; adding
-       onto an already-occupied ring moves only that person / cluster; opening
-       a new ring redistributes radii (the allowed spread shift). */
+       Angle = f(id). Radius = ringBandRadius(own ring) + within-band jitter
+       (same function the guide strokes use). Same data → same seats; adding
+       a person moves only that person / their same-ring collision cluster. */
     const semanticRing = new Map<string, number>();
     for (const p of people) {
       semanticRing.set(p.id, ringIndex(!!p.is_self, p.relation, p.passed_at));
@@ -252,8 +251,6 @@ export default function AppHomePage() {
       ring: semanticRing.get(p.id) ?? 4, /* unknown fallback = sketch Ring 3 */
     }));
     const seatsById = galaxySeatsResolved(seatInputs);
-    const occupiedNorms = ringNormsOccupied(seatInputs.map((p) => (p.isSelf ? 0 : p.ring)));
-    const occupiedGuideRings = GALAXY_GUIDE_RINGS.filter((r) => occupiedNorms.has(r));
 
     /* ── entrance timeline ─────────────────────────────────────────────
        The constellation ARRIVES: the self star (galactic core) ignites first,
@@ -361,16 +358,33 @@ export default function AppHomePage() {
     const LABEL_PAD_TOP = 22;
     const LABEL_PAD_BOTTOM = 26;
 
-    /* stable base (pre-drift) seat — resolved with occupied-ring radii +
-       same-ring collision separation, then clamped so the node + label stay
-       inside the canvas. Clamp is canvas-only (does not reshuffle peers). */
+    /* stable base (pre-drift) seat — band radius + same-ring collision
+       separation. Edge clamp preserves angle (scales along the ray) so a
+       person stays on their ring instead of being squashed into a gap. */
     function basePos(i: number): { x: number; y: number } {
       const p = people[i];
       const geom = ringGeom();
       const seat = seatsById.get(p.id) ?? { nx: 0, ny: 0, angle: 0, rn: 0 };
       let { x, y } = galaxySeatXY(seat, geom);
-      x = Math.min(W() - LABEL_PAD_X, Math.max(LABEL_PAD_X, x));
-      y = Math.min(H() - LABEL_PAD_BOTTOM, Math.max(LABEL_PAD_TOP, y));
+      const minX = LABEL_PAD_X, maxX = W() - LABEL_PAD_X;
+      const minY = LABEL_PAD_TOP, maxY = H() - LABEL_PAD_BOTTOM;
+      if (x < minX || x > maxX || y < minY || y > maxY) {
+        const dx = x - geom.cx, dy = y - geom.cy;
+        const dist = Math.hypot(dx, dy) || 1;
+        /* Largest scale ≤1 that keeps the point inside the pad box. */
+        let s = 1;
+        if (dx > 0) s = Math.min(s, (maxX - geom.cx) / dx);
+        if (dx < 0) s = Math.min(s, (minX - geom.cx) / dx);
+        if (dy > 0) s = Math.min(s, (maxY - geom.cy) / dy);
+        if (dy < 0) s = Math.min(s, (minY - geom.cy) / dy);
+        if (s < 1 && s > 0) {
+          x = geom.cx + dx * s;
+          y = geom.cy + dy * s;
+        } else {
+          x = Math.min(maxX, Math.max(minX, x));
+          y = Math.min(maxY, Math.max(minY, y));
+        }
+      }
       return { x, y };
     }
 
@@ -413,16 +427,19 @@ export default function AppHomePage() {
       return map;
     }
 
-    /* compute position with drift — prototype pos() (drift settles in with ignition) */
+    /* Tangential drift only — amplitude along the ring, never radial, so the
+       person stays on their band. Settles in with ignition. */
     function nodePos(i: number): { x: number; y: number } {
       const p = people[i];
       const base = basePos(i);
       if (reduced || p.is_self) return base;
       const { ph, sp } = phases[i];
       const settle = clamp01(ignition(p.id).raw);
+      const ang = seatsById.get(p.id)?.angle ?? 0;
+      const amp = Math.sin(t * 0.00045 * sp + ph) * 6 * settle;
       return {
-        x: base.x + Math.sin(t * 0.00045 * sp + ph) * 7 * settle,
-        y: base.y + Math.cos(t * 0.00038 * sp + ph) * 7 * settle,
+        x: base.x + Math.cos(ang + Math.PI / 2) * amp,
+        y: base.y + Math.sin(ang + Math.PI / 2) * amp,
       };
     }
 
@@ -934,8 +951,9 @@ export default function AppHomePage() {
          drawImage rather than a per-frame radial-gradient fill. */
       cx.drawImage(washCanvas, 0, 0, W(), H());
 
-      /* soft concentric guides — only for occupied sketch rings, at the
-         occupied-spread radii so empty bands do not bunch the structure. */
+      /* soft concentric guides — sketch Rings 1–4 at ringBandRadius (same
+         function as person seats). Always drawn so the legend's four bands
+         stay readable even when a band is empty. */
       {
         const { cx: rcx, cy: rcy, radX, radY } = ringGeom();
         const breath = (!reduced && !lowPerf)
@@ -943,8 +961,8 @@ export default function AppHomePage() {
           : 0;
         const baseAlpha = lowPerf ? 0.10 : 0.11;
         cx.save();
-        for (const ring of occupiedGuideRings) {
-          const rn = (occupiedNorms.get(ring) ?? 1) * (1 + breath);
+        for (const ring of GALAXY_GUIDE_RINGS) {
+          const rn = ringBandRadius(ring) * (1 + breath);
           cx.beginPath();
           cx.ellipse(rcx, rcy, radX * rn, radY * rn, 0, 0, Math.PI * 2);
           cx.strokeStyle = `rgba(183,154,216,${baseAlpha})`;

@@ -2,7 +2,7 @@
 
 **Trigger**: The natal wheel drew an aspect web that was effectively invisible (alpha ~0.08–0.22), planet glyphs were small and low-contrast (especially air at `#B79AD8`), and the person page Aspects tab could disagree with the wheel’s independently filtered list. Compare’s biwheel needs an additive second-chart seam before that UI lands.
 
-`[FIXED]` **Aspect web legibility on the dark disc.** Stroke alpha raised to ~0.45–0.78 (orb-weighted) and stroke width to 1.75; harmony colouring kept (`--teal` / `--rose` / `--mist`). Planet glyphs bumped to `fontSize` 14 / disc `r` 12 with cream fill for contrast; element colour stays on the planet ring stroke so air no longer paints unreadable purple-on-black text.
+`[FIXED]` **Aspect web legibility on the dark disc.** Stroke alpha raised to ~0.55–0.92 (orb-weighted; mist/neutral gets a little extra weight) and stroke width to 2; harmony colouring kept (`--teal` / `--rose` / `--mist`). Planet glyphs bumped to `fontSize` 15 / disc `r` 13 with cream fill for contrast; element colour stays on the planet ring stroke so air no longer paints unreadable purple-on-black text. Verified readable at 375px DPR-2 without zoom.
 
 `[CHANGED]` **Optional `aspects` prop — one list with the person page.** When passed, the wheel draws exactly that set and does not recompute. When absent, the historical internal filter stands (`orb < 5`, max 12) so `/chart`, share snapshots, and PDF keep working. Person page now passes `natalAspects` to both the Aspects tab and the wheel. On a representative exact chart those two lists **did** disagree: page = 14 orb-sorted (including ≥5°), wheel = ≤12 with `orb < 5` only.
 

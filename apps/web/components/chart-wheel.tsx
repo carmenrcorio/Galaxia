@@ -91,9 +91,12 @@ function harmonyStroke(harmony: number): string {
   return "var(--mist)";
 }
 
-function aspectAlpha(orb: number): number {
+function aspectAlpha(orb: number, harmony: number): number {
   // Legible on the dark inner disc; tighter orbs read stronger.
-  return Math.max(0.45, 0.78 - orb * 0.045);
+  // Neutral (mist) lines need a little extra weight — lavender washes out on near-black.
+  const base = Math.max(0.55, 0.88 - orb * 0.04);
+  if (harmony >= 0 && harmony < 1.2) return Math.min(0.92, base + 0.1);
+  return base;
 }
 
 type PlanetPlot = {
@@ -152,7 +155,7 @@ export function ChartWheel({ chart, aspects, outerChart, interactive = true }: C
       to: a.to,
       x0, y0, x1, y1,
       stroke: harmonyStroke(a.harmony),
-      alpha: aspectAlpha(a.orb),
+      alpha: aspectAlpha(a.orb, a.harmony),
     };
   }).filter(Boolean) as Array<{
     from: BodyName; to: BodyName;
@@ -186,6 +189,8 @@ export function ChartWheel({ chart, aspects, outerChart, interactive = true }: C
 
   function onPlanetPointerEnter(owner: ChartOwner, body: BodyName, e: ReactPointerEvent) {
     if (!interactive) return;
+    // Hover path (mouse/pen). Touch uses pointerup toggle below — a click after
+    // pointerenter would otherwise clear the hover focus immediately.
     if (e.pointerType === "touch") return;
     setFocus({ owner, body });
   }
@@ -196,8 +201,9 @@ export function ChartWheel({ chart, aspects, outerChart, interactive = true }: C
     setFocus(null);
   }
 
-  function onPlanetClick(owner: ChartOwner, body: BodyName) {
+  function onPlanetPointerUp(owner: ChartOwner, body: BodyName, e: ReactPointerEvent) {
     if (!interactive) return;
+    if (e.pointerType !== "touch") return;
     setFocus((prev) => (prev && prev.owner === owner && prev.body === body ? null : { owner, body }));
   }
 
@@ -215,8 +221,8 @@ export function ChartWheel({ chart, aspects, outerChart, interactive = true }: C
               data-asp={`${al.from}-${al.to}`}
               x1={al.x0} y1={al.y0} x2={al.x1} y2={al.y1}
               stroke={al.stroke}
-              strokeWidth={dim ? 1 : 1.75}
-              strokeOpacity={dim ? Math.min(0.12, al.alpha * 0.22) : al.alpha}
+              strokeWidth={dim ? 1 : 2}
+              strokeOpacity={dim ? Math.min(0.1, al.alpha * 0.18) : al.alpha}
             />
           );
         })}
@@ -258,17 +264,17 @@ export function ChartWheel({ chart, aspects, outerChart, interactive = true }: C
               data-planet={key}
               onPointerEnter={(e) => onPlanetPointerEnter(owner, body, e)}
               onPointerLeave={onPlanetPointerLeave}
-              onClick={() => onPlanetClick(owner, body)}
+              onPointerUp={(e) => onPlanetPointerUp(owner, body, e)}
               style={{ cursor: interactive ? "pointer" : undefined, opacity: dimPlanet ? 0.35 : 1 }}
             >
               <circle
-                cx={px} cy={py} r="12"
-                fill="rgba(10,7,23,.9)"
+                cx={px} cy={py} r="13"
+                fill="rgba(10,7,23,.92)"
                 stroke={stroke}
-                strokeWidth={isFocus ? 1.6 : 1.15}
+                strokeWidth={isFocus ? 1.75 : 1.25}
               />
               {/* Cream glyph fill: element-coloured air (#B79AD8) was unreadable at mobile width. */}
-              <text x={px} y={py} fill="var(--cream)" fontSize="14" textAnchor="middle" dominantBaseline="central">{gly}</text>
+              <text x={px} y={py} fill="var(--cream)" fontSize="15" textAnchor="middle" dominantBaseline="central">{gly}</text>
             </g>
           );
         })}

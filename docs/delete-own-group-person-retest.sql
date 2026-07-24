@@ -25,7 +25,6 @@ DECLARE
   group_left int;
   person_left int;
   members_left int;
-  err text;
 BEGIN
   -- Seed auth users (minimal columns for FK).
   INSERT INTO auth.users (
@@ -123,7 +122,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', owner_a::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', owner_a::text, 'role', 'authenticated')::text, true);
   result := public.delete_own_person(p1);
-  IF NOT (result->'deleted_group_names' ? 0) THEN
+  IF jsonb_array_length(coalesce(result->'deleted_group_names', '[]'::jsonb)) < 1 THEN
     RAISE EXCEPTION 'expected at least one collapsed group, got %', result;
   END IF;
   SELECT count(*) INTO group_left FROM groups WHERE id = g_collapse;
@@ -155,12 +154,14 @@ BEGIN
       END IF;
   END;
 
-  -- Cleanup remaining seed (owner_a leftovers + both auth users)
+  -- Cleanup remaining seed (owner_a leftovers + both auth users).
+  -- Inserting auth.users may auto-create profiles; clear profiles before auth.users.
   PERFORM set_config('request.jwt.claim.sub', owner_a::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', owner_a::text, 'role', 'authenticated')::text, true);
   DELETE FROM group_members WHERE group_id IN (g_keep);
   DELETE FROM groups WHERE owner_id = owner_a;
   DELETE FROM people WHERE owner_id = owner_a;
+  DELETE FROM profiles WHERE id IN (owner_a, owner_b);
   DELETE FROM auth.users WHERE id IN (owner_a, owner_b);
 
   RAISE NOTICE 'ALL delete_own_* retests passed';

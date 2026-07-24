@@ -50,12 +50,19 @@ export async function middleware(request: NextRequest) {
   if (accessGated) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("subscription_status, trial_ends_at")
+      .select("subscription_status, trial_ends_at, comped")
       .eq("id", user.id)
       .maybeSingle();
     // Fail-open only when there is genuinely no profile row yet (the new-user
     // trigger is still settling). A row that exists is trusted.
-    if (profile && !hasAccess({ status: profile.subscription_status, trialEndsAt: profile.trial_ends_at })) {
+    if (
+      profile &&
+      !hasAccess({
+        status: profile.subscription_status,
+        trialEndsAt: profile.trial_ends_at,
+        comped: profile.comped === true
+      })
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = "/subscribe";
       url.search = "";

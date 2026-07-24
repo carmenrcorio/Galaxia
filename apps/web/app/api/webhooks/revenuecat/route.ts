@@ -84,6 +84,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, matched: false });
   }
 
+  // Exactly these four billing columns — never `comped` (durable, service-set).
   const { error: updateError } = await supabase
     .from("profiles")
     .update({

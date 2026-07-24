@@ -56,6 +56,7 @@ export default function SettingsPage() {
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
   const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false);
+  const [comped, setComped] = useState(false);
   const [managementUrl, setManagementUrl] = useState<string | null>(null);
   const [managementLoaded, setManagementLoaded] = useState(false);
 
@@ -67,7 +68,7 @@ export default function SettingsPage() {
       const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("house_system, subscription_status, trial_ends_at, current_period_end, cancel_at_period_end")
+          .select("house_system, subscription_status, trial_ends_at, current_period_end, cancel_at_period_end, comped")
           .eq("id", user.id)
           .maybeSingle(),
         supabase.from("people").select("id, display_name, relation").eq("owner_id", user.id).order("display_name", { ascending: true }),
@@ -78,6 +79,7 @@ export default function SettingsPage() {
       setTrialEndsAt((profile?.trial_ends_at as string | null) ?? null);
       setCurrentPeriodEnd((profile?.current_period_end as string | null) ?? null);
       setCancelAtPeriodEnd(Boolean(profile?.cancel_at_period_end));
+      setComped(profile?.comped === true);
       setPeople((peopleRows ?? []) as PersonLite[]);
       setGroups((groupRows ?? []) as GroupLite[]);
 
@@ -109,14 +111,21 @@ export default function SettingsPage() {
   const trialLabel = formatDate(trialEndsAt);
   const periodLabel = formatDate(currentPeriodEnd);
   const canCancel =
-    (subscriptionStatus === "active" || subscriptionStatus === "past_due") && !cancelAtPeriodEnd;
+    !comped &&
+    (subscriptionStatus === "active" || subscriptionStatus === "past_due") &&
+    !cancelAtPeriodEnd;
   const showBillingControls =
-    subscriptionStatus === "active" ||
-    subscriptionStatus === "past_due" ||
-    (subscriptionStatus === "canceled" && Boolean(managementUrl));
+    !comped &&
+    (subscriptionStatus === "active" ||
+      subscriptionStatus === "past_due" ||
+      (subscriptionStatus === "canceled" && Boolean(managementUrl)));
 
+  // FOUNDER-REVIEW: Settings subscription card copy — refine voice.
   let subscriptionCopy: string;
-  if (subscriptionStatus === "trialing") {
+  if (comped) {
+    // FOUNDER-REVIEW: permanent comp access — not a subscription, not a trial.
+    subscriptionCopy = "Permanent access. This account is complimentary — you are not billed.";
+  } else if (subscriptionStatus === "trialing") {
     subscriptionCopy = trialLabel
       ? `Trial ends ${trialLabel}.`
       : "You're on a trial.";
@@ -156,7 +165,7 @@ export default function SettingsPage() {
               Cancel subscription
             </Link>
           ) : null}
-          {subscriptionStatus === "trialing" || subscriptionStatus === "canceled" ? (
+          {!comped && (subscriptionStatus === "trialing" || subscriptionStatus === "canceled") ? (
             <Link className="pill-link" href="/subscribe">Subscribe</Link>
           ) : null}
           {showBillingControls && managementLoaded ? (

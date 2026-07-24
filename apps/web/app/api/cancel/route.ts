@@ -1,5 +1,6 @@
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { missingEnvMessage, revenueCatEnv } from "../../../lib/env";
+import { missingEnvMessage, privateEnv, publicEnv, revenueCatEnv } from "../../../lib/env";
 import { requireUser } from "../../../lib/supabase/require-user";
 
 // Talks to the RevenueCat REST API with the secret key; Node runtime.
@@ -34,7 +35,7 @@ export async function POST() {
     return NextResponse.json({ error: missingEnvMessage("REVENUECAT_PROJECT_ID") }, { status: 503 });
   }
 
-  const { supabase, user } = await requireUser("/account");
+  const { user } = await requireUser("/account");
   const customerId = user.id;
 
   const base = "https://api.revenuecat.com/v2";
@@ -97,7 +98,18 @@ export async function POST() {
   // the CANCELLATION webhook lands. The webhook remains the source of truth for
   // subscription_status (stays active until EXPIRATION) and will reaffirm this
   // flag. Access is unchanged — hasAccess still reads subscription_status.
-  await supabase.from("profiles").update({ cancel_at_period_end: true }).eq("id", customerId);
+  // Billing columns (including cancel_at_period_end) are service-role only —
+  // the user-scoped client can no longer write them.
+  if (!publicEnv.supabaseUrl || !privateEnv.serviceRole) {
+    return NextResponse.json(
+      { error: "Server is missing Supabase service configuration." },
+      { status: 500 }
+    );
+  }
+  const admin = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, {
+    auth: { persistSession: false }
+  });
+  await admin.from("profiles").update({ cancel_at_period_end: true }).eq("id", customerId);
 
   return NextResponse.json({ ok: true });
 }

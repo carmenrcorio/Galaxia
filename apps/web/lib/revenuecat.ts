@@ -6,9 +6,11 @@ import type { SubscriptionStatus } from "@galaxia/core";
  * are imported here so it is safe to pull into either bundle and to unit test.
  *
  * Access model reminder: `@galaxia/core` `hasAccess` is the ONE access decision
- * (active/lifetime, or a live trial). It is intentionally unchanged. This file
- * only decides how a RevenueCat event maps onto the `profiles` columns that
- * `hasAccess` reads. The webhook is the single source of truth for paid status.
+ * (`comped` OR active/lifetime OR a live trial). This file only maps a
+ * RevenueCat event onto the four billing columns:
+ * `subscription_status`, `current_period_end`, `plan`, `cancel_at_period_end`.
+ * It never reads or writes `comped`. The webhook is the source of truth for
+ * paid billing status only.
  */
 
 /** The single entitlement that unlocks the product. Checked client-side after a purchase. */

@@ -7,11 +7,12 @@ import { useAuth } from "./auth-provider";
 /**
  * Entitlement is now the shared card-optional trial model (packages/core
  * `hasAccess`), not a free/plus tier. There is ONE product; nothing is gated on
- * the number of people or messages. Access = active | lifetime | live trial.
+ * the number of people or messages. Access = comped | active | lifetime | live trial.
  *
  * The previous `setTier` debug switch — which let a user grant themselves a paid
  * plan by writing `subscription_tier` — is REMOVED (ENGINEERING.md §7 revenue
- * bug). Status is set by signup (trial) and by the Stripe webhook only.
+ * bug). Billing status is set by signup (trial) and by the RevenueCat webhook;
+ * `comped` is service-role only and never touched by billing sync.
  *
  * The `@deprecated` fields below are non-gating compatibility shims so existing
  * mobile screens keep compiling during the trial-model rollout. They no longer
@@ -21,6 +22,7 @@ import { useAuth } from "./auth-provider";
 interface EntitlementContextValue {
   status: SubscriptionStatus;
   trialEndsAt: string | null;
+  comped: boolean;
   /** The single source of truth: can this user use the product right now. */
   hasAccess: boolean;
   trialDaysLeft: number;
@@ -54,16 +56,18 @@ export function EntitlementProvider({ children }: PropsWithChildren) {
   const { session } = useAuth();
   const [status, setStatus] = useState<SubscriptionStatus>("trialing");
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
+  const [comped, setComped] = useState(false);
 
   const refresh = async () => {
     if (!session?.user.id) return;
     const { data: profile } = await supabase
       .from("profiles")
-      .select("subscription_status, trial_ends_at")
+      .select("subscription_status, trial_ends_at, comped")
       .eq("id", session.user.id)
       .maybeSingle();
     setStatus(((profile?.subscription_status as SubscriptionStatus) ?? "trialing"));
     setTrialEndsAt((profile?.trial_ends_at as string | null) ?? null);
+    setComped(profile?.comped === true);
   };
 
   useEffect(() => {
@@ -72,10 +76,11 @@ export function EntitlementProvider({ children }: PropsWithChildren) {
   }, [session?.user.id]);
 
   const value = useMemo<EntitlementContextValue>(() => {
-    const access = hasAccess({ status, trialEndsAt });
+    const access = hasAccess({ status, trialEndsAt, comped });
     return {
       status,
       trialEndsAt,
+      comped,
       hasAccess: access,
       trialDaysLeft: trialDaysRemaining(trialEndsAt),
       refresh,
@@ -91,7 +96,7 @@ export function EntitlementProvider({ children }: PropsWithChildren) {
       canSendVelaMessage: () => access,
       recordVelaMessageSent: async () => {}
     };
-  }, [status, trialEndsAt, session?.user.id]);
+  }, [status, trialEndsAt, comped, session?.user.id]);
 
   return <EntitlementContext.Provider value={value}>{children}</EntitlementContext.Provider>;
 }

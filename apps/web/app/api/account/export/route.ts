@@ -33,7 +33,7 @@ export async function GET() {
     supabase
       .from("profiles")
       .select(
-        "id, display_name, created_at, house_system, subscription_status, trial_ends_at, plan, current_period_end, cancel_at_period_end"
+        "id, display_name, created_at, house_system, subscription_status, trial_ends_at, plan, current_period_end, cancel_at_period_end, comped"
       )
       .eq("id", uid)
       .maybeSingle(),

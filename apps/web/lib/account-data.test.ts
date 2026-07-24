@@ -29,6 +29,7 @@ describe("account-data helpers", () => {
 
   it("export profile allowlist excludes Stripe and deprecated tier fields", () => {
     expect(EXPORT_PROFILE_FIELDS).toContain("subscription_status");
+    expect(EXPORT_PROFILE_FIELDS).toContain("comped");
     expect(EXPORT_PROFILE_FIELDS).not.toContain("stripe_customer_id");
     expect(EXPORT_PROFILE_FIELDS).not.toContain("stripe_subscription_id");
     expect(EXPORT_PROFILE_FIELDS).not.toContain("subscription_tier");

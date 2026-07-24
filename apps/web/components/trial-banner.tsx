@@ -7,24 +7,30 @@ import { createSupabaseBrowserClient } from "../lib/supabase/client";
 
 /**
  * Calm, non-urgent trial banner. Shows only while `subscription_status` is
- * 'trialing'. No countdown, no red, no "don't miss out" — a warm, factual line
- * with a link to /subscribe.
+ * 'trialing' and the account is not comped. No countdown, no red, no
+ * "don't miss out" — a warm, factual line with a link to /subscribe.
  */
 export function TrialBanner() {
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [comped, setComped] = useState(false);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
-      const { data } = await supabase.from("profiles").select("subscription_status, trial_ends_at").eq("id", user.id).maybeSingle();
+      const { data } = await supabase
+        .from("profiles")
+        .select("subscription_status, trial_ends_at, comped")
+        .eq("id", user.id)
+        .maybeSingle();
       setStatus((data?.subscription_status as string | null) ?? null);
       setTrialEndsAt((data?.trial_ends_at as string | null) ?? null);
+      setComped(data?.comped === true);
     });
   }, []);
 
-  if (status !== "trialing" || !trialEndsAt) return null;
+  if (comped || status !== "trialing" || !trialEndsAt) return null;
   const ends = new Date(trialEndsAt);
   if (Number.isNaN(ends.getTime())) return null;
   const daysLeft = trialDaysRemaining(trialEndsAt);

@@ -11,9 +11,9 @@
  * and /chart/compare's own prefill). Consolidating it here means /chart and
  * /chart/compare recognize the user identically instead of each re-deriving it.
  *
- * `isSubscriber` is the real entitlement (@galaxia/core hasAccess) — true only
- * for active/lifetime or a trial that has not ended. It is never a hardcoded
- * flag; it gates the paid PDF export.
+ * `isSubscriber` is the real entitlement (@galaxia/core hasAccess) — true for
+ * comped, active/lifetime, or a trial that has not ended. It is never a
+ * hardcoded client flag; it gates the paid PDF export.
  *
  * The logged-out result (userId null, isSubscriber false, no self prefill) is
  * the default while loading and forever for anonymous visitors, so the public
@@ -34,7 +34,8 @@ export interface Viewer {
   userId: string | null;
   subscriptionStatus: string | null;
   trialEndsAt: string | null;
-  /** Real entitlement (active/lifetime/live trial). Gates the paid PDF export. */
+  comped: boolean;
+  /** Real entitlement (comped / active / lifetime / live trial). Gates the paid PDF export. */
   isSubscriber: boolean;
   /** The user's own birth data as a BirthFields input, for pre-fill. Null if no self / progressive-capture only. */
   selfInput: BirthFormInput | null;
@@ -48,6 +49,7 @@ const ANON: Viewer = {
   userId: null,
   subscriptionStatus: null,
   trialEndsAt: null,
+  comped: false,
   isSubscriber: false,
   selfInput: null,
   selfChart: null,
@@ -75,7 +77,7 @@ export function useViewer(): Viewer {
       if (!user) { if (!cancelled) setViewer(ANON); return; }
 
       const [{ data: profile }, { data: self }] = await Promise.all([
-        supabase.from("profiles").select("subscription_status, trial_ends_at").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("subscription_status, trial_ends_at, comped").eq("id", user.id).maybeSingle(),
         // A unique index on people(owner_id) WHERE is_self guarantees at most one row.
         supabase.from("people")
           .select("id, display_name, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, birth_precision")
@@ -100,6 +102,7 @@ export function useViewer(): Viewer {
 
       const subscriptionStatus = (profile?.subscription_status as string | null) ?? null;
       const trialEndsAt = (profile?.trial_ends_at as string | null) ?? null;
+      const comped = profile?.comped === true;
 
       if (cancelled) return;
       setViewer({
@@ -107,7 +110,8 @@ export function useViewer(): Viewer {
         userId: user.id,
         subscriptionStatus,
         trialEndsAt,
-        isSubscriber: hasAccess({ status: subscriptionStatus, trialEndsAt }),
+        comped,
+        isSubscriber: hasAccess({ status: subscriptionStatus, trialEndsAt, comped }),
         selfInput,
         selfChart,
         selfName: (self?.display_name as string | null) ?? null,

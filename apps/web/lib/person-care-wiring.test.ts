@@ -3,14 +3,16 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 describe("source wiring — person page + home hide live sky for passed", () => {
-  it("person page gates todayTransits with shouldShowLiveTransits (no run for passed)", () => {
+  it("person page gates daily nudge with shouldShowLiveTransits (no run for passed)", () => {
     const src = readFileSync(
       resolve(__dirname, "../app/app/person/[id]/page.tsx"),
       "utf8"
     );
     expect(src).toContain("shouldShowLiveTransits");
     expect(src).toContain("showActiveToday");
-    expect(src).toMatch(/if\s*\(\s*!shouldShowLiveTransits\(person\)\s*\)\s*return\s*\[\]/);
+    expect(src).toContain("person_daily_nudges");
+    expect(src).toContain("buildPersonDailyNudge");
+    expect(src).toMatch(/if\s*\(\s*shouldShowLiveTransits\(personRow\)\s*\)/);
     expect(src).toContain("HonorDeclarationBox");
     expect(src).toContain("Who carries their light ↓");
     expect(src).toContain("HONOR_LIGHT_ANCHOR_ID");
@@ -22,11 +24,13 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     expect(src).toContain("ChartSectionNav");
   });
 
-  it("home Today in your sky filters with peopleForTodaySky before transit compute", () => {
+  it("home Today in your sky filters with peopleForTodaySky before durable nudge plan", () => {
     const src = readFileSync(resolve(__dirname, "../app/app/page.tsx"), "utf8");
     expect(src).toContain("peopleForTodaySky");
     expect(src).toMatch(/peopleForTodaySky\(castPeople\)/);
-    expect(src).toContain("passed people are excluded");
+    expect(src).toContain("planDailyNudgeWrites");
+    expect(src).toContain("person_daily_nudges");
+    expect(src).toContain("CARE: passed people excluded");
   });
 
   it("RemembranceSpace no longer embeds the honor-declaration box (reflections only)", () => {

@@ -175,6 +175,22 @@ function bodyLongitude(body: BodyName, date: Date): number {
   return normalizeZodiacLongitude(Ecliptic(GeoVector(BODY_MAP[body], date, true)).elon);
 }
 
+/** Public ecliptic longitude for transit-nudge phase / exactness (0–360). */
+export function eclipticLongitude(body: BodyName, when: Date | string): number {
+  const date = typeof when === "string" ? toDate(when) : when;
+  return bodyLongitude(body, date);
+}
+
+/** Aspect angle + default orb for majors — shared with the nudge exactness window. */
+export function aspectDefinition(type: AspectType): { angle: number; orb: number; harmony: number } {
+  return ASPECT_DEFS[type];
+}
+
+/** Signed smallest angle delta in (−180, 180]. */
+export function signedAngleDelta(fromDeg: number, toDeg: number): number {
+  return normalizeSignedAngle(toDeg - fromDeg);
+}
+
 function signFromDate(date: Date, planet: Planet): Sign {
   const body = planet === "uranus" ? Body.Uranus : planet === "neptune" ? Body.Neptune : Body.Pluto;
   return longitudeToSign(Ecliptic(GeoVector(body, date, true)).elon);
@@ -616,3 +632,5 @@ export * from "./transit-interpretations";
 export * from "./generational-interpretations";
 
 export * from "./compare-guidance";
+
+export * from "./transit-nudge";

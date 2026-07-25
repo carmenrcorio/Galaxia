@@ -12,12 +12,16 @@ import {
   computeSynastry,
   type NatalChart,
   type Placement,
+  type PersonDailyNudgeRecord,
   CHART_ENGINE_VERSION,
   bodiesWithMovedLongitudes,
+  coerceDailyNudgeRow,
   formatMovedBodies,
   houseSystemLabelForChart,
+  ownerLocalDate,
   placementsLongitudeChanged,
-  todayTransitsForChart,
+  buildPersonDailyNudge,
+  whenUTCForOwnerLocalDate,
   bodyDomain,
   ELEMENT_ABSENT,
   ELEMENT_DOMINANT,
@@ -32,8 +36,6 @@ import {
   interpretHouse,
   STELLIUM_NOTE,
   type HouseKey,
-  interpretTransit,
-  transitNotation,
 } from "@galaxia/astro";
 import {
   buildPersonPageNavSections,
@@ -320,6 +322,8 @@ export default function PersonProfilePage() {
   const [loading, setLoading]       = useState(true);
   /** Session banner after a longitude-changing chart rewrite (also persisted to Record). */
   const [chartCorrectionNotice, setChartCorrectionNotice] = useState<string | null>(null);
+  /** Durable daily nudge — same row home reads; never recompute copy on open. */
+  const [dailyNudge, setDailyNudge] = useState<PersonDailyNudgeRecord | null>(null);
 
   const [openRows, setOpenRows]     = useState<Set<string>>(new Set(["sun","moon","rising"]));
   const [placementsAllOpen, setPlacementsAllOpen] = useState(false);
@@ -349,16 +353,6 @@ export default function PersonProfilePage() {
   }, [personId, supabase]);
 
   const hasHouses = useMemo(() => Boolean(chart?.cusps?.length === 12), [chart]);
-
-  // Today's transits against this natal chart. Deterministic (real ephemeris
-  // vs stored natal positions), skipped for year-only charts whose sampled
-  // positions would make transit orbs fabricated. Shared with the home
-  // dashboard's "Today in your sky" via one helper so they never disagree.
-  // CARE: never run for a passed person — they have no current day (hide, don't reframe).
-  const todayTransits = useMemo(() => {
-    if (!shouldShowLiveTransits(person)) return [];
-    return todayTransitsForChart(chart);
-  }, [chart, person]);
 
   // Balance tallies count only placements whose sign is actually known —
   // an uncertain (year-only) sign must not be tallied as if it were fact.
@@ -478,7 +472,7 @@ export default function PersonProfilePage() {
     // Progressive capture: a person with no chart yet (birth_precision 'none')
     // is not an error — render the "add birth data" state instead of failing.
     if (cErr || !cData) {
-      setPerson(personRow); setChart(null);
+      setPerson(personRow); setChart(null); setDailyNudge(null);
       await loadRecord(uid, actualId);
       setLoading(false);
       return;
@@ -547,6 +541,54 @@ export default function PersonProfilePage() {
     }
     setPerson(personRow); setChart(chartData); setEngineVersion(version);
     setChartCorrectionNotice(longitudeCorrectionBody);
+
+    // Durable daily nudge — shared with home. Build once if missing for today.
+    if (shouldShowLiveTransits(personRow)) {
+      const localDate = ownerLocalDate();
+      const { data: existingNudge } = await supabase
+        .from("person_daily_nudges")
+        .select("*")
+        .eq("owner_id", uid)
+        .eq("person_id", actualId)
+        .eq("date", localDate)
+        .maybeSingle();
+      if (existingNudge) {
+        setDailyNudge(coerceDailyNudgeRow(existingNudge as Record<string, unknown>));
+      } else {
+        const { data: recent } = await supabase
+          .from("person_daily_nudges")
+          .select("pass_id")
+          .eq("person_id", actualId)
+          .not("pass_id", "is", null)
+          .gte("date", new Date(Date.now() - 45 * 86400000).toISOString().slice(0, 10))
+          .neq("date", localDate);
+        const recentPassIds = new Set(
+          (recent ?? []).map((r) => r.pass_id as string).filter(Boolean)
+        );
+        const row = buildPersonDailyNudge({
+          ownerId: uid,
+          personId: actualId,
+          date: localDate,
+          whenUTC: whenUTCForOwnerLocalDate(localDate),
+          chart: chartData,
+          birthPrecision: personRow.birth_precision,
+          birthDate: personRow.birth_date,
+          relation: personRow.relation,
+          isSelf: Boolean(personRow.is_self),
+          minorSafe: isMinorForSafety({
+            isMinor: personRow.is_minor,
+            birthDate: personRow.birth_date,
+            birthPrecision: personRow.birth_precision,
+          }),
+          recentPassIds,
+        });
+        await supabase.from("person_daily_nudges").upsert(row, { onConflict: "person_id,date" });
+        setDailyNudge(row);
+      }
+    } else {
+      setDailyNudge(null);
+    }
+
     await loadRecord(uid, actualId);
     setLoading(false);
   }
@@ -679,7 +721,9 @@ export default function PersonProfilePage() {
 
   const sun  = chart.placements.find(p => p.body === "sun");
   const moon = chart.placements.find(p => p.body === "moon");
-  const showActiveToday = shouldShowLiveTransits(person) && todayTransits.length > 0;
+  const showActiveToday =
+    shouldShowLiveTransits(person) &&
+    Boolean(dailyNudge && dailyNudge.copy_tier !== "empty_hedge" && dailyNudge.transit_body);
   const showHousesSection = hasHouses || person.birth_precision !== "year";
   const showPastConversations = archivedThreads.length > 0;
   const showRemembrance = personPassed && !person.is_self && Boolean(userId);
@@ -769,30 +813,33 @@ export default function PersonProfilePage() {
         />
       ) : null}
 
-      {/* ── Active today (transit) — living people only; never for passed ── */}
-      {showActiveToday ? (
+      {/* ── Active today — same durable daily nudge home reads; never for passed ── */}
+      {showActiveToday && dailyNudge ? (
         <section id="active-today" className="glass-card fade-in" style={{ borderColor: "rgba(230,174,108,.28)", background: "rgba(230,174,108,.05)", scrollMarginTop: 92 }}>
           <p className="eyebrow" style={{ marginBottom: 8 }}>Active today for {person.display_name}</p>
-          {/* Meaning leads; the notation is demoted to a small "receipt" beneath
-             it (ENGINEERING §8/§12 — accurate translation, no fabrication).
-             `minorSafe` uses isMinorForSafety — never raw is_minor (§9/§13). */}
-          <div style={{ display: "grid", gap: 12 }}>
-            {todayTransits.map((t, i) => (
-              <div key={i} style={{ display: "grid", gap: 3 }}>
-                <p style={{ margin: 0, color: "var(--cream)", fontSize: ".92rem", lineHeight: 1.5 }}>
-                  {interpretTransit(t, { possessive: "their", minorSafe: personIsMinor }).short}
-                </p>
-                <p style={{ margin: 0, display: "flex", alignItems: "baseline", gap: 6, fontSize: ".72rem", color: "var(--mist2)" }}>
-                  <span style={{ color: "var(--gold-soft)", flexShrink: 0 }}>
-                    {BODY_GLYPH[t.transitBody] ?? t.transitBody} {ASPECT_GLYPH[t.type] ?? ""} {BODY_GLYPH[t.natalBody] ?? t.natalBody}
-                  </span>
-                  <span>{transitNotation(t)} · {t.orb.toFixed(1)}°</span>
-                </p>
-              </div>
-            ))}
+          <div style={{ display: "grid", gap: 3 }}>
+            <p style={{ margin: 0, color: "var(--cream)", fontSize: ".92rem", lineHeight: 1.5 }}>
+              {dailyNudge.copy_resolved}
+            </p>
+            {dailyNudge.precision_mode === "exact" && dailyNudge.transit_body && dailyNudge.natal_body && dailyNudge.aspect_type ? (
+              <p style={{ margin: 0, display: "flex", alignItems: "baseline", gap: 6, fontSize: ".72rem", color: "var(--mist2)" }}>
+                <span style={{ color: "var(--gold-soft)", flexShrink: 0 }}>
+                  {BODY_GLYPH[dailyNudge.transit_body] ?? dailyNudge.transit_body}{" "}
+                  {ASPECT_GLYPH[dailyNudge.aspect_type] ?? ""}{" "}
+                  {BODY_GLYPH[dailyNudge.natal_body] ?? dailyNudge.natal_body}
+                </span>
+                <span>
+                  {dailyNudge.transit_body[0]!.toUpperCase() + dailyNudge.transit_body.slice(1)}{" "}
+                  {dailyNudge.aspect_type}{" "}
+                  {dailyNudge.natal_body[0]!.toUpperCase() + dailyNudge.natal_body.slice(1)}
+                  {dailyNudge.orb_deg != null ? ` · ${dailyNudge.orb_deg.toFixed(1)}°` : ""}
+                  {dailyNudge.phase ? ` · ${dailyNudge.phase}` : ""}
+                </span>
+              </p>
+            ) : null}
           </div>
           <Link
-            href={`/app/vela?scope=person&subject=${person.id}&q=${encodeURIComponent(`How does today's ${todayTransits[0].transitBody} ${todayTransits[0].type} their natal ${todayTransits[0].natalBody} affect us right now?`)}`}
+            href={`/app/vela?scope=person&subject=${person.id}&q=${encodeURIComponent(`How does today's ${dailyNudge.transit_body} ${dailyNudge.aspect_type} their natal ${dailyNudge.natal_body} affect us right now?`)}`}
             className="pill-link"
             style={{ fontSize: ".8rem", marginTop: 10 }}
           >

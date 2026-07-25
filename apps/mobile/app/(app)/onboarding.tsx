@@ -12,9 +12,9 @@ import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
-import { supabase } from "../src/lib/supabase";
-import { useAuth } from "../src/providers/auth-provider";
-import { useEntitlement } from "../src/providers/entitlement-provider";
+import { supabase } from "../../src/lib/supabase";
+import { useAuth } from "../../src/providers/auth-provider";
+import { useEntitlement } from "../../src/providers/entitlement-provider";
 
 type Relation = GalaxyPickerRelation | "self";
 

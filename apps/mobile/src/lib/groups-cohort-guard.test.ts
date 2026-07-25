@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { readyMembersForCohortOverlay } from "@galaxia/core";
 
-const groupsSrc = readFileSync(join(__dirname, "../../app/groups.tsx"), "utf8");
+const groupsSrc = readFileSync(join(__dirname, "../../app/(app)/groups.tsx"), "utf8");
 
 describe("mobile Groups overlay guard", () => {
   it("buildOverlay goes through readyMembersForCohortOverlay before cohortOverlay", () => {

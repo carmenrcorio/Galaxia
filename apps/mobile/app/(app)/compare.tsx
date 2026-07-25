@@ -14,9 +14,9 @@ import { isMinorForSafety } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { supabase } from "../src/lib/supabase";
-import { useAuth } from "../src/providers/auth-provider";
-import { useEntitlement } from "../src/providers/entitlement-provider";
+import { supabase } from "../../src/lib/supabase";
+import { useAuth } from "../../src/providers/auth-provider";
+import { useEntitlement } from "../../src/providers/entitlement-provider";
 
 interface PersonLite {
   id: string;

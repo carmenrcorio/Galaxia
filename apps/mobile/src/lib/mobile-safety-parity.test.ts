@@ -101,12 +101,11 @@ describe("BUG 2 — passed person excluded from mobile Today in your sky", () =>
     expect(sky.some((p) => p.id === "remembered")).toBe(false);
   });
 
-  it("wiring: home imports shared peopleForTodaySky + todayTransitsForChart and loads passed_at", () => {
+  it("wiring: home imports shared peopleForTodaySky + durable daily nudges and loads passed_at", () => {
     const src = readFileSync(resolve(__dirname, "../../app/(app)/home.tsx"), "utf8");
     expect(src).toContain("peopleForTodaySky");
-    expect(src).toContain("todayTransitsForChart");
-    expect(src).toContain("interpretTransit");
-    expect(src).toContain("transitNotation");
+    expect(src).toContain("planDailyNudgeWrites");
+    expect(src).toContain("person_daily_nudges");
     expect(src).toContain("isMinorForSafety");
     expect(src).toContain('from "@galaxia/core"');
     expect(src).toMatch(/peopleForTodaySky\(castPeople\)/);
@@ -116,11 +115,11 @@ describe("BUG 2 — passed person excluded from mobile Today in your sky", () =>
     expect(src).toContain("birth_precision");
     expect(src).toContain("minorSafe");
     expect(src).toMatch(/\.eq\("status", "active"\)/);
-    // No local reimplementation of today's transit / safety helpers.
+    // No local reimplementation of daily-nudge / safety helpers.
+    expect(src).not.toMatch(/function planDailyNudgeWrites/);
     expect(src).not.toMatch(/function todayTransitsForChart/);
-    expect(src).not.toMatch(/function interpretTransit/);
     expect(src).not.toContain("describeTransit");
-    expect(src).toContain("passed people are excluded");
+    expect(src).toContain("Durable daily nudges — living people only");
   });
 });
 

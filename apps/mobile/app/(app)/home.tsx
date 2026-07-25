@@ -1,10 +1,12 @@
 import {
+  coerceDailyNudgeRow,
   computeSynastry,
-  interpretTransit,
-  todayTransitsForChart,
-  transitNotation,
+  ownerLocalDate,
+  orderSkyRowsForHome,
+  planDailyNudgeWrites,
+  whenUTCForOwnerLocalDate,
   type NatalChart,
-  type TransitHit
+  type PersonDailyNudgeRecord
 } from "@galaxia/astro";
 import {
   galaxySeatXY,
@@ -47,8 +49,7 @@ interface ThreadChip {
   preview: string;
 }
 
-/* One person's real sky today — computed from THEIR OWN natal chart.
-   `transits` is empty for year-only / chart-less people (hedged in the UI). */
+/* One person's sky today — durable person_daily_nudges row (frozen copy). */
 interface PersonSky {
   id: string;
   name: string;
@@ -56,7 +57,7 @@ interface PersonSky {
   isMinor: boolean;
   precision: PersonRow["birth_precision"];
   hasChart: boolean;
-  transits: TransitHit[];
+  nudge: PersonDailyNudgeRecord;
 }
 
 export default function HomeScreen() {
@@ -119,10 +120,9 @@ export default function HomeScreen() {
     [constellationPositions]
   );
 
-  /* Nodes shimmer when that person has a real tight transit today — derived
-     from each person's own computed sky, never a single shared flag. */
+  /* Nodes shimmer when that person has a real eligible nudge today. */
   const activeTransitIds = useMemo(
-    () => personSkies.filter((sky) => sky.transits.length > 0).map((sky) => sky.id),
+    () => personSkies.filter((sky) => sky.nudge.copy_tier !== "empty_hedge" && sky.nudge.transit_body).map((sky) => sky.id),
     [personSkies]
   );
 
@@ -137,23 +137,31 @@ export default function HomeScreen() {
          could not run on the sky module — a surface that renders content
          about a person. Galaxy safety now loads those fields (+ relation)
          and gates via isMinorForSafety — never raw is_minor alone. */
-      const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }] = await Promise.all([
-      supabase.from("profiles").select("display_name").eq("id", session.user.id).single(),
-      supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
-      supabase.from("charts").select("person_id, data").in(
-        "person_id",
+      const personIds = (
         (
-          (
-            await supabase.from("people").select("id").eq("owner_id", session.user.id)
-          ).data ?? []
-        ).map((row) => row.id)
-      ),
-      supabase.from("threads").select("id, mode").eq("owner_id", session.user.id).eq("status", "active").order("created_at", { ascending: false }).limit(8)
+          await supabase.from("people").select("id").eq("owner_id", session.user.id)
+        ).data ?? []
+      ).map((row) => row.id as string);
+      const localDate = ownerLocalDate();
+      const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }] = await Promise.all([
+      supabase.from("profiles").select("display_name, pinned_sky_person_id").eq("id", session.user.id).single(),
+      supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
+      personIds.length
+        ? supabase.from("charts").select("person_id, data").in("person_id", personIds)
+        : Promise.resolve({ data: [] as { person_id: string; data: NatalChart }[] }),
+      supabase.from("threads").select("id, mode").eq("owner_id", session.user.id).eq("status", "active").order("created_at", { ascending: false }).limit(8),
+      personIds.length
+        ? supabase.from("person_daily_nudges").select("*").eq("owner_id", session.user.id).eq("date", localDate).in("person_id", personIds)
+        : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+      personIds.length
+        ? supabase.from("person_daily_nudges").select("person_id, pass_id").eq("owner_id", session.user.id).in("person_id", personIds).not("pass_id", "is", null).gte("date", new Date(Date.now() - 45 * 86400000).toISOString().slice(0, 10)).neq("date", localDate)
+        : Promise.resolve({ data: [] as { person_id: string; pass_id: string | null }[] }),
       ]);
 
       setWelcomeName(profile?.display_name ?? session.user.email?.split("@")[0] ?? "stargazer");
       const castPeople = (peopleRows ?? []) as PersonRow[];
       setPeople(castPeople);
+      const pinnedSkyPersonId = (profile as { pinned_sky_person_id?: string | null } | null)?.pinned_sky_person_id ?? null;
 
       const chartById = new Map<string, NatalChart>((chartRows ?? []).map((row) => [row.person_id as string, row.data as NatalChart]));
       const calculatedLinks: LinkRow[] = [];
@@ -171,28 +179,62 @@ export default function HomeScreen() {
       const finalLinks = calculatedLinks.sort((a, b) => b.score - a.score).slice(0, 14);
       setLinks(finalLinks);
 
-      // Today's sky — living people only (peopleForTodaySky excludes anyone
-      // with passed_at set — same grief-care hole as web). Transits are
-      // computed PER PERSON against their OWN natal chart so every row is
-      // that person's real transit (or an honest hedge for year-only /
-      // chart-less people), never one shared summary line. Passed people
-      // are excluded and their transits are never computed.
-      const now = new Date().toISOString();
-      const skies: PersonSky[] = peopleForTodaySky(castPeople).map((person) => {
-        const chart = chartById.get(person.id);
+      // Durable daily nudges — living people only; frozen copy_resolved.
+      // Passed people are excluded via peopleForTodaySky (same care hole as web).
+      const living = peopleForTodaySky(castPeople);
+      const recentPassIdsByPerson = new Map<string, Set<string>>();
+      for (const r of recentNudgeRows ?? []) {
+        const pid = r.person_id as string;
+        const pass = r.pass_id as string | null;
+        if (!pass) continue;
+        if (!recentPassIdsByPerson.has(pid)) recentPassIdsByPerson.set(pid, new Set());
+        recentPassIdsByPerson.get(pid)!.add(pass);
+      }
+      const existing = (nudgeRows ?? []).map((r) => coerceDailyNudgeRow(r as Record<string, unknown>));
+      const { rowsToUpsert, rowsForDisplay } = planDailyNudgeWrites({
+        ownerId: session.user.id,
+        date: localDate,
+        whenUTC: whenUTCForOwnerLocalDate(localDate),
+        people: living.map((person) => ({
+          id: person.id,
+          relation: person.relation,
+          is_self: person.is_self,
+          birth_precision: person.birth_precision,
+          birth_date: person.birth_date,
+          minorSafe: isMinorForSafety({
+            isMinor: person.is_minor,
+            birthDate: person.birth_date,
+            birthPrecision: person.birth_precision
+          })
+        })),
+        chartsById: chartById,
+        existingRows: existing,
+        recentPassIdsByPerson
+      });
+      if (rowsToUpsert.length) {
+        await supabase.from("person_daily_nudges").upsert(rowsToUpsert, { onConflict: "person_id,date" });
+      }
+      const displayOrdered = orderSkyRowsForHome(
+        [
+          ...rowsForDisplay.filter((r) => living.find((p) => p.id === r.person_id)?.is_self),
+          ...rowsForDisplay.filter((r) => !living.find((p) => p.id === r.person_id)?.is_self)
+        ],
+        pinnedSkyPersonId
+      );
+      const skies: PersonSky[] = displayOrdered.map((nudge) => {
+        const person = living.find((x) => x.id === nudge.person_id)!;
         return {
           id: person.id,
           name: person.display_name,
           isSelf: person.is_self,
-          /* Age-aware gate — never raw is_minor alone (ENGINEERING §9). */
           isMinor: isMinorForSafety({
             isMinor: person.is_minor,
             birthDate: person.birth_date,
             birthPrecision: person.birth_precision
           }),
           precision: person.birth_precision,
-          hasChart: Boolean(chart),
-          transits: todayTransitsForChart(chart, now)
+          hasChart: Boolean(chartById.get(person.id)),
+          nudge
         };
       });
       setPersonSkies(skies);
@@ -334,28 +376,16 @@ export default function HomeScreen() {
         <Text style={cardTitle}>Today in your sky</Text>
         <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
           {activeTransitIds.length > 0
-            ? "Real transits, computed against each person's own chart."
-            : "No tight transits touching anyone's chart right now."}
+            ? "Daily sky notes from each person's own chart — fixed once for the day."
+            : "No sky notes near an exact pass for anyone right now."}
         </Text>
-        {[...personSkies.filter((sky) => sky.isSelf), ...personSkies.filter((sky) => !sky.isSelf)].map((sky) => {
-          const top = sky.transits[0];
-          /* Same shared interpretTransit path as web home — minorSafe keeps
-             a child's reading age-appropriate (§9/§13). No mobile-only copy. */
-          const meaning = top
-            ? interpretTransit(top, {
-                possessive: sky.isSelf ? "your" : "their",
-                minorSafe: sky.isMinor
-              }).short
-            : null;
-          const proof = top
-            ? `${transitNotation(top)} · ${top.orb.toFixed(1)}°${sky.transits.length > 1 ? ` (+${sky.transits.length - 1} more)` : ""}`
-            : null;
-          const hedge =
-            sky.precision === "year"
-              ? "Birth year only — a birth date is needed for daily transits."
-              : !sky.hasChart
-                ? "No birth data yet."
-                : "No tight transits today.";
+        {personSkies.map((sky) => {
+          const nudge = sky.nudge;
+          const hasHit = nudge.copy_tier !== "empty_hedge" && Boolean(nudge.transit_body);
+          const proof =
+            hasHit && nudge.precision_mode === "exact" && nudge.transit_body && nudge.natal_body && nudge.aspect_type
+              ? `${nudge.transit_body[0]!.toUpperCase()}${nudge.transit_body.slice(1)} ${nudge.aspect_type} ${nudge.natal_body[0]!.toUpperCase()}${nudge.natal_body.slice(1)}${nudge.orb_deg != null ? ` · ${nudge.orb_deg.toFixed(1)}°` : ""}${nudge.phase ? ` · ${nudge.phase}` : ""}`
+              : null;
           return (
             <Link key={sky.id} href={{ pathname: "/profile/[personId]", params: { personId: sky.id } }} asChild>
               <Pressable
@@ -364,28 +394,31 @@ export default function HomeScreen() {
                   paddingHorizontal: 10,
                   borderRadius: 10,
                   borderLeftWidth: 2,
-                  borderLeftColor: top ? tokens.colors.gold : tokens.colors.line,
-                  backgroundColor: top ? "rgba(230,174,108,0.06)" : "transparent",
+                  borderLeftColor: hasHit ? tokens.colors.gold : tokens.colors.line,
+                  backgroundColor: hasHit ? "rgba(230,174,108,0.06)" : "transparent",
                   gap: 2
                 }}
               >
                 <Text style={{ color: tokens.colors.cream, fontWeight: "600", fontSize: 13 }}>
                   {sky.isSelf ? "You" : sky.name}
                 </Text>
-                {meaning && proof ? (
-                  <>
-                    <Text style={{ color: tokens.colors.cream, fontSize: 12, lineHeight: 17 }}>{meaning}</Text>
-                    <Text style={{ color: tokens.colors.mist2, fontSize: 11 }}>{proof}</Text>
-                  </>
-                ) : (
-                  <Text style={{ color: tokens.colors.mist2, fontSize: 12, fontStyle: "italic" }}>{hedge}</Text>
-                )}
+                <Text
+                  style={{
+                    color: hasHit ? tokens.colors.cream : tokens.colors.mist2,
+                    fontSize: 12,
+                    lineHeight: 17,
+                    fontStyle: hasHit ? "normal" : "italic"
+                  }}
+                >
+                  {nudge.copy_resolved}
+                </Text>
+                {proof ? <Text style={{ color: tokens.colors.mist2, fontSize: 11 }}>{proof}</Text> : null}
               </Pressable>
             </Link>
           );
         })}
         <Text style={{ color: tokens.colors.mist2, fontSize: 11 }}>
-          Nodes shimmer when a person has an active tight transit (orb ≤ 1.5°).
+          Nodes shimmer when a person has an eligible daily sky note near an exact pass.
         </Text>
       </View>
 

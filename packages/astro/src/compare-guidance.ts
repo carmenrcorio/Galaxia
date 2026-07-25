@@ -155,25 +155,48 @@ const ROMANTIC_BODIES = ["venus", "mars", "sun", "moon"];
 const PLATONIC_BODIES = ["mercury", "moon", "jupiter"];
 
 /**
- * Which already-computed bodies matter MOST for each relationship type. This
- * is the SAME mechanism as ROMANTIC_BODIES/PLATONIC_BODIES (built for Quick
- * Chart) extended to the five saved-people relationship types /app/compare
- * offers. It only ever changes WHICH real, already-true aspects surface first
- * — never invents an aspect, never changes an orb or harmony. Per-type groups
- * (confirmed in the Phase 0 plan): partners lead with attraction/partnership
- * bodies, parent-child with emotional-safety + structure, siblings/friends
- * with communication, ancestor with the slow outer planets that carry the
- * generational layer.
+ * Single priority-band map for Compare AND transit nudges. Do not fork a
+ * second map elsewhere — extend this object (or `bodyPriorityForBand`) when a
+ * new band is needed. Nudge-only bands (`self`, `colleague`, `general`) live
+ * here so selection and Compare share one source of truth.
+ *
+ * Compare picker types stay on RelationType keys. Transit nudges resolve a
+ * framing → band via `bodyPriorityForBand`.
  */
-const RELATION_BODY_PRIORITY: Record<RelationType, string[]> = {
+export const BODY_PRIORITY_BY_BAND = {
   romantic:       ROMANTIC_BODIES,
   partners:       ["venus", "mars", "sun", "moon"],
   platonic:       PLATONIC_BODIES,
   friends:        ["mercury", "jupiter"],
   siblings:       ["mercury", "moon"],
-  "parent-child": ["moon", "saturn"],
+  /** Child / parenting — emotional safety, mind, structure. */
+  "parent-child": ["moon", "mercury", "saturn"],
   ancestor:       ["pluto", "neptune", "uranus"],
+  /** Self sky — personal planets. */
+  self:           ["sun", "moon", "mercury", "venus", "mars"],
+  /** Colleague / work — communication, drive, structure. */
+  colleague:      ["mercury", "mars", "saturn"],
+  /** Untagged / equal weight — empty means no domain boost. */
+  general:        [] as string[],
+} as const;
+
+export type PriorityBand = keyof typeof BODY_PRIORITY_BY_BAND;
+
+/** Compare-facing view of the shared map (RelationType keys only). */
+export const RELATION_BODY_PRIORITY: Record<RelationType, string[]> = {
+  romantic:       [...BODY_PRIORITY_BY_BAND.romantic],
+  partners:       [...BODY_PRIORITY_BY_BAND.partners],
+  platonic:       [...BODY_PRIORITY_BY_BAND.platonic],
+  friends:        [...BODY_PRIORITY_BY_BAND.friends],
+  siblings:       [...BODY_PRIORITY_BY_BAND.siblings],
+  "parent-child": [...BODY_PRIORITY_BY_BAND["parent-child"]],
+  ancestor:       [...BODY_PRIORITY_BY_BAND.ancestor],
 };
+
+/** Bodies weighted for a priority band — shared Compare / nudge entry point. */
+export function bodyPriorityForBand(band: PriorityBand): readonly string[] {
+  return BODY_PRIORITY_BY_BAND[band];
+}
 
 /**
  * Houses (1-based) most relevant to each relationship type — read from real
@@ -413,7 +436,7 @@ export function relationLensCaption(relType: RelationType): string {
     case "romantic":
       return "Leading with attraction and partnership aspects (Venus, Mars, Sun, Moon) first.";
     case "parent-child":
-      return "Leading with emotional-safety and structure aspects (Moon, Saturn) first.";
+      return "Leading with emotional-safety, mind, and structure aspects (Moon, Mercury, Saturn) first.";
     case "siblings":
       return "Leading with communication and understanding aspects (Mercury, Moon) first.";
     case "friends":

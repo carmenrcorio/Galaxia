@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   GALAXY_COLLISION_JOIN,
   GALAXY_COLLISION_SEP,
+  GALAXY_LABEL_CHAR_PX,
   GALAXY_LABEL_JOIN_PX,
   GALAXY_MAX_RING,
   GALAXY_RING_JITTER,
   GALAXY_RING_MIN,
   GALAXY_RING_NORMS,
   angularDiff,
+  galaxyLabelHalfWidthPx,
   galaxyLabelOffsets,
   galaxySeatAngle,
   galaxySeatNorm,
@@ -225,6 +227,22 @@ describe("galaxySeatsResolved — fixed bands + collision separation", () => {
   });
 });
 
+describe("galaxyLabelHalfWidthPx", () => {
+  it("floors short names at half the legacy join", () => {
+    expect(galaxyLabelHalfWidthPx("Mom")).toBe(GALAXY_LABEL_JOIN_PX / 2);
+    expect(galaxyLabelHalfWidthPx("Mommy")).toBe(GALAXY_LABEL_JOIN_PX / 2);
+  });
+
+  it("grows with long names at 11px Inter char advance", () => {
+    const long = "Carmen Sofia";
+    expect(galaxyLabelHalfWidthPx(long)).toBeCloseTo(
+      (long.length * GALAXY_LABEL_CHAR_PX) / 2,
+      5,
+    );
+    expect(galaxyLabelHalfWidthPx(long)).toBeGreaterThan(GALAXY_LABEL_JOIN_PX / 2);
+  });
+});
+
 describe("galaxyLabelOffsets", () => {
   it("same anchors → same offsets (two-load stability)", () => {
     const anchors = [
@@ -249,6 +267,27 @@ describe("galaxyLabelOffsets", () => {
     const bx = b.x + off.get(b.id)!.dx;
     const by = b.y + off.get(b.id)!.dy;
     expect(Math.hypot(bx - ax, by - ay)).toBeGreaterThanOrEqual(GALAXY_LABEL_JOIN_PX - 0.5);
+  });
+
+  it("separates a long name from a short neighbour by combined half-widths", () => {
+    const longName = "Carmen Sofia";
+    const shortName = "Mommy";
+    const halfLong = galaxyLabelHalfWidthPx(longName);
+    const halfShort = galaxyLabelHalfWidthPx(shortName);
+    const need = halfLong + halfShort;
+    expect(need).toBeGreaterThan(GALAXY_LABEL_JOIN_PX);
+    const anchors = [
+      { id: "aaa-carmen", x: 100, y: 100, halfW: halfLong },
+      { id: "bbb-mommy", x: 108, y: 100, halfW: halfShort },
+    ];
+    const off = galaxyLabelOffsets(anchors);
+    const a = anchors[0];
+    const b = anchors[1];
+    const ax = a.x + off.get(a.id)!.dx;
+    const ay = a.y + off.get(a.id)!.dy;
+    const bx = b.x + off.get(b.id)!.dx;
+    const by = b.y + off.get(b.id)!.dy;
+    expect(Math.hypot(bx - ax, by - ay)).toBeGreaterThanOrEqual(need - 0.5);
   });
 
   it("is order-independent", () => {

@@ -43,6 +43,7 @@ import {
   HONOR_RELATION_TYPE,
   elementFromRelation,
   formFromRelation,
+  galaxyLabelHalfWidthPx,
   galaxyLabelOffsets,
   galaxySeatXY,
   galaxySeatsResolved,
@@ -117,6 +118,10 @@ function hexA(hex: string, a: number): string {
   const b = parseInt(hex.slice(5,7),16);
   return `rgba(${r},${g},${b},${a})`;
 }
+
+/* Outer node halo loudness — radius + alphas together (−30%). Single tunable;
+   inner bloom / lowPerf shed untouched. */
+const GLOW_OUTER_SCALE = 0.7;
 
 /* ── generational cohort colour, DERIVED from the outer-planet signature ──
    A cohort is anchored by its Pluto sign (the slowest visible planet, ~12–30
@@ -417,7 +422,10 @@ export default function AppHomePage() {
       return { x, y };
     }
 
-    /* Default label centres (pre neighbor-offset), then deterministic push-apart. */
+    /* Default label centres (pre neighbor-offset), then deterministic push-apart.
+       Outer seats anchor radially OUTWARD along seat angle — no prefer-toward-
+       core flip (that stacked ring labels onto the core / ring-1). Hard
+       exceptions only: self always below, partner/ring-1 always above. */
     function labelAnchors(positions: { x: number; y: number }[]): Map<string, { x: number; y: number; baseDy: number; flip: boolean }> {
       const map = new Map<string, { x: number; y: number; baseDy: number; flip: boolean }>();
       for (let i = 0; i < people.length; i++) {
@@ -430,13 +438,7 @@ export default function AppHomePage() {
           : form === "self" ? 7 : form === "ancient" ? 3.4 : form === "moon" ? 4.2 : 5;
         const below = form === "fixed" ? R0 * 3.9 + 12 : R0 * 2.9 + 12;
         const above = form === "fixed" ? R0 * 3.9 + 14 : R0 * 2.9 + 14;
-        /* Prefer labels toward the core so a Ring-2 parent at the bottom
-           (Daddy) is not named past the outer bands. Edge clamp still wins. */
-        const geom = ringGeom();
-        const preferAbove = q.y >= geom.cy;
-        let flip = preferAbove || q.y + below > H() - 8;
-        if (!preferAbove && q.y - above < 8) flip = false;
-        let dy = flip ? -above : below;
+        const outward = form === "fixed" ? R0 * 3.9 + 14 : R0 * 2.9 + 14;
         if (p.is_self) {
           /* Self name always under the core. */
           map.set(p.id, { x: q.x, y: q.y + below + 6, baseDy: below + 6, flip: false });
@@ -454,7 +456,15 @@ export default function AppHomePage() {
           });
           continue;
         }
-        map.set(p.id, { x: q.x, y: q.y + dy, baseDy: dy, flip });
+        const ang = seatsById.get(p.id)?.angle ?? 0;
+        const ox = Math.cos(ang) * outward;
+        const oy = Math.sin(ang) * outward;
+        map.set(p.id, {
+          x: q.x + ox,
+          y: q.y + oy,
+          baseDy: oy,
+          flip: oy < 0,
+        });
       }
       return map;
     }
@@ -545,13 +555,15 @@ export default function AppHomePage() {
 
     /* ── layered radial glow: soft element-hued halo + a bright inner core.
        precision→brightness kept sacred: exact = crisp & bright (tight halo,
-       hot core); year-only ancient light = soft & diffuse (wide, dim). ── */
+       hot core); year-only ancient light = soft & diffuse (wide, dim).
+       Outer halo loudness: `GLOW_OUTER_SCALE` on radius + alphas (−30%).
+       Inner bloom / lowPerf shed unchanged. ── */
     function drawGlow(q: { x: number; y: number }, col: string, R: number, s: number,
                       intensity: number, isHovered: boolean, scale: number) {
-      const haloR = R * (s === 1 ? 5 : s > 0.5 ? 7.5 : 10.5) * (isHovered ? 1.3 : 1) * scale;
+      const haloR = R * (s === 1 ? 5 : s > 0.5 ? 7.5 : 10.5) * (isHovered ? 1.3 : 1) * scale * GLOW_OUTER_SCALE;
       const halo  = cx.createRadialGradient(q.x, q.y, 0, q.x, q.y, haloR);
-      halo.addColorStop(0,    hexA(col, (0.5 * s + 0.16) * intensity * (isHovered ? 1.35 : 1)));
-      halo.addColorStop(0.35, hexA(col, 0.12 * s * intensity));
+      halo.addColorStop(0,    hexA(col, (0.5 * s + 0.16) * intensity * (isHovered ? 1.35 : 1) * GLOW_OUTER_SCALE));
+      halo.addColorStop(0.35, hexA(col, 0.12 * s * intensity * GLOW_OUTER_SCALE));
       halo.addColorStop(1,    hexA(col, 0));
       cx.beginPath(); cx.arc(q.x, q.y, haloR, 0, Math.PI * 2); cx.fillStyle = halo; cx.fill();
 
@@ -1004,8 +1016,14 @@ export default function AppHomePage() {
       const positions = people.map((_, i) => nodePos(i));
       const byId = new Map(people.map((p, i) => [p.id, positions[i]]));
       const anchors = labelAnchors(positions);
+      const nameById = new Map(people.map((p) => [p.id, p.display_name]));
       const labelOff = galaxyLabelOffsets(
-        [...anchors.entries()].map(([id, a]) => ({ id, x: a.x, y: a.y })),
+        [...anchors.entries()].map(([id, a]) => ({
+          id,
+          x: a.x,
+          y: a.y,
+          halfW: galaxyLabelHalfWidthPx(nameById.get(id) ?? ""),
+        })),
       );
       const labelPosById = new Map<string, { x: number; y: number }>();
       for (const [id, a] of anchors) {

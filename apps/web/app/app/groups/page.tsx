@@ -4,13 +4,15 @@ import { cohortOverlay, compareGenerational, type GenSignature, type NatalChart 
 import {
   OWNED_DELETE_COPY,
   formatGroupDeleteConfirmation,
-  isBelowGroupMinimum
+  isBelowGroupMinimum,
+  readyMembersForCohortOverlay
 } from "@galaxia/core";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { Spinner } from "../../../components/spinner";
 import { BODY_GLYPH, SIGN_GLYPH } from "../../../lib/design";
+import { fetchGroupsCurrentReading, upsertGroupsCurrentReading } from "../../../lib/groups-cohort";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 type GroupKind = "siblings"|"friends"|"family"|"group";
@@ -67,8 +69,19 @@ function previewTitle(
 }
 
 export default function GroupsPage() {
+  return (
+    <Suspense fallback={<main className="app-content"><div className="skeleton skeleton-title" /></main>}>
+      <GroupsPageInner />
+    </Suspense>
+  );
+}
+
+function GroupsPageInner() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialGroupId = searchParams.get("groupId");
+  const paramLoadRef = useRef<string | null>(null);
   const [userId, setUserId]               = useState<string|null>(null);
   const [people, setPeople]               = useState<PersonLite[]>([]);
   const [groups, setGroups]               = useState<GroupRow[]>([]);
@@ -97,6 +110,13 @@ export default function GroupsPage() {
     };
     void load();
   }, [supabase]);
+
+  useEffect(() => {
+    if (!initialGroupId || !userId || groups.length === 0) return;
+    if (paramLoadRef.current === initialGroupId) return;
+    paramLoadRef.current = initialGroupId;
+    void loadGroup(initialGroupId);
+  }, [initialGroupId, userId, groups]);
 
   const formComposition = useMemo(
     () => ({ name: groupName, kind: groupKind, memberIds: selectedPersonIds }),
@@ -223,7 +243,7 @@ export default function GroupsPage() {
         setGroupName(name);
         await fetchGroups(userId);
         // Post-save: reading panel must show this group, not a prior preview.
-        await buildOverlay(selectedPersonIds, name);
+        await buildOverlay(selectedPersonIds, name, updated);
         setStatus("Group updated.");
       } else {
         // CREATE: only when no group is loaded (explicit new-group state).
@@ -248,7 +268,7 @@ export default function GroupsPage() {
         setGroupName(created.name);
         setGroupKind(created.kind);
         await fetchGroups(userId);
-        await buildOverlay(selectedPersonIds, created.name);
+        await buildOverlay(selectedPersonIds, created.name, created);
         setStatus("Group saved.");
       }
     } finally {
@@ -257,7 +277,16 @@ export default function GroupsPage() {
   }
 
   async function loadGroup(gid: string) {
-    const row = groups.find((g) => g.id === gid);
+    let row = groups.find((g) => g.id === gid) ?? null;
+    if (!row && userId) {
+      const { data } = await supabase
+        .from("groups")
+        .select("id, name, kind")
+        .eq("id", gid)
+        .eq("owner_id", userId)
+        .maybeSingle();
+      if (data) row = data as GroupRow;
+    }
     if (!row) return;
     const { data } = await supabase.from("group_members").select("person_id").eq("group_id", gid);
     const ids = (data ?? []).map((r) => r.person_id as string);
@@ -276,40 +305,82 @@ export default function GroupsPage() {
     setStatus(null);
     setConfirmDelete(false);
     setDeleteWarning(null);
-    if (ids.length >= 3) await buildOverlay(ids, row.name);
-    else {
+
+    if (ids.length < 3) {
       setCohort(null);
       if (isBelowGroupMinimum(ids.length)) setStatus(OWNED_DELETE_COPY.belowMinimumNotice);
+      return;
     }
+
+    // Hydrate from persisted current reading when roster hash matches — same surface.
+    if (userId) {
+      const stored = await fetchGroupsCurrentReading(supabase, userId, gid, ids);
+      if (stored) {
+        setCohort({
+          groupLabel: row.name,
+          memberNames: stored.state.memberNames,
+          memberIds: stored.state.memberIds,
+          overlay: stored.state.overlay,
+          pairHighlights: stored.state.pairHighlights
+        });
+        return;
+      }
+    }
+    await buildOverlay(ids, row.name, next);
   }
 
   /**
-   * Build the overlay locally only (no DB write). Accepts an explicit id list +
-   * label so load/save can run without waiting for setState to propagate.
+   * Build overlay only after member charts are resolved and non-empty
+   * (`readyMembersForCohortOverlay` — empty input never reaches cohortOverlay).
+   * Upserts notes.groups_current keyed by (group_id, member_set_hash).
    */
-  async function buildOverlay(idsArg?: string[], labelArg?: string) {
+  async function buildOverlay(idsArg?: string[], labelArg?: string, persistGroup?: LoadedGroup | null) {
     const ids = idsArg ?? selectedPersonIds;
+    const persistFor = persistGroup !== undefined ? persistGroup : loadedGroup;
     if (ids.length < 3) { setStatus("Pick at least 3 people."); return; }
     setBuildingOverlay(true);
     setStatus(null);
     try {
-      const sel = people.filter(p => ids.includes(p.id));
+      let sel = people.filter(p => ids.includes(p.id));
+      if (sel.length !== ids.length && userId) {
+        const { data } = await supabase
+          .from("people")
+          .select("id, display_name")
+          .in("id", ids)
+          .eq("owner_id", userId);
+        sel = (data ?? []) as PersonLite[];
+      }
+      if (sel.length !== ids.length) {
+        setStatus("Group members not found.");
+        setCohort(null);
+        return;
+      }
       const chartRes = await Promise.all(sel.map(async p => {
         const { data } = await supabase.from("charts").select("data").eq("person_id", p.id).single();
         return { person: p, chart: data?.data as NatalChart|undefined };
       }));
-      const missing = chartRes.find(r => !r.chart?.generational);
-      if (missing) { setStatus(`Missing chart for ${missing.person.display_name}.`); setCohort(null); return; }
-      const overlay = cohortOverlay(chartRes.map(r => ({ name: r.person.display_name, gen: r.chart!.generational as GenSignature })));
+      const candidates = chartRes.map((r) => ({
+        name: r.person.display_name,
+        id: r.person.id,
+        gen: r.chart?.generational as GenSignature | undefined
+      }));
+      const ready = readyMembersForCohortOverlay<{ name: string; id: string; gen: GenSignature }>(candidates);
+      if (!ready) {
+        const missing = candidates.find((r) => r.gen == null);
+        if (missing) setStatus(`Missing chart for ${missing.name}.`);
+        else setStatus("Pick at least 3 people.");
+        setCohort(null);
+        return;
+      }
+      const overlay = cohortOverlay(ready.map((r) => ({ name: r.name, gen: r.gen })));
       const pairHighlights: Array<{ pair: string; summary: string }> = [];
-      for (let i = 0; i < chartRes.length; i++) {
-        for (let j = i + 1; j < chartRes.length; j++) {
-          const a = chartRes[i]; const b = chartRes[j];
-          const rel = compareGenerational(a.chart!.generational as GenSignature, b.chart!.generational as GenSignature);
-          pairHighlights.push({ pair: `${a.person.display_name} × ${b.person.display_name}`, summary: rel.sameGeneration ? `Same generation (${rel.shared.map(s => `${s.planet} ${s.sign}`).join(", ")}).` : `Fault line: ${rel.diverged.map(d => `${d.planet} ${d.signA}/${d.signB}`).join(" · ")}.` });
+      for (let i = 0; i < ready.length; i++) {
+        for (let j = i + 1; j < ready.length; j++) {
+          const a = ready[i]!; const b = ready[j]!;
+          const rel = compareGenerational(a.gen, b.gen);
+          pairHighlights.push({ pair: `${a.name} × ${b.name}`, summary: rel.sameGeneration ? `Same generation (${rel.shared.map(s => `${s.planet} ${s.sign}`).join(", ")}).` : `Fault line: ${rel.diverged.map(d => `${d.planet} ${d.signA}/${d.signB}`).join(" · ")}.` });
         }
       }
-      // Label from explicit arg (post-save / load) or from dirty vs loadedGroup.
       const label =
         labelArg ??
         previewTitle(loadedGroup, {
@@ -317,8 +388,24 @@ export default function GroupsPage() {
           kind: groupKind,
           memberIds: ids,
         });
-      setCohort({ groupLabel: label, memberNames: sel.map(p => p.display_name), memberIds: sel.map(p => p.id), overlay, pairHighlights: pairHighlights.slice(0, 3) });
+      const memberNames = ready.map((r) => r.name);
+      const memberIds = ready.map((r) => r.id);
+      const highlights = pairHighlights.slice(0, 3);
+      setCohort({ groupLabel: label, memberNames, memberIds, overlay, pairHighlights: highlights });
       setReadingSaved(false);
+
+      if (persistFor && userId) {
+        const { error } = await upsertGroupsCurrentReading(supabase, {
+          ownerId: userId,
+          groupId: persistFor.id,
+          groupName: persistFor.name,
+          memberIds,
+          memberNames,
+          overlay,
+          pairHighlights: highlights
+        });
+        if (error) setStatus(error);
+      }
     } finally {
       setBuildingOverlay(false);
     }

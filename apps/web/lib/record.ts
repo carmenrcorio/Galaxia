@@ -21,6 +21,8 @@ export interface RecordEntry {
   createdAt: string;
   payload?: Record<string, unknown> | null;
   sourceThreadId?: string | null;
+  /** Group-scoped notes (e.g. cohort_reading) — powers Open Groups?groupId=. */
+  groupId?: string | null;
   /** For conversation entries: where to reopen. */
   href?: string;
   /** For conversation entries: the mode chip. */
@@ -39,7 +41,25 @@ export type RecordScope =
 interface NoteRow {
   id: string; body: string; created_at: string;
   kind: RecordKind | null; payload: Record<string, unknown> | null; source_thread_id: string | null;
+  group_id?: string | null;
   withdrawn_at?: string | null; withdrawn_reason?: string | null;
+}
+
+function noteToEntry(row: NoteRow): RecordEntry {
+  const withdrawn = Boolean(row.withdrawn_at);
+  const withdrawnDisplay = withdrawn
+    ? formatWithdrawnReasonForDisplay(row.withdrawn_reason)
+    : null;
+  return {
+    id: row.id,
+    kind: (row.kind ?? "note") as RecordKind,
+    body: withdrawn ? (withdrawnDisplay as string) : row.body,
+    createdAt: row.created_at,
+    payload: row.payload ?? null,
+    sourceThreadId: row.source_thread_id ?? null,
+    groupId: row.group_id ?? null,
+    withdrawnReason: withdrawnDisplay
+  };
 }
 
 // ─── Withdrawn preview voice (read-time only; DB reason untouched) ───────────
@@ -131,24 +151,34 @@ export async function fetchRecord(
   else query = query.eq("pair_low", scope.pairLow).eq("pair_high", scope.pairHigh);
 
   const { data: notes } = await query;
-  const noteEntries: RecordEntry[] = (notes ?? []).map((r) => {
-    const row = r as NoteRow;
-    const withdrawn = Boolean(row.withdrawn_at);
-    // Display voice only — `withdrawn_reason` in the DB stays audit-voice.
-    const withdrawnDisplay = withdrawn
-      ? formatWithdrawnReasonForDisplay(row.withdrawn_reason)
-      : null;
-    return {
-      id: row.id,
-      kind: (row.kind ?? "note") as RecordKind,
-      // A withdrawn note never shows its original content — only the note.
-      body: withdrawn ? (withdrawnDisplay as string) : row.body,
-      createdAt: row.created_at,
-      payload: row.payload ?? null,
-      sourceThreadId: row.source_thread_id ?? null,
-      withdrawnReason: withdrawnDisplay
-    };
-  });
+  const noteEntries: RecordEntry[] = (notes ?? []).map((r) => noteToEntry(r as NoteRow));
+
+  // Person Record: also surface group cohort readings for groups this person is in,
+  // so "Open Groups" can carry groupId back to the same reading surface.
+  if ("personId" in scope) {
+    const { data: memberships } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .eq("person_id", scope.personId);
+    const groupIds = [...new Set((memberships ?? []).map((m) => m.group_id as string).filter(Boolean))];
+    if (groupIds.length > 0) {
+      const { data: cohortNotes } = await supabase
+        .from("notes")
+        .select("*")
+        .eq("owner_id", ownerId)
+        .eq("kind", "cohort_reading")
+        .in("group_id", groupIds)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      const seen = new Set(noteEntries.map((e) => e.id));
+      for (const row of cohortNotes ?? []) {
+        const entry = noteToEntry(row as NoteRow);
+        if (seen.has(entry.id)) continue;
+        seen.add(entry.id);
+        noteEntries.push(entry);
+      }
+    }
+  }
 
   // Scoped conversations — active only (archived live under "Past conversations")
   let tQuery = supabase.from("threads").select("id, mode, created_at, status").eq("owner_id", ownerId).eq("status", "active").order("created_at", { ascending: false }).limit(limit);

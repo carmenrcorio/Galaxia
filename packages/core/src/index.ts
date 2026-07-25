@@ -1,53 +1,12 @@
-/**
- * Subscription / entitlement model (card-optional 14-day trial + durable comp).
- * The single source of truth for "can this user use the product right now".
- * Shared by apps/web middleware and apps/mobile so access is decided one way,
- * everywhere. Replaces the old free/plus `subscription_tier` and the mobile
- * debug tier switch that let a user grant themselves a paid plan
- * (ENGINEERING.md §7 revenue bug).
- */
-export type SubscriptionStatus = "trialing" | "active" | "past_due" | "canceled" | "lifetime";
-
-export interface Entitlement {
-  status?: SubscriptionStatus | string | null;
-  /** ISO string or Date; the trial's end for `trialing` status. */
-  trialEndsAt?: string | Date | null;
-  /**
-   * Durable complimentary access (founder / comped accounts). Independent of
-   * every billing field. Never written by the RevenueCat webhook.
-   */
-  comped?: boolean | null;
-}
-
-/**
- * hasAccess = comped || active || lifetime || (trialing && trial_ends_at > now)
- * Comp is checked first and is independent of billing state — a canceled or
- * expired profile stays entitled when `comped` is true.
- * Missing/unknown status is treated as trialing (a just-created account whose
- * profile row/trigger is still settling); a trialing status with no end date
- * has no access under the strict rule. Callers that cannot load a profile at
- * all should decide their own fail-open/closed posture.
- */
-export function hasAccess(entitlement: Entitlement | null | undefined, now: Date = new Date()): boolean {
-  if (entitlement?.comped === true) return true;
-  const status = entitlement?.status ?? "trialing";
-  if (status === "active" || status === "lifetime") return true;
-  if (status === "trialing") {
-    const raw = entitlement?.trialEndsAt;
-    if (!raw) return false;
-    const end = raw instanceof Date ? raw : new Date(raw);
-    return !Number.isNaN(end.getTime()) && end.getTime() > now.getTime();
-  }
-  return false; // past_due, canceled
-}
-
-/** Whole days remaining in a trial (0 if ended/unknown). For the calm trial banner. */
-export function trialDaysRemaining(trialEndsAt: string | Date | null | undefined, now: Date = new Date()): number {
-  if (!trialEndsAt) return 0;
-  const end = trialEndsAt instanceof Date ? trialEndsAt : new Date(trialEndsAt);
-  if (Number.isNaN(end.getTime())) return 0;
-  return Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86_400_000));
-}
+export {
+  hasAccess,
+  profileAllowsAccess,
+  trialDaysRemaining,
+  VELA_ENTITLEMENT_REQUIRED_ERROR,
+  type Entitlement,
+  type ProfileEntitlementRow,
+  type SubscriptionStatus
+} from "./has-access";
 
 export type RelationshipType =
   | "partner"

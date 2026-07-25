@@ -54,7 +54,7 @@ describe("BUG 1 — mobile Compare blocks romantic framing when either person is
   });
 
   it("wiring: compare.tsx imports shared safety helpers and loads is_minor", () => {
-    const src = readFileSync(resolve(__dirname, "../../app/compare.tsx"), "utf8");
+    const src = readFileSync(resolve(__dirname, "../../app/(app)/compare.tsx"), "utf8");
     expect(src).toContain('from "@galaxia/core"');
     expect(src).toContain("isMinorForSafety");
     expect(src).toContain("availableCompareRelationTypes");
@@ -102,7 +102,7 @@ describe("BUG 2 — passed person excluded from mobile Today in your sky", () =>
   });
 
   it("wiring: home imports shared peopleForTodaySky + todayTransitsForChart and loads passed_at", () => {
-    const src = readFileSync(resolve(__dirname, "../../app/index.tsx"), "utf8");
+    const src = readFileSync(resolve(__dirname, "../../app/(app)/home.tsx"), "utf8");
     expect(src).toContain("peopleForTodaySky");
     expect(src).toContain("todayTransitsForChart");
     expect(src).toContain("interpretTransit");
@@ -187,7 +187,7 @@ describe("BUG 3 — exact birth refuses without timezone; low-precision still sa
   });
 
   it("wiring: onboarding imports shared buildBirthInput/searchPlaces; local birth.ts is gone", () => {
-    const src = readFileSync(resolve(__dirname, "../../app/onboarding.tsx"), "utf8");
+    const src = readFileSync(resolve(__dirname, "../../app/(app)/onboarding.tsx"), "utf8");
     expect(src).toContain("buildBirthInput");
     expect(src).toContain("searchPlaces");
     expect(src).toContain('from "@galaxia/astro"');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasAccess } from "../src/index";
+import { hasAccess } from "../src/has-access";
 
 const NOW = new Date("2026-07-24T12:00:00.000Z");
 const PAST = "2026-07-10T12:00:00.000Z";

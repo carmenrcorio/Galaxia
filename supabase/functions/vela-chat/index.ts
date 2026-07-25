@@ -1,4 +1,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2.108.2";
+// One rule, one source — do not inline a second hasAccess. `./has-access.ts` is
+// a symlink to packages/core/src/has-access.ts (same module apps/web + apps/mobile
+// import via @galaxia/core). Deno cannot resolve the pnpm package name here.
+import {
+  profileAllowsAccess,
+  VELA_ENTITLEMENT_REQUIRED_ERROR
+} from "./has-access.ts";
 
 type VelaMode = "ask" | "shared";
 
@@ -282,6 +289,19 @@ Deno.serve(async (req) => {
 
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) return jsonResponse(401, { error: "Invalid or expired auth session." });
+
+    // ── Entitlement (fail closed) ────────────────────────────────────────────
+    // Before any thread/chat/Anthropic work. Reads the same profiles columns the
+    // client EntitlementProvider uses; decides with packages/core hasAccess
+    // (via profileAllowsAccess). Missing row or unentitled → 403, no stream.
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("subscription_status, trial_ends_at, comped")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profileError || !profileAllowsAccess(profile)) {
+      return jsonResponse(403, { error: VELA_ENTITLEMENT_REQUIRED_ERROR });
+    }
 
     // ── Parse request ────────────────────────────────────────────────────────
     const payload = (await req.json()) as VelaRequest;

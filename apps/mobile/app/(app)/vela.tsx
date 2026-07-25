@@ -3,10 +3,10 @@ import { tokens } from "@galaxia/ui";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { cacheGet, cacheSet } from "../src/lib/cache";
-import { supabase } from "../src/lib/supabase";
-import { useAuth } from "../src/providers/auth-provider";
-import { useEntitlement } from "../src/providers/entitlement-provider";
+import { cacheGet, cacheSet } from "../../src/lib/cache";
+import { supabase } from "../../src/lib/supabase";
+import { useAuth } from "../../src/providers/auth-provider";
+import { useEntitlement } from "../../src/providers/entitlement-provider";
 
 type VelaMode = "ask" | "shared";
 type Scope = "person" | "pair" | "group";

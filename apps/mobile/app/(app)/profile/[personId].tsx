@@ -9,8 +9,8 @@ import { tokens } from "@galaxia/ui";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { supabase } from "../../src/lib/supabase";
-import { useAuth } from "../../src/providers/auth-provider";
+import { supabase } from "../../../src/lib/supabase";
+import { useAuth } from "../../../src/providers/auth-provider";
 
 interface PersonRow {
   id: string;
@@ -177,7 +177,7 @@ export default function PersonProfileScreen() {
               setStatus(error.message || OWNED_DELETE_COPY.personErrorGeneric);
               return;
             }
-            router.replace("/");
+            router.replace("/home");
           })();
         }
       }

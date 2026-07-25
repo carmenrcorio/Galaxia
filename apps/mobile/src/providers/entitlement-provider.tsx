@@ -18,6 +18,9 @@ import { useAuth } from "./auth-provider";
  * mobile screens keep compiling during the trial-model rollout. They no longer
  * impose any limit; a follow-up mobile pass will delete them and the remaining
  * "Galaxia+" display copy (mobile is not yet store-deployed).
+ *
+ * NOTE: `canAddPerson` / `peopleLimit` remain dead shims (always allow /
+ * Infinity). Left in place — not part of the route-lockout scope.
  */
 interface EntitlementContextValue {
   status: SubscriptionStatus;
@@ -25,6 +28,8 @@ interface EntitlementContextValue {
   comped: boolean;
   /** The single source of truth: can this user use the product right now. */
   hasAccess: boolean;
+  /** True until the first profiles read for the current session settles. */
+  loading: boolean;
   trialDaysLeft: number;
   refresh: () => Promise<void>;
 
@@ -57,23 +62,41 @@ export function EntitlementProvider({ children }: PropsWithChildren) {
   const [status, setStatus] = useState<SubscriptionStatus>("trialing");
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
   const [comped, setComped] = useState(false);
+  /** Which user id the current status/comped fields were loaded for (null = none). */
+  const [loadedForUserId, setLoadedForUserId] = useState<string | null>(null);
 
   const refresh = async () => {
-    if (!session?.user.id) return;
+    const userId = session?.user.id;
+    if (!userId) {
+      setLoadedForUserId(null);
+      return;
+    }
     const { data: profile } = await supabase
       .from("profiles")
       .select("subscription_status, trial_ends_at, comped")
-      .eq("id", session.user.id)
+      .eq("id", userId)
       .maybeSingle();
     setStatus(((profile?.subscription_status as SubscriptionStatus) ?? "trialing"));
     setTrialEndsAt((profile?.trial_ends_at as string | null) ?? null);
     setComped(profile?.comped === true);
+    setLoadedForUserId(userId);
   };
 
   useEffect(() => {
-    if (!session?.user.id) return;
+    if (!session?.user.id) {
+      setStatus("trialing");
+      setTrialEndsAt(null);
+      setComped(false);
+      setLoadedForUserId(null);
+      return;
+    }
+    // Invalidate immediately so gates wait — do not use stale defaults
+    // (trialing + null end → hasAccess false) for a newly arrived session.
+    setLoadedForUserId(null);
     void refresh();
   }, [session?.user.id]);
+
+  const loading = Boolean(session?.user.id) && loadedForUserId !== session?.user.id;
 
   const value = useMemo<EntitlementContextValue>(() => {
     const access = hasAccess({ status, trialEndsAt, comped });
@@ -82,6 +105,7 @@ export function EntitlementProvider({ children }: PropsWithChildren) {
       trialEndsAt,
       comped,
       hasAccess: access,
+      loading,
       trialDaysLeft: trialDaysRemaining(trialEndsAt),
       refresh,
       // deprecated shims — non-gating
@@ -96,7 +120,7 @@ export function EntitlementProvider({ children }: PropsWithChildren) {
       canSendVelaMessage: () => access,
       recordVelaMessageSent: async () => {}
     };
-  }, [status, trialEndsAt, comped, session?.user.id]);
+  }, [status, trialEndsAt, comped, loading, session?.user.id]);
 
   return <EntitlementContext.Provider value={value}>{children}</EntitlementContext.Provider>;
 }

@@ -9,10 +9,10 @@ import { tokens } from "@galaxia/ui";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { fetchGroupsCurrentReading, upsertGroupsCurrentReading } from "../src/lib/groups-cohort";
-import { supabase } from "../src/lib/supabase";
-import { useAuth } from "../src/providers/auth-provider";
-import { useEntitlement } from "../src/providers/entitlement-provider";
+import { fetchGroupsCurrentReading, upsertGroupsCurrentReading } from "../../src/lib/groups-cohort";
+import { supabase } from "../../src/lib/supabase";
+import { useAuth } from "../../src/providers/auth-provider";
+import { useEntitlement } from "../../src/providers/entitlement-provider";
 
 type GroupKind = "siblings" | "friends" | "family" | "group";
 

@@ -70,6 +70,21 @@ export const GALAXY_COLLISION_SEP = (20 * Math.PI) / 180;
 /** Label centres closer than this (CSS px) get deterministic push-apart. */
 export const GALAXY_LABEL_JOIN_PX = 36;
 
+/**
+ * Mean advance width (CSS px) per character for constellation labels at
+ * `11px Inter`. Conservative (slightly wide) so long names clear neighbours.
+ */
+export const GALAXY_LABEL_CHAR_PX = 6.2;
+
+/**
+ * Approximate half-width (CSS px) of a constellation name at 11px Inter.
+ * Used for placement join checks — not measured from canvas metrics.
+ * Floors at half of `GALAXY_LABEL_JOIN_PX` so short names keep the old join.
+ */
+export function galaxyLabelHalfWidthPx(displayName: string): number {
+  return Math.max(GALAXY_LABEL_JOIN_PX / 2, (displayName.length * GALAXY_LABEL_CHAR_PX) / 2);
+}
+
 /** Stable value in [0, 1) from a string — full 32-bit FNV-1a. */
 export function hash01(s: string): number {
   let h = 2166136261;
@@ -322,18 +337,27 @@ export interface GalaxyLabelAnchor {
   /** Default label centre (CSS px), before offset. */
   x: number;
   y: number;
+  /**
+   * Approx half-width of the label text (CSS px). When set, pair join is
+   * `halfW_a + halfW_b` (floored by `opts.join` / `GALAXY_LABEL_JOIN_PX`).
+   * Defaults to `GALAXY_LABEL_JOIN_PX / 2`.
+   */
+  halfW?: number;
 }
 
 /**
  * Deterministic label push-apart for neighbouring anchors.
  * Same input → same offsets. Lexicographically smaller id is nudged one way,
  * larger the other — no fetch-order dependence. Several passes so chains settle.
+ * Pair join uses approx text half-widths when provided so long names clear
+ * short neighbours (placement-time only — not a post-draw correction).
  */
 export function galaxyLabelOffsets(
   anchors: readonly GalaxyLabelAnchor[],
   opts?: { join?: number; passes?: number },
 ): Map<string, { dx: number; dy: number }> {
-  const join = opts?.join ?? GALAXY_LABEL_JOIN_PX;
+  const minJoin = opts?.join ?? GALAXY_LABEL_JOIN_PX;
+  const defaultHalf = GALAXY_LABEL_JOIN_PX / 2;
   const passes = opts?.passes ?? 6;
   const offsets = new Map<string, { dx: number; dy: number }>();
   for (const a of anchors) offsets.set(a.id, { dx: 0, dy: 0 });
@@ -353,6 +377,10 @@ export function galaxyLabelOffsets(
         const dx = bx - ax;
         const dy = by - ay;
         const dist = Math.hypot(dx, dy);
+        const join = Math.max(
+          minJoin,
+          (a.halfW ?? defaultHalf) + (b.halfW ?? defaultHalf),
+        );
         if (dist >= join) continue;
         const gap = join - (dist || 0.001);
         const push = gap / 2 + 0.25;

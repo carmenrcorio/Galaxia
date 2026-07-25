@@ -2,11 +2,14 @@ import { cohortOverlay, compareGenerational, type GenSignature, type NatalChart 
 import {
   OWNED_DELETE_COPY,
   formatGroupDeleteConfirmation,
-  isBelowGroupMinimum
+  isBelowGroupMinimum,
+  readyMembersForCohortOverlay
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
-import { useEffect, useMemo, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { fetchGroupsCurrentReading, upsertGroupsCurrentReading } from "../src/lib/groups-cohort";
 import { supabase } from "../src/lib/supabase";
 import { useAuth } from "../src/providers/auth-provider";
 import { useEntitlement } from "../src/providers/entitlement-provider";
@@ -64,7 +67,14 @@ function previewTitle(
   return loaded.name;
 }
 
+function paramOne(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
 export default function GroupsScreen() {
+  const params = useLocalSearchParams<{ groupId?: string | string[] }>();
+  const initialGroupId = useMemo(() => paramOne(params.groupId), [params.groupId]);
   const { session } = useAuth();
   const { canUseGroups } = useEntitlement();
   const [people, setPeople] = useState<PersonLite[]>([]);
@@ -75,11 +85,20 @@ export default function GroupsScreen() {
   const [groupKind, setGroupKind] = useState<GroupKind>("group");
   const [status, setStatus] = useState<string | null>(null);
   const [cohort, setCohort] = useState<CohortState | null>(null);
+  const paramLoadRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!session?.user.id) return;
     void Promise.all([fetchPeople(), fetchGroups()]);
   }, [session?.user.id]);
+
+  useEffect(() => {
+    if (!initialGroupId || !session?.user.id) return;
+    if (groups.length === 0) return;
+    if (paramLoadRef.current === initialGroupId) return;
+    paramLoadRef.current = initialGroupId;
+    void loadGroup(initialGroupId);
+  }, [initialGroupId, groups, session?.user.id]);
 
   const formComposition = useMemo(
     () => ({ name: groupName, kind: groupKind, memberIds: selectedPersonIds }),
@@ -191,7 +210,6 @@ export default function GroupsScreen() {
     const userId = session.user.id;
 
     if (loadedGroup) {
-      // UPDATE existing group (same id). Never silently insert a duplicate.
       const { error: groupError } = await supabase
         .from("groups")
         .update({ name, kind: groupKind })
@@ -232,17 +250,16 @@ export default function GroupsScreen() {
         id: loadedGroup.id,
         name,
         kind: groupKind,
-        memberIds: [...selectedPersonIds],
+        memberIds: [...selectedPersonIds]
       };
       setLoadedGroup(updated);
       setGroupName(name);
       await fetchGroups();
-      await buildOverlay(selectedPersonIds);
+      await buildOverlay(selectedPersonIds, updated);
       setStatus("Group updated.");
       return;
     }
 
-    // CREATE: only when no group is loaded (explicit new-group state).
     const { data: createdGroup, error: groupError } = await supabase
       .from("groups")
       .insert({
@@ -269,18 +286,27 @@ export default function GroupsScreen() {
       id: createdGroup.id,
       name: createdGroup.name,
       kind: createdGroup.kind as GroupKind,
-      memberIds: [...selectedPersonIds],
+      memberIds: [...selectedPersonIds]
     };
     setLoadedGroup(created);
     setGroupName(created.name);
     setGroupKind(created.kind);
     await fetchGroups();
-    await buildOverlay(selectedPersonIds);
+    await buildOverlay(selectedPersonIds, created);
     setStatus("Group saved.");
   };
 
   const loadGroup = async (groupId: string) => {
-    const row = groups.find((group) => group.id === groupId);
+    let row = groups.find((group) => group.id === groupId) ?? null;
+    if (!row && session?.user.id) {
+      const { data } = await supabase
+        .from("groups")
+        .select("id, name, kind")
+        .eq("id", groupId)
+        .eq("owner_id", session.user.id)
+        .maybeSingle();
+      if (data) row = data as GroupRow;
+    }
     if (!row) return;
     const { data, error } = await supabase.from("group_members").select("person_id").eq("group_id", groupId);
     if (error) {
@@ -292,38 +318,60 @@ export default function GroupsScreen() {
       id: groupId,
       name: row.name,
       kind: row.kind,
-      memberIds: ids,
+      memberIds: ids
     };
-    // Load populates the full model + form (id, name, kind, members).
     setLoadedGroup(next);
     setGroupName(row.name);
     setGroupKind(row.kind);
     setSelectedPersonIds(ids);
     setStatus(null);
-    // Local overlay only (charts already on-device). Do not gate on canUseGroups:
-    // hasAccess defaults false until profile refresh, so a fast tap would clear
-    // the overlay for a paying user. Save stays gated below.
-    if (ids.length >= 3) await buildOverlay(ids);
-    else {
+
+    if (ids.length < 3) {
       setCohort(null);
       if (isBelowGroupMinimum(ids.length)) setStatus(OWNED_DELETE_COPY.belowMinimumNotice);
+      return;
     }
+
+    // Hydrate from persisted current reading when the roster hash matches — same surface.
+    if (session?.user.id) {
+      const stored = await fetchGroupsCurrentReading(supabase, session.user.id, groupId, ids);
+      if (stored) {
+        setCohort(stored.state as CohortState);
+        return;
+      }
+    }
+    await buildOverlay(ids, next);
   };
 
   /**
-   * Build the overlay locally only (no DB write). Accepts an explicit id list so
-   * load/save can run without waiting for setState to propagate. Preview title
-   * is derived at render from loadedGroup + form dirty state (never fabricated).
-   * Ungated: compute uses charts the user already has; save/paywall is separate.
+   * Build the overlay only after member charts are resolved and non-empty.
+   * `readyMembersForCohortOverlay` makes empty input unreachable for cohortOverlay
+   * (no try/catch). Upserts groups_current when a saved group is in scope.
    */
-  const buildOverlay = async (idsArg?: string[]) => {
+  const buildOverlay = async (idsArg?: string[], persistGroup?: LoadedGroup | null) => {
     const ids = idsArg ?? selectedPersonIds;
+    const persistFor = persistGroup !== undefined ? persistGroup : loadedGroup;
     if (ids.length < 3) {
       setStatus("Pick at least 3 people to build cohort overlay.");
       return;
     }
+    if (!session?.user.id) return;
 
-    const selectedPeople = people.filter((person) => ids.includes(person.id));
+    let selectedPeople = people.filter((person) => ids.includes(person.id));
+    if (selectedPeople.length !== ids.length) {
+      const { data } = await supabase
+        .from("people")
+        .select("id, display_name")
+        .in("id", ids)
+        .eq("owner_id", session.user.id);
+      selectedPeople = (data ?? []) as PersonLite[];
+    }
+    if (selectedPeople.length !== ids.length) {
+      setStatus("Group members not found.");
+      setCohort(null);
+      return;
+    }
+
     const chartResponses = await Promise.all(
       selectedPeople.map(async (person) => {
         const { data } = await supabase.from("charts").select("data").eq("person_id", person.id).single();
@@ -331,29 +379,30 @@ export default function GroupsScreen() {
       })
     );
 
-    const missing = chartResponses.find((response) => !response.chart?.generational);
-    if (missing) {
-      setStatus(`Missing chart for ${missing.person.display_name}.`);
+    const candidates = chartResponses.map((row) => ({
+      name: row.person.display_name,
+      id: row.person.id,
+      gen: row.chart?.generational as GenSignature | undefined
+    }));
+    const ready = readyMembersForCohortOverlay<{ name: string; id: string; gen: GenSignature }>(candidates);
+    if (!ready) {
+      const missing = candidates.find((row) => row.gen == null);
+      if (missing) setStatus(`Missing chart for ${missing.name}.`);
+      else setStatus("Pick at least 3 people to build cohort overlay.");
       setCohort(null);
       return;
     }
 
-    const overlay = cohortOverlay(
-      chartResponses.map((row) => ({
-        name: row.person.display_name,
-        gen: row.chart!.generational as GenSignature
-      }))
-    );
+    const overlay = cohortOverlay(ready.map((row) => ({ name: row.name, gen: row.gen })));
 
-    // Keep this bounded: top 3 pair highlights using generational relation only.
     const pairHighlights: Array<{ pair: string; summary: string }> = [];
-    for (let i = 0; i < chartResponses.length; i += 1) {
-      for (let j = i + 1; j < chartResponses.length; j += 1) {
-        const a = chartResponses[i];
-        const b = chartResponses[j];
-        const relation = compareGenerational(a.chart!.generational as GenSignature, b.chart!.generational as GenSignature);
+    for (let i = 0; i < ready.length; i += 1) {
+      for (let j = i + 1; j < ready.length; j += 1) {
+        const a = ready[i]!;
+        const b = ready[j]!;
+        const relation = compareGenerational(a.gen, b.gen);
         pairHighlights.push({
-          pair: `${a.person.display_name} × ${b.person.display_name}`,
+          pair: `${a.name} × ${b.name}`,
           summary: relation.sameGeneration
             ? `Mostly same generation (${relation.shared.map((item) => `${item.planet} ${item.sign}`).join(", ")}).`
             : `Fault line: ${relation.diverged.map((item) => `${item.planet} ${item.signA}/${item.signB}`).join(" · ")}.`
@@ -361,13 +410,27 @@ export default function GroupsScreen() {
       }
     }
 
-    setCohort({
-      memberNames: selectedPeople.map((person) => person.display_name),
-      memberIds: selectedPeople.map((person) => person.id),
+    const nextCohort: CohortState = {
+      memberNames: ready.map((row) => row.name),
+      memberIds: ready.map((row) => row.id),
       overlay,
       pairHighlights: pairHighlights.slice(0, 3)
-    });
+    };
+    setCohort(nextCohort);
     setStatus(null);
+
+    if (persistFor) {
+      const { error } = await upsertGroupsCurrentReading(supabase, {
+        ownerId: session.user.id,
+        groupId: persistFor.id,
+        groupName: persistFor.name,
+        memberIds: nextCohort.memberIds,
+        memberNames: nextCohort.memberNames,
+        overlay: nextCohort.overlay,
+        pairHighlights: nextCohort.pairHighlights
+      });
+      if (error) setStatus(error);
+    }
   };
 
   return (

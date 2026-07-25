@@ -272,7 +272,12 @@ function RecordItem({ entry, onArchive }: { entry: RecordEntry; personName: stri
         <Link href="/app/compare" style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}>Open Compare →</Link>
       ) : null}
       {entry.kind === "cohort_reading" ? (
-        <Link href="/app/groups" style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}>Open Groups →</Link>
+        <Link
+          href={entry.groupId ? `/app/groups?groupId=${entry.groupId}` : "/app/groups"}
+          style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}
+        >
+          Open Groups →
+        </Link>
       ) : null}
     </div>
   );

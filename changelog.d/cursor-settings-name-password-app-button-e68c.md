@@ -10,11 +10,21 @@ already on, so it never opened anything. There is no deep link scheme and no
 published app to receive one. The `GetApp` card directly below it already carries
 the honest state ("iOS coming soon", "Android coming soon", plus the launch
 notification signup), so the button was both dead and contradicted one card
-away. Removed rather than restyled as a disabled "coming soon" pill, because the
-card below already says exactly that. Note for whoever ships mobile: the
-placeholder `TEAMID.com.galaxia.app` in
+away. Note for whoever ships mobile: the placeholder `TEAMID.com.galaxia.app` in
 `app/.well-known/apple-app-site-association/route.ts` and the unmounted
 `components/smart-app-banner.tsx` are the pieces to revisit then.
+
+`[DECISION]` **That button was fixed twice, and #122's version won the merge.**
+This branch deleted the button outright, on the grounds that the `GetApp` card one
+row below already says "coming soon" so a second coming-soon control would be
+redundant. In parallel, #122 replaced it with a link to `/download` labelled "Get
+mobile app updates", alongside a coherent rewrite of the mobile copy on `/signup`,
+in `get-app.tsx`, and on `/download` itself. The merge kept #122's link: it is the
+newer deliberate decision, it does not imply an installed app the user can open,
+and `/download` is a real page that says iOS and Android are still coming.
+Deleting it would have silently reverted part of a merged PR. The standing rule
+either way: no control on this screen may imply an app that can be opened right
+now, and the mobile affordance must leave `/account` rather than point back at it.
 
 `[ADDED]` **Authenticated change-password on `/account`** as
 `components/change-password.tsx`, calling `supabase.auth.updateUser({ password })`

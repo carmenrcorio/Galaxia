@@ -1,14 +1,15 @@
 "use client";
 
+import { joinFullName, resolveAccountName, splitFullName } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ChangePassword } from "../../components/change-password";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { GetApp } from "../../components/get-app";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { SignOutButton } from "../../components/sign-out-button";
 import { Spinner } from "../../components/spinner";
 import { TrialBanner } from "../../components/trial-banner";
-import { publicEnv } from "../../lib/env";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 
 export default function AccountPage() {
@@ -16,11 +17,12 @@ export default function AccountPage() {
   const [userId, setUserId]         = useState<string | null>(null);
   const [email, setEmail]           = useState("");
   // The name the user explicitly set on their profile, and the name on their
-  // "self" person record (from onboarding). Kept separate so we can resolve a
-  // display name without ever presenting the raw email AS the person's name.
+  // "self" person record (from onboarding). Kept separate and handed to the
+  // shared resolver, which is the only thing that decides which one wins.
   const [profileName, setProfileName] = useState<string>("");
   const [selfName, setSelfName]       = useState<string>("");
-  const [nameDraft, setNameDraft]     = useState("");
+  const [firstDraft, setFirstDraft]   = useState("");
+  const [lastDraft, setLastDraft]     = useState("");
   const [savingName, setSavingName]   = useState(false);
   const [nameStatus, setNameStatus]   = useState<string | null>(null);
   const [subStatus, setSubStatus]   = useState<string | null>(null);
@@ -28,12 +30,12 @@ export default function AccountPage() {
   const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false);
   const [peopleCount, setPeopleCount] = useState(0);
   const [sampleNames, setSampleNames] = useState<string[]>([]);
-  const siteUrl = publicEnv.siteUrl || "";
 
-  // Name resolution: an explicitly-set profile name wins; otherwise fall back
-  // to the self-person's name (set during onboarding); otherwise nothing — we
-  // prompt for a name rather than showing the login email as if it were one.
-  const resolvedName = profileName.trim() || selfName.trim();
+  // One shared decision, identical to every other surface that names the user
+  // (see @galaxia/core resolveAccountName). The email is only ever the identity
+  // label when no name exists, never the name itself.
+  const account = resolveAccountName({ profileDisplayName: profileName, selfPersonName: selfName, email });
+  const nameDraft = joinFullName(firstDraft, lastDraft);
 
   useEffect(() => {
     const load = async () => {
@@ -51,9 +53,12 @@ export default function AccountPage() {
       const sName = (self?.display_name as string | null)?.trim() ?? "";
       setProfileName(pName);
       setSelfName(sName);
-      // Pre-fill the editable field with the best name we have so saving it is
-      // one tap — but never pre-fill it with the email.
-      setNameDraft(pName || sName);
+      // Pre-fill the editable fields with the best name we have so saving it is
+      // one tap. `resolveAccountName().name` is never an email, so the fields
+      // can never be seeded with one.
+      const seeded = splitFullName(resolveAccountName({ profileDisplayName: pName, selfPersonName: sName }).name);
+      setFirstDraft(seeded.firstName);
+      setLastDraft(seeded.lastName);
       setSubStatus((profile?.subscription_status as string | null) ?? null);
       setComped(profile?.comped === true);
       setCancelAtPeriodEnd(Boolean(profile?.cancel_at_period_end));
@@ -65,7 +70,9 @@ export default function AccountPage() {
 
   const saveName = async () => {
     if (!userId) return;
-    const next = nameDraft.trim();
+    // One stored value in profiles.display_name, joined from the two fields, so
+    // there is still exactly one field anything reads.
+    const next = nameDraft;
     if (!next || next === profileName.trim()) return;
     setSavingName(true); setNameStatus(null);
     const { error } = await supabase.from("profiles").upsert({ id: userId, display_name: next });
@@ -95,46 +102,68 @@ export default function AccountPage() {
 
       <main className="app-content">
         <div className="person-row fade-in" style={{ gap: 16 }}>
-          <InitialAvatar name={resolvedName || "?"} size="lg" />
+          <InitialAvatar name={account.name ?? "?"} size="lg" />
           <div>
             <p className="eyebrow">Account</p>
-            {resolvedName ? (
-              <h1 className="page-title">{resolvedName}</h1>
+            {/* Name when there is one. Only when a name is genuinely absent does
+                the header fall back to the email, which identifies the account
+                without pretending to be a name. */}
+            <h1 className="page-title">{account.identityLabel ?? ""}</h1>
+            {account.hasName ? (
+              <p className="muted" style={{ margin: 0, fontSize: 14 }}>{email}</p>
             ) : (
-              // No name yet — prompt for one instead of showing the raw email as a name.
-              <h1 className="page-title" style={{ color: "var(--mist2)", fontStyle: "italic", fontWeight: 400 }}>Add your name</h1>
+              // FOUNDER-REVIEW: authored prompt shown when no name is stored yet.
+              <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+                No name saved yet, so your email is standing in. Add your name below.
+              </p>
             )}
-            <p className="muted" style={{ margin: 0, fontSize: 14 }}>{email}</p>
           </div>
         </div>
 
         {/* Your profile — set the name shown across your account */}
         <section className="glass-card fade-in">
           <p className="eyebrow" style={{ marginBottom: 10 }}>Your profile</p>
-          <label htmlFor="account-name" className="muted" style={{ display: "block", fontSize: 13, marginBottom: 6 }}>
-            First name (or whatever you'd like to be called)
-          </label>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <input
-              id="account-name"
-              className="field"
-              value={nameDraft}
-              onChange={(e) => setNameDraft(e.target.value)}
-              placeholder="Your name"
-              maxLength={80}
-              style={{ flex: "1 1 220px", minWidth: 0 }}
-            />
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div style={{ flex: "1 1 160px", minWidth: 0 }}>
+              {/* FOUNDER-REVIEW: authored name field labels. */}
+              <label htmlFor="account-first-name" className="muted" style={{ display: "block", fontSize: 13, marginBottom: 6 }}>
+                First name
+              </label>
+              <input
+                id="account-first-name"
+                className="field"
+                value={firstDraft}
+                onChange={(e) => setFirstDraft(e.target.value)}
+                autoComplete="given-name"
+                maxLength={80}
+                style={{ width: "100%" }}
+              />
+            </div>
+            <div style={{ flex: "1 1 160px", minWidth: 0 }}>
+              <label htmlFor="account-last-name" className="muted" style={{ display: "block", fontSize: 13, marginBottom: 6 }}>
+                Last name
+              </label>
+              <input
+                id="account-last-name"
+                className="field"
+                value={lastDraft}
+                onChange={(e) => setLastDraft(e.target.value)}
+                autoComplete="family-name"
+                maxLength={80}
+                style={{ width: "100%" }}
+              />
+            </div>
             <button
               className="btn-primary"
               onClick={() => void saveName()}
-              disabled={savingName || !nameDraft.trim() || nameDraft.trim() === profileName.trim()}
+              disabled={savingName || !nameDraft || nameDraft === profileName.trim()}
               style={{ gap: 8 }}
             >
               {savingName && <Spinner size={12} color="#1a1206" />}
               {savingName ? "Saving…" : "Save name"}
             </button>
           </div>
-          {!profileName && selfName ? (
+          {account.source === "self-person" ? (
             <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
               Using the name from your own chart ({selfName}) until you set one here.
             </p>
@@ -146,6 +175,8 @@ export default function AccountPage() {
             <p className={nameStatus === "Saved." ? "success" : "error"} style={{ fontSize: 13, marginTop: 8 }}>{nameStatus}</p>
           ) : null}
         </section>
+
+        <ChangePassword />
 
         {/* Constellation summary */}
         <section className="glass-card fade-in">
@@ -165,7 +196,12 @@ export default function AccountPage() {
               <Link className="pill-link" href="/subscribe">Subscribe</Link>
             )}
             <Link className="pill-link" href="/account/data">Your data</Link>
-            {siteUrl ? <a className="pill-link" href={`${siteUrl}/account`}>Open in app</a> : null}
+            {/* No "Open in app" button here. There is no app to open: it linked
+                to NEXT_PUBLIC_SITE_URL/account, which is this same web page, and
+                the card directly below already says iOS and Android are coming
+                and offers the launch notification. A button that implies an
+                installed app the user can open right now is a claim the product
+                cannot honour, so it is gone until mobile actually ships. */}
           </div>
         </section>
 

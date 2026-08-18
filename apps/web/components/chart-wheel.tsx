@@ -97,6 +97,67 @@ function pt(r: number, deg: number): [number, number] {
   return [CX + r * Math.cos(a), CY - r * Math.sin(a)];
 }
 
+function axisLabelPosition(angle: number): { x: number; y: number; anchor: "start" | "middle" | "end" } {
+  const [rawX, rawY] = pt(R_OUT + 10, angle);
+  const edge = 8;
+  if (rawX <= edge + 6) return { x: edge, y: rawY, anchor: "start" };
+  if (rawX >= S - edge - 6) return { x: S - edge, y: rawY, anchor: "end" };
+  return { x: rawX, y: rawY, anchor: "middle" };
+}
+
+function clusterOffset(index: number, step: number): number {
+  if (index === 0) return 0;
+  const distance = Math.ceil(index / 2) * step;
+  return index % 2 === 1 ? -distance : distance;
+}
+
+function clusteredOffsets(
+  sorted: NatalChart["placements"],
+  proximityDeg: number,
+  step: number,
+): Map<string, number> {
+  const offsets = new Map<string, number>();
+  if (sorted.length === 0) return offsets;
+
+  const clusters: NatalChart["placements"][] = [];
+  let current = [sorted[0]!];
+
+  for (let i = 1; i < sorted.length; i += 1) {
+    const prev = sorted[i - 1]!;
+    const next = sorted[i]!;
+    if (next.lon - prev.lon < proximityDeg) {
+      current.push(next);
+    } else {
+      clusters.push(current);
+      current = [next];
+    }
+  }
+  clusters.push(current);
+
+  if (clusters.length > 1) {
+    const first = clusters[0]![0]!;
+    const lastCluster = clusters[clusters.length - 1]!;
+    const last = lastCluster[lastCluster.length - 1]!;
+    const wrapGap = first.lon + 360 - last.lon;
+    if (wrapGap < proximityDeg) {
+      clusters[0] = [...lastCluster, ...clusters[0]!];
+      clusters.pop();
+    }
+  }
+
+  for (const cluster of clusters) {
+    if (cluster.length === 1) {
+      offsets.set(cluster[0]!.body, 0);
+      continue;
+    }
+    cluster.forEach((planet, index) => {
+      offsets.set(planet.body, clusterOffset(index, step));
+    });
+  }
+
+  return offsets;
+}
+
 function svgAngle(lon: number, ascLon: number | null): number {
   const n = (v: number) => ((v % 360) + 360) % 360;
   return ascLon !== null ? n(180 - lon + ascLon) : n(270 - lon);
@@ -126,10 +187,10 @@ function planetRing(
   owner: ChartOwner,
 ): PlanetGlyph[] {
   const sorted = [...placements].filter((p) => p.confident !== false).sort((a, b) => a.lon - b.lon);
-  return sorted.map((p, idx) => {
+  const offsets = clusteredOffsets(sorted, 16, owner === "b" ? 10 : 12);
+  return sorted.map((p) => {
     const a = svgAngle(p.lon, ascLon);
-    const near = sorted.filter((q) => q.body !== p.body && Math.abs(q.lon - p.lon) < 14);
-    const rr = near.length > 0 && idx % 2 === 1 ? baseR - 15 : baseR;
+    const rr = baseR + (offsets.get(p.body) ?? 0);
     const [px, py] = pt(rr, a);
     const overlay = owner === "b";
     return {
@@ -255,6 +316,8 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
 
   const [focus, setFocus] = useState<{ owner: ChartOwner; body: string } | null>(null);
   const showYearNote = !isOverlay && chart.precision === "year" && aspectLines.length === 0;
+  const ascLabel = axisLabelPosition(180);
+  const mcLabel = chart.mc ? axisLabelPosition(svgAngle(chart.cusps![9]!, ascLon)) : null;
 
   function lineDimmed(from: string, to: string): boolean {
     if (!interactive || !focus) return false;
@@ -285,12 +348,12 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
   }
 
   // Glyph size retuned for main's 72/96 rings (closer to each other and the sign band).
-  const glyphR = isOverlay ? 11 : 12;
-  const glyphFs = isOverlay ? 13 : 14;
+  const glyphR = isOverlay ? 12 : 13;
+  const glyphFs = isOverlay ? 14 : 15;
 
   return (
-    <div style={{ width: "100%", maxWidth: 290, margin: "0 auto" }}>
-      <svg viewBox={`0 0 ${S} ${S}`} width="100%" style={{ display: "block" }}>
+    <div style={{ width: "100%", maxWidth: 306, margin: "0 auto", paddingInline: 8 }}>
+      <svg viewBox={`0 0 ${S} ${S}`} width="100%" style={{ display: "block", overflow: "visible" }}>
         <circle cx={CX} cy={CY} r={R_OUT} fill="none" stroke={LINE_COLOR} strokeWidth="1" />
         <circle cx={CX} cy={CY} r={R_SIGN_IN} fill="none" stroke={LINE_COLOR} strokeWidth="1" />
         <circle cx={CX} cy={CY} r={R_INNER} fill="rgba(10,7,23,.6)" stroke={LINE_COLOR} strokeWidth="1" />
@@ -332,23 +395,23 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
         {hasHouses ? (
           <>
             <text
-              x={pt(R_OUT + 10, 180)[0]}
-              y={pt(R_OUT + 10, 180)[1]}
+              x={ascLabel.x}
+              y={ascLabel.y}
               fill="var(--gold)"
               fontSize="8"
-              textAnchor="middle"
+              textAnchor={ascLabel.anchor}
               dominantBaseline="central"
               fontWeight="700"
             >
               ASC
             </text>
-            {chart.mc ? (
+            {mcLabel ? (
               <text
-                x={pt(R_OUT + 10, svgAngle(chart.cusps![9]!, ascLon))[0]}
-                y={pt(R_OUT + 10, svgAngle(chart.cusps![9]!, ascLon))[1]}
+                x={mcLabel.x}
+                y={mcLabel.y}
                 fill="var(--gold)"
                 fontSize="8"
-                textAnchor="middle"
+                textAnchor={mcLabel.anchor}
                 dominantBaseline="central"
                 fontWeight="700"
               >
@@ -377,6 +440,8 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
               onPointerUp={(e) => onPlanetPointerUp(owner, body, e)}
               style={{ cursor: interactive ? "pointer" : undefined, opacity: dimPlanet ? 0.35 : 1 }}
             >
+              {/* Keep a large invisible touch target on phone without crowding visuals. */}
+              <circle cx={px} cy={py} r={glyphR + 9} fill="transparent" />
               <circle
                 cx={px} cy={py} r={glyphR}
                 fill="rgba(10,7,23,.92)"

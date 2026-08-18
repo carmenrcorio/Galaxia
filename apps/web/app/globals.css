@@ -43,7 +43,7 @@
 /* scroll-padding-top clears the sticky, translucent marketing/app nav (~68px)
    so in-page anchor jumps (#shift, #how, …) land the target heading *below* the
    header instead of tucked under its blur band, where it read as clipped. */
-html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+html { scroll-behavior: auto; scroll-padding-top: 88px; }
 
 body {
   background: var(--ink);
@@ -913,6 +913,12 @@ section { padding-block: clamp(76px, 12vh, 140px); }
   .natal-sign-reveal__signup .btn-primary {
     width: 100%;
     justify-content: center;
+  }
+}
+
+@media (max-width: 420px) {
+  .quick-chart-entry-dates {
+    grid-template-columns: 1fr;
   }
 }
 

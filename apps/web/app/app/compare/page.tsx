@@ -431,7 +431,9 @@ function ComparePageInner() {
     <main className="app-content">
       <p className="eyebrow">Synastry</p>
       <h1 className="page-title">Compare</h1>
-      <p className="lede">See where two people flow, where they catch, and what each one needs.</p>
+      <p className="lede" style={{ maxWidth: "38ch", overflowWrap: "anywhere" }}>
+        See where two people flow, where they catch, and what each one needs.
+      </p>
 
       {/* Pickers */}
       <section className="glass-card fade-in">
@@ -486,12 +488,12 @@ function ComparePageInner() {
         <>
           {/* Headline */}
           <section className="glass-card fade-in">
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap", minWidth: 0 }}>
               <InitialAvatar name={result.personA.display_name} />
               <span style={{ color: "var(--mist2)", fontSize: "1.1rem" }}>×</span>
               <InitialAvatar name={result.personB.display_name} />
-              <div>
-                <div style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)" }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", overflowWrap: "anywhere" }}>
                   {result.personA.display_name} &amp; {result.personB.display_name}
                 </div>
                 <div style={{ fontSize: ".74rem", color: "var(--mist2)" }}>{relationType}</div>

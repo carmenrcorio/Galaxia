@@ -3,6 +3,7 @@
 import { joinFullName, resolveAccountName, splitFullName } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AppNav } from "../../components/app-nav";
 import { ChangePassword } from "../../components/change-password";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { GetApp } from "../../components/get-app";
@@ -91,18 +92,7 @@ export default function AccountPage() {
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
       <CosmicBackground />
-
-      {/* Nav header — same as app layout */}
-      <header style={{ position: "sticky", top: 0, zIndex: 30, borderBottom: "1px solid rgba(183,154,216,.12)", background: "rgba(10,7,23,.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}>
-        <nav className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, paddingBottom: 10, gap: 10, flexWrap: "wrap" }}>
-          <Link href="/app" style={{ color: "var(--gold)", fontFamily: "var(--font-fraunces)", fontSize: 22 }}>Galaxia</Link>
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {[["Galaxia Mea","/app"],["Compare","/app/compare"],["Groups","/app/groups"],["Vela","/app/vela"],["Settings","/app/settings"]].map(([label, href]) => (
-              <Link key={href} href={href as never} style={{ color: "var(--mist)", fontSize: 13, fontWeight: 500, padding: "5px 12px", borderRadius: 100 }}>{label}</Link>
-            ))}
-          </div>
-        </nav>
-      </header>
+      <AppNav />
 
       <TrialBanner />
 
@@ -202,12 +192,12 @@ export default function AccountPage() {
               <Link className="pill-link" href="/subscribe">Subscribe</Link>
             )}
             <Link className="pill-link" href="/account/data">Your data</Link>
-            {/* No "Open in app" button here. There is no app to open: it linked
-                to NEXT_PUBLIC_SITE_URL/account, which is this same web page, and
-                the card directly below already says iOS and Android are coming
-                and offers the launch notification. A button that implies an
-                installed app the user can open right now is a claim the product
-                cannot honour, so it is gone until mobile actually ships. */}
+            {/* This replaced an "Open in app" button that pointed at
+                NEXT_PUBLIC_SITE_URL/account, which is this same web page, so it
+                opened nothing. Do not reintroduce an affordance that implies an
+                installed app until one exists: /download is a real page that
+                says iOS and Android are still coming. */}
+            <Link className="pill-link" href="/download">Get mobile app updates</Link>
           </div>
         </section>
 

@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  RC_BACKEND_CODE,
   RC_ENTITLEMENT_ID,
   RC_ERROR_CODE,
   RC_PLAN,
+  isCheckoutSetupRejection,
   mapRevenueCatEvent,
+  parseRcBackendFailure,
   purchaseErrorCopy,
+  rcBackendErrorCode,
   rcKeyKind,
   verifyWebhookAuth,
   type RevenueCatEvent
@@ -220,6 +224,189 @@ describe("purchaseErrorCopy", () => {
       expect(copy.toLowerCase()).not.toContain("stripe");
       expect(copy.toLowerCase()).not.toContain("sandbox");
     }
+  });
+});
+
+/**
+ * The two shapes the same checkout rejection arrives in. Both are built the way
+ * `purchases-js` builds them: the HTTP layer throws with the endpoint, status
+ * and body in `underlyingErrorMessage` and the backend code on `extra`, and the
+ * checkout modal's error handler then rebuilds the error, remapping the code
+ * from 16 to 2 and dropping `extra` while keeping the message intact.
+ */
+const REJECTION_BODY = '{"code":8142,"message":"Checkout session could not be created."}';
+const REJECTION_UNDERLYING = `Request: postCheckoutStart. Status code: 422. Body: ${REJECTION_BODY}.`;
+
+const DIRECT_REJECTION = {
+  errorCode: RC_ERROR_CODE.unknownBackend,
+  backendErrorCode: RC_BACKEND_CODE.checkoutSessionRejected,
+  underlyingErrorMessage: REJECTION_UNDERLYING
+};
+
+const REWRAPPED_REJECTION = {
+  errorCode: RC_ERROR_CODE.storeProblem,
+  backendErrorCode: null,
+  underlyingErrorMessage: REJECTION_UNDERLYING
+};
+
+describe("parseRcBackendFailure", () => {
+  it("reads the endpoint, status and body code the SDK put in the message", () => {
+    expect(parseRcBackendFailure(REJECTION_UNDERLYING)).toEqual({
+      request: "postCheckoutStart",
+      httpStatus: 422,
+      backendErrorCode: 8142
+    });
+  });
+
+  it("returns nulls rather than guesses when the message is absent or unshaped", () => {
+    for (const input of [null, undefined, "", "something else entirely"]) {
+      expect(parseRcBackendFailure(input)).toEqual({
+        request: null,
+        httpStatus: null,
+        backendErrorCode: null
+      });
+    }
+  });
+
+  it("takes only a top-level body code, not a nested one", () => {
+    const nested = 'Request: postCheckoutStart. Status code: 422. Body: {"error":{"code":9999}}.';
+    expect(parseRcBackendFailure(nested).backendErrorCode).toBeNull();
+  });
+
+  it("still finds the code in a body that is not parseable JSON", () => {
+    const truncated = 'Request: postCheckoutStart. Status code: 422. Body: {"code":8142,"message":"trunc';
+    expect(parseRcBackendFailure(truncated).backendErrorCode).toBe(8142);
+  });
+
+  it("parses a non-checkout backend failure without inventing a checkout one", () => {
+    const offerings = 'Request: getOfferings. Status code: 500. Body: {"code":7110}.';
+    expect(parseRcBackendFailure(offerings)).toEqual({
+      request: "getOfferings",
+      httpStatus: 500,
+      backendErrorCode: 7110
+    });
+  });
+});
+
+describe("rcBackendErrorCode", () => {
+  it("prefers extra when the SDK kept it", () => {
+    expect(rcBackendErrorCode(DIRECT_REJECTION)).toBe(8142);
+  });
+
+  it("recovers the code from the message body when extra was dropped", () => {
+    // The modal path: this is the only place 8142 still exists on that route.
+    expect(rcBackendErrorCode(REWRAPPED_REJECTION)).toBe(8142);
+  });
+
+  it("is null when the error carries no backend code at all", () => {
+    expect(rcBackendErrorCode({ errorCode: RC_ERROR_CODE.network })).toBeNull();
+    expect(rcBackendErrorCode({})).toBeNull();
+  });
+});
+
+describe("isCheckoutSetupRejection", () => {
+  it("detects the rejection on both SDK paths, which disagree on the error code", () => {
+    // 16 direct, 2 through the modal. Keying off errorCode would miss one.
+    expect(isCheckoutSetupRejection(DIRECT_REJECTION)).toBe(true);
+    expect(isCheckoutSetupRejection(REWRAPPED_REJECTION)).toBe(true);
+  });
+
+  it("detects a checkout-opening endpoint refusing with 422 even under a different code", () => {
+    // The 8142 number is what we have observed, not a guarantee. A call that
+    // opens checkout answering 422 is a refusal to process whatever code it
+    // carries.
+    expect(
+      isCheckoutSetupRejection({
+        errorCode: RC_ERROR_CODE.unknownBackend,
+        underlyingErrorMessage:
+          'Request: postCheckoutPrepare. Status code: 422. Body: {"code":8399}.'
+      })
+    ).toBe(true);
+  });
+
+  it("does not call a failure after the card was entered a setup rejection", () => {
+    // postCheckoutComplete runs once the user has already typed card details,
+    // so "we couldn't start checkout" would be a false statement about it.
+    expect(
+      isCheckoutSetupRejection({
+        errorCode: RC_ERROR_CODE.unknownBackend,
+        underlyingErrorMessage:
+          'Request: postCheckoutComplete. Status code: 422. Body: {"code":8399}.'
+      })
+    ).toBe(false);
+  });
+
+  it("does not claim a setup rejection for a transient or unrelated failure", () => {
+    expect(
+      isCheckoutSetupRejection({
+        errorCode: RC_ERROR_CODE.unknownBackend,
+        underlyingErrorMessage: 'Request: postCheckoutStart. Status code: 503. Body: {"code":7110}.'
+      })
+    ).toBe(false);
+    expect(
+      isCheckoutSetupRejection({
+        errorCode: RC_ERROR_CODE.unknownBackend,
+        underlyingErrorMessage: 'Request: getOfferings. Status code: 422. Body: {"code":7226}.'
+      })
+    ).toBe(false);
+    expect(isCheckoutSetupRejection({ errorCode: RC_ERROR_CODE.network })).toBe(false);
+    expect(isCheckoutSetupRejection({})).toBe(false);
+  });
+});
+
+describe("purchaseErrorCopy for a checkout setup rejection", () => {
+  it("does not put a permanent setup failure in the generic retry bucket", () => {
+    const generic = purchaseErrorCopy(RC_ERROR_CODE.unknownBackend);
+    for (const failure of [DIRECT_REJECTION, REWRAPPED_REJECTION]) {
+      const copy = purchaseErrorCopy(failure);
+      expect(copy).toBeTruthy();
+      expect(copy).not.toBe(generic);
+      expect(copy).toContain("start checkout");
+    }
+  });
+
+  it("does not promise the user that trying again will work", () => {
+    const copy = purchaseErrorCopy(DIRECT_REJECTION)!.toLowerCase();
+    expect(copy).not.toMatch(/please try again\b/);
+    expect(copy).toContain("rather than trying again now");
+  });
+
+  it("names no cause it cannot verify and nothing about the user's money", () => {
+    // ENGINEERING.md §12. We know checkout did not open. We do not know why.
+    const copy = purchaseErrorCopy(DIRECT_REJECTION)!.toLowerCase();
+    for (const fabrication of ["declin", "card", "charged", "charge", "bank", "payment method", "expired"]) {
+      expect(copy).not.toContain(fabrication);
+    }
+  });
+
+  it("leaks nothing internal and no em dash", () => {
+    // ENGINEERING.md §7, plus the house rule against em dashes in authored copy.
+    const copy = purchaseErrorCopy(DIRECT_REJECTION)!;
+    expect(copy).not.toMatch(/\d/);
+    expect(copy).not.toContain("—");
+    for (const internal of ["revenuecat", "stripe", "sandbox", "checkout/start", "422", "8142"]) {
+      expect(copy.toLowerCase()).not.toContain(internal);
+    }
+  });
+
+  it("still says nothing when the user closed the checkout themselves", () => {
+    // A cancel outranks the rejection signal even if both are somehow present.
+    expect(purchaseErrorCopy({ ...DIRECT_REJECTION, errorCode: RC_ERROR_CODE.userCancelled })).toBeNull();
+  });
+
+  it("never overwrites a claim about the user's own money with the rejection copy", () => {
+    // A payment in flight, or an existing subscription, is a more specific and
+    // more consequential truth than "checkout did not open".
+    for (const code of [RC_ERROR_CODE.paymentPending, RC_ERROR_CODE.alreadyPurchased]) {
+      expect(purchaseErrorCopy({ ...DIRECT_REJECTION, errorCode: code })).toBe(purchaseErrorCopy(code));
+    }
+  });
+
+  it("accepts a bare error code, so callers with only a code still work", () => {
+    expect(purchaseErrorCopy(RC_ERROR_CODE.userCancelled)).toBeNull();
+    expect(purchaseErrorCopy({ errorCode: RC_ERROR_CODE.network })).toBe(
+      purchaseErrorCopy(RC_ERROR_CODE.network)
+    );
   });
 });
 

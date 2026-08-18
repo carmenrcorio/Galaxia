@@ -8,7 +8,15 @@ import {
 } from "@revenuecat/purchases-js";
 import { useState } from "react";
 import { publicEnv } from "../lib/env";
-import { RC_ENTITLEMENT_ID, purchaseErrorCopy, rcKeyKind } from "../lib/revenuecat";
+import {
+  RC_ENTITLEMENT_ID,
+  isCheckoutSetupRejection,
+  parseRcBackendFailure,
+  purchaseErrorCopy,
+  rcBackendErrorCode,
+  rcKeyKind,
+  type RcPurchaseFailure
+} from "../lib/revenuecat";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";
 
@@ -129,6 +137,19 @@ async function purchasesForUser(userId: string): Promise<Purchases> {
 }
 
 /**
+ * Everything the thrown error carries, collected once so the copy and the log
+ * read the same facts. Nothing is interpreted here.
+ */
+function rcPurchaseFailure(error: unknown): RcPurchaseFailure {
+  const rc = error instanceof PurchasesError ? error : null;
+  return {
+    errorCode: rc?.errorCode ?? null,
+    backendErrorCode: rc?.extra?.backendErrorCode ?? null,
+    underlyingErrorMessage: rc?.underlyingErrorMessage ?? null
+  };
+}
+
+/**
  * Report a failed purchase to the browser console only — never to the screen
  * (ENGINEERING.md §7). This is what turns a bare RevenueCat error code into
  * something diagnosable: alongside RevenueCat's own reason it names which key
@@ -136,13 +157,24 @@ async function purchasesForUser(userId: string): Promise<Purchases> {
  * rejects some of them locally. A backend error on a key whose engine or mode
  * does not match the RevenueCat project's config looks identical to a genuine
  * payment failure otherwise. It prints no key, no user id, no session detail.
+ *
+ * `backendErrorCode` is logged as its own field because the RevenueCat error
+ * code is not the failure: an 8142 rejection reaches us as code 16 or code 2
+ * depending on the path, with the real number buried in the underlying message
+ * or on `extra`. Every field here is read off the error or parsed out of it;
+ * anything absent is logged as null rather than filled in.
  */
-function logPurchaseFailure(error: unknown) {
+function logPurchaseFailure(error: unknown, failure: RcPurchaseFailure) {
   const rc = error instanceof PurchasesError ? error : null;
+  const backend = parseRcBackendFailure(failure.underlyingErrorMessage);
   console.error("[billing] purchase failed", {
-    rcErrorCode: rc?.errorCode ?? null,
+    rcErrorCode: failure.errorCode,
     rcMessage: rc?.message ?? String(error),
-    rcUnderlyingMessage: rc?.underlyingErrorMessage ?? null,
+    rcUnderlyingMessage: failure.underlyingErrorMessage,
+    backendErrorCode: rcBackendErrorCode(failure),
+    backendHttpStatus: backend.httpStatus,
+    backendRequest: backend.request,
+    checkoutSetupRejected: isCheckoutSetupRejection(failure),
     keyKind: rcKeyKind(publicEnv.revenueCatPublicKey),
     sdkReportsSandbox: Purchases.isConfigured()
       ? Purchases.getSharedInstance().isSandbox()
@@ -231,10 +263,11 @@ export function Paywall({
         setError("Your purchase went through but access is still syncing. Refresh in a moment.");
       }
     } catch (e) {
-      const copy = e instanceof PurchasesError ? purchaseErrorCopy(e.errorCode) : purchaseErrorCopy(null);
+      const failure = rcPurchaseFailure(e);
+      const copy = purchaseErrorCopy(failure);
       // `null` copy means the user closed the checkout themselves — not an error.
       if (copy) {
-        logPurchaseFailure(e);
+        logPurchaseFailure(e, failure);
         setError(copy);
       }
     } finally {

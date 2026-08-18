@@ -33,6 +33,44 @@ charge happened when we do not know (ENGINEERING.md §12). Kept SDK-free so the
 webhook route can still import this module — the RevenueCat error codes are
 mirrored by value in `RC_ERROR_CODE`.
 
+`[FIXED]` **A checkout the backend refuses no longer reads as "something went
+wrong, please try again".** The live failure is Stripe rejecting the checkout
+session: `postCheckoutStart` answers HTTP 422 with backend code `8142`. That is
+a permanent server-side setup rejection, and both the old catch-all and the
+error-code buckets above put it in the generic retry bucket, telling the user to
+do the one thing that cannot work. `purchaseErrorCopy` now has its own case for
+it, and the copy says only what is provable: checkout did not open, it is our
+side, and it does not promise that trying again will help. It names no cause,
+which is the whole point, since the app cannot see why Stripe refused.
+
+`[DECISION]` **The rejection is detected from the underlying message, never from
+the RevenueCat error code.** The same failure reaches the paywall with two
+different codes. Thrown straight out of an SDK call it is `UnknownBackendError`
+(16) with the backend code on `extra`; through the checkout modal, the SDK's own
+error handler rebuilds it via `getForPurchasesFlowError`, which remaps the code
+to `StoreProblemError` (2) and **drops `extra` entirely**. Only
+`underlyingErrorMessage` survives both, shaped as `Request: <endpoint>. Status
+code: <status>. Body: <body>.`, so `isCheckoutSetupRejection` reads the backend
+code from `extra` or from that body, and independently treats a `postCheckout*`
+endpoint answering 422 as a refusal. Keying on code 16 alone would have missed
+the live path.
+
+`[ADDED]` **The real backend code is logged as its own field.**
+`logPurchaseFailure` now records `backendErrorCode` (from `extra`, else parsed
+from the response body), `backendHttpStatus`, `backendRequest` and
+`checkoutSetupRejected` alongside the RevenueCat code, so `8142` is greppable
+instead of buried mid-string. `parseRcBackendFailure` is parsing only: a field
+that is not in the error is logged as null rather than inferred (ENGINEERING.md
+§12). Console only, nothing new reaches the screen (§7).
+
+`[ADDED]` **`docs/purchase-path-verification.md`**, the phone-runnable
+checklist for the live URL once Stripe onboarding is done: test card
+`4242 4242 4242 4242`, confirming `checkout/start` returns 200 rather than 422,
+the real webhook delivering 2xx, `profiles.subscription_status` flipping to
+`active`, and the app unlocking and staying unlocked across a reload. The
+webhook is deliberately not mocked: it is the only writer of paid status, so a
+simulated one would prove the column and not the purchase.
+
 `[FIXED]` **A purchase can no longer be attributed to a stale RevenueCat
 customer.** The SDK may only be configured once per page load, so the previous
 `if (!Purchases.isConfigured()) configure(...)` left a configured instance
@@ -52,6 +90,19 @@ branches on test vs live; the mode is entirely the value of
 `NEXT_PUBLIC_REVENUECAT_PUBLIC_KEY` (and `REVENUECAT_SECRET_KEY` for the cancel
 route). Switching modes is a value change plus a redeploy — never a code change,
 and never a rename.
+
+`[OPEN]` **`cancel-subscription.tsx` still has the generic fallback.**
+`apps/web/components/cancel-subscription.tsx` falls back to the identical
+"Something went wrong. Please try again." string when the cancel route returns
+no error of its own. Same class of problem as the purchase path, different
+route, deliberately left alone here so this PR stays one thing. Separate task.
+
+`[OPEN]` **Two older strings in `purchaseErrorCopy` still contain em dashes.**
+The pending-payment and misconfiguration messages authored earlier on this
+branch use em dashes, against the house rule for authored copy. Not rewritten
+here because they are copy the founder may already have read, and rewriting them
+is a voice decision rather than a fix. The new checkout-rejection string is em
+dash free and pinned by a test.
 
 `[OPEN]` **Sandbox purchases grant real access.** The webhook does not read
 `event.environment`, so a SANDBOX `INITIAL_PURCHASE` writes `subscription_status

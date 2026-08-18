@@ -10,10 +10,34 @@ Every RevenueCat statement below is from RevenueCat's own docs (linked inline)
 or verified in the installed SDK source. Where their dashboard labels may have
 moved, the doc link is the authority, not this file.
 
+## Check the billing engine before the mode
+
+The mode question (test vs live) assumes the key is even for the right billing
+engine, and that is worth confirming first, because `purchases-js` accepts **four
+different key families**: RevenueCat Billing (`rcb_`), Stripe Billing (`strp_`),
+Paddle (`pdl_`) and Test Store (`test_`). A key from the wrong family still
+configures cleanly and then fails **at RevenueCat's backend** — which is what a
+code 16 looks like. Only a mobile SDK key (`appl_`/`goog_`/`amzn_`) or a secret
+key (`sk_`) is rejected locally, and that is a code 11, not 16.
+
+**Concretely: the `NEXT_PUBLIC_REVENUECAT_PUBLIC_KEY` present in the Cursor agent
+environment is a `strp_…` Stripe Billing key, not an `rcb_…` RevenueCat Billing
+key.** That is only the value in the agent VM (Cursor secrets) and says nothing
+certain about what Vercel holds, so read Vercel yourself in step 1. But if the
+same value is in Vercel, that is a mismatch worth resolving before anything else:
+Stripe Billing and RevenueCat Billing are **separate web configs** in RevenueCat,
+each with their own products and offerings
+([Configuring Payments](https://www.revenuecat.com/docs/tools/funnels/configuring-payments)),
+and the paywall reads `offerings.current.monthly`, which only resolves if the
+offering exists in the config that key belongs to.
+
+Either engine can work. What cannot work is a key for one config and products
+and offerings set up in the other.
+
 ## The rule we are aligning to
 
-**Everything in ONE mode.** The key in the app, the RevenueCat Billing config's
-Stripe connection, and Stripe itself must all be test/sandbox, or all be live.
+**Everything in ONE mode.** The key in the app, the web config's Stripe
+connection, and Stripe itself must all be test/sandbox, or all be live.
 
 Since the Stripe keys currently in play are **test** keys, align everything to
 **test/sandbox now**, prove one purchase end to end, then swap all of it to live
@@ -81,29 +105,37 @@ Cursor is not on the live site at all.
 
 The prefix is the marker:
 
-| Prefix | What it is | Takes a payment? |
+| Prefix | What it is | Behaviour |
 | --- | --- | --- |
-| `rcb_sb_…` | Web Billing **sandbox** key | Yes — Stripe **test mode**, test cards only |
-| `rcb_…` (no `sb_`) | Web Billing **production** key | Yes — real money, needs Stripe live mode |
-| `appl_…`, `goog_…`, `amzn_…` | a mobile SDK key, wrong product | No — SDK rejects it at configure |
-| `sk_…` | a **secret** key; never belongs in a `NEXT_PUBLIC_` var | No |
+| `rcb_sb_…` | RevenueCat Billing **sandbox** key | Purchases via Stripe **test mode**, test cards only |
+| `rcb_…` (no `sb_`) | RevenueCat Billing **production** key | Real money; needs Stripe live mode |
+| `strp_…` | **Stripe Billing** key — a different web config | Configures fine, then needs *that* config's products/offering |
+| `pdl_…` | Paddle Billing key — a different engine again | Configures fine, needs a Paddle config |
+| `test_…` | RevenueCat Test Store key | Simulated purchases only |
+| `appl_…`, `goog_…`, `amzn_…` | a mobile SDK key, wrong product | Rejected locally, code 11 |
+| `sk_…` | a **secret** key; never belongs in a `NEXT_PUBLIC_` var | Rejected locally, code 11 |
 
 That table is the SDK's own rule, not an inference: `purchases-js` sets its
 sandbox flag from `key.startsWith("rcb_sb_")`, and rejects any key outside
 `rcb_`/`pdl_`/`test_`/`strp_` with "Invalid API key. Use your Web Billing API
-key." — which is error code **11**, not 16. Getting a 16 therefore tells you the
-key was accepted locally and the refusal came from RevenueCat's backend.
+key." — error code **11**. So a 16 tells you the key was accepted locally and the
+refusal came from RevenueCat's backend.
 
-**Fastest read of all: the app now reports its own mode.** Open `/subscribe`,
-open the browser console, click "Continue with Galaxia" and let it fail. The
-`[billing] purchase failed` line reports:
+Note that **only `rcb_` keys carry the mode in the prefix.** For a `strp_` or
+`pdl_` key the mode belongs to the connected Stripe/Paddle account, not to the
+key, so there is nothing to read off the prefix — go to section 3.
 
-- `keyMode` — `sandbox` / `production` / `unrecognized` / `missing`
+**Fastest read of all: the app now reports which key it is using.** Open
+`/subscribe`, open the browser console, click "Continue with Galaxia" and let it
+fail. The `[billing] purchase failed` line reports:
+
+- `keyKind` — `revenuecat-billing-sandbox` / `revenuecat-billing-production` /
+  `stripe-billing` / `paddle-billing` / `test-store` / `mobile-sdk-key` /
+  `secret-key` / `unrecognized` / `missing`
 - `sdkReportsSandbox` — the SDK's own verdict on the key it was configured with
 - `rcErrorCode`, `rcMessage`, `rcUnderlyingMessage` — RevenueCat's own reason
 
-No key, no user id, nothing secret is printed, and nothing of this appears on
-screen.
+No key, no user id, nothing secret is printed, and none of it appears on screen.
 
 ## 2. See which key is which in RevenueCat
 
@@ -113,8 +145,13 @@ keys** ([API Keys & Authentication](https://www.revenuecat.com/docs/welcome/auth
 A properly provisioned RevenueCat Billing config shows **both** a public
 production key and a sandbox key.
 
-Aligned looks like: the value in Vercel is character-for-character one of those
-two keys, and you know which one it is.
+While you are there, note **how many web configs exist and of what type** — a
+RevenueCat Billing config, a Stripe Billing config, or both. That tells you which
+family the key in Vercel belongs to, and which config has to hold the monthly
+product and the offering for the paywall to resolve `offerings.current.monthly`.
+
+Aligned looks like: the value in Vercel is character-for-character a key from the
+config that owns your products and offering, and you know which one it is.
 
 **If only the `rcb_sb_…` sandbox key is listed and there is no production
 `rcb_…` key at all, that is itself the finding** — per the Stripe connection doc
@@ -221,9 +258,9 @@ nothing gets paid status either way.
 
 ## 6. End-to-end test, once the modes match
 
-1. **Confirm the mode first.** `/subscribe` → console → the `[billing]` line's
-   `keyMode` and `sdkReportsSandbox` must agree with the mode you found in
-   sections 2–3. Do not start a purchase before those agree.
+1. **Confirm the key and mode first.** `/subscribe` → console → the `[billing]`
+   line's `keyKind` and `sdkReportsSandbox` must agree with the config and mode
+   you found in sections 2–3. Do not start a purchase before they agree.
 2. Sign in as a test account. Note its Supabase `user.id`.
 3. `/subscribe` → **Continue with Galaxia** → pay with Stripe test card
    `4242 4242 4242 4242`, any future expiry, any CVC, any postcode.

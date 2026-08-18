@@ -20,21 +20,47 @@ export const RC_ENTITLEMENT_ID = "GalaxiaMea App Unlimited";
 export const RC_PLAN = "monthly";
 
 /**
- * Which RevenueCat Web Billing key the app was handed, read from its prefix.
- * Every Web Billing key starts `rcb_`; the sandbox variant is `rcb_sb_`.
+ * Which RevenueCat key the app was handed, read from its prefix alone.
  *
- * The app has no notion of "test mode" of its own — the mode is entirely a
- * property of the key in NEXT_PUBLIC_REVENUECAT_PUBLIC_KEY, and the RevenueCat
- * project's own Stripe connection decides whether that mode can take real
- * money. This helper exists so a failed purchase can name the mode it was in
- * without ever printing the key.
+ * The app has no notion of "test mode" of its own — which mode and which
+ * billing engine a purchase runs through is entirely a property of the key in
+ * NEXT_PUBLIC_REVENUECAT_PUBLIC_KEY. This exists so a failed purchase can name
+ * the key it was using without ever printing the key.
+ *
+ * Two distinctions matter, and they are different questions:
+ *   - Engine: we integrate RevenueCat Billing (`rcb_`, formerly Web Billing).
+ *     `purchases-js` also accepts Stripe Billing (`strp_`), Paddle (`pdl_`) and
+ *     Test Store (`test_`) keys, so one of those configures cleanly and then
+ *     fails at the backend — the RevenueCat project has to have that engine's
+ *     config, products and offering set up for the purchase to resolve.
+ *   - Mode: only RevenueCat Billing keys carry the mode in the prefix
+ *     (`rcb_sb_` sandbox vs `rcb_` production). For the other engines the mode
+ *     belongs to the connected Stripe/Paddle account, not to the key, so it
+ *     cannot be read here at all.
+ * Anything else (a mobile SDK key, a secret key) the SDK rejects outright.
  */
-export type RcKeyMode = "sandbox" | "production" | "unrecognized" | "missing";
+export type RcKeyKind =
+  | "missing"
+  | "revenuecat-billing-sandbox"
+  | "revenuecat-billing-production"
+  | "stripe-billing"
+  | "paddle-billing"
+  | "test-store"
+  | "mobile-sdk-key"
+  | "secret-key"
+  | "unrecognized";
 
-export function rcKeyMode(key: string | null | undefined): RcKeyMode {
+export function rcKeyKind(key: string | null | undefined): RcKeyKind {
   if (!key) return "missing";
-  if (key.startsWith("rcb_sb_")) return "sandbox";
-  if (key.startsWith("rcb_")) return "production";
+  if (key.startsWith("rcb_sb_")) return "revenuecat-billing-sandbox";
+  if (key.startsWith("rcb_")) return "revenuecat-billing-production";
+  if (key.startsWith("strp_")) return "stripe-billing";
+  if (key.startsWith("pdl_")) return "paddle-billing";
+  if (key.startsWith("test_")) return "test-store";
+  if (key.startsWith("appl_") || key.startsWith("goog_") || key.startsWith("amzn_")) {
+    return "mobile-sdk-key";
+  }
+  if (key.startsWith("sk_")) return "secret-key";
   return "unrecognized";
 }
 

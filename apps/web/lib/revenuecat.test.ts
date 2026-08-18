@@ -5,7 +5,7 @@ import {
   RC_PLAN,
   mapRevenueCatEvent,
   purchaseErrorCopy,
-  rcKeyMode,
+  rcKeyKind,
   verifyWebhookAuth,
   type RevenueCatEvent
 } from "./revenuecat";
@@ -138,23 +138,37 @@ describe("RC_ENTITLEMENT_ID", () => {
   });
 });
 
-describe("rcKeyMode", () => {
-  it("reads the mode off the key prefix", () => {
-    expect(rcKeyMode("rcb_sb_abc123")).toBe("sandbox");
-    expect(rcKeyMode("rcb_abc123")).toBe("production");
+describe("rcKeyKind", () => {
+  it("reads RevenueCat Billing mode off the prefix", () => {
+    expect(rcKeyKind("rcb_sb_abc123")).toBe("revenuecat-billing-sandbox");
+    expect(rcKeyKind("rcb_abc123")).toBe("revenuecat-billing-production");
   });
 
-  it("flags a key that is not a Web Billing key at all", () => {
-    // e.g. a mobile SDK key or a secret key pasted in by mistake.
-    expect(rcKeyMode("appl_abc123")).toBe("unrecognized");
-    expect(rcKeyMode("goog_abc123")).toBe("unrecognized");
-    expect(rcKeyMode("sk_abc123")).toBe("unrecognized");
+  it("names the other engines the SDK accepts, which configure but are not ours", () => {
+    // These pass the SDK's key validation, so they fail later at the backend
+    // rather than locally — the case that is otherwise invisible.
+    expect(rcKeyKind("strp_abc123")).toBe("stripe-billing");
+    expect(rcKeyKind("pdl_abc123")).toBe("paddle-billing");
+    expect(rcKeyKind("test_abc123")).toBe("test-store");
   });
 
-  it("reports a missing key as missing, not as a mode", () => {
-    expect(rcKeyMode("")).toBe("missing");
-    expect(rcKeyMode(null)).toBe("missing");
-    expect(rcKeyMode(undefined)).toBe("missing");
+  it("names a wrong-product key the SDK rejects outright", () => {
+    expect(rcKeyKind("appl_abc123")).toBe("mobile-sdk-key");
+    expect(rcKeyKind("goog_abc123")).toBe("mobile-sdk-key");
+    expect(rcKeyKind("amzn_abc123")).toBe("mobile-sdk-key");
+    expect(rcKeyKind("sk_abc123")).toBe("secret-key");
+    expect(rcKeyKind("nonsense")).toBe("unrecognized");
+  });
+
+  it("reports a missing key as missing, not as a kind of key", () => {
+    expect(rcKeyKind("")).toBe("missing");
+    expect(rcKeyKind(null)).toBe("missing");
+    expect(rcKeyKind(undefined)).toBe("missing");
+  });
+
+  it("does not mistake a sandbox key for a production one", () => {
+    // The production branch is a prefix of the sandbox one, so order matters.
+    expect(rcKeyKind("rcb_sb_x")).not.toBe("revenuecat-billing-production");
   });
 });
 

@@ -8,7 +8,7 @@ import {
 } from "@revenuecat/purchases-js";
 import { useState } from "react";
 import { publicEnv } from "../lib/env";
-import { RC_ENTITLEMENT_ID, purchaseErrorCopy, rcKeyMode } from "../lib/revenuecat";
+import { RC_ENTITLEMENT_ID, purchaseErrorCopy, rcKeyKind } from "../lib/revenuecat";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";
 
@@ -131,10 +131,11 @@ async function purchasesForUser(userId: string): Promise<Purchases> {
 /**
  * Report a failed purchase to the browser console only — never to the screen
  * (ENGINEERING.md §7). This is what turns a bare RevenueCat error code into
- * something diagnosable: it names the code and the mode the key put us in
- * (a sandbox key cannot take an external payment, so a backend error while
- * running on `rcb_sb_` points at the key, not at the customer). It prints no
- * key, no user id and no session detail.
+ * something diagnosable: alongside RevenueCat's own reason it names which key
+ * the attempt ran on, because the SDK accepts several key families and only
+ * rejects some of them locally. A backend error on a key whose engine or mode
+ * does not match the RevenueCat project's config looks identical to a genuine
+ * payment failure otherwise. It prints no key, no user id, no session detail.
  */
 function logPurchaseFailure(error: unknown) {
   const rc = error instanceof PurchasesError ? error : null;
@@ -142,7 +143,7 @@ function logPurchaseFailure(error: unknown) {
     rcErrorCode: rc?.errorCode ?? null,
     rcMessage: rc?.message ?? String(error),
     rcUnderlyingMessage: rc?.underlyingErrorMessage ?? null,
-    keyMode: rcKeyMode(publicEnv.revenueCatPublicKey),
+    keyKind: rcKeyKind(publicEnv.revenueCatPublicKey),
     sdkReportsSandbox: Purchases.isConfigured()
       ? Purchases.getSharedInstance().isSandbox()
       : null

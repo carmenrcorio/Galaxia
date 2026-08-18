@@ -8,11 +8,21 @@ beyond pinning it with a test.
 
 `[ADDED]` **The paywall now reports why a purchase failed, to the console only.**
 `logPurchaseFailure` in `apps/web/components/paywall.tsx` logs the RevenueCat
-error code, message and underlying message, plus the mode the key put us in
-(`keyMode` from the new `rcKeyMode` helper, and the SDK's own `isSandbox()`). No
+error code, message and underlying message, plus which key the attempt ran on
+(`keyKind` from the new `rcKeyKind` helper, and the SDK's own `isSandbox()`). No
 key, user id or session detail is printed and none of it reaches the screen
 (ENGINEERING.md §7). Code 16 is `UnknownBackendError` — a RevenueCat-side
-refusal — and it is not diagnosable without knowing which mode the key was in.
+refusal — and it is not diagnosable without knowing which key produced it.
+
+`[DECISION]` **`rcKeyKind` names the billing engine, not just sandbox vs
+production.** `purchases-js` accepts four key families — RevenueCat Billing
+(`rcb_`), Stripe Billing (`strp_`), Paddle (`pdl_`) and Test Store (`test_`) —
+and only rejects a mobile (`appl_`/`goog_`/`amzn_`) or secret (`sk_`) key
+locally. A key for the wrong *engine* therefore configures cleanly and fails at
+the backend, indistinguishable from a payment problem, which is precisely the
+shape of a code 16. Reporting the family makes that visible; verified in a
+browser against the live RevenueCat backend for `rcb_sb_`, `rcb_`, `strp_` and
+`appl_` keys.
 
 `[CHANGED]` **Purchase failures say only what the error code establishes.**
 `purchaseErrorCopy` in `apps/web/lib/revenuecat.ts` replaces the single

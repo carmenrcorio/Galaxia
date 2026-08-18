@@ -19,7 +19,10 @@ export function GetApp({ source }: GetAppProps) {
   return (
     <section className="glass-card" style={{ marginTop: 16 }}>
       <h2 style={{ marginTop: 0, fontFamily: "var(--font-fraunces)" }}>Get Galaxia on your phone</h2>
-      <p className="muted">The full constellation experience lives in the mobile app: charts, Vela, and relationship guidance.</p>
+      <p className="muted">
+        Your web account works now, and mobile links will use the same account as soon as they are
+        available.
+      </p>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 12 }}>
         {iosLink ? (
           <a href={iosLink} className="pill-link pill-link--gold">

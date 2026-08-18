@@ -2,7 +2,7 @@
 
 import { joinFullName, resolveAccountName, splitFullName } from "@galaxia/core";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChangePassword } from "../../components/change-password";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { GetApp } from "../../components/get-app";
@@ -23,6 +23,10 @@ export default function AccountPage() {
   const [selfName, setSelfName]       = useState<string>("");
   const [firstDraft, setFirstDraft]   = useState("");
   const [lastDraft, setLastDraft]     = useState("");
+  // The name fields render before the profile fetch lands, so someone can start
+  // typing into them first. Once they have, the fetch must not seed over what
+  // they typed.
+  const nameEdited = useRef(false);
   const [savingName, setSavingName]   = useState(false);
   const [nameStatus, setNameStatus]   = useState<string | null>(null);
   const [subStatus, setSubStatus]   = useState<string | null>(null);
@@ -56,9 +60,11 @@ export default function AccountPage() {
       // Pre-fill the editable fields with the best name we have so saving it is
       // one tap. `resolveAccountName().name` is never an email, so the fields
       // can never be seeded with one.
-      const seeded = splitFullName(resolveAccountName({ profileDisplayName: pName, selfPersonName: sName }).name);
-      setFirstDraft(seeded.firstName);
-      setLastDraft(seeded.lastName);
+      if (!nameEdited.current) {
+        const seeded = splitFullName(resolveAccountName({ profileDisplayName: pName, selfPersonName: sName }).name);
+        setFirstDraft(seeded.firstName);
+        setLastDraft(seeded.lastName);
+      }
       setSubStatus((profile?.subscription_status as string | null) ?? null);
       setComped(profile?.comped === true);
       setCancelAtPeriodEnd(Boolean(profile?.cancel_at_period_end));
@@ -133,7 +139,7 @@ export default function AccountPage() {
                 id="account-first-name"
                 className="field"
                 value={firstDraft}
-                onChange={(e) => setFirstDraft(e.target.value)}
+                onChange={(e) => { nameEdited.current = true; setFirstDraft(e.target.value); }}
                 autoComplete="given-name"
                 maxLength={80}
                 style={{ width: "100%" }}
@@ -147,7 +153,7 @@ export default function AccountPage() {
                 id="account-last-name"
                 className="field"
                 value={lastDraft}
-                onChange={(e) => setLastDraft(e.target.value)}
+                onChange={(e) => { nameEdited.current = true; setLastDraft(e.target.value); }}
                 autoComplete="family-name"
                 maxLength={80}
                 style={{ width: "100%" }}

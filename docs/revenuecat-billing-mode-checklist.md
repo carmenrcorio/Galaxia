@@ -259,6 +259,10 @@ nothing gets paid status either way.
 
 ## 6. End-to-end test, once the modes match
 
+> For the phone-runnable version of this, to be run on the live URL once Stripe
+> onboarding is complete, see `docs/purchase-path-verification.md`. Same path,
+> written as a checklist rather than as a diagnosis.
+
 1. **Confirm the key and mode first.** `/subscribe` → console → the `[billing]`
    line's `keyKind` and `sdkReportsSandbox` must agree with the config and mode
    you found in sections 2–3. Do not start a purchase before they agree.

@@ -53,6 +53,7 @@ import {
   honorEdgesFromDeclaredRows,
   isMinorForSafety,
   peopleForTodaySky,
+  resolveAccountName,
   resolveNodeColor,
   ringBandRadius,
   ringIndex,
@@ -158,7 +159,10 @@ export default function AppHomePage() {
   const entranceStartRef = useRef<number | null>(null);
   const entranceKeyRef   = useRef<string>("");
 
-  const [welcomeName, setWelcomeName] = useState("stargazer");
+  /* First name only, from the shared resolver. Null when no name has been
+     captured, which the greeting handles by simply not naming anyone. It is
+     never the local part of an email address. */
+  const [welcomeName, setWelcomeName] = useState<string | null>(null);
   const [people, setPeople]           = useState<PersonRow[]>([]);
   const [links, setLinks]             = useState<LinkRow[]>([]);
   /* Honor-constellation edges — declared relationships rows only (Phase 3).
@@ -184,7 +188,7 @@ export default function AppHomePage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      loadHome(user.id, user.email ?? "");
+      loadHome(user.id);
     });
   }, [supabase]);
 
@@ -1159,7 +1163,7 @@ export default function AppHomePage() {
   }, [loading, people, links, honorEdges, activeTransitIds, hoverPerson, router, cohortByPerson]);
 
   /* ─── data loading ────────────────────────────────────────────── */
-  async function loadHome(uid: string, email: string) {
+  async function loadHome(uid: string) {
     setLoading(true);
     try {
       const { data: idRows } = await supabase.from("people").select("id").eq("owner_id", uid);
@@ -1184,8 +1188,16 @@ export default function AppHomePage() {
           : Promise.resolve({ data: [] as any[] }),
       ]);
 
-      setWelcomeName(profile?.display_name ?? email.split("@")[0] ?? "stargazer");
       const castPeople = (peopleRows ?? []) as PersonRow[];
+      /* Same resolver as /account and mobile home. Previously this line fell
+         back to email.split("@")[0], which greeted people by a fragment of
+         their login address and ignored the name on their own chart. */
+      setWelcomeName(
+        resolveAccountName({
+          profileDisplayName: profile?.display_name as string | null,
+          selfPersonName: castPeople.find(p => p.is_self === true)?.display_name ?? null
+        }).firstName
+      );
       setPeople(castPeople);
       const pinnedSkyPersonId = (profile as { pinned_sky_person_id?: string | null } | null)?.pinned_sky_person_id ?? null;
 
@@ -1316,7 +1328,8 @@ export default function AppHomePage() {
       <div className="fade-in">
         <p className="eyebrow">Home</p>
         <h1 className="page-title">Galaxia Mea</h1>
-        <p className="muted">Welcome back, {welcomeName}.</p>
+        {/* FOUNDER-REVIEW: authored greeting, including the no-name variant. */}
+        <p className="muted">{welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."}</p>
       </div>
 
       {homeStatus ? <p className="error">{homeStatus}</p> : null}

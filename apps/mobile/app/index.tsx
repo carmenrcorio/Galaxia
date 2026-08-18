@@ -32,13 +32,16 @@ export default function PublicIndexScreen() {
     setError(null);
     try {
       const fn = mode === "sign-in" ? supabase.auth.signInWithPassword : supabase.auth.signUp;
-      const { data, error: authError } = await fn({ email, password });
+      const { error: authError } = await fn({ email, password });
       if (authError) {
         setError(authError.message);
       }
-      if (mode === "sign-up" && data.user?.id) {
-        await supabase.from("profiles").upsert({ id: data.user.id, display_name: email.split("@")[0] });
-      }
+      // Signing up deliberately writes no display_name. This used to store
+      // email.split("@")[0] as the user's name, which put a fragment of a login
+      // address into profiles.display_name, the field every greeting and account
+      // header reads. It then showed up as the person's name on the web account
+      // screen and in invite emails. No name captured here means no name stored,
+      // and the account screen honestly asks for one.
     } finally {
       setSubmitting(false);
     }

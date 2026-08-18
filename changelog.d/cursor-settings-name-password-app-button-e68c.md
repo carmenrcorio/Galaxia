@@ -1,4 +1,4 @@
-## Account screen: dead app button removed, change password added, name shown instead of email (branch `cursor/settings-name-password-app-button-e68c`) — 2026-08-18
+## Account screen: dead app button fixed, change password added, name shown instead of email (branch `cursor/settings-name-password-app-button-e68c`) — 2026-08-18
 
 **Trigger**: Three defects on the same signed-in surface (`/account`). It offered an
 "Open in app" button for an app that does not exist, offered no way to change a

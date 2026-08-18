@@ -67,7 +67,7 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
         Already have an account? <Link href="/login">Log in</Link>
       </p>
       <p className="muted">
-        Want mobile? <Link href="/download">Get the app</Link>
+        Want mobile updates? <Link href="/download">See launch links</Link>
       </p>
     </div>
   );

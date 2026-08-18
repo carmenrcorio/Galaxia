@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { AppNav } from "../../components/app-nav";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { GetApp } from "../../components/get-app";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { SignOutButton } from "../../components/sign-out-button";
 import { Spinner } from "../../components/spinner";
 import { TrialBanner } from "../../components/trial-banner";
-import { publicEnv } from "../../lib/env";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 
 export default function AccountPage() {
@@ -28,7 +28,6 @@ export default function AccountPage() {
   const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false);
   const [peopleCount, setPeopleCount] = useState(0);
   const [sampleNames, setSampleNames] = useState<string[]>([]);
-  const siteUrl = publicEnv.siteUrl || "";
 
   // Name resolution: an explicitly-set profile name wins; otherwise fall back
   // to the self-person's name (set during onboarding); otherwise nothing — we
@@ -78,18 +77,7 @@ export default function AccountPage() {
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
       <CosmicBackground />
-
-      {/* Nav header — same as app layout */}
-      <header style={{ position: "sticky", top: 0, zIndex: 30, borderBottom: "1px solid rgba(183,154,216,.12)", background: "rgba(10,7,23,.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}>
-        <nav className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, paddingBottom: 10, gap: 10, flexWrap: "wrap" }}>
-          <Link href="/app" style={{ color: "var(--gold)", fontFamily: "var(--font-fraunces)", fontSize: 22 }}>Galaxia</Link>
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {[["Galaxia Mea","/app"],["Compare","/app/compare"],["Groups","/app/groups"],["Vela","/app/vela"],["Settings","/app/settings"]].map(([label, href]) => (
-              <Link key={href} href={href as never} style={{ color: "var(--mist)", fontSize: 13, fontWeight: 500, padding: "5px 12px", borderRadius: 100 }}>{label}</Link>
-            ))}
-          </div>
-        </nav>
-      </header>
+      <AppNav />
 
       <TrialBanner />
 
@@ -165,7 +153,7 @@ export default function AccountPage() {
               <Link className="pill-link" href="/subscribe">Subscribe</Link>
             )}
             <Link className="pill-link" href="/account/data">Your data</Link>
-            {siteUrl ? <a className="pill-link" href={`${siteUrl}/account`}>Open in app</a> : null}
+            <Link className="pill-link" href="/download">Get mobile app updates</Link>
           </div>
         </section>
 

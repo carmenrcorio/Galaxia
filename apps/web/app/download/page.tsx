@@ -9,7 +9,10 @@ export default function DownloadPage() {
   return (
     <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 920 }}>
       <h1 className="auth-title">Download Galaxia</h1>
-      <p className="muted">Galaxia Mea, Vela, and your complete constellation are designed for mobile first.</p>
+      <p className="muted">
+        Use your Galaxia account on web today, then open the same account in mobile once these
+        links are available.
+      </p>
       <section className="glass-card" style={{ marginTop: 16 }}>
         <h2 style={{ marginTop: 0 }}>Get the app</h2>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

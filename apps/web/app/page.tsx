@@ -8,7 +8,6 @@ import { MarketingNav } from "../components/marketing/marketing-nav";
 import { PricingSection } from "../components/marketing/pricing-section";
 import { RevealObserver } from "../components/marketing/reveal-observer";
 import { SiteFooter } from "../components/marketing/site-footer";
-import { SocialProofPlaceholder } from "../components/marketing/social-proof-placeholder";
 import { TrustSection } from "../components/marketing/trust-section";
 import { VelaExampleSection } from "../components/marketing/vela-example-section";
 import { WhyNotSection } from "../components/marketing/why-not-section";
@@ -23,7 +22,7 @@ import { WhySection } from "../components/marketing/why-section";
  *
  * Conversion order: Hero (with Quick Chart mini-form + inline natal sign reveal)
  * → The Edge → The shift → why-not-a-horoscope-app → How it works → Vela → Trust
- * → empty social-proof placeholder → Pricing → FAQ → Close.
+ * → Pricing → FAQ → Close.
  */
 export default function HomePage() {
   return (
@@ -39,7 +38,6 @@ export default function HomePage() {
         <FeaturesSection />
         <VelaExampleSection />
         <TrustSection />
-        <SocialProofPlaceholder />
         <PricingSection />
         <FaqSection />
         <CloseSection />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   PASSWORD_MIN_LENGTH,
   PASSWORD_MISMATCH_ERROR,
@@ -40,6 +40,15 @@ export function ChangePassword() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const statusRef = useRef<HTMLDivElement>(null);
+
+  // On a phone this card can sit low enough that the answer renders just below
+  // the fold, which reads as the button having done nothing. `nearest` scrolls
+  // the minimum needed, so it is a no-op when the message is already visible.
+  useEffect(() => {
+    if (!saved && !error) return;
+    statusRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [saved, error]);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,6 +134,7 @@ export function ChangePassword() {
         Set a new password for this account. You stay signed in on this device.
       </p>
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 8, maxWidth: 420 }}>
+        {/* FOUNDER-REVIEW: authored password field labels and the card eyebrow. */}
         <label className="muted" htmlFor="new-password" style={{ fontSize: 13 }}>
           New password
         </label>
@@ -166,15 +176,17 @@ export function ChangePassword() {
           </button>
         </div>
       </form>
-      {/* FOUNDER-REVIEW: authored success confirmation. */}
-      {saved ? (
-        <p className="success" style={{ fontSize: 13, marginTop: 10, marginBottom: 0 }}>
-          Password changed. Use the new one next time you sign in.
-        </p>
-      ) : null}
-      {error ? (
-        <p className="error" style={{ fontSize: 13, marginTop: 10, marginBottom: 0 }}>{error}</p>
-      ) : null}
+      <div ref={statusRef}>
+        {/* FOUNDER-REVIEW: authored success confirmation. */}
+        {saved ? (
+          <p className="success" style={{ fontSize: 13, marginTop: 10, marginBottom: 0 }}>
+            Password changed. Use the new one next time you sign in.
+          </p>
+        ) : null}
+        {error ? (
+          <p className="error" style={{ fontSize: 13, marginTop: 10, marginBottom: 0 }}>{error}</p>
+        ) : null}
+      </div>
     </section>
   );
 }

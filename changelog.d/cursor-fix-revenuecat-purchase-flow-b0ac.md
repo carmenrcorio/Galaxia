@@ -55,6 +55,19 @@ code from `extra` or from that body, and independently treats a `postCheckout*`
 endpoint answering 422 as a refusal. Keying on code 16 alone would have missed
 the live path.
 
+`[TESTED]` **Driven in a real browser through the real SDK on a production
+build, with the RevenueCat backend responses controlled.** Three runs, each
+clicking **Continue with Galaxia** for real: `checkout/start` answering 422 with
+code 8142, answering 503 with code 7110, and answering 200. The rejection run
+settles as **`rcErrorCode: 2`**, not 16, with `extra` gone and
+`backendErrorCode: 8142` recovered from `underlyingErrorMessage` alone. That is
+the predicted re-wrap, observed, and direct evidence that a code-16 check would
+not have fired on the live failure. The 503 run reports
+`checkoutSetupRejected: false` and keeps the generic copy, so the new case is a
+genuine split rather than a blanket rewrite; the 200 run logs nothing and shows
+no error. The temporary unauthenticated harness page used to reach the paywall
+without Supabase was deleted before commit.
+
 `[ADDED]` **The real backend code is logged as its own field.**
 `logPurchaseFailure` now records `backendErrorCode` (from `extra`, else parsed
 from the response body), `backendHttpStatus`, `backendRequest` and
@@ -90,6 +103,17 @@ branches on test vs live; the mode is entirely the value of
 `NEXT_PUBLIC_REVENUECAT_PUBLIC_KEY` (and `REVENUECAT_SECRET_KEY` for the cancel
 route). Switching modes is a value change plus a redeploy — never a code change,
 and never a rename.
+
+`[OPEN]` **RevenueCat's own checkout sheet shows the user the raw backend
+number first.** Before our copy is reachable, the SDK's checkout modal renders
+its own error page reading "Something went wrong. Purchase not started due to an
+error (error code: 8142)." with a **Try again** button, and our `catch` only runs
+once that button is pressed. So the first thing the user reads is generic, and
+it puts an internal number on screen, which is what ENGINEERING.md §7 exists to
+prevent. That page is inside `purchases-js` and `purchase()` exposes no option to
+suppress or retitle it, so it is not fixable from our side without leaving the
+SDK's prebuilt checkout. Recorded, not worked around. Worth raising with
+RevenueCat or revisiting if we ever move off their hosted sheet.
 
 `[OPEN]` **`cancel-subscription.tsx` still has the generic fallback.**
 `apps/web/components/cancel-subscription.tsx` falls back to the identical

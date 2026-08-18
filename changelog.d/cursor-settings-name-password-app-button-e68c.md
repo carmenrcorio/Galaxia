@@ -86,3 +86,12 @@ clients that never touch the web callback. It is not needed while web signup is
 the only place a name is collected, and it would add a manual apply step to a
 branch that Vercel can otherwise ship on its own. Worth adding when mobile signup
 starts collecting a name.
+
+`[FIXED]` **Two defects the browser harness caught in the new code itself.** The
+account screen's name fields render before the profile read resolves, so anyone
+who started typing immediately had their input replaced when it landed: filling
+first name then last name saved only the last name. The seed now runs only while
+the fields are untouched. Separately, on a phone the password card can sit low
+enough that its success or error line renders just below the fold, which reads as
+the button having done nothing, so the status block scrolls itself into view with
+`block: "nearest"`.

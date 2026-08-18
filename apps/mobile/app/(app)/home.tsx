@@ -13,6 +13,7 @@ import {
   galaxySeatsResolved,
   isMinorForSafety,
   peopleForTodaySky,
+  resolveAccountName,
   ringIndex,
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
@@ -64,7 +65,9 @@ export default function HomeScreen() {
   const { session, signOut } = useAuth();
   const { tier } = useEntitlement();
   const { reduceMotion } = useAccessibilitySettings();
-  const [welcomeName, setWelcomeName] = useState("stargazer");
+  // First name only, from the shared resolver, or null when no name has been
+  // captured. Never the local part of an email address.
+  const [welcomeName, setWelcomeName] = useState<string | null>(null);
   const [people, setPeople] = useState<PersonRow[]>([]);
   const [links, setLinks] = useState<LinkRow[]>([]);
   const [personSkies, setPersonSkies] = useState<PersonSky[]>([]);
@@ -158,8 +161,15 @@ export default function HomeScreen() {
         : Promise.resolve({ data: [] as { person_id: string; pass_id: string | null }[] }),
       ]);
 
-      setWelcomeName(profile?.display_name ?? session.user.email?.split("@")[0] ?? "stargazer");
       const castPeople = (peopleRows ?? []) as PersonRow[];
+      // Same resolver as the web account screen and web home. This line used to
+      // fall back to session.user.email?.split("@")[0], greeting people by a
+      // fragment of their login address.
+      const resolvedFirstName = resolveAccountName({
+        profileDisplayName: profile?.display_name as string | null,
+        selfPersonName: castPeople.find((person) => person.is_self === true)?.display_name ?? null
+      }).firstName;
+      setWelcomeName(resolvedFirstName);
       setPeople(castPeople);
       const pinnedSkyPersonId = (profile as { pinned_sky_person_id?: string | null } | null)?.pinned_sky_person_id ?? null;
 
@@ -242,7 +252,7 @@ export default function HomeScreen() {
       const threads = (threadRows ?? []) as Array<{ id: string; mode: "ask" | "shared" }>;
       if (threads.length === 0) {
         setThreadChips([]);
-        await cacheSet(cacheKey, { welcomeName: profile?.display_name, people: castPeople, links: finalLinks, personSkies: skies, threadChips: [] });
+        await cacheSet(cacheKey, { welcomeName: resolvedFirstName, people: castPeople, links: finalLinks, personSkies: skies, threadChips: [] });
         return;
       }
       const { data: messages } = await supabase
@@ -269,7 +279,7 @@ export default function HomeScreen() {
 
       setThreadChips(computedThreadChips);
       await cacheSet(cacheKey, {
-        welcomeName: profile?.display_name,
+        welcomeName: resolvedFirstName,
         people: castPeople,
         links: finalLinks,
         personSkies: skies,
@@ -277,7 +287,7 @@ export default function HomeScreen() {
       });
     } catch (error) {
       const cached = await cacheGet<{
-        welcomeName?: string;
+        welcomeName?: string | null;
         people: PersonRow[];
         links: LinkRow[];
         personSkies: PersonSky[];
@@ -301,7 +311,10 @@ export default function HomeScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
       <Text style={{ color: tokens.colors.cream, fontSize: 33, fontWeight: "700" }}>Galaxia Mea</Text>
-      <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>Welcome back, {welcomeName}. Here’s your constellation at a glance.</Text>
+      {/* FOUNDER-REVIEW: authored greeting, including the no-name variant. */}
+      <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
+        {welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."} Here’s your constellation at a glance.
+      </Text>
       <Text style={{ color: tokens.colors.goldSoft }}>Plan: {tier === "plus" ? "Galaxia+" : "Free"}</Text>
 
       {homeLoading ? (

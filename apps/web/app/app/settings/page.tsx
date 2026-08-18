@@ -235,6 +235,12 @@ export default function SettingsPage() {
           Export your data or delete your account from{" "}
           <a href="/account/data" style={{ color: "var(--gold)" }}>Your data</a>.
         </p>
+        {/* FOUNDER-REVIEW: authored pointer to the password control. It lives on
+            Account, next to your name, rather than being duplicated here. */}
+        <p className="muted" style={{ marginTop: 10 }}>
+          Change your password from{" "}
+          <a href="/account" style={{ color: "var(--gold)" }}>Account</a>.
+        </p>
       </section>
 
       <section className="glass-card">

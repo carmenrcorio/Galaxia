@@ -1,14 +1,19 @@
 "use client";
 
+import { joinFullName } from "@galaxia/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { syncSignupNameToProfile } from "../lib/account-name";
 import { getSiteUrlFromRequestOrigin } from "../lib/env";
+import { PASSWORD_MIN_LENGTH, PASSWORD_RULE_HINT } from "../lib/password-rules";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 
 export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: string; nextPath?: string }) {
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "confirm">("idle");
@@ -26,11 +31,20 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
     const siteUrl = getSiteUrlFromRequestOrigin(window.location.origin);
     const redirectUrl = new URL(`${siteUrl}/auth/callback`);
     if (nextPath) redirectUrl.searchParams.set("next", nextPath);
+    // The name rides in auth metadata because signUp can return without a
+    // session (email confirmation), and `profiles` is not writable until there
+    // is one. syncSignupNameToProfile copies it into profiles.display_name,
+    // which is the only field anything reads for display.
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl.toString()
+        emailRedirectTo: redirectUrl.toString(),
+        data: {
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          full_name: joinFullName(firstName, lastName)
+        }
       }
     });
     if (signUpError) {
@@ -39,6 +53,7 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
       return;
     }
     if (data.session) {
+      await syncSignupNameToProfile(supabase, data.user);
       router.push(destination as never);
       router.refresh();
       return;
@@ -49,6 +64,33 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
   return (
     <div className="glass-card" style={{ maxWidth: 460 }}>
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 10 }}>
+        {/* FOUNDER-REVIEW: authored signup name labels and hint. */}
+        <label className="muted" htmlFor="signup-first-name">
+          First name
+        </label>
+        <input
+          id="signup-first-name"
+          className="field"
+          required
+          autoComplete="given-name"
+          maxLength={80}
+          value={firstName}
+          onChange={(event) => setFirstName(event.target.value)}
+        />
+        <label className="muted" htmlFor="signup-last-name">
+          Last name
+        </label>
+        <input
+          id="signup-last-name"
+          className="field"
+          autoComplete="family-name"
+          maxLength={80}
+          value={lastName}
+          onChange={(event) => setLastName(event.target.value)}
+        />
+        <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>
+          This is what Galaxia calls you. Your email stays your login and is never shown as your name.
+        </p>
         <label className="muted" htmlFor="signup-email">
           Email
         </label>
@@ -56,7 +98,9 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
         <label className="muted" htmlFor="signup-password">
           Password
         </label>
-        <input id="signup-password" className="field" required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        <input id="signup-password" className="field" required minLength={PASSWORD_MIN_LENGTH} autoComplete="new-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        {/* FOUNDER-REVIEW: authored password hint. */}
+        <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>{PASSWORD_RULE_HINT}</p>
         <button className="pill-link pill-link--gold" type="submit" disabled={status === "submitting"}>
           {status === "submitting" ? "Creating account..." : "Create account"}
         </button>

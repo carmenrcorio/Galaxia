@@ -61,7 +61,10 @@ export default function VelaPage() {
   const [status, setStatus]     = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [userName, setUserName] = useState("You");
+  // No userName state here on purpose. It used to exist, seeded from
+  // email.split("@")[0], and was never rendered. Anything on this page that
+  // needs to name the signed-in user reads @galaxia/core resolveAccountName,
+  // which never derives a name from an email address.
   const [pinnedKeys, setPinnedKeys] = useState<Set<number>>(new Set());
   // Bootstrap params captured once from the entry URL. Navigation into this
   // page is always cross-route (home "Resume a thread", Compare "Ask Vela",
@@ -130,7 +133,6 @@ export default function VelaPage() {
       if (!user || !session) return;
       setAccessToken(session.access_token);
       setUserId(user.id);
-      setUserName(user.email?.split("@")[0] ?? "You");
       const [{ data: pd }, { data: gd }] = await Promise.all([
         supabase.from("people").select("id, display_name, is_minor, birth_date, birth_precision").eq("owner_id", user.id).order("display_name"),
         supabase.from("groups").select("id, name").eq("owner_id", user.id).order("name")

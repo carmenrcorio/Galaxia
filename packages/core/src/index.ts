@@ -74,3 +74,5 @@ export * from "./record";
 export * from "./owned-delete";
 
 export * from "./cohort-reading";
+
+export * from "./account-name";

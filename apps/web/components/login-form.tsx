@@ -35,8 +35,10 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
     }
     setError(null);
     const siteUrl = getSiteUrlFromRequestOrigin(window.location.origin);
+    const resetCallback = new URL("/auth/callback", siteUrl);
+    resetCallback.searchParams.set("next", "/reset-password");
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/auth/callback`
+      redirectTo: resetCallback.toString()
     });
     if (resetError) {
       setError("We couldn't send the reset email. Please try again.");

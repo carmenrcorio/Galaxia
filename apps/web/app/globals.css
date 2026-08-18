@@ -917,8 +917,9 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 }
 
 @media (max-width: 420px) {
-  .quick-chart-entry-dates {
-    grid-template-columns: 1fr;
+  .quick-chart-entry .quick-chart-entry-dates {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px;
   }
 }
 

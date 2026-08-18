@@ -2,14 +2,21 @@
 
 import { trialDaysRemaining } from "@galaxia/core";
 import {
-  ErrorCode,
   Purchases,
   PurchasesError,
   type Package
 } from "@revenuecat/purchases-js";
 import { useState } from "react";
 import { publicEnv } from "../lib/env";
-import { RC_ENTITLEMENT_ID } from "../lib/revenuecat";
+import {
+  RC_ENTITLEMENT_ID,
+  isCheckoutSetupRejection,
+  parseRcBackendFailure,
+  purchaseErrorCopy,
+  rcBackendErrorCode,
+  rcKeyKind,
+  type RcPurchaseFailure
+} from "../lib/revenuecat";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";
 
@@ -109,6 +116,73 @@ export function deriveHeaderCopy(subscriptionStatus: string | null, trialEndsAt:
 }
 
 /**
+ * Point the RevenueCat SDK at the signed-in Supabase user and return the
+ * instance. The RevenueCat App User ID must be the Supabase user.id so one RC
+ * customer maps to one profile row.
+ *
+ * `configure` can only run once per page load, so if someone signs out and back
+ * in as a different user without a full reload, a configured-but-stale instance
+ * would attribute the purchase to the previous user's RevenueCat customer —
+ * they would pay and someone else would be entitled. `changeUser` re-targets it.
+ */
+async function purchasesForUser(userId: string): Promise<Purchases> {
+  if (!Purchases.isConfigured()) {
+    return Purchases.configure({ apiKey: publicEnv.revenueCatPublicKey, appUserId: userId });
+  }
+  const instance = Purchases.getSharedInstance();
+  if (instance.getAppUserId() !== userId) {
+    await instance.changeUser(userId);
+  }
+  return instance;
+}
+
+/**
+ * Everything the thrown error carries, collected once so the copy and the log
+ * read the same facts. Nothing is interpreted here.
+ */
+function rcPurchaseFailure(error: unknown): RcPurchaseFailure {
+  const rc = error instanceof PurchasesError ? error : null;
+  return {
+    errorCode: rc?.errorCode ?? null,
+    backendErrorCode: rc?.extra?.backendErrorCode ?? null,
+    underlyingErrorMessage: rc?.underlyingErrorMessage ?? null
+  };
+}
+
+/**
+ * Report a failed purchase to the browser console only — never to the screen
+ * (ENGINEERING.md §7). This is what turns a bare RevenueCat error code into
+ * something diagnosable: alongside RevenueCat's own reason it names which key
+ * the attempt ran on, because the SDK accepts several key families and only
+ * rejects some of them locally. A backend error on a key whose engine or mode
+ * does not match the RevenueCat project's config looks identical to a genuine
+ * payment failure otherwise. It prints no key, no user id, no session detail.
+ *
+ * `backendErrorCode` is logged as its own field because the RevenueCat error
+ * code is not the failure: an 8142 rejection reaches us as code 16 or code 2
+ * depending on the path, with the real number buried in the underlying message
+ * or on `extra`. Every field here is read off the error or parsed out of it;
+ * anything absent is logged as null rather than filled in.
+ */
+function logPurchaseFailure(error: unknown, failure: RcPurchaseFailure) {
+  const rc = error instanceof PurchasesError ? error : null;
+  const backend = parseRcBackendFailure(failure.underlyingErrorMessage);
+  console.error("[billing] purchase failed", {
+    rcErrorCode: failure.errorCode,
+    rcMessage: rc?.message ?? String(error),
+    rcUnderlyingMessage: failure.underlyingErrorMessage,
+    backendErrorCode: rcBackendErrorCode(failure),
+    backendHttpStatus: backend.httpStatus,
+    backendRequest: backend.request,
+    checkoutSetupRejected: isCheckoutSetupRejection(failure),
+    keyKind: rcKeyKind(publicEnv.revenueCatPublicKey),
+    sdkReportsSandbox: Purchases.isConfigured()
+      ? Purchases.getSharedInstance().isSandbox()
+      : null
+  });
+}
+
+/**
  * Poll the user's profile until the webhook has flipped their status to a state
  * with access. Read-only — the client never writes status. Bounded so we never
  * hang; if it doesn't land in time the caller falls back to a manual link.
@@ -163,11 +237,9 @@ export function Paywall({
     try {
       // Identify the RevenueCat customer by the Supabase user.id so web (and
       // future mobile) map to ONE RevenueCat customer and ONE entitlement.
-      if (!Purchases.isConfigured()) {
-        Purchases.configure({ apiKey: publicEnv.revenueCatPublicKey, appUserId: userId });
-      }
+      const purchases = await purchasesForUser(userId);
 
-      const offerings = await Purchases.getSharedInstance().getOfferings();
+      const offerings = await purchases.getOfferings();
       const monthly: Package | null =
         offerings.current?.monthly ?? offerings.current?.availablePackages?.[0] ?? null;
       if (!monthly) {
@@ -175,7 +247,7 @@ export function Paywall({
         return;
       }
 
-      const { customerInfo } = await Purchases.getSharedInstance().purchase({ rcPackage: monthly });
+      const { customerInfo } = await purchases.purchase({ rcPackage: monthly });
 
       if (customerInfo.entitlements.active[RC_ENTITLEMENT_ID]) {
         setPurchased(true);
@@ -191,10 +263,12 @@ export function Paywall({
         setError("Your purchase went through but access is still syncing. Refresh in a moment.");
       }
     } catch (e) {
-      if (e instanceof PurchasesError && e.errorCode === ErrorCode.UserCancelledError) {
-        // User closed the purchase flow — not an error.
-      } else {
-        setError("Something went wrong. Please try again.");
+      const failure = rcPurchaseFailure(e);
+      const copy = purchaseErrorCopy(failure);
+      // `null` copy means the user closed the checkout themselves — not an error.
+      if (copy) {
+        logPurchaseFailure(e, failure);
+        setError(copy);
       }
     } finally {
       setSubmitting(false);

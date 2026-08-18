@@ -1,4 +1,4 @@
-# RevenueCat Web Billing — mode alignment checklist
+# RevenueCat billing — engine and mode alignment checklist
 
 Written for the live purchase failing with **RevenueCat error code 16**. Code 16
 is `UnknownBackendError` in `@revenuecat/purchases-js` — RevenueCat's backend
@@ -194,9 +194,10 @@ Then check, in this order:
    paywall takes `offerings.current.monthly`, so that specific package must
    resolve.
 
-Aligned looks like: the key's mode from step 1, the config's Stripe connection,
-that connection's mode, and the offering's product all name the same mode.
-Given your Stripe keys are test keys, all four should read test/sandbox now.
+Aligned looks like: the config's Stripe connection, that connection's mode, and
+the offering's product all name the same mode — and, for an `rcb_` key, the same
+mode its prefix names. Given your Stripe keys are test keys, they should all read
+test/sandbox now.
 
 ## 4. Find the recorded reason for the error-16 attempt
 

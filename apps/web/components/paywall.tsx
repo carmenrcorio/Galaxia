@@ -2,14 +2,13 @@
 
 import { trialDaysRemaining } from "@galaxia/core";
 import {
-  ErrorCode,
   Purchases,
   PurchasesError,
   type Package
 } from "@revenuecat/purchases-js";
 import { useState } from "react";
 import { publicEnv } from "../lib/env";
-import { RC_ENTITLEMENT_ID } from "../lib/revenuecat";
+import { RC_ENTITLEMENT_ID, purchaseErrorCopy, rcKeyMode } from "../lib/revenuecat";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";
 
@@ -109,6 +108,48 @@ export function deriveHeaderCopy(subscriptionStatus: string | null, trialEndsAt:
 }
 
 /**
+ * Point the RevenueCat SDK at the signed-in Supabase user and return the
+ * instance. The RevenueCat App User ID must be the Supabase user.id so one RC
+ * customer maps to one profile row.
+ *
+ * `configure` can only run once per page load, so if someone signs out and back
+ * in as a different user without a full reload, a configured-but-stale instance
+ * would attribute the purchase to the previous user's RevenueCat customer —
+ * they would pay and someone else would be entitled. `changeUser` re-targets it.
+ */
+async function purchasesForUser(userId: string): Promise<Purchases> {
+  if (!Purchases.isConfigured()) {
+    return Purchases.configure({ apiKey: publicEnv.revenueCatPublicKey, appUserId: userId });
+  }
+  const instance = Purchases.getSharedInstance();
+  if (instance.getAppUserId() !== userId) {
+    await instance.changeUser(userId);
+  }
+  return instance;
+}
+
+/**
+ * Report a failed purchase to the browser console only — never to the screen
+ * (ENGINEERING.md §7). This is what turns a bare RevenueCat error code into
+ * something diagnosable: it names the code and the mode the key put us in
+ * (a sandbox key cannot take an external payment, so a backend error while
+ * running on `rcb_sb_` points at the key, not at the customer). It prints no
+ * key, no user id and no session detail.
+ */
+function logPurchaseFailure(error: unknown) {
+  const rc = error instanceof PurchasesError ? error : null;
+  console.error("[billing] purchase failed", {
+    rcErrorCode: rc?.errorCode ?? null,
+    rcMessage: rc?.message ?? String(error),
+    rcUnderlyingMessage: rc?.underlyingErrorMessage ?? null,
+    keyMode: rcKeyMode(publicEnv.revenueCatPublicKey),
+    sdkReportsSandbox: Purchases.isConfigured()
+      ? Purchases.getSharedInstance().isSandbox()
+      : null
+  });
+}
+
+/**
  * Poll the user's profile until the webhook has flipped their status to a state
  * with access. Read-only — the client never writes status. Bounded so we never
  * hang; if it doesn't land in time the caller falls back to a manual link.
@@ -163,11 +204,9 @@ export function Paywall({
     try {
       // Identify the RevenueCat customer by the Supabase user.id so web (and
       // future mobile) map to ONE RevenueCat customer and ONE entitlement.
-      if (!Purchases.isConfigured()) {
-        Purchases.configure({ apiKey: publicEnv.revenueCatPublicKey, appUserId: userId });
-      }
+      const purchases = await purchasesForUser(userId);
 
-      const offerings = await Purchases.getSharedInstance().getOfferings();
+      const offerings = await purchases.getOfferings();
       const monthly: Package | null =
         offerings.current?.monthly ?? offerings.current?.availablePackages?.[0] ?? null;
       if (!monthly) {
@@ -175,7 +214,7 @@ export function Paywall({
         return;
       }
 
-      const { customerInfo } = await Purchases.getSharedInstance().purchase({ rcPackage: monthly });
+      const { customerInfo } = await purchases.purchase({ rcPackage: monthly });
 
       if (customerInfo.entitlements.active[RC_ENTITLEMENT_ID]) {
         setPurchased(true);
@@ -191,10 +230,11 @@ export function Paywall({
         setError("Your purchase went through but access is still syncing. Refresh in a moment.");
       }
     } catch (e) {
-      if (e instanceof PurchasesError && e.errorCode === ErrorCode.UserCancelledError) {
-        // User closed the purchase flow — not an error.
-      } else {
-        setError("Something went wrong. Please try again.");
+      const copy = e instanceof PurchasesError ? purchaseErrorCopy(e.errorCode) : purchaseErrorCopy(null);
+      // `null` copy means the user closed the checkout themselves — not an error.
+      if (copy) {
+        logPurchaseFailure(e);
+        setError(copy);
       }
     } finally {
       setSubmitting(false);

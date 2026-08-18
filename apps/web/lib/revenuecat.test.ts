@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  RC_ENTITLEMENT_ID,
+  RC_ERROR_CODE,
   RC_PLAN,
   mapRevenueCatEvent,
+  purchaseErrorCopy,
+  rcKeyMode,
   verifyWebhookAuth,
   type RevenueCatEvent
 } from "./revenuecat";
@@ -123,6 +127,85 @@ describe("comped survives billing expiration (resolution contract)", () => {
         comped: false
       })
     ).toBe(false);
+  });
+});
+
+describe("RC_ENTITLEMENT_ID", () => {
+  it("is the dashboard entitlement id, exactly", () => {
+    // Case- and space-sensitive: the post-purchase entitlements.active[...]
+    // lookup in the paywall only matches on an exact string.
+    expect(RC_ENTITLEMENT_ID).toBe("GalaxiaMea App Unlimited");
+  });
+});
+
+describe("rcKeyMode", () => {
+  it("reads the mode off the key prefix", () => {
+    expect(rcKeyMode("rcb_sb_abc123")).toBe("sandbox");
+    expect(rcKeyMode("rcb_abc123")).toBe("production");
+  });
+
+  it("flags a key that is not a Web Billing key at all", () => {
+    // e.g. a mobile SDK key or a secret key pasted in by mistake.
+    expect(rcKeyMode("appl_abc123")).toBe("unrecognized");
+    expect(rcKeyMode("goog_abc123")).toBe("unrecognized");
+    expect(rcKeyMode("sk_abc123")).toBe("unrecognized");
+  });
+
+  it("reports a missing key as missing, not as a mode", () => {
+    expect(rcKeyMode("")).toBe("missing");
+    expect(rcKeyMode(null)).toBe("missing");
+    expect(rcKeyMode(undefined)).toBe("missing");
+  });
+});
+
+describe("purchaseErrorCopy", () => {
+  it("says nothing when the user closed the checkout themselves", () => {
+    expect(purchaseErrorCopy(RC_ERROR_CODE.userCancelled)).toBeNull();
+  });
+
+  it("does not call a pending payment a failure or ask for a second payment", () => {
+    const copy = purchaseErrorCopy(RC_ERROR_CODE.paymentPending);
+    expect(copy).toBeTruthy();
+    expect(copy!.toLowerCase()).toContain("no need to pay again");
+  });
+
+  it("does not tell the user to retry a misconfiguration they cannot fix", () => {
+    for (const code of [
+      RC_ERROR_CODE.invalidCredentials,
+      RC_ERROR_CODE.configuration,
+      RC_ERROR_CODE.unsupported,
+      RC_ERROR_CODE.invalidAppUserId
+    ]) {
+      expect(purchaseErrorCopy(code)).toContain("Payments aren't set up correctly");
+    }
+  });
+
+  it("gives a plain retry message for backend/unknown failures (incl. code 16)", () => {
+    expect(purchaseErrorCopy(RC_ERROR_CODE.unknownBackend)).toContain("try again");
+    expect(purchaseErrorCopy(999)).toContain("try again");
+    expect(purchaseErrorCopy(null)).toContain("try again");
+    expect(purchaseErrorCopy(undefined)).toContain("try again");
+  });
+
+  it("never claims whether the user was charged when we do not know", () => {
+    // ENGINEERING.md §12: no confident wrong answer about someone's money.
+    for (const code of [RC_ERROR_CODE.unknownBackend, RC_ERROR_CODE.storeProblem, 999]) {
+      expect(purchaseErrorCopy(code)!.toLowerCase()).not.toContain("charged");
+    }
+  });
+
+  it("leaks no error code, key or internal detail into user copy", () => {
+    // ENGINEERING.md §7: nothing internal reaches the user.
+    const codes = [...Object.values(RC_ERROR_CODE), 0, 999];
+    for (const code of codes) {
+      const copy = purchaseErrorCopy(code);
+      if (!copy) continue;
+      expect(copy).not.toMatch(/\d/);
+      expect(copy.toLowerCase()).not.toContain("revenuecat");
+      expect(copy.toLowerCase()).not.toContain("rcb_");
+      expect(copy.toLowerCase()).not.toContain("stripe");
+      expect(copy.toLowerCase()).not.toContain("sandbox");
+    }
   });
 });
 

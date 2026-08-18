@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { syncSignupNameToProfile } from "../../lib/account-name";
 import { createSupabaseServerClient } from "../../lib/supabase/server";
 
 /**
@@ -33,6 +34,11 @@ export default async function StartPage() {
   if (!user) {
     redirect("/login?next=/start");
   }
+
+  // Catch-up for a name collected at signup that never reached `profiles`, for
+  // any login path that skipped /auth/callback. Costs nothing when there is no
+  // pending name, which is every established account.
+  await syncSignupNameToProfile(supabase, user);
 
   // Only the two facts the signal needs. No chart, no join — cheap and honest.
   const { data: people } = await supabase.from("people").select("id, is_self").eq("owner_id", user.id);

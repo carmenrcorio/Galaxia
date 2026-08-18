@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
+import { syncSignupNameToProfile } from "../../../lib/account-name";
 import { publicEnv } from "../../../lib/env";
 
 export async function GET(request: NextRequest) {
@@ -33,6 +34,14 @@ export async function GET(request: NextRequest) {
   if (tokenHash && (type === "recovery" || type === "email")) {
     await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as EmailOtpType });
   }
+
+  // First authenticated moment after an email confirmation, which is the only
+  // point where a name collected at signup can reach `profiles`. No-op unless
+  // signup captured a name and the profile has none.
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  await syncSignupNameToProfile(supabase, user);
 
   return response;
 }

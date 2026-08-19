@@ -104,6 +104,11 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
         <button className="pill-link pill-link--gold" type="submit" disabled={status === "submitting"}>
           {status === "submitting" ? "Creating account..." : "Create account"}
         </button>
+        {/* FOUNDER-REVIEW: authored */}
+        <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>
+          By creating an account you agree to our <Link href="/terms">Terms</Link> and{" "}
+          <Link href="/privacy">Privacy Policy</Link>.
+        </p>
       </form>
       {status === "confirm" ? <p className="success">Check your email to confirm your account.</p> : null}
       {error ? <p className="error">{error}</p> : null}

@@ -9,7 +9,7 @@
  * minimum without raising it in the Supabase project's auth settings would let
  * signup accept a password the server rejects, or the reverse.
  */
-export const PASSWORD_MIN_LENGTH = 6;
+export const PASSWORD_MIN_LENGTH = 8;
 
 /** FOUNDER-REVIEW: authored password hint shown under password fields. */
 export const PASSWORD_RULE_HINT = `At least ${PASSWORD_MIN_LENGTH} characters.`;

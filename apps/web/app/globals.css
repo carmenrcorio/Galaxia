@@ -1251,6 +1251,110 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 .site-footer-links a { color: var(--mist2); font-size: .82rem; text-decoration: none; transition: color .2s; }
 .site-footer-links a:hover { color: var(--cream); }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   LEGAL PAGES (apps/web/app/terms, apps/web/app/privacy)
+   Renders the reviewed markdown in content/legal/*.md verbatim via
+   components/legal-document.tsx — every class below is typography/layout
+   only, mapped onto react-markdown's element overrides. Do not rewrite the
+   source text to fit the design; adjust these rules instead.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.legal-page {
+  padding-top: clamp(40px, 6vh, 64px);
+  padding-bottom: clamp(56px, 8vh, 88px);
+  max-width: 860px;
+}
+.legal-doc-title { margin-bottom: 4px; }
+/* The doc's own "**Last updated: ...**" line is the very first paragraph;
+   no separate hardcoded date — it inherits .legal-doc-p + the bold-text rule
+   below, which is enough to read as a dateline under the title. */
+.legal-doc-h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -.012em;
+  color: var(--cream);
+  font-size: clamp(1.32rem, 2.6vw, 1.7rem);
+  line-height: 1.24;
+  margin: 40px 0 12px;
+}
+.legal-doc-h2:first-of-type { margin-top: 28px; }
+.legal-doc-h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  color: var(--cream);
+  font-size: 1.08rem;
+  line-height: 1.3;
+  margin: 22px 0 8px;
+}
+.legal-doc-p {
+  color: var(--mist);
+  font-weight: 300;
+  line-height: 1.75;
+  max-width: var(--measure);
+  margin: 0 0 16px;
+}
+.legal-doc-p:first-of-type { margin-top: 6px; }
+.legal-doc strong { color: var(--cream); font-weight: 600; }
+.legal-doc-link {
+  color: var(--gold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.legal-doc-link:hover { color: var(--gold-bright); }
+.legal-doc-list {
+  color: var(--mist);
+  font-weight: 300;
+  line-height: 1.7;
+  max-width: var(--measure);
+  margin: 0 0 16px;
+  padding-left: 22px;
+  display: grid;
+  gap: 6px;
+}
+.legal-doc-hr {
+  border: none;
+  border-top: 1px solid var(--line2);
+  margin: 32px 0;
+}
+.legal-doc-table-wrap {
+  overflow-x: auto;
+  margin: 8px 0 20px;
+  border: 1px solid var(--line2);
+  border-radius: 14px;
+}
+.legal-doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .87rem;
+}
+.legal-doc-table th,
+.legal-doc-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  word-break: break-word;
+}
+.legal-doc-table th:first-child,
+.legal-doc-table td:first-child {
+  width: 34%;
+}
+@media (max-width: 480px) {
+  .legal-doc-table th,
+  .legal-doc-table td { padding: 9px 10px; }
+}
+.legal-doc-table th {
+  color: var(--cream);
+  font-weight: 600;
+  background: rgba(255,255,255,.03);
+}
+.legal-doc-table td { color: var(--mist); font-weight: 300; }
+.legal-doc-table tr:last-child td { border-bottom: none; }
+
+@media (max-width: 480px) {
+  .legal-page { padding-top: clamp(28px, 5vh, 44px); }
+  .legal-doc-h2 { margin: 32px 0 10px; }
+}
+
 /* ─── reveal (scroll fade-up, ported from the removed inline SCRIPT) ──────
    Fast + snappy: the old .9s fade left text sitting at low opacity through a
    normal scroll (read like a perf bug). Short duration + a small rise, and

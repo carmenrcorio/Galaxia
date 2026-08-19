@@ -1,15 +1,22 @@
+import type { Metadata } from "next";
+import { LegalDocument } from "../../components/legal-document";
+import { readLegalMarkdown } from "../../lib/legal-content";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy · Galaxia"
+};
+
+/**
+ * Renders the reviewed Privacy Policy (content/legal/privacy-policy.md)
+ * verbatim. Public route — not in middleware's matcher, so it's reachable
+ * without auth or Supabase config. See LegalDocument for the rendering
+ * approach; do not hand-edit the wording here, edit the source markdown.
+ */
 export default function PrivacyPage() {
+  const markdown = readLegalMarkdown("privacy-policy.md");
   return (
-    <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 860 }}>
-      <h1 className="auth-title">Privacy Policy</h1>
-      <p className="muted">The people in Galaxia are the ones you love most. We treat that with care.</p>
-      <ul style={{ color: "var(--cream)", lineHeight: 1.8 }}>
-        <li>Your notes are private to you and never shared with the person they are about.</li>
-        <li>Shared-space conversations do not include your private notes.</li>
-        <li>No two-way AI chat with children; parent guidance about a child stays with the parent.</li>
-        <li>Charts are computed from real astronomical data; AI interprets, it does not invent placements.</li>
-        <li>You can request account export and account deletion from /account.</li>
-      </ul>
+    <main className="container legal-page">
+      <LegalDocument markdown={markdown} />
     </main>
   );
 }

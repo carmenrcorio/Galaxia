@@ -257,6 +257,8 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
           <FlowsAndCatchesSection
             aspects={payload.synastry.aspects}
             relationType={relationType}
+            nameA={personA.display_name}
+            nameB={personB.display_name}
           />
         </>
       )}

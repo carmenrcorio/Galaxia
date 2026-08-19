@@ -13,6 +13,7 @@ import {
   interpretSynastryAspect,
   orbStrength,
   relationLensCaption,
+  relationshipAspectFraming,
   sortAspectsForFocus,
   type AspectKey,
   type BodyKey,
@@ -43,6 +44,9 @@ const HIDE_ASPECT_DETAIL = "▼ Hide aspect detail";
 type Props = {
   aspects: FlowsCatchesAspect[];
   relationType: RelationType;
+  /** Real display names, needed only for the relationshipAspectFraming() revival below. */
+  nameA: string;
+  nameB: string;
 };
 
 function introFor(relationType: RelationType): string {
@@ -52,7 +56,7 @@ function introFor(relationType: RelationType): string {
   return relationLensCaption(relationType);
 }
 
-export function FlowsAndCatchesSection({ aspects, relationType }: Props) {
+export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: Props) {
   const [showDetail, setShowDetail] = useState(false);
   // Full RelationType focus sort — romantic/platonic and /app/compare types alike.
   const ordered = sortAspectsForFocus(
@@ -61,6 +65,18 @@ export function FlowsAndCatchesSection({ aspects, relationType }: Props) {
   ).slice(0, 6);
 
   const intro = introFor(relationType);
+
+  // Revived RELATION_ASPECT_FRAME readings (previously dropped in
+  // cursor/compare-biwheel-aspect-disclosure-0120). Only the `text` field is
+  // rendered: `action` is discarded because it is literally the same
+  // opener+tactic pair the rows below already render via aspectActionParts,
+  // so surfacing it again would be word-for-word repetition.
+  const framing = relationshipAspectFraming(
+    { aspects: aspects.filter((a) => a.from !== a.to) } as never,
+    relationType,
+    nameA,
+    nameB
+  );
 
   // Keep aspect order identical. Show each register opener once at the top of
   // its logical group (before the first flows row / first catches row); every
@@ -137,6 +153,27 @@ export function FlowsAndCatchesSection({ aspects, relationType }: Props) {
           </div>
         </div>
       ))}
+
+      {framing.length > 0 ? (
+        <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+          {framing.map((f, idx) => (
+            <p
+              key={`framing-${idx}`}
+              style={{
+                fontSize: ".82rem",
+                color: "var(--mist)",
+                lineHeight: 1.6,
+                fontStyle: "italic",
+                margin: 0,
+                borderLeft: `2px solid ${f.flows ? "rgba(111,177,184,.4)" : "rgba(200,120,120,.4)"}`,
+                paddingLeft: 12,
+              }}
+            >
+              {f.text}
+            </p>
+          ))}
+        </div>
+      ) : null}
 
       {rows.length > 0 ? (
         <div style={{ marginTop: 12 }}>

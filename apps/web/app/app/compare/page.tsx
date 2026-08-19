@@ -570,6 +570,8 @@ function ComparePageInner() {
           <FlowsAndCatchesSection
             aspects={result.synastry.aspects}
             relationType={relationType}
+            nameA={result.personA.display_name}
+            nameB={result.personB.display_name}
           />
           {elementSignal ? (
             <section className="glass-card fade-in fade-in-delay-2">

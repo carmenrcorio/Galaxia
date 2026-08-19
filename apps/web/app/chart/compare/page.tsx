@@ -349,6 +349,8 @@ export default function QuickComparePage() {
               <FlowsAndCatchesSection
                 aspects={result.synastry.aspects}
                 relationType={relationType}
+                nameA={personA!.display_name}
+                nameB={personB!.display_name}
               />
             </>
           )}

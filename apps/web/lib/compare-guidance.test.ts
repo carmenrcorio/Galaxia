@@ -282,3 +282,21 @@ describe("1B: relationship-framed Compare headline (relType-keyed, score-band fa
     expect(compareHeadline(defaultCompareRelationType(true), 80)).not.toBe(HEADLINES.partners);
   });
 });
+
+describe("1C: relationshipAspectFraming() revival — text is unique, action duplicates the tactic layer", () => {
+  it("action is exactly aspectActionLine's opener+tactic (why it must never be re-rendered)", () => {
+    const framing = relationshipAspectFraming(SYNASTRY, "friends", "Sarah", "Ben");
+    for (const f of framing) {
+      expect(f.action).toBe(aspectActionLine(f.aspect, "friends"));
+    }
+  });
+
+  it("text is a distinct, relationship-framed sentence naming both people (never equal to action)", () => {
+    const framing = relationshipAspectFraming(SYNASTRY, "siblings", "Sarah", "Ben");
+    for (const f of framing) {
+      expect(f.text).not.toBe(f.action);
+      expect(f.text).toContain("Sarah's");
+      expect(f.text).toContain("Ben's");
+    }
+  });
+});

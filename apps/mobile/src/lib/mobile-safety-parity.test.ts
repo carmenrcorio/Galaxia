@@ -4,6 +4,7 @@ import {
   availableCompareRelationTypes,
   buildBirthInput,
   COMPARE_RELATION_SUGGESTION_HINT,
+  compareHeadline,
   defaultCompareRelationType,
   isRomanticRelation,
   suggestCompareRelationType,
@@ -86,6 +87,26 @@ describe("BUG 1 — mobile Compare blocks romantic framing when either person is
     expect(suggestCompareRelationType("child", "child")).toBeNull();
     expect(suggestCompareRelationType("parent", "parent")).toBeNull();
     expect(COMPARE_RELATION_SUGGESTION_HINT).not.toContain("—");
+  });
+});
+
+describe("1B parity — mobile Compare shares web's relType-keyed compareHeadline() helper", () => {
+  it("compare.tsx calls the shared compareHeadline helper, not its own inline score ternary", () => {
+    const src = readFileSync(resolve(__dirname, "../../app/(app)/compare.tsx"), "utf8");
+    expect(src).toContain("compareHeadline");
+    expect(src).toContain("compareHeadline(relationType, result.synastry.scores.overall)");
+    // The old mobile-only score-band wording must be gone — both surfaces now
+    // render the exact same helper output, so there is nothing left to drift.
+    expect(src).not.toContain("High flow dynamic with meaningful momentum.");
+    expect(src).not.toContain("Balanced dynamic with both ease and growth edges.");
+    expect(src).not.toContain("Growth-heavy dynamic: more intentional care will help.");
+  });
+
+  it("renders the same relationship-framed headline text web does, for the same inputs", () => {
+    expect(compareHeadline("siblings", 40)).toBe(
+      "You two share a history and a floor neither of you can walk off. Here's what runs smooth between you, and where the old patterns catch."
+    );
+    expect(compareHeadline("romantic", 80)).toBe("High flow — momentum comes naturally here.");
   });
 });
 

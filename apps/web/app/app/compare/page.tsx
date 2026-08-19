@@ -14,6 +14,7 @@
 
 import {
   compareGenerational,
+  compareHeadline,
   computeSynastry,
   type GenSignature,
   type NatalChart,
@@ -500,11 +501,7 @@ function ComparePageInner() {
               </div>
             </div>
             <p className="muted" style={{ fontStyle: "italic", borderLeft: "2px solid rgba(230,174,108,.3)", paddingLeft: 12, lineHeight: 1.5 }}>
-              {result.synastry.scores.overall >= 70
-                ? "High flow — momentum comes naturally here."
-                : result.synastry.scores.overall >= 50
-                ? "Balanced — ease and growth in equal measure."
-                : "Growth-heavy — real warmth under intentional care."}
+              {compareHeadline(relationType, result.synastry.scores.overall)}
             </p>
             {wheel ? (
               wheel.chart.cusps ? (
@@ -573,6 +570,8 @@ function ComparePageInner() {
           <FlowsAndCatchesSection
             aspects={result.synastry.aspects}
             relationType={relationType}
+            nameA={result.personA.display_name}
+            nameB={result.personB.display_name}
           />
           {elementSignal ? (
             <section className="glass-card fade-in fade-in-delay-2">

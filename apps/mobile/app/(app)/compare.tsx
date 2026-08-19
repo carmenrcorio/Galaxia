@@ -2,6 +2,7 @@ import {
   availableCompareRelationTypes,
   COMPARE_RELATION_SUGGESTION_HINT,
   compareGenerational,
+  compareHeadline,
   computeSynastry,
   defaultCompareRelationType,
   isRomanticRelation,
@@ -291,11 +292,7 @@ export default function CompareScreen() {
               {result.personA.display_name} × {result.personB.display_name}
             </Text>
             <Text style={headlineStyle}>
-              {result.synastry.scores.overall >= 70
-                ? "High flow dynamic with meaningful momentum."
-                : result.synastry.scores.overall >= 50
-                  ? "Balanced dynamic with both ease and growth edges."
-                  : "Growth-heavy dynamic: more intentional care will help."}
+              {compareHeadline(relationType, result.synastry.scores.overall)}
             </Text>
             <Text style={cardBody}>
               Your dynamic: overall {result.synastry.scores.overall} · emotional {result.synastry.scores.emotional} · communication{" "}

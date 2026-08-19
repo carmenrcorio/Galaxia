@@ -120,3 +120,41 @@ describe("source wiring — compare bi-wheel + shared flows/catches", () => {
     expect(share).toContain("FlowsAndCatchesSection");
   });
 });
+
+describe("revival: relationshipAspectFraming() text-only inside FlowsAndCatchesSection", () => {
+  it("the shared component calls relationshipAspectFraming and renders f.text, but never f.action", () => {
+    const src = readFileSync(
+      resolve(__dirname, "../components/flows-and-catches-section.tsx"),
+      "utf8"
+    );
+    expect(src).toContain("relationshipAspectFraming");
+    expect(src).toContain("f.text");
+    // `f.action` is the exact opener+tactic pair the rows above already render
+    // via aspectActionParts — rendering it again would be word-for-word
+    // repetition, which is the specific thing this revival must not reintroduce.
+    expect(src).not.toContain("f.action");
+  });
+
+  it("/app/compare does NOT import relationshipAspectFraming directly (it stays inside the shared component)", () => {
+    const src = readFileSync(resolve(__dirname, "../app/app/compare/page.tsx"), "utf8");
+    expect(src).not.toContain("relationshipAspectFraming");
+  });
+
+  it("all three Compare surfaces pass real nameA/nameB into the shared component", () => {
+    const appCompare = readFileSync(resolve(__dirname, "../app/app/compare/page.tsx"), "utf8");
+    const quickCompare = readFileSync(resolve(__dirname, "../app/chart/compare/page.tsx"), "utf8");
+    const share = readFileSync(resolve(__dirname, "../components/share-snapshot-view.tsx"), "utf8");
+    for (const src of [appCompare, quickCompare, share]) {
+      expect(src).toMatch(/FlowsAndCatchesSection[\s\S]*?nameA=/);
+      expect(src).toMatch(/FlowsAndCatchesSection[\s\S]*?nameB=/);
+    }
+  });
+});
+
+describe("1B: web shares one compareHeadline() helper with mobile (no drift) — web half", () => {
+  it("web /app/compare calls the shared compareHeadline helper, not an inline score ternary", () => {
+    const src = readFileSync(resolve(__dirname, "../app/app/compare/page.tsx"), "utf8");
+    expect(src).toContain("compareHeadline(relationType, result.synastry.scores.overall)");
+    expect(src).not.toContain("High flow — momentum comes naturally here.");
+  });
+});

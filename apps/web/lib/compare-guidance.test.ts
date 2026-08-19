@@ -211,3 +211,40 @@ describe("MINOR SAFETY: actionable guidance is never romantic/attraction-framed 
     expect(aspectActionLine({ from: "venus", to: "moon", harmony: -0.5 }, "parent-child")).not.toMatch(ROMANTIC_WORDS);
   });
 });
+
+// ── Relationship-differentiated Compare copy (RELATION_ASPECT_FRAME /
+// whatTheyNeed audit follow-up) ─────────────────────────────────────────────
+const ALL_SIGNS = [
+  "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+  "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
+];
+
+describe("1A: friends vs siblings now resolve to different Mercury-how strings", () => {
+  it("the same Mercury sign produces a different 'in practice' clause for a friend vs a sibling", () => {
+    const person = { ...SARAH, mercury: "Aries" };
+    const friendText = whatTheyNeed(SCORES, person, "friends", SYNASTRY);
+    const siblingText = whatTheyNeed(SCORES, person, "siblings", SYNASTRY);
+    expect(friendText).toContain("This friend moves fast and says it straight.");
+    expect(siblingText).toContain("Your sibling wants it direct, no cushioning.");
+    expect(friendText).not.toBe(siblingText);
+  });
+
+  it("holds for every Mercury sign, not just one", () => {
+    for (const sign of ALL_SIGNS) {
+      const person = { ...SARAH, mercury: sign };
+      const friendText = whatTheyNeed(SCORES, person, "friends", SYNASTRY);
+      const siblingText = whatTheyNeed(SCORES, person, "siblings", SYNASTRY);
+      expect(friendText, sign).not.toBe(siblingText);
+      expect(friendText, sign).toContain("In practice: ");
+      expect(siblingText, sign).toContain("In practice: ");
+      expect(friendText, sign).toContain("friend");
+      expect(siblingText, sign).toContain("Your sibling");
+    }
+  });
+
+  it("does not change any other relType's whatTheyNeed() path", () => {
+    const person = { ...SARAH, mercury: "Aries" };
+    expect(whatTheyNeed(SCORES, person, "parent-child", SYNASTRY)).toContain("Scorpio Saturn");
+    expect(whatTheyNeed(SCORES, person, "partners", SYNASTRY)).toContain("Cancer Venus");
+  });
+});

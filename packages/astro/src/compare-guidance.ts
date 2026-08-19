@@ -360,20 +360,41 @@ const VENUS_HOW: Partial<Record<string, string>> = {
   Pisces:      "offer sincere tenderness over grand gestures — the small true thing lands deepest",
 };
 
-// FOUNDER-REVIEW: authored — refine voice. Pairs with MERCURY_NEED (siblings/friends).
-const MERCURY_HOW: Partial<Record<string, string>> = {
-  Aries:       "get to the point fast and skip the wind-up — they hear directness as respect",
-  Taurus:      "give them time to chew on it, and don't read a slow reply as a no",
-  Gemini:      "let them think out loud without holding the drafts against them",
-  Cancer:      "watch your tone first; how you say it reaches them before what you say does",
-  Leo:         "acknowledge the idea before you edit it, and never correct them in front of others",
-  Virgo:       "bring precise, specific claims — vagueness derails them faster than a hard truth",
-  Libra:       "keep it fair and two-sided; drop the scorekeeping and they stay in the room",
-  Scorpio:     "name the subtext directly — they already sense the thing you're not saying",
-  Sagittarius: "give the big frame first, then the detail, and stay blunt-honest over polite",
-  Capricorn:   "lead with the useful, load-bearing thing; they trust competence over pleasantry",
-  Aquarius:    "let them disagree without making it personal — ideas are how they connect",
-  Pisces:      "leave room for the unspoken; not everything they mean arrives in words",
+// FOUNDER-REVIEW: authored — friends-specific Mercury "how" clause. Replaces the
+// old shared MERCURY_HOW + "As friends" prefix pattern for this relType (a
+// relationship-differentiated Compare audit found that pattern read as a
+// cosmetic prefix over otherwise-identical sign-driven copy). See whatTheyNeed().
+const FRIEND_MERCURY_HOW: Partial<Record<string, string>> = {
+  Aries:       "This friend moves fast and says it straight. Match their pace and get to the point; circling makes them restless, not comforted.",
+  Taurus:      "This friend thinks it through before they answer. Give them room and don't push for a fast reply; pressure just makes them dig in.",
+  Gemini:      "This friend feels closest mid-conversation. Keep it curious and let it wander; a genuinely interested question reads to them like affection.",
+  Cancer:      "This friend reads your tone before your words. Lead with warmth on anything hard, or the feeling lands before the message does.",
+  Leo:         "This friend wants their take treated as it matters. Give it real weight before you push back, and warmth opens them faster than logic.",
+  Virgo:       "This friend deals in specifics. Be concrete and accurate; vague reassurance slides off, but a precise point lands and sticks.",
+  Libra:       "This friend wants it fair before they want it fast. Show you've weighed both sides, and frame hard things as a question, not a verdict.",
+  Scorpio:     "This friend wants the real thing named. Say the subtext out loud, because with them a comfortable half-truth reads as a small betrayal.",
+  Sagittarius: "This friend wants the big frame before the detail, and honesty over politeness. Give them the wide view first, then fill it in.",
+  Capricorn:   "This friend wants to be talked to like they've got it handled. Bring the point, skip the over-explaining, and respect that they've thought about it.",
+  Aquarius:    "This friend needs room to process as themselves before they meet you halfway. Give them the space and don't chase the pause.",
+  Pisces:      "With this friend, how you say it matters more than what you say. Lead with warmth on anything difficult, or the feeling lands before the message does.",
+};
+
+// FOUNDER-REVIEW: authored — siblings-specific Mercury "how" clause. Replaces the
+// old shared MERCURY_HOW + "Between siblings" prefix pattern for this relType,
+// for the same reason as FRIEND_MERCURY_HOW above. See whatTheyNeed().
+const SIBLING_MERCURY_HOW: Partial<Record<string, string>> = {
+  Aries:       "Your sibling wants it direct, no cushioning. Say the real thing plainly; with them, hedging reads as talking down.",
+  Taurus:      "Your sibling settles into a view and stays there. Bring things up early and let them sit, because rushing a decision is the fastest way to a wall.",
+  Gemini:      "Your sibling talks to figure out what they think, so don't hold them to the first version. Let the idea move before you pin it down.",
+  Cancer:      "Your sibling clocks your mood instantly, and old family tone carries weight. Watch how you say it; with them, delivery is half the message.",
+  Leo:         "Your sibling needs their thinking respected, not managed. Acknowledge the point first; dismissiveness from family stings longer than from anyone else.",
+  Virgo:       "Your sibling notices the details and the gaps. Come with the specifics, because with them a hand-wave reads as not having thought it through.",
+  Libra:       "Your sibling wants to feel the scales were balanced. Lay out the whole picture; landing straight on a conclusion reads as steamrolling.",
+  Scorpio:     "Your sibling already senses what you're not saying. Name it directly; with them, softening the truth does more damage than the truth would.",
+  Sagittarius: "Your sibling would rather have it blunt than gentle. Lead with the honest headline; over-softening reads to them as a dodge.",
+  Capricorn:   "Your sibling reads over-explaining as being managed. Say it once, cleanly, and trust them to take it from there.",
+  Aquarius:    "Your sibling steps back to think, and closing in makes them close off. Say your piece and let them come back on their own clock.",
+  Pisces:      "Your sibling hears the tone under the words, so leave room for what isn't said directly. Not everything they mean will arrive in the sentence.",
 };
 
 // FOUNDER-REVIEW: authored — refine voice. Pairs with SATURN_NEED (parent-child).
@@ -562,13 +583,16 @@ export function whatTheyNeed(
   // FOUNDER-REVIEW: authored placeholder — refine voice.
   // Siblings & friends read this person's REAL Mercury sign (communication is
   // the genuine register for these bonds). Omitted when Mercury is missing or
-  // uncertain — never invented.
+  // uncertain — never invented. The "how" clause is relType-specific
+  // (FRIEND_MERCURY_HOW / SIBLING_MERCURY_HOW) so the same Mercury sign reads
+  // differently for a sibling than a friend — not just a swapped prefix.
   if ((relType === "siblings" || relType === "friends") && mercury) {
     const mercuryLine = MERCURY_NEED[mercury];
     if (mercuryLine) {
       const frame = relType === "siblings" ? "Between siblings" : "As friends";
       // PHASE 2: how they need to be talked to + the concrete practice (same Mercury sign).
-      const mercuryHow = MERCURY_HOW[mercury];
+      const mercuryHow: string | undefined =
+        relType === "siblings" ? SIBLING_MERCURY_HOW[mercury] : FRIEND_MERCURY_HOW[mercury];
       parts.push(
         `${frame}, ${name}'s ${mercury} Mercury sets how they need to be talked to: ${mercuryLine}.` +
         (mercuryHow ? ` In practice: ${mercuryHow}.` : "")

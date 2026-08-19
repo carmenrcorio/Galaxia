@@ -6,7 +6,7 @@ import {
   suggestCompareRelationType,
 } from "../src/compare-guidance";
 
-describe("suggestCompareRelationType — self + other only", () => {
+describe("suggestCompareRelationType — self + other, and neither-side-self", () => {
   it("maps self + partner → partners (and the reverse order)", () => {
     expect(suggestCompareRelationType("self", "partner")).toBe("partners");
     expect(suggestCompareRelationType("partner", "self")).toBe("partners");
@@ -30,15 +30,38 @@ describe("suggestCompareRelationType — self + other only", () => {
     expect(suggestCompareRelationType("self", null)).toBeNull();
   });
 
-  it("never infers a pair relation when neither side is self", () => {
+  it("neither side self: an exact, symmetric, non-romantic match is carried over", () => {
+    // Two of the user's siblings are siblings of each other.
+    expect(suggestCompareRelationType("sibling", "sibling")).toBe("siblings");
+    // A safe, low-stakes default: two of the user's friends read as friends.
+    expect(suggestCompareRelationType("friend", "friend")).toBe("friends");
+  });
+
+  it("neither side self: mismatched or non-symmetric tags never infer a pair relation", () => {
     // Two children of the user are siblings to each other — but the tags do
     // not establish that as a Compare default. Must fall back, not guess.
     expect(suggestCompareRelationType("child", "child")).toBeNull();
     // Two parents of the user must NEVER become partners by inference.
     expect(suggestCompareRelationType("parent", "parent")).toBeNull();
-    expect(suggestCompareRelationType("friend", "friend")).toBeNull();
     expect(suggestCompareRelationType("partner", "friend")).toBeNull();
-    expect(suggestCompareRelationType("sibling", "sibling")).toBeNull();
+    expect(suggestCompareRelationType("grandparent", "grandparent")).toBeNull();
+    expect(suggestCompareRelationType("colleague", "colleague")).toBeNull();
+    expect(suggestCompareRelationType("ancestor", "ancestor")).toBeNull();
+  });
+
+  it("neither side self: a matching partner tag on both sides must NOT open romantic", () => {
+    // A single "partner" tag between two non-self people must not suggest a
+    // romantic lens, even when both sides agree — a `people.relation` tag
+    // is each person's relation to the USER, not to each other.
+    expect(suggestCompareRelationType("partner", "partner")).toBeNull();
+  });
+
+  it("neither side self: no possible tag pair ever suggests a romantic type", () => {
+    const tags = ["self", "partner", "sibling", "friend", "parent", "child", "grandparent", "grandchild", "colleague", "ancestor", ""];
+    for (const t of tags) {
+      const suggested = suggestCompareRelationType(t, t);
+      if (suggested) expect(isRomanticRelation(suggested)).toBe(false);
+    }
   });
 
   it("never suggests when both sides are self", () => {
@@ -81,6 +104,22 @@ describe("suggestCompareRelationType — caller contract with defaults + minor c
       relationType = defaultCompareRelationType(true);
     }
     expect(relationType).toBe("parent-child");
+    expect(isRomanticRelation(relationType)).toBe(false);
+  });
+
+  it("minor clamp still wins on the neither-side-self path (sibling + sibling + minor)", () => {
+    // The neither-side-self suggestion is non-romantic already, but the
+    // clamp must still be the final authority regardless of source.
+    let relationType =
+      suggestCompareRelationType("sibling", "sibling") ?? defaultCompareRelationType(false);
+    expect(relationType).toBe("siblings");
+    const pairHasMinor = true;
+    if (pairHasMinor && isRomanticRelation(relationType)) {
+      relationType = defaultCompareRelationType(true);
+    }
+    // Not romantic to begin with, so the clamp's "reset when romantic"
+    // branch does not fire — siblings stays selected, which is correct.
+    expect(relationType).toBe("siblings");
     expect(isRomanticRelation(relationType)).toBe(false);
   });
 

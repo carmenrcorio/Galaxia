@@ -58,11 +58,18 @@ describe("MINOR SAFETY: /app/compare cannot select romantic framing for a minor"
     expect(defaultCompareRelationType(true)).toBe("parent-child");
   });
 
-  it("tag suggestion is self-only; two user-relative tags never invent partners/siblings", () => {
+  it("tag suggestion: self + partner maps directly; non-symmetric non-self tags never invent a pair", () => {
     expect(suggestCompareRelationType("self", "partner")).toBe("partners");
     expect(suggestCompareRelationType("child", "child")).toBeNull();
     expect(suggestCompareRelationType("parent", "parent")).toBeNull();
     expect(COMPARE_RELATION_SUGGESTION_HINT).not.toContain("—");
+  });
+
+  it("tag suggestion: neither-side-self matching partner tags never invent romantic framing", () => {
+    // A `people.relation` tag is each person's relation to the USER, not to
+    // each other, so a single (or even matching) `partner` tag between two
+    // non-self people must never auto-select a romantic lens.
+    expect(suggestCompareRelationType("partner", "partner")).toBeNull();
   });
 
   it("self + partner suggestion is clamped by the minor default (order: suggest, then clamp)", () => {

@@ -114,11 +114,46 @@ const SELF_OTHER_TO_COMPARE: Readonly<Record<string, RelationType>> = {
 };
 
 /**
+ * Tags that describe an unambiguous PAIR relation when BOTH sides carry the
+ * exact same tag, for the case where NEITHER side is `self`. A
+ * `people.relation` tag describes that person's relation to the USER, not to
+ * the other person in the pair, so a single tag never describes the A-B pair
+ * on its own (see `suggestCompareRelationType` doc). A matching pair is only
+ * carried over when the shared tag is symmetric and non-romantic:
+ *
+ *   - `sibling` + `sibling`: two of the user's siblings are siblings of
+ *     each other.
+ *   - `friend` + `friend`: a safe, low-stakes default; two of the user's
+ *     friends are at minimum framed as friends of each other.
+ *
+ * Deliberately excluded even on an exact match:
+ *   - `partner`: two people the user tagged `partner` (e.g. an ex and a
+ *     current partner) are not partners of EACH OTHER. Romantic/attraction
+ *     framing must never be auto-selected from a single person's tag, and
+ *     that holds even when both tags agree (ENGINEERING.md §13).
+ *   - `parent`, `child`, `grandparent`, `grandchild`, `colleague`,
+ *     `ancestor`: a matching pair does not describe a sound relation to each
+ *     other (two of the user's parents are peers, not parent-child; two
+ *     colleagues/ancestors have no matching picker type).
+ */
+const NON_SELF_SYMMETRIC_TO_COMPARE: Readonly<Partial<Record<string, RelationType>>> = {
+  sibling: "siblings",
+  friend: "friends",
+};
+
+/**
  * Suggest a Compare relationType from two saved `people.relation` tags.
- * Returns a type only when exactly one side is `self` and the other maps
- * confidently; otherwise null (caller falls back to
+ * A tag describes that person's relation to the USER, not to the other
+ * person in the pair — so it only describes the A-B pair directly when one
+ * side is `self` (self + other). When neither side is `self`, a single tag
+ * is never carried over; only an exact, symmetric, non-romantic match on
+ * both sides is (see `NON_SELF_SYMMETRIC_TO_COMPARE`). The two strategies
+ * never compete: self + other is checked first and, when it applies, is the
+ * only source of a suggestion for that pair.
+ *
+ * Returns null when nothing sound applies (caller falls back to
  * `defaultCompareRelationType(false)`). Never fabricates from names, ages,
- * gender, or two non-self user-relative tags.
+ * or gender.
  *
  * Minor safety is NOT applied here — callers must run the existing
  * `selectionHasMinor` clamp AFTER this suggestion so romantic framing is
@@ -134,10 +169,23 @@ export function suggestCompareRelationType(
 
   const aSelf = a === "self";
   const bSelf = b === "self";
-  if (aSelf === bSelf) return null; // neither self, or both self — no sound pair mapping
 
-  const other = aSelf ? b : a;
-  return SELF_OTHER_TO_COMPARE[other] ?? null;
+  if (aSelf !== bSelf) {
+    // self + other: the tag describes the A-B pair directly.
+    const other = aSelf ? b : a;
+    return SELF_OTHER_TO_COMPARE[other] ?? null;
+  }
+
+  if (aSelf && bSelf) return null; // both self — no sound pair mapping
+
+  // Neither side is self: only an exact, symmetric, non-romantic match
+  // carries over. A single tag on either side is never enough. Defense in
+  // depth: re-check isRomanticRelation here too, so a future edit to
+  // NON_SELF_SYMMETRIC_TO_COMPARE could never leak a romantic suggestion
+  // into the one path that has no self+other tag to justify it.
+  if (a !== b) return null;
+  const mapped = NON_SELF_SYMMETRIC_TO_COMPARE[a] ?? null;
+  return mapped && !isRomanticRelation(mapped) ? mapped : null;
 }
 
 /**

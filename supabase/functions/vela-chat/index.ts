@@ -252,6 +252,20 @@ function compareGenerational(
   };
 }
 
+// ─── Rate limit ────────────────────────────────────────────────────────────
+// FOUNDER-REVIEW: cap + window are starting-point placeholders, not final.
+// Backed by check_and_increment_vela_rate (supabase/migrations/20260725050000_vela_chat_rate_limit.sql) —
+// an atomic per-user fixed-window counter. See index.ts's admission check
+// below for how tier is chosen and how the RPC result maps to 429 vs 503.
+const VELA_RATE_PAID  = { limit: 20, windowSeconds: 600 } as const;
+const VELA_RATE_TRIAL = { limit: 5,  windowSeconds: 600 } as const;
+
+// FOUNDER-REVIEW: authored — vela-chat rate-limit response copy.
+const RATE_LIMIT_COPY =
+  "You've reached the chat limit for now. Give it a few minutes and try again.";
+const RATE_LIMIT_503_COPY =
+  "Vela is briefly unavailable. Please try again in a moment.";
+
 // ─── Main handler ─────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   // Preflight
@@ -301,6 +315,44 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (profileError || !profileAllowsAccess(profile)) {
       return jsonResponse(403, { error: VELA_ENTITLEMENT_REQUIRED_ERROR });
+    }
+
+    // ── Rate limit (admission — before any thread/message/Anthropic work) ───
+    // Everything past this point is gated, including action === "consent":
+    // this check runs before the body is even parsed, so there is no
+    // request shape that reaches thread/message work or Anthropic without
+    // passing it first.
+    //
+    // Tier default is fail-safe-to-PAID: classify TRIAL positively
+    // (subscription_status === "trialing") and let everything else — comped,
+    // active, lifetime, and any future access path profileAllowsAccess might
+    // grow — fall through to PAID. A misclassification then costs a rounding
+    // error on spend (an entitled user occasionally gets the looser cap),
+    // never a paying user hitting the tight one. Built only from the two
+    // fields profileAllowsAccess already consumed above; this is not a
+    // second access decision, only a classification of the access already
+    // granted by the entitlement check just above.
+    const isTrial  = !profile?.comped && profile?.subscription_status === "trialing";
+    const rateTier = isTrial ? VELA_RATE_TRIAL : VELA_RATE_PAID;
+
+    let rateLimitAllowed: boolean;
+    try {
+      // Scoped tightly to the RPC call + its result check only — a real bug
+      // anywhere else in the handler must still surface as the file's normal
+      // catch-all (500), not get mislabeled as this transient 503.
+      const { data: rateLimitData, error: rateLimitError } = await supabase.rpc(
+        "check_and_increment_vela_rate",
+        { p_limit: rateTier.limit, p_window_seconds: rateTier.windowSeconds }
+      );
+      if (rateLimitError) {
+        return jsonResponse(503, { error: RATE_LIMIT_503_COPY });
+      }
+      rateLimitAllowed = rateLimitData === true;
+    } catch {
+      return jsonResponse(503, { error: RATE_LIMIT_503_COPY });
+    }
+    if (!rateLimitAllowed) {
+      return jsonResponse(429, { error: RATE_LIMIT_COPY });
     }
 
     // ── Parse request ────────────────────────────────────────────────────────

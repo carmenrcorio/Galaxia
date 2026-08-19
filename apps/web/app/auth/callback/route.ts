@@ -3,6 +3,7 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import { syncSignupNameToProfile } from "../../../lib/account-name";
 import { publicEnv } from "../../../lib/env";
+import { safeNextPath } from "../../../lib/safe-next-path";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -11,8 +12,10 @@ export async function GET(request: NextRequest) {
   const type = requestUrl.searchParams.get("type");
   // Default to the /start resolver so email-confirm / password-reset logins
   // route returning users to /app and new users to /welcome. An explicit
-  // `next` (e.g. a Quick Chart prefill hand-off) is respected as-is.
-  const next = requestUrl.searchParams.get("next") ?? "/start";
+  // `next` (e.g. a Quick Chart prefill hand-off) is respected only once it
+  // has passed safeNextPath — this is a real HTTP redirect, so an
+  // unvalidated `next` here is a same-origin-authenticated open redirect.
+  const next = safeNextPath(requestUrl.searchParams.get("next"));
 
   let response = NextResponse.redirect(new URL(next, request.url));
   const supabase = createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {

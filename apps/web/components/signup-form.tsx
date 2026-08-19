@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { syncSignupNameToProfile } from "../lib/account-name";
 import { getSiteUrlFromRequestOrigin } from "../lib/env";
 import { PASSWORD_MIN_LENGTH, PASSWORD_RULE_HINT } from "../lib/password-rules";
+import { safeNextPath } from "../lib/safe-next-path";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 
 export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: string; nextPath?: string }) {
@@ -22,7 +23,7 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
   // Quick Chart hand-off: /chart's "Save to your galaxy" sends signed-out
   // visitors here with ?next=/welcome?prefill=... so the birth data they
   // already entered survives account creation without retyping.
-  const destination = nextPath && nextPath.startsWith("/") ? nextPath : "/welcome";
+  const destination = safeNextPath(nextPath, "/welcome");
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -30,7 +31,12 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
     setError(null);
     const siteUrl = getSiteUrlFromRequestOrigin(window.location.origin);
     const redirectUrl = new URL(`${siteUrl}/auth/callback`);
-    if (nextPath) redirectUrl.searchParams.set("next", nextPath);
+    // This `next` rides in the confirmation email Supabase sends, so it must
+    // be sanitized here too, not just on the immediate-session `destination`
+    // above: /auth/callback trusts whatever `next` arrives on that emailed
+    // link, so an unsanitized value here is what turns a genuine
+    // confirmation email into a same-origin-authenticated open redirect.
+    if (nextPath) redirectUrl.searchParams.set("next", safeNextPath(nextPath, "/welcome"));
     // The name rides in auth metadata because signUp can return without a
     // session (email confirmation), and `profiles` is not writable until there
     // is one. syncSignupNameToProfile copies it into profiles.display_name,

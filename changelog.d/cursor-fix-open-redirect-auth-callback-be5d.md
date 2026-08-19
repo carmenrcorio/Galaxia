@@ -1,0 +1,9 @@
+## Open redirect in auth callback (branch `cursor/fix-open-redirect-auth-callback-be5d`) — 2026-08-19
+
+**Trigger**: Security audit found a live-confirmed open redirect. `/auth/callback` built `NextResponse.redirect(new URL(next, request.url))` from an unvalidated `next` query param, so an absolute (`https://evil.com`) or protocol-relative (`//evil.com`) `next` overrode the base entirely: a genuine auth token exchange (password reset / email confirm) would complete, then hand the victim off to the attacker's page.
+
+`[ADDED]` **`safeNextPath` helper** (`apps/web/lib/safe-next-path.ts`). One shared, pure, character-based same-origin validator: rejects empty/missing input, a second leading `/` or `\` (blocks `//evil.com` and `/\evil.com`), and any `://` substring (blocks `https://evil.com`); otherwise returns the path unchanged so internal paths and their query strings survive. No `next/headers`, `next/navigation`, or client/server markers, so it imports cleanly into both a server route and client components.
+
+`[FIXED]` **Four sites now route through it, not three.** `app/auth/callback/route.ts` (the real HTTP redirect), `components/login-form.tsx` (post-login `router.push`), and `components/signup-form.tsx`'s immediate-session `destination` were the three the audit named. A fourth was found during diagnosis and was not in the original audit: `signup-form.tsx`'s `emailRedirectTo` embed wrote the raw, unvalidated `nextPath` into the `next=` param of the URL Supabase puts in the actual confirmation email, bypassing the `destination` check entirely. That is the highest-value target, since it is the one that turns a genuine, Galaxia-sent confirmation email into the open-redirect vector. All four now call `safeNextPath`; no code path in these three files uses `nextPath` raw anymore.
+
+The auth token exchange (`exchangeCodeForSession`, `verifyOtp`, `getUser`, `syncSignupNameToProfile`) is untouched — only the redirect destination is sanitized.

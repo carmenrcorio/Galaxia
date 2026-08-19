@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { getSiteUrlFromRequestOrigin } from "../lib/env";
+import { safeNextPath } from "../lib/safe-next-path";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 
 export function LoginForm({ nextPath }: { nextPath: string }) {
@@ -24,7 +25,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       setStatus("idle");
       return;
     }
-    router.push((nextPath || "/app") as never);
+    router.push(safeNextPath(nextPath) as never);
     router.refresh();
   };
 

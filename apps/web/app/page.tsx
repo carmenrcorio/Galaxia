@@ -6,6 +6,7 @@ import { FeaturesSection } from "../components/marketing/features-section";
 import { Hero } from "../components/marketing/hero";
 import { MarketingNav } from "../components/marketing/marketing-nav";
 import { PricingSection } from "../components/marketing/pricing-section";
+import { RemembranceSection } from "../components/marketing/remembrance-section";
 import { RevealObserver } from "../components/marketing/reveal-observer";
 import { SiteFooter } from "../components/marketing/site-footer";
 import { TrustSection } from "../components/marketing/trust-section";
@@ -21,8 +22,8 @@ import { WhySection } from "../components/marketing/why-section";
  * dangerouslySetInnerHTML anywhere on this page anymore.
  *
  * Conversion order: Hero (with Quick Chart mini-form + inline natal sign reveal)
- * → The Edge → The shift → why-not-a-horoscope-app → How it works → Vela → Trust
- * → Pricing → FAQ → Close.
+ * → The Edge → The shift → Remembrance → why-not-a-horoscope-app → How it works
+ * → Vela → Trust → Pricing → FAQ → Close.
  */
 export default function HomePage() {
   return (
@@ -34,6 +35,7 @@ export default function HomePage() {
         <Hero />
         <EdgeSection />
         <WhySection />
+        <RemembranceSection />
         <WhyNotSection />
         <FeaturesSection />
         <VelaExampleSection />

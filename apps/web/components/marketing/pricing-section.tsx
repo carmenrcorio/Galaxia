@@ -6,10 +6,11 @@ export function PricingSection() {
     <section className="container" id="pricing">
       <div className="price-wrap">
         <div className="faq-head reveal">
+          {/* FOUNDER-REVIEW: authored - pricing headline + lede. */}
           <span className="eyebrow" style={{ justifyContent: "center" }}>Pricing</span>
-          <h2 style={{ marginTop: 16 }}>One price. Everyone you love.</h2>
+          <h2 style={{ marginTop: 16 }}>One honest plan.</h2>
           <p className="lede" style={{ margin: "16px auto 0" }}>
-            No tiers, no add-ons, no limit on how many people you can add. Fourteen days free to try all of it.
+            No feature tiers. No per-person fees. No upsells.
           </p>
         </div>
         <div className="price-cards reveal">

@@ -517,6 +517,45 @@ export function relationLensCaption(relType: RelationType): string {
   }
 }
 
+/**
+ * FOUNDER-REVIEW: authored — relationship-framed Compare result headline, one
+ * line per core picker relType (COMPARE_RELATION_TYPES). Flat per type — NOT
+ * score-aware, unlike the score-band fallback below. Types the saved-people
+ * picker never offers (romantic, platonic) have no line here and fall back
+ * to the score-band headline instead of inventing copy for them.
+ */
+const RELATION_HEADLINE: Partial<Record<RelationType, string>> = {
+  partners: "This is a partnership you're both building on purpose. Below is where it moves easily, and where it asks for tending.",
+  siblings: "You two share a history and a floor neither of you can walk off. Here's what runs smooth between you, and where the old patterns catch.",
+  friends: "This is chosen closeness, kept alive by showing up. Here's what comes easy, and where it needs a little care.",
+  "parent-child": "This is love read through respect and room to grow. Here's where care lands clean, and where it can tip into control.",
+  ancestor: "This is a bond that reaches across time. Here's what still connects you, and where the eras pull apart.",
+};
+
+/**
+ * FOUNDER-REVIEW: authored (moved) — score-band-only fallback headline, the
+ * ORIGINAL Compare headline text (previously inlined separately on web and,
+ * with different wording, on mobile — now the single shared source for
+ * both). Kept as the fallback for any relType without a RELATION_HEADLINE
+ * line (romantic, platonic).
+ */
+function scoreBandHeadline(overall: number): string {
+  if (overall >= 70) return "High flow — momentum comes naturally here.";
+  if (overall >= 50) return "Balanced — ease and growth in equal measure.";
+  return "Growth-heavy — real warmth under intentional care.";
+}
+
+/**
+ * The Compare result headline shown at the top of a reading. relType-keyed
+ * for the five core picker types (COMPARE_RELATION_TYPES); score-band
+ * fallback for every other type. Single source of truth for web
+ * (/app/compare) and mobile (Compare) so both surfaces render identical
+ * copy — no web/mobile drift.
+ */
+export function compareHeadline(relType: RelationType, overall: number): string {
+  return RELATION_HEADLINE[relType] ?? scoreBandHeadline(overall);
+}
+
 export function whatTheyNeed(
   scores: Record<string, number>,
   person: GuidancePerson,

@@ -120,3 +120,11 @@ describe("source wiring — compare bi-wheel + shared flows/catches", () => {
     expect(share).toContain("FlowsAndCatchesSection");
   });
 });
+
+describe("1B: web shares one compareHeadline() helper with mobile (no drift) — web half", () => {
+  it("web /app/compare calls the shared compareHeadline helper, not an inline score ternary", () => {
+    const src = readFileSync(resolve(__dirname, "../app/app/compare/page.tsx"), "utf8");
+    expect(src).toContain("compareHeadline(relationType, result.synastry.scores.overall)");
+    expect(src).not.toContain("High flow — momentum comes naturally here.");
+  });
+});

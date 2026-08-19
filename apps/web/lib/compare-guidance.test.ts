@@ -6,6 +6,7 @@ import {
   aspectActionParts,
   availableCompareRelationTypes,
   COMPARE_RELATION_SUGGESTION_HINT,
+  compareHeadline,
   defaultCompareRelationType,
   isRomanticRelation,
   orbStrength,
@@ -246,5 +247,38 @@ describe("1A: friends vs siblings now resolve to different Mercury-how strings",
     const person = { ...SARAH, mercury: "Aries" };
     expect(whatTheyNeed(SCORES, person, "parent-child", SYNASTRY)).toContain("Scorpio Saturn");
     expect(whatTheyNeed(SCORES, person, "partners", SYNASTRY)).toContain("Cancer Venus");
+  });
+});
+
+describe("1B: relationship-framed Compare headline (relType-keyed, score-band fallback)", () => {
+  const HEADLINES: Record<string, string> = {
+    partners: "This is a partnership you're both building on purpose. Below is where it moves easily, and where it asks for tending.",
+    siblings: "You two share a history and a floor neither of you can walk off. Here's what runs smooth between you, and where the old patterns catch.",
+    friends: "This is chosen closeness, kept alive by showing up. Here's what comes easy, and where it needs a little care.",
+    "parent-child": "This is love read through respect and room to grow. Here's where care lands clean, and where it can tip into control.",
+    ancestor: "This is a bond that reaches across time. Here's what still connects you, and where the eras pull apart.",
+  };
+
+  it("returns the relationship-framed line for each of the five core picker types, regardless of score", () => {
+    for (const [relType, expected] of Object.entries(HEADLINES)) {
+      expect(compareHeadline(relType as RelationType, 12)).toBe(expected);
+      expect(compareHeadline(relType as RelationType, 55)).toBe(expected);
+      expect(compareHeadline(relType as RelationType, 95)).toBe(expected);
+    }
+  });
+
+  it("falls back to the original score-band line for types the picker never offers (romantic, platonic)", () => {
+    expect(compareHeadline("romantic", 75)).toBe("High flow — momentum comes naturally here.");
+    expect(compareHeadline("platonic", 60)).toBe("Balanced — ease and growth in equal measure.");
+    expect(compareHeadline("romantic", 30)).toBe("Growth-heavy — real warmth under intentional care.");
+  });
+
+  it("MINOR SAFETY: a minor pairing's available/default relation types never resolve to the partners headline", () => {
+    const available = availableCompareRelationTypes(true);
+    for (const t of available) {
+      expect(compareHeadline(t, 80)).not.toBe(HEADLINES.partners);
+    }
+    expect(isRomanticRelation(defaultCompareRelationType(true))).toBe(false);
+    expect(compareHeadline(defaultCompareRelationType(true), 80)).not.toBe(HEADLINES.partners);
   });
 });

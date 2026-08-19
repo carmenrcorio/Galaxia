@@ -51,6 +51,9 @@ export function MarketingNav() {
 
         <div className="app-nav-links">
           {LINKS.map((l) => <DesktopLink key={l.href} href={l.href}>{l.label}</DesktopLink>)}
+          <Link href="/login" className="pill-link" style={{ padding: "9px 18px", borderRadius: 100, fontSize: ".86rem" }}>
+            Log in
+          </Link>
           <Link href="/signup" className="pill-link--gold" style={{ padding: "9px 18px", borderRadius: 100, fontSize: ".86rem" }}>
             Start 14 days free
           </Link>
@@ -74,6 +77,9 @@ export function MarketingNav() {
               {l.label}
             </Link>
           ))}
+          <Link href="/login" className="app-nav-drawer-link" onClick={() => setOpen(false)}>
+            Log in
+          </Link>
           <Link href="/signup" className="app-nav-drawer-link app-nav-drawer-link--gold" onClick={() => setOpen(false)}>
             Start 14 days free
           </Link>

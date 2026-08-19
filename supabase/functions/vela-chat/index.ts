@@ -332,7 +332,7 @@ Deno.serve(async (req) => {
     // fields profileAllowsAccess already consumed above; this is not a
     // second access decision, only a classification of the access already
     // granted by the entitlement check just above.
-    const isTrial  = profile?.subscription_status === "trialing";
+    const isTrial  = !profile?.comped && profile?.subscription_status === "trialing";
     const rateTier = isTrial ? VELA_RATE_TRIAL : VELA_RATE_PAID;
 
     let rateLimitAllowed: boolean;

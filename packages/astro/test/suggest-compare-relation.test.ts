@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   COMPARE_RELATION_SUGGESTION_HINT,
   defaultCompareRelationType,
+  initialComparePairIds,
   isRomanticRelation,
   suggestCompareRelationType,
 } from "../src/compare-guidance";
@@ -127,5 +128,52 @@ describe("suggestCompareRelationType — caller contract with defaults + minor c
     expect(COMPARE_RELATION_SUGGESTION_HINT.length).toBeGreaterThan(0);
     expect(COMPARE_RELATION_SUGGESTION_HINT).not.toContain("—");
     expect(COMPARE_RELATION_SUGGESTION_HINT).toBe("Preselected from how you saved them.");
+  });
+});
+
+describe("initialComparePairIds — Person A/B preselection prefers self", () => {
+  it("prefers the self record as Person A, most-recent other as Person B", () => {
+    const people = [
+      { id: "friend-1", relation: "friend" },
+      { id: "partner-1", relation: "partner" },
+      { id: "self-1", relation: "self" },
+    ];
+    expect(initialComparePairIds(people)).toEqual({ personAId: "self-1", personBId: "friend-1" });
+  });
+
+  it("finds self even when it is not the most-recently-created row", () => {
+    // Newest-first order (created_at desc): self can be anywhere in the array.
+    const people = [
+      { id: "friend-1", relation: "friend" },
+      { id: "self-1", relation: "self" },
+      { id: "partner-1", relation: "partner" },
+    ];
+    expect(initialComparePairIds(people)).toEqual({ personAId: "self-1", personBId: "friend-1" });
+  });
+
+  it("falls back to the two most-recently-created people when there is no self record", () => {
+    const people = [
+      { id: "friend-1", relation: "friend" },
+      { id: "partner-1", relation: "partner" },
+    ];
+    expect(initialComparePairIds(people)).toEqual({ personAId: "friend-1", personBId: "partner-1" });
+  });
+
+  it("returns nulls for an empty list, and a null Person B for a self-only list", () => {
+    expect(initialComparePairIds([])).toEqual({ personAId: null, personBId: null });
+    expect(initialComparePairIds([{ id: "self-1", relation: "self" }])).toEqual({
+      personAId: "self-1",
+      personBId: null,
+    });
+  });
+
+  it("never reorders or mutates the input list", () => {
+    const people = [
+      { id: "friend-1", relation: "friend" },
+      { id: "self-1", relation: "self" },
+    ];
+    const copy = [...people];
+    initialComparePairIds(people);
+    expect(people).toEqual(copy);
   });
 });

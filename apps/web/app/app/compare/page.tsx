@@ -21,6 +21,7 @@ import {
   availableCompareRelationTypes,
   COMPARE_RELATION_SUGGESTION_HINT,
   defaultCompareRelationType,
+  initialComparePairIds,
   isRomanticRelation,
   suggestCompareRelationType,
   narrateHouseOverlay,
@@ -153,12 +154,19 @@ function ComparePageInner() {
         .eq("owner_id", user.id).order("created_at", { ascending: false });
       const rows = (data ?? []) as PersonLite[];
       setPeople(rows);
-      // BUG B: pre-fill Person A from ?a=<personId> when navigating in from a profile.
+      // BUG B: pre-fill Person A from ?a=<personId> when navigating in from a
+      // profile — an explicit deep link always wins over the self preference
+      // below. Otherwise, prefer the user's own `self` record as Person A (so
+      // the tag suggestion below can fire on first render) with the most-
+      // recently-created other person as Person B; only the two initial
+      // slots, both stay freely changeable afterward.
       const preA = searchParams.get("a");
-      const aId = preA && rows.some(r => r.id === preA) ? preA : rows[0]?.id ?? null;
+      const { personAId: aId, personBId: bId } =
+        preA && rows.some(r => r.id === preA)
+          ? { personAId: preA, personBId: rows.find(r => r.id !== preA)?.id ?? null }
+          : initialComparePairIds(rows);
       if (aId) setPersonAId(aId);
-      const bRow = rows.find(r => r.id !== aId);
-      if (bRow) setPersonBId(bRow.id);
+      if (bId) setPersonBId(bId);
     });
   }, [supabase, searchParams]);
 

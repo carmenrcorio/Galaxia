@@ -8,7 +8,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="container" style={{ paddingTop: 72, paddingBottom: 72, maxWidth: 820 }}>
       <h1 className="auth-title">Sign in to Galaxia</h1>
-      <p className="muted">Use the same email + password account as mobile.</p>
+      {/* FOUNDER-REVIEW: authored — matches the future-tense mobile framing on signup/account/download. */}
+      <p className="muted">
+        Use your Galaxia account on web today. When mobile links are live, this same account
+        carries over.
+      </p>
       <LoginForm nextPath={nextPath} />
     </main>
   );

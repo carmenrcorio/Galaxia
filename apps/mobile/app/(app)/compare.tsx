@@ -5,6 +5,7 @@ import {
   compareHeadline,
   computeSynastry,
   defaultCompareRelationType,
+  initialComparePairIds,
   isRomanticRelation,
   suggestCompareRelationType,
   type GenSignature,
@@ -80,8 +81,13 @@ export default function CompareScreen() {
     }
     const rows = (data ?? []) as PersonLite[];
     setPeople(rows);
-    if (!personAId && rows[0]) setPersonAId(rows[0].id);
-    if (!personBId && rows[1]) setPersonBId(rows[1].id);
+    // Prefer the user's own `self` record as Person A (matches web) so the
+    // tag suggestion below can fire on first render, with the most-
+    // recently-created other person as Person B — only the initial slots;
+    // both stay freely changeable afterward via the pickers below.
+    const { personAId: initialA, personBId: initialB } = initialComparePairIds(rows);
+    if (!personAId && initialA) setPersonAId(initialA);
+    if (!personBId && initialB) setPersonBId(initialB);
   };
 
   const selectedA = useMemo(() => people.find((person) => person.id === personAId) ?? null, [people, personAId]);

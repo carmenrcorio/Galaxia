@@ -197,6 +197,37 @@ export function suggestCompareRelationType(
 export const COMPARE_RELATION_SUGGESTION_HINT =
   "Preselected from how you saved them.";
 
+/**
+ * Initial Person A / Person B pair for /app/compare on first load, shared by
+ * web and mobile so the two surfaces cannot drift. Prefers the user's own
+ * `self` record as Person A — so `suggestCompareRelationType`'s self+tag
+ * inference (e.g. self + partner → partners) can actually fire on the very
+ * first render — paired with the most-recently-created OTHER (non-self)
+ * person as Person B. Falls back to today's behavior (the two
+ * most-recently-created people) when there is no `self` record.
+ *
+ * `people` must already be sorted newest-first (created_at desc) — this
+ * never reorders, refetches, or reads anything beyond `id`/`relation`.
+ *
+ * This is ONLY the initial preselection, not a permanent lock: callers keep
+ * both slots freely changeable afterward, including swapping self out to
+ * compare two non-self people. It does not touch `defaultCompareRelationType`,
+ * `suggestCompareRelationType`, or minor-clamp ordering — those still run,
+ * unchanged, on whichever pair ends up selected.
+ */
+export function initialComparePairIds(
+  people: readonly { id: string; relation: string | null | undefined }[]
+): { personAId: string | null; personBId: string | null } {
+  const selfPerson = people.find((p) => p.relation === "self");
+  if (selfPerson) {
+    const other = people.find((p) => p.id !== selfPerson.id);
+    return { personAId: selfPerson.id, personBId: other?.id ?? null };
+  }
+  const personAId = people[0]?.id ?? null;
+  const personBId = people.find((p) => p.id !== personAId)?.id ?? null;
+  return { personAId, personBId };
+}
+
 /** Bodies whose cross-aspects are most relevant to a romantic reading. */
 const ROMANTIC_BODIES = ["venus", "mars", "sun", "moon"];
 /** Bodies whose cross-aspects are most relevant to a platonic reading. */

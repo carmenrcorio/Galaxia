@@ -1,14 +1,22 @@
+import type { Metadata } from "next";
+import { LegalDocument } from "../../components/legal-document";
+import { readLegalMarkdown } from "../../lib/legal-content";
+
+export const metadata: Metadata = {
+  title: "Terms of Service · Galaxia"
+};
+
+/**
+ * Renders the reviewed Terms of Service (content/legal/terms-of-service.md)
+ * verbatim. Public route — not in middleware's matcher, so it's reachable
+ * without auth or Supabase config. See LegalDocument for the rendering
+ * approach; do not hand-edit the wording here, edit the source markdown.
+ */
 export default function TermsPage() {
+  const markdown = readLegalMarkdown("terms-of-service.md");
   return (
-    <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 860 }}>
-      <h1 className="auth-title">Terms of Service</h1>
-      <p className="muted">By using Galaxia, you agree to use the service lawfully and with consent for shared-space interactions.</p>
-      <ul style={{ color: "var(--cream)", lineHeight: 1.8 }}>
-        <li>Galaxia guidance is reflective coaching, not medical or legal advice.</li>
-        <li>You are responsible for the accuracy of data you enter.</li>
-        <li>Shared spaces require participant consent and may be revoked.</li>
-        <li>Abusive use and attempts to bypass safety controls are prohibited.</li>
-      </ul>
+    <main className="container legal-page">
+      <LegalDocument markdown={markdown} />
     </main>
   );
 }

@@ -253,14 +253,15 @@ function compareGenerational(
 }
 
 // ─── Rate limit ────────────────────────────────────────────────────────────
-// FOUNDER-REVIEW: cap + window are starting-point placeholders, not final.
-// Backed by check_and_increment_vela_rate (supabase/migrations/20260725050000_vela_chat_rate_limit.sql) —
-// an atomic per-user fixed-window counter. See index.ts's admission check
-// below for how tier is chosen and how the RPC result maps to 429 vs 503.
+// Cap and window are finalized: paid 20 requests per 600s, trial 5 requests
+// per 600s. Backed by check_and_increment_vela_rate
+// (supabase/migrations/20260725050000_vela_chat_rate_limit.sql), an atomic
+// per-user fixed-window counter. See index.ts's admission check below for
+// how tier is chosen and how the RPC result maps to 429 vs 503.
 const VELA_RATE_PAID  = { limit: 20, windowSeconds: 600 } as const;
 const VELA_RATE_TRIAL = { limit: 5,  windowSeconds: 600 } as const;
 
-// FOUNDER-REVIEW: authored — vela-chat rate-limit response copy.
+// Rate-limit response copy. Finalized.
 const RATE_LIMIT_COPY =
   "You've reached the chat limit for now. Give it a few minutes and try again.";
 const RATE_LIMIT_503_COPY =

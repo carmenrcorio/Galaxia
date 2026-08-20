@@ -8,9 +8,10 @@
 -- locking UPDATE, not a read-then-write, so it holds under concurrent
 -- callers (see the UPDATE's WHERE clause below).
 --
--- Cap numbers and window length are NOT decided here — they are
--- FOUNDER-REVIEW constants in the edge function (Phase 2), passed in as
--- p_limit / p_window_seconds. This migration only provides the primitive.
+-- Cap numbers and window length are not decided here. They are finalized
+-- constants in the edge function (Phase 2): paid 20 requests per 600
+-- seconds, trial 5 requests per 600 seconds, passed in as p_limit /
+-- p_window_seconds. This migration only provides the primitive.
 
 create table if not exists public.vela_rate_limits (
   user_id uuid primary key references auth.users(id) on delete cascade,
@@ -103,7 +104,7 @@ end;
 $$;
 
 comment on function public.check_and_increment_vela_rate(int, int) is
-  'Atomic per-user fixed-window admission check for vela-chat. Returns true (and records the hit) or false (no state change), for auth.uid() only. SECURITY DEFINER so it can write vela_rate_limits despite the table having no client write policy. Cap/window are caller-supplied (FOUNDER-REVIEW constants live in the edge function, not here).';
+  'Atomic per-user fixed-window admission check for vela-chat. Returns true (and records the hit) or false (no state change), for auth.uid() only. SECURITY DEFINER so it can write vela_rate_limits despite the table having no client write policy. Cap/window are caller-supplied (finalized constants live in the edge function, not here).';
 
 -- authenticated may call it for themselves (auth.uid() inside); anon may not
 -- (there is no unauthenticated vela-chat call to rate-limit) — mirrors the

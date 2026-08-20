@@ -222,7 +222,7 @@ export default function HomeScreen() {
         recentPassIdsByPerson
       });
       if (rowsToUpsert.length) {
-        await supabase.from("person_daily_nudges").upsert(rowsToUpsert, { onConflict: "person_id,date" });
+        await supabase.from("person_daily_nudges").upsert(rowsToUpsert, { onConflict: "person_id,date", ignoreDuplicates: true });
       }
       const displayOrdered = orderSkyRowsForHome(
         [

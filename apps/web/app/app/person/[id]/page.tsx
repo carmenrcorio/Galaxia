@@ -582,7 +582,7 @@ export default function PersonProfilePage() {
           }),
           recentPassIds,
         });
-        await supabase.from("person_daily_nudges").upsert(row, { onConflict: "person_id,date" });
+        await supabase.from("person_daily_nudges").upsert(row, { onConflict: "person_id,date", ignoreDuplicates: true });
         setDailyNudge(row);
       }
     } else {

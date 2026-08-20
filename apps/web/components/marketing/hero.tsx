@@ -40,6 +40,7 @@ export function Hero() {
           </p>
           <div className="hero-actions fade-in fade-in-delay-3">
             <Link href="/signup" className="btn-primary">Start 14 days free</Link>
+            <Link href="/login" className="pill-link hero-login-btn">Log in</Link>
             <a href="#how" className="hero-scroll-cue">
               <span>See how it works</span>
               <ArrowDown />

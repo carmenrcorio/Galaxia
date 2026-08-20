@@ -802,6 +802,10 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 .marketing .hero-h1 em { font-style: italic; font-weight: 400; color: var(--cream); }
 
 .hero-actions { margin-top: 30px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+/* Secondary CTA beside the primary Sign Up pill — same footprint as
+   .btn-primary (padding 14px 26px, .95rem) so the pair reads as equal-weight
+   buttons, not a big button next to a small nav pill. */
+.hero-login-btn { padding: 14px 26px; font-size: .95rem; }
 .hero-scroll-cue {
   display: inline-flex; align-items: center; gap: 7px;
   color: var(--mist2); font-size: .84rem; font-weight: 500;

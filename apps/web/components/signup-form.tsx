@@ -9,6 +9,7 @@ import { getSiteUrlFromRequestOrigin } from "../lib/env";
 import { PASSWORD_MIN_LENGTH, PASSWORD_RULE_HINT } from "../lib/password-rules";
 import { safeNextPath } from "../lib/safe-next-path";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
+import { backfillProfileTimezoneIfMissing } from "../lib/timezone";
 
 export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: string; nextPath?: string }) {
   const router = useRouter();
@@ -60,6 +61,13 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
     }
     if (data.session) {
       await syncSignupNameToProfile(supabase, data.user);
+      // Bonus capture, not the primary mechanism — TimezoneSync's
+      // backfill-on-app-load covers everyone (including the email-confirm
+      // path, where signUp returns no session and this never runs). A
+      // brand-new profile row always starts with timezone null (the
+      // handle_new_user trigger doesn't set it), so there is no need to
+      // query the row first here.
+      if (data.user) await backfillProfileTimezoneIfMissing(supabase, data.user.id, null);
       router.push(destination as never);
       router.refresh();
       return;

@@ -22,6 +22,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, Text, View } from "react-native";
 import { cacheGet, cacheSet } from "../../src/lib/cache";
 import { supabase } from "../../src/lib/supabase";
+import { backfillProfileTimezoneIfMissing } from "../../src/lib/timezone";
 import { useAccessibilitySettings } from "../../src/providers/accessibility-provider";
 import { useAuth } from "../../src/providers/auth-provider";
 import { useEntitlement } from "../../src/providers/entitlement-provider";
@@ -147,7 +148,7 @@ export default function HomeScreen() {
       ).map((row) => row.id as string);
       const localDate = ownerLocalDate();
       const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }] = await Promise.all([
-      supabase.from("profiles").select("display_name, pinned_sky_person_id").eq("id", session.user.id).single(),
+      supabase.from("profiles").select("display_name, pinned_sky_person_id, timezone").eq("id", session.user.id).single(),
       supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
       personIds.length
         ? supabase.from("charts").select("person_id, data").in("person_id", personIds)
@@ -172,6 +173,17 @@ export default function HomeScreen() {
       setWelcomeName(resolvedFirstName);
       setPeople(castPeople);
       const pinnedSkyPersonId = (profile as { pinned_sky_person_id?: string | null } | null)?.pinned_sky_person_id ?? null;
+
+      // Nudge-delivery Phase A backfill (mobile parity with web's
+      // TimezoneSync) — reuses the profile row already fetched above
+      // instead of an extra query. Write-amplification guard lives in
+      // backfillProfileTimezoneIfMissing: no-ops once a value is stored, so
+      // repeat home loads/session refreshes never re-write it.
+      void backfillProfileTimezoneIfMissing(
+        supabase,
+        session.user.id,
+        (profile as { timezone?: string | null } | null)?.timezone ?? null
+      );
 
       const chartById = new Map<string, NatalChart>((chartRows ?? []).map((row) => [row.person_id as string, row.data as NatalChart]));
       const calculatedLinks: LinkRow[] = [];

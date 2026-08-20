@@ -5,7 +5,8 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
-import { missingEnvMessage, privateEnv, publicEnv } from "./env";
+import { missingEnvMessage, publicEnv } from "./env";
+import { privateEnv } from "./env.server";
 import type { QuickShareKind, QuickSharePayload, QuickShareRow } from "./quick-share";
 
 /** Unguessable URL token (~128 bits), nanoid-length, URL-safe. */

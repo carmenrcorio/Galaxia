@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { privateEnv, publicEnv } from "../../../lib/env";
+import { publicEnv } from "../../../lib/env";
+import { privateEnv } from "../../../lib/env.server";
 
 export async function POST(request: Request) {
   try {

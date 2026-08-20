@@ -6,7 +6,8 @@ import {
 } from "@galaxia/astro";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { privateEnv, publicEnv } from "../../../../lib/env";
+import { publicEnv } from "../../../../lib/env";
+import { privateEnv } from "../../../../lib/env.server";
 import { getPreferredHouseSystem } from "../../../../lib/house-system";
 import { invitePersonOwnedByInviter } from "../../../../lib/invite-ownership";
 

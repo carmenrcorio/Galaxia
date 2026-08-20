@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { privateEnv, publicEnv } from "../../../../lib/env";
+import { publicEnv } from "../../../../lib/env";
+import { privateEnv } from "../../../../lib/env.server";
 import { renderTrialEmail, sendEmail, type TrialEmailData, type TrialEmailKind } from "../../../../lib/emails";
 
 /**

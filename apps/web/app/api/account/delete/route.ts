@@ -4,7 +4,8 @@ import {
   ACCOUNT_DELETE_COPY,
   isDeleteConfirmation
 } from "../../../../lib/account-data";
-import { missingEnvMessage, privateEnv, publicEnv } from "../../../../lib/env";
+import { missingEnvMessage, publicEnv } from "../../../../lib/env";
+import { privateEnv } from "../../../../lib/env.server";
 import { createSupabaseServerClient } from "../../../../lib/supabase/server";
 
 export const runtime = "nodejs";

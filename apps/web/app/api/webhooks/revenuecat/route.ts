@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { missingEnvMessage, privateEnv, publicEnv, revenueCatEnv } from "../../../../lib/env";
+import { missingEnvMessage, publicEnv } from "../../../../lib/env";
+import { privateEnv, revenueCatEnv } from "../../../../lib/env.server";
 import {
   mapRevenueCatEvent,
   verifyWebhookAuth,

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { privateEnv, publicEnv } from "./env";
+import { publicEnv } from "./env";
+import { privateEnv } from "./env.server";
 
 export interface InviteRecord {
   id: string;

@@ -29,10 +29,17 @@ export async function middleware(request: NextRequest) {
   // logged-out user can't land there. /start is the post-login resolver — it
   // needs a user to read, then redirects on to /app or /welcome (both gated
   // below), so it is auth-gated but intentionally left out of the entitlement
-  // gate.
+  // gate. /admin is included here as the cheap "logged in at all" first line
+  // — it is NOT the real admin gate (this middleware has no admin_users
+  // lookup and never will; that would be a second service-role round trip
+  // on every admin request, on top of the one requireAdmin/requireAdminApi
+  // already does). The real gate is requireAdmin() in admin/layout.tsx plus
+  // requireAdminApi() in every /api/admin/** handler — this only means an
+  // anonymous request never even reaches the layout.
   const needsAuth =
     path.startsWith("/app") ||
     path.startsWith("/account") ||
+    path.startsWith("/admin") ||
     path === "/welcome" ||
     path === "/start" ||
     path === "/subscribe";
@@ -74,5 +81,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/account/:path*", "/welcome", "/start", "/subscribe"]
+  // /admin here is page routes only (the layout-guarded surface), not
+  // /api/admin/** — those handlers must independently return a JSON 403 via
+  // requireAdminApi() even for an anonymous caller, not a login redirect.
+  matcher: ["/app/:path*", "/account/:path*", "/admin/:path*", "/welcome", "/start", "/subscribe"]
 };

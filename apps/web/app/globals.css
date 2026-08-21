@@ -1454,3 +1454,54 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 .chart-pdf-root .pdf-placement-uncertain-text { font-size: .82rem; color: #574d73; }
 
 .chart-pdf-root .pdf-footnote { margin-top: 20px; font-size: .7rem; color: #8076a6; line-height: 1.5; border-top: 1px solid rgba(230,174,108,.4); padding-top: 10px; }
+
+/* ─── Admin portal (apps/web/app/admin/**) ──────────────────────────────────
+   Deliberately plain/utilitarian rather than reusing CosmicBackground — this
+   is an internal account-management tool, not a product surface. Reuses
+   existing tokens/.container/.glass-card/.pill-link/.field so it stays
+   visually consistent without introducing a second design system. */
+.admin-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  background: linear-gradient(180deg, rgba(10,7,23,.85), rgba(10,7,23,.35));
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.admin-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 60px;
+}
+.admin-nav-brand {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.15rem;
+  color: var(--gold);
+  text-decoration: none;
+}
+.admin-nav-links { display: flex; gap: 8px; }
+
+.admin-search-form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.admin-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+.admin-table th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.admin-table td {
+  padding: 10px 14px;
+  color: var(--cream);
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  white-space: nowrap;
+}
+.admin-table tbody tr:last-child td { border-bottom: none; }

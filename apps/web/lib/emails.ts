@@ -221,8 +221,9 @@ const MAILING_ADDRESS_PLACEHOLDER = "[MAILING ADDRESS]";
 export function skyTodayEmail(d: SkyTodayEmailData): RenderedEmail {
   const subject = nudgeEmailSubject(d.subjectPersonName);
   const greeting = d.ownerFirstName ? `Hi ${d.ownerFirstName},` : "Hi,";
+  // FOUNDER-REVIEW: first-send context line, voice pass pending.
   const firstEmailLine = d.isFirstEmail
-    ? "You're getting this because you're a Galaxia member — daily sky emails are on by default. Turn them off any time, no login required, from the link below."
+    ? "You're getting this because you're a Galaxia member - turn it off any time from the link below."
     : null;
 
   const html = shell(

@@ -64,23 +64,21 @@ describe("nudge-send route — separate from B1 compute, read-only against perso
   });
 });
 
-describe("nudge-send route — gate order: consent, then local-hour, then ledger, then minor-exclusion, then lead pick", () => {
+describe("nudge-send route — gate order: consent -> local-hour -> minor-exclusion -> lead-selection -> ledger (locked, critical)", () => {
   const src = readRoute();
 
   it("filters consent at the query level", () => {
     expect(src).toContain('.eq("daily_nudge_emails_enabled", true)');
   });
 
-  it("checks isDueForNudgeSend before touching person_daily_nudges or the ledger", () => {
+  it("checks isDueForNudgeSend before touching person_daily_nudges", () => {
     const dueIdx = src.indexOf("isDueForNudgeSend(");
     const nudgeRowsIdx = src.indexOf('.from("person_daily_nudges")');
-    const ledgerIdx = src.indexOf('.from("daily_nudge_emails")');
     expect(dueIdx).toBeGreaterThan(-1);
-    expect(dueIdx).toBeLessThan(ledgerIdx);
     expect(dueIdx).toBeLessThan(nudgeRowsIdx);
   });
 
-  it("calls eligibleForEmailSend strictly before pickLeadNudgeRow, source-order", () => {
+  it("calls eligibleForEmailSend strictly before pickLeadNudgeRow, source-order (the critical property)", () => {
     const eligibleIdx = src.indexOf("eligibleForEmailSend(");
     const pickIdx = src.indexOf("pickLeadNudgeRow(");
     expect(eligibleIdx).toBeGreaterThan(-1);
@@ -88,15 +86,33 @@ describe("nudge-send route — gate order: consent, then local-hour, then ledger
     expect(eligibleIdx).toBeLessThan(pickIdx);
   });
 
+  it("checks the already-sent ledger AFTER lead selection, right before sending — not before minor-exclusion", () => {
+    const pickIdx = src.indexOf("pickLeadNudgeRow(");
+    const ledgerCheckIdx = src.indexOf('.from("daily_nudge_emails")\n      .select(');
+    expect(pickIdx).toBeGreaterThan(-1);
+    expect(ledgerCheckIdx).toBeGreaterThan(-1);
+    expect(pickIdx).toBeLessThan(ledgerCheckIdx);
+  });
+
   it("skips the owner entirely (continue) when nothing survives minor-exclusion — never falls back to a filtered row", () => {
     expect(src).toMatch(/if\s*\(\s*!eligible\.length\s*\)\s*\{[\s\S]{0,120}continue;/);
   });
 
-  it("imports pickLeadNudgeRow / eligibleForEmailSend / isDueForNudgeSend from the pure lib, not re-derived inline", () => {
+  it("imports pickLeadNudgeRow / eligibleForEmailSend / isDueForNudgeSend / effectiveMinorSafe from the pure lib, not re-derived inline", () => {
     expect(src).toMatch(/from\s*"\.\.\/\.\.\/\.\.\/\.\.\/lib\/nudge-send"/);
-    for (const fn of ["eligibleForEmailSend", "isDueForNudgeSend", "pickLeadNudgeRow"]) {
+    for (const fn of ["eligibleForEmailSend", "isDueForNudgeSend", "pickLeadNudgeRow", "effectiveMinorSafe"]) {
       expect(src).toContain(fn);
     }
+  });
+
+  it("recomputes minor safety defensively via effectiveMinorSafe/isMinorForSafety, never by reading is_minor raw", () => {
+    expect(src).toMatch(/effectiveMinorSafe\(\s*row\.minor_safe,/);
+    expect(src).not.toMatch(/\.is_minor\s*===\s*(true|false)/);
+    expect(src).not.toContain("person.is_minor === true");
+  });
+
+  it("joins people with the birth fields effectiveMinorSafe needs, riding along on the existing passed-person join", () => {
+    expect(src).toMatch(/\.select\("id, display_name, is_self, passed_at, created_at, is_minor, birth_date, birth_precision"\)/);
   });
 });
 

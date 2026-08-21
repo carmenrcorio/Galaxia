@@ -72,8 +72,21 @@ describe("skyTodayEmail", () => {
   it("adds the why-you're-getting-this line only on the first email", () => {
     const first = skyTodayEmail({ ...base, isFirstEmail: true });
     const later = skyTodayEmail({ ...base, isFirstEmail: false });
-    expect(first.html).toContain("on by default");
-    expect(later.html).not.toContain("on by default");
+    expect(first.html).toContain("You're getting this because you're a Galaxia member");
+    expect(later.html).not.toContain("You're getting this because you're a Galaxia member");
+  });
+
+  it("no CHROME copy (subject, greeting, first-send line, footer) uses an em dash (founder style rule)", () => {
+    // copy_resolved itself legitimately uses em dashes (the astrology copy
+    // library's established voice, packages/astro/src/transit-nudge/copy-matrix.ts)
+    // — untouchable, per Phase 0. Strip it out before checking the CHROME
+    // this phase actually authored.
+    const rendered = skyTodayEmail({ ...base, isFirstEmail: true });
+    const chromeHtml = rendered.html.replaceAll(base.copyResolved, "");
+    const chromeText = rendered.text.replaceAll(base.copyResolved, "");
+    expect(chromeHtml).not.toContain("\u2014");
+    expect(chromeText).not.toContain("\u2014");
+    expect(rendered.subject).not.toContain("\u2014");
   });
 });
 

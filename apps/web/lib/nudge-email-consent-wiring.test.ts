@@ -77,20 +77,40 @@ describe("Settings page — the consent toggle is a plain owner-row write, same 
   it("treats a null/undefined stored value as on, matching the column's own default", () => {
     expect(src).toMatch(/daily_nudge_emails_enabled\s*!==\s*false/);
   });
+
+  it("the new card's copy (toggle label, description, saved confirmation) never uses an em dash (founder style rule)", () => {
+    const cardSrc = src.slice(src.indexOf('<h2 className="card-title">Daily sky email'), src.indexOf("</section>", src.indexOf('<h2 className="card-title">Daily sky email')));
+    expect(cardSrc).not.toContain("\u2014");
+    expect(src).not.toMatch(/setConsentStatus\([^)]*\u2014/);
+  });
 });
 
-describe("nudge delivery Phase B2 does not touch the untouchable selection/entitlement internals", () => {
+describe("nudge delivery Phase B2 does not touch the untouchable entitlement/copy-resolver surfaces", () => {
   for (const surface of [
     "apps/web/app/app/settings/page.tsx",
     "apps/web/app/api/nudge-email/unsubscribe/route.ts",
     "apps/web/lib/emails.ts",
-    "apps/web/lib/nudge-send.ts"
+    "apps/web/lib/nudge-send.ts",
+    "apps/web/app/api/cron/nudge-send/route.ts"
   ]) {
-    it(`${surface} never imports hasAccess/isMinorForSafety internals or the copy resolver`, () => {
+    it(`${surface} never imports hasAccess or the copy resolver`, () => {
       const src = read(surface);
       expect(src).not.toContain("hasAccess");
-      expect(src).not.toMatch(/isMinorForSafety\(/);
       expect(src).not.toContain("resolveNudgeCopy");
     });
   }
+});
+
+describe("the send job's defensive minor recomputation goes through isMinorForSafety, never re-derives it", () => {
+  it("lib/nudge-send.ts imports isMinorForSafety unmodified from @galaxia/core rather than reimplementing age logic", () => {
+    const src = read("apps/web/lib/nudge-send.ts");
+    expect(src).toContain('import { isMinorForSafety, type MinorSafetyInput } from "@galaxia/core"');
+    expect(src).not.toContain("minPossibleAge");
+  });
+
+  it("the route file itself never calls isMinorForSafety directly — only through effectiveMinorSafe", () => {
+    const src = read("apps/web/app/api/cron/nudge-send/route.ts");
+    expect(src).not.toMatch(/isMinorForSafety\(/);
+    expect(src).toMatch(/effectiveMinorSafe\(/);
+  });
 });

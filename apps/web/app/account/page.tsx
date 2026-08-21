@@ -10,6 +10,7 @@ import { GetApp } from "../../components/get-app";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { SignOutButton } from "../../components/sign-out-button";
 import { Spinner } from "../../components/spinner";
+import { TimezoneSync } from "../../components/timezone-sync";
 import { TrialBanner } from "../../components/trial-banner";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 
@@ -95,6 +96,7 @@ export default function AccountPage() {
       <AppNav />
 
       <TrialBanner />
+      <TimezoneSync />
 
       <main className="app-content">
         <div className="person-row fade-in" style={{ gap: 16 }}>

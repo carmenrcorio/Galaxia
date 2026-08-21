@@ -8,6 +8,8 @@ export {
   type SubscriptionStatus
 } from "./has-access";
 
+export { isAdmin, type AdminRow } from "./is-admin";
+
 export type RelationshipType =
   | "partner"
   | "child"

@@ -61,9 +61,23 @@ describe("mobile parity — home.tsx backfills using the profile row it already 
 });
 
 describe("Phase A never touches Phase B's future inputs", () => {
-  it("ownerLocalDate's signature is untouched (still runtime-local, no tz parameter)", () => {
-    const src = read("packages/astro/src/transit-nudge/dates.ts");
-    expect(src).toContain("export function ownerLocalDate(now: Date = new Date()): string");
+  // Phase B1 (packages/astro/test/transit-nudge-dates.test.ts) added the
+  // optional trailing `timezone` param this describe block anticipated —
+  // Phase A itself (this file's capture points) still never calls
+  // ownerLocalDate/whenUTCForOwnerLocalDate with a third argument, so the
+  // guard below is scoped to what Phase A actually owns: no capture-point
+  // file threads a tz into either function or touches the nudge pipeline.
+  it("no capture-point file imports ownerLocalDate/whenUTCForOwnerLocalDate (doc mentions are fine, imports are not)", () => {
+    for (const surface of [
+      "apps/web/components/timezone-sync.tsx",
+      "apps/web/lib/timezone.ts",
+      "apps/mobile/src/lib/timezone.ts",
+      "packages/core/src/timezone.ts",
+    ]) {
+      const src = read(surface);
+      expect(src).not.toMatch(/import\s*\{[^}]*ownerLocalDate/);
+      expect(src).not.toMatch(/import\s*\{[^}]*whenUTCForOwnerLocalDate/);
+    }
   });
 
   it("no capture-point file references buildPersonDailyNudge, the selection engine, or copy_resolved", () => {

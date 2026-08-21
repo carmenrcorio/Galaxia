@@ -40,10 +40,20 @@
  *   2. An owner with BOTH a minor row and a real adult ("full" tier) row
  *      reaches `usersProcessed` (attempts a send) exactly once — proving
  *      the minor row didn't block the adult row, and the adult row's
- *      person_id/name is what would have led (never the minor's).
+ *      person_id/name is what would have led (never the minor's). Also
+ *      proves the defensive `effectiveMinorSafe` recomputation: the minor
+ *      row here has `minor_safe: false` written directly (simulating a
+ *      stale/wrong frozen flag) with `is_minor: true` on the person row —
+ *      it's still excluded, because the route recomputes from `people`.
  *   3. Idempotency — inserting a `daily_nudge_emails` ledger row for that
  *      same owner+date BEFORE a second call makes the route skip via
  *      skipped.alreadySentToday instead of reprocessing.
+ *   4. Consent — an owner with `daily_nudge_emails_enabled = false` never
+ *      appears in the query at all (never counted anywhere, not even
+ *      skipped), proven by the `evaluated` count not including them.
+ *   5. Cadence — an owner whose LOCAL hour is NOT the target hour right
+ *      now is skipped via `notDueThisHour`, even though every other gate
+ *      would otherwise let them through (consent on, real adult content).
  *
  * Usage:
  *   CRON_SECRET=<same value the running server has> \
@@ -144,10 +154,12 @@ function diff(before, after) {
 async function main() {
   const results = {};
   const zone = zoneForTargetHourNow(NUDGE_SEND_TARGET_HOUR);
+  const notDueZone = zoneForTargetHourNow(NUDGE_SEND_TARGET_HOUR + 2); // guaranteed local hour != target
   results.zoneUsed = zone;
+  results.notDueZoneUsed = notDueZone;
 
-  let minorOnlyUser, mixedUser;
-  let minorOnlyPersonId, mixedSelfPersonId, mixedMinorPersonId;
+  let minorOnlyUser, mixedUser, consentOffUser, notDueUser;
+  let minorOnlyPersonId, mixedSelfPersonId, mixedMinorPersonId, consentOffPersonId, notDuePersonId;
 
   try {
     // === Call 0: baseline, before any test data exists ===
@@ -168,7 +180,12 @@ async function main() {
     await insertNudgeRow(minorOnlyUser.userId, minorOnlyPersonId, dateA, { minor_safe: true, copy_tier: "full" });
 
     // --- User B: mixed. A minor row (should be excluded) AND a real adult
-    // "full" tier row (should lead and reach sendEmail). ---
+    // "full" tier row (should lead and reach sendEmail). The minor row's
+    // frozen `minor_safe` is deliberately written FALSE (simulating a
+    // stale/wrong frozen flag) while the joined `people` row has
+    // `is_minor: true` — proving `effectiveMinorSafe`'s defensive
+    // recomputation catches it anyway (over-protect, never trusts the
+    // frozen flag alone to say "safe"). ---
     mixedUser = await createUser("mixed", zone);
     mixedSelfPersonId = await createPerson(mixedUser.userId, {
       display_name: "QA Send Adult Lead",
@@ -182,20 +199,58 @@ async function main() {
       birth_precision: "none"
     });
     const dateB = ownerLocalDateForZone(zone);
-    await insertNudgeRow(mixedUser.userId, mixedMinorPersonId, dateB, { minor_safe: true, copy_tier: "full" });
+    await insertNudgeRow(mixedUser.userId, mixedMinorPersonId, dateB, { minor_safe: false, copy_tier: "full" });
     await insertNudgeRow(mixedUser.userId, mixedSelfPersonId, dateB, { minor_safe: false, copy_tier: "full" });
 
-    // === Call 1: after inserting both test users ===
+    // --- User C: consent OFF, otherwise perfectly eligible (due this hour,
+    // real adult content). Must never appear in the query at all — proven
+    // via the `evaluated` count, not just a skip bucket. ---
+    consentOffUser = await createUser("consent-off", zone);
+    await admin.from("profiles").update({ daily_nudge_emails_enabled: false }).eq("id", consentOffUser.userId);
+    consentOffPersonId = await createPerson(consentOffUser.userId, {
+      display_name: "QA Send Consent Off",
+      is_self: true,
+      birth_precision: "none"
+    });
+    await insertNudgeRow(consentOffUser.userId, consentOffPersonId, dateA, { minor_safe: false, copy_tier: "full" });
+
+    // --- User D: consent ON, real adult content, but their LOCAL hour is
+    // NOT the target hour right now — must be skipped via notDueThisHour,
+    // proving cadence is a real per-owner LOCAL-clock check, not a fixed
+    // UTC hour that would have let this owner through too. ---
+    notDueUser = await createUser("not-due", notDueZone);
+    const dateD = ownerLocalDateForZone(notDueZone);
+    notDuePersonId = await createPerson(notDueUser.userId, {
+      display_name: "QA Send Not Due",
+      is_self: true,
+      birth_precision: "none"
+    });
+    await insertNudgeRow(notDueUser.userId, notDuePersonId, dateD, { minor_safe: false, copy_tier: "full" });
+
+    // === Call 1: after inserting all four test users ===
     const call1 = await callRoute();
     results.call1 = call1;
     if (call1.status !== 200) throw new Error(`call1 failed: ${JSON.stringify(call1)}`);
 
     const d1 = diff(call0.body, call1.body);
+    d1.evaluated = call1.body.evaluated - call0.body.evaluated;
     results.deltaCall1 = d1;
     results.minorExclusionAndMixedLead = {
       verdict:
         d1.usersProcessed === 1 && d1.skipped.noEligibleAfterMinorExclusion === 1 && d1.sent === 0
-          ? "CORRECT — minor-only user never reached usersProcessed (excluded), mixed user reached usersProcessed exactly once (adult row led), neither user actually sent (no RESEND_API_KEY, expected)"
+          ? "CORRECT — minor-only user never reached usersProcessed (excluded), mixed user reached usersProcessed exactly once (adult row led, minor row excluded even with a stale frozen flag), neither user actually sent (no RESEND_API_KEY, expected)"
+          : "FAILED"
+    };
+    results.consentGate = {
+      verdict:
+        d1.evaluated === 3
+          ? "CORRECT — evaluated grew by only 3 (minor-only, mixed, not-due), not 4 — the consent-off user never entered the query at all"
+          : "FAILED"
+    };
+    results.cadenceGate = {
+      verdict:
+        d1.skipped.notDueThisHour === 1
+          ? "CORRECT — the not-due user (local hour != target, real eligible content, consent on) was skipped via notDueThisHour"
           : "FAILED"
     };
 
@@ -220,22 +275,26 @@ async function main() {
 
     console.log(JSON.stringify(results, null, 2));
 
-    const allPassed = [results.minorExclusionAndMixedLead.verdict, results.idempotencyLedgerSkip.verdict].every((v) =>
-      v.startsWith("CORRECT")
-    );
+    const allPassed = [
+      results.minorExclusionAndMixedLead.verdict,
+      results.consentGate.verdict,
+      results.cadenceGate.verdict,
+      results.idempotencyLedgerSkip.verdict
+    ].every((v) => v.startsWith("CORRECT"));
     if (!allPassed) {
       console.error("\nONE OR MORE VERIFY CHECKS FAILED — see verdicts above.");
       process.exitCode = 1;
     }
   } finally {
-    for (const personId of [minorOnlyPersonId, mixedSelfPersonId, mixedMinorPersonId]) {
+    const personIds = [minorOnlyPersonId, mixedSelfPersonId, mixedMinorPersonId, consentOffPersonId, notDuePersonId];
+    for (const personId of personIds) {
       if (personId) await admin.from("person_daily_nudges").delete().eq("person_id", personId);
     }
     if (mixedUser) await admin.from("daily_nudge_emails").delete().eq("owner_id", mixedUser.userId);
-    for (const personId of [minorOnlyPersonId, mixedSelfPersonId, mixedMinorPersonId]) {
+    for (const personId of personIds) {
       if (personId) await admin.from("people").delete().eq("id", personId);
     }
-    for (const user of [minorOnlyUser, mixedUser]) {
+    for (const user of [minorOnlyUser, mixedUser, consentOffUser, notDueUser]) {
       if (!user) continue;
       await admin.from("profiles").delete().eq("id", user.userId);
       const { error } = await admin.auth.admin.deleteUser(user.userId);

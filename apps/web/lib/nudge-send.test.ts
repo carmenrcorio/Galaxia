@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { eligibleForEmailSend, isDueForNudgeSend, NUDGE_SEND_TARGET_HOUR, ownerLocalHour, pickLeadNudgeRow } from "./nudge-send";
+import {
+  effectiveMinorSafe,
+  eligibleForEmailSend,
+  isDueForNudgeSend,
+  NUDGE_SEND_TARGET_HOUR,
+  ownerLocalHour,
+  pickLeadNudgeRow
+} from "./nudge-send";
 
 describe("ownerLocalHour / isDueForNudgeSend", () => {
   it("resolves the correct local hour for a real IANA zone", () => {
@@ -60,6 +67,33 @@ describe("eligibleForEmailSend — minor-exclusion gate", () => {
       { person_id: "b", copy_tier: "empty_hedge", minor_safe: false }
     ];
     expect(eligibleForEmailSend(rows)).toHaveLength(2);
+  });
+});
+
+describe("effectiveMinorSafe — over-protect: OR of the frozen row flag and a fresh recomputation", () => {
+  it("trusts the frozen flag when it's already true, without needing a person", () => {
+    expect(effectiveMinorSafe(true, null)).toBe(true);
+  });
+
+  it("is false when the frozen flag is false and the person is a computed adult", () => {
+    expect(effectiveMinorSafe(false, { isMinor: false, birthDate: "1980-01-01", birthPrecision: "date" })).toBe(false);
+  });
+
+  it("catches a minor the frozen flag missed, via isMinorForSafety's age computation (not raw is_minor)", () => {
+    const tenYearsAgo = new Date();
+    tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
+    const birthDate = tenYearsAgo.toISOString().slice(0, 10);
+    // is_minor deliberately false — proves the age computation runs, not just the flag.
+    expect(effectiveMinorSafe(false, { isMinor: false, birthDate, birthPrecision: "date" })).toBe(true);
+  });
+
+  it("never removes protection: once the frozen flag is true, no person data can flip it back to false", () => {
+    expect(effectiveMinorSafe(true, { isMinor: false, birthDate: "1980-01-01", birthPrecision: "date" })).toBe(true);
+  });
+
+  it("is false when there is no person to recompute from and the frozen flag is false (never fabricates minor status)", () => {
+    expect(effectiveMinorSafe(false, null)).toBe(false);
+    expect(effectiveMinorSafe(false, undefined)).toBe(false);
   });
 });
 

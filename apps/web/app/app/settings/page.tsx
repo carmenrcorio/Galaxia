@@ -116,7 +116,7 @@ export default function SettingsPage() {
     const { error } = await supabase.from("profiles").update({ daily_nudge_emails_enabled: next }).eq("id", userId);
     setSavingConsent(false);
     if (error) { setDailyNudgeEmailsEnabled(previous); setConsentStatus(error.message); return; }
-    setConsentStatus(next ? "Saved — daily sky emails are on." : "Saved — daily sky emails are off.");
+    setConsentStatus(next ? "Saved. Daily sky emails are on." : "Saved. Daily sky emails are off.");
   };
 
   const signOut = async () => {
@@ -247,8 +247,9 @@ export default function SettingsPage() {
 
       <section className="glass-card">
         <h2 className="card-title">Daily sky email</h2>
+        {/* FOUNDER-REVIEW: Daily sky email card copy, voice pass pending. */}
         <p className="muted" style={{ marginBottom: 12 }}>
-          A short email with what's moving in your sky today, sent once a day. On by default — turn it off any time here, no login required (every email also has a one-click unsubscribe link).
+          A short email with what's moving in your sky today, sent once a day. On by default. Turn it off any time here, no login required (every email also has a one-click unsubscribe link).
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button
@@ -259,7 +260,7 @@ export default function SettingsPage() {
             className="pill-link"
             style={{ cursor: "pointer" }}
           >
-            {dailyNudgeEmailsEnabled ? "On — turn off" : "Off — turn on"}
+            {dailyNudgeEmailsEnabled ? "On (turn off)" : "Off (turn on)"}
           </button>
           {savingConsent ? <Spinner size={11} /> : null}
         </div>

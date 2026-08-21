@@ -1,4 +1,5 @@
 import { orderSkyRowsForHome } from "@galaxia/astro";
+import { isMinorForSafety, type MinorSafetyInput } from "@galaxia/core";
 
 /**
  * Pure, testable helpers for the nudge-send cron (Phase B2). Deliberately
@@ -49,6 +50,23 @@ export interface SendableNudgeRow {
   minor_safe: boolean;
   /** Defensive only — B1's peopleForTodaySky should already exclude passed people. */
   passed?: boolean;
+}
+
+/**
+ * Defensive minor recomputation, OR'd with the frozen row flag — this only
+ * ever ADDS protection, never removes it (over-protect doctrine, same as
+ * `isMinorForSafety` itself: a false positive is a minor inconvenience, a
+ * false negative is a safety failure). `minor_safe` on the row is already
+ * correct-by-construction (the exact, unmodified `isMinorForSafety` output
+ * B1 froze at generation time — Phase 0 diagnosis) — this exists because
+ * the send job already joins `people` for the passed-person check, so the
+ * extra birth fields ride along on that same query for near-zero cost.
+ * Goes through `isMinorForSafety`, never reads `person.isMinor` raw.
+ */
+export function effectiveMinorSafe(frozenMinorSafe: boolean, person: MinorSafetyInput | null | undefined): boolean {
+  if (frozenMinorSafe === true) return true;
+  if (!person) return false;
+  return isMinorForSafety(person);
 }
 
 /**

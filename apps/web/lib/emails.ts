@@ -138,10 +138,18 @@ export function renderTrialEmail(kind: TrialEmailKind, d: TrialEmailData): Rende
 }
 
 /**
+ * Optional custom headers for a send — currently only used for the nudge
+ * email's RFC 8058 one-click List-Unsubscribe pair (see `nudgeEmailHeaders`).
+ * Kept generic rather than a fixed shape so a future sender doesn't need a
+ * new sendEmail overload.
+ */
+export type EmailHeaders = Record<string, string>;
+
+/**
  * Send via Resend. No-ops (logs) when RESEND_API_KEY is absent, so the cron is
  * safe to run before the key is configured. Returns true if actually sent.
  */
-export async function sendEmail(to: string, email: RenderedEmail): Promise<boolean> {
+export async function sendEmail(to: string, email: RenderedEmail, headers?: EmailHeaders): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
     console.log(`[emails] RESEND_API_KEY absent — skipping "${email.subject}" to ${to}`);
@@ -151,11 +159,110 @@ export async function sendEmail(to: string, email: RenderedEmail): Promise<boole
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify({ from, to, subject: email.subject, html: email.html, text: email.text })
+    body: JSON.stringify({
+      from,
+      to,
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+      ...(headers ? { headers } : {})
+    })
   });
   if (!res.ok) {
     console.error(`[emails] Resend failed (${res.status}) for "${email.subject}" to ${to}`);
     return false;
   }
   return true;
+}
+
+/**
+ * "Your sky today" — nudge delivery Phase B2. Renders `copy_resolved`
+ * VERBATIM; no new safety/precision logic here — minor_safe and
+ * precision_mode are already baked into copy_resolved by the copy resolver
+ * (packages/astro/src/transit-nudge/resolve-copy.ts) at generation time. The
+ * caller (the nudge-send cron) is solely responsible for making sure this is
+ * only ever called with a NON-minor row's copy_resolved and subject name —
+ * this function has no minor check of its own and must never grow one that
+ * could be bypassed instead of the caller's gate.
+ */
+export interface SkyTodayEmailData {
+  /** From resolveAccountName(...).firstName — never derived from an email address. */
+  ownerFirstName: string | null;
+  /** display_name of the person the leading nudge is about (never a minor — enforced by the caller). */
+  subjectPersonName: string;
+  /** copy_resolved, verbatim. Never wrapped, truncated, or re-derived. */
+  copyResolved: string;
+  siteUrl: string;
+  unsubscribeUrl: string;
+  /**
+   * True only for the very first nudge email a given owner ever receives.
+   * daily_nudge_emails_enabled defaults to true (opt-out, locked decision),
+   * so every existing account is opted in without ever having asked for
+   * this — the first email adds one honest sentence explaining why it
+   * arrived, on top of (not instead of) the unsubscribe link every email has.
+   */
+  isFirstEmail?: boolean;
+}
+
+/**
+ * Generic, name-only subject. Deliberately takes ONLY the subject person's
+ * name — no `copy_resolved`, no theme/domain word can leak into an inbox or
+ * lock-screen preview because this function's signature never receives them.
+ */
+export function nudgeEmailSubject(subjectPersonName: string): string {
+  return `Your sky today, for ${subjectPersonName}`;
+}
+
+// FOUNDER-REVIEW: real physical mailing address required before this ships
+// to any real recipient — CAN-SPAM requires one in every commercial email.
+// Mirrors the same open placeholder in content/legal/privacy-policy.md.
+const MAILING_ADDRESS_PLACEHOLDER = "[MAILING ADDRESS]";
+
+export function skyTodayEmail(d: SkyTodayEmailData): RenderedEmail {
+  const subject = nudgeEmailSubject(d.subjectPersonName);
+  const greeting = d.ownerFirstName ? `Hi ${d.ownerFirstName},` : "Hi,";
+  const firstEmailLine = d.isFirstEmail
+    ? "You're getting this because you're a Galaxia member — daily sky emails are on by default. Turn them off any time, no login required, from the link below."
+    : null;
+
+  const html = shell(
+    p(greeting) +
+      p(`Here's what's moving for <strong style="color:${CREAM}">${d.subjectPersonName}</strong> today:`) +
+      p(d.copyResolved) +
+      (firstEmailLine ? p(firstEmailLine) : "") +
+      button("Open your galaxy →", `${d.siteUrl}/app`) +
+      `<p style="color:#8076a6;font-size:11px;margin-top:28px;line-height:1.6">
+        Galaxia, ${MAILING_ADDRESS_PLACEHOLDER}<br />
+        <a href="${d.unsubscribeUrl}" style="color:#8076a6;text-decoration:underline">Unsubscribe from daily sky emails</a>
+      </p>`
+  );
+
+  const text = [
+    greeting,
+    "",
+    `Here's what's moving for ${d.subjectPersonName} today:`,
+    "",
+    d.copyResolved,
+    firstEmailLine ? `\n${firstEmailLine}` : "",
+    "",
+    `Open your galaxy: ${d.siteUrl}/app`,
+    "",
+    `Galaxia, ${MAILING_ADDRESS_PLACEHOLDER}`,
+    `Unsubscribe from daily sky emails: ${d.unsubscribeUrl}`
+  ].filter((line) => line !== "").join("\n");
+
+  return { subject, html, text };
+}
+
+/**
+ * RFC 8058 one-click List-Unsubscribe headers. `unsubscribeUrl` must be the
+ * SAME url as the visible footer link in `skyTodayEmail` — the send job's
+ * unsubscribe route handles both a mail-client POST (blank 200/202, no
+ * confirmation page) and a human GET (confirmation page) at that one URL.
+ */
+export function nudgeEmailHeaders(unsubscribeUrl: string): EmailHeaders {
+  return {
+    "List-Unsubscribe": `<${unsubscribeUrl}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+  };
 }

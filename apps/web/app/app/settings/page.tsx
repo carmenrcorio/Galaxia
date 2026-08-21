@@ -52,6 +52,10 @@ export default function SettingsPage() {
   const [savingHouseSystem, setSavingHouseSystem] = useState(false);
   const [houseSystemStatus, setHouseSystemStatus] = useState<string | null>(null);
 
+  const [dailyNudgeEmailsEnabled, setDailyNudgeEmailsEnabled] = useState(true);
+  const [savingConsent, setSavingConsent] = useState(false);
+  const [consentStatus, setConsentStatus] = useState<string | null>(null);
+
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
@@ -68,13 +72,16 @@ export default function SettingsPage() {
       const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("house_system, subscription_status, trial_ends_at, current_period_end, cancel_at_period_end, comped")
+          .select("house_system, subscription_status, trial_ends_at, current_period_end, cancel_at_period_end, comped, daily_nudge_emails_enabled")
           .eq("id", user.id)
           .maybeSingle(),
         supabase.from("people").select("id, display_name, relation").eq("owner_id", user.id).order("display_name", { ascending: true }),
         supabase.from("groups").select("id, name, kind").eq("owner_id", user.id).order("created_at", { ascending: false })
       ]);
       if (isHouseSystem(profile?.house_system)) setHouseSystem(profile.house_system);
+      // Column default is true (opt-out, default-on); null only precedes the
+      // migration landing on a not-yet-refreshed row, so treat null as on too.
+      setDailyNudgeEmailsEnabled(profile?.daily_nudge_emails_enabled !== false);
       setSubscriptionStatus((profile?.subscription_status as string | null) ?? null);
       setTrialEndsAt((profile?.trial_ends_at as string | null) ?? null);
       setCurrentPeriodEnd((profile?.current_period_end as string | null) ?? null);
@@ -99,6 +106,17 @@ export default function SettingsPage() {
     setSavingHouseSystem(false);
     if (error) { setHouseSystem(previous); setHouseSystemStatus(error.message); return; }
     setHouseSystemStatus("Saved. Each chart recomputes with the new system the next time you open it.");
+  };
+
+  const changeDailyNudgeEmails = async (next: boolean) => {
+    if (!userId || next === dailyNudgeEmailsEnabled) return;
+    setSavingConsent(true); setConsentStatus(null);
+    const previous = dailyNudgeEmailsEnabled;
+    setDailyNudgeEmailsEnabled(next);
+    const { error } = await supabase.from("profiles").update({ daily_nudge_emails_enabled: next }).eq("id", userId);
+    setSavingConsent(false);
+    if (error) { setDailyNudgeEmailsEnabled(previous); setConsentStatus(error.message); return; }
+    setConsentStatus(next ? "Saved — daily sky emails are on." : "Saved — daily sky emails are off.");
   };
 
   const signOut = async () => {
@@ -225,6 +243,27 @@ export default function SettingsPage() {
           Placidus is undefined at polar latitudes (above roughly 66°). If a birth place is inside the polar circles, that chart shows Whole Sign instead — and says so.
         </p>
         {houseSystemStatus ? <p className={houseSystemStatus.startsWith("Saved") ? "success" : "error"} style={{ fontSize: ".78rem", marginTop: 8 }}>{houseSystemStatus}</p> : null}
+      </section>
+
+      <section className="glass-card">
+        <h2 className="card-title">Daily sky email</h2>
+        <p className="muted" style={{ marginBottom: 12 }}>
+          A short email with what's moving in your sky today, sent once a day. On by default — turn it off any time here, no login required (every email also has a one-click unsubscribe link).
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            type="button"
+            onClick={() => void changeDailyNudgeEmails(!dailyNudgeEmailsEnabled)}
+            disabled={savingConsent}
+            aria-pressed={dailyNudgeEmailsEnabled}
+            className="pill-link"
+            style={{ cursor: "pointer" }}
+          >
+            {dailyNudgeEmailsEnabled ? "On — turn off" : "Off — turn on"}
+          </button>
+          {savingConsent ? <Spinner size={11} /> : null}
+        </div>
+        {consentStatus ? <p className={consentStatus.startsWith("Saved") ? "success" : "error"} style={{ fontSize: ".78rem", marginTop: 8 }}>{consentStatus}</p> : null}
       </section>
 
       <section className="glass-card">

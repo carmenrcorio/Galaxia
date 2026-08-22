@@ -1,11 +1,13 @@
 import "server-only";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type User } from "@supabase/supabase-js";
 import { isAdmin } from "@galaxia/core";
 import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
 import { missingEnvMessage, publicEnv } from "./env";
 import { privateEnv } from "./env.server";
 import { readAdminRow } from "./read-admin-row";
+import { createSupabaseServerClient } from "./supabase/server";
 import { requireUser } from "./supabase/require-user";
 
 /**
@@ -47,8 +49,97 @@ export async function requireAdmin(nextPath = "/app") {
 
   const row = await readAdminRow(serviceRoleClient, user.id);
   if (!isAdmin(row)) {
-    redirect(nextPath);
+    // `nextPath` is a caller-supplied `string`, not a literal route, so
+    // Next's typedRoutes (next.config.mjs) can't narrow it to `Route` —
+    // same `as never` escape used for a dynamic href in app-nav.tsx. This
+    // is a type-only cast; it changes nothing about where this redirects.
+    redirect(nextPath as never);
   }
 
   return { supabase, user };
+}
+
+/**
+ * Result of {@link requireAdminApi} — either a `NextResponse` to return
+ * immediately (denied) or `{ user }` (allowed). Deliberately a plain
+ * `instanceof`-narrowable union rather than a `{ ok: boolean; ... }`
+ * discriminated union: this repo's `apps/web/tsconfig.json` sets
+ * `"strict": false` (so `strictNullChecks` is off), and TypeScript's
+ * control-flow narrowing on a boolean-literal discriminant (`if (!guard.ok)
+ * return guard.response`) silently fails to narrow under that setting —
+ * confirmed by reproducing it in isolation, not a guess. `instanceof`
+ * narrowing has no such dependency and works the same with or without
+ * `strictNullChecks`.
+ */
+export type RequireAdminApiResult = NextResponse | { user: User };
+
+/**
+ * requireAdminApi — the JSON-403 sibling of requireAdmin() for `/api/admin/**`
+ * route handlers. `requireAdmin()` redirects on failure, which is the right
+ * "denied" signal for a page render but not for a fetch/curl caller hitting
+ * a route directly — the whole point of a route handler calling its own
+ * guard (rather than trusting the `/admin` layout above it) is that a
+ * caller who bypasses the layout entirely still gets a real denial, not a
+ * 30x it can silently follow or ignore.
+ *
+ * Same two checks as requireAdmin — a real verified session (this reads
+ * `auth.getUser()` directly rather than going through `requireUser()`,
+ * because `requireUser()` calls `redirect()`, which throws a Next.js
+ * `NEXT_REDIRECT` control-flow error that is the wrong "denied" shape for a
+ * route handler to let escape), then `admin_users` via a service-role
+ * client, decided by the same pure `isAdmin()`.
+ *
+ * Never throws and never returns a 5xx for an auth decision: every failure
+ * path — no session, a signed-in non-admin, or any unexpected error while
+ * establishing the session or reading `admin_users` — collapses to the same
+ * 403 JSON response. This is deliberately fail-closed by construction: a
+ * caught exception defaulting to "forbidden" is safe, a caught exception
+ * defaulting to "allowed" (or an uncaught one producing an unhandled 500
+ * that happens to skip the check) would not be. A genuine server
+ * misconfiguration (missing `SUPABASE_SERVICE_ROLE_KEY`) is the one
+ * exception — that's not an auth decision, it's why nothing works right
+ * now, so it gets its own named 500 response per ENGINEERING.md §6, rather
+ * than being folded into "forbidden."
+ *
+ * Call this at the top of every `/api/admin/**` handler and return the
+ * guard immediately when it's a `NextResponse`. Only `user` is returned on
+ * success (not the session client) — every consumer so far either just
+ * needs the verified admin's id (for `admin_audit_log.actor_id`) or already
+ * constructs its own service-role client, the same way this function and
+ * `requireAdmin` do:
+ *
+ * ```ts
+ * const guard = await requireAdminApi();
+ * if (guard instanceof NextResponse) return guard;
+ * const { user } = guard; // guard.user.id is the verified admin's id
+ * ```
+ */
+export async function requireAdminApi(): Promise<RequireAdminApiResult> {
+  const forbidden = () => NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  if (!publicEnv.supabaseUrl || !privateEnv.serviceRole) {
+    return NextResponse.json(
+      { error: missingEnvMessage("SUPABASE_SERVICE_ROLE_KEY") },
+      { status: 500 }
+    );
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (!user) return forbidden();
+
+    const serviceRoleClient = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, {
+      auth: { persistSession: false }
+    });
+
+    const row = await readAdminRow(serviceRoleClient, user.id);
+    if (!isAdmin(row)) return forbidden();
+
+    return { user };
+  } catch {
+    return forbidden();
+  }
 }

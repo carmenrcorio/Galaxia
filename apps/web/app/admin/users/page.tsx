@@ -2,6 +2,7 @@ import Link from "next/link";
 import { missingEnvMessage, publicEnv } from "../../../lib/env";
 import { privateEnv } from "../../../lib/env.server";
 import { listAdminUsers, DEFAULT_PAGE_SIZE, type AdminUserRow } from "../../../lib/admin/list-users";
+import { ResendEmailButton } from "../../../components/admin/resend-email-button";
 
 /**
  * Read-only admin user list. This page renders behind admin/layout.tsx's
@@ -93,12 +94,13 @@ export default async function AdminUsersPage({
                   <th>Created</th>
                   <th>Timezone</th>
                   <th>Nudge emails</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {result.users.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="muted">
+                    <td colSpan={9} className="muted">
                       No users found.
                     </td>
                   </tr>
@@ -113,6 +115,9 @@ export default async function AdminUsersPage({
                       <td>{formatDate(user.created_at)}</td>
                       <td>{user.timezone ?? "—"}</td>
                       <td>{user.daily_nudge_emails_enabled ? "On" : "Off"}</td>
+                      <td>
+                        <ResendEmailButton userId={user.id} />
+                      </td>
                     </tr>
                   ))
                 )}

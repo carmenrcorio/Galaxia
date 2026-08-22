@@ -56,6 +56,12 @@ export default function SettingsPage() {
   const [savingConsent, setSavingConsent] = useState(false);
   const [consentStatus, setConsentStatus] = useState<string | null>(null);
 
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [supportSubject, setSupportSubject] = useState("");
+  const [supportBody, setSupportBody] = useState("");
+  const [submittingSupport, setSubmittingSupport] = useState(false);
+  const [supportStatus, setSupportStatus] = useState<string | null>(null);
+
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
@@ -69,6 +75,7 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
+      setAccountEmail(user.email ?? null);
       const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
         supabase
           .from("profiles")
@@ -117,6 +124,37 @@ export default function SettingsPage() {
     setSavingConsent(false);
     if (error) { setDailyNudgeEmailsEnabled(previous); setConsentStatus(error.message); return; }
     setConsentStatus(next ? "Saved. Daily sky emails are on." : "Saved. Daily sky emails are off.");
+  };
+
+  const submitSupportRequest = async () => {
+    if (!userId) return;
+    const subject = supportSubject.trim();
+    const body = supportBody.trim();
+    if (!subject || !body) {
+      setSupportStatus("Please fill in both the subject and message.");
+      return;
+    }
+    setSubmittingSupport(true);
+    setSupportStatus(null);
+    // Direct insert via the signed-in session client — the owner-insert RLS
+    // policy on support_requests (owner_id = auth.uid()) is what allows
+    // this to land; there is no select policy, so this never reads the row
+    // back (no `.select()` chained — that alone requires a select grant
+    // this table intentionally does not have).
+    const { error } = await supabase.from("support_requests").insert({
+      owner_id: userId,
+      email: accountEmail ?? "",
+      subject,
+      body
+    });
+    setSubmittingSupport(false);
+    if (error) {
+      setSupportStatus(error.message);
+      return;
+    }
+    setSupportSubject("");
+    setSupportBody("");
+    setSupportStatus("Sent. We'll follow up by email.");
   };
 
   const signOut = async () => {
@@ -281,6 +319,48 @@ export default function SettingsPage() {
           Change your password from{" "}
           <a href="/account" style={{ color: "var(--gold)" }}>Account</a>.
         </p>
+      </section>
+
+      <section className="glass-card">
+        <h2 className="card-title">Contact support</h2>
+        <p className="muted" style={{ marginBottom: 12 }}>
+          Send us a note — we'll reply to {accountEmail ?? "the email on this account"}.
+        </p>
+        <div style={{ display: "grid", gap: 10 }}>
+          <input
+            type="text"
+            className="field field--rect"
+            placeholder="Subject"
+            value={supportSubject}
+            onChange={(e) => setSupportSubject(e.target.value)}
+            disabled={submittingSupport}
+            maxLength={200}
+          />
+          <textarea
+            className="field field--rect"
+            placeholder="What's going on?"
+            rows={4}
+            value={supportBody}
+            onChange={(e) => setSupportBody(e.target.value)}
+            disabled={submittingSupport}
+            maxLength={4000}
+          />
+          <button
+            type="button"
+            className="pill-link"
+            style={{ width: "fit-content", cursor: "pointer" }}
+            onClick={() => void submitSupportRequest()}
+            disabled={submittingSupport || !supportSubject.trim() || !supportBody.trim()}
+          >
+            {submittingSupport && <Spinner size={11} />}
+            {submittingSupport ? "Sending…" : "Send"}
+          </button>
+        </div>
+        {supportStatus ? (
+          <p className={supportStatus.startsWith("Sent") ? "success" : "error"} style={{ fontSize: ".78rem", marginTop: 8 }}>
+            {supportStatus}
+          </p>
+        ) : null}
       </section>
 
       <section className="glass-card">

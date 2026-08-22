@@ -1,0 +1,12 @@
+-- Follow-up to 20260822120000_admin_safe_actions_and_support_queue.sql:
+-- the security advisor flagged enforce_support_request_rate_limit() as a
+-- SECURITY DEFINER function directly callable by anon/authenticated via
+-- PostgREST RPC (every new function is PUBLIC-executable by default). It
+-- is a BEFORE INSERT trigger only — Postgres invokes trigger functions
+-- itself during the INSERT, which does not require EXECUTE privilege on
+-- the function for the inserting role, so revoking EXECUTE here does not
+-- break the rate limit. It only closes the direct
+-- `/rest/v1/rpc/enforce_support_request_rate_limit` path, which would
+-- otherwise error anyway (`new` is unassigned outside trigger context) but
+-- should not be reachable at all.
+revoke execute on function public.enforce_support_request_rate_limit() from public, anon, authenticated;

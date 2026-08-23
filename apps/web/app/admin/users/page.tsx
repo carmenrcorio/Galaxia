@@ -3,6 +3,7 @@ import { missingEnvMessage, publicEnv } from "../../../lib/env";
 import { privateEnv } from "../../../lib/env.server";
 import { listAdminUsers, DEFAULT_PAGE_SIZE, type AdminUserRow } from "../../../lib/admin/list-users";
 import { ResendEmailButton } from "../../../components/admin/resend-email-button";
+import { CompActionButton } from "../../../components/admin/comp-action-button";
 
 /**
  * Read-only admin user list. This page renders behind admin/layout.tsx's
@@ -116,7 +117,16 @@ export default async function AdminUsersPage({
                       <td>{user.timezone ?? "—"}</td>
                       <td>{user.daily_nudge_emails_enabled ? "On" : "Off"}</td>
                       <td>
-                        <ResendEmailButton userId={user.id} />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+                          <ResendEmailButton userId={user.id} />
+                          <CompActionButton
+                            userId={user.id}
+                            email={user.email}
+                            comped={user.comped}
+                            subscriptionStatus={user.subscription_status}
+                            trialEndsAt={user.trial_ends_at}
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))

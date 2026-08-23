@@ -1,17 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * The closed audit-action vocabulary (LOCKED, Stage 2 scope). Every
- * mutating admin action writes exactly one of these — never free text, and
- * never a vocabulary defined again inline at the call site.
+ * The closed audit-action vocabulary (LOCKED, Stage 2 scope + comp Phase 1).
+ * Every mutating admin action writes exactly one of these — never free
+ * text, and never a vocabulary defined again inline at the call site.
  * `writeAdminAuditLog` fails closed on anything outside this set instead of
  * silently logging (or worse, silently swallowing) an unrecognized action.
+ *
+ * `admin_audit_log.action` is plain `text` in the database — no CHECK
+ * constraint or enum type (confirmed live: only the actor_id/target_user_id
+ * foreign keys and the primary key exist on the table). This TS-side closed
+ * set is the only enforcement, so adding `grant_comp`/`revoke_comp` here
+ * needs no migration.
  */
 export const ADMIN_AUDIT_ACTIONS = [
   "resend_confirmation_email",
   "resend_password_reset_email",
   "close_support_request",
-  "reopen_support_request"
+  "reopen_support_request",
+  "grant_comp",
+  "revoke_comp"
 ] as const;
 
 export type AdminAuditAction = (typeof ADMIN_AUDIT_ACTIONS)[number];

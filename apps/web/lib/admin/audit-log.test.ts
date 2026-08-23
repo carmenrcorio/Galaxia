@@ -17,13 +17,15 @@ function fakeServiceRoleClient(insertResult: { error: { message: string } | null
 }
 
 describe("ADMIN_AUDIT_ACTIONS / isAdminAuditAction", () => {
-  it("is exactly the four Stage 2 actions, no more, no less", () => {
+  it("is exactly the six Stage 2 + comp Phase 1 actions, no more, no less", () => {
     expect([...ADMIN_AUDIT_ACTIONS].sort()).toEqual(
       [
         "close_support_request",
         "reopen_support_request",
         "resend_confirmation_email",
-        "resend_password_reset_email"
+        "resend_password_reset_email",
+        "grant_comp",
+        "revoke_comp"
       ].sort()
     );
   });

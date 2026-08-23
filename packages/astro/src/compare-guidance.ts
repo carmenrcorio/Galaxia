@@ -840,6 +840,194 @@ const ASPECT_ACTION: Record<string, { flows: string; catches: string }> = {
     catches: "when two drives push at once, decide who leads this one before it becomes a fight over who's in charge",
     flows:   "aim the shared drive at a real project together; this is momentum you can build with, not just spend",
   },
+
+  // ─────────────────────────────────────────────────────────────────────
+  // ASPECT_ACTION Tier-1 coverage sprint: the remaining 36 body pairs, so
+  // every real (from,to) the engine can produce resolves via Tier 1 instead
+  // of falling to the single-body BODY_FRICTION_ACTION/BODY_FLOW_ACTION
+  // fallback below. Voice matched to the 19 pairs above. FOUNDER-REVIEW
+  // pending on every entry in this block.
+  // ─────────────────────────────────────────────────────────────────────
+  // FOUNDER-REVIEW
+  [PAIR_KEY("jupiter", "jupiter")]: {
+    catches: "when you both inflate the same plan, one of you play the check; two people sizing it bigger need someone counting the cost, not just the upside",
+    flows:   "dream the big version out loud together; shared optimism this matched is rare fuel, so aim it at something you'll actually build",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("jupiter", "mars")]: {
+    catches: "when the drive and the big idea egg each other on, decide the actual size before you move; unchecked, this pair commits to more than it can carry",
+    flows:   "point the eagerness at one real target; when energy and optimism line up like this, the risk is scattering it, not lacking it",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("jupiter", "mercury")]: {
+    catches: "when the talk runs ahead of what's real, pin one claim down to specifics before you build on it; enthusiasm inflates the details here",
+    flows:   "think the big picture out loud together; you widen each other's frame, so use it to plan and not just to riff",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("jupiter", "neptune")]: {
+    catches: "when the vision gets rosy and vague at once, ask what it actually requires this week; this pair believes hardest right where it's least specific",
+    flows:   "imagine the ideal version together, then name one true next step; the dream is a gift only if it touches ground",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("jupiter", "pluto")]: {
+    catches: "when the stakes and the ambition both climb, say plainly what you each want out of it; this drive runs deep, so keep the aim in the open instead of underground",
+    flows:   "aim the shared conviction at something worth it; when belief runs this deep, use it deliberately instead of letting it just build",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("jupiter", "saturn")]: {
+    catches: "when one wants to widen and the other wants to secure, treat both as the plan, not opposing votes; growth with no floor and a floor with no growth both stall",
+    flows:   "let the optimism and the caution balance each other; this is a pair that can dream big and still keep its footing, so plan for both",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("jupiter", "uranus")]: {
+    catches: "when the urge to leap hits, agree what stays fixed before you change everything; the excitement is real, but not all of it needs deciding today",
+    flows:   "chase the new possibility together while it's live; this pair sees the opening early, so move on it before the moment cools",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("jupiter", "venus")]: {
+    catches: "when generosity tips into too much, check what's actually wanted before you give bigger; overdoing warmth can bury the plainer thing they needed",
+    flows:   "be openly generous with each other; affection comes easy and large here, so spend it out loud before it gets assumed",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("mars", "neptune")]: {
+    catches: "when the drive goes murky and the effort scatters, name the actual want out loud; this pair loses steam when what it's chasing stays vague",
+    flows:   "let the imagination steer the action for once; when drive and vision cooperate here, you can move on a feeling before it's fully spelled out",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("mars", "pluto")]: {
+    catches: "when the push turns into a power contest, step back from the win and name what you actually want; this pair can go all the way in, so keep the fight from becoming the point",
+    flows:   "aim the combined force at a real obstacle together; intensity this focused moves things, so give it something outside the two of you to push against",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("mars", "saturn")]: {
+    catches: "when the drive keeps hitting the brake, get the plan explicit instead of pushing harder; this pair grinds when heat meets caution, so make the pace something you both agreed to",
+    flows:   "use the way you can push and pace at once; drive with discipline behind it is how this pair actually finishes things",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("mars", "sun")]: {
+    catches: "when the drive reads as a challenge to who they are, back the person before you contest the move; the heat here is really about being taken seriously",
+    flows:   "let the shared energy make each of you bolder; you spur each other on, so put that toward something instead of at each other",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("mars", "uranus")]: {
+    catches: "when the impulse fires fast, put one beat between the urge and the act; this pair moves before it thinks, and the spark is worth keeping but not obeying blindly",
+    flows:   "let the fast, inventive energy loose on a real problem; this pair improvises well under pressure, so give it something live to solve",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("mercury", "neptune")]: {
+    catches: "when the words go foggy or you fill the gap with a story, ask them to say it plainly again; most of the trouble here is imagined, not said",
+    flows:   "use the way you can talk in half-said things; you catch each other's drift easily, so trust the read but still check it landed",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("mercury", "pluto")]: {
+    catches: "when a talk turns into an interrogation, drop the pressure and ask instead of digging; this pair goes deep, so make it safe to say the real thing rather than extract it",
+    flows:   "use how you can go to the hard subject without flinching; few pairs can talk about the buried stuff this directly, so do it on purpose",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("mercury", "uranus")]: {
+    catches: "when the thinking jumps track mid-conversation, land one point before you leap to the next; the pair is fast and original but loses each other in the jumps",
+    flows:   "let the ideas spark off each other; this is quick, unexpected thinking that gets somewhere, so chase the tangent while it's alive",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("moon", "neptune")]: {
+    catches: "when the mood turns hazy and you can't tell whose feeling it is, name your own first; this pair absorbs each other, so separate the weather before you answer it",
+    flows:   "lean on the wordless read you have on each other; you feel each other's states early here, so honor it out loud instead of just sensing it",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("moon", "pluto")]: {
+    catches: "when the feeling comes up huge, let it be big without making it a threat; this pair feels at full volume, so meet the intensity plainly instead of managing it down",
+    flows:   "trust each other with the feelings that go deep; the capacity to sit in the heavy stuff together is rare, so don't keep it shallow",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("moon", "uranus")]: {
+    catches: "when the mood shifts without warning, give room instead of pinning down the cause; this pair needs comfort that doesn't cage, so offer closeness that leaves an exit",
+    flows:   "let the emotional honesty be as unconventional as it wants; you give each other space to feel oddly, so protect that rather than smoothing it out",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("neptune", "neptune")]: {
+    catches: "when you both drift into the ideal and lose the plan, one of you name the concrete; two dreamers need a fact between them, not another vision",
+    flows:   "make room for the shared imaginative thread; you dream in the same key here, so build something with it instead of just floating in it",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("neptune", "pluto")]: {
+    catches: "when the depth gets murky and hard to name, go slow and stay specific; this runs deep and quiet, so don't let the important thing dissolve before it's said",
+    flows:   "honor the deep, quiet current you share; this bond works underground, so trust it while still naming what's actually happening",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("neptune", "saturn")]: {
+    catches: "when the dream meets the hard limit, build the small real version instead of grieving the whole; this pair can ground a vision, but only if it stops mourning the ideal one",
+    flows:   "let the structure give the dream a shape; realism and imagination cooperate here, so turn the ideal into one thing you can actually hold",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("neptune", "sun")]: {
+    catches: "when you're loving the idea of them more than the person, look at who's actually there; this pair projects easily, so meet the real one, not the imagined",
+    flows:   "let yourselves see the best in each other and say it; there's a gentle, inspired quality here, so name what you admire without inflating it",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("neptune", "uranus")]: {
+    catches: "when the vision keeps shifting shape, agree on one thing that stays true; this pair reinvents the ideal constantly, so anchor something before you remake it again",
+    flows:   "let the unconventional imagination run; you see past the usual together here, so use it to picture something genuinely new",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("neptune", "venus")]: {
+    catches: "when the affection goes dreamy and unreal, ask for the plain version of what they feel; this pair idealizes love, so keep the warmth attached to the actual person",
+    flows:   "let the tender, imaginative warmth show; affection has a soft, generous quality here, so give it freely and keep it honest",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("pluto", "pluto")]: {
+    catches: "when you both grip the same thing hard, one of you loosen first; two people this intense need someone to let go, not two who won't",
+    flows:   "use the shared capacity to go all the way in; you don't flinch from the deep stuff together, so take something real all the way down",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("pluto", "saturn")]: {
+    catches: "when the control tightens on both sides, name the fear under the grip; this pair holds hard, so say what you're afraid to lose before it becomes a standoff",
+    flows:   "build something that lasts with the seriousness you share; this pair commits deep and holds, so put that toward a thing worth the endurance",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("pluto", "sun")]: {
+    catches: "when the intensity aims at who they are, back off the remake and let them be; this pair can want to transform each other, so admire the person instead of managing them",
+    flows:   "let each other's depth strengthen who you are; there's real power to draw on here, so use it to back each other rather than overwhelm",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("pluto", "uranus")]: {
+    catches: "when the urge to blow it up and the urge to go deep collide, decide what's actually being changed; this pair can mistake destruction for depth, so aim the upheaval at something specific",
+    flows:   "use the appetite for real change you both have; this pair can go deep and break the old pattern at once, so point it at the thing that needs to move",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("pluto", "venus")]: {
+    catches: "when love goes to obsession or a test, name the fear instead of tightening the hold; affection runs deep here, so let it be intense without making it a grip",
+    flows:   "let yourselves love with the full depth this has; warmth here goes all the way down, so trust it instead of guarding it",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("saturn", "saturn")]: {
+    catches: "when you both wait for the other to give first, one of you go first anyway; two people who think warmth is earned can stand there forever",
+    flows:   "rely on the steadiness you both bring; two careful people make agreements that actually hold, so build the long thing together",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("saturn", "uranus")]: {
+    catches: "when one holds the line and the other breaks it, put the fixed and the free in the same plan; this pair fights structure against freedom, so decide what each of those gets",
+    flows:   "let the discipline and the invention balance each other; you can steady a new idea here, so keep what works while you change what doesn't",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("sun", "uranus")]: {
+    catches: "when being seen collides with needing to be free, give the recognition and the room at once; this pair reads control into attention, so admire them without pinning them",
+    flows:   "celebrate what's original in each of you; there's an easy respect for difference here, so name the thing that makes them un-ordinary",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("sun", "venus")]: {
+    catches: "when pride and affection tangle, lead with what you appreciate before anything else; this pair needs to feel liked, not just handled, so let the warmth come first",
+    flows:   "say plainly what you admire and enjoy in each other; there's an easy, flattering warmth here, so spend it out loud before it's assumed",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("uranus", "uranus")]: {
+    catches: "when you both bolt at the same restriction, agree on the one thing you'll keep steady; two people who need this much room can drift right apart",
+    flows:   "protect the freedom you give each other; you let one another be genuinely different here, so guard that as the thing that makes it work",
+  },
+  // FOUNDER-REVIEW
+  [PAIR_KEY("uranus", "venus")]: {
+    catches: "when affection needs room and consistency at once, ask which one they need today; this pair loves in an unusual key, so give the warmth without demanding it look normal",
+    flows:   "let the affection be as unconventional as it is; there's an electric, easy warmth here, so enjoy the spark without trying to make it settle",
+  },
 };
 
 /**

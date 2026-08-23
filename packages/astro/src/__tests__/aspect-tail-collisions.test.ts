@@ -1,11 +1,20 @@
 /**
- * PHASE 0 — build-time collision test for the Compare aspect-tail resolver
- * (`aspectActionParts()` in ../compare-guidance.ts).
+ * PERMANENT REGRESSION GATE — build-time collision test for the Compare
+ * aspect-tail resolver (`aspectActionParts()` in ../compare-guidance.ts).
  *
- * TEST ONLY. No copy authored, no resolver logic changed. This file only
- * reads ../compare-guidance.ts (never imports its private `ASPECT_ACTION`
- * table, never edits it) and calls the real, exported `computeNatalChart` /
- * `computeSynastry` / `aspectActionParts` functions.
+ * Originated as a Phase 0 diagnostic that was expected to fail (36 of 55
+ * body pairs were unauthored and collapsed onto shared Tier-2 fallback
+ * text). Phase 1 authored all 36 remaining ASPECT_ACTION pairs, so this
+ * file now asserts the fixed point: every real pair resolves via Tier 1,
+ * and no two distinct body pairs ever collapse onto the same tactic text
+ * for a given relType. A future PAIR_KEY that loses its ASPECT_ACTION entry
+ * (new BodyName added to the engine, or an entry accidentally deleted)
+ * fails CI here before it ships.
+ *
+ * TEST ONLY. No copy authored here, no resolver logic changed. This file
+ * only reads ../compare-guidance.ts (never imports its private
+ * `ASPECT_ACTION` table, never edits it) and calls the real, exported
+ * `computeNatalChart` / `computeSynastry` / `aspectActionParts` functions.
  *
  * WHAT THIS PROVES (see BACKGROUND in the task): `aspectActionParts()`
  * resolves a tactic in two tiers —
@@ -353,10 +362,24 @@ describe("aspectActionParts() collision domain", () => {
   });
 
   /**
-   * THE FINDING. This is expected to FAIL on the current resolver — that
-   * failure IS the deliverable for Phase 0 (see console output above for
-   * the full collision report). Do not "fix" this by editing the resolver
-   * or authoring copy here; Phase 0 is report-only.
+   * PERMANENT REGRESSION GATE: every enumerated (from,to) pair the engine
+   * can produce must be Tier-1 authored, so Tier 2 (BODY_FRICTION_ACTION /
+   * BODY_FLOW_ACTION) is unreachable for any pair this grid enumerates.
+   * Fails the moment a real pair falls back to Tier 2 — e.g. a new BodyName
+   * added to the engine without a matching ASPECT_ACTION entry.
+   */
+  it("every enumerated (from,to) pair resolves via Tier 1 — Tier 2 fallback is unreachable for real pairs", () => {
+    expect(AUTHORED_TIER1_PAIRS.size).toBe(TOTAL_POSSIBLE_PAIRS);
+    expect(TIER2_COMBOS).toBe(0);
+    expect(TIER1_COMBOS).toBe(TOTAL_COMBOS);
+  });
+
+  /**
+   * THE GATE. Originated as "THE FINDING" in Phase 0, expected to fail by
+   * design (see the collision report printed above). Now that every pair is
+   * Tier-1 authored, no two distinct body pairs may collapse onto the same
+   * tactic text for a given relType — a future regression (e.g. two
+   * ASPECT_ACTION entries copy-pasted identically) fails this assertion.
    */
   it("never lets two distinct body pairs collapse onto the same tactic text for a given relType", () => {
     expect(COLLISION_CLUSTERS).toEqual([]);

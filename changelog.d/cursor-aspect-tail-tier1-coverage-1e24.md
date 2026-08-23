@@ -1,0 +1,11 @@
+## Compare: full Tier-1 ASPECT_ACTION coverage — collision test flipped to a permanent gate (branch `cursor/aspect-tail-tier1-coverage-1e24`) — 2026-08-23
+
+**Trigger**: the Phase 0 collision test (`packages/astro/src/__tests__/aspect-tail-collisions.test.ts`, added on `cursor/aspect-tail-collision-test-a627`) proved that 36 of 55 possible body pairs had no `ASPECT_ACTION` entry and fell to the single-body `BODY_FRICTION_ACTION`/`BODY_FLOW_ACTION` Tier-2 fallback, so genuinely different aspects (e.g. jupiter–mars and mars–uranus) could render byte-identical tactic text within the same relationship type.
+
+`[ADDED]` **36 new `ASPECT_ACTION` pairs in `packages/astro/src/compare-guidance.ts` — full Tier-1 coverage.** Every remaining unordered body pair over the engine's 10 `BodyName`s (jupiter, mars, mercury, moon, neptune, pluto, saturn, sun, uranus, venus) now has an authored `flows`/`catches` tactic, taking `ASPECT_ACTION` from 19 to 55 entries (all 55 possible pairs). Purely additive: the existing 19 entries, `PAIR_KEY`, `aspectActionParts()`, `leadBody()`, `BODY_FRICTION_ACTION`, and `BODY_FLOW_ACTION` are byte-for-byte unchanged — Tier 2 remains in place as dead-but-harmless code for any future `BodyName` the engine might add.
+
+`[CHANGED]` **Collision test flipped from a Phase 0 diagnostic (expected to fail) into a permanent CI regression gate.** `aspect-tail-collisions.test.ts` now asserts, in addition to zero tactic collisions across every `RelationType`, that every enumerated `(from,to)` pair resolves via Tier 1 (`AUTHORED_TIER1_PAIRS.size === TOTAL_POSSIBLE_PAIRS`, `TIER2_COMBOS === 0`) — i.e. Tier 2 is unreachable for any real pair. A future `BodyName` added to the engine without a matching `ASPECT_ACTION` entry, or an accidental deletion from the authored table, fails this test before it ships.
+
+**Voice:** every one of the 36 new entries is marked `// FOUNDER-REVIEW`, matching the existing convention; no em dashes in the new authored strings per the founder rule for this batch (the pre-existing 19 entries' em dashes are untouched).
+
+**Verification:** `pnpm --filter @galaxia/astro test` — 15 files / 123 tests pass, collision report shows 0 collision clusters across all 7 relTypes and 0/1925 combos resolved via Tier 2. `pnpm --filter @galaxia/astro typecheck` — clean.

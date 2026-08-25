@@ -11,7 +11,8 @@ import {
  * `support-requests.test.ts`'s tests for `transitionSupportRequest`: fake
  * the service-role client's chained calls, prove the read-validate-write
  * shape without a live database. The live-DB proof (real audit rows, real
- * hasAccess crossing) is `comp-verify.test.ts`.
+ * hasAccess crossing) is `comp-verify.live.test.ts` (opt-in only, see
+ * `apps/web/lib/test-utils/assert-not-prod.ts`).
  */
 
 interface FakeRow {

@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 // Scope test discovery to co-located unit tests under lib/ (server logic)
 // and components/ (client components) so Vitest never tries to execute
@@ -24,6 +24,13 @@ export default defineConfig({
   },
   test: {
     include: ["lib/**/*.test.ts", "components/**/*.test.tsx"],
+    // `*.live.test.ts` files open real network connections to a live
+    // Supabase project (see apps/web/lib/test-utils/assert-not-prod.ts) and
+    // must never be part of the default suite — they run only via the
+    // explicit, separately-configured `test:live` script
+    // (vitest.live.config.ts). Every one of them also self-aborts if it is
+    // ever collected here, but this exclusion is the primary mechanism.
+    exclude: [...configDefaults.exclude, "**/*.live.test.ts"],
     environment: "node",
   },
 });

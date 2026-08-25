@@ -13,39 +13,37 @@
  *      `profiles_validate_timezone` trigger (backed by `pg_timezone_names`)
  *      is a real server-side backstop, not just a client-side guard.
  *
- * This hits the LIVE Supabase project (no local Postgres/Supabase stack is
- * wired up in this monorepo — see AGENTS.md), the same way
- * `person-daily-nudges-concurrency.test.ts` already does. It creates two
- * throwaway auth users, writes/attempts writes against real `profiles`
+ * This hits a LIVE, disposable Supabase project (no local Postgres/Supabase
+ * stack is wired up in this monorepo — see AGENTS.md), the same way
+ * `person-daily-nudges-concurrency.live.test.ts` already does. It creates
+ * two throwaway auth users, writes/attempts writes against real `profiles`
  * rows, and cleans up everything it created (success or failure) in an
  * `afterAll`.
  *
- * Skips (with a clear reason, not silently) when Supabase credentials are
- * not present in the environment.
+ * Quarantined out of the default suite (`*.live.test.ts`, its own vitest
+ * project) and gated by `assertDisposableDbTarget` — see
+ * `apps/web/lib/test-utils/assert-not-prod.ts` and `test:live` in
+ * `package.json`. Run via `pnpm --filter web test:live` with
+ * `ALLOW_LIVE_DB_TESTS_AGAINST=<disposable-ref>` set; aborts loudly against
+ * prod or with no opt-in.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { assertDisposableDbTarget } from "./test-utils/assert-not-prod";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY ?? "";
-const hasLiveCreds =
-  Boolean(SUPABASE_URL) &&
-  Boolean(SERVICE_ROLE_KEY) &&
-  Boolean(ANON_KEY) &&
-  !SUPABASE_URL.includes("placeholder");
 
-if (!hasLiveCreds) {
-  // eslint-disable-next-line no-console
-  console.warn(
-    "[verify] profile-timezone-capture: SKIPPED — no live Supabase credentials " +
-      "(NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY) " +
-      "in this environment. This is a live-DB proof, not a pure-logic test; it needs the real " +
-      "project. Run with those env vars set to exercise it."
-  );
+// Structural backstop: throws and aborts this whole file before any client
+// is constructed unless SUPABASE_URL is an explicitly allow-listed
+// disposable project — never prod. See assert-not-prod.ts.
+assertDisposableDbTarget(SUPABASE_URL);
+if (!SERVICE_ROLE_KEY || !ANON_KEY) {
+  throw new Error("[live-db test] ABORT: SUPABASE_SERVICE_ROLE_KEY / SUPABASE_ANON_KEY are not both set.");
 }
 
-describe.skipIf(!hasLiveCreds)("VERIFY (live DB): profiles.timezone capture", () => {
+describe("VERIFY (live DB): profiles.timezone capture", () => {
   let admin: SupabaseClient;
   let ownerA: SupabaseClient;
   let ownerB: SupabaseClient;

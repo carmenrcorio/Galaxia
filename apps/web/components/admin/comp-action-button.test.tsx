@@ -14,7 +14,8 @@ import { CompActionButton } from "./comp-action-button";
  * No live database, no real network, no real router — `fetch` and
  * `next/navigation`'s `useRouter` are mocked. This proves the CLIENT
  * behavior only; the live-DB proof that the revoke write path itself is
- * correct is `lib/admin/comp-verify.test.ts`.
+ * correct is `lib/admin/comp-verify.live.test.ts` (opt-in only, see
+ * `apps/web/lib/test-utils/assert-not-prod.ts`).
  */
 
 const refresh = vi.fn();

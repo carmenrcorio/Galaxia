@@ -28,6 +28,29 @@ export function isAdminAuditAction(value: string): value is AdminAuditAction {
   return (ADMIN_AUDIT_ACTIONS as readonly string[]).includes(value);
 }
 
+const ADMIN_AUDIT_ACTION_LABELS: Record<AdminAuditAction, string> = {
+  resend_confirmation_email: "Resent confirmation email",
+  resend_password_reset_email: "Resent password reset email",
+  close_support_request: "Closed support request",
+  reopen_support_request: "Reopened support request",
+  grant_comp: "Granted comp access",
+  revoke_comp: "Revoked comp access"
+};
+
+/**
+ * Human-readable label for one audit-log row's `action`, for the per-user
+ * audit history on `/admin/users/[id]` (`read-audit-history.ts`'s only
+ * consumer). One label per entry in the closed {@link ADMIN_AUDIT_ACTIONS}
+ * vocabulary, kept next to it so adding a new action here fails a
+ * TypeScript exhaustiveness check instead of silently falling through.
+ * Anything outside the closed vocabulary (which should never happen for a
+ * row this same module wrote) renders the raw action string rather than a
+ * misleading label.
+ */
+export function humanizeAuditAction(action: string): string {
+  return isAdminAuditAction(action) ? ADMIN_AUDIT_ACTION_LABELS[action] : action;
+}
+
 export interface WriteAdminAuditLogInput {
   /**
    * The verified admin's id from the guard's own session read

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ADMIN_AUDIT_ACTIONS, isAdminAuditAction, writeAdminAuditLog } from "./audit-log";
+import { ADMIN_AUDIT_ACTIONS, humanizeAuditAction, isAdminAuditAction, writeAdminAuditLog } from "./audit-log";
 
 /**
  * Pure/mocked-client unit tests for the one shared admin_audit_log writer.
@@ -37,6 +37,20 @@ describe("ADMIN_AUDIT_ACTIONS / isAdminAuditAction", () => {
     for (const bogus of ["grant_admin", "delete_user", "", "RESEND_CONFIRMATION_EMAIL", "close_support_request "]) {
       expect(isAdminAuditAction(bogus)).toBe(false);
     }
+  });
+});
+
+describe("humanizeAuditAction", () => {
+  it("labels every entry in the closed vocabulary, never the raw action string", () => {
+    for (const action of ADMIN_AUDIT_ACTIONS) {
+      const label = humanizeAuditAction(action);
+      expect(label).not.toBe(action);
+      expect(label.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("falls back to the raw string for anything outside the closed vocabulary, rather than a misleading label", () => {
+    expect(humanizeAuditAction("delete_user")).toBe("delete_user");
   });
 });
 

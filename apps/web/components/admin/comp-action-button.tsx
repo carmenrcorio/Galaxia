@@ -2,7 +2,7 @@
 
 import { profileAllowsAccess } from "@galaxia/core";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 /**
  * Per-row comp grant/revoke trigger for /admin/users, cloned from
@@ -25,6 +25,23 @@ import { useState } from "react";
  * shape, see the Phase 0 dump) names that plainly; a revoke on an
  * account that also has genuine active billing or a live trial says so
  * instead of claiming a lockout that would not actually happen.
+ *
+ * `pending` (the rendered disabled/"…ing" state) is the OR of two
+ * genuinely-in-flight phases, never a flag that can outlive the work it
+ * represents (this is the Phase 0 fix — previously `pending` was only
+ * ever cleared on the error path, so a SUCCESSFUL grant/revoke left the
+ * button stuck disabled forever, relabeled for the opposite action once
+ * `comped` flipped, because `router.refresh()` re-renders this component
+ * in place rather than remounting it):
+ *   1. `isSubmitting` — the POST itself, guaranteed to clear via
+ *      try/finally on every path (resolved, rejected, or non-ok), so the
+ *      fetch phase can never leave `pending` stuck true.
+ *   2. `isRefreshing` — `router.refresh()`'s own completion, tracked by
+ *      wrapping it in `startTransition` (the documented idiomatic
+ *      App Router pattern for a `router.refresh()` loading state) so the
+ *      button stays disabled until the row's new `comped` prop has
+ *      actually landed, rather than flashing an enabled button still
+ *      labeled for the action that just completed.
  */
 export function CompActionButton({
   userId,
@@ -40,8 +57,10 @@ export function CompActionButton({
   trialEndsAt: string | null;
 }) {
   const router = useRouter();
-  const [pending, setPending] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRefreshing, startRefresh] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const pending = isSubmitting || isRefreshing;
   const transition: "grant" | "revoke" = comped ? "revoke" : "grant";
   const who = email ?? "this user";
 
@@ -59,20 +78,28 @@ export function CompActionButton({
           : `Revoke comp access for ${who}? This will immediately remove access for ${who} — no active subscription or live trial is covering them.`;
     if (!window.confirm(confirmMessage)) return;
 
-    setPending(true);
+    setIsSubmitting(true);
     setError(null);
     try {
       const res = await fetch(`/api/admin/users/${userId}/comp/${transition}`, { method: "POST" });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         setError(body.error ?? `Couldn't ${transition} comp access. Please try again.`);
-        setPending(false);
         return;
       }
-      router.refresh();
+      // Stay disabled until the refresh actually delivers the row's new
+      // `comped` — startTransition is what makes `isRefreshing` track
+      // router.refresh()'s completion rather than just the dispatch call.
+      startRefresh(() => {
+        router.refresh();
+      });
     } catch {
       setError(`Couldn't ${transition} comp access. Please try again.`);
-      setPending(false);
+    } finally {
+      // Always clears, on every path (ok, not-ok, or thrown) — the fetch
+      // phase can never leave `pending` stuck true. `isRefreshing` (set
+      // above, success-only) independently covers the refresh phase.
+      setIsSubmitting(false);
     }
   };
 

@@ -1,7 +1,15 @@
 /**
- * VERIFY proof (Stage 2, resend-email action): against the LIVE Supabase
- * project (no local stack in this repo — see AGENTS.md), same pattern as
- * `read-admin-row.test.ts` / `profile-timezone-capture-verify.test.ts`.
+ * VERIFY proof (Stage 2, resend-email action): against a LIVE, disposable
+ * Supabase project (no local stack in this repo — see AGENTS.md), same
+ * pattern as `read-admin-row.live.test.ts` /
+ * `profile-timezone-capture-verify.live.test.ts`.
+ *
+ * Quarantined out of the default suite (`*.live.test.ts`, its own vitest
+ * project) and gated by `assertDisposableDbTarget` — see
+ * `apps/web/lib/test-utils/assert-not-prod.ts` and `test:live` in
+ * `package.json`. Run via `pnpm --filter web test:live` with
+ * `ALLOW_LIVE_DB_TESTS_AGAINST=<disposable-ref>` set; aborts loudly against
+ * prod or with no opt-in.
  *
  * Proves:
  *   1. An unconfirmed signup and a confirmed user really do branch
@@ -22,23 +30,22 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { assertDisposableDbTarget } from "../test-utils/assert-not-prod";
 import { resendUserEmail } from "./resend-email";
 import { writeAdminAuditLog } from "./audit-log";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-const hasLiveCreds = Boolean(SUPABASE_URL) && Boolean(SERVICE_ROLE_KEY) && !SUPABASE_URL.includes("placeholder");
 
-if (!hasLiveCreds) {
-  // eslint-disable-next-line no-console
-  console.warn(
-    "[verify] resend-email: SKIPPED — no live Supabase credentials " +
-      "(NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY) in this environment. " +
-      "This is a live-DB proof, not a pure-logic test; run with those env vars set."
-  );
+// Structural backstop: throws and aborts this whole file before any client
+// is constructed unless SUPABASE_URL is an explicitly allow-listed
+// disposable project — never prod. See assert-not-prod.ts.
+assertDisposableDbTarget(SUPABASE_URL);
+if (!SERVICE_ROLE_KEY) {
+  throw new Error("[live-db test] ABORT: SUPABASE_SERVICE_ROLE_KEY is not set.");
 }
 
-describe.skipIf(!hasLiveCreds)("VERIFY (live): resendUserEmail branches correctly and audits exactly once per call", () => {
+describe("VERIFY (live): resendUserEmail branches correctly and audits exactly once per call", () => {
   let admin: SupabaseClient;
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const password = `Qa-${Math.random().toString(36).slice(2, 10)}!Aa1`;

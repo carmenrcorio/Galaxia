@@ -1502,6 +1502,55 @@ section { padding-block: clamp(76px, 12vh, 140px); }
   padding: 10px 14px;
   color: var(--cream);
   border-bottom: 1px solid rgba(255,255,255,.05);
-  white-space: nowrap;
 }
 .admin-table tbody tr:last-child td { border-bottom: none; }
+
+/* Opt-in modifier (used by /admin/users only — the support table's rows are
+   not links) so the whole row is clickable without a client component: the
+   trailing "View" cell holds one real <Link> stretched via `inset: 0` to
+   cover the whole <tr> (its containing block), so a click anywhere on the
+   row activates that one link. Visible label text still renders at the
+   link's own flex-end position, over the top of the invisible stretched
+   area. */
+.admin-table--rows-clickable tbody tr { position: relative; cursor: pointer; transition: background .15s; }
+.admin-table--rows-clickable tbody tr:hover { background: rgba(255,255,255,.03); }
+.admin-table--rows-clickable tbody tr.admin-table-row--empty { cursor: default; }
+.admin-table--rows-clickable tbody tr.admin-table-row--empty:hover { background: none; }
+.admin-row-link {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 14px;
+  color: var(--gold-soft);
+  font-size: .82rem;
+  text-decoration: none;
+}
+.admin-row-link:hover { color: var(--cream); }
+
+/* table-layout: fixed opt-in (used by /admin/users only) — column widths
+   come from an explicit <colgroup> rather than content, so the table never
+   grows past its .glass-card. */
+.admin-table--fixed { table-layout: fixed; }
+.admin-table-email-cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Status/comp pills — reuse the existing role tokens (--teal/--gold/--rose/
+   --mist), never a new palette. See lib/admin/status-pill.ts for which
+   status maps to which variant. */
+.pill-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 11px;
+  border-radius: 100px;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+.pill-status--success { color: var(--teal); background: rgba(111,177,184,.12); border: 1px solid rgba(111,177,184,.28); }
+.pill-status--warning { color: var(--gold); background: rgba(230,174,108,.12); border: 1px solid rgba(230,174,108,.28); }
+.pill-status--danger  { color: var(--rose); background: rgba(218,140,140,.12); border: 1px solid rgba(218,140,140,.28); }
+.pill-status--muted   { color: var(--mist); background: rgba(183,154,216,.08); border: 1px solid rgba(183,154,216,.18); }
+.pill-status--accent  { color: var(--gold-bright); background: rgba(230,174,108,.16); border: 1px solid rgba(230,174,108,.34); }

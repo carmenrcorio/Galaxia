@@ -2,8 +2,8 @@ import Link from "next/link";
 import { missingEnvMessage, publicEnv } from "../../../lib/env";
 import { privateEnv } from "../../../lib/env.server";
 import { listAdminUsers, DEFAULT_PAGE_SIZE, type AdminUserRow } from "../../../lib/admin/list-users";
-import { ResendEmailButton } from "../../../components/admin/resend-email-button";
-import { CompActionButton } from "../../../components/admin/comp-action-button";
+import { statusPillInfo, compPillInfo } from "../../../lib/admin/status-pill";
+import { StatusPill } from "../../../components/admin/status-pill";
 
 /**
  * Read-only admin user list. This page renders behind admin/layout.tsx's
@@ -13,11 +13,17 @@ import { CompActionButton } from "../../../components/admin/comp-action-button";
  * uses (listAdminUsers) rather than a client-side Supabase query — this is
  * a server component fetching directly, not a browser query against RLS.
  *
- * Fields shown are exactly the account-management set approved for v1:
- * email, display name, subscription status, comped, trial end, created
- * at, timezone, daily nudge email preference. Nothing from `people`,
- * `notes`, or Vela — there is no per-user "view their people" link here or
- * anywhere else in the admin portal, and it must stay that way.
+ * Narrowed to exactly 5 columns (v2 layout): Email, Status, Comped,
+ * Created, and a trailing "View" affordance that links to
+ * /admin/users/[id]. Name, Trial ends, Timezone, Nudge emails, and the
+ * per-row action buttons (resend email / comp grant-revoke) moved to that
+ * detail page — this list is a directory, not a control panel.
+ *
+ * The list itself still reads only account-management fields (via
+ * `AdminUserRow` — see that type's own doc comment for the load-bearing
+ * exclusion this must never grow past). Nothing from `people`, `notes`, or
+ * Vela — there is no per-user "view their people" link here or anywhere
+ * else in the admin portal, and it must stay that way.
  */
 export default async function AdminUsersPage({
   searchParams
@@ -83,53 +89,57 @@ export default async function AdminUsersPage({
 
       {result ? (
         <>
-          <div className="glass-card" style={{ overflowX: "auto" }}>
-            <table className="admin-table">
+          <div className="glass-card">
+            <table className="admin-table admin-table--fixed admin-table--rows-clickable">
+              <colgroup>
+                <col style={{ width: "42%" }} />
+                <col style={{ width: "16%" }} />
+                <col style={{ width: "14%" }} />
+                <col style={{ width: "16%" }} />
+                <col style={{ width: "12%" }} />
+              </colgroup>
               <thead>
                 <tr>
                   <th>Email</th>
-                  <th>Name</th>
                   <th>Status</th>
                   <th>Comped</th>
-                  <th>Trial ends</th>
                   <th>Created</th>
-                  <th>Timezone</th>
-                  <th>Nudge emails</th>
-                  <th>Actions</th>
+                  <th aria-hidden="true"></th>
                 </tr>
               </thead>
               <tbody>
                 {result.users.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="muted">
+                  <tr className="admin-table-row--empty">
+                    <td colSpan={5} className="muted">
                       No users found.
                     </td>
                   </tr>
                 ) : (
-                  result.users.map((user: AdminUserRow) => (
-                    <tr key={user.id}>
-                      <td>{user.email ?? "—"}</td>
-                      <td>{user.display_name ?? "—"}</td>
-                      <td>{user.subscription_status ?? "—"}</td>
-                      <td>{user.comped ? "Yes" : "No"}</td>
-                      <td>{formatDate(user.trial_ends_at)}</td>
-                      <td>{formatDate(user.created_at)}</td>
-                      <td>{user.timezone ?? "—"}</td>
-                      <td>{user.daily_nudge_emails_enabled ? "On" : "Off"}</td>
-                      <td>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
-                          <ResendEmailButton userId={user.id} />
-                          <CompActionButton
-                            userId={user.id}
-                            email={user.email}
-                            comped={user.comped}
-                            subscriptionStatus={user.subscription_status}
-                            trialEndsAt={user.trial_ends_at}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  result.users.map((user: AdminUserRow) => {
+                    const status = statusPillInfo(user.subscription_status);
+                    const comp = compPillInfo(user.comped);
+                    return (
+                      <tr key={user.id}>
+                        <td className="admin-table-email-cell">{user.email ?? "—"}</td>
+                        <td>
+                          <StatusPill label={status.label} variant={status.variant} />
+                        </td>
+                        <td>
+                          <StatusPill label={comp.label} variant={comp.variant} />
+                        </td>
+                        <td>{formatDate(user.created_at)}</td>
+                        <td>
+                          <Link
+                            href={`/admin/users/${user.id}`}
+                            className="admin-row-link"
+                            aria-label={`View ${user.email ?? "this user"}`}
+                          >
+                            View <span aria-hidden="true">→</span>
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

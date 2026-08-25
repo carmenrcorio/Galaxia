@@ -167,17 +167,17 @@ export function BirthFields({ input, onChange, allowNone = false }: { input: Bir
             <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 5 }}>Birth date</p>
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 2fr", gap: 6 }}>
               {/* Month */}
-              <select className="field" value={input.month ?? ""} onChange={e => onChange({ ...input, month: e.target.value ? parseInt(e.target.value, 10) : undefined })}>
+              <select className="field" value={input.month ?? ""} onChange={e => onChange({ ...input, month: e.target.value ? parseInt(e.target.value, 10) : undefined })} aria-label="Birth month">
                 <option value="">Month</option>
                 {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
               </select>
               {/* Day */}
-              <select className="field" value={input.day ?? ""} onChange={e => onChange({ ...input, day: e.target.value ? parseInt(e.target.value, 10) : undefined })}>
+              <select className="field" value={input.day ?? ""} onChange={e => onChange({ ...input, day: e.target.value ? parseInt(e.target.value, 10) : undefined })} aria-label="Birth day">
                 <option value="">Day</option>
                 {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
               </select>
               {/* Year */}
-              <select className="field" value={input.year ?? ""} onChange={e => onChange({ ...input, year: e.target.value ? parseInt(e.target.value, 10) : undefined })}>
+              <select className="field" value={input.year ?? ""} onChange={e => onChange({ ...input, year: e.target.value ? parseInt(e.target.value, 10) : undefined })} aria-label="Birth year">
                 <option value="">Year</option>
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
@@ -195,13 +195,13 @@ export function BirthFields({ input, onChange, allowNone = false }: { input: Bir
             <div>
               <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 5 }}>Birth time (local time at birth place)</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                <select className="field" value={input.hour ?? ""} onChange={e => onChange({ ...input, hour: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })}>
+                <select className="field" value={input.hour ?? ""} onChange={e => onChange({ ...input, hour: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })} aria-label="Birth hour">
                   <option value="">Hour</option>
                   {Array.from({ length: 24 }, (_, i) => i).map(h => (
                     <option key={h} value={h}>{String(h).padStart(2, "0")}:00 ({h === 0 ? "midnight" : h === 12 ? "noon" : h < 12 ? `${h} am` : `${h - 12} pm`})</option>
                   ))}
                 </select>
-                <select className="field" value={input.minute ?? ""} onChange={e => onChange({ ...input, minute: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })}>
+                <select className="field" value={input.minute ?? ""} onChange={e => onChange({ ...input, minute: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })} aria-label="Birth minute">
                   <option value="">Minute</option>
                   {[0,5,10,15,20,25,30,35,40,45,50,55].map(m => (
                     <option key={m} value={m}>{String(m).padStart(2, "0")}</option>

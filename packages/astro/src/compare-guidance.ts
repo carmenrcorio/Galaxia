@@ -624,7 +624,7 @@ export function whatTheyNeed(
   // different, type-appropriate body below (Saturn for parent-child, Mercury
   // for siblings/friends) instead of borrowing the romantic register — that
   // would be a label applied to the wrong data.
-  const isPartnerLens = relType === "partners" || relType === "romantic";
+  const isPartnerLens = isRomanticRelation(relType);
   const mercury = person.mercury ?? "";
   const saturn = person.saturn ?? "";
   const venusLine = venus && venus !== moon ? VENUS_NEED[venus] : null;

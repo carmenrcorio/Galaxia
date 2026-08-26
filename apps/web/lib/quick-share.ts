@@ -8,6 +8,7 @@
  */
 
 import {
+  COMPARE_RELATION_TYPES,
   isRomanticRelation,
   type NatalChart,
   type RelationType,
@@ -48,7 +49,7 @@ export type SingleSharePayload = {
 export type CompareSharePayload = {
   nameA?: string;
   nameB?: string;
-  relationType: "romantic" | "platonic";
+  relationType: RelationType;
   pairHasMinor: boolean;
   romanticHeldNotice?: boolean;
   chartA: NatalChart;
@@ -96,6 +97,20 @@ const FORBIDDEN_PII_KEYS = new Set([
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Every persistable relationType: the /app/compare picker's five types
+ * (COMPARE_RELATION_TYPES) plus the two binary-only values /chart/compare's
+ * simpler picker adds. Driven by the exported list, not hand-copied
+ * literals, so a future 8th RelationType needs no edit here, only an
+ * addition to COMPARE_RELATION_TYPES (or here, if it is binary-only) in
+ * @galaxia/astro.
+ */
+const ALL_RELATION_TYPES = new Set<string>([...COMPARE_RELATION_TYPES, "romantic", "platonic"]);
+
+function isRelationType(value: unknown): value is RelationType {
+  return typeof value === "string" && ALL_RELATION_TYPES.has(value);
 }
 
 /** Deep-strip forbidden birth-PII keys from any JSON-like value. */
@@ -218,15 +233,15 @@ export function validateQuickSharePersistBody(body: unknown): PersistValidation 
   if (!chartA || !chartB || !generational) {
     return { ok: false, status: 400, error: "Both charts and a generational reading are required." };
   }
-  if (relationType !== "romantic" && relationType !== "platonic") {
-    return { ok: false, status: 400, error: "relationType must be romantic or platonic." };
+  if (!isRelationType(relationType)) {
+    return { ok: false, status: 400, error: "relationType must be a supported relationship type." };
   }
   if (typeof rawPayload.pairHasMinor !== "boolean") {
     return { ok: false, status: 400, error: "pairHasMinor is required." };
   }
 
   // STRUCTURAL GUARANTEE — primary safety lock. Do not weaken.
-  if (rawPayload.pairHasMinor && isRomanticRelation(relationType as RelationType)) {
+  if (rawPayload.pairHasMinor && isRomanticRelation(relationType)) {
     return {
       ok: false,
       status: 400,
@@ -265,13 +280,13 @@ export function validateQuickSharePersistBody(body: unknown): PersistValidation 
  * Mirrors /chart/compare after its force-Platonic effect.
  */
 export function effectiveCompareFraming(payload: CompareSharePayload): {
-  relationType: "romantic" | "platonic";
+  relationType: RelationType;
   blockRomanticMinorRender: boolean;
   romanticHeldNotice: boolean;
 } {
   const askedRomanticWithMinor =
     payload.pairHasMinor && isRomanticRelation(payload.relationType);
-  const relationType = askedRomanticWithMinor ? "platonic" : payload.relationType;
+  const relationType: RelationType = askedRomanticWithMinor ? "platonic" : payload.relationType;
   // After the snap, romantic framing is gone — block only if still romantic.
   const blockRomanticMinorRender =
     payload.pairHasMinor && isRomanticRelation(relationType);

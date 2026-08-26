@@ -74,6 +74,44 @@ describe("validateQuickSharePersistBody — romantic-minor structural guarantee"
     expect(result.ok).toBe(true);
   });
 
+  it("refuses compare + pairHasMinor + partners (romantic-family beyond the old binary)", () => {
+    const result = validateQuickSharePersistBody({
+      kind: "compare",
+      payload: { ...baseComparePayload, relationType: "partners" },
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok === false) {
+      expect(result.status).toBe(400);
+      expect(result.error.toLowerCase()).toContain("minor");
+    }
+  });
+
+  it("accepts the full RelationType union, not just the old romantic|platonic binary", () => {
+    for (const relationType of ["partners", "siblings", "friends", "parent-child", "ancestor"] as const) {
+      const result = validateQuickSharePersistBody({
+        kind: "compare",
+        payload: { ...baseComparePayload, pairHasMinor: false, relationType },
+      });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        const p = result.payload as CompareSharePayload;
+        expect(p.relationType).toBe(relationType);
+      }
+    }
+  });
+
+  it("rejects a relationType outside the supported union", () => {
+    const result = validateQuickSharePersistBody({
+      kind: "compare",
+      payload: { ...baseComparePayload, pairHasMinor: false, relationType: "spouse" },
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok === false) {
+      expect(result.status).toBe(400);
+      expect(result.error).toContain("relationType");
+    }
+  });
+
   it("strips raw birth PII keys from a smuggled payload nest", () => {
     const smuggled = stripBirthPii({
       displayDate: "April 3, 2017",
@@ -128,5 +166,34 @@ describe("effectiveCompareFraming — render backstop", () => {
     expect(framing.relationType).toBe("platonic");
     expect(framing.blockRomanticMinorRender).toBe(false);
     expect(framing.romanticHeldNotice).toBe(true);
+  });
+
+  it("snaps a bad partners+minor row (full-union romantic family) to platonic + held", () => {
+    const framing = effectiveCompareFraming({
+      ...baseComparePayload,
+      relationType: "partners",
+      pairHasMinor: true,
+    });
+    expect(framing.relationType).toBe("platonic");
+    expect(framing.blockRomanticMinorRender).toBe(false);
+    expect(framing.romanticHeldNotice).toBe(true);
+  });
+
+  it("passes a non-romantic full-union row through unchanged (old binary rows still render as before)", () => {
+    const framing = effectiveCompareFraming({
+      ...baseComparePayload,
+      relationType: "friends",
+      pairHasMinor: true,
+    });
+    expect(framing.relationType).toBe("friends");
+    expect(framing.blockRomanticMinorRender).toBe(false);
+    expect(framing.romanticHeldNotice).toBe(false);
+  });
+
+  it("old binary platonic row still renders as platonic, unaffected by the widened type", () => {
+    const framing = effectiveCompareFraming(baseComparePayload);
+    expect(framing.relationType).toBe("platonic");
+    expect(framing.blockRomanticMinorRender).toBe(false);
+    expect(framing.romanticHeldNotice).toBe(false);
   });
 });

@@ -11,6 +11,7 @@
 import {
   aspectActionParts,
   interpretSynastryAspect,
+  isRomanticRelation,
   orbStrength,
   relationLensCaption,
   relationshipAspectFraming,
@@ -50,7 +51,7 @@ type Props = {
 };
 
 function introFor(relationType: RelationType): string {
-  if (relationType === "romantic") return INTRO_ROMANTIC;
+  if (isRomanticRelation(relationType)) return INTRO_ROMANTIC;
   if (relationType === "platonic") return INTRO_PLATONIC;
   // Authenticated Compare types keep the existing type-lens caption.
   return relationLensCaption(relationType);

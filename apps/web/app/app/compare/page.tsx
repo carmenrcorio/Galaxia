@@ -351,8 +351,8 @@ function ComparePageInner() {
 
   /**
    * Share the live comparison via the existing Quick Compare snapshot stack
-   * (POST /api/quick-share → /s/<token>). Maps the full RelationType picker to
-   * romantic|platonic for the share schema; never recomputes astrology.
+   * (POST /api/quick-share → /s/<token>). Persists the real RelationType from
+   * the picker (no binary collapse); never recomputes astrology.
    */
   async function createShareUrl(): Promise<string> {
     if (!result?.chartA || !result?.chartB || !result?.synastry) {
@@ -360,15 +360,15 @@ function ComparePageInner() {
     }
     // Live pairHasMinor (isMinorForSafety); not stored on the compare_reading note.
     const sharePairHasMinor = minorOf(result.personA) || minorOf(result.personB);
-    // Share schema is romantic|platonic only; do not widen it here.
-    const mapped: "romantic" | "platonic" = isRomanticRelation(relationType)
-      ? "romantic"
-      : "platonic";
-    // Post-block framing: never send romantic when a minor is in the pairing.
-    // Persist also refuses romantic + pairHasMinor with 400.
-    const safeRelationType =
-      sharePairHasMinor && mapped === "romantic" ? "platonic" : mapped;
-    const romanticHeldNotice = sharePairHasMinor && mapped === "romantic";
+    // Share schema now carries the full RelationType (partners, siblings,
+    // friends, parent-child, ancestor, romantic, platonic). Never collapse
+    // it to a binary here.
+    const wantsRomantic = isRomanticRelation(relationType);
+    // Post-block framing: never send a romantic-family type when a minor is
+    // in the pairing. Persist also refuses romantic + pairHasMinor with 400.
+    const safeRelationType: RelationType =
+      sharePairHasMinor && wantsRomantic ? "platonic" : relationType;
+    const romanticHeldNotice = sharePairHasMinor && wantsRomantic;
     const res = await fetch("/api/quick-share", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -75,8 +75,13 @@ export const QUICK_COMPARE_HELD_READING =
 export const QUICK_COMPARE_MINOR_NOTICE =
   "A minor is part of this comparison, so only a platonic reading is available. Romantic framing is turned off for pairings involving a child.";
 
-/** Keys that must never appear in a stored or returned snapshot payload. */
-const FORBIDDEN_PII_KEYS = new Set([
+/**
+ * Keys that must never appear in a stored or returned snapshot payload.
+ * Exported so other safety-critical consumers (e.g. the `/s` OG image route
+ * and its tests) assert against this single list instead of a second,
+ * possibly-drifted copy.
+ */
+export const FORBIDDEN_PII_KEYS = new Set([
   "birthDate",
   "birthPrecision",
   "birth_date",

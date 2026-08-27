@@ -554,8 +554,14 @@ export function relationLensCaption(relType: RelationType): string {
  * score-aware, unlike the score-band fallback below. Types the saved-people
  * picker never offers (romantic, platonic) have no line here and fall back
  * to the score-band headline instead of inventing copy for them.
+ *
+ * Exported so callers that must never read `synastry.scores` (e.g. the `/s`
+ * OG image route) can index this map directly instead of going through
+ * `compareHeadline()`, whose fallback for a type with no entry here needs a
+ * score-derived `overall`. Index this map with a scores-free fallback
+ * (never `scoreBandHeadline`) for any type not covered here.
  */
-const RELATION_HEADLINE: Partial<Record<RelationType, string>> = {
+export const RELATION_HEADLINE: Partial<Record<RelationType, string>> = {
   partners: "This is a partnership you're both building on purpose. Below is where it moves easily, and where it asks for tending.",
   siblings: "You two share a history and a floor neither of you can walk off. Here's what runs smooth between you, and where the old patterns catch.",
   friends: "This is chosen closeness, kept alive by showing up. Here's what comes easy, and where it needs a little care.",

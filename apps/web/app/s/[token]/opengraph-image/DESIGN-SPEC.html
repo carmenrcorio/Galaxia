@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Galaxia OG Card Design Spec — MATCH TARGET</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#1a1822; color:#cfc6e6; font-family:'Inter',system-ui,sans-serif; padding:32px; }
+  h1 { font-family:'Fraunces',Georgia,serif; color:#ecc890; font-weight:600; }
+  .note { max-width:1200px; font-size:14px; line-height:1.6; background:#221f2e; border:1px solid #3a3350; border-radius:12px; padding:18px 22px; margin:18px 0 28px; }
+  .note code { background:#0e0c18; padding:1px 6px; border-radius:5px; color:#f0c98a; font-size:13px; }
+  .note h3 { color:#ecc890; margin:16px 0 6px; font-size:15px; }
+  .card-label { font-size:13px; color:#8f86b0; margin:28px 0 8px; letter-spacing:1px; text-transform:uppercase; }
+  /* ============================================================
+     CARD SHELL — exact OG dimensions. Do not change.
+     ============================================================ */
+  .card { width:1200px; height:630px; position:relative; overflow:hidden; border-radius:16px;
+          background:#09080f; display:flex; font-family:'Inter',system-ui,sans-serif; }
+  .serif { font-family:'Fraunces',Georgia,serif; }
+</style>
+</head>
+<body>
+
+<h1>Galaxia OG Card Design Spec — MATCH TARGET</h1>
+
+<div class="note">
+  <strong>Purpose:</strong> This is the authoritative visual target for the OG share cards in PR&nbsp;#153. The PR version rendered flat (no glow, grey outline nodes, dead background) because the glow in the earlier chat mock used SVG blur filters that Satori ignores. This file is authored ONLY in techniques Satori (<code>@vercel/og</code>) actually renders, so it ports directly into the <code>ImageResponse</code> JSX. Match it.
+
+  <h3>SATORI CONSTRAINTS — obey these or the card breaks or flattens</h3>
+  1. <strong>Glow is done with <code>radial-gradient</code> backgrounds and <code>box-shadow</code>, NEVER <code>filter: blur()</code> or SVG <code>feGaussianBlur</code></strong> (Satori ignores both — that is exactly why the PR cards are flat).<br>
+  2. Every <code>&lt;div&gt;</code> with more than one child MUST set <code>display:flex</code> and an explicit <code>flex-direction</code> (Satori requirement).<br>
+  3. No CSS variables (<code>var(--x)</code>) — Satori drops them. Use literal hex (this file already does).<br>
+  4. Lines/rings = inline <code>&lt;svg&gt;</code> with plain <code>&lt;line&gt;/&lt;ellipse&gt;/&lt;path&gt;</code> strokes. No SVG filters.<br>
+  5. Zodiac/planet glyphs need the subsetted symbol font in the <code>fonts</code> array (already planned in PR). In this preview your OS renders them; in Satori only the supplied font will.<br>
+
+  <h3>THE GLOW RECIPE (the thing the PR missed)</h3>
+  A glowing node = a soft <code>radial-gradient</code> orb that fades to transparent, with a small bright core on top:<br>
+  <code>background: radial-gradient(circle, rgba(255,255,255,.9) 0%, &lt;COLOR&gt; 32%, transparent 70%)</code> on a round div, plus a tiny white core div. That produces real bloom in Satori with zero filters. Flat stroked circles (what the PR shipped) are the wrong technique.
+
+  <h3>PALETTE (literal hex — use verbatim)</h3>
+  bg <code>#09080f</code> · violet bloom <code>#5d4aa6</code>/<code>#382d64</code> · gold wordmark/eyebrow <code>#ecc890</code>/<code>#d9b57e</code> · gold core node <code>#ffd98a</code> · teal node <code>#7fd4c0</code> · coral node <code>#e8926a</code> · lavender node <code>#b8a9e8</code> · pale-yellow node <code>#e8d98a</code> · sign tile <code>#5a3f8f</code> · tile glyph <code>#e6dcff</code> · title text <code>#f2eefa</code> · muted <code>#a99ec9</code>/<code>#b3a6cf</code> · aspect coral <code>#e8926a</code> · aspect teal <code>#7fd4c0</code>
+
+  <h3>FONTS</h3>
+  Display/serif = <strong>Fraunces</strong> (names, signs, summary — italic for the summary line). Labels/UI = <strong>Inter</strong>. Glyphs = the subsetted symbol font. Wordmark is "Galax" + italic "ia".
+
+  <h3>SCOPE</h3>
+  Two cards only: <strong>chart (single)</strong> and <strong>comparison</strong>. The galaxy card is NOT here and NOT in this build — it is deferred behind a galaxy-share feature that does not exist yet (no galaxy snapshot kind, no per-share people selection). Do not attempt it.
+</div>
+
+<!-- ============================================================
+     CARD 1 — CHART (single).  Left column = text.  Right = glowing wheel.
+     ============================================================ -->
+<div class="card-label">Card 1 — Chart share (kind: single)</div>
+<div class="card">
+  <!-- bloom: radial-gradient background, Satori-safe -->
+  <div style="position:absolute; top:0; left:0; width:1200px; height:630px;
+       background:radial-gradient(circle at 74% 50%, rgba(74,58,134,0.5) 0%, rgba(44,35,82,0.26) 55%, rgba(9,8,15,0) 100%); display:flex;"></div>
+
+  <!-- wheel (right) as inline SVG: rings + aspect lines only (strokes, no filters) -->
+  <svg width="1200" height="630" viewBox="0 0 1200 630" style="position:absolute; top:0; left:0;">
+    <ellipse cx="920" cy="315" rx="248" ry="248" fill="none" stroke="#b9a9e6" stroke-opacity="0.08"/>
+    <ellipse cx="920" cy="315" rx="172" ry="172" fill="none" stroke="#b9a9e6" stroke-opacity="0.10"/>
+    <path d="M948 245 L880 468" fill="none" stroke="#e8926a" stroke-opacity="0.55" stroke-width="1.4"/>
+    <path d="M1000 305 L900 262 L880 468" fill="none" stroke="#7fd4c0" stroke-opacity="0.45" stroke-width="1.4"/>
+  </svg>
+
+  <!-- 12 sign tiles: filled purple with a soft box-shadow glow (Satori-safe). Positioned absolute. -->
+  <!-- tile template: 40x40, radius 10, bg #5a3f8f, box-shadow glow, glyph centered in symbol font -->
+  <div style="position:absolute; left:900px; top:90px;  width:40px; height:40px; border-radius:10px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.45); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:20px;">&#9807;</div>
+  <div style="position:absolute; left:1002px; top:117px; width:40px; height:40px; border-radius:10px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.45); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:20px;">&#9808;</div>
+  <div style="position:absolute; left:1078px; top:193px; width:40px; height:40px; border-radius:10px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.45); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:20px;">&#9809;</div>
+  <div style="position:absolute; left:1105px; top:295px; width:40px; height:40px; border-radius:10px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.45); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:20px;">&#9810;</div>
+  <div style="position:absolute; left:1078px; top:397px; width:40px; height:40px; border-radius:10px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.45); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:20px;">&#9811;</div>
+  <div style="position:absolute; left:1002px; top:473px; width:40px; height:40px; border-radius:10px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.45); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:20px;">&#9800;</div>
+  <div style="position:absolute; left:900px; top:500px;  width:40px; height:40px; border-radius:10px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.45); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:20px;">&#9801;</div>
+  <div style="position:absolute; left:798px; top:473px;  width:40px; height:40px; border-radius:10px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.45); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:20px;">&#9802;</div>
+  <div style="position:absolute; left:722px; top:397px;  width:40px; height:40px; border-radius:10px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.45); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:20px;">&#9803;</div>
+  <div style="position:absolute; left:695px; top:295px;  width:40px; height:40px; border-radius:10px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.45); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:20px;">&#9804;</div>
+  <div style="position:absolute; left:722px; top:193px;  width:40px; height:40px; border-radius:10px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.45); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:20px;">&#9805;</div>
+  <div style="position:absolute; left:798px; top:117px;  width:40px; height:40px; border-radius:10px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.45); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:20px;">&#9806;</div>
+
+  <!-- planet tokens: GLOWING orb + dark token + colored ring. This is where the PR went flat. -->
+  <!-- Sun (gold) -->
+  <div style="position:absolute; left:898px; top:185px; width:120px; height:120px; border-radius:50%; background:radial-gradient(circle, rgba(255,231,150,0.55) 0%, rgba(232,192,122,0.0) 68%); display:flex;"></div>
+  <div style="position:absolute; left:931px; top:218px; width:34px; height:34px; border-radius:50%; background:#14102a; border:1.6px solid #e8c07a; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px;">&#9737;</div>
+  <!-- Moon (gold) -->
+  <div style="position:absolute; left:830px; top:408px; width:120px; height:120px; border-radius:50%; background:radial-gradient(circle, rgba(255,231,150,0.5) 0%, rgba(232,192,122,0.0) 68%); display:flex;"></div>
+  <div style="position:absolute; left:863px; top:441px; width:34px; height:34px; border-radius:50%; background:#14102a; border:1.6px solid #e8c07a; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px;">&#9789;</div>
+  <!-- Mercury (teal) -->
+  <div style="position:absolute; left:952px; top:257px; width:104px; height:104px; border-radius:50%; background:radial-gradient(circle, rgba(127,212,192,0.5) 0%, rgba(127,212,192,0.0) 68%); display:flex;"></div>
+  <div style="position:absolute; left:983px; top:288px; width:34px; height:34px; border-radius:50%; background:#14102a; border:1.6px solid #7fd4c0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px;">&#9791;</div>
+  <!-- Venus (lavender) -->
+  <div style="position:absolute; left:994px; top:302px; width:104px; height:104px; border-radius:50%; background:radial-gradient(circle, rgba(184,169,232,0.5) 0%, rgba(184,169,232,0.0) 68%); display:flex;"></div>
+  <div style="position:absolute; left:1025px; top:333px; width:34px; height:34px; border-radius:50%; background:#14102a; border:1.6px solid #b8a9e8; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px;">&#9792;</div>
+  <!-- Mars (coral) -->
+  <div style="position:absolute; left:852px; top:214px; width:104px; height:104px; border-radius:50%; background:radial-gradient(circle, rgba(232,146,106,0.5) 0%, rgba(232,146,106,0.0) 68%); display:flex;"></div>
+  <div style="position:absolute; left:883px; top:245px; width:34px; height:34px; border-radius:50%; background:#14102a; border:1.6px solid #e8926a; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px;">&#9794;</div>
+
+  <!-- ASC / MC gold labels -->
+  <div style="position:absolute; left:648px; top:308px; color:#e0b878; font-size:15px; letter-spacing:1px;">ASC</div>
+  <div style="position:absolute; left:900px; top:540px; color:#e0b878; font-size:15px; letter-spacing:1px;">MC</div>
+
+  <!-- LEFT COLUMN (text) -->
+  <div style="position:absolute; left:80px; top:64px; width:520px; display:flex; flex-direction:column;">
+    <div class="serif" style="font-size:34px; color:#ecc890;">Galax<span style="font-style:italic;">ia</span></div>
+    <div style="font-size:16px; letter-spacing:3px; color:#d9b57e; margin-top:44px;">&mdash;&nbsp;&nbsp;NATAL WHEEL</div>
+    <div class="serif" style="font-size:52px; color:#f2eefa; margin-top:12px;">Ada Lovelace</div>
+
+    <!-- big-three rows: purple tile + label + sign + curated phrase -->
+    <div style="display:flex; flex-direction:row; align-items:center; margin-top:34px;">
+      <div style="width:46px; height:46px; border-radius:11px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.4); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:22px;">&#9810;</div>
+      <div style="display:flex; flex-direction:column; margin-left:16px;">
+        <div style="font-size:13px; letter-spacing:2px; color:#9a90bb;">SUN</div>
+        <div class="serif" style="font-size:25px; color:#f2eefa;">Aquarius</div>
+      </div>
+      <div class="serif" style="font-style:italic; font-size:16px; color:#a99ec9; margin-left:auto;">first of its kind</div>
+    </div>
+    <div style="display:flex; flex-direction:row; align-items:center; margin-top:22px;">
+      <div style="width:46px; height:46px; border-radius:11px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.4); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:22px;">&#9811;</div>
+      <div style="display:flex; flex-direction:column; margin-left:16px;">
+        <div style="font-size:13px; letter-spacing:2px; color:#9a90bb;">MOON</div>
+        <div class="serif" style="font-size:25px; color:#f2eefa;">Pisces</div>
+      </div>
+      <div class="serif" style="font-style:italic; font-size:16px; color:#a99ec9; margin-left:auto;">feels the room first</div>
+    </div>
+    <div style="display:flex; flex-direction:row; align-items:center; margin-top:22px;">
+      <div style="width:46px; height:46px; border-radius:11px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.4); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:22px;">&#9804;</div>
+      <div style="display:flex; flex-direction:column; margin-left:16px;">
+        <div style="font-size:13px; letter-spacing:2px; color:#9a90bb;">RISING</div>
+        <div class="serif" style="font-size:25px; color:#f2eefa;">Leo</div>
+      </div>
+      <div class="serif" style="font-style:italic; font-size:16px; color:#a99ec9; margin-left:auto;">warm, unmissable</div>
+    </div>
+  </div>
+</div>
+<div class="note" style="margin-top:10px;">
+  <strong>Chart card notes:</strong> the italic phrase per row is the app's curated big-three line for that placement (from the same source the app already renders), never generated. RISING row renders ONLY when a real ascendant exists in the payload (<code>chart.asc</code> present); if absent, drop the Rising row entirely, do not invent it. Planet tokens must show the radial glow orb behind them, that is the single biggest fix vs the PR.
+</div>
+
+<!-- ============================================================
+     CARD 2 — COMPARISON.  Centered header + summary + two glowing columns.
+     ============================================================ -->
+<div class="card-label">Card 2 — Comparison share (kind: compare) — non-romantic case shown</div>
+<div class="card">
+  <div style="position:absolute; top:0; left:0; width:1200px; height:630px;
+       background:radial-gradient(circle at 50% 46%, rgba(74,58,134,0.42) 0%, rgba(44,35,82,0.22) 60%, rgba(9,8,15,0) 100%); display:flex;"></div>
+
+  <!-- faint glowing ring behind center -->
+  <svg width="1200" height="630" viewBox="0 0 1200 630" style="position:absolute; top:0; left:0;">
+    <ellipse cx="600" cy="380" rx="200" ry="200" fill="none" stroke="#b9a9e6" stroke-opacity="0.05"/>
+  </svg>
+
+  <!-- wordmark -->
+  <div class="serif" style="position:absolute; left:0; top:40px; width:1200px; text-align:center; font-size:28px; color:#ecc890; display:flex; justify-content:center;">Galax<span style="font-style:italic;">ia</span></div>
+
+  <!-- avatar row: glowing orbs + letters + × -->
+  <div style="position:absolute; left:0; top:82px; width:1200px; display:flex; flex-direction:row; align-items:center; justify-content:center;">
+    <div style="width:64px; height:64px; border-radius:50%; background:radial-gradient(circle at 50% 40%, #f0a878 0%, #c96a44 100%); box-shadow:0 0 22px 2px rgba(201,106,68,0.5); display:flex; align-items:center; justify-content:center;">
+      <span class="serif" style="font-size:28px; color:#3a1a10;">A</span>
+    </div>
+    <div style="font-size:23px; color:#8a7fb0; margin:0 20px;">&#215;</div>
+    <div style="width:64px; height:64px; border-radius:50%; background:radial-gradient(circle at 50% 40%, #e8a8c4 0%, #b8688e 100%); box-shadow:0 0 22px 2px rgba(184,104,142,0.5); display:flex; align-items:center; justify-content:center;">
+      <span class="serif" style="font-size:28px; color:#3a1020;">S</span>
+    </div>
+  </div>
+
+  <div class="serif" style="position:absolute; left:0; top:196px; width:1200px; text-align:center; font-size:42px; color:#f2eefa; display:flex; justify-content:center;">Ada &amp; Sam</div>
+  <div style="position:absolute; left:0; top:250px; width:1200px; text-align:center; font-size:17px; letter-spacing:2px; color:#a99ec9; display:flex; justify-content:center;">SIBLINGS</div>
+
+  <!-- relationship summary: gold bar + 2 italic serif lines. Non-romantic only. -->
+  <div style="position:absolute; left:196px; top:288px; width:4px; height:70px; background:#e0b878; display:flex;"></div>
+  <div class="serif" style="position:absolute; left:220px; top:296px; width:800px; font-style:italic; font-size:21px; line-height:1.35; color:#cabce4; display:flex; flex-direction:column;">
+    <span>You two share a history and a floor neither of you can walk off.</span>
+    <span>Here&rsquo;s what runs smooth, and where the old patterns catch.</span>
+  </div>
+
+  <!-- two columns: name + glowing sun/moon/rising tiles -->
+  <div style="position:absolute; left:150px; top:392px; width:300px; display:flex; flex-direction:column; align-items:center;">
+    <div class="serif" style="font-size:30px; color:#f2eefa;">Ada</div>
+    <div style="display:flex; flex-direction:row; margin-top:18px;">
+      <div style="display:flex; flex-direction:column; align-items:center; margin:0 8px;">
+        <div style="width:50px; height:50px; border-radius:12px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.4); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:23px;">&#9810;</div>
+        <div style="font-size:14px; color:#a99ec9; margin-top:8px;">Aquarius</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; margin:0 8px;">
+        <div style="width:50px; height:50px; border-radius:12px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.4); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:23px;">&#9811;</div>
+        <div style="font-size:14px; color:#a99ec9; margin-top:8px;">Pisces</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; margin:0 8px;">
+        <div style="width:50px; height:50px; border-radius:12px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.4); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:23px;">&#9804;</div>
+        <div style="font-size:14px; color:#a99ec9; margin-top:8px;">Leo</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:absolute; left:750px; top:392px; width:300px; display:flex; flex-direction:column; align-items:center;">
+    <div class="serif" style="font-size:30px; color:#f2eefa;">Sam</div>
+    <div style="display:flex; flex-direction:row; margin-top:18px;">
+      <div style="display:flex; flex-direction:column; align-items:center; margin:0 8px;">
+        <div style="width:50px; height:50px; border-radius:12px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.4); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:23px;">&#9805;</div>
+        <div style="font-size:14px; color:#a99ec9; margin-top:8px;">Virgo</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; margin:0 8px;">
+        <div style="width:50px; height:50px; border-radius:12px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.4); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:23px;">&#9803;</div>
+        <div style="font-size:14px; color:#a99ec9; margin-top:8px;">Cancer</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; margin:0 8px;">
+        <div style="width:50px; height:50px; border-radius:12px; background:#5a3f8f; box-shadow:0 0 16px 2px rgba(120,80,180,0.4); display:flex; align-items:center; justify-content:center; color:#e6dcff; font-size:23px;">&#9827;</div>
+        <div style="font-size:14px; color:#a99ec9; margin-top:8px;">Scorpio</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:absolute; left:0; top:558px; width:1200px; text-align:center; font-size:18px; color:#b3a6cf; display:flex; justify-content:center;">see how their charts meet on Galaxia</div>
+</div>
+<div class="note" style="margin-top:10px;">
+  <strong>Comparison card notes — the safety-critical ones:</strong><br>
+  1. The summary line is the app's <code>RELATION_HEADLINE[relationType]</code> for non-romantic types (siblings/friends/parent-child/ancestor) plus the new authored platonic line. <strong>Read the table directly, never <code>compareHeadline()</code></strong> (its fallback reads scores).<br>
+  2. For a <strong>romantic / partners</strong> pairing: render NO summary and NO relationship label. Replace with a neutral subtitle only (e.g. "A shared compatibility reading"). No scores, no warmth, no attraction copy, ever.<br>
+  3. Sun/Moon/Rising per person; Rising tile only when that person's <code>chart.asc</code> exists. Never fabricate.<br>
+  4. The relationship label (SIBLINGS) shows only for non-romantic types; hide it for romantic.
+</div>
+
+<div class="note">
+  <strong>How to use this file:</strong> commit it to the repo (e.g. <code>apps/web/app/s/[token]/opengraph-image/DESIGN-SPEC.html</code>) and port each element into the <code>ImageResponse</code> JSX 1:1 — same hex, same positions, same glow technique (radial-gradient orbs + box-shadow). Open it in a browser to see the target. When your Satori render matches what the browser shows here, the card is right. The single biggest delta from PR #153: nodes and tiles must GLOW (radial-gradient + box-shadow), and the background must carry the violet bloom, not be flat #09080f.
+</div>
+
+</body>
+</html>

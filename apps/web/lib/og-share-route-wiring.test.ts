@@ -54,11 +54,14 @@ describe("opengraph-image route — never touches scores/whatTheyNeed/compareHea
   });
 });
 
-describe("opengraph-image route — fonts read once at module scope, never inside the handler", () => {
+describe("opengraph-image route — fonts loaded lazily inside the handler, never at module scope", () => {
   const src = readRoute(IMAGE_ROUTE_PATH);
 
-  it("reads all 5 font files via a single top-level readFile/Promise.all block", () => {
-    expect(src).toMatch(/^const \[[^\]]*\] = await Promise\.all\(\[/m);
+  it("reads all 5 font files inside an async loader, memoized after the first successful read", () => {
+    const loaderIndex = src.indexOf("async function loadOgFonts(");
+    expect(loaderIndex).toBeGreaterThan(-1);
+    const loaderBody = src.slice(loaderIndex);
+    expect(loaderBody).toMatch(/Promise\.all\(\[/);
     for (const file of [
       "Fraunces-Regular.ttf",
       "Fraunces-SemiBold.ttf",
@@ -66,16 +69,36 @@ describe("opengraph-image route — fonts read once at module scope, never insid
       "Inter-SemiBold.ttf",
       "ZodiacGlyphs-Regular.ttf",
     ]) {
-      expect(src).toContain(file);
+      expect(loaderBody).toContain(file);
     }
   });
 
-  it("the module-scope font read happens before the default export (never re-read per request)", () => {
-    const fontReadIndex = src.indexOf("await Promise.all([");
+  it("never reads fonts at module scope — no top-level `const [...] = await Promise.all(...)`", () => {
+    // Guards against regressing to the original bug: a top-level `await`
+    // executes as soon as this module is imported, including when Next
+    // imports it merely to read the sibling page's alt/size/contentType
+    // metadata — see the file header comment. The loader/handler's own
+    // internal `await`s are indented (inside a function body), so this
+    // only matches a genuine top-level (unindented) await.
+    expect(src).not.toMatch(/^const \[[^\]]*\] = await Promise\.all\(\[/m);
+    expect(src).not.toMatch(/^await\s/m);
+  });
+
+  it("loadOgFonts is only called from inside the default export's handler", () => {
     const handlerIndex = src.indexOf("export default async function Image(");
-    expect(fontReadIndex).toBeGreaterThan(-1);
     expect(handlerIndex).toBeGreaterThan(-1);
-    expect(fontReadIndex).toBeLessThan(handlerIndex);
+    const callSites = [...src.matchAll(/await loadOgFonts\(\)/g)].map((m) => m.index ?? -1);
+    expect(callSites.length).toBeGreaterThan(0);
+    for (const idx of callSites) {
+      expect(idx).toBeGreaterThan(handlerIndex);
+    }
+  });
+
+  it("a failed font read is caught and falls back instead of throwing out of the handler", () => {
+    const handlerIndex = src.indexOf("export default async function Image(");
+    const handlerBody = src.slice(handlerIndex);
+    expect(handlerBody).toMatch(/try\s*\{\s*fonts\s*=\s*await\s*loadOgFonts\(\)/);
+    expect(handlerBody).toMatch(/catch\s*\(/);
   });
 
   it("is a Node-runtime route (no `export const runtime = \"edge\"`) — fs.readFile needs Node", () => {

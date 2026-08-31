@@ -18,12 +18,28 @@
  * `display: flex` + a flex-direction on every multi-child `<div>`.
  *
  * Satori (the renderer behind `next/og`) cannot use `next/font/google`, so
- * fonts are raw `.ttf` files read once at module scope (see
- * `opengraph-image/fonts/NOTICE.md`) — never inside the request handler.
+ * fonts are raw `.ttf` files read from disk (see `opengraph-image/fonts/NOTICE.md`).
  * `ZodiacGlyphs-Regular.ttf` covers exactly the 22 codepoints
  * `SIGN_GLYPH`/`BODY_GLYPH` use; satori substitutes glyphs from any loaded
  * font that has them, regardless of which font a span's `fontFamily`
  * names, so no per-span override is needed for the zodiac/planet symbols.
+ *
+ * The fonts are loaded lazily inside `loadOgFonts()`, called only from the
+ * `Image` request handler below — NEVER at module scope. Next's file-convention
+ * metadata resolution imports this module as a dependency of the sibling
+ * `page.tsx` too (to read the static `alt`/`size`/`contentType` exports below
+ * for auto-generated `<meta>` tags), which bundles this file's module-scope
+ * code into the PAGE's serverless function, not just this route's own. On
+ * Vercel that page-side bundle did not reliably ship these `.ttf` files
+ * (output-file-tracing missed the transitive `readFile` call once inlined
+ * into another route), so a module-scope `await` here threw and crashed
+ * metadata resolution for the whole page, not just image generation.
+ * Loading lazily means only a real image request ever touches the
+ * filesystem — and page.js no longer even references this code (confirmed
+ * via the compiled bundle: dead-code-eliminated, since nothing in the
+ * page's import graph calls it). A failed read here degrades to Satori's
+ * built-in fallback font (see the `catch` below) instead of taking down
+ * either route.
  */
 
 import { RELATION_HEADLINE, type RelationType, type Sign } from "@galaxia/astro";
@@ -47,23 +63,43 @@ export const contentType = "image/png";
 
 const FONT_DIR = join(process.cwd(), "app/s/[token]/opengraph-image/fonts");
 
-const [frauncesRegular, frauncesDisplay, interRegular, interSemiBold, zodiacGlyphs] = await Promise.all([
-  readFile(join(FONT_DIR, "Fraunces-Regular.ttf")),
-  readFile(join(FONT_DIR, "Fraunces-SemiBold.ttf")),
-  readFile(join(FONT_DIR, "Inter-Regular.ttf")),
-  readFile(join(FONT_DIR, "Inter-SemiBold.ttf")),
-  readFile(join(FONT_DIR, "ZodiacGlyphs-Regular.ttf")),
-]);
+type OgFont = { name: string; data: Buffer; weight: 400 | 600; style: "normal" };
 
-const OG_FONTS = [
-  { name: "Fraunces", data: frauncesRegular, weight: 400 as const, style: "normal" as const },
-  { name: "Fraunces", data: frauncesDisplay, weight: 600 as const, style: "normal" as const },
-  { name: "Inter", data: interRegular, weight: 400 as const, style: "normal" as const },
-  { name: "Inter", data: interSemiBold, weight: 600 as const, style: "normal" as const },
-  // Never matched by name — present purely so satori's cross-font glyph
-  // fallback can find the zodiac/planet codepoints Fraunces/Inter lack.
-  { name: "Zodiac Glyphs", data: zodiacGlyphs, weight: 400 as const, style: "normal" as const },
-];
+let ogFontsPromise: Promise<OgFont[]> | null = null;
+
+/**
+ * Loads the 5 OG fonts once and memoizes the result — called only from the
+ * `Image` handler (never at module scope; see the file header for why).
+ * A failed read does not get cached as a permanent rejection: if this
+ * container's filesystem is missing a font transiently (or forever, for a
+ * misconfigured deployment), the next request gets to try again instead of
+ * being wedged behind one cached failure for the container's lifetime.
+ */
+async function loadOgFonts(): Promise<OgFont[]> {
+  if (!ogFontsPromise) {
+    ogFontsPromise = Promise.all([
+      readFile(join(FONT_DIR, "Fraunces-Regular.ttf")),
+      readFile(join(FONT_DIR, "Fraunces-SemiBold.ttf")),
+      readFile(join(FONT_DIR, "Inter-Regular.ttf")),
+      readFile(join(FONT_DIR, "Inter-SemiBold.ttf")),
+      readFile(join(FONT_DIR, "ZodiacGlyphs-Regular.ttf")),
+    ])
+      .then(([frauncesRegular, frauncesDisplay, interRegular, interSemiBold, zodiacGlyphs]): OgFont[] => [
+        { name: "Fraunces", data: frauncesRegular, weight: 400, style: "normal" },
+        { name: "Fraunces", data: frauncesDisplay, weight: 600, style: "normal" },
+        { name: "Inter", data: interRegular, weight: 400, style: "normal" },
+        { name: "Inter", data: interSemiBold, weight: 600, style: "normal" },
+        // Never matched by name — present purely so satori's cross-font glyph
+        // fallback can find the zodiac/planet codepoints Fraunces/Inter lack.
+        { name: "Zodiac Glyphs", data: zodiacGlyphs, weight: 400, style: "normal" },
+      ])
+      .catch((error: unknown) => {
+        ogFontsPromise = null;
+        throw error;
+      });
+  }
+  return ogFontsPromise;
+}
 
 /**
  * Literal hex from `opengraph-image/DESIGN-SPEC.html`'s palette note.
@@ -521,15 +557,29 @@ export default async function Image({ params }: { params: Promise<{ token: strin
   const { token } = await params;
   const snapshot = await getQuickShareByToken(token);
 
+  // A failed font read (e.g. a deployment missing one of the .ttf files)
+  // degrades to Satori's built-in fallback font rather than 500ing this
+  // route — a link that unfurls with slightly-off typography beats one that
+  // never unfurls at all. Stays `undefined` (not `[]`) on failure: `next/og`
+  // only swaps in its own default font when `fonts` is falsy — an empty
+  // array is passed through as "zero fonts" and Satori throws ("At least
+  // one font is required to calculate the layout").
+  let fonts: OgFont[] | undefined;
+  try {
+    fonts = await loadOgFonts();
+  } catch (error) {
+    console.error("s/[token]/opengraph-image: font load failed, rendering without custom fonts", error);
+  }
+
   if (!snapshot) {
-    return new ImageResponse(<FallbackCard />, { ...size, fonts: OG_FONTS });
+    return new ImageResponse(<FallbackCard />, { ...size, fonts });
   }
 
   if (snapshot.kind === "single") {
     const card = buildOgSingleCard(snapshot.payload as SingleSharePayload);
-    return new ImageResponse(<SingleCard card={card} />, { ...size, fonts: OG_FONTS });
+    return new ImageResponse(<SingleCard card={card} />, { ...size, fonts });
   }
 
   const card = buildOgCompareCard(snapshot.payload as CompareSharePayload, RELATION_HEADLINE);
-  return new ImageResponse(<CompareCard card={card} />, { ...size, fonts: OG_FONTS });
+  return new ImageResponse(<CompareCard card={card} />, { ...size, fonts });
 }

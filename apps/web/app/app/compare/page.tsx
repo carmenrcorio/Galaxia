@@ -544,12 +544,12 @@ function ComparePageInner() {
                 const { word, cls } = compatWord(score);
                 const pct = score / 100;
                 return (
-                  <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 16px", borderTop: key === "overall" ? "none" : "1px solid rgba(255,255,255,.04)" }}>
-                    <span style={{ fontSize: ".82rem", color: "var(--mist)" }}>{COMPAT_LABELS[key] ?? key}</span>
-                    <div style={{ textAlign: "right" }}>
+                  <div key={key} className="dyn-row" style={{ borderTop: key === "overall" ? "none" : "1px solid rgba(255,255,255,.04)" }}>
+                    <span className="dyn-row-label" style={{ fontSize: ".82rem", color: "var(--mist)" }}>{COMPAT_LABELS[key] ?? key}</span>
+                    <div className="dyn-row-value" style={{ textAlign: "right" }}>
                       <span className={`compat-word ${cls}`} style={{ fontSize: ".88rem", fontFamily: "var(--serif)" }}>{word}</span>
                       {/* thin underline bar sized to percentage (landing concept) */}
-                      <div style={{ height: 2, borderRadius: 999, marginTop: 3, width: `${pct * 72}px`, background: cls === "compat-high" ? "var(--teal)" : cls === "compat-mid" ? "var(--gold-soft)" : "var(--rose)", opacity: .7 }} />
+                      <div style={{ height: 2, borderRadius: 999, marginTop: 3, width: `${pct * 72}px`, maxWidth: "100%", background: cls === "compat-high" ? "var(--teal)" : cls === "compat-mid" ? "var(--gold-soft)" : "var(--rose)", opacity: .7 }} />
                       {showRaw ? <div style={{ fontSize: ".68rem", color: "var(--mist2)", marginTop: 2 }}>{score}/100</div> : null}
                     </div>
                   </div>

@@ -43,16 +43,13 @@ export function DynamicTableSection({ scores, children }: Props) {
           return (
             <div
               key={key}
+              className="dyn-row"
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "9px 16px",
                 borderTop: key === "overall" ? "none" : "1px solid rgba(255,255,255,.04)",
               }}
             >
-              <span style={{ fontSize: ".82rem", color: "var(--mist)" }}>{COMPAT_LABELS[key] ?? key}</span>
-              <span className={`compat-word ${cls}`} style={{ fontSize: ".88rem", fontFamily: "var(--serif)" }}>
+              <span className="dyn-row-label" style={{ fontSize: ".82rem", color: "var(--mist)" }}>{COMPAT_LABELS[key] ?? key}</span>
+              <span className={`compat-word dyn-row-value ${cls}`} style={{ fontSize: ".88rem", fontFamily: "var(--serif)" }}>
                 {word}
               </span>
             </div>

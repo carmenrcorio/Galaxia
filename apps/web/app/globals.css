@@ -489,6 +489,30 @@ select.field--rect {
 .compat-mid   { color: var(--teal); }   .compat-mid   .compat-bar { background: var(--teal); }
 .compat-low   { color: var(--rose); }   .compat-low   .compat-bar { background: var(--rose); }
 
+/* "Your dynamic" score rows (dyn-row) — shared by DynamicTableSection
+   (/chart/compare, /s/[token]) and /app/compare's own copy. flex-wrap lets
+   the value drop to its own line on narrow viewports instead of a fixed-
+   width row forcing overflow; max-width keeps the row inside its card even
+   if a value is unexpectedly long. */
+.dyn-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 12px;
+  row-gap: 2px;
+  max-width: 100%;
+  padding: 9px 16px;
+}
+.dyn-row-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dyn-row-value {
+  min-width: 0;
+  max-width: 100%;
+}
+
 /* "What X needs from you" tip block (from landing .tip) */
 .tip-block {
   margin-top: 12px;

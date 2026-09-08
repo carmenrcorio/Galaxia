@@ -1383,6 +1383,67 @@ section { padding-block: clamp(76px, 12vh, 140px); }
   .legal-doc-h2 { margin: 32px 0 10px; }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   ARTICLE / BLOG PAGES (e.g. apps/web/app/synastry-chart-meaning)
+   Hand-authored long-form content pages — same bare `<main className="container">`
+   shell as /download and /privacy (no nav/footer chrome exists for standalone
+   content pages in this app), with its own typography scale modeled directly
+   on .legal-doc-* so new articles read consistently with the rest of the site.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.article-page {
+  padding-top: clamp(40px, 6vh, 64px);
+  padding-bottom: clamp(56px, 8vh, 88px);
+  max-width: 720px;
+}
+.article-title { margin-bottom: 18px; }
+.article-h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -.012em;
+  color: var(--cream);
+  font-size: clamp(1.32rem, 2.6vw, 1.7rem);
+  line-height: 1.24;
+  margin: 40px 0 12px;
+}
+.article-h2:first-of-type { margin-top: 28px; }
+.article-p {
+  color: var(--mist);
+  font-weight: 300;
+  line-height: 1.75;
+  max-width: var(--measure);
+  margin: 0 0 16px;
+}
+.article-content strong { color: var(--cream); font-weight: 600; }
+.article-content em { font-style: italic; color: var(--cream); }
+.article-blockquote {
+  border-left: 2px solid rgba(230,174,108,.4);
+  padding: 4px 0 4px 18px;
+  margin: 20px 0 24px;
+  color: var(--cream);
+  font-weight: 300;
+  line-height: 1.7;
+  max-width: var(--measure);
+}
+.article-figure {
+  margin: 28px 0 32px;
+}
+.article-figure img {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 18px;
+  border: 1px solid rgba(230,174,108,.13);
+  box-shadow: 0 30px 80px -34px rgba(0,0,0,.7);
+}
+.article-cta {
+  margin-top: 36px;
+  padding-top: 12px;
+}
+@media (max-width: 480px) {
+  .article-page { padding-top: clamp(28px, 5vh, 44px); }
+  .article-h2 { margin: 32px 0 10px; }
+}
+
 /* ─── reveal (scroll fade-up, ported from the removed inline SCRIPT) ──────
    Fast + snappy: the old .9s fade left text sitting at low opacity through a
    normal scroll (read like a perf bug). Short duration + a small rise, and

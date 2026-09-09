@@ -1,12 +1,17 @@
 import {
   coerceDailyNudgeRow,
   computeSynastry,
+  interpretRelationalTransit,
+  MAJOR_RELATIONAL_TRANSIT_BODIES,
   ownerLocalDate,
   orderSkyRowsForHome,
   planDailyNudgeWrites,
   whenUTCForOwnerLocalDate,
+  type AffectedProfileHit,
+  type AspectType,
   type NatalChart,
-  type PersonDailyNudgeRecord
+  type PersonDailyNudgeRecord,
+  type RelationalTransitBody
 } from "@galaxia/astro";
 import {
   galaxySeatXY,
@@ -62,6 +67,22 @@ interface PersonSky {
   nudge: PersonDailyNudgeRecord;
 }
 
+/* Generations Feature 3 — mirrors relational_transits columns (web parity,
+   apps/web/components/relational-transit-feed.tsx). Read-only here. */
+interface RelationalTransitRow {
+  id: string;
+  transit_body: RelationalTransitBody;
+  aspect_type: AspectType;
+  affected_profiles: Array<{
+    profile_id: string;
+    profile_name: string;
+    natal_body: string;
+    natal_sign: string;
+    orb_deg: number;
+    exact_at: string;
+  }>;
+}
+
 export default function HomeScreen() {
   const { session, signOut } = useAuth();
   const { tier } = useEntitlement();
@@ -72,6 +93,7 @@ export default function HomeScreen() {
   const [people, setPeople] = useState<PersonRow[]>([]);
   const [links, setLinks] = useState<LinkRow[]>([]);
   const [personSkies, setPersonSkies] = useState<PersonSky[]>([]);
+  const [relationalTransits, setRelationalTransits] = useState<RelationalTransitRow[]>([]);
   const [threadChips, setThreadChips] = useState<ThreadChip[]>([]);
   const [homeStatus, setHomeStatus] = useState<string | null>(null);
   const [homeLoading, setHomeLoading] = useState(true);
@@ -147,8 +169,9 @@ export default function HomeScreen() {
         ).data ?? []
       ).map((row) => row.id as string);
       const localDate = ownerLocalDate();
-      const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }] = await Promise.all([
-      supabase.from("profiles").select("display_name, pinned_sky_person_id, timezone").eq("id", session.user.id).single(),
+      const nowISO = new Date().toISOString();
+      const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: transitRows }] = await Promise.all([
+      supabase.from("profiles").select("display_name, pinned_sky_person_id, timezone, relational_transit_alerts").eq("id", session.user.id).single(),
       supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
       personIds.length
         ? supabase.from("charts").select("person_id, data").in("person_id", personIds)
@@ -160,6 +183,14 @@ export default function HomeScreen() {
       personIds.length
         ? supabase.from("person_daily_nudges").select("person_id, pass_id").eq("owner_id", session.user.id).in("person_id", personIds).not("pass_id", "is", null).gte("date", new Date(Date.now() - 45 * 86400000).toISOString().slice(0, 10)).neq("date", localDate)
         : Promise.resolve({ data: [] as { person_id: string; pass_id: string | null }[] }),
+      supabase
+        .from("relational_transits")
+        .select("id, transit_body, aspect_type, affected_profiles")
+        .eq("owner_id", session.user.id)
+        .lte("active_from", nowISO)
+        .gte("active_to", nowISO)
+        .order("active_from", { ascending: true })
+        .limit(20),
       ]);
 
       const castPeople = (peopleRows ?? []) as PersonRow[];
@@ -172,6 +203,15 @@ export default function HomeScreen() {
       }).firstName;
       setWelcomeName(resolvedFirstName);
       setPeople(castPeople);
+      const relationalPref = (profile as { relational_transit_alerts?: string | null } | null)?.relational_transit_alerts ?? "all";
+      const allTransits = (transitRows ?? []) as RelationalTransitRow[];
+      setRelationalTransits(
+        relationalPref === "off"
+          ? []
+          : relationalPref === "major_only"
+            ? allTransits.filter((row) => MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body))
+            : allTransits
+      );
       const pinnedSkyPersonId = (profile as { pinned_sky_person_id?: string | null } | null)?.pinned_sky_person_id ?? null;
 
       // Nudge-delivery Phase A backfill (mobile parity with web's
@@ -446,6 +486,50 @@ export default function HomeScreen() {
           Nodes shimmer when a person has an eligible daily sky note near an exact pass.
         </Text>
       </View>
+
+      {relationalTransits.length > 0 ? (
+        <View style={cardStyle}>
+          <Text style={cardTitle}>This week</Text>
+          <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
+            Transits moving across more than one person in your constellation at once.
+          </Text>
+          {relationalTransits.map((row) => {
+            const affected: AffectedProfileHit[] = row.affected_profiles.map((a) => ({
+              personId: a.profile_id,
+              personName: a.profile_name,
+              natalBody: a.natal_body as AffectedProfileHit["natalBody"],
+              natalSign: a.natal_sign as AffectedProfileHit["natalSign"],
+              aspectType: row.aspect_type,
+              orbDeg: a.orb_deg,
+              exactAtUTC: a.exact_at
+            }));
+            const { headline } = interpretRelationalTransit({ transitBody: row.transit_body, aspectType: row.aspect_type, affected });
+            const firstPersonId = affected[0]?.personId;
+            const card = (
+              <View
+                style={{
+                  paddingVertical: 8,
+                  paddingHorizontal: 10,
+                  borderRadius: 10,
+                  borderLeftWidth: 2,
+                  borderLeftColor: tokens.colors.goldSoft,
+                  backgroundColor: "rgba(230,174,108,0.06)",
+                  gap: 2
+                }}
+              >
+                <Text style={{ color: tokens.colors.cream, fontSize: 13, lineHeight: 18 }}>{headline}</Text>
+              </View>
+            );
+            return firstPersonId ? (
+              <Link key={row.id} href={{ pathname: "/profile/[personId]", params: { personId: firstPersonId } }} asChild>
+                <Pressable>{card}</Pressable>
+              </Link>
+            ) : (
+              <View key={row.id}>{card}</View>
+            );
+          })}
+        </View>
+      ) : null}
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Jump back in</Text>

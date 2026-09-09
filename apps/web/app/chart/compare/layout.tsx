@@ -4,11 +4,11 @@ import type { ReactNode } from "react";
 /**
  * `app/chart/compare/page.tsx` is a client component ("use client"), so it
  * cannot export `metadata` itself. This layout carries per-route metadata
- * for `/chart/compare`, overriding the `title`/`description`/`openGraph`/
- * `twitter` inherited from the parent `app/chart/layout.tsx` (Next merges
- * metadata per top-level key per segment, so restating the full objects
- * here fully replaces the parent's `/chart` copy rather than partially
- * merging with it).
+ * for `/chart/compare`, overriding the `title`/`description`/`alternates`/
+ * `openGraph`/`twitter` inherited from the parent `app/chart/layout.tsx`
+ * (Next merges metadata per top-level key per segment, so restating the
+ * full objects here — including `alternates.canonical` — fully replaces the
+ * parent's `/chart` copy rather than partially merging with it).
  */
 const TITLE = "Free Synastry Chart — Compare Two Charts | Galaxia";
 const DESCRIPTION =
@@ -17,6 +17,9 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
+  alternates: {
+    canonical: "/chart/compare"
+  },
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,

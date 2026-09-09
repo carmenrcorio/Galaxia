@@ -1,9 +1,10 @@
 "use client";
 
 import { joinFullName } from "@galaxia/core";
+import { track } from "@vercel/analytics/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { syncSignupNameToProfile } from "../lib/account-name";
 import { getSiteUrlFromRequestOrigin } from "../lib/env";
 import { PASSWORD_MIN_LENGTH, PASSWORD_RULE_HINT } from "../lib/password-rules";
@@ -25,6 +26,13 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
   // visitors here with ?next=/welcome?prefill=... so the birth data they
   // already entered survives account creation without retyping.
   const destination = safeNextPath(nextPath, "/welcome");
+
+  // Fires once when a visitor lands on /signup (or opens this form), not on
+  // every re-render — this is the "signup_started" half of the funnel,
+  // paired with "signup_completed" below.
+  useEffect(() => {
+    track("signup_started");
+  }, []);
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -59,6 +67,11 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
       setStatus("idle");
       return;
     }
+    // Account creation succeeded here regardless of which branch runs next
+    // (immediate session vs. email-confirmation-required), so the
+    // conversion event fires once, right after signUp resolves without an
+    // error rather than being duplicated in both branches below.
+    track("signup_completed");
     if (data.session) {
       await syncSignupNameToProfile(supabase, data.user);
       // Bonus capture, not the primary mechanism — TimezoneSync's

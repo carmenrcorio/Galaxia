@@ -3,7 +3,10 @@ import { LegalDocument } from "../../components/legal-document";
 import { readLegalMarkdown } from "../../lib/legal-content";
 
 export const metadata: Metadata = {
-  title: "Terms of Service · Galaxia"
+  title: "Terms of Service · Galaxia",
+  alternates: {
+    canonical: "/terms"
+  }
 };
 
 /**

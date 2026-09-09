@@ -6,11 +6,12 @@ import type { ReactNode } from "react";
  * quick-chart form with hooks), so it cannot export `metadata` itself. This
  * layout is the server-rendered sibling that carries per-route metadata for
  * `/chart` instead of it silently inheriting the root layout's generic
- * "Galaxia" title/description. `/chart/compare` has its own `layout.tsx`
- * with its own copy — this file does not apply to that nested route because
- * Next.js resolves per-segment `layout.tsx` files independently and
- * `app/chart/compare/layout.tsx` fully overrides `metadata` for that
- * subtree.
+ * "Galaxia" title/description, and the route's canonical the same way every
+ * other public page does. `/chart/compare` has its own `layout.tsx` with its
+ * own copy — this file does not apply to that nested route because Next.js
+ * resolves per-segment `layout.tsx` files independently and
+ * `app/chart/compare/layout.tsx` fully overrides `metadata` (including
+ * `alternates`) for that subtree.
  */
 const TITLE = "Free Birth Chart Calculator — Galaxia";
 const DESCRIPTION =
@@ -19,6 +20,9 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
+  alternates: {
+    canonical: "/chart"
+  },
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,

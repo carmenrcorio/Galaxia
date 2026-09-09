@@ -15,6 +15,8 @@ const SITE_URL = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
  *   - /invite/[token], /s/[token], /r/[slug] (per-invite/per-share/
  *     per-referral pages, not general content — see route comments)
  *   - /auth/callback (an OAuth redirect target, not a page)
+ *   - /login, /signup (thin auth-only forms — no unique content to rank on,
+ *     so they add crawl weight without any SEO value)
  * `/pricing` is a homepage anchor (`#pricing`), not a route — see
  * components/marketing/site-footer.tsx — so it is covered by `/` below.
  *
@@ -32,8 +34,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/privacy",
     "/terms",
     "/download",
-    "/login",
-    "/signup",
     "/chart",
     "/chart/compare"
   ];

@@ -3,7 +3,10 @@ import { LegalDocument } from "../../components/legal-document";
 import { readLegalMarkdown } from "../../lib/legal-content";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy · Galaxia"
+  title: "Privacy Policy · Galaxia",
+  alternates: {
+    canonical: "/privacy"
+  }
 };
 
 /**

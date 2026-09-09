@@ -386,11 +386,17 @@ function houseFromLongitude(lon: number, cusps: number[]): number {
   return 1;
 }
 
-function elementForSign(sign: Sign): "fire" | "earth" | "air" | "water" {
+export function elementForSign(sign: Sign): "fire" | "earth" | "air" | "water" {
   if (["Aries", "Leo", "Sagittarius"].includes(sign)) return "fire";
   if (["Taurus", "Virgo", "Capricorn"].includes(sign)) return "earth";
   if (["Gemini", "Libra", "Aquarius"].includes(sign)) return "air";
   return "water";
+}
+
+export function modalityForSign(sign: Sign): "cardinal" | "fixed" | "mutable" {
+  if (["Aries", "Cancer", "Libra", "Capricorn"].includes(sign)) return "cardinal";
+  if (["Taurus", "Leo", "Scorpio", "Aquarius"].includes(sign)) return "fixed";
+  return "mutable";
 }
 
 export function computeNatalChart(birth: Birth): NatalChart {
@@ -638,3 +644,5 @@ export * from "./transit-nudge";
 
 export * from "./lifespan-transits";
 export * from "./memorial-timeline-interpretations";
+export * from "./family-compare";
+export * from "./family-compare-interpretations";

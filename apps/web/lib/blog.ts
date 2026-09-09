@@ -113,8 +113,19 @@ function toBlogPost(row: PostRow): BlogPost {
  * cookie-based `createSupabaseServerClient()` (lib/supabase/server.ts)
  * would tie this to a request scope it doesn't need. RLS decides what
  * this can see (published rows only), not which client constructor reads it.
+ *
+ * Returns null rather than a placeholder-URL client when Supabase env is
+ * unset — /blog, its category pages, and each post are statically
+ * prerendered (`getPublishedPost`/`getPublishedPosts` run at `next build`
+ * time, not just per-request), and `createClient("", ...)` throws
+ * synchronously ("supabaseUrl is required"), which aborts the whole build.
+ * The rest of the public site already tolerates missing Supabase config
+ * (ENGINEERING.md §6 / AGENTS.md); every caller below degrades to an empty
+ * list / not-found rather than crashing, matching the same
+ * `!publicEnv.supabaseUrl` guard every admin page in this app already uses.
  */
 function createPublicPostsClient() {
+  if (!publicEnv.supabaseUrl || !publicEnv.supabaseAnonKey) return null;
   return createClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
     auth: { persistSession: false }
   });
@@ -122,6 +133,7 @@ function createPublicPostsClient() {
 
 export async function getPublishedPosts(): Promise<BlogPost[]> {
   const supabase = createPublicPostsClient();
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from("posts")
     .select(POST_FIELDS)
@@ -133,6 +145,7 @@ export async function getPublishedPosts(): Promise<BlogPost[]> {
 
 export async function getPublishedPostsByCategory(category: BlogCategorySlug): Promise<BlogPost[]> {
   const supabase = createPublicPostsClient();
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from("posts")
     .select(POST_FIELDS)
@@ -145,6 +158,7 @@ export async function getPublishedPostsByCategory(category: BlogCategorySlug): P
 
 export async function getPublishedPost(slug: string): Promise<BlogPost | null> {
   const supabase = createPublicPostsClient();
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from("posts")
     .select(POST_FIELDS)

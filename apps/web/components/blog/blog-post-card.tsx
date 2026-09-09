@@ -10,6 +10,10 @@ export function BlogPostCard({ post }: { post: BlogPost }) {
     // can't verify this from `post.slug` alone, same escape marketing-nav.tsx
     // uses for its own config-driven hrefs.
     <Link href={`/${post.slug}` as never} className="blog-post-card">
+      {/* Graceful when hero_image_url is empty (e.g. the migrated synastry
+          post, until Carmen assigns one through /admin/posts) — no thumbnail
+          renders at all, never a broken-image box. */}
+      {post.heroImageUrl ? <img className="blog-post-card-thumb" src={post.heroImageUrl} alt="" /> : null}
       {category ? <span className="blog-post-card-tag">{category.label}</span> : null}
       <h2 className="blog-post-card-title">{post.title}</h2>
       <p className="blog-post-card-dek">{post.dek}</p>

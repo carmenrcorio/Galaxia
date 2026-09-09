@@ -33,6 +33,13 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const post = await getPublishedPost(slug);
   if (!post) return {};
 
+  // Prefer the post's own hero image for link previews once one is set
+  // (Part C); falls back to the generic site OG card exactly like before
+  // for a post that has none yet.
+  const ogImage = post.heroImageUrl
+    ? [{ url: post.heroImageUrl, alt: post.title }]
+    : [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }];
+
   return {
     title: post.title,
     description: post.dek,
@@ -42,13 +49,13 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       siteName: "Galaxia",
       type: "article",
       url: `/${post.slug}`,
-      images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+      images: ogImage
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.dek,
-      images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+      images: ogImage
     }
   };
 }
@@ -64,6 +71,11 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
     <>
       <BlogHeader />
       <main className="container article-page article-content">
+        {post.heroImageUrl ? (
+          <figure className="article-hero">
+            <img src={post.heroImageUrl} alt="" />
+          </figure>
+        ) : null}
         <h1 className="auth-title article-title">{post.title}</h1>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}

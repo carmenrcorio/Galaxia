@@ -3,6 +3,7 @@ import { CosmicBackground } from "../../components/cosmic-background";
 import { CloseSection } from "../../components/marketing/close-section";
 import { FeaturesSection } from "../../components/marketing/features-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { RelatedLinks } from "../../components/marketing/related-links";
 import { RemembranceSection } from "../../components/marketing/remembrance-section";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
@@ -63,6 +64,20 @@ export default function WhyGalaxiaPage() {
         <RemembranceSection />
         <WhyNotSection />
         <FeaturesSection />
+        <RelatedLinks
+          heading="Keep exploring"
+          links={[
+            { href: "/chart", label: "Try a free chart" },
+            { href: "/chart/compare", label: "Check your compatibility with someone" },
+            { href: "/generations", label: "See how it works across a whole family" },
+          ]}
+        />
+        <RelatedLinks
+          heading="From the blog"
+          links={[
+            { href: "/synastry-chart-meaning", label: "What synastry actually measures" },
+          ]}
+        />
         <CloseSection />
       </main>
       <SiteFooter />

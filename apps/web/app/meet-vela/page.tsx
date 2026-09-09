@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { CloseSection } from "../../components/marketing/close-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { RelatedLinks } from "../../components/marketing/related-links";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
 import { SiteFooter } from "../../components/marketing/site-footer";
@@ -47,6 +48,13 @@ export default function MeetVelaPage() {
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Meet Vela" lede={DESCRIPTION} />
         <VelaExampleSection />
+        <RelatedLinks
+          heading="Keep exploring"
+          links={[
+            { href: "/why-galaxia", label: "See how Galaxia computes your chart" },
+            { href: "/pricing", label: "See what's included in your plan" },
+          ]}
+        />
         <CloseSection />
       </main>
       <SiteFooter />

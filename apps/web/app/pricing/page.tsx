@@ -3,6 +3,7 @@ import { CosmicBackground } from "../../components/cosmic-background";
 import { CloseSection } from "../../components/marketing/close-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
 import { PricingSection } from "../../components/marketing/pricing-section";
+import { RelatedLinks } from "../../components/marketing/related-links";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
 import { SiteFooter } from "../../components/marketing/site-footer";
@@ -48,6 +49,13 @@ export default function PricingPage() {
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="One Honest Plan" lede={DESCRIPTION} />
         <PricingSection />
+        <RelatedLinks
+          heading="Keep exploring"
+          links={[
+            { href: "/why-galaxia", label: "See what you're getting" },
+            { href: "/meet-vela", label: "Meet Vela, your AI guide" },
+          ]}
+        />
         <CloseSection />
       </main>
       <SiteFooter />

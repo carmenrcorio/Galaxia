@@ -30,6 +30,7 @@ import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES } from "../../../components/char
 import { DynamicTableSection } from "../../../components/dynamic-table-section";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { GenerationalSection } from "../../../components/generational-section";
+import { RelatedLinks } from "../../../components/marketing/related-links";
 import { QuickChartShell } from "../../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../../components/share-link-button";
@@ -208,6 +209,15 @@ export default function QuickComparePage() {
       <p className="lede" style={{ marginBottom: 20 }}>
         Enter both birth dates for a real synastry reading — where you flow, where you catch, and what each of you needs. Nothing is saved unless you choose to.
       </p>
+
+      <RelatedLinks
+        bare
+        heading="Keep reading"
+        links={[
+          { href: "/synastry-chart-meaning", label: "What a synastry chart actually tells you" },
+          { href: "/generations", label: "See the generational layer behind your compatibility" },
+        ]}
+      />
 
       {!result ? (
         <>

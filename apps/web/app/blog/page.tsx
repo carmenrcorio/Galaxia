@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BlogHeader } from "../../components/blog/blog-header";
 import { BlogPostCard } from "../../components/blog/blog-post-card";
+import { BlogZodiacTrail } from "../../components/blog/blog-zodiac-trail";
+import { CosmicBackground } from "../../components/cosmic-background";
 import { SiteFooter } from "../../components/marketing/site-footer";
-import { BLOG_CATEGORIES, BLOG_POSTS } from "../../lib/blog";
+import { BLOG_CATEGORIES, getPublishedPosts } from "../../lib/blog";
 
 const TITLE = "Blog — Galaxia";
 const DESCRIPTION = "Guides for reading real birth charts — synastry, generations, and what astrology can and can't actually tell you.";
@@ -27,13 +29,21 @@ export const metadata: Metadata = {
   }
 };
 
-export default function BlogIndexPage() {
-  const posts = [...BLOG_POSTS].sort((a, b) => (a.date < b.date ? 1 : -1));
+// Re-read on every request rather than caching indefinitely — a post
+// published through /admin/posts should show up here promptly, not only
+// after the next deploy.
+export const revalidate = 60;
+
+export default async function BlogIndexPage() {
+  const posts = await getPublishedPosts();
 
   return (
-    <>
+    <div style={{ position: "relative", minHeight: "100vh" }}>
+      <CosmicBackground />
       <BlogHeader />
-      <main className="container blog-index-page">
+      <main className="container blog-index-page" style={{ position: "relative", zIndex: 2 }}>
+        <BlogZodiacTrail />
+        <div className="blog-index-glow" aria-hidden="true" />
         <span className="eyebrow">Galaxia blog</span>
         <h1 className="page-title">Guides for the people you love.</h1>
         <p className="lede">
@@ -56,6 +66,6 @@ export default function BlogIndexPage() {
         </div>
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

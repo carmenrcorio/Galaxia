@@ -47,3 +47,8 @@ export function statusPillInfo(status: string | null | undefined): PillInfo {
 export function compPillInfo(comped: boolean): PillInfo {
   return comped ? { label: "Yes", variant: "accent" } : { label: "No", variant: "muted" };
 }
+
+/** Maps `posts.status` to a pill for /admin/posts: published reads as success (teal, live), draft as warning (gold, not yet visible to readers). */
+export function postStatusPillInfo(status: "draft" | "published"): PillInfo {
+  return status === "published" ? { label: "Published", variant: "success" } : { label: "Draft", variant: "warning" };
+}

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { publicEnv } from "../lib/env";
-import { BLOG_CATEGORIES } from "../lib/blog";
+import { BLOG_CATEGORIES, getPublishedPosts } from "../lib/blog";
 
 // Same base URL as `metadataBase` in app/layout.tsx (see PR #153) — falls back
 // to the prod URL when NEXT_PUBLIC_SITE_URL is unset, so this never emits
@@ -17,13 +17,18 @@ const SITE_URL = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
  *   - /auth/callback (an OAuth redirect target, not a page)
  * `/pricing` is a homepage anchor (`#pricing`), not a route — see
  * components/marketing/site-footer.tsx — so it is covered by `/` below.
+ *
+ * Post URLs (`/${slug}`) are read from the `posts` table at request time
+ * (getPublishedPosts — published rows only, via lib/blog.ts) rather than
+ * hardcoded, now that they come from the admin editor (/admin/posts)
+ * instead of a static per-article route folder. A new post appears here
+ * the same request it becomes visible on /blog — no sitemap edit needed.
  */
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const routes = [
     "/",
     "/blog",
     ...BLOG_CATEGORIES.map((c) => `/blog/${c.slug}`),
-    "/synastry-chart-meaning",
     "/privacy",
     "/terms",
     "/download",
@@ -33,8 +38,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/chart/compare"
   ];
 
-  return routes.map((route) => ({
-    url: `${SITE_URL}${route}`,
-    lastModified: new Date()
-  }));
+  const posts = await getPublishedPosts();
+
+  return [
+    ...routes.map((route) => ({
+      url: `${SITE_URL}${route}`,
+      lastModified: new Date()
+    })),
+    ...posts.map((post) => ({
+      url: `${SITE_URL}/${post.slug}`,
+      lastModified: post.publishedAt ? new Date(post.publishedAt) : new Date()
+    }))
+  ];
 }

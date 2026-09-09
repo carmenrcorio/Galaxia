@@ -1433,6 +1433,47 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 }
 .blog-index-page .lede { margin-top: 8px; margin-bottom: 8px; }
 
+/* Decorative violet bloom behind the header block — same rgba stops as the
+   OG share card's BloomBackground (app/s/[token]/opengraph-image.tsx), so the
+   index reads as the same product as the chart/compare share cards rather
+   than a flat solid panel. z-index -1 keeps it behind the (unpositioned,
+   normal-flow) heading text within this stacking context — see CosmicBackground
+   for the equivalent page-level treatment this layers on top of. */
+.blog-index-glow {
+  position: absolute;
+  z-index: -1;
+  top: -80px;
+  left: 50%;
+  width: min(720px, 90vw);
+  height: 420px;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(74,58,134,.5) 0%, rgba(44,35,82,.26) 55%, rgba(9,8,15,0) 100%);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+/* Faded zodiac-glyph trail, reusing SIGN_GLYPH (lib/design.ts) — the same
+   unicode set the chart wheel renders on /chart and /compare
+   (components/chart-wheel.tsx) — as a low-contrast decorative strip above
+   the eyebrow, giving /blog the same astrological signature as the rest of
+   the product. Per-glyph opacity/offset is set inline by BlogZodiacTrail. */
+.blog-zodiac-trail {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 6px;
+  user-select: none;
+  pointer-events: none;
+}
+.blog-zodiac-trail-glyph {
+  font-size: clamp(1rem, 2.2vw, 1.5rem);
+  line-height: 1;
+  color: var(--mist);
+}
+@media (max-width: 480px) {
+  .blog-zodiac-trail-glyph:nth-child(even) { display: none; }
+}
+
 .blog-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1469,9 +1510,28 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   border-radius: 20px;
   border: 1px solid rgba(230,174,108,.13);
   background: linear-gradient(165deg, rgba(255,255,255,.035), rgba(255,255,255,.01));
-  transition: border-color .2s, transform .2s;
+  /* Same frosted-glass recipe as .glass-card, dialed down (18px vs 22px blur,
+     lighter shadow) so it still reads as a card floating over CosmicBackground
+     rather than a flat, opaque panel. */
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  box-shadow: 0 20px 50px -30px rgba(0,0,0,.6);
+  transition: border-color .2s, transform .2s, box-shadow .2s;
 }
-.blog-post-card:hover { border-color: rgba(230,174,108,.32); transform: translateY(-2px); }
+.blog-post-card:hover {
+  border-color: rgba(230,174,108,.32);
+  transform: translateY(-2px);
+  box-shadow: 0 24px 60px -28px rgba(0,0,0,.65), 0 0 24px -4px rgba(230,174,108,.22);
+}
+.blog-post-card-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 14px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(230,174,108,.13);
+}
 .blog-post-card-tag {
   display: inline-flex;
   font-size: .68rem;
@@ -1529,6 +1589,27 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   padding-bottom: clamp(56px, 8vh, 88px);
   max-width: 720px;
 }
+/* Post hero — full-width banner above the title (not the smaller inline
+   .article-figure treatment used for photos inside the body). Graceful when
+   a post has no hero_image_url yet (e.g. the migrated synastry post, until
+   Carmen assigns one through /admin/posts): app/[slug]/page.tsx simply
+   doesn't render this element at all rather than showing a broken-image box. */
+.article-hero {
+  margin: 0 0 32px;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(230,174,108,.16);
+  box-shadow: 0 30px 80px -34px rgba(0,0,0,.7);
+}
+.article-hero img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+@media (max-width: 480px) {
+  .article-hero { border-radius: 16px; margin-bottom: 22px; }
+}
 .article-title { margin-bottom: 18px; }
 .article-h2 {
   font-family: var(--serif);
@@ -1558,6 +1639,11 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   line-height: 1.7;
   max-width: var(--measure);
 }
+/* Markdown (react-markdown) always wraps blockquote text in its own <p> —
+   this app's hand-authored quote above set margin:0 on that inline; same
+   reset, applied generally, now that post bodies are rendered from markdown
+   (app/[slug]/page.tsx) rather than typed out per-article as JSX. */
+.article-blockquote p { margin: 0; }
 .article-figure {
   margin: 28px 0 32px;
 }

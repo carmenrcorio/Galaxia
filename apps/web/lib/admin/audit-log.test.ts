@@ -17,7 +17,7 @@ function fakeServiceRoleClient(insertResult: { error: { message: string } | null
 }
 
 describe("ADMIN_AUDIT_ACTIONS / isAdminAuditAction", () => {
-  it("is exactly the six Stage 2 + comp Phase 1 actions, no more, no less", () => {
+  it("is exactly the Stage 2 + comp Phase 1 + posts CMS actions, no more, no less", () => {
     expect([...ADMIN_AUDIT_ACTIONS].sort()).toEqual(
       [
         "close_support_request",
@@ -25,7 +25,10 @@ describe("ADMIN_AUDIT_ACTIONS / isAdminAuditAction", () => {
         "resend_confirmation_email",
         "resend_password_reset_email",
         "grant_comp",
-        "revoke_comp"
+        "revoke_comp",
+        "create_post",
+        "update_post",
+        "delete_post"
       ].sort()
     );
   });

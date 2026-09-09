@@ -25,7 +25,7 @@ export function HashRedirect() {
 
   useEffect(() => {
     const target = HASH_REDIRECTS[window.location.hash];
-    if (target) router.replace(target);
+    if (target) router.replace(target as never);
   }, [router]);
 
   return null;

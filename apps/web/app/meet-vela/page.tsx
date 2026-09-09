@@ -3,16 +3,24 @@ import { CosmicBackground } from "../../components/cosmic-background";
 import { CloseSection } from "../../components/marketing/close-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
+import { SectionPageIntro } from "../../components/marketing/section-page-intro";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { VelaExampleSection } from "../../components/marketing/vela-example-section";
+import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 
-const TITLE = "Meet Vela · Your AI Astrologer & Relationship Coach · Galaxia";
+const TITLE = "Meet Vela — Your AI Astrology Guide | Galaxia";
 const DESCRIPTION =
-  "Vela is your AI astrologer and relationship coach — an astrologer who already knows both charts, and a coach who gives you something to actually do. It never invents a placement, never takes a side, and never breaches your privacy.";
+  "Vela is Galaxia's AI guide. Ask about your chart, a relationship, or a transit — every answer is grounded in your real computed data, never generic.";
 
+/**
+ * Standalone page for the former homepage `#vela` anchor section (see
+ * <VelaExampleSection>). The homepage itself no longer renders this
+ * section in full — see the removal notes in app/page.tsx.
+ */
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
+  alternates: { canonical: "/meet-vela" },
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,
@@ -29,17 +37,15 @@ export const metadata: Metadata = {
   }
 };
 
-/**
- * Standalone "Meet Vela" page — was the homepage's #vela section. See the
- * removal notes in app/page.tsx.
- */
 export default function MeetVelaPage() {
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
+      <WebPageJsonLd path="/meet-vela" name={TITLE} description={DESCRIPTION} />
       <CosmicBackground />
       <RevealObserver />
       <MarketingNav />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
+        <SectionPageIntro title="Meet Vela" lede={DESCRIPTION} />
         <VelaExampleSection />
         <CloseSection />
       </main>

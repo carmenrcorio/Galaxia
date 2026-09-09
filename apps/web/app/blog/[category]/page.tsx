@@ -25,6 +25,9 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   return {
     title,
     description,
+    alternates: {
+      canonical: `/blog/${category.slug}`
+    },
     openGraph: { title, description, siteName: "Galaxia", type: "website", url: `/blog/${category.slug}` },
     twitter: { card: "summary_large_image", title, description }
   };

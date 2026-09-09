@@ -62,7 +62,7 @@ export function FeatureTeasers() {
       </div>
       <div className="teaser-grid">
         {TEASERS.map((t) => (
-          <Link key={t.href} href={t.href} className="teaser-card glass-card reveal">
+          <Link key={t.href} href={t.href as never} className="teaser-card glass-card reveal">
             <span className="eyebrow">{t.eyebrow}</span>
             <h3>{t.title}</h3>
             <p>{t.body}</p>

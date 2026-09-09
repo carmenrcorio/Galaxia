@@ -4,15 +4,24 @@ import { CloseSection } from "../../components/marketing/close-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
 import { PricingSection } from "../../components/marketing/pricing-section";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
+import { SectionPageIntro } from "../../components/marketing/section-page-intro";
 import { SiteFooter } from "../../components/marketing/site-footer";
+import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 
-const TITLE = "Pricing · One Honest Plan · Galaxia";
+const TITLE = "Pricing — Galaxia";
 const DESCRIPTION =
-  "One honest plan. No feature tiers, no per-person fees, no upsells. $9.99/month or $89/year (save 26%), with 14 days free.";
+  "One honest plan. See what Galaxia costs, what's included, and what you can do free — no hidden fees, no per-question charges, no subscription traps.";
 
+/**
+ * Standalone page for the former homepage `#pricing` anchor section (see
+ * <PricingSection>). The homepage itself no longer renders this section in
+ * full — see the removal notes in app/page.tsx — so this is the only
+ * indexable pricing URL for the product.
+ */
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
+  alternates: { canonical: "/pricing" },
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,
@@ -29,17 +38,15 @@ export const metadata: Metadata = {
   }
 };
 
-/**
- * Standalone "Pricing" page — was the homepage's #pricing section. See the
- * removal notes in app/page.tsx.
- */
 export default function PricingPage() {
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
+      <WebPageJsonLd path="/pricing" name={TITLE} description={DESCRIPTION} />
       <CosmicBackground />
       <RevealObserver />
       <MarketingNav />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
+        <SectionPageIntro title="One Honest Plan" lede={DESCRIPTION} />
         <PricingSection />
         <CloseSection />
       </main>

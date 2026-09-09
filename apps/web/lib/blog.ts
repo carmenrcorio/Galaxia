@@ -53,6 +53,8 @@ export interface BlogPost {
   byline: string;
   /** ISO timestamp. Null for a draft that has never been published. */
   publishedAt: string | null;
+  /** ISO timestamp — `updated_at`, maintained by Postgres on every row write. Used as the Article JSON-LD `dateModified`. */
+  updatedAt: string;
 }
 
 export const BLOG_CATEGORIES: BlogCategory[] = [
@@ -73,7 +75,7 @@ export function getCategory(slug: string): BlogCategory | undefined {
 }
 
 const POST_FIELDS =
-  "id, slug, title, dek, category, body, hero_image_url, status, read_time_minutes, byline, published_at";
+  "id, slug, title, dek, category, body, hero_image_url, status, read_time_minutes, byline, published_at, updated_at";
 
 interface PostRow {
   id: string;
@@ -87,6 +89,7 @@ interface PostRow {
   read_time_minutes: number;
   byline: string;
   published_at: string | null;
+  updated_at: string;
 }
 
 function toBlogPost(row: PostRow): BlogPost {
@@ -101,7 +104,8 @@ function toBlogPost(row: PostRow): BlogPost {
     status: row.status === "published" ? "published" : "draft",
     readTimeMinutes: row.read_time_minutes,
     byline: row.byline,
-    publishedAt: row.published_at
+    publishedAt: row.published_at,
+    updatedAt: row.updated_at
   };
 }
 

@@ -4,15 +4,23 @@ import { CloseSection } from "../../components/marketing/close-section";
 import { EdgeSection } from "../../components/marketing/edge-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
+import { SectionPageIntro } from "../../components/marketing/section-page-intro";
 import { SiteFooter } from "../../components/marketing/site-footer";
+import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 
-const TITLE = "Generations · The Sky Your Whole Family Was Born Under · Galaxia";
+const TITLE = "Generations — Your Family's Astrology, Together | Galaxia";
 const DESCRIPTION =
-  "The slow planets shape a whole generation, not just one person. See the sky your whole family or friend group shares — and where you quietly diverge — from just a birth year.";
+  "Parents, siblings, grandparents, the people you've lost — Galaxia maps your whole family's charts and shows how generational patterns actually work.";
 
+/**
+ * Standalone page for the former homepage `#generations` anchor section
+ * (see <EdgeSection>). The homepage itself no longer renders this section
+ * in full — see the removal notes in app/page.tsx.
+ */
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
+  alternates: { canonical: "/generations" },
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,
@@ -29,18 +37,15 @@ export const metadata: Metadata = {
   }
 };
 
-/**
- * Standalone "Generations" page — was the homepage's #generations section
- * (the generational layer, Galaxia's differentiator). See the removal notes
- * in app/page.tsx.
- */
 export default function GenerationsPage() {
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
+      <WebPageJsonLd path="/generations" name={TITLE} description={DESCRIPTION} />
       <CosmicBackground />
       <RevealObserver />
       <MarketingNav />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
+        <SectionPageIntro title="Generations" lede={DESCRIPTION} />
         <EdgeSection />
         <CloseSection />
       </main>

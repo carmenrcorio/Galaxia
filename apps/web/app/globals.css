@@ -1302,6 +1302,42 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 .site-footer-links a:hover { color: var(--cream); }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   STANDALONE SECTION PAGES (components/marketing/section-page-intro.tsx +
+   apps/web/app/why-galaxia, /generations, /meet-vela, /security, /pricing)
+   Each of these routes was formerly a same-page anchor section on `/`
+   (#shift, #generations, #vela, #trust, #pricing) and now also renders
+   standalone with a real <h1> + breadcrumb ahead of the reused section
+   component, inside the same `.marketing` wrapper/CosmicBackground/nav as
+   the homepage — so the visual design and component structure stay
+   identical, this block only adds the page-title chrome that a same-page
+   section never needed.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.section-page-intro {
+  padding-top: clamp(48px, 8vh, 96px);
+  padding-bottom: 8px;
+}
+.section-page-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .82rem;
+  color: var(--mist2);
+  margin-bottom: 26px;
+}
+.section-page-breadcrumb a { color: var(--mist); transition: color .2s; }
+.section-page-breadcrumb a:hover { color: var(--cream); }
+.section-page-breadcrumb span[aria-current] { color: var(--cream); }
+.section-page-h1 {
+  font-size: clamp(2.3rem, 5.5vw, 4.1rem);
+  line-height: 1.04;
+  letter-spacing: -.02em;
+}
+.section-page-lede {
+  margin-top: 18px;
+  font-weight: 300;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    LEGAL PAGES (apps/web/app/terms, apps/web/app/privacy)
    Renders the reviewed markdown in content/legal/*.md verbatim via
    components/legal-document.tsx — every class below is typography/layout

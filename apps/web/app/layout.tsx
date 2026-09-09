@@ -1,3 +1,5 @@
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import type { ReactNode } from "react";
@@ -64,7 +66,21 @@ const inter = Inter({
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${fraunces.variable}`}>{children}</body>
+      <body className={`${inter.variable} ${fraunces.variable}`}>
+        {children}
+        {/*
+         * Vercel Analytics / Speed Insights. Both are no-ops (script never
+         * fetched) when the app isn't served through a Vercel deployment,
+         * so this is safe in local/dev too. Per ENGINEERING.md §2 there is
+         * deliberately no root `vercel.json` — do not add one to configure
+         * this. Instead, in the Vercel dashboard for this project, turn on
+         * the "Analytics" and "Speed Insights" tabs (Project → Analytics /
+         * Speed Insights → Enable); without that toggle the client sends
+         * events but Vercel drops them.
+         */}
+        <Analytics />
+        <SpeedInsights />
+      </body>
     </html>
   );
 }

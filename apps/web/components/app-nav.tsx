@@ -33,6 +33,7 @@ import { useEffect, useState, type ReactNode } from "react";
 const LINKS: { href: string; label: string }[] = [
   { href: "/app", label: "Home" },
   { href: "/app/compare", label: "Compare" },
+  { href: "/app/family-compare", label: "Family" },
   { href: "/app/groups", label: "Groups" },
   { href: "/app/vela", label: "Vela" },
   { href: "/app/settings", label: "Settings" },

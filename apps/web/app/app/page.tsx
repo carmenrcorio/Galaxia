@@ -1338,11 +1338,18 @@ export default function AppHomePage() {
       <section className="glass-card fade-in" style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <p className="eyebrow" style={{ margin: 0 }}>Your constellation</p>
-          {!loading && people.length > 0 ? (
-            <Link href="/app/add-person" className="pill-link pill-link--gold" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
-              + Add person
-            </Link>
-          ) : null}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {!loading && people.length >= 3 ? (
+              <Link href="/app/family-compare" className="pill-link" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
+                Compare family
+              </Link>
+            ) : null}
+            {!loading && people.length > 0 ? (
+              <Link href="/app/add-person" className="pill-link pill-link--gold" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
+                + Add person
+              </Link>
+            ) : null}
+          </div>
         </div>
 
         {loading ? (

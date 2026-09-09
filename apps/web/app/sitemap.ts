@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { publicEnv } from "../lib/env";
+import { BLOG_CATEGORIES } from "../lib/blog";
 
 // Same base URL as `metadataBase` in app/layout.tsx (see PR #153) — falls back
 // to the prod URL when NEXT_PUBLIC_SITE_URL is unset, so this never emits
@@ -18,7 +19,19 @@ const SITE_URL = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
  * components/marketing/site-footer.tsx — so it is covered by `/` below.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const routes = ["/", "/synastry-chart-meaning", "/privacy", "/terms", "/download", "/login", "/signup", "/chart", "/chart/compare"];
+  const routes = [
+    "/",
+    "/blog",
+    ...BLOG_CATEGORIES.map((c) => `/blog/${c.slug}`),
+    "/synastry-chart-meaning",
+    "/privacy",
+    "/terms",
+    "/download",
+    "/login",
+    "/signup",
+    "/chart",
+    "/chart/compare"
+  ];
 
   return routes.map((route) => ({
     url: `${SITE_URL}${route}`,

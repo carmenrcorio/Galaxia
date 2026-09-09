@@ -1384,6 +1384,140 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   BLOG (components/blog/blog-header.tsx, app/blog/**, app/<slug>/page.tsx)
+   Shared chrome for every blog surface — the index, category pages, and each
+   individual post — so a reader always has a way back to /blog and to the
+   site itself (the gap this whole section exists to close). Reuses tokens/
+   .container/.eyebrow/.page-title/.lede/.glass-card rather than a parallel
+   design system.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.blog-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  background: linear-gradient(180deg, rgba(10,7,23,.82), rgba(10,7,23,.32));
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.blog-header-in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.blog-header-brand {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.3rem;
+  color: var(--gold);
+  letter-spacing: .01em;
+  flex-shrink: 0;
+}
+.blog-header-brand-italic { font-style: italic; font-weight: 500; }
+.blog-header-nav { display: flex; align-items: center; gap: 20px; }
+.blog-header-link {
+  color: var(--mist);
+  font-size: .86rem;
+  font-weight: 500;
+  transition: color .25s;
+}
+.blog-header-link:hover { color: var(--cream); }
+
+.blog-index-page {
+  padding-top: clamp(40px, 6vh, 64px);
+  padding-bottom: clamp(56px, 8vh, 88px);
+  max-width: 860px;
+}
+.blog-index-page .lede { margin-top: 8px; margin-bottom: 8px; }
+
+.blog-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 28px 0 8px;
+}
+.blog-tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 100px;
+  border: 1px solid rgba(183,154,216,.22);
+  color: var(--mist);
+  font-size: .82rem;
+  font-weight: 500;
+  transition: color .2s, border-color .2s, background .2s;
+}
+a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
+.blog-tab--active {
+  color: #1a1206;
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  font-weight: 600;
+}
+
+.blog-post-list {
+  display: grid;
+  gap: 18px;
+  margin-top: 28px;
+}
+.blog-post-card {
+  display: block;
+  padding: 26px 28px;
+  border-radius: 20px;
+  border: 1px solid rgba(230,174,108,.13);
+  background: linear-gradient(165deg, rgba(255,255,255,.035), rgba(255,255,255,.01));
+  transition: border-color .2s, transform .2s;
+}
+.blog-post-card:hover { border-color: rgba(230,174,108,.32); transform: translateY(-2px); }
+.blog-post-card-tag {
+  display: inline-flex;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+.blog-post-card-title {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(1.2rem, 2.4vw, 1.5rem);
+  color: var(--cream);
+  line-height: 1.28;
+  margin-bottom: 8px;
+}
+.blog-post-card-dek {
+  color: var(--mist);
+  font-weight: 300;
+  line-height: 1.6;
+  max-width: var(--measure);
+  margin-bottom: 12px;
+}
+.blog-post-card-meta {
+  color: var(--mist2);
+  font-size: .78rem;
+}
+
+.blog-category-empty {
+  color: var(--mist);
+  font-weight: 300;
+  line-height: 1.7;
+  max-width: var(--measure);
+  margin-top: 32px;
+  padding: 22px 24px;
+  border: 1px dashed rgba(183,154,216,.28);
+  border-radius: 18px;
+}
+
+@media (max-width: 480px) {
+  .blog-index-page { padding-top: clamp(28px, 5vh, 44px); }
+  .blog-post-card { padding: 20px 20px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    ARTICLE / BLOG PAGES (e.g. apps/web/app/synastry-chart-meaning)
    Hand-authored long-form content pages — same bare `<main className="container">`
    shell as /download and /privacy (no nav/footer chrome exists for standalone

@@ -61,6 +61,12 @@ export const metadata: Metadata = {
  * Conversion order: Hero (with Quick Chart mini-form + inline natal sign reveal)
  * → The Edge → The shift → Remembrance → why-not-a-horoscope-app → How it works
  * → Vela → Trust → Pricing → FAQ → Close.
+ *
+ * Sections also reused standalone: /why-galaxia, /generations, /meet-vela,
+ * /security, /pricing each carve one section out into its own indexable
+ * page (see components/marketing/webpage-json-ld.tsx for their WebPage
+ * schema) — this page's own SoftwareApplication schema below stays
+ * homepage-only, describing the product once rather than per page.
  */
 /**
  * Organization + SoftwareApplication JSON-LD — homepage only. Gives search

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BlogHeader } from "../../components/blog/blog-header";
 import { SiteFooter } from "../../components/marketing/site-footer";
+import { formatPostDate, getPost } from "../../lib/blog";
 
 const TITLE = "What a Synastry Chart Actually Tells You About Your Relationship";
 const DESCRIPTION =
@@ -34,6 +35,11 @@ export const metadata: Metadata = {
 };
 
 export default function SynastryChartMeaningPage() {
+  const post = getPost("synastry-chart-meaning");
+  if (!post) {
+    throw new Error("Missing blog metadata for synastry-chart-meaning — see lib/blog.ts");
+  }
+
   return (
     <>
       <BlogHeader />
@@ -41,6 +47,9 @@ export default function SynastryChartMeaningPage() {
         <h1 className="auth-title article-title">
           What a synastry chart actually tells you about your relationship
         </h1>
+        <p className="article-meta">
+          By {post.byline} · {formatPostDate(post.date)} · {post.readTimeMinutes} min read
+        </p>
 
         <p className="article-p">
           Most writing about synastry is aimed at someone standing at the beginning of something, trying to decide
@@ -90,12 +99,19 @@ export default function SynastryChartMeaningPage() {
           difficult aspects are the diagnosis and the easy ones are the filler. It is backwards, and it costs people
           years.
         </p>
+        <p className="article-p">
+          Here is what that looks like once it stops being abstract — a real flows-and-catches reading, pulled
+          straight from inside the app for an actual pair:
+        </p>
 
         <figure className="article-figure">
           <img
             src="/synastry-flows-catches.png"
             alt="Galaxia's flows and catches card showing a relational dynamic with Nurture it and Ease it guidance"
           />
+          <figcaption className="article-caption">
+            This is what a flows/catches reading looks like inside Galaxia.
+          </figcaption>
         </figure>
 
         <h2 className="article-h2">Why the easy parts are the dangerous ones</h2>

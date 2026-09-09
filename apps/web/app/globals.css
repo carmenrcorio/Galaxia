@@ -1529,7 +1529,12 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   padding-bottom: clamp(56px, 8vh, 88px);
   max-width: 720px;
 }
-.article-title { margin-bottom: 18px; }
+.article-title { margin-bottom: 10px; }
+.article-meta {
+  color: var(--mist2);
+  font-size: .82rem;
+  margin-bottom: 26px;
+}
 .article-h2 {
   font-family: var(--serif);
   font-weight: 500;
@@ -1568,6 +1573,14 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   border-radius: 18px;
   border: 1px solid rgba(230,174,108,.13);
   box-shadow: 0 30px 80px -34px rgba(0,0,0,.7);
+}
+.article-caption {
+  max-width: 480px;
+  margin-top: 10px;
+  color: var(--mist2);
+  font-size: .8rem;
+  font-style: italic;
+  line-height: 1.5;
 }
 .article-cta {
   margin-top: 36px;

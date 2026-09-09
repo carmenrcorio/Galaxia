@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { JsonLd, type JsonLdObject } from "../components/seo/json-ld";
 import { CosmicBackground } from "../components/cosmic-background";
 import { CloseSection } from "../components/marketing/close-section";
 import { EdgeSection } from "../components/marketing/edge-section";
@@ -58,9 +59,44 @@ export const metadata: Metadata = {
  * → The Edge → The shift → Remembrance → why-not-a-horoscope-app → How it works
  * → Vela → Trust → Pricing → FAQ → Close.
  */
+/**
+ * Organization + SoftwareApplication JSON-LD — homepage only. Gives search
+ * engines a structured description of what Galaxia is and who publishes it,
+ * separate from the human-facing copy above. `HomePage` is a plain server
+ * component (no "use client"), so this renders straight into the initial
+ * server HTML rather than being injected after hydration.
+ */
+const SOFTWARE_APPLICATION_JSON_LD: JsonLdObject = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Galaxia",
+  applicationCategory: "LifestyleApplication",
+  operatingSystem: "iOS, Android, Web",
+  url: "https://galaxiamea.com",
+  description:
+    "Relationship intelligence powered by computed astrology. Real natal charts, synastry readings, and an AI guide — for you and the people in your life.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+    description: "Free trial, no credit card required"
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "Galaxia",
+    url: "https://galaxiamea.com",
+    contactPoint: {
+      "@type": "ContactPoint",
+      email: "help@galaxiamea.com",
+      contactType: "customer support"
+    }
+  }
+};
+
 export default function HomePage() {
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
+      <JsonLd data={SOFTWARE_APPLICATION_JSON_LD} />
       <CosmicBackground />
       <RevealObserver />
       <MarketingNav />

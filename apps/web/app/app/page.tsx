@@ -65,6 +65,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { InitialAvatar } from "../../components/initial-avatar";
+import { RelationalTransitFeed } from "../../components/relational-transit-feed";
 import { ThreadMenu } from "../../components/thread-menu";
 import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
@@ -177,6 +178,7 @@ export default function AppHomePage() {
   const [homeStatus, setHomeStatus]             = useState<string | null>(null);
   const [loading, setLoading]                   = useState(true);
   const [hoverPerson, setHoverPerson]           = useState<PersonRow | null>(null);
+  const [ownerId, setOwnerId]                   = useState<string | null>(null);
 
   /* Nodes shimmer when that person has a real eligible nudge today — derived
      from the durable daily record, never a shared flag. */
@@ -188,6 +190,7 @@ export default function AppHomePage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
+      setOwnerId(user.id);
       loadHome(user.id);
     });
   }, [supabase]);
@@ -1501,6 +1504,12 @@ export default function AppHomePage() {
           </div>
         </section>
       ) : null}
+
+      {/* ── This Week (Generations Feature 3: relational transit alerts) ──
+         Reads relational_transits rows the daily cron job already computed;
+         this component does its own load/filter/render, home just mounts it
+         once an owner is known. */}
+      {!loading && ownerId ? <RelationalTransitFeed ownerId={ownerId} /> : null}
 
       {/* ── Recent Vela threads ── */}
       {!loading && threadChips.length > 0 ? (

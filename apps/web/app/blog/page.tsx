@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BlogHeader } from "../../components/blog/blog-header";
 import { BlogPostCard } from "../../components/blog/blog-post-card";
 import { SiteFooter } from "../../components/marketing/site-footer";
-import { BLOG_CATEGORIES, BLOG_POSTS } from "../../lib/blog";
+import { BLOG_CATEGORIES, getPublishedPosts } from "../../lib/blog";
 
 const TITLE = "Blog — Galaxia";
 const DESCRIPTION = "Guides for reading real birth charts — synastry, generations, and what astrology can and can't actually tell you.";
@@ -27,8 +27,13 @@ export const metadata: Metadata = {
   }
 };
 
-export default function BlogIndexPage() {
-  const posts = [...BLOG_POSTS].sort((a, b) => (a.date < b.date ? 1 : -1));
+// Re-read on every request rather than caching indefinitely — a post
+// published through /admin/posts should show up here promptly, not only
+// after the next deploy.
+export const revalidate = 60;
+
+export default async function BlogIndexPage() {
+  const posts = await getPublishedPosts();
 
   return (
     <>

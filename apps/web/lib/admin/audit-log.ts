@@ -19,7 +19,10 @@ export const ADMIN_AUDIT_ACTIONS = [
   "close_support_request",
   "reopen_support_request",
   "grant_comp",
-  "revoke_comp"
+  "revoke_comp",
+  "create_post",
+  "update_post",
+  "delete_post"
 ] as const;
 
 export type AdminAuditAction = (typeof ADMIN_AUDIT_ACTIONS)[number];
@@ -34,7 +37,10 @@ const ADMIN_AUDIT_ACTION_LABELS: Record<AdminAuditAction, string> = {
   close_support_request: "Closed support request",
   reopen_support_request: "Reopened support request",
   grant_comp: "Granted comp access",
-  revoke_comp: "Revoked comp access"
+  revoke_comp: "Revoked comp access",
+  create_post: "Created blog post",
+  update_post: "Updated blog post",
+  delete_post: "Deleted blog post"
 };
 
 /**

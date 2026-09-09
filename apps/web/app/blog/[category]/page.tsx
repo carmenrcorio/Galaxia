@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { BlogHeader } from "../../../components/blog/blog-header";
 import { BlogPostCard } from "../../../components/blog/blog-post-card";
 import { SiteFooter } from "../../../components/marketing/site-footer";
-import { BLOG_CATEGORIES, getCategory, getPostsByCategory } from "../../../lib/blog";
+import { BLOG_CATEGORIES, getCategory, getPublishedPostsByCategory, type BlogCategorySlug } from "../../../lib/blog";
 
 type Params = { category: string };
 
@@ -28,12 +28,14 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   };
 }
 
+export const revalidate = 60;
+
 export default async function BlogCategoryPage({ params }: { params: Promise<Params> }) {
   const { category: slug } = await params;
   const category = getCategory(slug);
   if (!category) notFound();
 
-  const posts = getPostsByCategory(category.slug).sort((a, b) => (a.date < b.date ? 1 : -1));
+  const posts = await getPublishedPostsByCategory(category.slug as BlogCategorySlug);
 
   return (
     <>

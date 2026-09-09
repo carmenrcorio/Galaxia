@@ -1558,6 +1558,11 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   line-height: 1.7;
   max-width: var(--measure);
 }
+/* Markdown (react-markdown) always wraps blockquote text in its own <p> —
+   this app's hand-authored quote above set margin:0 on that inline; same
+   reset, applied generally, now that post bodies are rendered from markdown
+   (app/[slug]/page.tsx) rather than typed out per-article as JSX. */
+.article-blockquote p { margin: 0; }
 .article-figure {
   margin: 28px 0 32px;
 }

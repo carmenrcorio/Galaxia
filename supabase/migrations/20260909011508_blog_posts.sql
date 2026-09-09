@@ -1,0 +1,7 @@
+-- No-op: an empty placeholder was applied to the remote project under this
+-- version/name before the real schema landed in the next migration
+-- (20260909011620_blog_posts_schema_and_content.sql). Recorded here,
+-- unedited, so this file matches what actually ran remotely — per
+-- ENGINEERING.md §2, an applied migration is never edited after the fact,
+-- even to fix an authoring mistake. The real posts table, RLS, storage
+-- bucket, and seed content are entirely in the next migration.

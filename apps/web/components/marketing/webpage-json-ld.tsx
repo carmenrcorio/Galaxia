@@ -1,3 +1,4 @@
+import { JsonLd, type JsonLdObject } from "../seo/json-ld";
 import { publicEnv } from "../../lib/env";
 
 // Same prod fallback as app/layout.tsx's `metadataBase` / app/sitemap.ts's
@@ -13,13 +14,16 @@ interface Props {
 }
 
 /**
- * `WebPage` + `BreadcrumbList` JSON-LD for a standalone marketing page.
- * The site's `SoftwareApplication` schema stays on `/` only (app/page.tsx)
- * — it describes the product once, not once per page.
+ * `WebPage` + `BreadcrumbList` JSON-LD for a standalone marketing page,
+ * rendered via the shared <JsonLd> injector (components/seo/json-ld.tsx —
+ * also used for the homepage's `SoftwareApplication` schema and each blog
+ * post's `Article` schema). The site's `SoftwareApplication` schema stays
+ * on `/` only (app/page.tsx) — it describes the product once, not once per
+ * page.
  */
 export function WebPageJsonLd({ path, name, description }: Props) {
   const url = `${SITE_URL}${path}`;
-  const jsonLd = {
+  const jsonLd: JsonLdObject = {
     "@context": "https://schema.org",
     "@type": "WebPage",
     name,
@@ -35,6 +39,5 @@ export function WebPageJsonLd({ path, name, description }: Props) {
     }
   };
 
-  // eslint-disable-next-line react/no-danger -- trusted, statically-built JSON, not user input
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />;
+  return <JsonLd data={jsonLd} />;
 }

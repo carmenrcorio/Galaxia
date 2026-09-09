@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { JsonLd, type JsonLdObject } from "../components/seo/json-ld";
 import { CosmicBackground } from "../components/cosmic-background";
 import { CloseSection } from "../components/marketing/close-section";
 import { EdgeSection } from "../components/marketing/edge-section";
@@ -14,36 +15,10 @@ import { TrustSection } from "../components/marketing/trust-section";
 import { VelaExampleSection } from "../components/marketing/vela-example-section";
 import { WhyNotSection } from "../components/marketing/why-not-section";
 import { WhySection } from "../components/marketing/why-section";
-import { publicEnv } from "../lib/env";
 
 const TITLE = "Galaxia — Astrology for the People You Love";
 const DESCRIPTION =
   "Galaxia reads the real birth charts of your inner circle — partner, kids, parents, siblings, friends — so you can show up for each bond with more intention. Not your horoscope.";
-
-// Same prod fallback as `metadataBase` in app/layout.tsx / `SITE_URL` in
-// app/sitemap.ts — the `SoftwareApplication` JSON-LD below needs an
-// absolute `url`, which `metadataBase` doesn't help with (that only resolves
-// relative Metadata API fields like `openGraph.images`, not raw JSON-LD).
-const SITE_URL = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
-
-// The product-level structured data — describes Galaxia itself, once, so it
-// lives on `/` only. Every standalone page split out of a homepage section
-// (see app/why-galaxia, /generations, /meet-vela, /security, /pricing and
-// components/marketing/webpage-json-ld.tsx) gets its own `WebPage` schema
-// instead of repeating this.
-const SOFTWARE_APPLICATION_JSON_LD = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "Galaxia",
-  applicationCategory: "LifestyleApplication",
-  operatingSystem: "Web, iOS, Android",
-  description: DESCRIPTION,
-  url: SITE_URL,
-  offers: [
-    { "@type": "Offer", price: "9.99", priceCurrency: "USD", name: "Monthly" },
-    { "@type": "Offer", price: "89", priceCurrency: "USD", name: "Yearly" }
-  ]
-};
 
 /**
  * Page-specific metadata for `/` — the link every launch post (Reddit, etc.)
@@ -57,6 +32,9 @@ const SOFTWARE_APPLICATION_JSON_LD = {
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
+  alternates: {
+    canonical: "/"
+  },
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,
@@ -83,12 +61,51 @@ export const metadata: Metadata = {
  * Conversion order: Hero (with Quick Chart mini-form + inline natal sign reveal)
  * → The Edge → The shift → Remembrance → why-not-a-horoscope-app → How it works
  * → Vela → Trust → Pricing → FAQ → Close.
+ *
+ * Sections also reused standalone: /why-galaxia, /generations, /meet-vela,
+ * /security, /pricing each carve one section out into its own indexable
+ * page (see components/marketing/webpage-json-ld.tsx for their WebPage
+ * schema) — this page's own SoftwareApplication schema below stays
+ * homepage-only, describing the product once rather than per page.
  */
+/**
+ * Organization + SoftwareApplication JSON-LD — homepage only. Gives search
+ * engines a structured description of what Galaxia is and who publishes it,
+ * separate from the human-facing copy above. `HomePage` is a plain server
+ * component (no "use client"), so this renders straight into the initial
+ * server HTML rather than being injected after hydration.
+ */
+const SOFTWARE_APPLICATION_JSON_LD: JsonLdObject = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Galaxia",
+  applicationCategory: "LifestyleApplication",
+  operatingSystem: "iOS, Android, Web",
+  url: "https://galaxiamea.com",
+  description:
+    "Relationship intelligence powered by computed astrology. Real natal charts, synastry readings, and an AI guide — for you and the people in your life.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+    description: "Free trial, no credit card required"
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "Galaxia",
+    url: "https://galaxiamea.com",
+    contactPoint: {
+      "@type": "ContactPoint",
+      email: "help@galaxiamea.com",
+      contactType: "customer support"
+    }
+  }
+};
+
 export default function HomePage() {
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
-      {/* eslint-disable-next-line react/no-danger -- trusted, statically-built JSON, not user input */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SOFTWARE_APPLICATION_JSON_LD) }} />
+      <JsonLd data={SOFTWARE_APPLICATION_JSON_LD} />
       <CosmicBackground />
       <RevealObserver />
       <MarketingNav />

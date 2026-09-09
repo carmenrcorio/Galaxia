@@ -13,6 +13,9 @@ const DESCRIPTION = "Guides for reading real birth charts — synastry, generati
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
+  alternates: {
+    canonical: "/blog"
+  },
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,

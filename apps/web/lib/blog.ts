@@ -24,6 +24,11 @@ export interface BlogCategory {
   emptyNote: string;
 }
 
+export interface BlogPostSection {
+  id: string;
+  label: string;
+}
+
 export interface BlogPost {
   slug: string;
   title: string;
@@ -33,7 +38,12 @@ export interface BlogPost {
   category: BlogCategorySlug;
   readTimeMinutes: number;
   byline: string;
+  /** H2 sections (id must match the heading's actual `id` in the post JSX), for the table of contents. */
+  sections: BlogPostSection[];
 }
+
+/** Posts with at least this many sections get an anchored table of contents. */
+export const TOC_SECTION_THRESHOLD = 4;
 
 export const BLOG_CATEGORIES: BlogCategory[] = [
   {
@@ -57,7 +67,15 @@ export const BLOG_POSTS: BlogPost[] = [
     date: "2026-09-08",
     category: "guides",
     readTimeMinutes: 6,
-    byline: "The Galaxia Team"
+    byline: "The Galaxia Team",
+    sections: [
+      { id: "what-it-is", label: "What a synastry chart is, in two minutes" },
+      { id: "flows-and-catches", label: "The only distinction that matters: flows and catches" },
+      { id: "why-ease-is-dangerous", label: "Why the easy parts are the dangerous ones" },
+      { id: "reading-the-catches", label: "Reading the catches without building a case" },
+      { id: "what-a-chart-cannot-tell-you", label: "What a chart cannot tell you" },
+      { id: "reading-yours", label: "Reading yours" }
+    ]
   }
 ];
 

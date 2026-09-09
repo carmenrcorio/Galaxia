@@ -42,6 +42,7 @@ import {
   hasPassed,
   isMinorForSafety,
   shouldShowLiveTransits,
+  shouldShowMemorialTimeline,
 } from "@galaxia/core";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -51,6 +52,7 @@ import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { InitialAvatar } from "../../../../components/initial-avatar";
 import { ChartSectionNav } from "../../../../components/chart-section-nav";
+import { MemorialTimeline } from "../../../../components/memorial-timeline";
 import { HonorDeclarationBox, HONOR_LIGHT_ANCHOR_ID } from "../../../../components/honor-declaration";
 import { RemembranceSpace } from "../../../../components/remembrance-space";
 import { Spinner } from "../../../../components/spinner";
@@ -67,6 +69,8 @@ interface PersonRow {
   birth_place?: string | null; birth_lat?: number | null; birth_lng?: number | null;
   tz_offset_min?: number | null;
   passed_at?: string | null;
+  /** Owner-recorded actual date of death (distinct from passed_at). NULL = unknown. */
+  died_on?: string | null;
   /** Curated palette hex; null = element-derived node color. */
   star_color?: string | null;
   /** Assigned memorial pattern id; null = ancient light when passed. */
@@ -464,7 +468,7 @@ export default function PersonProfilePage() {
       : personId;
     if (!actualId) { setStatus("No self profile yet."); setLoading(false); return; }
     const [{ data: pData, error: pErr }, { data: cData, error: cErr }] = await Promise.all([
-      supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, star_color, memorial_constellation").eq("id", actualId).single(),
+      supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, died_on, star_color, memorial_constellation").eq("id", actualId).single(),
       supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualId).single()
     ]);
     if (pErr || !pData) { setStatus(pErr?.message ?? "Unable to load person."); setLoading(false); return; }
@@ -727,11 +731,13 @@ export default function PersonProfilePage() {
   const showHousesSection = hasHouses || person.birth_precision !== "year";
   const showPastConversations = archivedThreads.length > 0;
   const showRemembrance = personPassed && !person.is_self && Boolean(userId);
+  const showTimeline = shouldShowMemorialTimeline(person, chart);
   // Remembrance keeps a single Vela entry in RemembranceSpace — hide the
   // "Vela on {name}" module (and its nav chip) unless pinned insights exist.
   const showVelaOnThem = !showRemembrance || velaPins.length > 0;
   const navForPage = buildPersonPageNavSections({
     hasRemembrance: showRemembrance,
+    hasTimeline: showTimeline,
     hasActiveToday: showActiveToday,
     hasVelaOnThem: showVelaOnThem,
     hasWheel: true,
@@ -1265,6 +1271,16 @@ export default function PersonProfilePage() {
           );
         })}
       </section>
+
+      {/* ── Memorial Timeline (Generations Feature 1) — passed, non-self, real chart only ── */}
+      {showTimeline ? (
+        <MemorialTimeline
+          person={person}
+          userId={userId!}
+          chart={chart}
+          onDiedOnSaved={() => loadProfile(userId!)}
+        />
+      ) : null}
 
       {/* ── The record (B1): notes, tending, Vela pins, saved readings, conversations ── */}
       <section id="notes" className="glass-card fade-in fade-in-delay-3" style={{ scrollMarginTop: 92 }}>

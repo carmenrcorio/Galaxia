@@ -21,6 +21,17 @@ interface GroupLite {
   kind: string;
 }
 
+/** Generations Feature 3 preference — mirrors the `profiles.relational_transit_alerts` check constraint. */
+type RelationalTransitAlertsPref = "all" | "major_only" | "off";
+const RELATIONAL_TRANSIT_ALERTS_OPTIONS: { value: RelationalTransitAlertsPref; label: string; description: string }[] = [
+  { value: "all", label: "All transits", description: "Jupiter, Saturn, Uranus, Neptune, and Pluto — every relational transit we find." },
+  { value: "major_only", label: "Major only", description: "Just Saturn, Uranus, and Pluto — skip the lighter Jupiter and Neptune windows." },
+  { value: "off", label: "Off", description: "No relational transit alerts, in the app or by push." },
+];
+function isRelationalTransitAlertsPref(value: unknown): value is RelationalTransitAlertsPref {
+  return value === "all" || value === "major_only" || value === "off";
+}
+
 function formatDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -56,6 +67,10 @@ export default function SettingsPage() {
   const [savingConsent, setSavingConsent] = useState(false);
   const [consentStatus, setConsentStatus] = useState<string | null>(null);
 
+  const [relationalTransitAlerts, setRelationalTransitAlerts] = useState<RelationalTransitAlertsPref>("all");
+  const [savingRelationalPref, setSavingRelationalPref] = useState(false);
+  const [relationalPrefStatus, setRelationalPrefStatus] = useState<string | null>(null);
+
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [supportSubject, setSupportSubject] = useState("");
   const [supportBody, setSupportBody] = useState("");
@@ -79,7 +94,7 @@ export default function SettingsPage() {
       const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("house_system, subscription_status, trial_ends_at, current_period_end, cancel_at_period_end, comped, daily_nudge_emails_enabled")
+          .select("house_system, subscription_status, trial_ends_at, current_period_end, cancel_at_period_end, comped, daily_nudge_emails_enabled, relational_transit_alerts")
           .eq("id", user.id)
           .maybeSingle(),
         supabase.from("people").select("id, display_name, relation").eq("owner_id", user.id).order("display_name", { ascending: true }),
@@ -89,6 +104,9 @@ export default function SettingsPage() {
       // Column default is true (opt-out, default-on); null only precedes the
       // migration landing on a not-yet-refreshed row, so treat null as on too.
       setDailyNudgeEmailsEnabled(profile?.daily_nudge_emails_enabled !== false);
+      // Column default is 'all'; treat any unrecognized/missing value as
+      // 'all' too rather than fabricating a different preference.
+      setRelationalTransitAlerts(isRelationalTransitAlertsPref(profile?.relational_transit_alerts) ? profile.relational_transit_alerts : "all");
       setSubscriptionStatus((profile?.subscription_status as string | null) ?? null);
       setTrialEndsAt((profile?.trial_ends_at as string | null) ?? null);
       setCurrentPeriodEnd((profile?.current_period_end as string | null) ?? null);
@@ -124,6 +142,17 @@ export default function SettingsPage() {
     setSavingConsent(false);
     if (error) { setDailyNudgeEmailsEnabled(previous); setConsentStatus(error.message); return; }
     setConsentStatus(next ? "Saved. Daily sky emails are on." : "Saved. Daily sky emails are off.");
+  };
+
+  const changeRelationalTransitAlerts = async (next: RelationalTransitAlertsPref) => {
+    if (!userId || next === relationalTransitAlerts) return;
+    setSavingRelationalPref(true); setRelationalPrefStatus(null);
+    const previous = relationalTransitAlerts;
+    setRelationalTransitAlerts(next);
+    const { error } = await supabase.from("profiles").update({ relational_transit_alerts: next }).eq("id", userId);
+    setSavingRelationalPref(false);
+    if (error) { setRelationalTransitAlerts(previous); setRelationalPrefStatus(error.message); return; }
+    setRelationalPrefStatus("Saved.");
   };
 
   const submitSupportRequest = async () => {
@@ -303,6 +332,40 @@ export default function SettingsPage() {
           {savingConsent ? <Spinner size={11} /> : null}
         </div>
         {consentStatus ? <p className={consentStatus.startsWith("Saved") ? "success" : "error"} style={{ fontSize: ".78rem", marginTop: 8 }}>{consentStatus}</p> : null}
+      </section>
+
+      <section className="glass-card">
+        <h2 className="card-title">Generational transit alerts</h2>
+        <p className="muted" style={{ marginBottom: 12 }}>
+          "This week" alerts when a slow-moving transit is hitting two or more people in your constellation at once — the sky's dynamic between you, not just what one of you is feeling alone.
+        </p>
+        <div style={{ display: "grid", gap: 8 }}>
+          {RELATIONAL_TRANSIT_ALERTS_OPTIONS.map((option) => {
+            const active = relationalTransitAlerts === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => void changeRelationalTransitAlerts(option.value)}
+                disabled={savingRelationalPref}
+                aria-pressed={active}
+                style={{
+                  textAlign: "left", cursor: "pointer", borderRadius: 12, padding: "10px 14px",
+                  background: active ? "rgba(230,174,108,.09)" : "rgba(255,255,255,.02)",
+                  border: active ? "1px solid rgba(230,174,108,.45)" : "1px solid rgba(183,154,216,.14)"
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: active ? "var(--gold)" : "var(--cream)", fontWeight: 600, fontSize: ".9rem" }}>{option.label}</span>
+                  {active ? <span style={{ color: "var(--gold)", fontSize: ".72rem" }}>✓ in use</span> : null}
+                  {active && savingRelationalPref ? <Spinner size={11} /> : null}
+                </span>
+                <span className="muted" style={{ display: "block", fontSize: ".78rem", marginTop: 2 }}>{option.description}</span>
+              </button>
+            );
+          })}
+        </div>
+        {relationalPrefStatus ? <p className={relationalPrefStatus.startsWith("Saved") ? "success" : "error"} style={{ fontSize: ".78rem", marginTop: 8 }}>{relationalPrefStatus}</p> : null}
       </section>
 
       <section className="glass-card">

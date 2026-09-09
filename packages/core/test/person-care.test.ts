@@ -52,6 +52,7 @@ describe("buildPersonPageNavSections — nav syncs with rendered sections", () =
   it("omits Active today for a passed person (no dead transit anchor)", () => {
     const nav = buildPersonPageNavSections({
       hasRemembrance: true,
+      hasTimeline: true,
       hasActiveToday: false,
       hasVelaOnThem: true,
       hasWheel: true,
@@ -67,12 +68,14 @@ describe("buildPersonPageNavSections — nav syncs with rendered sections", () =
     expect(nav.map((s) => s.id)).not.toContain("active-today");
     expect(nav.map((s) => s.id)).toContain("honor-light");
     expect(nav.map((s) => s.id)).toContain("remembrance");
+    expect(nav.map((s) => s.id)).toContain("memorial-timeline");
     expect(nav[nav.length - 1]?.id).toBe("honor-light");
   });
 
   it("includes Active today only when that section actually renders", () => {
     const withTransit = buildPersonPageNavSections({
       hasRemembrance: false,
+      hasTimeline: false,
       hasActiveToday: true,
       hasVelaOnThem: true,
       hasWheel: true,
@@ -89,11 +92,36 @@ describe("buildPersonPageNavSections — nav syncs with rendered sections", () =
     expect(withTransit.map((s) => s.id)).not.toContain("honor-light");
     expect(withTransit.map((s) => s.id)).not.toContain("aspects");
     expect(withTransit.map((s) => s.id)).not.toContain("houses");
+    expect(withTransit.map((s) => s.id)).not.toContain("memorial-timeline");
+  });
+
+  it("includes Timeline only for a passed profile with a real chart (never alongside Active today)", () => {
+    const withTimeline = buildPersonPageNavSections({
+      hasRemembrance: true,
+      hasTimeline: true,
+      hasActiveToday: false,
+      hasVelaOnThem: true,
+      hasWheel: true,
+      hasBigThree: true,
+      hasPlacements: true,
+      hasAspects: true,
+      hasHouses: true,
+      hasGenerational: true,
+      hasRecord: true,
+      hasPastConversations: false,
+      hasHonorBox: true,
+    });
+    expect(withTimeline.map((s) => s.id)).toContain("memorial-timeline");
+    // Timeline sits right after Remembrance in the nav order.
+    const remIdx = withTimeline.findIndex((s) => s.id === "remembrance");
+    const timelineIdx = withTimeline.findIndex((s) => s.id === "memorial-timeline");
+    expect(timelineIdx).toBe(remIdx + 1);
   });
 
   it("produces zero dead links — every id corresponds to a known section anchor", () => {
     const known = new Set([
       "remembrance",
+      "memorial-timeline",
       "active-today",
       "vela-on-them",
       "chart-wheel",
@@ -108,6 +136,7 @@ describe("buildPersonPageNavSections — nav syncs with rendered sections", () =
     ]);
     const nav = buildPersonPageNavSections({
       hasRemembrance: true,
+      hasTimeline: true,
       hasActiveToday: true,
       hasVelaOnThem: true,
       hasWheel: true,
@@ -123,7 +152,7 @@ describe("buildPersonPageNavSections — nav syncs with rendered sections", () =
     for (const s of nav) {
       expect(known.has(s.id)).toBe(true);
     }
-    expect(nav).toHaveLength(12);
+    expect(nav).toHaveLength(13);
   });
 });
 

@@ -33,6 +33,7 @@ export type PersonNavSection = { id: string; label: string };
  */
 export function buildPersonPageNavSections(input: {
   hasRemembrance: boolean;
+  hasTimeline: boolean;
   hasActiveToday: boolean;
   hasVelaOnThem: boolean;
   hasWheel: boolean;
@@ -47,6 +48,7 @@ export function buildPersonPageNavSections(input: {
 }): PersonNavSection[] {
   const sections: PersonNavSection[] = [];
   if (input.hasRemembrance) sections.push({ id: "remembrance", label: "Remembrance" });
+  if (input.hasTimeline) sections.push({ id: "memorial-timeline", label: "Timeline" });
   if (input.hasActiveToday) sections.push({ id: "active-today", label: "Active today" });
   if (input.hasVelaOnThem) sections.push({ id: "vela-on-them", label: "Vela" });
   if (input.hasWheel) sections.push({ id: "chart-wheel", label: "Wheel" });

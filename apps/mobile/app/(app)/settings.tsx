@@ -1,6 +1,6 @@
 import { tokens } from "@galaxia/ui";
 import { useEffect, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { supabase } from "../../src/lib/supabase";
 import { useAuth } from "../../src/providers/auth-provider";
 import { useEntitlement } from "../../src/providers/entitlement-provider";
@@ -15,6 +15,17 @@ interface GroupLite {
   id: string;
   name: string;
   kind: string;
+}
+
+/** Generations Feature 3 preference — mirrors the `profiles.relational_transit_alerts` check constraint (web parity: apps/web/app/app/settings/page.tsx). */
+type RelationalTransitAlertsPref = "all" | "major_only" | "off";
+const RELATIONAL_TRANSIT_ALERTS_OPTIONS: { value: RelationalTransitAlertsPref; label: string; description: string }[] = [
+  { value: "all", label: "All transits", description: "Jupiter, Saturn, Uranus, Neptune, and Pluto." },
+  { value: "major_only", label: "Major only", description: "Just Saturn, Uranus, and Pluto." },
+  { value: "off", label: "Off", description: "No relational transit alerts, in the app or by push." }
+];
+function isRelationalTransitAlertsPref(value: unknown): value is RelationalTransitAlertsPref {
+  return value === "all" || value === "major_only" || value === "off";
 }
 
 function formatDate(iso: string | null): string | null {
@@ -32,6 +43,8 @@ export default function SettingsScreen() {
   const [status, setStatus] = useState<string | null>(null);
   const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false);
   const [periodEndLabel, setPeriodEndLabel] = useState<string | null>(null);
+  const [relationalTransitAlerts, setRelationalTransitAlerts] = useState<RelationalTransitAlertsPref>("all");
+  const [savingRelationalPref, setSavingRelationalPref] = useState(false);
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -43,7 +56,7 @@ export default function SettingsScreen() {
     const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("cancel_at_period_end, current_period_end")
+        .select("cancel_at_period_end, current_period_end, relational_transit_alerts")
         .eq("id", session.user.id)
         .maybeSingle(),
       supabase.from("people").select("id, display_name, relation").eq("owner_id", session.user.id).order("display_name", { ascending: true }),
@@ -51,8 +64,22 @@ export default function SettingsScreen() {
     ]);
     setCancelAtPeriodEnd(Boolean(profile?.cancel_at_period_end));
     setPeriodEndLabel(formatDate((profile?.current_period_end as string | null) ?? null));
+    setRelationalTransitAlerts(isRelationalTransitAlertsPref(profile?.relational_transit_alerts) ? profile.relational_transit_alerts : "all");
     setPeople((peopleRows ?? []) as PersonLite[]);
     setGroups((groupRows ?? []) as GroupLite[]);
+  };
+
+  const changeRelationalTransitAlerts = async (next: RelationalTransitAlertsPref) => {
+    if (!session?.user.id || next === relationalTransitAlerts) return;
+    setSavingRelationalPref(true);
+    const previous = relationalTransitAlerts;
+    setRelationalTransitAlerts(next);
+    const { error } = await supabase.from("profiles").update({ relational_transit_alerts: next }).eq("id", session.user.id);
+    setSavingRelationalPref(false);
+    if (error) {
+      setRelationalTransitAlerts(previous);
+      setStatus(error.message);
+    }
   };
 
   // FOUNDER-REVIEW: Settings subscription card copy — refine voice.
@@ -79,6 +106,37 @@ export default function SettingsScreen() {
       <View style={cardStyle}>
         <Text style={cardTitle}>Subscription</Text>
         <Text style={cardBody}>{subscriptionBody}</Text>
+      </View>
+
+      <View style={cardStyle}>
+        <Text style={cardTitle}>Generational transit alerts</Text>
+        <Text style={cardBody}>Alerts when a slow-moving transit hits two or more people in your constellation at once.</Text>
+        <View style={{ gap: 8, marginTop: 4 }}>
+          {RELATIONAL_TRANSIT_ALERTS_OPTIONS.map((option) => {
+            const active = relationalTransitAlerts === option.value;
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => void changeRelationalTransitAlerts(option.value)}
+                disabled={savingRelationalPref}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                style={{
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: active ? tokens.colors.gold : tokens.colors.line,
+                  backgroundColor: active ? "rgba(230,174,108,0.09)" : "transparent",
+                  padding: 10
+                }}
+              >
+                <Text style={{ color: active ? tokens.colors.gold : tokens.colors.cream, fontWeight: "700", fontSize: 14 }}>
+                  {option.label}{active ? " ✓" : ""}
+                </Text>
+                <Text style={{ color: tokens.colors.mist2, fontSize: 12, marginTop: 2 }}>{option.description}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       <View style={cardStyle}>

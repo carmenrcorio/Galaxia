@@ -164,7 +164,8 @@ function normalizeSignedAngle(delta: number): number {
   return adjusted;
 }
 
-function longitudeToSign(lon: number): Sign {
+/** Public: zodiac sign for a raw ecliptic longitude (0–360). Used by the lifespan-transit scanner. */
+export function longitudeToSign(lon: number): Sign {
   const normalized = normalizeZodiacLongitude(lon);
   return SIGNS[Math.floor(normalized / 30)] ?? "Aries";
 }
@@ -385,11 +386,17 @@ function houseFromLongitude(lon: number, cusps: number[]): number {
   return 1;
 }
 
-function elementForSign(sign: Sign): "fire" | "earth" | "air" | "water" {
+export function elementForSign(sign: Sign): "fire" | "earth" | "air" | "water" {
   if (["Aries", "Leo", "Sagittarius"].includes(sign)) return "fire";
   if (["Taurus", "Virgo", "Capricorn"].includes(sign)) return "earth";
   if (["Gemini", "Libra", "Aquarius"].includes(sign)) return "air";
   return "water";
+}
+
+export function modalityForSign(sign: Sign): "cardinal" | "fixed" | "mutable" {
+  if (["Aries", "Cancer", "Libra", "Capricorn"].includes(sign)) return "cardinal";
+  if (["Taurus", "Leo", "Scorpio", "Aquarius"].includes(sign)) return "fixed";
+  return "mutable";
 }
 
 export function computeNatalChart(birth: Birth): NatalChart {
@@ -634,3 +641,10 @@ export * from "./generational-interpretations";
 export * from "./compare-guidance";
 
 export * from "./transit-nudge";
+
+export * from "./lifespan-transits";
+export * from "./memorial-timeline-interpretations";
+export * from "./family-compare";
+export * from "./family-compare-interpretations";
+export * from "./relational-transits";
+export * from "./relational-transit-interpretations";

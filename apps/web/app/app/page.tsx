@@ -65,6 +65,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { InitialAvatar } from "../../components/initial-avatar";
+import { RelationalTransitFeed } from "../../components/relational-transit-feed";
 import { ThreadMenu } from "../../components/thread-menu";
 import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
@@ -177,6 +178,7 @@ export default function AppHomePage() {
   const [homeStatus, setHomeStatus]             = useState<string | null>(null);
   const [loading, setLoading]                   = useState(true);
   const [hoverPerson, setHoverPerson]           = useState<PersonRow | null>(null);
+  const [ownerId, setOwnerId]                   = useState<string | null>(null);
 
   /* Nodes shimmer when that person has a real eligible nudge today — derived
      from the durable daily record, never a shared flag. */
@@ -188,6 +190,7 @@ export default function AppHomePage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
+      setOwnerId(user.id);
       loadHome(user.id);
     });
   }, [supabase]);
@@ -1338,11 +1341,18 @@ export default function AppHomePage() {
       <section className="glass-card fade-in" style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <p className="eyebrow" style={{ margin: 0 }}>Your constellation</p>
-          {!loading && people.length > 0 ? (
-            <Link href="/app/add-person" className="pill-link pill-link--gold" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
-              + Add person
-            </Link>
-          ) : null}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {!loading && people.length >= 3 ? (
+              <Link href="/app/family-compare" className="pill-link" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
+                Compare family
+              </Link>
+            ) : null}
+            {!loading && people.length > 0 ? (
+              <Link href="/app/add-person" className="pill-link pill-link--gold" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
+                + Add person
+              </Link>
+            ) : null}
+          </div>
         </div>
 
         {loading ? (
@@ -1494,6 +1504,12 @@ export default function AppHomePage() {
           </div>
         </section>
       ) : null}
+
+      {/* ── This Week (Generations Feature 3: relational transit alerts) ──
+         Reads relational_transits rows the daily cron job already computed;
+         this component does its own load/filter/render, home just mounts it
+         once an owner is known. */}
+      {!loading && ownerId ? <RelationalTransitFeed ownerId={ownerId} /> : null}
 
       {/* ── Recent Vela threads ── */}
       {!loading && threadChips.length > 0 ? (

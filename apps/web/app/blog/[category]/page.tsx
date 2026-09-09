@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BlogHeader } from "../../../components/blog/blog-header";
 import { BlogPostCard } from "../../../components/blog/blog-post-card";
+import { BlogZodiacTrail } from "../../../components/blog/blog-zodiac-trail";
+import { CosmicBackground } from "../../../components/cosmic-background";
 import { SiteFooter } from "../../../components/marketing/site-footer";
 import { BLOG_CATEGORIES, getCategory, getPublishedPostsByCategory, type BlogCategorySlug } from "../../../lib/blog";
 
@@ -38,9 +40,12 @@ export default async function BlogCategoryPage({ params }: { params: Promise<Par
   const posts = await getPublishedPostsByCategory(category.slug as BlogCategorySlug);
 
   return (
-    <>
+    <div style={{ position: "relative", minHeight: "100vh" }}>
+      <CosmicBackground />
       <BlogHeader />
-      <main className="container blog-index-page">
+      <main className="container blog-index-page" style={{ position: "relative", zIndex: 2 }}>
+        <BlogZodiacTrail />
+        <div className="blog-index-glow" aria-hidden="true" />
         <span className="eyebrow">Galaxia blog</span>
         <h1 className="page-title">{category.label}</h1>
 
@@ -66,6 +71,6 @@ export default async function BlogCategoryPage({ params }: { params: Promise<Par
         )}
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

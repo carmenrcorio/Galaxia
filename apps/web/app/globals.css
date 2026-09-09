@@ -1433,6 +1433,47 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 }
 .blog-index-page .lede { margin-top: 8px; margin-bottom: 8px; }
 
+/* Decorative violet bloom behind the header block — same rgba stops as the
+   OG share card's BloomBackground (app/s/[token]/opengraph-image.tsx), so the
+   index reads as the same product as the chart/compare share cards rather
+   than a flat solid panel. z-index -1 keeps it behind the (unpositioned,
+   normal-flow) heading text within this stacking context — see CosmicBackground
+   for the equivalent page-level treatment this layers on top of. */
+.blog-index-glow {
+  position: absolute;
+  z-index: -1;
+  top: -80px;
+  left: 50%;
+  width: min(720px, 90vw);
+  height: 420px;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(74,58,134,.5) 0%, rgba(44,35,82,.26) 55%, rgba(9,8,15,0) 100%);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+/* Faded zodiac-glyph trail, reusing SIGN_GLYPH (lib/design.ts) — the same
+   unicode set the chart wheel renders on /chart and /compare
+   (components/chart-wheel.tsx) — as a low-contrast decorative strip above
+   the eyebrow, giving /blog the same astrological signature as the rest of
+   the product. Per-glyph opacity/offset is set inline by BlogZodiacTrail. */
+.blog-zodiac-trail {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 6px;
+  user-select: none;
+  pointer-events: none;
+}
+.blog-zodiac-trail-glyph {
+  font-size: clamp(1rem, 2.2vw, 1.5rem);
+  line-height: 1;
+  color: var(--mist);
+}
+@media (max-width: 480px) {
+  .blog-zodiac-trail-glyph:nth-child(even) { display: none; }
+}
+
 .blog-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1469,9 +1510,19 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   border-radius: 20px;
   border: 1px solid rgba(230,174,108,.13);
   background: linear-gradient(165deg, rgba(255,255,255,.035), rgba(255,255,255,.01));
-  transition: border-color .2s, transform .2s;
+  /* Same frosted-glass recipe as .glass-card, dialed down (18px vs 22px blur,
+     lighter shadow) so it still reads as a card floating over CosmicBackground
+     rather than a flat, opaque panel. */
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  box-shadow: 0 20px 50px -30px rgba(0,0,0,.6);
+  transition: border-color .2s, transform .2s, box-shadow .2s;
 }
-.blog-post-card:hover { border-color: rgba(230,174,108,.32); transform: translateY(-2px); }
+.blog-post-card:hover {
+  border-color: rgba(230,174,108,.32);
+  transform: translateY(-2px);
+  box-shadow: 0 24px 60px -28px rgba(0,0,0,.65), 0 0 24px -4px rgba(230,174,108,.22);
+}
 .blog-post-card-thumb {
   display: block;
   width: 100%;

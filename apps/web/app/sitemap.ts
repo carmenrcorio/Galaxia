@@ -15,8 +15,11 @@ const SITE_URL = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
  *   - /invite/[token], /s/[token], /r/[slug] (per-invite/per-share/
  *     per-referral pages, not general content — see route comments)
  *   - /auth/callback (an OAuth redirect target, not a page)
- * `/pricing` is a homepage anchor (`#pricing`), not a route — see
- * components/marketing/site-footer.tsx — so it is covered by `/` below.
+ *
+ * /why-galaxia, /generations, /meet-vela, /security, and /pricing were
+ * homepage anchors (#shift, #generations, #vela, #trust, #pricing) — see
+ * components/marketing/hash-redirect.tsx — and are now their own standalone
+ * routes, listed here like any other page.
  *
  * Post URLs (`/${slug}`) are read from the `posts` table at request time
  * (getPublishedPosts — published rows only, via lib/blog.ts) rather than
@@ -27,6 +30,11 @@ const SITE_URL = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const routes = [
     "/",
+    "/why-galaxia",
+    "/generations",
+    "/meet-vela",
+    "/security",
+    "/pricing",
     "/blog",
     ...BLOG_CATEGORIES.map((c) => `/blog/${c.slug}`),
     "/privacy",

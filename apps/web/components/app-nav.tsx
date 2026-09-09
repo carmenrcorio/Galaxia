@@ -40,6 +40,10 @@ const LINKS: { href: string; label: string }[] = [
   // "Quick check" launcher on /app (fast in-app compatibility modal); this
   // opens the full public /chart experience.
   { href: "/chart", label: "Quick Chart" },
+  // Also public — previously only reachable from the logged-out marketing
+  // nav, so a signed-in subscriber had no way back to it without leaving
+  // their account (e.g. via a bookmark or search result).
+  { href: "/blog", label: "Blog" },
 ];
 
 export function AppNav() {

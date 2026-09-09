@@ -14,10 +14,36 @@ import { TrustSection } from "../components/marketing/trust-section";
 import { VelaExampleSection } from "../components/marketing/vela-example-section";
 import { WhyNotSection } from "../components/marketing/why-not-section";
 import { WhySection } from "../components/marketing/why-section";
+import { publicEnv } from "../lib/env";
 
 const TITLE = "Galaxia — Astrology for the People You Love";
 const DESCRIPTION =
   "Galaxia reads the real birth charts of your inner circle — partner, kids, parents, siblings, friends — so you can show up for each bond with more intention. Not your horoscope.";
+
+// Same prod fallback as `metadataBase` in app/layout.tsx / `SITE_URL` in
+// app/sitemap.ts — the `SoftwareApplication` JSON-LD below needs an
+// absolute `url`, which `metadataBase` doesn't help with (that only resolves
+// relative Metadata API fields like `openGraph.images`, not raw JSON-LD).
+const SITE_URL = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
+
+// The product-level structured data — describes Galaxia itself, once, so it
+// lives on `/` only. Every standalone page split out of a homepage section
+// (see app/why-galaxia, /generations, /meet-vela, /security, /pricing and
+// components/marketing/webpage-json-ld.tsx) gets its own `WebPage` schema
+// instead of repeating this.
+const SOFTWARE_APPLICATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Galaxia",
+  applicationCategory: "LifestyleApplication",
+  operatingSystem: "Web, iOS, Android",
+  description: DESCRIPTION,
+  url: SITE_URL,
+  offers: [
+    { "@type": "Offer", price: "9.99", priceCurrency: "USD", name: "Monthly" },
+    { "@type": "Offer", price: "89", priceCurrency: "USD", name: "Yearly" }
+  ]
+};
 
 /**
  * Page-specific metadata for `/` — the link every launch post (Reddit, etc.)
@@ -61,6 +87,8 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
+      {/* eslint-disable-next-line react/no-danger -- trusted, statically-built JSON, not user input */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SOFTWARE_APPLICATION_JSON_LD) }} />
       <CosmicBackground />
       <RevealObserver />
       <MarketingNav />

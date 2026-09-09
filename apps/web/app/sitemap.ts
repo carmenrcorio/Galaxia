@@ -17,10 +17,12 @@ const SITE_URL = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
  *   - /auth/callback (an OAuth redirect target, not a page)
  *   - /login, /signup (thin auth-only forms — no unique content to rank on,
  *     so they add crawl weight without any SEO value)
- * `/why-galaxia`, `/generations`, `/meet-vela`, `/security`, `/pricing` are
- * standalone pages carved out of former homepage anchor sections (#shift,
- * #generations, #vela, #trust, #pricing — see components/marketing/*
- * -section.tsx); each is also still reachable as a same-page anchor on `/`.
+ *
+ * `/why-galaxia`, `/generations`, `/meet-vela`, `/security`, and `/pricing`
+ * were homepage anchors (#shift, #generations, #vela, #trust, #pricing);
+ * each now has its own standalone route (a bookmarked `/#generations`-style
+ * link redirects there client-side — see components/marketing/hash-
+ * redirect.tsx) and is listed here like any other page.
  *
  * Post URLs (`/${slug}`) are read from the `posts` table at request time
  * (getPublishedPosts — published rows only, via lib/blog.ts) rather than

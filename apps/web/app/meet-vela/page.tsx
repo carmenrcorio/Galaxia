@@ -14,7 +14,8 @@ const DESCRIPTION =
 
 /**
  * Standalone page for the former homepage `#vela` anchor section (see
- * <VelaExampleSection>, still rendered on `/` too).
+ * <VelaExampleSection>). The homepage itself no longer renders this
+ * section in full — see the removal notes in app/page.tsx.
  */
 export const metadata: Metadata = {
   title: TITLE,

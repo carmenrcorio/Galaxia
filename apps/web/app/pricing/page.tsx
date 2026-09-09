@@ -14,9 +14,9 @@ const DESCRIPTION =
 
 /**
  * Standalone page for the former homepage `#pricing` anchor section (see
- * <PricingSection>, still rendered on `/` too). Previously `/pricing` had
- * no real route — see the (now stale) comment in app/sitemap.ts — so this
- * is the first indexable pricing URL for the product.
+ * <PricingSection>). The homepage itself no longer renders this section in
+ * full — see the removal notes in app/page.tsx — so this is the only
+ * indexable pricing URL for the product.
  */
 export const metadata: Metadata = {
   title: TITLE,

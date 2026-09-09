@@ -14,7 +14,8 @@ const DESCRIPTION =
 
 /**
  * Standalone page for the former homepage `#trust` anchor section (see
- * <TrustSection>, still rendered on `/` too). Not a replacement for
+ * <TrustSection>). The homepage itself no longer renders this section in
+ * full — see the removal notes in app/page.tsx. Not a replacement for
  * /privacy (the full legal Privacy Policy, app/privacy/page.tsx) — this is
  * the plain-language trust pitch; it links out to /privacy for the legal
  * text via <TrustSection>'s existing copy.

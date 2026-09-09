@@ -14,7 +14,8 @@ const DESCRIPTION =
 
 /**
  * Standalone page for the former homepage `#generations` anchor section
- * (see <EdgeSection>, still rendered on `/` too, id="generations").
+ * (see <EdgeSection>). The homepage itself no longer renders this section
+ * in full — see the removal notes in app/page.tsx.
  */
 export const metadata: Metadata = {
   title: TITLE,

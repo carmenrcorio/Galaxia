@@ -1,7 +1,9 @@
 "use client";
 
 /**
- * Marketing landing nav. Reuses the same collapse pattern as
+ * Marketing landing nav — shared across the homepage and every standalone
+ * marketing page (`/why-galaxia`, `/generations`, `/meet-vela`, `/security`,
+ * `/pricing`). Reuses the same collapse pattern as
  * apps/web/components/app-nav.tsx (and its .app-nav-links / .app-nav-trigger-btn /
  * .app-nav-drawer / .app-nav-drawer-link CSS in globals.css, shared by both navs)
  * instead of duplicating a second mobile-menu implementation.
@@ -10,26 +12,29 @@
  * mobile behavior was `.nav-links a:not(.nav-cta){display:none}` below
  * 860px — every link except the CTA pill simply vanished, with no menu to
  * open them from at all. This nav could never be reached on a phone.
+ *
+ * LINKS used to be in-page anchors (#shift, #generations, #vela, #trust,
+ * #pricing) that only worked from `/`. Each of those sections now has its
+ * own route, so the same nav works correctly from any page, not just the
+ * homepage — see app/why-galaxia, app/generations, app/meet-vela,
+ * app/security, app/pricing.
  */
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 
 const LINKS: { href: string; label: string }[] = [
-  { href: "#shift", label: "Why Galaxia" },
-  { href: "#generations", label: "Generations" },
-  { href: "#vela", label: "Meet Vela" },
+  { href: "/why-galaxia", label: "Why Galaxia" },
+  { href: "/generations", label: "Generations" },
+  { href: "/meet-vela", label: "Meet Vela" },
   { href: "/blog", label: "Blog" },
-  { href: "#trust", label: "Privacy" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "/chart", label: "Quick Chart" },
+  { href: "/pricing", label: "Pricing" },
 ];
 
 export function MarketingNav() {
   const [open, setOpen] = useState(false);
 
-  // An in-page anchor click should close the drawer immediately, not leave
-  // it open over the section it just navigated to.
+  // Let Escape close the drawer.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };

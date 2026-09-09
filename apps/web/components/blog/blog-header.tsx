@@ -6,10 +6,10 @@ import Link from "next/link";
  * had no <header> or <nav> in the DOM at all — a reader landing on a post
  * had no way back to the site short of the browser's back button.
  *
- * Deliberately lighter than <MarketingNav>: a full landing nav (with its
- * in-page anchor links like #pricing, #vela) doesn't belong on a page that
- * isn't the homepage. This is just the wordmark (→ home) + one link back to
- * the blog index, same sticky/blur treatment as the other nav bars
+ * Deliberately lighter than <MarketingNav>: a full landing nav (with links
+ * out to Why Galaxia, Generations, Meet Vela, and Pricing) is more than a
+ * reader mid-article needs. This is just the wordmark (→ home) + one link
+ * back to the blog index, same sticky/blur treatment as the other nav bars
  * (marketing-nav.tsx, app-nav.tsx) for visual consistency.
  */
 export function BlogHeader() {

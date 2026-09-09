@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { CloseSection } from "../../components/marketing/close-section";
+import { FeaturesSection } from "../../components/marketing/features-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { RemembranceSection } from "../../components/marketing/remembrance-section";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
+import { WhyNotSection } from "../../components/marketing/why-not-section";
 import { WhySection } from "../../components/marketing/why-section";
 
 const TITLE = "Why Galaxia — Relationship Intelligence, Not Horoscopes";
@@ -14,9 +17,18 @@ const DESCRIPTION =
 
 /**
  * Standalone page for the former homepage `#shift` anchor section (see
- * <WhySection>, still rendered on `/` too). Same component, same copy — this
- * just gives it a real <h1>, its own metadata, and a URL search can actually
- * rank, instead of only being reachable as a same-page jump target.
+ * <WhySection>). The homepage itself no longer renders this section in
+ * full — see the removal notes in app/page.tsx — so this real <h1>, its
+ * own metadata, and this URL are the only way to reach and rank this copy.
+ *
+ * Also carries <RemembranceSection>, <WhyNotSection>, and <FeaturesSection>
+ * — the three homepage sections that sat right after #shift in source
+ * order (Why → Remembrance → why-not-a-horoscope-app → How it works) but
+ * never had their own anchor or standalone route. Removing them from the
+ * homepage without giving them a home would delete that content from the
+ * site entirely, so they stay grouped with the section they originally
+ * followed: the full "why Galaxia" narrative — thesis, remembrance,
+ * differentiation, and mechanics — in one page.
  */
 export const metadata: Metadata = {
   title: TITLE,
@@ -48,6 +60,9 @@ export default function WhyGalaxiaPage() {
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Why Galaxia" lede={DESCRIPTION} />
         <WhySection />
+        <RemembranceSection />
+        <WhyNotSection />
+        <FeaturesSection />
         <CloseSection />
       </main>
       <SiteFooter />

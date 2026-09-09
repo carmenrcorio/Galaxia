@@ -2,19 +2,13 @@ import type { Metadata } from "next";
 import { JsonLd, type JsonLdObject } from "../components/seo/json-ld";
 import { CosmicBackground } from "../components/cosmic-background";
 import { CloseSection } from "../components/marketing/close-section";
-import { EdgeSection } from "../components/marketing/edge-section";
 import { FaqSection } from "../components/marketing/faq-section";
-import { FeaturesSection } from "../components/marketing/features-section";
+import { FeatureTeasers } from "../components/marketing/feature-teasers";
+import { HashRedirect } from "../components/marketing/hash-redirect";
 import { Hero } from "../components/marketing/hero";
 import { MarketingNav } from "../components/marketing/marketing-nav";
-import { PricingSection } from "../components/marketing/pricing-section";
-import { RemembranceSection } from "../components/marketing/remembrance-section";
 import { RevealObserver } from "../components/marketing/reveal-observer";
 import { SiteFooter } from "../components/marketing/site-footer";
-import { TrustSection } from "../components/marketing/trust-section";
-import { VelaExampleSection } from "../components/marketing/vela-example-section";
-import { WhyNotSection } from "../components/marketing/why-not-section";
-import { WhySection } from "../components/marketing/why-section";
 
 const TITLE = "Galaxia — Astrology for the People You Love";
 const DESCRIPTION =
@@ -52,21 +46,24 @@ export const metadata: Metadata = {
 };
 
 /**
- * Marketing landing page. Was previously a single dangerouslySetInnerHTML
- * raw HTML string + injected <script> — see CHANGELOG.md for the full
- * rebuild notes (Phase 0 inventory, Phase 1 JSX-conversion parity, Phase 2
- * restructure). Every section below is a real component; there is no
- * dangerouslySetInnerHTML anywhere on this page anymore.
+ * Marketing landing page — a concise hub, not the whole story. Used to carry
+ * every section in full (The shift, The edge, Remembrance, why-not-a-
+ * horoscope-app, How it works, Vela, Trust, Pricing, FAQ, Close — see
+ * CHANGELOG.md for that rebuild's history). Those five feature sections
+ * (#shift, #generations, #vela, #trust, #pricing) now each have their own
+ * standalone page — app/why-galaxia, app/generations, app/meet-vela,
+ * app/security, app/pricing — and this page only carries a condensed,
+ * 2-3-sentence preview of each (FeatureTeasers) linking out to the real
+ * thing. `HashRedirect` sends a bookmarked `/#generations`-style link on to
+ * wherever that content now lives, since a hash fragment never reaches the
+ * server for a normal route-based redirect to catch.
  *
- * Conversion order: Hero (with Quick Chart mini-form + inline natal sign reveal)
- * → The Edge → The shift → Remembrance → why-not-a-horoscope-app → How it works
- * → Vela → Trust → Pricing → FAQ → Close.
- *
- * Sections also reused standalone: /why-galaxia, /generations, /meet-vela,
- * /security, /pricing each carve one section out into its own indexable
- * page (see components/marketing/webpage-json-ld.tsx for their WebPage
- * schema) — this page's own SoftwareApplication schema below stays
- * homepage-only, describing the product once rather than per page.
+ * Kept in full here: Hero (headline + primary signup CTA), the teaser grid,
+ * FAQ (already short-form, not a duplicate of a standalone page), the final
+ * CTA, and the footer. The SoftwareApplication schema below stays
+ * homepage-only, describing the product once rather than per page — each
+ * standalone page has its own WebPage schema instead (see
+ * components/marketing/webpage-json-ld.tsx).
  */
 /**
  * Organization + SoftwareApplication JSON-LD — homepage only. Gives search
@@ -108,17 +105,11 @@ export default function HomePage() {
       <JsonLd data={SOFTWARE_APPLICATION_JSON_LD} />
       <CosmicBackground />
       <RevealObserver />
+      <HashRedirect />
       <MarketingNav />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <Hero />
-        <EdgeSection />
-        <WhySection />
-        <RemembranceSection />
-        <WhyNotSection />
-        <FeaturesSection />
-        <VelaExampleSection />
-        <TrustSection />
-        <PricingSection />
+        <FeatureTeasers />
         <FaqSection />
         <CloseSection />
       </main>

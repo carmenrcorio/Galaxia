@@ -164,7 +164,8 @@ function normalizeSignedAngle(delta: number): number {
   return adjusted;
 }
 
-function longitudeToSign(lon: number): Sign {
+/** Public: zodiac sign for a raw ecliptic longitude (0–360). Used by the lifespan-transit scanner. */
+export function longitudeToSign(lon: number): Sign {
   const normalized = normalizeZodiacLongitude(lon);
   return SIGNS[Math.floor(normalized / 30)] ?? "Aries";
 }
@@ -634,3 +635,6 @@ export * from "./generational-interpretations";
 export * from "./compare-guidance";
 
 export * from "./transit-nudge";
+
+export * from "./lifespan-transits";
+export * from "./memorial-timeline-interpretations";

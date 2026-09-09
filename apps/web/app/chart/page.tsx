@@ -18,11 +18,12 @@ import {
   type SignKey,
 } from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
 import { ChartPdfExport } from "../../components/chart-pdf-export";
 import { ChartWheel } from "../../components/chart-wheel";
+import { RelatedLinks } from "../../components/marketing/related-links";
 import { NatalSignReveal } from "../../components/natal-sign-reveal";
 import { QuickChartShell } from "../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../components/save-to-galaxy-button";
@@ -40,7 +41,6 @@ interface QuickResult {
 }
 
 export default function QuickChartPage() {
-  const router = useRouter();
   const viewer = useViewer();
   const [input, setInput] = useState<BirthFormInput>(BASE_BIRTH_INPUT);
   const [name, setName] = useState("");
@@ -147,6 +147,15 @@ export default function QuickChartPage() {
         Enter a birth date (and time and city, if known) for a real computed natal chart — Big Three, placements, and the wheel. Nothing is saved unless you choose to.
       </p>
 
+      <RelatedLinks
+        bare
+        heading="Keep reading"
+        links={[
+          { href: "/synastry-chart-meaning", label: "What synastry actually measures" },
+          { href: "/why-galaxia", label: "Why Galaxia reads real charts, not sun signs" },
+        ]}
+      />
+
       {!result ? (
         <>
           {/* Mode: a solo chart has no romantic/platonic dimension, so that
@@ -158,9 +167,9 @@ export default function QuickChartPage() {
               <button type="button" className="pill-link" aria-pressed style={{ fontSize: ".82rem", padding: "8px 16px", borderColor: "rgba(230,174,108,.5)", color: "var(--gold)" }}>
                 Single chart
               </button>
-              <button type="button" className="pill-link" onClick={() => router.push("/chart/compare")} style={{ fontSize: ".82rem", padding: "8px 16px" }}>
+              <Link href="/chart/compare" className="pill-link" style={{ fontSize: ".82rem", padding: "8px 16px" }}>
                 Check compatibility
-              </button>
+              </Link>
             </div>
           </section>
 

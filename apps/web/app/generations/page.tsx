@@ -3,6 +3,7 @@ import { CosmicBackground } from "../../components/cosmic-background";
 import { CloseSection } from "../../components/marketing/close-section";
 import { EdgeSection } from "../../components/marketing/edge-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { RelatedLinks } from "../../components/marketing/related-links";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
 import { SiteFooter } from "../../components/marketing/site-footer";
@@ -47,6 +48,19 @@ export default function GenerationsPage() {
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Generations" lede={DESCRIPTION} />
         <EdgeSection />
+        <RelatedLinks
+          heading="Keep exploring"
+          links={[
+            { href: "/meet-vela", label: "Ask Vela about generational patterns" },
+            { href: "/security", label: "How we protect your family's data" },
+          ]}
+        />
+        <RelatedLinks
+          heading="From the blog"
+          links={[
+            { href: "/synastry-chart-meaning", label: "What synastry actually measures" },
+          ]}
+        />
         <CloseSection />
       </main>
       <SiteFooter />

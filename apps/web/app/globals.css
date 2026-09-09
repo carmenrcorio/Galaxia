@@ -1337,6 +1337,51 @@ section { padding-block: clamp(76px, 12vh, 140px); }
   font-weight: 300;
 }
 
+/* ─── related links (components/marketing/related-links.tsx) ────────────────
+   Contextual "keep exploring" links between the standalone section pages
+   above and out to the blog. Deliberately quiet — a labeled row of pill-ish
+   cards below the main section content, not another full-bleed section, so
+   it reads as a short list of next steps rather than a second pitch. */
+.related-links { padding-block: clamp(40px, 6vh, 72px); }
+.related-links .eyebrow { margin-bottom: 16px; }
+.related-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.related-link-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(183,154,216,.18);
+  background: linear-gradient(165deg, rgba(255,255,255,.03), rgba(255,255,255,.008));
+  color: var(--cream);
+  font-size: .9rem;
+  font-weight: 500;
+  line-height: 1.4;
+  transition: border-color .2s, transform .2s, background .2s;
+}
+.related-link-card:hover {
+  border-color: rgba(230,174,108,.35);
+  background: linear-gradient(165deg, rgba(255,255,255,.05), rgba(255,255,255,.014));
+  transform: translateY(-2px);
+}
+.related-link-arrow { color: var(--gold); flex-shrink: 0; }
+
+/* Quick Chart pages (/chart, /chart/compare) render <RelatedLinks bare> inside
+   QuickChartShell's own `.container` — no second container, and a tighter
+   block since it sits between a lede paragraph and a form/result, not at the
+   foot of a full marketing page. */
+.related-links:not(.container) {
+  padding-block: 0;
+  margin: 4px 0 22px;
+}
+.related-links:not(.container) .related-links-grid { grid-template-columns: 1fr; gap: 8px; }
+.related-links:not(.container) .related-link-card { padding: 12px 16px; font-size: .86rem; }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    LEGAL PAGES (apps/web/app/terms, apps/web/app/privacy)
    Renders the reviewed markdown in content/legal/*.md verbatim via

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { CloseSection } from "../../components/marketing/close-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { RelatedLinks } from "../../components/marketing/related-links";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
 import { SiteFooter } from "../../components/marketing/site-footer";
@@ -50,6 +51,13 @@ export default function SecurityPage() {
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Your Data Is Yours" lede={DESCRIPTION} />
         <TrustSection />
+        <RelatedLinks
+          heading="Keep exploring"
+          links={[
+            { href: "/privacy", label: "Read our full privacy policy" },
+            { href: "/pricing", label: "See pricing" },
+          ]}
+        />
         <CloseSection />
       </main>
       <SiteFooter />

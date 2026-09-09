@@ -1529,12 +1529,63 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   padding-bottom: clamp(56px, 8vh, 88px);
   max-width: 720px;
 }
+/* Scoped override, not a global one: `--measure` (62ch) is shared by .lede /
+   .legal-doc-p / .why-not .body elsewhere, and changing it there would move
+   every one of those. Measured in-browser, 62ch of Inter body copy renders
+   ~78-80 real characters on a full line (the "ch" unit is the width of the
+   "0" glyph, not the average character) — comfortably past the 65-75
+   target. 56ch of the same font measures to ~70, which is the number that
+   matters. Only applies inside the article content column. */
+.article-content { --measure: 56ch; }
 .article-title { margin-bottom: 10px; }
 .article-meta {
   color: var(--mist2);
   font-size: .82rem;
   margin-bottom: 26px;
 }
+.article-link {
+  color: var(--gold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.article-link:hover { color: var(--gold-bright); }
+
+/* Anchored table of contents — v1 for posts with enough sections to need
+   one (TOC_SECTION_THRESHOLD in lib/blog.ts). Inline/static, not sticky:
+   the article column is narrow enough (720px) that a sticky sidebar has
+   nowhere to live without widening the page. */
+.article-toc {
+  margin: 28px 0 32px;
+  padding: 20px 22px;
+  border: 1px solid rgba(230,174,108,.16);
+  border-radius: 16px;
+  background: rgba(255,255,255,.02);
+}
+.article-toc-label {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+.article-toc ol {
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  counter-reset: toc;
+}
+.article-toc li { counter-increment: toc; }
+.article-toc li::before {
+  content: counter(toc) ". ";
+  color: var(--mist2);
+}
+.article-toc a {
+  color: var(--mist);
+  font-size: .88rem;
+  transition: color .2s;
+}
+.article-toc a:hover { color: var(--cream); }
 .article-h2 {
   font-family: var(--serif);
   font-weight: 500;

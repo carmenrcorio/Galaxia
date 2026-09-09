@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { BlogHeader } from "../../components/blog/blog-header";
 import { SiteFooter } from "../../components/marketing/site-footer";
-import { formatPostDate, getPost } from "../../lib/blog";
+import Link from "next/link";
+import { formatPostDate, getPost, TOC_SECTION_THRESHOLD } from "../../lib/blog";
 
 const TITLE = "What a Synastry Chart Actually Tells You About Your Relationship";
 const DESCRIPTION =
@@ -51,6 +52,19 @@ export default function SynastryChartMeaningPage() {
           By {post.byline} · {formatPostDate(post.date)} · {post.readTimeMinutes} min read
         </p>
 
+        {post.sections.length >= TOC_SECTION_THRESHOLD ? (
+          <nav aria-label="Table of contents" className="article-toc">
+            <p className="article-toc-label">In this guide</p>
+            <ol>
+              {post.sections.map((section) => (
+                <li key={section.id}>
+                  <a href={`#${section.id}`}>{section.label}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        ) : null}
+
         <p className="article-p">
           Most writing about synastry is aimed at someone standing at the beginning of something, trying to decide
           whether to walk in. Score out of ten. Green flags, red flags, verdict.
@@ -66,7 +80,7 @@ export default function SynastryChartMeaningPage() {
           years of evidence. Here is the better one.
         </p>
 
-        <h2 className="article-h2">What a synastry chart is, in two minutes</h2>
+        <h2 id="what-it-is" className="article-h2">What a synastry chart is, in two minutes</h2>
         <p className="article-p">Two real birth charts, overlaid.</p>
         <p className="article-p">
           A birth chart is a map of where the planets actually were at the moment someone was born — computed from
@@ -82,7 +96,7 @@ export default function SynastryChartMeaningPage() {
           pattern. What you do with the pattern is entirely yours.
         </p>
 
-        <h2 className="article-h2">The only distinction that matters: flows and catches</h2>
+        <h2 id="flows-and-catches" className="article-h2">The only distinction that matters: flows and catches</h2>
         <p className="article-p">Strip away the vocabulary and a synastry chart tells you two things.</p>
         <p className="article-p">
           Some things between you and this person are structurally easy. Effortless in a way neither of you had to
@@ -114,7 +128,7 @@ export default function SynastryChartMeaningPage() {
           </figcaption>
         </figure>
 
-        <h2 className="article-h2">Why the easy parts are the dangerous ones</h2>
+        <h2 id="why-ease-is-dangerous" className="article-h2">Why the easy parts are the dangerous ones</h2>
         <p className="article-p">
           Here is the counterintuitive part, and if you take one thing from this page, take this.
         </p>
@@ -149,7 +163,7 @@ export default function SynastryChartMeaningPage() {
           and then go say it to the person.
         </p>
 
-        <h2 className="article-h2">Reading the catches without building a case</h2>
+        <h2 id="reading-the-catches" className="article-h2">Reading the catches without building a case</h2>
         <p className="article-p">Now the hard aspects — and the reason the reading order matters so much.</p>
         <p className="article-p">
           If you pull a synastry chart while annoyed, and you read the difficult aspects first, you will find them.
@@ -181,7 +195,7 @@ export default function SynastryChartMeaningPage() {
           aspect. It is whether they have a shared name for it.
         </p>
 
-        <h2 className="article-h2">What a chart cannot tell you</h2>
+        <h2 id="what-a-chart-cannot-tell-you" className="article-h2">What a chart cannot tell you</h2>
         <p className="article-p">This section is here because no competing page has it, and because it is true.</p>
         <p className="article-p">
           A synastry chart cannot tell you whether to stay. It describes a pattern; it does not weigh a life. Two
@@ -202,6 +216,14 @@ export default function SynastryChartMeaningPage() {
           And it cannot forecast. Nothing in a chart tells you what will happen next month. Anything that claims
           otherwise is not reading astronomy.
         </p>
+        <p className="article-p">
+          This page keeps to what a chart can actually claim. For a running list of the specific things astrology
+          gets oversold on — and why — see{" "}
+          <Link href="/blog/debunked" className="article-link">
+            Astrology, debunked
+          </Link>
+          .
+        </p>
 
         <figure className="article-figure">
           <img
@@ -210,7 +232,13 @@ export default function SynastryChartMeaningPage() {
           />
         </figure>
 
-        <h2 className="article-h2">Reading yours</h2>
+        <div className="article-cta">
+          <a className="btn-primary" href="/chart/compare">
+            See your own flows and catches
+          </a>
+        </div>
+
+        <h2 id="reading-yours" className="article-h2">Reading yours</h2>
         <p className="article-p">
           You need two birth dates. Birth times, as exact as you can get them, unlock the deepest layer — houses,
           rising signs, the precise Moon — but you do not need them to start. The signs, the aspect readings, and the
@@ -229,12 +257,6 @@ export default function SynastryChartMeaningPage() {
         <p className="article-p">
           Compare any two people, see where you flow and where you catch, and get a specific thing to do about each.
         </p>
-
-        <div className="article-cta">
-          <a className="btn-primary" href="https://galaxiamea.com">
-            Start 14 days free
-          </a>
-        </div>
       </main>
       <SiteFooter />
     </>

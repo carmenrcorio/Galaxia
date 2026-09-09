@@ -9,9 +9,7 @@ export function SiteFooter() {
           <p>The people you love, written in the stars. · © 2026 Galaxia</p>
         </div>
         <div className="site-footer-links">
-          {/* Direct link to the one article we have — swap for a /blog index
-              link once there is more than one post. */}
-          <Link href="/synastry-chart-meaning">Synastry Guide</Link>
+          <Link href="/blog">Blog</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
           <a href="#pricing">Pricing</a>

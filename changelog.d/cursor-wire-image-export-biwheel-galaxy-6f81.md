@@ -1,0 +1,15 @@
+## Wire image export to the biwheel and the galaxy view (branch `cursor/wire-image-export-biwheel-galaxy-6f81`) — 2026-09-10
+
+**Trigger**: `ShareImageButton` (html-to-image) already existed and was wired only to Family Comparison and Memorial Timeline. The natal wheel and the galaxy constellation had no image export at all.
+
+`[ADDED]` **`ShareExportCard`** (`apps/web/components/share-export-card.tsx`) — the one shared wrapper every export call site now uses, so the watermark, the `exportFilename()` naming convention, and the minor gate cannot drift between surfaces. `minorBlocked` withholds the whole watermark + button pair (not just the button), matching `ShareWatermark`'s WYSIWYG contract.
+
+`[ADDED]` Single natal chart export on `/chart`, `/app/person/[id]`, and the single snapshot on `/s/[token]` — captures the chart wheel plus Sun/Moon/Rising chips and the person's name. `/app/person/[id]` gets a new minimal, non-interactive `NatalBigThreeChips` component (its existing "Big Three" section is stateful expand/collapse and unsafe to capture as-is).
+
+`[ADDED]` Compare export on `/chart/compare`, `/app/compare`, and the compare snapshot on `/s/[token]` — captures the overlay wheel, both names, and a new compact `DynamicScoresTable` (extracted from `DynamicTableSection`, which still wraps it unchanged for the full-page legend + tip cards). Withheld entirely when `pairHasMinor` — every surface's boolean traces back to `isMinorForSafety` (`@galaxia/core`), never a raw column.
+
+`[ADDED]` Galaxy export on `/app` — captures the two live canvases + film grain (never the hover inspector) once the entrance animation's own already-computed `budgetArmed` condition first goes true, surfaced as a one-time `entranceSettled` state flip from inside the existing `draw()` loop. The drawing code itself was not refactored out of its `useEffect`.
+
+`[DECISION]` `ChartWheel` gets an additive `exportSafe?: boolean` prop (default `false`, zero live-visual change): it swaps every `var(--x)` SVG presentation-attribute colour for the matching literal hex from a new `EXPORT_COLOR_LITERALS` table (`apps/web/lib/design.ts`, drift-guarded against `globals.css` `:root` by `lib/design.test.ts`). html-to-image clones an `<svg>` root natively and never revisits its descendants, so a `fill="var(--x)"` inside a captured wheel has no `:root` definition in the exported document and would paint as the SVG's initial colour (black) — every wheel inside an export card now passes `exportSafe`. Native per-`<canvas>` `toDataURL()` handling in html-to-image composited the galaxy's two layered canvases cleanly; the manual `toDataURL()`-compositing fallback was not needed.
+
+`[ADDED]` Unit tests: `chart-wheel.test.ts` (exportSafe literal-hex coverage, default behaviour unchanged), `design.test.ts` (drift guard), `share-export-card.test.tsx` (minor gate absent/present + `exportFilename` slugify/fallback), and wiring assertions in `compare-biwheel-wiring.test.ts` confirming all three compare surfaces thread an `isMinorForSafety`-derived boolean into `minorBlocked`.

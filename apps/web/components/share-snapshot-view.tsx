@@ -62,7 +62,7 @@ function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
 
         {payload.chart.cusps ? (
           <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
-            <ChartWheel chart={payload.chart} />
+            <ChartWheel chart={payload.chart} exportSafe />
           </section>
         ) : null}
       </ChartImageExport>
@@ -210,6 +210,7 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
                   chart={payload.chartA}
                   overlayChart={payload.chartB}
                   aspects={payload.synastry.aspects}
+                  exportSafe
                 />
               </div>
             ) : (

@@ -326,6 +326,7 @@ export default function QuickComparePage() {
                       chart={result.chartA}
                       overlayChart={result.chartB}
                       aspects={result.synastry.aspects}
+                      exportSafe
                     />
                   </div>
                 ) : (

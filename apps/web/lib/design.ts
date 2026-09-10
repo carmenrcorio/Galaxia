@@ -83,3 +83,42 @@ export const COMPAT_LABELS: Record<string, string> = {
   stability:     "Stability",
 };
 
+/**
+ * Literal hex values for the `:root` custom properties in globals.css —
+ * copied here (not read from the DOM) so a raster capture of an <svg>
+ * subtree still resolves real colours. html-to-image bakes computed style
+ * onto plain DOM elements before serializing, but it clones an <svg> root
+ * with a native `cloneNode(true)` and never re-visits its descendants, so a
+ * `fill="var(--x)"` presentation attribute inside a captured wheel has no
+ * `:root` definition in the exported document and paints as the SVG
+ * initial value (black), not the intended element colour. `designColor` is
+ * the one-line swap for any SVG colour that needs to survive that capture.
+ * Every value here must stay in lockstep with globals.css `:root` — see
+ * `lib/design.test.ts` for the drift guard. Not used outside SVG capture:
+ * regular DOM elements keep plain `var(--x)`, which the same capture path
+ * resolves correctly already.
+ */
+export const EXPORT_COLOR_LITERALS: Record<string, string> = {
+  gold:        "#E6AE6C",
+  "gold-bright": "#f0c089",
+  "gold-soft": "#caa06f",
+  rose:        "#DA8C8C",
+  teal:        "#6FB1B8",
+  mist:        "#b9aede",
+  mist2:       "#8076a6",
+  cream:       "#F4ECDB",
+  fire:        "#E0825C",
+  earth:       "#cdbd7a",
+  air:         "#B79AD8",
+  water:       "#6FB1B8",
+};
+
+/**
+ * Resolve a `--x` custom-property name to `var(--x)` (live UI, unchanged) or
+ * its literal hex (raster export of an SVG subtree — see EXPORT_COLOR_LITERALS).
+ */
+export function designColor(name: string, exportSafe: boolean): string {
+  if (!exportSafe) return `var(--${name})`;
+  return EXPORT_COLOR_LITERALS[name] ?? `var(--${name})`;
+}
+

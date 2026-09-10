@@ -23,7 +23,7 @@
 
 import { computeSynastry, type NatalChart } from "@galaxia/astro";
 import React, { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { BODY_GLYPH, SIGN_GLYPH, signElement } from "../lib/design";
+import { BODY_GLYPH, designColor, SIGN_GLYPH, signElement } from "../lib/design";
 
 const SIGNS_ORDER = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
 const S = 300, CX = S / 2, CY = S / 2;
@@ -65,6 +65,16 @@ export type ChartWheelProps = {
    * to a static wheel — no handlers, no focus state.
    */
   interactive?: boolean;
+  /**
+   * Swaps every `var(--x)` colour for its literal hex (see EXPORT_COLOR_LITERALS
+   * in lib/design.ts). Set true only when this wheel is the root (or inside the
+   * root) of an html-to-image raster capture — an SVG subtree's presentation
+   * attributes are never re-resolved against `:root` by that capture, so an
+   * unresolved var() there paints as the SVG initial colour (black), not the
+   * intended one. Live/interactive/PDF rendering never sets this — those paths
+   * already resolve `var()` correctly (computed-style baking or real print DOM).
+   */
+  exportSafe?: boolean;
 };
 
 type ChartOwner = "a" | "b";
@@ -163,14 +173,14 @@ function svgAngle(lon: number, ascLon: number | null): number {
   return ascLon !== null ? n(180 - lon + ascLon) : n(270 - lon);
 }
 
-function elVar(sign: string): string {
-  return `var(--${signElement(sign)})`;
+function elVar(sign: string, exportSafe: boolean): string {
+  return designColor(signElement(sign), exportSafe);
 }
 
-function harmonyStroke(harmony: number): string {
-  if (harmony >= 1.2) return "var(--teal)";
-  if (harmony < 0) return "var(--rose)";
-  return "var(--mist)";
+function harmonyStroke(harmony: number, exportSafe: boolean): string {
+  if (harmony >= 1.2) return designColor("teal", exportSafe);
+  if (harmony < 0) return designColor("rose", exportSafe);
+  return designColor("mist", exportSafe);
 }
 
 function aspectAlpha(orb: number, harmony: number): number {
@@ -185,6 +195,7 @@ function planetRing(
   ascLon: number | null,
   baseR: number,
   owner: ChartOwner,
+  exportSafe: boolean,
 ): PlanetGlyph[] {
   const sorted = [...placements].filter((p) => p.confident !== false).sort((a, b) => a.lon - b.lon);
   const offsets = clusteredOffsets(sorted, 16, owner === "b" ? 10 : 12);
@@ -200,7 +211,7 @@ function planetRing(
       px,
       py,
       // B ring: teal so overlay stays distinct from A/natal element strokes.
-      stroke: overlay ? "var(--teal)" : elVar(p.sign),
+      stroke: overlay ? designColor("teal", exportSafe) : elVar(p.sign, exportSafe),
       gly: BODY_GLYPH[p.body] ?? p.body[0].toUpperCase(),
       overlay,
     };
@@ -231,7 +242,7 @@ export function orientSynastryWheel(
   return { chart: chartA, overlayChart: chartB, aspects };
 }
 
-export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interactive = true }: ChartWheelProps) {
+export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interactive = true, exportSafe = false }: ChartWheelProps) {
   const hasHouses = chart.cusps != null && chart.cusps.length >= 12;
   const ascLon: number | null = hasHouses ? (chart.cusps![0] ?? null) : null;
   const isOverlay = overlayChart != null;
@@ -246,10 +257,10 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
 
   const planetPositions: PlanetGlyph[] = isOverlay
     ? [
-        ...planetRing(chart.placements, ascLon, R_PLANET_A, "a"),
-        ...planetRing(overlayChart.placements, ascLon, R_PLANET_B, "b"),
+        ...planetRing(chart.placements, ascLon, R_PLANET_A, "a", exportSafe),
+        ...planetRing(overlayChart.placements, ascLon, R_PLANET_B, "b", exportSafe),
       ]
-    : planetRing(chart.placements, ascLon, R_PLANET, "a");
+    : planetRing(chart.placements, ascLon, R_PLANET, "a", exportSafe);
 
   const natalPrecisionOk = chart.precision === "exact" || chart.precision === "date";
   const aspectLines: AspectLine[] = (() => {
@@ -270,7 +281,7 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
             from: a.from,
             to: a.to,
             x0, y0, x1, y1,
-            stroke: harmonyStroke(a.harmony),
+            stroke: harmonyStroke(a.harmony, exportSafe),
             alpha: aspectAlpha(a.orb, a.harmony),
           };
         })
@@ -296,7 +307,7 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
           from: a.from,
           to: a.to,
           x0, y0, x1, y1,
-          stroke: harmonyStroke(a.harmony),
+          stroke: harmonyStroke(a.harmony, exportSafe),
           alpha: aspectAlpha(a.orb, a.harmony),
         };
       })
@@ -382,11 +393,11 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
             <g key={sign}>
               <path
                 d={`M${qx0},${qy0} A${R_OUT},${R_OUT} 0 0 0 ${qx1},${qy1} L${qi1},${qi1y} A${R_SIGN_IN},${R_SIGN_IN} 0 0 1 ${qi0},${qi0y} Z`}
-                fill={elVar(sign)}
+                fill={elVar(sign, exportSafe)}
                 fillOpacity={0.18}
               />
               <line x1={qx0} y1={qy0} x2={qi0} y2={qi0y} stroke={LINE_COLOR} strokeWidth="1" />
-              <text x={gx} y={gy} fill="var(--cream)" fontSize="13" textAnchor="middle" dominantBaseline="central">
+              <text x={gx} y={gy} fill={designColor("cream", exportSafe)} fontSize="13" textAnchor="middle" dominantBaseline="central">
                 {SIGN_GLYPH[sign]}
               </text>
             </g>
@@ -397,7 +408,7 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
             <text
               x={ascLabel.x}
               y={ascLabel.y}
-              fill="var(--gold)"
+              fill={designColor("gold", exportSafe)}
               fontSize="8"
               textAnchor={ascLabel.anchor}
               dominantBaseline="central"
@@ -409,7 +420,7 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
               <text
                 x={mcLabel.x}
                 y={mcLabel.y}
-                fill="var(--gold)"
+                fill={designColor("gold", exportSafe)}
                 fontSize="8"
                 textAnchor={mcLabel.anchor}
                 dominantBaseline="central"
@@ -423,7 +434,7 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
         {houseCusps.map(({ i, x0, y0, x1, y1, hx, hy }) => (
           <g key={i}>
             <line x1={x0} y1={y0} x2={x1} y2={y1} stroke={LINE_COLOR} strokeWidth="0.8" />
-            <text x={hx} y={hy} fill="var(--mist2)" fontSize="8" textAnchor="middle" dominantBaseline="central">
+            <text x={hx} y={hy} fill={designColor("mist2", exportSafe)} fontSize="8" textAnchor="middle" dominantBaseline="central">
               {i + 1}
             </text>
           </g>
@@ -449,7 +460,7 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
                 strokeWidth={isFocus ? 1.75 : 1.25}
               />
               {/* Cream glyph fill: element-coloured air was unreadable at mobile width. */}
-              <text x={px} y={py} fill="var(--cream)" fontSize={glyphFs} textAnchor="middle" dominantBaseline="central">
+              <text x={px} y={py} fill={designColor("cream", exportSafe)} fontSize={glyphFs} textAnchor="middle" dominantBaseline="central">
                 {gly}
               </text>
             </g>

@@ -149,3 +149,51 @@ describe("ChartWheel PDF / non-interactive", () => {
     expect(html).not.toContain("cursor:pointer");
   });
 });
+
+describe("ChartWheel exportSafe (raster capture)", () => {
+  it("defaults to false and keeps every existing var(--x) call site unchanged", () => {
+    const chart = computeNatalChart(EXACT_A);
+    const withDefault = renderToStaticMarkup(createElement(ChartWheel, { chart, interactive: false }));
+    const withExplicitFalse = renderToStaticMarkup(
+      createElement(ChartWheel, { chart, interactive: false, exportSafe: false })
+    );
+    expect(withDefault).toBe(withExplicitFalse);
+    expect(withDefault).toContain("var(--cream)");
+    expect(withDefault).toContain("var(--gold)");
+    expect(withDefault).toContain("var(--mist2)");
+  });
+
+  it("true swaps every colour for its literal hex — no var(--x) survives", () => {
+    const chart = computeNatalChart(EXACT_A);
+    const html = renderToStaticMarkup(
+      createElement(ChartWheel, { chart, interactive: false, exportSafe: true })
+    );
+    expect(html).not.toMatch(/var\(--/);
+    // Cream planet glyphs and sign-band glyphs.
+    expect(html).toContain('fill="#F4ECDB"');
+    // ASC label.
+    expect(html).toContain('fill="#E6AE6C"');
+  });
+
+  it("true resolves overlay (B ring) teal stroke and house-number mist2 fill to literals", () => {
+    const inner = computeNatalChart(EXACT_A);
+    const outer = computeNatalChart(EXACT_B);
+    const aspects = computeSynastry(inner, outer).aspects;
+    const html = renderToStaticMarkup(
+      createElement(ChartWheel, { chart: inner, overlayChart: outer, aspects, interactive: false, exportSafe: true })
+    );
+    expect(html).not.toMatch(/var\(--/);
+    expect(html).toContain('stroke="#6FB1B8"');
+    expect(html).toContain('fill="#8076a6"');
+  });
+
+  it("literal harmony stroke colours (rose/teal/mist) replace var(--x) on aspect lines", () => {
+    const chart = computeNatalChart(EXACT_A);
+    const only: WheelAspect[] = [{ from: "sun", to: "moon", type: "square", orb: 1.1, harmony: -1 }];
+    const html = renderToStaticMarkup(
+      createElement(ChartWheel, { chart, aspects: only, interactive: false, exportSafe: true })
+    );
+    expect(html).toContain('stroke="#DA8C8C"');
+    expect(html).not.toContain("var(--rose)");
+  });
+});

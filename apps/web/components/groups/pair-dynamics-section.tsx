@@ -107,13 +107,6 @@ export function PairDynamicsSection({ items, resolveId, onOpenPair }: PairDynami
               key={item.pair}
               className="pair-card"
               onClick={() => onOpenPair(idA!, idB!)}
-              onKeyDown={(event) => {
-                if (event.target !== event.currentTarget) return;
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  onOpenPair(idA!, idB!);
-                }
-              }}
             >
               {content}
               <button

@@ -161,9 +161,20 @@ function ComparePageInner() {
       // recently-created other person as Person B; only the two initial
       // slots, both stay freely changeable afterward.
       const preA = searchParams.get("a");
+      // BUG C (Groups pair dynamics deep link): an optional ?b=<personId>
+      // lets a caller (e.g. a Groups pair card) pre-load an exact pairing,
+      // not just Person A. Only honored alongside a valid ?a= and never
+      // equal to it; otherwise falls back to the existing first-non-A pick.
+      const preB = searchParams.get("b");
       const { personAId: aId, personBId: bId } =
         preA && rows.some(r => r.id === preA)
-          ? { personAId: preA, personBId: rows.find(r => r.id !== preA)?.id ?? null }
+          ? {
+              personAId: preA,
+              personBId:
+                preB && preB !== preA && rows.some(r => r.id === preB)
+                  ? preB
+                  : rows.find(r => r.id !== preA)?.id ?? null
+            }
           : initialComparePairIds(rows);
       if (aId) setPersonAId(aId);
       if (bId) setPersonBId(bId);

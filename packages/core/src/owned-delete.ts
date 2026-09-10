@@ -93,5 +93,5 @@ export const OWNED_DELETE_COPY = {
   groupErrorGeneric: "We could not delete this group. Nothing was removed.",
   personErrorGeneric: "We could not delete this person. Nothing was removed.",
   belowMinimumNotice:
-    "This group has fewer than three people, so a cohort reading cannot run. Add people or delete the group."
+    "This group has fewer than three people, so a group reading cannot run. Add people or delete the group."
 } as const;

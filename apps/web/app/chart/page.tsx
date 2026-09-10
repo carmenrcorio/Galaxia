@@ -211,7 +211,7 @@ export default function QuickChartPage() {
 
             {result.chart.cusps ? (
               <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
-                <ChartWheel chart={result.chart} />
+                <ChartWheel chart={result.chart} exportSafe />
               </section>
             ) : null}
           </ChartImageExport>

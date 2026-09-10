@@ -540,6 +540,7 @@ function ComparePageInner() {
                       chart={wheel.chart}
                       overlayChart={wheel.overlayChart}
                       aspects={wheel.aspects}
+                      exportSafe
                     />
                   </div>
                 ) : (

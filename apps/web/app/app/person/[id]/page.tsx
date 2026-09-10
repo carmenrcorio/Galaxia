@@ -921,7 +921,7 @@ export default function PersonProfilePage() {
                 ))}
             </div>
           ) : null}
-          <ChartWheel chart={chart} aspects={natalAspects} />
+          <ChartWheel chart={chart} aspects={natalAspects} exportSafe />
           {chart.houseSystemFallbackReason ? (
             <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
               {chart.houseSystemFallbackReason}

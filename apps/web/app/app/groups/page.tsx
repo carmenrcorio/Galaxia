@@ -1,14 +1,16 @@
 "use client";
 
-import { cohortOverlay, compareGenerational, type GenSignature, type NatalChart } from "@galaxia/astro";
+import { cohortOverlay, compareGenerational, type FamilyComparePersonInput, type GenSignature, type NatalChart } from "@galaxia/astro";
 import {
   OWNED_DELETE_COPY,
   formatGroupDeleteConfirmation,
+  hasPassed,
   isBelowGroupMinimum,
   readyMembersForCohortOverlay
 } from "@galaxia/core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { ChartGridSection } from "../../../components/groups/chart-grid-section";
 import { GenerationalMap } from "../../../components/groups/generational-map";
 import { GroupSelector, type GroupSelectorItem } from "../../../components/groups/group-selector";
 import { ManageGroupAccordion, type GroupKind } from "../../../components/groups/manage-group-accordion";
@@ -30,7 +32,7 @@ import {
 } from "../../../lib/groups-copy";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
-interface PersonLite { id: string; display_name: string; }
+interface PersonLite { id: string; display_name: string; passed_at?: string | null; }
 interface GroupRow    { id: string; name: string; kind: GroupKind; }
 
 /** Single source of truth for the currently loaded saved group (or null = new draft). */
@@ -113,6 +115,8 @@ function GroupsPageInner() {
   const [deleteWarning, setDeleteWarning] = useState<string | null>(null);
   const [deletingGroup, setDeletingGroup] = useState(false);
   const [manageOpen, setManageOpen]       = useState(false);
+  /** Personal-planet chart grid (any group kind) — independent of the generational cohort above. */
+  const [chartGridMembers, setChartGridMembers] = useState<FamilyComparePersonInput[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -152,6 +156,30 @@ function GroupsPageInner() {
     setManageOpen(true);
   }, [userId, groupSummaries]);
 
+  // Chart grid: independent of the generational cohort (which requires a
+  // computed `generational` signature per member) — this only needs the
+  // base chart, so it renders even when the cohort reading can't. Runs off
+  // `selectedPersonIds` directly rather than piggybacking on buildOverlay,
+  // so it stays populated even when a saved reading is hydrated from a
+  // stored note (which skips buildOverlay entirely).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (selectedPersonIds.length < 3) { setChartGridMembers([]); return; }
+      const { data: chartRows } = await supabase
+        .from("charts")
+        .select("person_id, data")
+        .in("person_id", selectedPersonIds);
+      if (cancelled) return;
+      const chartByPerson = new Map((chartRows ?? []).map((r) => [r.person_id as string, r.data as NatalChart]));
+      const members: FamilyComparePersonInput[] = people
+        .filter((p) => selectedPersonIds.includes(p.id) && chartByPerson.has(p.id))
+        .map((p) => ({ id: p.id, name: p.display_name, chart: chartByPerson.get(p.id)!, passed: hasPassed(p) }));
+      setChartGridMembers(members);
+    })();
+    return () => { cancelled = true; };
+  }, [selectedPersonIds, people, supabase]);
+
   const formComposition = useMemo(
     () => ({ name: groupName, kind: groupKind, memberIds: selectedPersonIds }),
     [groupName, groupKind, selectedPersonIds]
@@ -186,7 +214,7 @@ function GroupsPageInner() {
   );
 
   async function fetchPeople(uid: string) {
-    const { data } = await supabase.from("people").select("id, display_name").eq("owner_id", uid).order("display_name");
+    const { data } = await supabase.from("people").select("id, display_name, passed_at").eq("owner_id", uid).order("display_name");
     setPeople((data ?? []) as PersonLite[]);
   }
 
@@ -718,6 +746,9 @@ function GroupsPageInner() {
               onOpenPair={(idA, idB) => router.push(`/app/compare?a=${idA}&b=${idB}`)}
             />
           ) : null}
+
+          {/* Chart grid — personal planets, any group kind. */}
+          <ChartGridSection members={chartGridMembers} />
         </>
       ) : null}
 

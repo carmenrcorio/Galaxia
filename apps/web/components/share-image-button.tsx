@@ -1,8 +1,49 @@
 "use client";
 
 import { useState, type RefObject } from "react";
-import { toPng } from "html-to-image";
+import { toSvg } from "html-to-image";
 import { Spinner } from "./spinner";
+
+/**
+ * Rasterizes `node` the same way html-to-image's `toPng` does internally
+ * (`toSvg` → `<img>` → `<canvas>`), except it strips `backdrop-filter` /
+ * `-webkit-backdrop-filter` from the baked SVG before decoding it to an
+ * image. Chromium leaves everything below/around an element with an active
+ * backdrop-filter unpainted when it rasterizes html-to-image's
+ * foreignObject-based SVG onto a canvas, which clipped the bottom of the
+ * export (the MC label and the watermark) even though the DOM itself was
+ * complete. The filter blurs whatever sits *behind* the card, which a
+ * static export has already flattened away, so dropping it here costs
+ * nothing visually (same pattern already used by
+ * `.quick-chart-entry-reveal.glass-card` in globals.css).
+ */
+async function toPngWithoutBackdropFilterClip(
+  node: HTMLElement,
+  options: { pixelRatio: number; backgroundColor: string; cacheBust: boolean },
+): Promise<string> {
+  const svgDataUrl = await toSvg(node, { backgroundColor: options.backgroundColor, cacheBust: options.cacheBust });
+  const decoded = decodeURIComponent(svgDataUrl.slice(svgDataUrl.indexOf(",") + 1));
+  const stripped = decoded.replace(/(?:-webkit-)?backdrop-filter:[^;"]*;?/gi, "");
+  const fixedDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(stripped)}`;
+
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("Could not create the image."));
+    img.src = fixedDataUrl;
+  });
+  await img.decode().catch(() => {});
+
+  const canvas = document.createElement("canvas");
+  canvas.width = (img.naturalWidth || node.clientWidth) * options.pixelRatio;
+  canvas.height = (img.naturalHeight || node.clientHeight) * options.pixelRatio;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = options.backgroundColor;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL();
+}
 
 /**
  * "Share" — captures the referenced DOM node as a PNG (client-side only,
@@ -37,7 +78,7 @@ export function ShareImageButton({
     setError(null);
     setStatus(null);
     try {
-      const dataUrl = await toPng(targetRef.current, {
+      const dataUrl = await toPngWithoutBackdropFilterClip(targetRef.current, {
         pixelRatio: 2,
         backgroundColor: "#0a0717",
         cacheBust: true,

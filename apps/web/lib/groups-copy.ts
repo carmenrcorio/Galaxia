@@ -11,15 +11,70 @@
  * tested and reusable by any Groups surface.
  */
 
-const GEN_PLANETS = ["uranus", "neptune", "pluto"] as const;
+export const GEN_PLANETS = ["uranus", "neptune", "pluto"] as const;
 export type GenPlanetKey = (typeof GEN_PLANETS)[number];
 
-/** One-line domain gloss per generational planet — static, curated, never generated. */
+export type SharedSkyCoverage = "whole" | "majority" | "pair";
+
+// FOUNDER-REVIEW: authored. One-line domain gloss per generational planet. Static, never generated.
 export const GEN_PLANET_MEANING: Record<GenPlanetKey, string> = {
   uranus: "how the group handles disruption and change",
   neptune: "shared idealism vs. disillusionment",
   pluto: "instincts around power, control, and transformation",
 };
+
+/**
+ * Shared Sky sentence tails, keyed by coverage shape and planet.
+ * Distinct along both axes so Neptune-across-four and Uranus-across-two
+ * never resolve to the same ending. Looked up, never generated at render.
+ */
+// FOUNDER-REVIEW: authored. Shared Sky tails by (coverage, planet).
+export const SHARED_SKY_TAIL: Record<SharedSkyCoverage, Record<GenPlanetKey, string>> = {
+  whole: {
+    uranus: "This is the climate of change the whole group grew up in.",
+    neptune: "This is the dream, and the fog, the whole group inherited.",
+    pluto: "This is the power lesson the whole group was born into.",
+  },
+  majority: {
+    uranus: "Most of the group was formed in the same climate of change, so their reflex when something breaks is the room's default.",
+    neptune: "Most of the group inherited the same dream, which is why that idealism can feel like the group's own weather.",
+    pluto: "Most of the group was shaped by the same era of power, so the majority's instincts about control set the tone.",
+  },
+  pair: {
+    uranus: "A pair who break the mold the same way, even when the rest of the group does not.",
+    neptune: "A pair who dream in the same key. That private weather does not fill the room.",
+    pluto: "Those two were taught the same lesson about power, so they can lock in while others cannot.",
+  },
+};
+
+export function isGenPlanet(planet: string): planet is GenPlanetKey {
+  return (GEN_PLANETS as readonly string[]).includes(planet);
+}
+
+export function coverageShape(sharerCount: number, totalMembers: number): SharedSkyCoverage {
+  if (totalMembers > 0 && sharerCount >= totalMembers) return "whole";
+  if (sharerCount === 2) return "pair";
+  return "majority";
+}
+
+export function sharedSkyTail(coverage: SharedSkyCoverage, planet: string): string | undefined {
+  if (!isGenPlanet(planet)) return undefined;
+  return SHARED_SKY_TAIL[coverage][planet];
+}
+
+// FOUNDER-REVIEW: authored. Generational map framing line under the header.
+export const GENERATIONAL_MAP_FRAMING =
+  "These planets move slowly, so everyone born within a few years shares them. They show where instincts were formed, and where generations split.";
+
+// FOUNDER-REVIEW: authored. Groups page first-visit intro, three short lines.
+export const GROUPS_INTRO_LINES = [
+  "This page reads the slow planets: Uranus, Neptune, and Pluto. Everyone born within a few years shares them.",
+  "Shared sky is what the group has in common. Fault lines are where generations split.",
+  "Tap a gold-underlined name to see what a planet or sign means in plain English.",
+] as const;
+
+// FOUNDER-REVIEW: authored. Dismisses the Groups first-visit intro.
+export const GROUPS_INTRO_GOT_IT = "Got it";
 
 export function capitalizeWord(word: string): string {
   if (!word) return word;
@@ -110,10 +165,12 @@ export interface PartialOverlap {
   planet: string;
   sign: string;
   names: string[];
+  /** Full roster size. Needed to distinguish a pair (2) from a majority (3+ of N). */
+  totalMembers: number;
 }
 
 /**
- * Sub-group overlaps on a planet that fall short of the whole group — e.g.
+ * Sub-group overlaps on a planet that fall short of the whole group, e.g.
  * two of three members sharing Pluto in Capricorn. Only meaningful when the
  * planet did NOT make it into `sharedSky` (i.e. it's listed in `faultLines`),
  * and only when a sign-group has 2+ names but fewer than the full roster.
@@ -127,21 +184,135 @@ export function sharedSkyPartialOverlaps(
   for (const line of faultLines) {
     for (const g of line.groups) {
       if (g.names.length >= 2 && g.names.length < totalMembers) {
-        overlaps.push({ planet: line.planet, sign: g.sign, names: [...g.names] });
+        overlaps.push({ planet: line.planet, sign: g.sign, names: [...g.names], totalMembers });
       }
     }
   }
   return overlaps.sort((a, b) => b.names.length - a.names.length);
 }
 
+/**
+ * Group partial overlaps by the set of members who share them, so one
+ * sentence can cover every placement that same set holds (not one sentence
+ * per placement).
+ */
+export function groupPartialOverlapsByMembers(overlaps: PartialOverlap[]): PartialOverlap[][] {
+  const bySet = new Map<string, PartialOverlap[]>();
+  for (const overlap of overlaps) {
+    const key = [...overlap.names].sort().join("\0");
+    const bucket = bySet.get(key);
+    if (bucket) bucket.push(overlap);
+    else bySet.set(key, [overlap]);
+  }
+  const seen = new Set<string>();
+  const grouped: PartialOverlap[][] = [];
+  for (const overlap of overlaps) {
+    const key = [...overlap.names].sort().join("\0");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    grouped.push(bySet.get(key)!);
+  }
+  return grouped;
+}
+
+export interface SharedSkyLine {
+  key: string;
+  coverage: SharedSkyCoverage;
+  placements: Array<{ planet: string; sign: string }>;
+  names: string[];
+  gloss: string;
+  tail: string;
+  sentence: string;
+}
+
+function glossForPlanets(planets: readonly string[]): string {
+  return planets
+    .filter(isGenPlanet)
+    .map((planet) => GEN_PLANET_MEANING[planet])
+    .join("; ");
+}
+
+function tailForPlanets(coverage: SharedSkyCoverage, planets: readonly string[]): string {
+  return planets
+    .map((planet) => sharedSkyTail(coverage, planet))
+    .filter((tail): tail is string => Boolean(tail))
+    .join(" ");
+}
+
+function placementPhrase(placements: Array<{ planet: string; sign: string }>): string {
+  return joinNames(placements.map((p) => `${capitalizeWord(p.planet)} in ${p.sign}`));
+}
+
+function assembleSharedSkySentence(lead: string, gloss: string, tail: string): string {
+  if (gloss && tail) return `${lead}: ${gloss}. ${tail}`;
+  if (gloss) return `${lead}: ${gloss}.`;
+  if (tail) return `${lead}. ${tail}`;
+  return `${lead}.`;
+}
+
+function fullShareLine(planet: string, sign: string): SharedSkyLine {
+  const coverage: SharedSkyCoverage = "whole";
+  const placements = [{ planet, sign }];
+  const gloss = glossForPlanets([planet]);
+  const tail = tailForPlanets(coverage, [planet]);
+  const lead = `Everyone shares ${placementPhrase(placements)}`;
+  return {
+    key: `whole:${planet}-${sign}`,
+    coverage,
+    placements,
+    names: [],
+    gloss,
+    tail,
+    sentence: assembleSharedSkySentence(lead, gloss, tail),
+  };
+}
+
+function clusterLine(overlaps: PartialOverlap[]): SharedSkyLine {
+  const first = overlaps[0]!;
+  const coverage = coverageShape(first.names.length, first.totalMembers);
+  const placements = overlaps.map((o) => ({ planet: o.planet, sign: o.sign }));
+  const planets = placements.map((p) => p.planet);
+  const gloss = glossForPlanets(planets);
+  const tail = tailForPlanets(coverage, planets);
+  const lead = `${joinNames(first.names)} share ${placementPhrase(placements)}`;
+  return {
+    key: `partial:${[...first.names].sort().join(",")}:${planets.join(",")}`,
+    coverage,
+    placements,
+    names: [...first.names],
+    gloss,
+    tail,
+    sentence: assembleSharedSkySentence(lead, gloss, tail),
+  };
+}
+
 /** Sentence for a single partial shared-sky overlap. */
 export function describePartialOverlap(overlap: PartialOverlap): string {
-  return `${joinNames(overlap.names)} share ${capitalizeWord(overlap.planet)} in ${overlap.sign} — a strong generational bond within this group, even though it doesn't span all members.`;
+  return clusterLine([overlap]).sentence;
+}
+
+/** Whole-group Shared Sky sentence for one fully shared planet. */
+export function describeFullShare(planet: string, sign: string): string {
+  return fullShareLine(planet, sign).sentence;
+}
+
+/**
+ * Every Shared Sky line for a render: full-group shares AND partial
+ * clusters, evaluated per planet. A fully shared planet must not suppress
+ * partial clusters on the others.
+ */
+export function sharedSkyLines(overlay: CohortOverlayLike, totalMembers: number): SharedSkyLine[] {
+  const full = overlay.sharedSky.filter((s) => isGenPlanet(s.planet)).map((s) => fullShareLine(s.planet, s.sign));
+  const partials = groupPartialOverlapsByMembers(sharedSkyPartialOverlaps(overlay.faultLines, totalMembers)).map(
+    (cluster) => clusterLine(cluster)
+  );
+  return [...full, ...partials];
 }
 
 /** Fallback line when there is truly no overlap of any size on any planet. */
+// FOUNDER-REVIEW: authored. Shared Sky empty state when nothing overlaps.
 export const SHARED_SKY_NO_OVERLAP_NOTE =
-  "No outer planet sign is shared across all members — this group bridges generational cohorts, which is both its richness and its friction. See Fault Lines below for what divides them.";
+  "No outer planet sign is shared across all members. This group bridges generational cohorts, which is both its richness and its friction. See Fault Lines below for what divides them.";
 
 function partitionKey(groups: Array<{ names: string[] }>): string {
   return groups
@@ -176,13 +347,13 @@ export function faultLinesInterpretation(faultLines: CohortOverlayLike["faultLin
     const majority = minority === g1 ? g2! : g1!;
     return (
       `This group spans two distinct generational cohorts. ${planetsPhrase}, ${joinNames(minority.names)}'s instincts were ` +
-      `shaped by a different era than ${joinNames(majority.names)}'s — which is both what makes this group rich and where its deepest friction lives.`
+      `shaped by a different era than ${joinNames(majority.names)}'s, which is both what makes this group rich and where its deepest friction lives.`
     );
   }
 
   const planetsList = joinNames(planetLabels);
   return (
-    `This group's generational fault lines shift depending on the planet — ${planetsList} ${faultLines.length === 1 ? "splits" : "each split"} ` +
+    `This group's generational fault lines shift depending on the planet. ${planetsList} ${faultLines.length === 1 ? "splits" : "each split"} ` +
     "the group along a different line. That range is real: different people carry the friction depending on what's being negotiated."
   );
 }
@@ -226,7 +397,7 @@ export function generationalMapSummary(memberNames: readonly string[], overlay: 
   if (names.length < 2) return "";
 
   if (overlay.faultLines.length === 0) {
-    return "Everyone here shares the same generational sky — Uranus, Neptune, and Pluto all line up for the whole group.";
+    return "Everyone here shares the same generational sky. Uranus, Neptune, and Pluto all line up for the whole group.";
   }
 
   const signsByMember = memberSignsFromOverlay(names, overlay);
@@ -341,8 +512,8 @@ export function describePairHighlight(nameA: string, nameB: string, summary: str
     const detail = parsed.planets.map((p) => `${capitalizeWord(p.planet)} ${p.sign}`).join(" · ");
     const sentence =
       planetLabels.length >= GEN_PLANETS.length
-        ? `${nameA} and ${nameB} share every generational planet — their instincts about change, ideals, and power trace back to the same era.`
-        : `${nameA} and ${nameB} share ${joinNames(planetLabels)} — enough common generational ground to feel like the same era.`;
+        ? `${nameA} and ${nameB} share every generational planet. Their instincts about change, ideals, and power trace back to the same era.`
+        : `${nameA} and ${nameB} share ${joinNames(planetLabels)}, enough common generational ground to feel like the same era.`;
     return { badge: "SAME GENERATION", sentence, detail };
   }
 
@@ -351,8 +522,8 @@ export function describePairHighlight(nameA: string, nameB: string, summary: str
   const detail = parsed.planets.map((p) => `${capitalizeWord(p.planet)} ${p.signA}/${p.signB}`).join(" · ");
   const sentence =
     planetLabels.length >= GEN_PLANETS.length
-      ? `${nameA} and ${nameB} diverge on every generational planet — their instincts about change, ideals, and power were shaped by different eras.`
-      : `${nameA} and ${nameB} diverge on ${joinNames(planetLabels)}${remainder.length > 0 ? `, though they still share ${joinNames(remainder)}` : ""} — a real generational fault line between them.`;
+      ? `${nameA} and ${nameB} diverge on every generational planet. Their instincts about change, ideals, and power were shaped by different eras.`
+      : `${nameA} and ${nameB} diverge on ${joinNames(planetLabels)}${remainder.length > 0 ? `, though they still share ${joinNames(remainder)}` : ""}, a real generational fault line between them.`;
   return { badge: "FAULT LINE", sentence, detail };
 }
 

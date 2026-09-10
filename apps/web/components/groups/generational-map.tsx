@@ -15,8 +15,15 @@
  */
 
 import { InitialAvatar } from "../initial-avatar";
+import { GlossaryPlanet, GlossarySign } from "../glossary-term";
 import { BODY_GLYPH, SIGN_GLYPH } from "../../lib/design";
-import { generationalMapSummary, memberSignsFromOverlay, type CohortOverlayLike, type GenPlanetKey } from "../../lib/groups-copy";
+import {
+  GENERATIONAL_MAP_FRAMING,
+  generationalMapSummary,
+  memberSignsFromOverlay,
+  type CohortOverlayLike,
+  type GenPlanetKey,
+} from "../../lib/groups-copy";
 
 const ZODIAC_ORDER = [
   "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
@@ -41,7 +48,18 @@ export function GenerationalMap({ memberNames, overlay }: GenerationalMapProps) 
 
   return (
     <section className="glass-card fade-in">
-      <p className="eyebrow" style={{ marginBottom: 14 }}>Generational map</p>
+      <p className="eyebrow" style={{ marginBottom: 8 }}>Generational map</p>
+      <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6, margin: "0 0 14px" }}>
+        {GENERATIONAL_MAP_FRAMING}
+      </p>
+      <ul className="gen-map-legend">
+        {memberNames.map((name) => (
+          <li key={name} className="gen-map-legend__item">
+            <InitialAvatar name={name} size="sm" />
+            <span>{name}</span>
+          </li>
+        ))}
+      </ul>
       <div className="gen-map-scroll">
         <div className="gen-map">
           {GEN_ROWS.map((row) => {
@@ -56,7 +74,7 @@ export function GenerationalMap({ memberNames, overlay }: GenerationalMapProps) 
               <div className="gen-map-row" key={row.planet}>
                 <div className="gen-map-row__label">
                   <span className="gen-map-row__glyph" aria-hidden="true">{BODY_GLYPH[row.planet]}</span>
-                  <span>{row.label}</span>
+                  <GlossaryPlanet planet={row.planet}>{row.label}</GlossaryPlanet>
                 </div>
                 <div className="gen-map-track">
                   {ZODIAC_ORDER.map((sign) => {
@@ -65,7 +83,7 @@ export function GenerationalMap({ memberNames, overlay }: GenerationalMapProps) 
                       <div
                         key={sign}
                         className={`gen-map-slot${occupants ? " gen-map-slot--occupied" : ""}`}
-                        title={occupants ? `${occupants.join(", ")} — ${row.label} in ${sign}` : `${row.label} in ${sign}`}
+                        title={occupants ? `${occupants.join(", ")} · ${row.label} in ${sign}` : `${row.label} in ${sign}`}
                       >
                         {occupants ? (
                           <div className="gen-map-slot__dots">
@@ -79,7 +97,12 @@ export function GenerationalMap({ memberNames, overlay }: GenerationalMapProps) 
                             ))}
                           </div>
                         ) : null}
-                        <span className="gen-map-slot__sign" aria-hidden="true">{SIGN_GLYPH[sign]}</span>
+                        <div className="gen-map-slot__caption">
+                          <span className="gen-map-slot__sign" aria-hidden="true">{SIGN_GLYPH[sign]}</span>
+                          <span className="gen-map-slot__sign-name">
+                            <GlossarySign sign={sign}>{sign}</GlossarySign>
+                          </span>
+                        </div>
                       </div>
                     );
                   })}

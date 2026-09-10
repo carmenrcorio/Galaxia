@@ -1,13 +1,21 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "fs";
+import { resolve } from "path";
 import {
+  describeFullShare,
   describePairHighlight,
+  describePartialOverlap,
   distinctSignCountForPlanet,
   faultLinesInterpretation,
   generationalMapSummary,
+  GEN_PLANET_MEANING,
+  groupPartialOverlapsByMembers,
   groupSignatureLine,
   joinNames,
   parsePairNames,
   parsePairSummary,
+  SHARED_SKY_TAIL,
+  sharedSkyLines,
   sharedSkyPartialOverlaps,
   SHARED_SKY_NO_OVERLAP_NOTE,
   type CohortOverlayLike,
@@ -89,7 +97,12 @@ describe("sharedSkyPartialOverlaps", () => {
     ];
     const overlaps = sharedSkyPartialOverlaps(faultLines, 3);
     expect(overlaps).toHaveLength(1);
-    expect(overlaps[0]).toEqual({ planet: "pluto", sign: "Capricorn", names: ["Camila", "Emilio"] });
+    expect(overlaps[0]).toEqual({
+      planet: "pluto",
+      sign: "Capricorn",
+      names: ["Camila", "Emilio"],
+      totalMembers: 3,
+    });
   });
   it("returns nothing when every sign group is a singleton", () => {
     const faultLines: CohortOverlayLike["faultLines"] = [
@@ -233,5 +246,223 @@ describe("describePairHighlight", () => {
     const result = describePairHighlight("A", "B", "Same generation vibes, roughly.");
     expect(result.badge).toBe("SAME GENERATION");
     expect(result.sentence).toBe("Same generation vibes, roughly.");
+  });
+});
+
+describe("describePartialOverlap", () => {
+  const pairUranus = {
+    planet: "uranus",
+    sign: "Taurus",
+    names: ["Camila", "Emilio"],
+    totalMembers: 4,
+  };
+  const majorityUranus = {
+    planet: "uranus",
+    sign: "Taurus",
+    names: ["Camila", "Emilio", "Dana"],
+    totalMembers: 4,
+  };
+
+  it("pair versus majority produce different tails", () => {
+    const pair = describePartialOverlap(pairUranus);
+    const majority = describePartialOverlap(majorityUranus);
+    expect(pair).toContain(SHARED_SKY_TAIL.pair.uranus);
+    expect(majority).toContain(SHARED_SKY_TAIL.majority.uranus);
+    expect(SHARED_SKY_TAIL.pair.uranus).not.toBe(SHARED_SKY_TAIL.majority.uranus);
+    expect(pair).not.toBe(majority);
+  });
+
+  it("each planet produces a different tail", () => {
+    const tails = (["uranus", "neptune", "pluto"] as const).map((planet) => {
+      const sentence = describePartialOverlap({
+        planet,
+        sign: "Pisces",
+        names: ["Camila", "Emilio"],
+        totalMembers: 4,
+      });
+      expect(sentence).toContain(GEN_PLANET_MEANING[planet]);
+      expect(sentence).toContain(SHARED_SKY_TAIL.pair[planet]);
+      return SHARED_SKY_TAIL.pair[planet];
+    });
+    expect(new Set(tails).size).toBe(3);
+    const majorityTails = (["uranus", "neptune", "pluto"] as const).map((planet) => SHARED_SKY_TAIL.majority[planet]);
+    const wholeTails = (["uranus", "neptune", "pluto"] as const).map((planet) => SHARED_SKY_TAIL.whole[planet]);
+    expect(new Set([...tails, ...majorityTails, ...wholeTails]).size).toBe(9);
+  });
+
+  it("carries GEN_PLANET_MEANING so the line says what the planet means", () => {
+    const sentence = describePartialOverlap({
+      planet: "neptune",
+      sign: "Pisces",
+      names: ["Camila", "Emilio"],
+      totalMembers: 3,
+    });
+    expect(sentence).toContain(GEN_PLANET_MEANING.neptune);
+    expect(sentence).toContain("Camila and Emilio");
+    expect(sentence).toContain("Neptune in Pisces");
+  });
+});
+
+describe("sharedSkyLines", () => {
+  it("a full group share does not suppress partial clusters on other planets", () => {
+    const overlay: CohortOverlayLike = {
+      sharedSky: [{ planet: "neptune", sign: "Pisces" }],
+      faultLines: [
+        {
+          planet: "uranus",
+          groups: [
+            { sign: "Taurus", names: ["Camila", "Emilio"] },
+            { sign: "Sagittarius", names: ["Carmen"] },
+          ],
+        },
+        {
+          planet: "pluto",
+          groups: [
+            { sign: "Capricorn", names: ["Camila"] },
+            { sign: "Scorpio", names: ["Emilio"] },
+            { sign: "Leo", names: ["Carmen"] },
+          ],
+        },
+      ],
+    };
+    const lines = sharedSkyLines(overlay, 3);
+    expect(lines.some((line) => line.coverage === "whole" && line.placements[0]?.planet === "neptune")).toBe(true);
+    expect(lines.some((line) => line.placements.some((p) => p.planet === "uranus") && line.names.includes("Camila"))).toBe(true);
+    expect(lines.map((line) => line.sentence).join(" ")).toContain("Neptune");
+    expect(lines.map((line) => line.sentence).join(" ")).toContain("Uranus");
+  });
+
+  it("no two Shared Sky lines in one render share a tail", () => {
+    const overlay: CohortOverlayLike = {
+      sharedSky: [{ planet: "neptune", sign: "Pisces" }],
+      faultLines: [
+        {
+          planet: "uranus",
+          groups: [
+            { sign: "Taurus", names: ["Camila", "Emilio"] },
+            { sign: "Sagittarius", names: ["Carmen"] },
+            { sign: "Aquarius", names: ["Dana"] },
+          ],
+        },
+        {
+          planet: "pluto",
+          groups: [
+            { sign: "Capricorn", names: ["Camila", "Emilio", "Carmen"] },
+            { sign: "Scorpio", names: ["Dana"] },
+          ],
+        },
+      ],
+    };
+    const lines = sharedSkyLines(overlay, 4);
+    const tails = lines.map((line) => line.tail);
+    expect(tails.length).toBeGreaterThan(1);
+    expect(new Set(tails).size).toBe(tails.length);
+  });
+
+  it("groups partial overlaps by the set of members, one sentence per set", () => {
+    const overlaps = sharedSkyPartialOverlaps(
+      [
+        {
+          planet: "uranus",
+          groups: [
+            { sign: "Taurus", names: ["Camila", "Emilio"] },
+            { sign: "Sagittarius", names: ["Carmen"] },
+          ],
+        },
+        {
+          planet: "pluto",
+          groups: [
+            { sign: "Capricorn", names: ["Camila", "Emilio"] },
+            { sign: "Scorpio", names: ["Carmen"] },
+          ],
+        },
+      ],
+      3
+    );
+    const grouped = groupPartialOverlapsByMembers(overlaps);
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0]).toHaveLength(2);
+    const lines = sharedSkyLines(
+      {
+        sharedSky: [],
+        faultLines: [
+          {
+            planet: "uranus",
+            groups: [
+              { sign: "Taurus", names: ["Camila", "Emilio"] },
+              { sign: "Sagittarius", names: ["Carmen"] },
+            ],
+          },
+          {
+            planet: "pluto",
+            groups: [
+              { sign: "Capricorn", names: ["Camila", "Emilio"] },
+              { sign: "Scorpio", names: ["Carmen"] },
+            ],
+          },
+        ],
+      },
+      3
+    );
+    expect(lines).toHaveLength(1);
+    expect(lines[0]!.sentence).toContain("Uranus in Taurus");
+    expect(lines[0]!.sentence).toContain("Pluto in Capricorn");
+  });
+
+  it("whole-group lines use GEN_PLANET_MEANING and the whole-coverage tail", () => {
+    const sentence = describeFullShare("uranus", "Taurus");
+    expect(sentence).toContain(GEN_PLANET_MEANING.uranus);
+    expect(sentence).toContain(SHARED_SKY_TAIL.whole.uranus);
+    expect(sentence).toContain("Everyone shares Uranus in Taurus");
+  });
+});
+
+describe("em dash purge in Groups user-facing copy", () => {
+  function stripComments(source: string): string {
+    return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  }
+
+  it("ships zero U+2014 in user-facing strings in the three named files", () => {
+    const files = [
+      "lib/groups-copy.ts",
+      "app/app/groups/page.tsx",
+      "components/groups/generational-map.tsx",
+    ];
+    for (const rel of files) {
+      const src = stripComments(readFileSync(resolve(__dirname, "..", rel), "utf8"));
+      expect(src, `${rel} still contains U+2014 outside comments`).not.toContain("\u2014");
+    }
+  });
+
+  it("copy functions never emit an em dash", () => {
+    const samples = [
+      SHARED_SKY_NO_OVERLAP_NOTE,
+      describeFullShare("pluto", "Scorpio"),
+      describePartialOverlap({
+        planet: "neptune",
+        sign: "Pisces",
+        names: ["Camila", "Emilio"],
+        totalMembers: 3,
+      }),
+      generationalMapSummary(["Camila", "Emilio"], {
+        sharedSky: [
+          { planet: "uranus", sign: "Taurus" },
+          { planet: "neptune", sign: "Capricorn" },
+          { planet: "pluto", sign: "Scorpio" },
+        ],
+        faultLines: [],
+      }),
+      faultLinesInterpretation([
+        { planet: "uranus", groups: [{ sign: "Taurus", names: ["Camila", "Emilio"] }, { sign: "Sagittarius", names: ["Carmen"] }] },
+        { planet: "neptune", groups: [{ sign: "Pisces", names: ["Camila", "Emilio"] }, { sign: "Capricorn", names: ["Carmen"] }] },
+        { planet: "pluto", groups: [{ sign: "Capricorn", names: ["Camila", "Emilio"] }, { sign: "Scorpio", names: ["Carmen"] }] },
+      ]),
+      describePairHighlight("Carmen", "Camila", "Fault line: uranus Taurus/Sagittarius · neptune Pisces/Capricorn · pluto Capricorn/Scorpio.").sentence,
+      describePairHighlight("Camila", "Emilio", "Same generation (uranus Taurus, neptune Pisces, pluto Capricorn).").sentence,
+      describePairHighlight("Carmen", "Camila", "Fault line: uranus Taurus/Sagittarius · neptune Pisces/Capricorn.").sentence,
+    ];
+    for (const sample of samples) {
+      expect(sample).not.toContain("\u2014");
+    }
   });
 });

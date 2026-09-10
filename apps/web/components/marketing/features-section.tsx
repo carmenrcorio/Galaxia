@@ -99,9 +99,10 @@ export function FeaturesSection() {
             <span className="step-num">03 — Care</span>
             <h3>Care for the bond.</h3>
             <p>
-              Vela, your AI astrologer and relationship coach, helps you navigate the hard conversations
-              — drawing on the chart <em>and</em> plain good sense. Ask privately, or open a consented
-              shared space where Vela helps you both, without ever taking a side.
+              {/* FOUNDER-REVIEW: rewritten. Shared spaces are unshipped; this describes private Vela only. */}
+              Vela, your AI astrologer and relationship coach, helps you navigate the hard conversations,
+              drawing on the chart <em>and</em> plain good sense. Ask privately. Your notes about
+              someone stay yours.
             </p>
           </div>
           <div className="mock glass-card">

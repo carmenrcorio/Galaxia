@@ -43,11 +43,13 @@ You are responsible for the information you provide, for maintaining the confide
 
 ## 5\. Subscriptions, trial, billing, renewal, and cancellation
 
-**Plans.** Access to paid features requires a subscription. We offer a monthly plan and an annual plan at the prices shown in the Service at the time you subscribe. We may change prices prospectively; changes will not affect the term you have already paid for.
+<!-- FOUNDER-REVIEW: rewritten. The paywall sells monthly only; yearly is not offered. -->
+**Plans.** Access to paid features requires a subscription. We offer a monthly plan at the price shown in the Service at the time you subscribe. We may change prices prospectively; changes will not affect the term you have already paid for.
 
 **Free trial.** We may offer a free trial. If you start a trial and do not cancel before it ends, your subscription will begin automatically and the payment method you provided will be charged the applicable price. The length of the trial and the date it converts are shown to you at signup.
 
-**Automatic renewal.** Subscriptions renew automatically at the end of each billing period (monthly or annually, depending on your plan) at the then-current price, using your payment method on file, until you cancel. By subscribing, you authorize us and our payment providers to charge your payment method on a recurring basis.
+<!-- FOUNDER-REVIEW: rewritten. Renewals are monthly only. -->
+**Automatic renewal.** Subscriptions renew automatically at the end of each monthly billing period at the then-current price, using your payment method on file, until you cancel. By subscribing, you authorize us and our payment providers to charge your payment method on a recurring basis.
 
 **Cancellation.** You may cancel at any time through the Service or through the platform you subscribed on. When you cancel, you will retain access until the end of your current billing period, and you will not be charged again after that. Cancelling does not, by itself, delete your account or data; to delete your data, use the account-deletion feature (see Section 9).
 

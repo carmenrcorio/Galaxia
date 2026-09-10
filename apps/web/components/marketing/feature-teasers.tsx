@@ -26,7 +26,8 @@ const TEASERS: Teaser[] = [
   {
     eyebrow: "Your guide",
     title: "Meet Vela",
-    body: "Vela is your AI astrologer and relationship coach — grounded in both real charts and plain good sense. It never invents a placement, and never takes a side in a shared space.",
+    // FOUNDER-REVIEW: rewritten. Shared spaces are unshipped; this describes private Vela only.
+    body: "Vela is your AI astrologer and relationship coach, grounded in both real charts and plain good sense. It never invents a placement, and never breaches your privacy.",
     href: "/meet-vela",
     cta: "Meet Vela"
   },

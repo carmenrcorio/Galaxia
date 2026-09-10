@@ -8,13 +8,13 @@
  */
 
 import type { ReactNode } from "react";
-import { COMPAT_LABELS, compatWord } from "../lib/design";
+import { DynamicScoresTable, type DynamicScores } from "./dynamic-scores-table";
 
 // FOUNDER-REVIEW: authored — ease-scale legend for Your dynamic ratings table.
 const DYNAMIC_SCALE_LEGEND =
   "How to read this: these run from easiest to most effort. Gold comes naturally, teal takes a little tending, rose takes real work. Charged is the far end, the most friction between you, not the most spark.";
 
-export type DynamicScores = Record<string, number>;
+export type { DynamicScores };
 
 type Props = {
   scores: DynamicScores;
@@ -29,32 +29,8 @@ export function DynamicTableSection({ scores, children }: Props) {
       <p className="muted" style={{ fontSize: ".72rem", lineHeight: 1.5, marginBottom: 10 }}>
         {DYNAMIC_SCALE_LEGEND}
       </p>
-      <div
-        style={{
-          borderRadius: 14,
-          background: "rgba(111,177,184,.06)",
-          border: "1px solid rgba(111,177,184,.15)",
-          padding: "4px 0",
-          marginBottom: 14,
-        }}
-      >
-        {Object.entries(scores).map(([key, score]) => {
-          const { word, cls } = compatWord(score);
-          return (
-            <div
-              key={key}
-              className="dyn-row"
-              style={{
-                borderTop: key === "overall" ? "none" : "1px solid rgba(255,255,255,.04)",
-              }}
-            >
-              <span className="dyn-row-label" style={{ fontSize: ".82rem", color: "var(--mist)" }}>{COMPAT_LABELS[key] ?? key}</span>
-              <span className={`compat-word dyn-row-value ${cls}`} style={{ fontSize: ".88rem", fontFamily: "var(--serif)" }}>
-                {word}
-              </span>
-            </div>
-          );
-        })}
+      <div style={{ marginBottom: 14 }}>
+        <DynamicScoresTable scores={scores} />
       </div>
       {children}
     </section>

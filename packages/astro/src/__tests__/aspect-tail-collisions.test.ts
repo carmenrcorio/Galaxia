@@ -14,7 +14,8 @@
  * TEST ONLY. No copy authored here, no resolver logic changed. This file
  * only reads ../compare-guidance.ts (never imports its private
  * `ASPECT_ACTION` table, never edits it) and calls the real, exported
- * `computeNatalChart` / `computeSynastry` / `aspectActionParts` functions.
+ * `computeNatalChart` / `computeSynastry` / `aspectActionParts` /
+ * `interpretSynastryAspect` / `selectCompareAspectRows` functions.
  *
  * WHAT THIS PROVES (see BACKGROUND in the task): `aspectActionParts()`
  * resolves a tactic in two tiers —
@@ -68,13 +69,17 @@ import { fileURLToPath } from "node:url";
 import {
   computeNatalChart,
   computeSynastry,
+  interpretSynastryAspect,
   type AspectType,
   type BodyName,
   type NatalChart,
 } from "../index";
+import { ASPECT_NATURE } from "../interpretations";
 import {
+  aspectActionLine,
   aspectActionParts,
   RELATION_BODY_PRIORITY,
+  selectCompareAspectRows,
   type RelationType,
 } from "../compare-guidance";
 
@@ -384,4 +389,187 @@ describe("aspectActionParts() collision domain", () => {
   it("never lets two distinct body pairs collapse onto the same tactic text for a given relType", () => {
     expect(COLLISION_CLUSTERS).toEqual([]);
   });
+
+  /**
+   * Same uniqueness gate, but on the FULL rendered action line
+   * (`opener + tactic`, what `aspectActionLine` concatenates) rather than the
+   * authored tactic tail alone. The previous gate missed collisions that only
+   * appear after the register opener is applied.
+   */
+  it("never lets two distinct body pairs collapse onto the same full rendered action line for a given relType", () => {
+    const clusters: { relType: RelationType; line: string; pairs: string[] }[] = [];
+    for (const relType of RELATION_TYPES) {
+      const byLine = new Map<string, Set<string>>();
+      for (const probe of PROBE_ASPECTS) {
+        const pairKey = canonicalPairKey(probe.from, probe.to);
+        const line = aspectActionLine(
+          { from: probe.from, to: probe.to, harmony: probe.harmony },
+          relType
+        );
+        if (!line.trim()) continue;
+        let group = byLine.get(line);
+        if (!group) {
+          group = new Set();
+          byLine.set(line, group);
+        }
+        group.add(pairKey);
+      }
+      for (const [line, group] of byLine) {
+        if (group.size >= 2) clusters.push({ relType, line, pairs: Array.from(group) });
+      }
+    }
+    expect(clusters).toEqual([]);
+  });
 });
+
+function renderRowString(
+  aspect: { from: string; to: string; type: string; harmony: number },
+  relType: RelationType
+): { short: string; full: string; fallback: boolean } {
+  const type = aspect.type.toLowerCase() as AspectType;
+  const reading = interpretSynastryAspect(
+    aspect.from.toLowerCase() as BodyName,
+    aspect.to.toLowerCase() as BodyName,
+    type
+  );
+  const { flows, tactic } = aspectActionParts(aspect, relType);
+  const line = aspectActionLine(aspect, relType);
+  const nature = ASPECT_NATURE[type];
+  return {
+    short: reading.short,
+    full: `${reading.short}\n${flows ? "Nurture it: " : "Ease it: "}${tactic}.\n${line}`,
+    fallback: Boolean(nature && reading.short === nature.short && reading.long === nature.long),
+  };
+}
+
+describe("reading-layer collision domain", () => {
+  const DISTINCT_PAIRS = PAIRS.filter((p) => p.a !== p.b);
+
+  it("every distinct unordered pair x aspect type resolves to an authored reading, never ASPECT_NATURE", () => {
+    for (const { a, b } of DISTINCT_PAIRS) {
+      for (const type of ASPECT_TYPES) {
+        const reading = interpretSynastryAspect(a, b, type);
+        const nature = ASPECT_NATURE[type];
+        expect(reading.short, `${a}-${b} ${type}`).not.toBe(nature.short);
+        expect(reading.long, `${a}-${b} ${type}`).not.toBe(nature.long);
+      }
+    }
+  });
+
+  it("no two distinct (pair, type) cells share a reading short", () => {
+    const seen = new Map<string, string>();
+    for (const { a, b, key } of DISTINCT_PAIRS) {
+      for (const type of ASPECT_TYPES) {
+        const short = interpretSynastryAspect(a, b, type).short;
+        const prior = seen.get(short);
+        expect(prior, `duplicate short "${short}" at ${key} ${type} (first: ${prior})`).toBeUndefined();
+        seen.set(short, `${key} ${type}`);
+      }
+    }
+    expect(seen.size).toBe(DISTINCT_PAIRS.length * ASPECT_TYPES.length);
+  });
+
+  it("selectCompareAspectRows drops same-body and keeps the tighter orb of a directed reverse", () => {
+    const rows = selectCompareAspectRows(
+      [
+        { from: "moon", to: "uranus", type: "square", orb: 2.0, harmony: -1 },
+        { from: "uranus", to: "moon", type: "square", orb: 0.4, harmony: -1 },
+        { from: "sun", to: "sun", type: "conjunction", orb: 0.1, harmony: 1 },
+        { from: "venus", to: "mars", type: "trine", orb: 1.0, harmony: 1 },
+      ],
+      "friends",
+      6
+    );
+    expect(rows.map((r) => `${r.from}-${r.to}-${r.type}-${r.orb}`)).toEqual([
+      "uranus-moon-square-0.4",
+      "venus-mars-trine-1",
+    ]);
+  });
+
+  it("selectCompareAspectRows keeps both types when the same unordered pair aspects twice", () => {
+    const rows = selectCompareAspectRows(
+      [
+        { from: "moon", to: "uranus", type: "trine", orb: 1.2, harmony: 1 },
+        { from: "uranus", to: "moon", type: "square", orb: 0.8, harmony: -1 },
+      ],
+      "friends",
+      6
+    );
+    expect(rows).toHaveLength(2);
+  });
+});
+
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a += 0x6d2b79f5;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+describe("200-pair compare report simulation", () => {
+  it("renders zero ASPECT_NATURE fallbacks and zero duplicate shorts in a single report", () => {
+    const rng = mulberry32(20260910);
+    const relCycle = RELATION_TYPES;
+    let displayed = 0;
+    let fallback = 0;
+    let reportsWithDupShort = 0;
+    let reportsWithDupFull = 0;
+
+    for (let i = 0; i < 200; i++) {
+      const yearA = 1800 + Math.floor(rng() * (2027 - 1800 + 1));
+      const yearB = 1800 + Math.floor(rng() * (2027 - 1800 + 1));
+      const monthA = 1 + Math.floor(rng() * 12);
+      const monthB = 1 + Math.floor(rng() * 12);
+      const dayA = 1 + Math.floor(rng() * 28);
+      const dayB = 1 + Math.floor(rng() * 28);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const chartA = computeNatalChart({
+        dateUTC: `${yearA}-${pad(monthA)}-${pad(dayA)}T12:00:00Z`,
+        precision: "exact",
+        lat: 40.7128,
+        lng: -74.006,
+      });
+      const chartB = computeNatalChart({
+        dateUTC: `${yearB}-${pad(monthB)}-${pad(dayB)}T12:00:00Z`,
+        precision: "exact",
+        lat: 51.5074,
+        lng: -0.1278,
+      });
+      const { aspects } = computeSynastry(chartA, chartB);
+      const relType = relCycle[i % relCycle.length]!;
+      const rows = selectCompareAspectRows(aspects, relType, 6);
+      const shorts: string[] = [];
+      const fulls: string[] = [];
+      for (const row of rows) {
+        displayed += 1;
+        const rendered = renderRowString(row, relType);
+        if (rendered.fallback) fallback += 1;
+        shorts.push(rendered.short);
+        fulls.push(rendered.full);
+      }
+      if (new Set(shorts).size !== shorts.length) reportsWithDupShort += 1;
+      if (new Set(fulls).size !== fulls.length) reportsWithDupFull += 1;
+    }
+
+    const fallbackPct = displayed === 0 ? 0 : (fallback / displayed) * 100;
+    // eslint-disable-next-line no-console
+    console.log(
+      `\n================ 200-PAIR READING SIMULATION ================\n` +
+        `Displayed rows: ${displayed}\n` +
+        `ASPECT_NATURE fallback rows: ${fallback} (${fallbackPct.toFixed(1)}%)\n` +
+        `Reports with duplicate reading shorts: ${reportsWithDupShort} / 200\n` +
+        `Reports with duplicate full row strings: ${reportsWithDupFull} / 200\n` +
+        `================================================================\n`
+    );
+
+    expect(fallback).toBe(0);
+    expect(fallbackPct).toBe(0);
+    expect(reportsWithDupShort).toBe(0);
+    expect(reportsWithDupFull).toBe(0);
+  });
+});
+

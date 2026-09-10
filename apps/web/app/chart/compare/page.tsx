@@ -150,7 +150,7 @@ export default function QuickComparePage() {
         window.history.replaceState(null, "", `/chart/compare?${qs}`);
       }
     } catch {
-      setError("Network error — check your connection and try again.");
+      setError("Network error. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -208,7 +208,7 @@ export default function QuickComparePage() {
   return (
     <QuickChartShell eyebrow="Quick Compatibility" title={fromShareLink ? "A compatibility reading" : viewer.userId ? "Check your compatibility." : "Check your compatibility, free."} authed={!!viewer.userId}>
       <p className="lede" style={{ marginBottom: 20 }}>
-        Enter both birth dates for a real synastry reading — where you flow, where you catch, and what each of you needs. Nothing is saved unless you choose to.
+        Enter both birth dates for a real synastry reading: where you flow, where you catch, and what each of you needs. Nothing is saved unless you choose to.
       </p>
 
       <RelatedLinks
@@ -349,7 +349,7 @@ export default function QuickComparePage() {
             {blockRomanticMinorRender ? null : !result.synastry ? (
               <section className="glass-card fade-in fade-in-delay-1">
                 <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>
-                  One of you has year-only birth data, so a full synastry read isn't possible — the planet-to-planet aspects would be guesses.
+                  One of you has year-only birth data, so a full synastry read isn't possible. The planet-to-planet aspects would be guesses.
                   What the generational layer shows: {result.generational.theme}
                 </p>
               </section>

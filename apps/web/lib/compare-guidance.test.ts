@@ -182,7 +182,7 @@ describe("PHASE 1: actionable per-aspect guidance", () => {
     const a = { from: "venus", to: "moon", harmony: 0.7 };
     const parts = aspectActionParts(a, "romantic");
     expect(parts.flows).toBe(true);
-    expect(parts.opener).toBe("Don't let this ease go unspoken between you —");
+    expect(parts.opener).toBe("Don't let this ease go unspoken between you:");
     expect(parts.tactic.length).toBeGreaterThan(10);
     expect(aspectActionLine(a, "romantic")).toBe(`${parts.opener} ${parts.tactic}.`);
   });
@@ -268,9 +268,9 @@ describe("1B: relationship-framed Compare headline (relType-keyed, score-band fa
   });
 
   it("falls back to the original score-band line for types the picker never offers (romantic, platonic)", () => {
-    expect(compareHeadline("romantic", 75)).toBe("High flow — momentum comes naturally here.");
-    expect(compareHeadline("platonic", 60)).toBe("Balanced — ease and growth in equal measure.");
-    expect(compareHeadline("romantic", 30)).toBe("Growth-heavy — real warmth under intentional care.");
+    expect(compareHeadline("romantic", 75)).toBe("High flow. Momentum comes naturally here.");
+    expect(compareHeadline("platonic", 60)).toBe("Balanced. Ease and growth in equal measure.");
+    expect(compareHeadline("romantic", 30)).toBe("Growth-heavy. Real warmth under intentional care.");
   });
 
   it("MINOR SAFETY: a minor pairing's available/default relation types never resolve to the partners headline", () => {

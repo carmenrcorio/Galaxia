@@ -249,7 +249,7 @@ function ComparePageInner() {
       const generationalOnly = compareGenerational(natalA.generational as GenSignature, natalB.generational as GenSignature, estimateYearGap(selectedA, selectedB));
       setResult(null);
       setStatus(
-        `${natalA.precision === "year" ? selectedA.display_name : selectedB.display_name} has year-only birth data, so a full synastry read isn't possible — the planet-to-planet aspects would be guesses. ` +
+        `${natalA.precision === "year" ? selectedA.display_name : selectedB.display_name} has year-only birth data, so a full synastry read isn't possible. The planet-to-planet aspects would be guesses. ` +
         `What the generational layer shows: ${generationalOnly.theme} Add a birth date to unlock the full comparison.`
       );
       return;
@@ -258,7 +258,7 @@ function ComparePageInner() {
     const generational = compareGenerational(natalA.generational as GenSignature, natalB.generational as GenSignature, estimateYearGap(selectedA, selectedB));
     const ageGap = estimateYearGap(selectedA, selectedB) ?? 0;
     const ancestralHeadline = relationType === "ancestor" || ageGap >= 18
-      ? `This connection spans different eras — the generational layer is the headline. ${generational.theme}` : null;
+      ? `This connection spans different eras. The generational layer is the headline. ${generational.theme}` : null;
 
     // Enrich PersonLite with chart placements for chart-specific guidance.
     // A sign the engine flagged as uncertain is not used for guidance copy.
@@ -351,7 +351,7 @@ function ComparePageInner() {
       birthFingerprint: result.birthFingerprint as string,
       chartFingerprint: result.chartFingerprint as string,
     };
-    const body = `Compared as ${relationType} — overall ${result.synastry.scores.overall}. A dated snapshot of this reading.`;
+    const body = `Compared as ${relationType}, overall ${result.synastry.scores.overall}. A dated snapshot of this reading.`;
     const { error } = await supabase.from("notes").insert({
       owner_id: userId, pair_low: pairLow, pair_high: pairHigh, kind: "compare_reading", body, payload
     });
@@ -502,7 +502,7 @@ function ComparePageInner() {
         <section className="glass-card fade-in">
           <p className="eyebrow" style={{ marginBottom: 8 }}>Reading held</p>
           <p className="muted" style={{ fontSize: ".88rem", lineHeight: 1.6 }}>
-            A minor is part of this comparison, so Galaxia won&apos;t produce a romantic or partner reading here. Choose a non-romantic relationship type — parent-child, siblings, friends, or ancestor — to see the comparison.
+            A minor is part of this comparison, so Galaxia won&apos;t produce a romantic or partner reading here. Choose a non-romantic relationship type (parent-child, siblings, friends, or ancestor) to see the comparison.
           </p>
         </section>
       ) : result ? (
@@ -617,7 +617,7 @@ function ComparePageInner() {
               <p className="eyebrow" style={{ marginBottom: 8 }}>Where your charts land on each other</p>
               {!houseOverlay.available ? (
                 <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>
-                  These are date-only charts, so the house placements that would show where each of you lands in the other&apos;s life (the {relationHouseHint(relationType)}) aren&apos;t computed — that needs an exact birth time. The reading above holds without them.
+                  These are date-only charts, so the house placements that would show where each of you lands in the other&apos;s life (the {relationHouseHint(relationType)}) aren&apos;t computed. That needs an exact birth time. The reading above holds without them.
                 </p>
               ) : houseOverlay.lines.length > 0 ? (
                 <div style={{ display: "grid", gap: 8 }}>
@@ -629,7 +629,7 @@ function ComparePageInner() {
                 </div>
               ) : (
                 <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>
-                  Both charts have houses, but nothing lands in the {relationHouseHint(relationType)} this type leans on — the connection lives in the aspects above, not the house overlay.
+                  Both charts have houses, but nothing lands in the {relationHouseHint(relationType)} this type leans on. The connection lives in the aspects above, not the house overlay.
                 </p>
               )}
             </section>
@@ -647,7 +647,7 @@ function ComparePageInner() {
             {result.generational.diverged.length > 0 ? (
               <div className="teal-callout" style={{ marginTop: 10 }}>
                 <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>
-                  Fault line: {result.generational.diverged.map((d: any) => `${d.planet} — ${d.signA} vs ${d.signB}`).join(" · ")}
+                  Fault line: {result.generational.diverged.map((d: any) => `${d.planet}: ${d.signA} vs ${d.signB}`).join(" · ")}
                 </p>
               </div>
             ) : null}
@@ -672,7 +672,7 @@ function ComparePageInner() {
             </Link>
             {pairHasMinor ? (
               <p className="muted" style={{ marginTop: 12, fontSize: ".78rem", lineHeight: 1.6, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10, textAlign: "left" }}>
-                A minor is part of this comparison, so Vela stays in private coaching mode — it guides you and the child never sees the conversation.
+                A minor is part of this comparison, so Vela stays in private coaching mode. It guides you and the child never sees the conversation.
               </p>
             ) : null}
           </section>
@@ -682,7 +682,7 @@ function ComparePageInner() {
             <p className="eyebrow" style={{ marginBottom: 8 }}>Save this reading</p>
             {/* FOUNDER-REVIEW: authored — save-reading framing (deterministic when charts match). */}
             <p className="muted" style={{ fontSize: ".8rem", marginBottom: 10 }}>
-              With the same chart positions, a comparison is the same every time — so a saved reading is a dated record, not a trend.
+              With the same chart positions, a comparison is the same every time, so a saved reading is a dated record, not a trend.
               It lives on both {result.personA.display_name}&apos;s and {result.personB.display_name}&apos;s pages.
             </p>
             <button className="btn-primary" onClick={saveReading} disabled={savingReading} style={{ gap: 8 }}>
@@ -701,12 +701,12 @@ function ComparePageInner() {
             {chartRewrittenReading ? (
               // FOUNDER-REVIEW: authored — saved reading vs chart rewrite (not a relationship trend).
               <p className="muted" style={{ fontSize: ".78rem", marginTop: 12, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
-                A reading saved on {new Date(chartRewrittenReading.createdAt).toLocaleDateString()} is not comparable to this re-run — the planet positions in one or both charts were corrected since it was saved. That is a chart update, not the relationship moving.
+                A reading saved on {new Date(chartRewrittenReading.createdAt).toLocaleDateString()} is not comparable to this re-run. The planet positions in one or both charts were corrected since it was saved. That is a chart update, not the relationship moving.
               </p>
             ) : birthChangedReading ? (
               // FOUNDER-REVIEW: authored — saved reading vs birth-field edit.
               <p className="muted" style={{ fontSize: ".78rem", marginTop: 12, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
-                A reading saved on {new Date(birthChangedReading.createdAt).toLocaleDateString()} differs from this one because the birth data changed since — not because the relationship did.
+                A reading saved on {new Date(birthChangedReading.createdAt).toLocaleDateString()} differs from this one because the birth data changed since, not because the relationship did.
               </p>
             ) : provenanceMissingReading ? (
               // FOUNDER-REVIEW: authored — legacy saved reading without chart fingerprint.
@@ -724,11 +724,11 @@ function ComparePageInner() {
                     {r.comparability === "comparable" ? (
                       <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""}</>
                     ) : r.comparability === "chart_rewritten" ? (
-                      <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""} · not comparable to this re-run — chart positions were corrected since</>
+                      <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""} · not comparable to this re-run. Chart positions were corrected since</>
                     ) : r.comparability === "birth_changed" ? (
-                      <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""} · not comparable — birth data changed since</>
+                      <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""} · not comparable. Birth data changed since</>
                     ) : (
-                      <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""} · snapshot only — no chart provenance to compare</>
+                      <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""} · snapshot only. No chart provenance to compare</>
                     )}
                   </div>
                 ))}
@@ -739,7 +739,7 @@ function ComparePageInner() {
           {/* Log moment */}
           <section className="glass-card fade-in fade-in-delay-3">
             <p className="eyebrow" style={{ marginBottom: 8 }}>Log a moment (private)</p>
-            <p className="muted" style={{ fontSize: ".78rem", marginBottom: 10 }}>Saved to this pair's shared record — visible on both their pages.</p>
+            <p className="muted" style={{ fontSize: ".78rem", marginBottom: 10 }}>Saved to this pair's shared record, visible on both their pages.</p>
             <textarea className="field field--rect" value={noteDraft} onChange={e => setNoteDraft(e.target.value)} placeholder="Capture what happened and what you noticed…" rows={3} style={{ borderRadius: 14, marginBottom: 10 }} />
             <button className="btn-primary" onClick={saveMoment} disabled={saving || !noteDraft.trim()} style={{ gap: 8 }}>
               {saving && <Spinner size={13} color="#1a1206" />}

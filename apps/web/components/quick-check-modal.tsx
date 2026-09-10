@@ -32,7 +32,7 @@ import {
   interpretSynastryAspect,
   type AspectKey,
   type BodyKey,
-  sortAspectsForFocus,
+  selectCompareAspectRows,
   whatTheyNeed,
   type RelationType,
 } from "@galaxia/astro";
@@ -175,7 +175,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
           </div>
         ) : !result ? (
           <div style={{ display: "grid", gap: 12 }}>
-            <p className="muted" style={{ fontSize: ".82rem" }}>Just met someone? Enter what you know for an instant compatibility read against your own chart — nothing saves unless you choose to.</p>
+            <p className="muted" style={{ fontSize: ".82rem" }}>Just met someone? Enter what you know for an instant compatibility read against your own chart. Nothing saves unless you choose to.</p>
 
             <div>
               <p className="eyebrow" style={{ marginBottom: 8 }}>Romantic or platonic?</p>
@@ -202,7 +202,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
           <div style={{ display: "grid", gap: 12 }}>
             {!result.synastry ? (
               <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>
-                {(name || "They")} {name ? "has" : "have"} year-only birth data, so a full synastry read isn't possible — the planet-to-planet aspects would be guesses. Add a birth date for the real read; you can still save them now.
+                {(name || "They")} {name ? "has" : "have"} year-only birth data, so a full synastry read isn't possible. The planet-to-planet aspects would be guesses. Add a birth date for the real read; you can still save them now.
               </p>
             ) : (
               <>
@@ -220,7 +220,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
                 </p>
                 <div>
                   <p className="eyebrow" style={{ marginBottom: 6 }}>Where it flows and catches</p>
-                  {sortAspectsForFocus(result.synastry.aspects.filter((a) => a.from !== a.to).sort((a, b) => a.orb - b.orb), focus).slice(0, 4).map((a, idx) => {
+                  {selectCompareAspectRows(result.synastry.aspects, focus, 4).map((a, idx) => {
                     const reading = interpretSynastryAspect(a.from.toLowerCase() as BodyKey, a.to.toLowerCase() as BodyKey, a.type.toLowerCase() as AspectKey);
                     return (
                       <div key={`${a.from}-${a.to}-${idx}`} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>

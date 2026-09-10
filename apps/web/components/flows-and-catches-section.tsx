@@ -15,7 +15,7 @@ import {
   orbStrength,
   relationLensCaption,
   relationshipAspectFraming,
-  sortAspectsForFocus,
+  selectCompareAspectRows,
   type AspectKey,
   type BodyKey,
   type RelationType,
@@ -59,11 +59,9 @@ function introFor(relationType: RelationType): string {
 
 export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: Props) {
   const [showDetail, setShowDetail] = useState(false);
-  // Full RelationType focus sort — romantic/platonic and /app/compare types alike.
-  const ordered = sortAspectsForFocus(
-    aspects.filter((a) => a.from !== a.to).sort((a, b) => a.orb - b.orb),
-    relationType
-  ).slice(0, 6);
+  // Full RelationType focus sort. Drops same-body and duplicate unordered
+  // pair+type rows so two directions of one pair cannot render identical copy.
+  const ordered = selectCompareAspectRows(aspects, relationType, 6);
 
   const intro = introFor(relationType);
 

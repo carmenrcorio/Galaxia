@@ -106,7 +106,7 @@ describe("1B parity — mobile Compare shares web's relType-keyed compareHeadlin
     expect(compareHeadline("siblings", 40)).toBe(
       "You two share a history and a floor neither of you can walk off. Here's what runs smooth between you, and where the old patterns catch."
     );
-    expect(compareHeadline("romantic", 80)).toBe("High flow — momentum comes naturally here.");
+    expect(compareHeadline("romantic", 80)).toBe("High flow. Momentum comes naturally here.");
   });
 });
 

@@ -160,7 +160,7 @@ export default function CompareScreen() {
     const ageGap = estimateYearGap(selectedA, selectedB) ?? 0;
     const ancestralHeadline =
       relationType === "ancestor" || selectedA.relation === "ancestor" || selectedB.relation === "ancestor" || ageGap >= 18
-        ? `This connection spans different eras — the generational layer is the headline. ${generational.theme}`
+        ? `This connection spans different eras. The generational layer is the headline. ${generational.theme}`
         : null;
 
     setResult({ personA: selectedA, personB: selectedB, synastry, generational, ancestralHeadline });

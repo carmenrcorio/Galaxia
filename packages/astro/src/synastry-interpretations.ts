@@ -21,6 +21,21 @@
 // drops from===to, so they never render. Relation type is not in the lookup, so every
 // string here can appear on parent-child / ancestor / friends as well as partners.
 // Voice is between-you, family-safe: no sexual, romantic, or possessive charge.
+//
+// BEFORE YOU AUTHOR AN ENTRY, READ THIS:
+// AspectKey has no relation-type dimension. There is no "romantic" vs "parent-child"
+// vs "ancestor" variant of interpretSynastryAspect(); the SAME string you write here
+// renders on a couple's page and on a parent reading about their own child, unedited.
+// PASS 1 (the 7 personal/social bodies) shipped 15 strings, concentrated in
+// mars-venus, that assumed a romantic reader: "chemistry," "attraction," "desire,"
+// "passion," "magnetic," and one that told you to "want each other" and "rub each
+// other." They shipped to production unreviewed and rendered on parent-child and
+// ancestor comparisons for a full pass, because nothing structural caught them.
+// They were rewritten once caught; __tests__/no-romantic-terms-in-synastry-copy.test.ts
+// (see that file for the enforced term list) now fails the build if a new one lands.
+// Write the dynamic honestly (Mars-Venus IS a pull toward someone, a wanting of
+// their attention) but describe it in words a parent could read about their kid, or
+// a grandchild could read about an ancestor, without wincing.
 
 import type { BodyKey, AspectKey, Reading } from "./interpretations";
 import { ASPECT_NATURE } from "./interpretations";
@@ -46,9 +61,10 @@ export const SYNASTRY_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> 
       short: "wants one thing, needs another",
       long: "One of you pushes to be seen while the other pulls toward safety, and those aims scrape. It is not a flaw in either of you, just different settings. Say which you need in the moment.",
     },
+    // FOUNDER-REVIEW
     opposition: {
       short: "pulled two ways, drawn together",
-      long: "You sit on opposite ends of self and feeling, so you each carry what the other lacks. That is the magnetic part and the tiring part. Treat the difference as a completion, not a correction.",
+      long: "You sit on opposite ends of self and feeling, so you each carry what the other lacks. That is the pull that draws you together and the same pull that wears you out. Treat the difference as a completion, not a correction.",
     },
   },
 
@@ -94,9 +110,10 @@ export const SYNASTRY_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> 
       short: "warmth that rubs on taste",
       long: "You care, but what one of you finds worth valuing can chafe the other. The feeling is real; the taste differs. Respect the difference instead of trying to convert it.",
     },
+    // FOUNDER-REVIEW
     opposition: {
       short: "drawn together across a gap in taste",
-      long: "Attraction pulls you close while your values sit on opposite sides. That tension is part of the draw. Let each of you keep your own sense of what is good.",
+      long: "You are drawn close to each other while your values sit on opposite sides. That tension is part of the pull. Let each of you keep your own sense of what is good.",
     },
   },
 
@@ -118,8 +135,9 @@ export const SYNASTRY_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> 
       short: "two wills that push",
       long: "You both want to lead, and that grinds. Badly handled it is a turf war; well handled it is healthy heat. Decide who drives which parts before it becomes a contest.",
     },
+    // FOUNDER-REVIEW
     opposition: {
-      short: "attraction with friction in it",
+      short: "a pull with sparks in it",
       long: "Your drives point opposite ways, so you strike sparks, wanted and unwanted. The heat that pulls you together is the same heat that argues. Aim it outward, not at each other.",
     },
   },
@@ -222,25 +240,28 @@ export const SYNASTRY_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> 
 
   // ---- MOON / MARS -------------------------------------------------------------
   "mars-moon": {
+    // FOUNDER-REVIEW
     conjunction: {
       short: "feelings run hot",
-      long: "Emotion and drive fuse, so your reactions are strong and fast, in passion and in temper. It makes for real heat and real fights. Give the feelings a place to move before they move you.",
+      long: "Emotion and drive fuse, so your reactions are strong and fast, intense in feeling and in temper. It makes for real heat and real fights. Give the feelings a place to move before they move you.",
     },
     trine: {
       short: "emotion and action in sync",
       long: "What you feel, you can act on cleanly together. There is a healthy directness here; upsets tend to move through rather than fester.",
     },
+    // FOUNDER-REVIEW
     sextile: {
       short: "healthy heat when you engage",
-      long: "Passion and momentum are on hand when you lean in. It rewards the pair who acts on a feeling rather than sitting in it.",
+      long: "Intensity and momentum are on hand when you lean in. It rewards the pair who acts on a feeling rather than sitting in it.",
     },
     square: {
       short: "quick to spark",
       long: "One of you can feel provoked by the other's pace or heat, and it flares fast. Not malice, just friction between mood and momentum. Cool the burner before you settle it.",
     },
+    // FOUNDER-REVIEW
     opposition: {
-      short: "passion pulling against comfort",
-      long: "Drive and need face off, so you can inflame or balance each other. The same heat that attracts can tip into conflict. Learn each other's fuse.",
+      short: "intensity pulling against comfort",
+      long: "Drive and need face off, so you can inflame or balance each other. The same heat that pulls you close can tip into conflict. Learn each other's fuse.",
     },
   },
 
@@ -390,25 +411,30 @@ export const SYNASTRY_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> 
 
   // ---- VENUS / MARS ------------------------------------------------------------
   "mars-venus": {
+    // FOUNDER-REVIEW
     conjunction: {
       short: "wanting and warmth, fused",
-      long: "The classic chemistry contact: affection and desire in the same place. The attraction is immediate. Keep tending the warmth so it does not burn down to just heat.",
+      long: "Affection and wanting occupy the same place, so the pull toward each other is immediate. Being near them stops feeling like a choice and starts feeling automatic. Keep tending the warmth so it does not burn down to just heat.",
     },
+    // FOUNDER-REVIEW
     trine: {
-      short: "attraction that flows easily",
-      long: "Desire and affection move in sync, so the spark feels natural rather than fraught. This is the easy chemistry that keeps a bond alive; do not let it go unspoken.",
+      short: "a pull that flows easily",
+      long: "Wanting and affection move in sync, so the pull feels natural rather than fraught. This is the easy draw that keeps a bond alive; do not let it go unspoken.",
     },
+    // FOUNDER-REVIEW
     sextile: {
-      short: "easy chemistry when you engage",
-      long: "The attraction is available and uncomplicated once you turn toward it. It rewards the pair who keeps choosing each other rather than coasting.",
+      short: "an easy pull when you engage",
+      long: "The pull is available and uncomplicated once you turn toward it. It rewards the pair who keeps choosing each other rather than coasting.",
     },
+    // FOUNDER-REVIEW
     square: {
       short: "heat with friction in it",
-      long: "You want each other and you rub each other, often at once. The tension is part of the charge. Let it drive you toward each other, not into a fight.",
+      long: "The pull toward each other and the friction between you show up together, often in the same breath. The tension is part of the intensity. Use it to close the distance between you, not to win the argument.",
     },
+    // FOUNDER-REVIEW
     opposition: {
-      short: "magnetic pull across a gap",
-      long: "Desire and affection sit opposite, so the attraction runs hot and a little combustible. The very difference that pulls you can also spark conflict. Ride it consciously.",
+      short: "a powerful pull across a gap",
+      long: "Wanting and affection sit opposite, so the pull runs hot and a little combustible. The very difference that draws you together can also spark conflict. Ride it consciously.",
     },
   },
 

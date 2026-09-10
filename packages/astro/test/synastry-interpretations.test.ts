@@ -29,7 +29,7 @@ describe("interpretSynastryAspect", () => {
   it("returns curated between-you copy for a PASS 1 pair (venus-mars square)", () => {
     const reading = interpretSynastryAspect("venus", "mars", "square");
     expect(reading.short).toBe("heat with friction in it");
-    expect(reading.long).toContain("You want each other");
+    expect(reading.long).toContain("The pull toward each other and the friction between you show up together");
     expect(interpretSynastryAspect("mars", "venus", "square").short).toBe(reading.short);
   });
 

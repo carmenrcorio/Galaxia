@@ -23,15 +23,14 @@ describe("GlossaryTerm", () => {
   it("opens on focus and Escape dismisses the visible popover", () => {
     render(<GlossaryTerm term="Taurus" meaning="Steady and built to last." />);
     const trigger = screen.getByRole("button", { name: "Taurus" });
-    const describedBy = trigger.getAttribute("aria-describedby")!;
-    const tooltip = document.getElementById(describedBy)!;
 
     fireEvent.focus(trigger);
-    expect(tooltip.className).toContain("is-open");
+    expect(document.querySelector(".glossary-term__floating")).toBeTruthy();
+    expect(document.querySelector(".glossary-term__floating")!.textContent).toBe("Steady and built to last.");
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
 
     fireEvent.keyDown(trigger, { key: "Escape" });
-    expect(tooltip.className).not.toContain("is-open");
+    expect(document.querySelector(".glossary-term__floating")).toBeNull();
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
   });
 

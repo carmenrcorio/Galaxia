@@ -4,9 +4,13 @@
  * First reusable glossary popover in this codebase. No tooltip library.
  * Keyboard-focusable trigger, Escape dismisses, aria-describedby wired so
  * the meaning is announced to screen readers on focus.
+ *
+ * The visible popover is portalled to document.body so overflow:auto
+ * ancestors (the generational map scroller) cannot clip it.
  */
 
-import { useEffect, useId, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode, type SyntheticEvent } from "react";
+import { createPortal } from "react-dom";
 import { planetMeaning, signMeaning } from "../lib/astro-glossary";
 
 function capitalizeWord(word: string): string {
@@ -20,13 +24,32 @@ interface GlossaryTermProps {
   children?: ReactNode;
 }
 
+const POPOVER_WIDTH = 240;
+
+function popoverStyle(trigger: HTMLElement): CSSProperties {
+  const rect = trigger.getBoundingClientRect();
+  let left = rect.left + rect.width / 2 - POPOVER_WIDTH / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - POPOVER_WIDTH - 8));
+  const spaceAbove = rect.top;
+  if (spaceAbove > 96) {
+    return { left, bottom: window.innerHeight - rect.top + 8, width: POPOVER_WIDTH };
+  }
+  return { left, top: rect.bottom + 8, width: POPOVER_WIDTH };
+}
+
 export function GlossaryTerm({ term, meaning, children }: GlossaryTermProps) {
   const reactId = useId();
   const descId = `glossary-desc-${reactId.replace(/:/g, "")}`;
   const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState<CSSProperties>({});
+  const [mounted, setMounted] = useState(false);
   const rootRef = useRef<HTMLSpanElement>(null);
   const triggerRef = useRef<HTMLSpanElement>(null);
   const skipFocusOpen = useRef(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -39,6 +62,22 @@ export function GlossaryTerm({ term, meaning, children }: GlossaryTermProps) {
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function update() {
+      const el = triggerRef.current;
+      if (!el) return;
+      setCoords(popoverStyle(el));
+    }
+    update();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
   }, [open]);
 
   function toggle(event: SyntheticEvent) {
@@ -83,13 +122,17 @@ export function GlossaryTerm({ term, meaning, children }: GlossaryTermProps) {
       >
         {children ?? term}
       </span>
-      <span
-        id={descId}
-        role="tooltip"
-        className={`glossary-term__popover${open ? " is-open" : ""}`}
-      >
+      <span id={descId} role="tooltip" className="glossary-term__sr">
         {meaning}
       </span>
+      {mounted && open
+        ? createPortal(
+            <span className="glossary-term__floating" role="tooltip" aria-hidden="true" style={coords}>
+              {meaning}
+            </span>,
+            document.body
+          )
+        : null}
     </span>
   );
 }

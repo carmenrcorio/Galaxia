@@ -720,7 +720,7 @@ select.field--rect {
   outline-offset: 2px;
   border-radius: 2px;
 }
-.glossary-term__popover {
+.glossary-term__sr {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -728,17 +728,9 @@ select.field--rect {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
 }
-.glossary-term__popover.is-open {
-  position: absolute;
-  clip: auto;
-  width: max(180px, 100%);
-  height: auto;
-  overflow: visible;
-  white-space: normal;
-  left: 50%;
-  bottom: calc(100% + 8px);
-  transform: translateX(-50%);
-  z-index: 50;
+.glossary-term__floating {
+  position: fixed;
+  z-index: 80;
   min-width: 180px;
   max-width: 240px;
   padding: 10px 12px;
@@ -747,6 +739,7 @@ select.field--rect {
   border: 1px solid rgba(230, 174, 108, .22);
   box-shadow: 0 16px 40px -16px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .05);
   color: var(--cream);
+  font-family: var(--sans);
   font-size: .78rem;
   font-weight: 400;
   font-style: normal;

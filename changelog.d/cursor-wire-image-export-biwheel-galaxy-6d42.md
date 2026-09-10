@@ -1,0 +1,15 @@
+## Wire image export to the biwheel and the galaxy view (branch `cursor/wire-image-export-biwheel-galaxy-6d42`) — 2026-09-10
+
+**Trigger**: `ShareImageButton` (html-to-image plus OS share or download, `ShareWatermark` burned in) already existed and was wired to Family Compare and Memorial Timeline only. The natal biwheel and the galaxy constellation had no image export. This is wiring, not new export infrastructure.
+
+`[ADDED]` **Shared `ChartImageExport` wrapper (`apps/web/components/chart-image-export.tsx`).** One place for the filename convention (`chartExportFilename`, a slug of a name with a stable fallback), the watermark placement, and the minor gate, used by all five call sites instead of five separate `ShareImageButton` calls. `ChartImageExportFrame` and `ChartImageExportButton` are exported separately for the galaxy view, which needs the trigger physically apart from the captured frame.
+
+`[ADDED]` **Single-chart export** on `/chart`, `/app/person/[id]`, and the single snapshot on `/s/[token]`. Captures the sign chips (or the existing sign reveal), the person's name, and the `ChartWheel`.
+
+`[ADDED]` **Compare export** on `/chart/compare`, `/app/compare`, and the compare snapshot on `/s/[token]`. Captures the overlay `ChartWheel`, the two names, and the six-row dynamic table. `FlowsAndCatchesSection` (the full aspect list) and the generational section stay outside the capture, both for phone-screenshot legibility and because the task explicitly scoped the capture to the table, not the full aspect list.
+
+`[ADDED]` **Galaxy export** on `/app`. A `budgetArmed`-gated ref (mirrors the existing adaptive-performance gate already inside the `draw()` loop) flips once the entrance ignition has finished and the sky is in its settled ambient-idle state; the export button only renders after that point, so a capture never lands mid-animation. The drawing code was not refactored out of its `useEffect`. `html-to-image` handles both the atmosphere and motion `<canvas>` layers natively (`cloneCanvasElement` calls `canvas.toDataURL()` per canvas during its clone pass), so no `toDataURL` compositing fallback was needed.
+
+`[ADDED]` **Minor gate.** `ChartImageExport`/`ChartImageExportButton` hide the image export control (never the reading or the link-share flow) whenever the caller passes `pairHasMinor: true`, sourced from `isMinorForSafety` (or the already-computed, stored `pairHasMinor` on a share snapshot) and never a raw `is_minor` column. Unit test in `components/chart-image-export.test.tsx` covers both the wrapper and the lower-level button primitive.
+
+`[DECISION]` **No new capture library.** `html-to-image`'s `cloneNode` pipeline already handles inline SVG (native `cloneNode`) and `<canvas>` (`toDataURL` substitution) without a per-technology option, and `ChartWheel` already renders correctly detached from interactivity (precedent: `chart-pdf-export.tsx` already uses `interactive={false}`), so this task is pure wiring onto the existing `ShareImageButton` mechanism.

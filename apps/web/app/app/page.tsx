@@ -1343,8 +1343,8 @@ export default function AppHomePage() {
           <p className="eyebrow" style={{ margin: 0 }}>Your constellation</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
             {!loading && people.length >= 3 ? (
-              <Link href="/app/family-compare" className="pill-link" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
-                Compare family
+              <Link href="/app/groups" className="pill-link" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
+                Compare as a group
               </Link>
             ) : null}
             {!loading && people.length > 0 ? (

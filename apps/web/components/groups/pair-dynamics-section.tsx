@@ -8,7 +8,9 @@
  * both people can be resolved to an id (never guessed).
  */
 
-import { describePairHighlight, parsePairNames } from "../../lib/groups-copy";
+import { Fragment } from "react";
+import { describePairHighlight, parsePairNames, parsePairSummary } from "../../lib/groups-copy";
+import { GlossaryPlanet, GlossarySign } from "../glossary-term";
 
 export interface PairDynamicsItem {
   /** Persisted pair key, "Name A × Name B". */
@@ -29,6 +31,33 @@ function ChevronIcon() {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="M6 3.5l5 4.5-5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+function PairDetailLine({ summary, fallback }: { summary: string; fallback: string }) {
+  const parsed = parsePairSummary(summary);
+  if (!parsed) {
+    return <p className="muted" style={{ margin: "6px 0 0", fontSize: ".72rem" }}>{fallback}</p>;
+  }
+  return (
+    <p className="muted" style={{ margin: "6px 0 0", fontSize: ".72rem" }}>
+      {parsed.planets.map((planet, index) => (
+        <Fragment key={`${planet.planet}-${planet.sign ?? planet.signA}-${index}`}>
+          {index > 0 ? " · " : null}
+          <GlossaryPlanet planet={planet.planet} />
+          {" "}
+          {planet.sign ? (
+            <GlossarySign sign={planet.sign} />
+          ) : (
+            <>
+              {planet.signA ? <GlossarySign sign={planet.signA} /> : null}
+              {planet.signA && planet.signB ? "/" : null}
+              {planet.signB ? <GlossarySign sign={planet.signB} /> : null}
+            </>
+          )}
+        </Fragment>
+      ))}
+    </p>
   );
 }
 
@@ -57,10 +86,10 @@ export function PairDynamicsSection({ items, resolveId, onOpenPair }: PairDynami
               </span>
               <div className="pair-card__body">
                 <p style={{ margin: 0, color: "var(--cream)", fontSize: ".88rem", lineHeight: 1.55 }}>{presentation.sentence}</p>
-                <p className="muted" style={{ margin: "6px 0 0", fontSize: ".72rem" }}>{presentation.detail}</p>
+                <PairDetailLine summary={item.summary} fallback={presentation.detail} />
               </div>
               {clickable ? (
-                <span className="pair-card__chevron"><ChevronIcon /></span>
+                <span className="pair-card__chevron" aria-hidden="true"><ChevronIcon /></span>
               ) : null}
             </>
           );
@@ -74,15 +103,24 @@ export function PairDynamicsSection({ items, resolveId, onOpenPair }: PairDynami
           }
 
           return (
-            <button
+            <div
               key={item.pair}
-              type="button"
               className="pair-card"
               onClick={() => onOpenPair(idA!, idB!)}
-              aria-label={`Open the full comparison for ${nameA} and ${nameB}`}
             >
               {content}
-            </button>
+              <button
+                type="button"
+                className="pair-card__open"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenPair(idA!, idB!);
+                }}
+                aria-label={`Open the full comparison for ${nameA} and ${nameB}`}
+              >
+                Open comparison
+              </button>
+            </div>
           );
         })}
       </div>

@@ -13,19 +13,18 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ChartGridSection } from "../../../components/groups/chart-grid-section";
 import { GenerationalMap } from "../../../components/groups/generational-map";
 import { GroupSelector, type GroupSelectorItem } from "../../../components/groups/group-selector";
+import { GroupsIntroCard } from "../../../components/groups/groups-intro-card";
 import { ManageGroupAccordion, type GroupKind } from "../../../components/groups/manage-group-accordion";
 import { PairDynamicsSection } from "../../../components/groups/pair-dynamics-section";
+import { SharedSkySection } from "../../../components/groups/shared-sky-section";
+import { GlossaryPlanet, GlossarySign } from "../../../components/glossary-term";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { Spinner } from "../../../components/spinner";
 import { BODY_GLYPH, SIGN_GLYPH } from "../../../lib/design";
 import { fetchGroupsCurrentReading, upsertGroupsCurrentReading } from "../../../lib/groups-cohort";
 import {
-  capitalizeWord,
-  describePartialOverlap,
   faultLinesInterpretation,
   groupSignatureLine,
-  sharedSkyPartialOverlaps,
-  SHARED_SKY_NO_OVERLAP_NOTE,
   GEN_PLANET_MEANING,
   type CohortOverlayLike,
   type GenPlanetKey,
@@ -207,11 +206,6 @@ function GroupsPageInner() {
   /** Persist reading / Ask Vela only for a clean saved group at the create minimum. */
   const canPersistAgainstLoaded = Boolean(loadedGroup) && !dirty && !loadedBelowMinimum;
   const showWorkspace = Boolean(loadedGroup) || dirty;
-
-  const partialOverlaps = useMemo(
-    () => (cohort ? sharedSkyPartialOverlaps(cohort.overlay.faultLines, cohort.memberIds.length) : []),
-    [cohort]
-  );
 
   async function fetchPeople(uid: string) {
     const { data } = await supabase.from("people").select("id, display_name, passed_at").eq("owner_id", uid).order("display_name");
@@ -586,6 +580,8 @@ function GroupsPageInner() {
       <h1 className="page-title">Groups</h1>
       <p className="muted lede">See each group&apos;s shared sky, its generational fault lines, and how each pair connects.</p>
 
+      <GroupsIntroCard />
+
       {groupSummaries.length > 0 ? (
         <GroupSelector
           groups={groupSummaries}
@@ -682,34 +678,7 @@ function GroupsPageInner() {
           {cohort ? <GenerationalMap memberNames={cohort.memberNames} overlay={cohort.overlay} /> : null}
 
           {/* Shared sky */}
-          {cohort ? (
-            <section className="glass-card fade-in">
-              <p className="eyebrow" style={{ marginBottom: 10 }}>Shared sky</p>
-              {cohort.overlay.sharedSky.length > 0 ? (
-                <div style={{ display: "grid", gap: 4 }}>
-                  {cohort.overlay.sharedSky.map((item) => (
-                    <div key={`${item.planet}-${item.sign}`} className="pl-row">
-                      <div className="glyph-sq" style={{ fontSize: ".9rem" }}>{BODY_GLYPH[item.planet]}</div>
-                      <div>
-                        <div className="pl-body">{capitalizeWord(item.planet)} in {SIGN_GLYPH[item.sign]} {item.sign}</div>
-                        <div className="pl-desc">Shared by the whole group</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : partialOverlaps.length > 0 ? (
-                <div style={{ display: "grid", gap: 10 }}>
-                  {partialOverlaps.map((o) => (
-                    <p key={`${o.planet}-${o.sign}`} className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6, margin: 0 }}>
-                      {describePartialOverlap(o)}
-                    </p>
-                  ))}
-                </div>
-              ) : (
-                <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>{SHARED_SKY_NO_OVERLAP_NOTE}</p>
-              )}
-            </section>
-          ) : null}
+          {cohort ? <SharedSkySection overlay={cohort.overlay} totalMembers={cohort.memberIds.length} /> : null}
 
           {/* Fault lines */}
           {cohort && cohort.overlay.faultLines.length > 0 ? (
@@ -722,15 +691,20 @@ function GroupsPageInner() {
                 <div key={line.planet} style={{ marginBottom: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
                     <span style={{ fontSize: "1.3rem", color: "var(--gold-soft)" }} aria-hidden="true">{BODY_GLYPH[line.planet]}</span>
-                    <strong style={{ color: "var(--teal)", letterSpacing: ".04em" }}>{line.planet.toUpperCase()}</strong>
+                    <GlossaryPlanet planet={line.planet}>
+                      <strong style={{ color: "var(--teal)", letterSpacing: ".04em" }}>{line.planet.toUpperCase()}</strong>
+                    </GlossaryPlanet>
                   </div>
                   <p className="muted" style={{ fontSize: ".76rem", fontStyle: "italic", marginLeft: 34, marginBottom: 8 }}>
                     {GEN_PLANET_MEANING[line.planet as GenPlanetKey] ?? "a distinctive generational signature"}
                   </p>
                   {line.groups.map((g) => (
                     <div key={`${line.planet}-${g.sign}`} style={{ marginLeft: 34, marginBottom: 4 }}>
-                      <span style={{ color: "var(--cream)", fontWeight: 600 }}>{SIGN_GLYPH[g.sign]} {g.sign}</span>
-                      <span className="muted" style={{ fontSize: 13 }}> — {g.names.join(", ")}</span>
+                      <span style={{ color: "var(--cream)", fontWeight: 600 }}>
+                        <span aria-hidden="true">{SIGN_GLYPH[g.sign]} </span>
+                        <GlossarySign sign={g.sign} />
+                      </span>
+                      <span className="muted" style={{ fontSize: 13 }}>: {g.names.join(", ")}</span>
                     </div>
                   ))}
                 </div>

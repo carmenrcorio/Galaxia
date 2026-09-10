@@ -605,23 +605,56 @@ select.field--rect {
   border-radius: 8px;
   background: rgba(255,255,255,.02);
   border-bottom: 2px solid rgba(255,255,255,.06);
-  padding: 6px 3px 16px;
+  padding: 6px 3px 8px;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
   gap: 3px;
-  min-height: 58px;
+  min-height: 72px;
 }
 .gen-map-slot--occupied {
   background: rgba(111,177,184,.07);
   border-bottom-color: rgba(230,174,108,.4);
 }
+.gen-map-slot__caption {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  margin-top: 2px;
+  width: 100%;
+}
 .gen-map-slot__sign {
-  position: absolute; bottom: 2px; left: 0; right: 0;
-  text-align: center; font-size: .85rem; color: var(--mist2); opacity: .55;
+  text-align: center; font-size: .85rem; color: var(--mist2); opacity: .7; line-height: 1;
+}
+.gen-map-slot__sign-name {
+  font-size: .5rem;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--mist2);
+  max-width: 100%;
+}
+.gen-map-slot__sign-name .glossary-term__trigger {
+  font-size: inherit;
+  color: inherit;
+  white-space: normal;
 }
 .gen-map-slot__dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
 
+.gen-map-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0 0 16px;
+  padding: 0;
+}
+.gen-map-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .72rem;
+  color: var(--mist);
+}
+
 /* Pair dynamics cards */
 .pair-card {
+  position: relative;
   display: flex; align-items: center; gap: 12px;
   width: 100%; text-align: left;
   border-radius: 14px;
@@ -634,6 +667,29 @@ select.field--rect {
 }
 .pair-card:hover { border-color: rgba(230,174,108,.32); transform: translateY(-1px); }
 .pair-card__body { flex: 1; min-width: 0; }
+.pair-card__open {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.pair-card__open:focus-visible {
+  clip: auto;
+  width: auto;
+  height: auto;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(230, 174, 108, .4);
+  background: var(--ink2);
+  color: var(--gold);
+  font-size: .7rem;
+}
 .pair-card__badge {
   font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   padding: 4px 10px; border-radius: 100px; flex-shrink: 0;
@@ -641,6 +697,57 @@ select.field--rect {
 .pair-card__badge--fault    { color: var(--teal); background: rgba(111,177,184,.14); border: 1px solid rgba(111,177,184,.3); }
 .pair-card__badge--aligned  { color: var(--gold); background: rgba(230,174,108,.14); border: 1px solid rgba(230,174,108,.3); }
 .pair-card__chevron { color: var(--mist2); flex-shrink: 0; display: flex; }
+
+/* GlossaryTerm: dotted gold underline, no tooltip library */
+.glossary-term {
+  position: relative;
+  display: inline;
+}
+.glossary-term__trigger {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  cursor: help;
+  text-decoration: underline dotted var(--gold);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.glossary-term__trigger:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.glossary-term__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.glossary-term__floating {
+  position: fixed;
+  z-index: 80;
+  min-width: 180px;
+  max-width: 240px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(165deg, rgba(29, 22, 64, .97), rgba(10, 7, 23, .99));
+  border: 1px solid rgba(230, 174, 108, .22);
+  box-shadow: 0 16px 40px -16px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .05);
+  color: var(--cream);
+  font-family: var(--sans);
+  font-size: .78rem;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0;
+  line-height: 1.5;
+  text-transform: none;
+  text-align: left;
+}
 
 /* Manage-group accordion (same marker pattern as .honor-declare) */
 .manage-group-accordion > summary {

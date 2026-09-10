@@ -173,3 +173,17 @@ What this means in code:
 Edge weight or node emphasis that encodes "how often you open this person in the app" is a streak wearing a costume. It would quietly punish the healthiest relationships: the ones you don't need to check on. Every visual difference on the constellation must map to a real, inspectable event — click the edge and the reason is right there.
 
 This is a corollary of §12 (never fabricate) and the product's own constraint list (no streaks, no badges, no per-person score as a headline). A synastry score is time-invariant (two fixed birth charts produce one constant); it is a fact, not a trend, and must never be animated into a fake trajectory. What genuinely moves is transits against a natal chart and the notes a person writes — build every "living" surface from those.
+
+---
+
+## 14. Cron routes need a scheduler outside `vercel.json` — use GitHub Actions
+
+A `POST`-able route existing under `app/api/cron/*` is not the same as it running. `relational-transit-scan` and `relational-transit-push` (Generations Feature 3) shipped, passed review, and sat unscheduled for a stretch because the obvious fix — a Vercel Cron Jobs entry — requires a committed `vercel.json`, which §2 forbids (Vercel's native Next.js detection with Root Directory `apps/web` is the working deploy config; a `vercel.json` broke it before). Nobody wrote down that constraint next to the routes, so the missing schedule wasn't obvious from the code.
+
+**The fix:** schedule these routes from `.github/workflows/relational-transits.yml` instead. GitHub Actions' own `schedule:` cron trigger calls the deployed route over HTTPS with `curl`, exactly like a Vercel Cron Job would — the route itself stays framework-agnostic (`CRON_SECRET`-bearer-gated, unaware of what triggered it) and `vercel.json` is never touched.
+
+- Two jobs, `scan` then `push` (`needs: scan`), daily, plus `workflow_dispatch` for an on-demand run from the Actions tab.
+- Off-peak cron minute/hour (not `:00`) — GitHub's scheduler queue is busiest at the top of the hour and can delay or drop runs there.
+- Requires two repository secrets that are **not** set automatically (see the PR/task that added this workflow for the exact names and value formats): the deployed `apps/web` origin, and a value matching the `CRON_SECRET` already configured on the Vercel project's env vars. A run fails loudly (`::error::`) if either is missing, rather than silently no-op'ing.
+- Both cron routes return a JSON body with real counts (`ownersScanned`/`eventsUpserted`/`skipped` for scan; `evaluated`/`pushed`/`skipped` for push) — the workflow echoes the HTTP status and that body (never the secret) so a red run in the Actions log says *why*, not just *that*.
+- `nudge-compute`, `nudge-send`, and `trial-emails` have the identical gap today (their doc comments still say "point a Vercel dashboard cron at this route," which needs the same `vercel.json` this repo doesn't have) — `relational-transits.yml` is the template for wiring them up the same way, one workflow (or job) per route.

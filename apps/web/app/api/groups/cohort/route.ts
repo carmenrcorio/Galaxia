@@ -108,7 +108,7 @@ export async function POST(req: Request) {
     memberNames,
     pairHighlights: pairHighlights.slice(0, 3)
   };
-  const bodyText = `Current cohort overlay for ${group.name}: ${overlay.label}`;
+  const bodyText = `Current group reading for ${group.name}: ${overlay.label}`;
 
   // Keep a single current row per group so Ask Vela does not flood the Record.
   const { data: existingRows } = await supabase

@@ -9,13 +9,27 @@ import {
 } from "@galaxia/core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { GenerationalMap } from "../../../components/groups/generational-map";
+import { GroupSelector, type GroupSelectorItem } from "../../../components/groups/group-selector";
+import { ManageGroupAccordion, type GroupKind } from "../../../components/groups/manage-group-accordion";
+import { PairDynamicsSection } from "../../../components/groups/pair-dynamics-section";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { Spinner } from "../../../components/spinner";
 import { BODY_GLYPH, SIGN_GLYPH } from "../../../lib/design";
 import { fetchGroupsCurrentReading, upsertGroupsCurrentReading } from "../../../lib/groups-cohort";
+import {
+  capitalizeWord,
+  describePartialOverlap,
+  faultLinesInterpretation,
+  groupSignatureLine,
+  sharedSkyPartialOverlaps,
+  SHARED_SKY_NO_OVERLAP_NOTE,
+  GEN_PLANET_MEANING,
+  type CohortOverlayLike,
+  type GenPlanetKey,
+} from "../../../lib/groups-copy";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
-type GroupKind = "siblings"|"friends"|"family"|"group";
 interface PersonLite { id: string; display_name: string; }
 interface GroupRow    { id: string; name: string; kind: GroupKind; }
 
@@ -27,21 +41,15 @@ interface LoadedGroup {
   memberIds: string[];
 }
 
-const PLANET_LINES: Record<string, string> = {
-  Aquarius: "The reformers, wired to question the rules",
-  Capricorn: "A pragmatic, build-it kind of dreaming",
-  Scorpio: "Intensity, loyalty, all-or-nothing depth",
-  Sagittarius: "Restless and free, truth-seeking above all",
-  Pisces: "Absorbent, compassionate, permeable to everything",
-  Aries: "Pioneer energy, direct and quick to act",
-  Taurus: "Steady builders — slow, sensory, lasting",
-  Gemini: "Curious, adaptable, always in dialogue",
-  Cancer: "Tender, protective, feeding those they love",
-  Leo: "Warm and expressive — needing to be seen",
-  Virgo: "Devoted to craft, always refining",
-  Libra: "Harmony-seeking, beauty as a moral value",
-};
-function planetLine(sign: string): string { return PLANET_LINES[sign] ?? "A distinctive generation signature"; }
+interface CohortPairHighlightState { pair: string; summary: string; }
+
+interface CohortState {
+  groupLabel: string;
+  memberNames: string[];
+  memberIds: string[];
+  overlay: CohortOverlayLike & { label: string };
+  pairHighlights: CohortPairHighlightState[];
+}
 
 function sameMembers(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
@@ -82,16 +90,20 @@ function GroupsPageInner() {
   const searchParams = useSearchParams();
   const initialGroupId = searchParams.get("groupId");
   const paramLoadRef = useRef<string | null>(null);
+  const autoSelectRef = useRef(false);
+  const autoOpenEmptyRef = useRef(false);
+
   const [userId, setUserId]               = useState<string|null>(null);
   const [people, setPeople]               = useState<PersonLite[]>([]);
   const [groups, setGroups]               = useState<GroupRow[]>([]);
+  const [groupSummaries, setGroupSummaries] = useState<GroupSelectorItem[]>([]);
   /** Currently loaded saved group; null means working on an explicit new draft. */
   const [loadedGroup, setLoadedGroup]     = useState<LoadedGroup|null>(null);
   const [selectedPersonIds, setSelectedPersonIds] = useState<string[]>([]);
   const [groupName, setGroupName]         = useState("");
   const [groupKind, setGroupKind]         = useState<GroupKind>("group");
   const [status, setStatus]               = useState<string|null>(null);
-  const [cohort, setCohort]               = useState<any>(null);
+  const [cohort, setCohort]               = useState<CohortState|null>(null);
   const [savingGroup, setSavingGroup]     = useState(false);
   const [buildingOverlay, setBuildingOverlay] = useState(false);
   const [savingReading, setSavingReading] = useState(false);
@@ -100,13 +112,14 @@ function GroupsPageInner() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteWarning, setDeleteWarning] = useState<string | null>(null);
   const [deletingGroup, setDeletingGroup] = useState(false);
+  const [manageOpen, setManageOpen]       = useState(false);
 
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      await Promise.all([fetchPeople(user.id), fetchGroups(user.id)]);
+      await Promise.all([fetchPeople(user.id), fetchGroupSummaries(user.id)]);
     };
     void load();
   }, [supabase]);
@@ -117,6 +130,27 @@ function GroupsPageInner() {
     paramLoadRef.current = initialGroupId;
     void loadGroup(initialGroupId);
   }, [initialGroupId, userId, groups]);
+
+  // First visit with existing groups and no explicit deep link: land on the
+  // most recent group instead of a blank switcher — the dashboard should
+  // read as populated immediately, not as an empty admin panel.
+  useEffect(() => {
+    if (autoSelectRef.current) return;
+    if (initialGroupId) return;
+    if (!userId || groupSummaries.length === 0) return;
+    autoSelectRef.current = true;
+    if (!loadedGroup) void loadGroup(groupSummaries[0]!.id);
+  }, [userId, groupSummaries, initialGroupId, loadedGroup]);
+
+  // Brand new account with no groups at all: open the editor so there is
+  // something to do, instead of a page that reads as empty.
+  useEffect(() => {
+    if (autoOpenEmptyRef.current) return;
+    if (!userId) return;
+    if (groupSummaries.length > 0) { autoOpenEmptyRef.current = true; return; }
+    autoOpenEmptyRef.current = true;
+    setManageOpen(true);
+  }, [userId, groupSummaries]);
 
   const formComposition = useMemo(
     () => ({ name: groupName, kind: groupKind, memberIds: selectedPersonIds }),
@@ -139,19 +173,77 @@ function GroupsPageInner() {
   }, [loadedGroup, groupName, groupKind, selectedPersonIds]);
 
   const cohortTitle = previewTitle(loadedGroup, formComposition);
-  const selectedNames = people.filter(p => selectedPersonIds.includes(p.id)).map(p => p.display_name);
+  const selectedPeople = people.filter(p => selectedPersonIds.includes(p.id));
+  const selectedNames = selectedPeople.map(p => p.display_name);
   const loadedBelowMinimum = Boolean(loadedGroup && isBelowGroupMinimum(loadedGroup.memberIds.length));
   /** Persist reading / Ask Vela only for a clean saved group at the create minimum. */
   const canPersistAgainstLoaded = Boolean(loadedGroup) && !dirty && !loadedBelowMinimum;
+  const showWorkspace = Boolean(loadedGroup) || dirty;
+
+  const partialOverlaps = useMemo(
+    () => (cohort ? sharedSkyPartialOverlaps(cohort.overlay.faultLines, cohort.memberIds.length) : []),
+    [cohort]
+  );
 
   async function fetchPeople(uid: string) {
     const { data } = await supabase.from("people").select("id, display_name").eq("owner_id", uid).order("display_name");
     setPeople((data ?? []) as PersonLite[]);
   }
-  async function fetchGroups(uid: string) {
-    const { data } = await supabase.from("groups").select("id, name, kind").eq("owner_id", uid).order("created_at", { ascending: false });
-    setGroups((data ?? []) as GroupRow[]);
+
+  /**
+   * Loads saved groups plus everything the selector needs to show an
+   * astrological signature per card ("3 members · 2 Pluto signs · 1 fault
+   * line") without waiting for a group to be opened. Client-only compute
+   * with the same `cohortOverlay` engine the reading uses — never a second
+   * astrology implementation, and never a signature when chart data for
+   * every member isn't available (no fabricated one-liners).
+   */
+  async function fetchGroupSummaries(uid: string) {
+    const { data: groupRows } = await supabase
+      .from("groups")
+      .select("id, name, kind")
+      .eq("owner_id", uid)
+      .order("created_at", { ascending: false });
+    const rows = (groupRows ?? []) as GroupRow[];
+    setGroups(rows);
+    if (rows.length === 0) { setGroupSummaries([]); return; }
+
+    const { data: memberRows } = await supabase
+      .from("group_members")
+      .select("group_id, person_id")
+      .in("group_id", rows.map((r) => r.id));
+    const membersByGroup = new Map<string, string[]>();
+    for (const r of memberRows ?? []) {
+      const gid = r.group_id as string;
+      const arr = membersByGroup.get(gid);
+      if (arr) arr.push(r.person_id as string); else membersByGroup.set(gid, [r.person_id as string]);
+    }
+    const personIds = [...new Set((memberRows ?? []).map((r) => r.person_id as string))];
+
+    const nameById = new Map<string, string>();
+    const genById = new Map<string, GenSignature | undefined>();
+    if (personIds.length > 0) {
+      const [{ data: peopleRows }, { data: chartRows }] = await Promise.all([
+        supabase.from("people").select("id, display_name").in("id", personIds),
+        supabase.from("charts").select("person_id, data").in("person_id", personIds),
+      ]);
+      for (const p of peopleRows ?? []) nameById.set(p.id as string, p.display_name as string);
+      for (const c of chartRows ?? []) genById.set(c.person_id as string, (c.data as NatalChart | undefined)?.generational);
+    }
+
+    const summaries: GroupSelectorItem[] = rows.map((g) => {
+      const memberIds = membersByGroup.get(g.id) ?? [];
+      const members = memberIds.map((id) => ({ id, name: nameById.get(id) ?? "?" }));
+      const gens = memberIds.map((id) => genById.get(id)).filter((x): x is GenSignature => Boolean(x));
+      const overlay: CohortOverlayLike | null =
+        memberIds.length >= 2 && gens.length === memberIds.length
+          ? cohortOverlay(memberIds.map((id) => ({ name: nameById.get(id) ?? "?", gen: genById.get(id)! })))
+          : null;
+      return { id: g.id, name: g.name, kind: g.kind, members, signature: groupSignatureLine(memberIds.length, overlay) };
+    });
+    setGroupSummaries(summaries);
   }
+
   const toggleSelection = (id: string) => setSelectedPersonIds(cur => cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id]);
 
   /** Explicit new-group state: clears loaded group so the next Save creates. */
@@ -165,6 +257,7 @@ function GroupsPageInner() {
     setStatus(null);
     setConfirmDelete(false);
     setDeleteWarning(null);
+    setManageOpen(true);
   }
 
   async function beginDeleteGroup() {
@@ -193,14 +286,15 @@ function GroupsPageInner() {
       return;
     }
     startNewGroup();
-    await fetchGroups(userId);
+    setManageOpen(false);
+    await fetchGroupSummaries(userId);
     setStatus("Group deleted.");
   }
 
   async function saveGroup() {
     if (!userId) return;
     if (groupName.trim().length < 2) { setStatus("Give the group a name."); return; }
-    if (selectedPersonIds.length < 3) { setStatus("Select at least 3 people for a cohort."); return; }
+    if (selectedPersonIds.length < 3) { setStatus("Select at least 3 people for a group."); return; }
     setSavingGroup(true);
     setStatus(null);
     const name = groupName.trim();
@@ -241,7 +335,7 @@ function GroupsPageInner() {
         };
         setLoadedGroup(updated);
         setGroupName(name);
-        await fetchGroups(userId);
+        await fetchGroupSummaries(userId);
         // Post-save: reading panel must show this group, not a prior preview.
         await buildOverlay(selectedPersonIds, name, updated);
         setStatus("Group updated.");
@@ -267,7 +361,7 @@ function GroupsPageInner() {
         setLoadedGroup(created);
         setGroupName(created.name);
         setGroupKind(created.kind);
-        await fetchGroups(userId);
+        await fetchGroupSummaries(userId);
         await buildOverlay(selectedPersonIds, created.name, created);
         setStatus("Group saved.");
       }
@@ -305,6 +399,7 @@ function GroupsPageInner() {
     setStatus(null);
     setConfirmDelete(false);
     setDeleteWarning(null);
+    setManageOpen(false);
 
     if (ids.length < 3) {
       setCohort(null);
@@ -373,7 +468,7 @@ function GroupsPageInner() {
         return;
       }
       const overlay = cohortOverlay(ready.map((r) => ({ name: r.name, gen: r.gen })));
-      const pairHighlights: Array<{ pair: string; summary: string }> = [];
+      const pairHighlights: CohortPairHighlightState[] = [];
       for (let i = 0; i < ready.length; i++) {
         for (let j = i + 1; j < ready.length; j++) {
           const a = ready[i]!; const b = ready[j]!;
@@ -415,7 +510,7 @@ function GroupsPageInner() {
   async function saveCohortReading() {
     if (!userId || !cohort || !loadedGroup || dirty) return;
     setSavingReading(true);
-    const body = `Cohort reading for ${loadedGroup.name}: ${cohort.overlay.label}`;
+    const body = `Group reading for ${loadedGroup.name}: ${cohort.overlay.label}`;
     const { error } = await supabase.from("notes").insert({
       owner_id: userId, group_id: loadedGroup.id, kind: "cohort_reading", body,
       payload: { overlay: cohort.overlay, pairHighlights: cohort.pairHighlights, memberNames: cohort.memberNames }
@@ -442,7 +537,7 @@ function GroupsPageInner() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { error?: string };
-        setStatus(body.error ?? "Could not prepare this group's cohort for Vela.");
+        setStatus(body.error ?? "Could not prepare this group's reading for Vela.");
         return;
       }
       router.push(`/app/vela?scope=group&groupId=${loadedGroup.id}`);
@@ -451,178 +546,161 @@ function GroupsPageInner() {
     }
   }
 
+  function resolvePairPersonId(name: string): string | null {
+    if (!cohort) return null;
+    const idx = cohort.memberNames.indexOf(name);
+    return idx >= 0 ? cohort.memberIds[idx] ?? null : null;
+  }
+
   return (
     <main className="app-content">
-      <p className="eyebrow">Cohorts</p>
+      <p className="eyebrow">Relationship intelligence</p>
       <h1 className="page-title">Groups</h1>
-      <p className="muted">Build sibling/friend/family sets and see shared sky + generational fault lines.</p>
+      <p className="muted lede">See each group&apos;s shared sky, its generational fault lines, and how each pair connects.</p>
 
-      {/* Saved groups */}
-      <section className="glass-card fade-in">
-        <p className="eyebrow" style={{ marginBottom: 10 }}>Saved groups</p>
-        {groups.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>No groups yet — create one below.</p> : null}
-        <div style={{ display: "grid", gap: 8 }}>
-          {groups.map(g => (
-            <button key={g.id} onClick={() => loadGroup(g.id)} style={{ textAlign: "left", background: "rgba(255,255,255,.025)", border: `1px solid ${loadedGroup?.id === g.id ? "rgba(230,174,108,.4)" : "rgba(183,154,216,.15)"}`, borderRadius: 14, padding: "12px 16px", cursor: "pointer", transition: "border-color .15s" }}>
-              <div style={{ color: loadedGroup?.id === g.id ? "var(--gold)" : "var(--cream)", fontWeight: 600 }}>{g.name}</div>
-              <div className="muted" style={{ fontSize: 12 }}>{g.kind}</div>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Create / edit cohort */}
-      <section className="glass-card fade-in fade-in-delay-1">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
-          <p className="eyebrow" style={{ marginBottom: 0 }}>
-            {loadedGroup ? "Edit cohort" : "Create cohort"}
+      {groupSummaries.length > 0 ? (
+        <GroupSelector
+          groups={groupSummaries}
+          activeId={loadedGroup?.id ?? null}
+          onSelect={(id) => void loadGroup(id)}
+          onCreateNew={startNewGroup}
+        />
+      ) : (
+        <section className="glass-card fade-in">
+          <p className="card-title" style={{ marginBottom: 8 }}>Build your first group</p>
+          <p className="muted" style={{ fontSize: ".86rem" }}>
+            Add three or more people below to see their shared sky and generational fault lines.
           </p>
-          {loadedGroup ? (
-            <button type="button" className="pill-link" onClick={startNewGroup} style={{ fontSize: 12, padding: "5px 11px" }}>
-              New group
-            </button>
-          ) : null}
-        </div>
-        <input className="field" value={groupName} onChange={e => setGroupName(e.target.value)} placeholder="Group name (e.g. Siblings)" style={{ marginBottom: 10 }} />
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-          {(["siblings","friends","family","group"] as GroupKind[]).map(k => (
-            <button key={k} className="pill-link" style={{ fontSize: 13, padding: "6px 13px", borderColor: groupKind === k ? "rgba(230,174,108,.5)" : undefined, color: groupKind === k ? "var(--gold)" : undefined }} onClick={() => setGroupKind(k)}>{k}</button>
-          ))}
-        </div>
-        <p className="eyebrow" style={{ marginBottom: 8 }}>Select members (3+)</p>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-          {people.map(p => {
-            const sel = selectedPersonIds.includes(p.id);
-            return (
-              <button key={p.id} onClick={() => toggleSelection(p.id)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 12px", border: `1px solid ${sel ? "rgba(230,174,108,.45)" : "rgba(183,154,216,.2)"}`, borderRadius: 100, background: sel ? "rgba(230,174,108,.06)" : "transparent", cursor: "pointer" }}>
-                <InitialAvatar name={p.display_name} size="sm" />
-                <span style={{ color: sel ? "var(--gold)" : "var(--cream)", fontSize: 13 }}>{p.display_name}</span>
-              </button>
-            );
-          })}
-        </div>
-        {selectedNames.length > 0 ? (
-          <div className="avatar-cluster" style={{ marginBottom: 12 }}>
-            {people.filter(p => selectedPersonIds.includes(p.id)).slice(0, 6).map(p => <InitialAvatar key={p.id} name={p.display_name} size="sm" />)}
-            {selectedPersonIds.length > 6 ? <span style={{ fontSize: 11, color: "var(--mist2)", marginLeft: 8 }}>+{selectedPersonIds.length - 6}</span> : null}
-          </div>
-        ) : null}
-        {loadedBelowMinimum ? (
-          <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>{OWNED_DELETE_COPY.belowMinimumNotice}</p>
-        ) : null}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button className="btn-primary" onClick={saveGroup} disabled={savingGroup} style={{ gap: 8 }}>
-            {savingGroup && <Spinner size={13} color="#1a1206" />}
-            {savingGroup ? (loadedGroup ? "Updating…" : "Saving…") : loadedGroup ? "Update group" : "Save group"}
-          </button>
-          <button
-            className="pill-link"
-            onClick={() => buildOverlay()}
-            disabled={buildingOverlay || loadedBelowMinimum}
-            style={{ gap: 8 }}
-          >
-            {buildingOverlay && <Spinner size={12} />}
-            {buildingOverlay ? "Building…" : "Generate cohort overlay"}
-          </button>
-          {loadedGroup ? (
-            !confirmDelete ? (
-              <button
-                type="button"
-                className="pill-link"
-                style={{ borderColor: "rgba(218,140,140,.4)", color: "var(--rose)" }}
-                onClick={() => void beginDeleteGroup()}
-              >
-                Delete group
-              </button>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className="pill-link"
-                  style={{ background: "rgba(218,140,140,.15)", borderColor: "var(--rose)", color: "var(--rose)", gap: 8 }}
-                  onClick={() => void confirmDeleteGroup()}
-                  disabled={deletingGroup}
-                >
-                  {deletingGroup && <Spinner size={12} color="var(--rose)" />}
-                  {deletingGroup ? OWNED_DELETE_COPY.groupConfirmingButton : OWNED_DELETE_COPY.groupConfirmButton}
-                </button>
-                <button type="button" className="pill-link" onClick={() => { setConfirmDelete(false); setDeleteWarning(null); }}>
-                  Cancel
-                </button>
-              </>
-            )
-          ) : null}
-        </div>
-        {confirmDelete && deleteWarning ? (
-          <p className="muted" style={{ fontSize: 13, marginTop: 10, color: "var(--rose)" }}>{deleteWarning}</p>
-        ) : null}
-      </section>
+        </section>
+      )}
 
-      {/* Cohort results: title is derived from loadedGroup + dirty, never fabricated */}
-      {cohort ? (
+      {showWorkspace ? (
         <>
+          {/* Group hero */}
           <section className="glass-card fade-in">
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <div className="avatar-cluster">
-                {cohort.memberIds.slice(0,5).map((id: string, i: number) => {
-                  const name = cohort.memberNames[i] ?? "?";
-                  return <InitialAvatar key={id} name={name} size="sm" />;
-                })}
-              </div>
-              <div>
-                <h2 className="card-title" style={{ marginBottom: 0 }}>{cohortTitle}</h2>
-                <p className="muted" style={{ fontSize: 12, margin: 0 }}>{cohort.memberNames.join(", ")}</p>
-              </div>
-            </div>
-            <p className="muted" style={{ fontStyle: "italic" }}>{cohort.overlay.label}</p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12, alignItems: "center" }}>
+            <p className="eyebrow" style={{ marginBottom: 8 }}>{groupKind}</p>
+            <h2 className="page-title" style={{ marginBottom: 14 }}>{cohortTitle}</h2>
+            {selectedNames.length > 0 ? (
+              <>
+                <div className="avatar-cluster" style={{ marginBottom: 10 }}>
+                  {selectedPeople.map((p) => <InitialAvatar key={p.id} name={p.display_name} />)}
+                </div>
+                <p className="muted" style={{ fontSize: ".82rem", marginBottom: 14 }}>{selectedNames.join(", ")}</p>
+              </>
+            ) : null}
+            {cohort ? (
+              <p style={{ fontStyle: "italic", color: "var(--cream)", fontSize: "1rem", lineHeight: 1.5, margin: 0 }}>
+                {cohort.overlay.label}
+              </p>
+            ) : loadedBelowMinimum ? (
+              <p className="muted" style={{ fontSize: ".86rem", margin: 0 }}>{OWNED_DELETE_COPY.belowMinimumNotice}</p>
+            ) : buildingOverlay ? (
+              <p className="muted" style={{ fontSize: ".86rem", margin: 0 }}>Reading this group&apos;s generational sky…</p>
+            ) : selectedPersonIds.length > 0 && selectedPersonIds.length < 3 ? (
+              <p className="muted" style={{ fontSize: ".86rem", margin: 0 }}>
+                Add {3 - selectedPersonIds.length} more {3 - selectedPersonIds.length === 1 ? "person" : "people"} in Manage
+                group below to see this group&apos;s shared sky and fault lines.
+              </p>
+            ) : selectedPersonIds.length === 0 ? (
+              <p className="muted" style={{ fontSize: ".86rem", margin: 0 }}>
+                Choose members in Manage group below to see this group&apos;s generational signature.
+              </p>
+            ) : null}
+          </section>
+
+          {/* Group reading */}
+          {cohort ? (
+            <section className="glass-card fade-in fade-in-delay-1">
+              <p className="eyebrow" style={{ marginBottom: 10 }}>Group reading</p>
+              <p style={{
+                fontFamily: "var(--serif)", fontSize: "1.12rem", lineHeight: 1.65, color: "var(--cream)",
+                fontStyle: "italic", borderLeft: "2px solid rgba(230,174,108,.3)", paddingLeft: 16, margin: "0 0 22px",
+              }}>
+                {cohort.overlay.label}
+              </p>
               {canPersistAgainstLoaded ? (
-                <>
-                  <button className="pill-link" onClick={saveCohortReading} disabled={savingReading || readingSaved} style={{ gap: 8 }}>
+                <div style={{ display: "grid", gap: 10 }}>
+                  <button
+                    className="btn-primary"
+                    type="button"
+                    onClick={() => void askVelaAboutGroup()}
+                    disabled={askingVela}
+                    style={{ width: "100%", justifyContent: "center", gap: 9, fontSize: ".95rem" }}
+                  >
+                    <span aria-hidden="true">✦</span>
+                    {askingVela ? "Opening Vela…" : "Ask Vela about this group"}
+                  </button>
+                  <button
+                    className="pill-link"
+                    onClick={saveCohortReading}
+                    disabled={savingReading || readingSaved}
+                    style={{ width: "100%", justifyContent: "center", gap: 8 }}
+                  >
                     {savingReading && <Spinner size={12} />}
                     {readingSaved ? "✓ Reading saved" : savingReading ? "Saving…" : "Save this reading"}
                   </button>
-                  <button className="pill-link" type="button" onClick={() => void askVelaAboutGroup()} disabled={askingVela}>
-                    {askingVela ? "Opening Vela…" : "Ask Vela about this group"}
-                  </button>
-                </>
-              ) : (
-                <span className="muted" style={{ fontSize: ".76rem" }}>
-                  {loadedGroup
-                    ? "Save your changes before keeping this reading or asking Vela."
-                    : "Save this cohort as a group to keep this reading and ask Vela about it."}
-                </span>
-              )}
-            </div>
-          </section>
-
-          <section className="glass-card fade-in">
-            <p className="eyebrow" style={{ marginBottom: 10 }}>Shared sky</p>
-            {cohort.overlay.sharedSky.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>No full-group shared outer-planet signatures.</p> : null}
-            <div style={{ display: "grid", gap: 4 }}>
-              {cohort.overlay.sharedSky.map((item: any) => (
-                <div key={`${item.planet}-${item.sign}`} className="pl-row">
-                  <div className="glyph-sq" style={{ fontSize: ".9rem" }}>{BODY_GLYPH[item.planet]}</div>
-                  <div>
-                    <div className="pl-body">{item.planet} in {SIGN_GLYPH[item.sign]} {item.sign}</div>
-                    <div className="pl-desc">{planetLine(item.sign)}</div>
-                  </div>
                 </div>
-              ))}
-            </div>
-          </section>
+              ) : (
+                <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>
+                  {loadedGroup
+                    ? "Save your changes in Manage group below before keeping this reading or asking Vela."
+                    : "Save this as a group in Manage group below to keep this reading and ask Vela about it."}
+                </p>
+              )}
+            </section>
+          ) : null}
 
-          {cohort.overlay.faultLines.length > 0 ? (
+          {/* Generational map */}
+          {cohort ? <GenerationalMap memberNames={cohort.memberNames} overlay={cohort.overlay} /> : null}
+
+          {/* Shared sky */}
+          {cohort ? (
+            <section className="glass-card fade-in">
+              <p className="eyebrow" style={{ marginBottom: 10 }}>Shared sky</p>
+              {cohort.overlay.sharedSky.length > 0 ? (
+                <div style={{ display: "grid", gap: 4 }}>
+                  {cohort.overlay.sharedSky.map((item) => (
+                    <div key={`${item.planet}-${item.sign}`} className="pl-row">
+                      <div className="glyph-sq" style={{ fontSize: ".9rem" }}>{BODY_GLYPH[item.planet]}</div>
+                      <div>
+                        <div className="pl-body">{capitalizeWord(item.planet)} in {SIGN_GLYPH[item.sign]} {item.sign}</div>
+                        <div className="pl-desc">Shared by the whole group</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : partialOverlaps.length > 0 ? (
+                <div style={{ display: "grid", gap: 10 }}>
+                  {partialOverlaps.map((o) => (
+                    <p key={`${o.planet}-${o.sign}`} className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6, margin: 0 }}>
+                      {describePartialOverlap(o)}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>{SHARED_SKY_NO_OVERLAP_NOTE}</p>
+              )}
+            </section>
+          ) : null}
+
+          {/* Fault lines */}
+          {cohort && cohort.overlay.faultLines.length > 0 ? (
             <section className="teal-callout fade-in">
               <p className="eyebrow" style={{ marginBottom: 10 }}>Fault lines</p>
-              {cohort.overlay.faultLines.map((line: any) => (
-                <div key={line.planet} style={{ marginBottom: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <div className="glyph-sq" style={{ fontSize: ".9rem" }}>{BODY_GLYPH[line.planet]}</div>
-                    <strong style={{ color: "var(--teal)" }}>{line.planet.toUpperCase()}</strong>
+              <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6, marginBottom: 18 }}>
+                {faultLinesInterpretation(cohort.overlay.faultLines)}
+              </p>
+              {cohort.overlay.faultLines.map((line) => (
+                <div key={line.planet} style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                    <span style={{ fontSize: "1.3rem", color: "var(--gold-soft)" }} aria-hidden="true">{BODY_GLYPH[line.planet]}</span>
+                    <strong style={{ color: "var(--teal)", letterSpacing: ".04em" }}>{line.planet.toUpperCase()}</strong>
                   </div>
-                  {line.groups.map((g: any) => (
-                    <div key={`${line.planet}-${g.sign}`} style={{ marginLeft: 38, marginBottom: 4 }}>
+                  <p className="muted" style={{ fontSize: ".76rem", fontStyle: "italic", marginLeft: 34, marginBottom: 8 }}>
+                    {GEN_PLANET_MEANING[line.planet as GenPlanetKey] ?? "a distinctive generational signature"}
+                  </p>
+                  {line.groups.map((g) => (
+                    <div key={`${line.planet}-${g.sign}`} style={{ marginLeft: 34, marginBottom: 4 }}>
                       <span style={{ color: "var(--cream)", fontWeight: 600 }}>{SIGN_GLYPH[g.sign]} {g.sign}</span>
                       <span className="muted" style={{ fontSize: 13 }}> — {g.names.join(", ")}</span>
                     </div>
@@ -632,21 +710,44 @@ function GroupsPageInner() {
             </section>
           ) : null}
 
-          {cohort.pairHighlights.length > 0 ? (
-            <section className="glass-card fade-in">
-              <p className="eyebrow" style={{ marginBottom: 10 }}>Pair highlights</p>
-              {cohort.pairHighlights.map((item: any) => (
-                <div key={item.pair} style={{ borderRadius: 10, border: "1px solid rgba(183,154,216,.12)", padding: "10px 12px", marginBottom: 8, background: "rgba(255,255,255,.015)" }}>
-                  <div style={{ color: "var(--cream)", fontWeight: 600, marginBottom: 4 }}>{item.pair}</div>
-                  <p className="muted" style={{ margin: 0, fontSize: 13 }}>{item.summary}</p>
-                </div>
-              ))}
-            </section>
+          {/* Pair dynamics */}
+          {cohort ? (
+            <PairDynamicsSection
+              items={cohort.pairHighlights}
+              resolveId={resolvePairPersonId}
+              onOpenPair={(idA, idB) => router.push(`/app/compare?a=${idA}&b=${idB}`)}
+            />
           ) : null}
         </>
       ) : null}
 
-      {status ? <p className={status.startsWith("Group saved") || status.startsWith("Group updated") ? "success" : "error"}>{status}</p> : null}
+      <ManageGroupAccordion
+        open={manageOpen}
+        onToggle={setManageOpen}
+        isEditing={Boolean(loadedGroup)}
+        people={people}
+        groupName={groupName}
+        onGroupNameChange={setGroupName}
+        groupKind={groupKind}
+        onGroupKindChange={setGroupKind}
+        selectedPersonIds={selectedPersonIds}
+        onToggleMember={toggleSelection}
+        loadedBelowMinimum={loadedBelowMinimum}
+        belowMinimumNotice={OWNED_DELETE_COPY.belowMinimumNotice}
+        savingGroup={savingGroup}
+        onSave={() => void saveGroup()}
+        buildingOverlay={buildingOverlay}
+        onGenerateReading={() => void buildOverlay()}
+        canDelete={Boolean(loadedGroup)}
+        confirmDelete={confirmDelete}
+        deleteWarning={deleteWarning}
+        deletingGroup={deletingGroup}
+        onBeginDelete={() => void beginDeleteGroup()}
+        onConfirmDelete={() => void confirmDeleteGroup()}
+        onCancelDelete={() => { setConfirmDelete(false); setDeleteWarning(null); }}
+      />
+
+      {status ? <p className={status.startsWith("Group saved") || status.startsWith("Group updated") || status.startsWith("Group deleted") ? "success" : "error"}>{status}</p> : null}
     </main>
   );
 }

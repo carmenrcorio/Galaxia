@@ -241,7 +241,7 @@ const RECORD_META: Record<string, { label: string; color: string }> = {
   tending:         { label: "Tending note",    color: "rgba(111,177,184,.5)" },
   vela_pin:        { label: "Pinned from Vela", color: "rgba(183,154,216,.5)" },
   compare_reading: { label: "Saved comparison", color: "rgba(230,174,108,.5)" },
-  cohort_reading:  { label: "Saved cohort reading", color: "rgba(111,177,184,.4)" },
+  cohort_reading:  { label: "Saved group reading", color: "rgba(111,177,184,.4)" },
   remembrance:     { label: "Remembrance",     color: "rgba(111,177,184,.55)" },
   // FOUNDER-REVIEW: authored — Record label for longitude-changing chart rewrite.
   chart_correction:{ label: "Chart corrected", color: "rgba(230,174,108,.55)" },

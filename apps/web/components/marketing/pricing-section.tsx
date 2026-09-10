@@ -15,7 +15,7 @@ export function PricingSection() {
         </div>
         <div className="price-cards reveal">
           <div className="pcard glass-card">
-            {/* FOUNDER-REVIEW: rewritten. Yearly card removed; this is the only SKU the paywall sells. */}
+            {/* FOUNDER-REVIEW: rewritten. This is the only SKU the paywall sells. */}
             <div className="pcard-name">Monthly</div>
             <div className="pcard-price">$9.99 <span>/month</span></div>
             <div className="pcard-sub">Billed monthly · 14 days free</div>

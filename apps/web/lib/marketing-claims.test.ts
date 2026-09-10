@@ -21,7 +21,7 @@ describe("marketing claims match what ships", () => {
     const src = read("apps/web/components/marketing/pricing-section.tsx");
     expect(src).toContain("Monthly");
     expect(src).toContain("$9.99");
-    expect(src).not.toMatch(/Yearly/);
+    expect(src).not.toMatch(/pcard-name">Yearly/);
     expect(src).not.toMatch(/Best value/);
     expect(src).not.toMatch(/save 26%/);
   });

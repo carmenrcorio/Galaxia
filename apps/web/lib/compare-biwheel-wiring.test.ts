@@ -97,7 +97,8 @@ describe("source wiring — compare bi-wheel + shared flows/catches", () => {
     expect(src).toContain("Hide aspect detail");
     expect(src).toContain("useState(false)");
     // Full RelationType focus — not romantic/platonic-only.
-    expect(src).toMatch(/sortAspectsForFocus\([\s\S]*relationType\s*\)/);
+    expect(src).toContain("selectCompareAspectRows");
+    expect(src).toMatch(/selectCompareAspectRows\([\s\S]*relationType/);
   });
 
   it("/app/compare uses shared FlowsAndCatchesSection and bi-wheel (no inline aspect table)", () => {
@@ -155,6 +156,6 @@ describe("1B: web shares one compareHeadline() helper with mobile (no drift) —
   it("web /app/compare calls the shared compareHeadline helper, not an inline score ternary", () => {
     const src = readFileSync(resolve(__dirname, "../app/app/compare/page.tsx"), "utf8");
     expect(src).toContain("compareHeadline(relationType, result.synastry.scores.overall)");
-    expect(src).not.toContain("High flow — momentum comes naturally here.");
+    expect(src).not.toContain("High flow. Momentum comes naturally here.");
   });
 });

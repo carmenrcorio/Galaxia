@@ -32,7 +32,7 @@ import {
   interpretSynastryAspect,
   type AspectKey,
   type BodyKey,
-  sortAspectsForFocus,
+  selectCompareAspectRows,
   whatTheyNeed,
   type RelationType,
 } from "@galaxia/astro";
@@ -220,7 +220,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
                 </p>
                 <div>
                   <p className="eyebrow" style={{ marginBottom: 6 }}>Where it flows and catches</p>
-                  {sortAspectsForFocus(result.synastry.aspects.filter((a) => a.from !== a.to).sort((a, b) => a.orb - b.orb), focus).slice(0, 4).map((a, idx) => {
+                  {selectCompareAspectRows(result.synastry.aspects, focus, 4).map((a, idx) => {
                     const reading = interpretSynastryAspect(a.from.toLowerCase() as BodyKey, a.to.toLowerCase() as BodyKey, a.type.toLowerCase() as AspectKey);
                     return (
                       <div key={`${a.from}-${a.to}-${idx}`} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>

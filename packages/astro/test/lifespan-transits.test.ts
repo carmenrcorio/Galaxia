@@ -56,9 +56,70 @@ describe("computeLifespanTransits", () => {
     expect(dates).toEqual(sorted);
   });
 
-  it("never fabricates from a year-only chart (ENGINEERING §12)", () => {
+  it("never fabricates from a year-only chart when called without an explicit precision (defaults to 'exact')", () => {
     const yearChart = computeNatalChart({ dateUTC: "1950-01-01T00:00:00.000Z", precision: "year" });
     expect(computeLifespanTransits(yearChart, "1950-01-01T00:00:00.000Z", deathUTC)).toEqual([]);
+    // Passing 'exact' explicitly against a year-only chart is the same caller
+    // mistake — still no fabrication net, same as the default.
+    expect(computeLifespanTransits(yearChart, "1950-01-01T00:00:00.000Z", deathUTC, "exact")).toEqual([]);
+  });
+
+  it("'exact' output is byte-identical to before precision existed as a parameter", () => {
+    const withDefault = computeLifespanTransits(chart, birthUTC, deathUTC);
+    const withExplicitExact = computeLifespanTransits(chart, birthUTC, deathUTC, "exact");
+    expect(withExplicitExact).toEqual(withDefault);
+    expect(withDefault.length).toBeGreaterThan(0);
+    // No new fields leak into exact-mode events — old callers see the exact
+    // same shape as before isApproximate/ageEstimate existed.
+    for (const event of withDefault) {
+      expect(event).not.toHaveProperty("isApproximate");
+      expect(event).not.toHaveProperty("ageEstimate");
+    }
+  });
+
+  describe("precision: 'approximate' (year-only chart)", () => {
+    const yearChart = computeNatalChart({ dateUTC: "1950-01-01T00:00:00.000Z", precision: "year" });
+    // Caller convention for a year-only chart: the same mid-year "working
+    // date" computeNatalChart itself uses for year precision — July 1 of the
+    // birth year, noon UTC — never a real birth day.
+    const approxBirthUTC = "1950-07-01T12:00:00.000Z";
+
+    it("returns ONLY Saturn and Jupiter returns, each isApproximate with an integer ageEstimate", () => {
+      const events = computeLifespanTransits(yearChart, approxBirthUTC, deathUTC, "approximate");
+      expect(events.length).toBeGreaterThan(0);
+      for (const event of events) {
+        expect(["saturn_return", "jupiter_return"]).toContain(event.kind);
+        expect(event.isApproximate).toBe(true);
+        expect(typeof event.ageEstimate).toBe("number");
+        expect(Number.isInteger(event.ageEstimate)).toBe(true);
+        expect(event.ageEstimate).toBe(event.approxAge);
+      }
+      // No progressed Moon, no outer-planet conjunctions, no Sun conjunctions.
+      expect(events.some((e) => e.kind === "progressed_moon_sign_change")).toBe(false);
+      expect(events.some((e) => e.kind === "outer_conjunction")).toBe(false);
+    });
+
+    it("still finds a real Saturn return near age 29 from the mid-year sample", () => {
+      const events = computeLifespanTransits(yearChart, approxBirthUTC, deathUTC, "approximate");
+      const returns = events.filter((e) => e.kind === "saturn_return");
+      expect(returns.length).toBeGreaterThanOrEqual(1);
+      expect(returns.some((e) => e.ageEstimate! >= 27 && e.ageEstimate! <= 31)).toBe(true);
+    });
+
+    it("returns nothing for an invalid or empty lifespan window even in approximate mode", () => {
+      expect(computeLifespanTransits(yearChart, deathUTC, approxBirthUTC, "approximate")).toEqual([]);
+      expect(computeLifespanTransits(yearChart, approxBirthUTC, approxBirthUTC, "approximate")).toEqual([]);
+    });
+
+    it("every approximate event still has a curated, non-empty reverent interpretation", () => {
+      const events = computeLifespanTransits(yearChart, approxBirthUTC, deathUTC, "approximate");
+      expect(events.length).toBeGreaterThan(0);
+      for (const event of events) {
+        const copy = interpretLifespanTransitEvent(event);
+        expect(copy.headline.length).toBeGreaterThan(0);
+        expect(copy.body.length).toBeGreaterThan(0);
+      }
+    });
   });
 
   it("returns nothing for an invalid or empty lifespan window", () => {

@@ -1272,7 +1272,7 @@ export default function PersonProfilePage() {
         })}
       </section>
 
-      {/* ── Memorial Timeline (Generations Feature 1) — passed, non-self, real chart only ── */}
+      {/* ── Memorial Timeline (Generations Feature 1) — passed, non-self; year-only charts get age-based, not date-based, transits ── */}
       {showTimeline ? (
         <MemorialTimeline
           person={person}

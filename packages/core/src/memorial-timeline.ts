@@ -37,21 +37,52 @@ export function validateMemorialMilestoneInput(input: {
 }
 
 /**
- * The Timeline only ever appears on a passed, non-self profile whose chart
- * carries real (non-year-only) natal longitudes — a year-only chart's
- * placements are sampled mid-year, so a "Saturn return" computed against
- * them would be a fabricated date (ENGINEERING.md §12), exactly like the
- * existing "Active today" gate (shouldShowLiveTransits, person-care.ts) is
- * the mirror-image gate for living people.
+ * Whether the Timeline section (and the "Add a memory" flow) render at all.
+ *
+ * This is now a pure "does this profile qualify for remembrance" gate: the
+ * person exists, is not the viewer's own self-profile, and has passed. It no
+ * longer requires a chart or a particular chart precision — a year-only
+ * memorial profile still has a real (if imprecise) life to hold milestones
+ * for, and hiding the whole section punished exactly the people whose birth
+ * data is thinnest, which is backwards. See `memorialTimelinePrecision`
+ * below for the (separate) question of how honestly transits can be
+ * computed against that chart — the two used to be one gate, conflating
+ * "should this render" with "how precise can the astrology be."
+ *
+ * `chart` is still accepted (unused) so existing call sites — which pass the
+ * chart as the second argument — keep working unchanged.
+ *
+ * Mirror-image of the "Active today" gate for living people
+ * (shouldShowLiveTransits, person-care.ts).
  */
 export function shouldShowMemorialTimeline(
   person: { passed_at?: string | null; is_self?: boolean } | null | undefined,
-  chart: { precision?: string } | null | undefined
+  chart?: { precision?: string } | null | undefined
 ): boolean {
   if (!person || person.is_self) return false;
   if (!hasPassed(person)) return false;
-  if (!chart || chart.precision === "year") return false;
   return true;
+}
+
+export type MemorialTimelinePrecision = "exact" | "approximate";
+
+/**
+ * How honestly the Memorial Timeline can date the transits it computes for
+ * this profile. `'approximate'` for a year-only chart — its natal longitudes
+ * are sampled mid-year (never a real birth day), so a "Saturn return"
+ * computed against them can only honestly be placed by estimated age, not by
+ * calendar date (ENGINEERING.md §12). `'exact'` otherwise (`exact` or `date`
+ * precision, or no birth data at all — there is nothing to round in that
+ * case, `computeLifespanTransits` simply has no events to compute).
+ *
+ * Takes the person row (its `birth_precision`, the source of truth the chart
+ * itself is derived from) rather than the chart, so this still resolves
+ * correctly even when a chart failed to build.
+ */
+export function memorialTimelinePrecision(
+  person: { birth_precision?: string | null } | null | undefined
+): MemorialTimelinePrecision {
+  return person?.birth_precision === "year" ? "approximate" : "exact";
 }
 
 /**

@@ -2,28 +2,46 @@ import { describe, expect, it } from "vitest";
 import {
   MEMORIAL_MILESTONE_NOTE_MAX,
   MEMORIAL_MILESTONE_TITLE_MAX,
+  memorialTimelinePrecision,
   memorialTimelineWindow,
   shouldShowMemorialTimeline,
   validateMemorialMilestoneInput,
 } from "../src/index";
 
 describe("shouldShowMemorialTimeline", () => {
-  it("shows only for a passed, non-self person with a real (non-year-only) chart", () => {
+  it("shows for a passed, non-self person regardless of chart precision", () => {
     const passed = { passed_at: "2024-01-01T00:00:00.000Z", is_self: false };
     expect(shouldShowMemorialTimeline(passed, { precision: "exact" })).toBe(true);
     expect(shouldShowMemorialTimeline(passed, { precision: "date" })).toBe(true);
   });
 
-  it("hides for year-only charts (never fabricate a return from a sampled longitude)", () => {
+  it("shows for a passed, year-only profile — the gate no longer requires chart precision", () => {
     const passed = { passed_at: "2024-01-01T00:00:00.000Z", is_self: false };
-    expect(shouldShowMemorialTimeline(passed, { precision: "year" })).toBe(false);
+    expect(shouldShowMemorialTimeline(passed, { precision: "year" })).toBe(true);
+    // No chart at all (e.g. it failed to build) does not hide the section either —
+    // milestones and the "Add a memory" flow do not depend on the chart.
+    expect(shouldShowMemorialTimeline(passed, null)).toBe(true);
+    expect(shouldShowMemorialTimeline(passed, undefined)).toBe(true);
   });
 
-  it("hides for living people, self, missing chart, or missing person", () => {
+  it("hides for living people, self, or missing person", () => {
     expect(shouldShowMemorialTimeline({ passed_at: null, is_self: false }, { precision: "exact" })).toBe(false);
     expect(shouldShowMemorialTimeline({ passed_at: "2024-01-01T00:00:00.000Z", is_self: true }, { precision: "exact" })).toBe(false);
-    expect(shouldShowMemorialTimeline({ passed_at: "2024-01-01T00:00:00.000Z", is_self: false }, null)).toBe(false);
     expect(shouldShowMemorialTimeline(null, { precision: "exact" })).toBe(false);
+  });
+});
+
+describe("memorialTimelinePrecision", () => {
+  it("returns 'approximate' for a year-only chart", () => {
+    expect(memorialTimelinePrecision({ birth_precision: "year" })).toBe("approximate");
+  });
+
+  it("returns 'exact' for exact, date, none, or missing precision", () => {
+    expect(memorialTimelinePrecision({ birth_precision: "exact" })).toBe("exact");
+    expect(memorialTimelinePrecision({ birth_precision: "date" })).toBe("exact");
+    expect(memorialTimelinePrecision({ birth_precision: "none" })).toBe("exact");
+    expect(memorialTimelinePrecision(null)).toBe("exact");
+    expect(memorialTimelinePrecision(undefined)).toBe("exact");
   });
 });
 

@@ -38,8 +38,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES, orientSynastryWheel } from "../../../components/chart-wheel";
+import { DynamicScoresTable } from "../../../components/dynamic-scores-table";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { InitialAvatar } from "../../../components/initial-avatar";
+import { exportFilename, ShareExportCard } from "../../../components/share-export-card";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
 import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
@@ -507,37 +509,48 @@ function ComparePageInner() {
       ) : result ? (
         <>
           {/* Headline */}
-          <section className="glass-card fade-in">
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap", minWidth: 0 }}>
-              <InitialAvatar name={result.personA.display_name} />
-              <span style={{ color: "var(--mist2)", fontSize: "1.1rem" }}>×</span>
-              <InitialAvatar name={result.personB.display_name} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", overflowWrap: "anywhere" }}>
-                  {result.personA.display_name} &amp; {result.personB.display_name}
+          {/* FOUNDER-REVIEW: authored — compare export button label. */}
+          <ShareExportCard
+            filename={exportFilename(`${result.personA.display_name}-${result.personB.display_name}`, "compatibility.png")}
+            label="Share compatibility"
+            minorBlocked={pairHasMinor}
+          >
+            <section className="glass-card fade-in">
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap", minWidth: 0 }}>
+                <InitialAvatar name={result.personA.display_name} />
+                <span style={{ color: "var(--mist2)", fontSize: "1.1rem" }}>×</span>
+                <InitialAvatar name={result.personB.display_name} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", overflowWrap: "anywhere" }}>
+                    {result.personA.display_name} &amp; {result.personB.display_name}
+                  </div>
+                  <div style={{ fontSize: ".74rem", color: "var(--mist2)" }}>{relationType}</div>
                 </div>
-                <div style={{ fontSize: ".74rem", color: "var(--mist2)" }}>{relationType}</div>
               </div>
-            </div>
-            <p className="muted" style={{ fontStyle: "italic", borderLeft: "2px solid rgba(230,174,108,.3)", paddingLeft: 12, lineHeight: 1.5 }}>
-              {compareHeadline(relationType, result.synastry.scores.overall)}
-            </p>
-            {wheel ? (
-              wheel.chart.cusps ? (
-                <div style={{ marginTop: 16 }}>
-                  <ChartWheel
-                    chart={wheel.chart}
-                    overlayChart={wheel.overlayChart}
-                    aspects={wheel.aspects}
-                  />
-                </div>
-              ) : (
-                <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
-                  {COMPARE_WHEEL_NEEDS_HOUSES}
-                </p>
-              )
-            ) : null}
-          </section>
+              <p className="muted" style={{ fontStyle: "italic", borderLeft: "2px solid rgba(230,174,108,.3)", paddingLeft: 12, lineHeight: 1.5 }}>
+                {compareHeadline(relationType, result.synastry.scores.overall)}
+              </p>
+              {wheel ? (
+                wheel.chart.cusps ? (
+                  <div style={{ marginTop: 16 }}>
+                    <ChartWheel
+                      chart={wheel.chart}
+                      overlayChart={wheel.overlayChart}
+                      aspects={wheel.aspects}
+                      exportSafe
+                    />
+                  </div>
+                ) : (
+                  <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
+                    {COMPARE_WHEEL_NEEDS_HOUSES}
+                  </p>
+                )
+              ) : null}
+              <div style={{ marginTop: 16, textAlign: "left" }}>
+                <DynamicScoresTable scores={result.synastry.scores} />
+              </div>
+            </section>
+          </ShareExportCard>
 
           {/* ── Compat labels (not scores) — from landing .dyn-row + galaxia.jsx sdesc() ── */}
           <section className="glass-card fade-in fade-in-delay-1">

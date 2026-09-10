@@ -151,6 +151,34 @@ describe("revival: relationshipAspectFraming() text-only inside FlowsAndCatchesS
   });
 });
 
+describe("image export minor gate: every compare surface passes an isMinorForSafety-derived boolean, never a raw column", () => {
+  it("/app/compare threads pairHasMinor (built from minorOf/isMinorForSafety) into ShareExportCard's minorBlocked", () => {
+    const src = readFileSync(resolve(__dirname, "../app/app/compare/page.tsx"), "utf8");
+    expect(src).toContain("ShareExportCard");
+    expect(src).toMatch(/ShareExportCard[\s\S]*?minorBlocked=\{pairHasMinor\}/);
+    expect(src).toMatch(/function minorOf[\s\S]*?isMinorForSafety/);
+  });
+
+  it("/chart/compare threads pairHasMinor (from the isMinorForSafety-backed API) into ShareExportCard's minorBlocked", () => {
+    const src = readFileSync(resolve(__dirname, "../app/chart/compare/page.tsx"), "utf8");
+    expect(src).toContain("ShareExportCard");
+    expect(src).toMatch(/ShareExportCard[\s\S]*?minorBlocked=\{pairHasMinor\}/);
+    expect(src).toContain("Boolean(result?.pairHasMinor)");
+  });
+
+  it("/s/[token] compare threads payload.pairHasMinor (stored via isMinorForSafety, never re-derived) into ShareExportCard's minorBlocked", () => {
+    const src = readFileSync(resolve(__dirname, "../components/share-snapshot-view.tsx"), "utf8");
+    expect(src).toContain("ShareExportCard");
+    expect(src).toMatch(/ShareExportCard[\s\S]*?minorBlocked=\{payload\.pairHasMinor\}/);
+  });
+
+  it("the quick-compare API that ultimately feeds all three surfaces computes pairHasMinor via isMinorForSafety", () => {
+    const src = readFileSync(resolve(__dirname, "../app/api/quick-compare/route.ts"), "utf8");
+    expect(src).toContain("isMinorForSafety");
+    expect(src).toMatch(/pairHasMinor\s*=[\s\S]*?isMinorForSafety/);
+  });
+});
+
 describe("1B: web shares one compareHeadline() helper with mobile (no drift) — web half", () => {
   it("web /app/compare calls the shared compareHeadline helper, not an inline score ternary", () => {
     const src = readFileSync(resolve(__dirname, "../app/app/compare/page.tsx"), "utf8");

@@ -27,6 +27,7 @@ import { RelatedLinks } from "../../components/marketing/related-links";
 import { NatalSignReveal } from "../../components/natal-sign-reveal";
 import { QuickChartShell } from "../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../components/save-to-galaxy-button";
+import { exportFilename, ShareExportCard } from "../../components/share-export-card";
 import { ShareLinkButton } from "../../components/share-link-button";
 import { Spinner } from "../../components/spinner";
 import { BODY_GLYPH, signElement } from "../../lib/design";
@@ -197,20 +198,23 @@ export default function QuickChartPage() {
         </>
       ) : (
         <>
-          <NatalSignReveal
-            chart={result.chart}
-            displayDate={result.displayDate}
-            birthPlace={result.birthPlace}
-            name={name || undefined}
-            birthDate={result.birthDate}
-            birthPrecision={input.precision}
-          />
+          {/* FOUNDER-REVIEW: authored — single natal chart export button label. */}
+          <ShareExportCard filename={exportFilename(name, "natal-chart.png")} label="Share chart">
+            <NatalSignReveal
+              chart={result.chart}
+              displayDate={result.displayDate}
+              birthPlace={result.birthPlace}
+              name={name || undefined}
+              birthDate={result.birthDate}
+              birthPrecision={input.precision}
+            />
 
-          {result.chart.cusps ? (
-            <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
-              <ChartWheel chart={result.chart} />
-            </section>
-          ) : null}
+            {result.chart.cusps ? (
+              <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
+                <ChartWheel chart={result.chart} exportSafe />
+              </section>
+            ) : null}
+          </ShareExportCard>
 
           <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
             <button className="pill-link" onClick={() => setExpanded((e) => !e)} style={{ fontSize: ".82rem", marginBottom: expanded ? 12 : 0 }}>

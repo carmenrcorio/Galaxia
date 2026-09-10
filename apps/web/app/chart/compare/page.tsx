@@ -27,12 +27,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../../components/birth-fields";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES } from "../../../components/chart-wheel";
+import { DynamicScoresTable } from "../../../components/dynamic-scores-table";
 import { DynamicTableSection } from "../../../components/dynamic-table-section";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { GenerationalSection } from "../../../components/generational-section";
 import { RelatedLinks } from "../../../components/marketing/related-links";
 import { QuickChartShell } from "../../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
+import { exportFilename, ShareExportCard } from "../../../components/share-export-card";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
@@ -278,52 +280,65 @@ export default function QuickComparePage() {
         </>
       ) : (
         <>
-          <section className="glass-card fade-in" style={{ textAlign: "center" }}>
-            <p style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)", margin: "0 0 4px" }}>
-              {personA!.display_name} &amp; {personB!.display_name}
-            </p>
-            <p className="muted" style={{ fontSize: ".78rem", marginBottom: 12 }}>{relationType}</p>
-            {/* Mirror /app/compare: romantic types are removed entirely when a
-                minor is present — unselectable, not merely non-default. */}
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center", marginBottom: pairHasMinor ? 8 : 0 }}>
-              {availableFocusTypes.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  className="pill-link"
-                  onClick={() => setRelationType(t.key)}
-                  style={{
-                    fontSize: ".8rem",
-                    padding: "6px 13px",
-                    borderColor: relationType === t.key ? "rgba(230,174,108,.5)" : undefined,
-                    color: relationType === t.key ? "var(--gold)" : undefined,
-                  }}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            {pairHasMinor && !romanticHeldNotice ? (
-              <p className="muted" style={{ fontSize: ".75rem", lineHeight: 1.55, marginTop: 8, textAlign: "left", borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
-                {QUICK_COMPARE_MINOR_NOTICE}
+          {/* FOUNDER-REVIEW: authored — compare export button label. */}
+          <ShareExportCard
+            filename={exportFilename(`${personA!.display_name}-${personB!.display_name}`, "compatibility.png")}
+            label="Share compatibility"
+            minorBlocked={pairHasMinor}
+          >
+            <section className="glass-card fade-in" style={{ textAlign: "center" }}>
+              <p style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)", margin: "0 0 4px" }}>
+                {personA!.display_name} &amp; {personB!.display_name}
               </p>
-            ) : null}
-            {!blockRomanticMinorRender && result.synastry ? (
-              result.chartA.cusps ? (
-                <div style={{ marginTop: 16 }}>
-                  <ChartWheel
-                    chart={result.chartA}
-                    overlayChart={result.chartB}
-                    aspects={result.synastry.aspects}
-                  />
-                </div>
-              ) : (
-                <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
-                  {COMPARE_WHEEL_NEEDS_HOUSES}
+              <p className="muted" style={{ fontSize: ".78rem", marginBottom: 12 }}>{relationType}</p>
+              {/* Mirror /app/compare: romantic types are removed entirely when a
+                  minor is present — unselectable, not merely non-default. */}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center", marginBottom: pairHasMinor ? 8 : 0 }}>
+                {availableFocusTypes.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    className="pill-link"
+                    onClick={() => setRelationType(t.key)}
+                    style={{
+                      fontSize: ".8rem",
+                      padding: "6px 13px",
+                      borderColor: relationType === t.key ? "rgba(230,174,108,.5)" : undefined,
+                      color: relationType === t.key ? "var(--gold)" : undefined,
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              {pairHasMinor && !romanticHeldNotice ? (
+                <p className="muted" style={{ fontSize: ".75rem", lineHeight: 1.55, marginTop: 8, textAlign: "left", borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+                  {QUICK_COMPARE_MINOR_NOTICE}
                 </p>
-              )
-            ) : null}
-          </section>
+              ) : null}
+              {!blockRomanticMinorRender && result.synastry ? (
+                result.chartA.cusps ? (
+                  <div style={{ marginTop: 16 }}>
+                    <ChartWheel
+                      chart={result.chartA}
+                      overlayChart={result.chartB}
+                      aspects={result.synastry.aspects}
+                      exportSafe
+                    />
+                  </div>
+                ) : (
+                  <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
+                    {COMPARE_WHEEL_NEEDS_HOUSES}
+                  </p>
+                )
+              ) : null}
+              {!blockRomanticMinorRender && result.synastry ? (
+                <div style={{ marginTop: 16, textAlign: "left" }}>
+                  <DynamicScoresTable scores={result.synastry.scores} />
+                </div>
+              ) : null}
+            </section>
+          </ShareExportCard>
 
           {romanticHeldNotice || blockRomanticMinorRender ? (
             <section className="glass-card fade-in">

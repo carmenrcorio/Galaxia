@@ -29,11 +29,13 @@ import { BODY_GLYPH, signElement } from "../lib/design";
 import { useViewer } from "../lib/use-viewer";
 import { ChartPdfExport } from "./chart-pdf-export";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES } from "./chart-wheel";
+import { DynamicScoresTable } from "./dynamic-scores-table";
 import { DynamicTableSection } from "./dynamic-table-section";
 import { FlowsAndCatchesSection } from "./flows-and-catches-section";
 import { GenerationalSection } from "./generational-section";
 import { NatalSignReveal } from "./natal-sign-reveal";
 import { QuickChartShell } from "./quick-chart-shell";
+import { exportFilename, ShareExportCard } from "./share-export-card";
 
 function getSign(chart: NatalChart, body: string) {
   const p = chart.placements.find((pl) => pl.body === body);
@@ -49,19 +51,24 @@ function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
 
   return (
     <>
-      {/* No birthDate: single shares strip birth PII; NatalSignReveal fail-safes. */}
-      <NatalSignReveal
-        chart={payload.chart}
-        displayDate={payload.displayDate}
-        birthPlace={payload.birthPlace}
-        name={payload.name}
-      />
+      {/* Nameless hard boundary (quick-share.ts): single shares never carry a
+          name, so the export filename always falls back to natal-chart.png. */}
+      {/* FOUNDER-REVIEW: authored — single natal chart export button label. */}
+      <ShareExportCard filename={exportFilename(payload.name, "natal-chart.png")} label="Share chart">
+        {/* No birthDate: single shares strip birth PII; NatalSignReveal fail-safes. */}
+        <NatalSignReveal
+          chart={payload.chart}
+          displayDate={payload.displayDate}
+          birthPlace={payload.birthPlace}
+          name={payload.name}
+        />
 
-      {payload.chart.cusps ? (
-        <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
-          <ChartWheel chart={payload.chart} />
-        </section>
-      ) : null}
+        {payload.chart.cusps ? (
+          <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
+            <ChartWheel chart={payload.chart} exportSafe />
+          </section>
+        ) : null}
+      </ShareExportCard>
 
       <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
         <button
@@ -168,42 +175,58 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
 
   return (
     <>
-      <section className="glass-card fade-in" style={{ textAlign: "center" }}>
-        <p style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)", margin: "0 0 4px" }}>
-          {personA.display_name} &amp; {personB.display_name}
-        </p>
-        <p className="muted" style={{ fontSize: ".78rem", marginBottom: 12 }}>{relationType}</p>
-        {payload.pairHasMinor && !framing.romanticHeldNotice ? (
-          <p
-            className="muted"
-            style={{
-              fontSize: ".75rem",
-              lineHeight: 1.55,
-              marginTop: 8,
-              textAlign: "left",
-              borderLeft: "2px solid rgba(230,174,108,.4)",
-              paddingLeft: 10,
-            }}
-          >
-            {QUICK_COMPARE_MINOR_NOTICE}
+      {/* FOUNDER-REVIEW: authored — compare export button label. */}
+      <ShareExportCard
+        filename={exportFilename(
+          [personA.display_name, personB.display_name].filter(Boolean).join("-"),
+          "compatibility.png"
+        )}
+        label="Share compatibility"
+        minorBlocked={payload.pairHasMinor}
+      >
+        <section className="glass-card fade-in" style={{ textAlign: "center" }}>
+          <p style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)", margin: "0 0 4px" }}>
+            {personA.display_name} &amp; {personB.display_name}
           </p>
-        ) : null}
-        {!framing.blockRomanticMinorRender && payload.synastry ? (
-          payload.chartA.cusps ? (
-            <div style={{ marginTop: 16 }}>
-              <ChartWheel
-                chart={payload.chartA}
-                overlayChart={payload.chartB}
-                aspects={payload.synastry.aspects}
-              />
-            </div>
-          ) : (
-            <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
-              {COMPARE_WHEEL_NEEDS_HOUSES}
+          <p className="muted" style={{ fontSize: ".78rem", marginBottom: 12 }}>{relationType}</p>
+          {payload.pairHasMinor && !framing.romanticHeldNotice ? (
+            <p
+              className="muted"
+              style={{
+                fontSize: ".75rem",
+                lineHeight: 1.55,
+                marginTop: 8,
+                textAlign: "left",
+                borderLeft: "2px solid rgba(230,174,108,.4)",
+                paddingLeft: 10,
+              }}
+            >
+              {QUICK_COMPARE_MINOR_NOTICE}
             </p>
-          )
-        ) : null}
-      </section>
+          ) : null}
+          {!framing.blockRomanticMinorRender && payload.synastry ? (
+            payload.chartA.cusps ? (
+              <div style={{ marginTop: 16 }}>
+                <ChartWheel
+                  chart={payload.chartA}
+                  overlayChart={payload.chartB}
+                  aspects={payload.synastry.aspects}
+                  exportSafe
+                />
+              </div>
+            ) : (
+              <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
+                {COMPARE_WHEEL_NEEDS_HOUSES}
+              </p>
+            )
+          ) : null}
+          {!framing.blockRomanticMinorRender && payload.synastry ? (
+            <div style={{ marginTop: 16, textAlign: "left" }}>
+              <DynamicScoresTable scores={payload.synastry.scores} />
+            </div>
+          ) : null}
+        </section>
+      </ShareExportCard>
 
       {framing.romanticHeldNotice || framing.blockRomanticMinorRender ? (
         <section className="glass-card fade-in">

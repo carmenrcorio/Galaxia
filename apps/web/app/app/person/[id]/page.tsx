@@ -53,8 +53,10 @@ import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { InitialAvatar } from "../../../../components/initial-avatar";
 import { ChartSectionNav } from "../../../../components/chart-section-nav";
 import { MemorialTimeline } from "../../../../components/memorial-timeline";
+import { NatalBigThreeChips } from "../../../../components/natal-big-three-chips";
 import { HonorDeclarationBox, HONOR_LIGHT_ANCHOR_ID } from "../../../../components/honor-declaration";
 import { RemembranceSpace } from "../../../../components/remembrance-space";
+import { exportFilename, ShareExportCard } from "../../../../components/share-export-card";
 import { Spinner } from "../../../../components/spinner";
 import { ASPECT_GLYPH, BODY_GLYPH, SIGN_GLYPH, signElement } from "../../../../lib/design";
 import { getPreferredHouseSystem } from "../../../../lib/house-system";
@@ -890,24 +892,37 @@ export default function PersonProfilePage() {
       ) : null}
 
       {/* ── Chart Wheel ── */}
-      <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
-        <p className="eyebrow" style={{ marginBottom: 14 }}>
-          {chart.precision === "exact" && chart.asc
-            ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
-            : enduringEyebrow("Zodiac wheel")}
-        </p>
-        <ChartWheel chart={chart} aspects={natalAspects} />
-        {chart.houseSystemFallbackReason ? (
-          <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
-            {chart.houseSystemFallbackReason}
+      {/* FOUNDER-REVIEW: authored — single natal chart export button label. */}
+      <ShareExportCard filename={exportFilename(person.display_name, "natal-chart.png")} label="Share chart">
+        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
+          <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", margin: "0 0 10px", textAlign: "center" }}>
+            {person.display_name}
           </p>
-        ) : null}
-        {(chart.precision !== "exact" || !chart.asc) ? (
-          <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "48ch", margin: "10px auto 0" }}>
-            Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+          <p className="eyebrow" style={{ marginBottom: 14, textAlign: "center" }}>
+            {chart.precision === "exact" && chart.asc
+              ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
+              : enduringEyebrow("Zodiac wheel")}
           </p>
-        ) : null}
-      </section>
+          <ChartWheel chart={chart} aspects={natalAspects} exportSafe />
+          {chart.houseSystemFallbackReason ? (
+            <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
+              {chart.houseSystemFallbackReason}
+            </p>
+          ) : null}
+          {(chart.precision !== "exact" || !chart.asc) ? (
+            <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "48ch", margin: "10px auto 0" }}>
+              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+            </p>
+          ) : null}
+          <NatalBigThreeChips
+            chips={[
+              { label: "Sun", sign: sun?.sign, uncertain: sun?.confident === false },
+              { label: "Moon", sign: moon?.sign, uncertain: moon?.confident === false },
+              { label: "Rising", sign: chart.asc },
+            ]}
+          />
+        </section>
+      </ShareExportCard>
 
       {/* ── Big Three ── */}
       <section id="big-three" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>

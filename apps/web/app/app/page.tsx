@@ -64,6 +64,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ChartImageExportButton, ChartImageExportFrame, chartExportFilename } from "../../components/chart-image-export";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { RelationalTransitFeed } from "../../components/relational-transit-feed";
 import { ThreadMenu } from "../../components/thread-menu";
@@ -159,6 +160,15 @@ export default function AppHomePage() {
      so the arrival sequence plays once on data load, not on every state change */
   const entranceStartRef = useRef<number | null>(null);
   const entranceKeyRef   = useRef<string>("");
+  /* Flips true once the entrance ignition has finished and the sky is in its
+     settled ambient-idle state (mirrors the existing budgetArmed gate inside
+     draw() below), gating the image export button so a capture never lands
+     mid-animation. Reset alongside the entrance itself on a fresh data load. */
+  const entranceSettledRef = useRef(false);
+  const [entranceSettled, setEntranceSettled] = useState(false);
+  /* Captured region for the "share this sky" export: the canvas stack plus
+     the film-grain overlay, watermarked by ChartImageExportFrame. */
+  const galaxyFrameRef = useRef<HTMLDivElement>(null);
 
   /* First name only, from the shared resolver. Null when no name has been
      captured, which the greeting handles by simply not naming anyone. It is
@@ -338,6 +348,8 @@ export default function AppHomePage() {
     if (entranceKey !== entranceKeyRef.current) {
       entranceKeyRef.current = entranceKey;
       entranceStartRef.current = null;
+      entranceSettledRef.current = false;
+      setEntranceSettled(false);
     }
 
     let elapsed = 0;      /* ms since entrance start (updated each frame) */
@@ -1017,6 +1029,14 @@ export default function AppHomePage() {
         atmDirty = true; /* puff count / breath quality changes with lowPerf */
       }
 
+      /* Entrance has finished and the sky has settled into ambient idle
+         motion (same gate as budgetArmed), safe for the export button to
+         appear, so a capture never lands mid-ignition. */
+      if (budgetArmed && !entranceSettledRef.current) {
+        entranceSettledRef.current = true;
+        setEntranceSettled(true);
+      }
+
       /* Motion canvas is transparent over the atmosphere canvas — clear only. */
       cx.clearRect(0, 0, W(), H());
 
@@ -1352,6 +1372,14 @@ export default function AppHomePage() {
                 + Add person
               </Link>
             ) : null}
+            {!loading && people.length > 0 && entranceSettled ? (
+              // FOUNDER-REVIEW: authored - "Share sky image" export label
+              <ChartImageExportButton
+                frameRef={galaxyFrameRef}
+                filename={chartExportFilename(null, "galaxia-constellation.png")}
+                label="Share sky image"
+              />
+            ) : null}
           </div>
         </div>
 
@@ -1368,13 +1396,15 @@ export default function AppHomePage() {
           /* Near-square card: phone gets mild vertical room without a tall
              skinny ellipse; desktop grows with width but caps at 680 so a
              full-bleed row does not eat the viewport (see changelog). */
-          <div style={{
-            position: "relative",
-            width: "100%",
-            aspectRatio: "1 / 1.12",
-            minHeight: 380,
-            maxHeight: "min(72vh, 680px)",
-          }}>
+          <ChartImageExportFrame
+            frameRef={galaxyFrameRef}
+            style={{
+              width: "100%",
+              aspectRatio: "1 / 1.12",
+              minHeight: 380,
+              maxHeight: "min(72vh, 680px)",
+            }}
+          >
             <canvas
               ref={atmCanvasRef}
               aria-hidden
@@ -1415,7 +1445,7 @@ export default function AppHomePage() {
                 <p style={{ fontSize: ".72rem", color: "var(--teal)", display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 100, background: "rgba(111,177,184,.1)", border: "1px solid rgba(111,177,184,.24)" }}>Click to open profile</p>
               </div>
             ) : null}
-          </div>
+          </ChartImageExportFrame>
         )}
 
         {/* Legend strip */}

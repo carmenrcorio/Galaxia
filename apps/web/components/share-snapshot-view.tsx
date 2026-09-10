@@ -27,6 +27,7 @@ import {
 } from "../lib/quick-share";
 import { BODY_GLYPH, signElement } from "../lib/design";
 import { useViewer } from "../lib/use-viewer";
+import { ChartImageExport, chartExportFilename } from "./chart-image-export";
 import { ChartPdfExport } from "./chart-pdf-export";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES } from "./chart-wheel";
 import { DynamicTableSection } from "./dynamic-table-section";
@@ -49,19 +50,22 @@ function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
 
   return (
     <>
-      {/* No birthDate: single shares strip birth PII; NatalSignReveal fail-safes. */}
-      <NatalSignReveal
-        chart={payload.chart}
-        displayDate={payload.displayDate}
-        birthPlace={payload.birthPlace}
-        name={payload.name}
-      />
+      {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
+      <ChartImageExport filename={chartExportFilename(payload.name, "natal-chart.png")} label="Share chart image">
+        {/* No birthDate: single shares strip birth PII; NatalSignReveal fail-safes. */}
+        <NatalSignReveal
+          chart={payload.chart}
+          displayDate={payload.displayDate}
+          birthPlace={payload.birthPlace}
+          name={payload.name}
+        />
 
-      {payload.chart.cusps ? (
-        <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
-          <ChartWheel chart={payload.chart} />
-        </section>
-      ) : null}
+        {payload.chart.cusps ? (
+          <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
+            <ChartWheel chart={payload.chart} />
+          </section>
+        ) : null}
+      </ChartImageExport>
 
       <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
         <button
@@ -166,63 +170,73 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
     mars: getSign(payload.chartB, "mars"),
   };
 
+  const exportFilename = chartExportFilename(
+    `${personA.display_name}-${personB.display_name}`,
+    "compatibility-chart.png"
+  );
+
   return (
     <>
-      <section className="glass-card fade-in" style={{ textAlign: "center" }}>
-        <p style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)", margin: "0 0 4px" }}>
-          {personA.display_name} &amp; {personB.display_name}
-        </p>
-        <p className="muted" style={{ fontSize: ".78rem", marginBottom: 12 }}>{relationType}</p>
-        {payload.pairHasMinor && !framing.romanticHeldNotice ? (
-          <p
-            className="muted"
-            style={{
-              fontSize: ".75rem",
-              lineHeight: 1.55,
-              marginTop: 8,
-              textAlign: "left",
-              borderLeft: "2px solid rgba(230,174,108,.4)",
-              paddingLeft: 10,
-            }}
-          >
-            {QUICK_COMPARE_MINOR_NOTICE}
+      {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
+      {/* Capture is headline + wheel + reading-held notice (if any) + the
+          six-row dynamic table. FlowsAndCatchesSection (the full aspect
+          list) and GenerationalSection render outside the capture, matching
+          the task's "not the full aspect list" boundary. */}
+      <ChartImageExport filename={exportFilename} label="Share chart image" pairHasMinor={payload.pairHasMinor}>
+        <section className="glass-card fade-in" style={{ textAlign: "center" }}>
+          <p style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)", margin: "0 0 4px" }}>
+            {personA.display_name} &amp; {personB.display_name}
           </p>
-        ) : null}
-        {!framing.blockRomanticMinorRender && payload.synastry ? (
-          payload.chartA.cusps ? (
-            <div style={{ marginTop: 16 }}>
-              <ChartWheel
-                chart={payload.chartA}
-                overlayChart={payload.chartB}
-                aspects={payload.synastry.aspects}
-              />
-            </div>
-          ) : (
-            <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
-              {COMPARE_WHEEL_NEEDS_HOUSES}
+          <p className="muted" style={{ fontSize: ".78rem", marginBottom: 12 }}>{relationType}</p>
+          {payload.pairHasMinor && !framing.romanticHeldNotice ? (
+            <p
+              className="muted"
+              style={{
+                fontSize: ".75rem",
+                lineHeight: 1.55,
+                marginTop: 8,
+                textAlign: "left",
+                borderLeft: "2px solid rgba(230,174,108,.4)",
+                paddingLeft: 10,
+              }}
+            >
+              {QUICK_COMPARE_MINOR_NOTICE}
             </p>
-          )
+          ) : null}
+          {!framing.blockRomanticMinorRender && payload.synastry ? (
+            payload.chartA.cusps ? (
+              <div style={{ marginTop: 16 }}>
+                <ChartWheel
+                  chart={payload.chartA}
+                  overlayChart={payload.chartB}
+                  aspects={payload.synastry.aspects}
+                />
+              </div>
+            ) : (
+              <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
+                {COMPARE_WHEEL_NEEDS_HOUSES}
+              </p>
+            )
+          ) : null}
+        </section>
+
+        {framing.romanticHeldNotice || framing.blockRomanticMinorRender ? (
+          <section className="glass-card fade-in">
+            <p className="eyebrow" style={{ marginBottom: 8 }}>Reading held</p>
+            <p className="muted" style={{ fontSize: ".88rem", lineHeight: 1.6 }}>
+              {QUICK_COMPARE_HELD_READING}
+            </p>
+          </section>
         ) : null}
-      </section>
 
-      {framing.romanticHeldNotice || framing.blockRomanticMinorRender ? (
-        <section className="glass-card fade-in">
-          <p className="eyebrow" style={{ marginBottom: 8 }}>Reading held</p>
-          <p className="muted" style={{ fontSize: ".88rem", lineHeight: 1.6 }}>
-            {QUICK_COMPARE_HELD_READING}
-          </p>
-        </section>
-      ) : null}
-
-      {framing.blockRomanticMinorRender ? null : !payload.synastry ? (
-        <section className="glass-card fade-in fade-in-delay-1">
-          <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>
-            One of you has year-only birth data, so a full synastry read isn&apos;t possible — the planet-to-planet
-            aspects would be guesses. What the generational layer shows: {payload.generational.theme}
-          </p>
-        </section>
-      ) : (
-        <>
+        {framing.blockRomanticMinorRender ? null : !payload.synastry ? (
+          <section className="glass-card fade-in fade-in-delay-1">
+            <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>
+              One of you has year-only birth data, so a full synastry read isn&apos;t possible — the planet-to-planet
+              aspects would be guesses. What the generational layer shows: {payload.generational.theme}
+            </p>
+          </section>
+        ) : (
           <DynamicTableSection scores={payload.synastry.scores}>
             {[personA, personB].map((person) => (
               <div
@@ -253,14 +267,16 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
               </div>
             ))}
           </DynamicTableSection>
+        )}
+      </ChartImageExport>
 
-          <FlowsAndCatchesSection
-            aspects={payload.synastry.aspects}
-            relationType={relationType}
-            nameA={personA.display_name}
-            nameB={personB.display_name}
-          />
-        </>
+      {framing.blockRomanticMinorRender || !payload.synastry ? null : (
+        <FlowsAndCatchesSection
+          aspects={payload.synastry.aspects}
+          relationType={relationType}
+          nameA={personA.display_name}
+          nameB={personB.display_name}
+        />
       )}
 
       {!framing.blockRomanticMinorRender ? (

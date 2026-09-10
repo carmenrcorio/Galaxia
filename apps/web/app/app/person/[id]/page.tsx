@@ -48,6 +48,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AskBirthData } from "../../../../components/ask-birth-data";
+import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { InitialAvatar } from "../../../../components/initial-avatar";
@@ -890,24 +891,49 @@ export default function PersonProfilePage() {
       ) : null}
 
       {/* ── Chart Wheel ── */}
-      <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
-        <p className="eyebrow" style={{ marginBottom: 14 }}>
-          {chart.precision === "exact" && chart.asc
-            ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
-            : enduringEyebrow("Zodiac wheel")}
-        </p>
-        <ChartWheel chart={chart} aspects={natalAspects} />
-        {chart.houseSystemFallbackReason ? (
-          <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
-            {chart.houseSystemFallbackReason}
+      {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
+      <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
+        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
+          <p className="eyebrow" style={{ marginBottom: 14 }}>
+            {chart.precision === "exact" && chart.asc
+              ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
+              : enduringEyebrow("Zodiac wheel")}
           </p>
-        ) : null}
-        {(chart.precision !== "exact" || !chart.asc) ? (
-          <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "48ch", margin: "10px auto 0" }}>
-            Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+          <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", textAlign: "center", marginBottom: 12 }}>
+            {person.display_name}
           </p>
-        ) : null}
-      </section>
+          {(sun?.sign || moon?.sign || chart.asc) ? (
+            <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", marginBottom: 14 }}>
+              {([
+                { label: "Sun", sign: sun?.sign },
+                { label: "Moon", sign: moon?.sign },
+                { label: "Rising", sign: chart.asc },
+              ] as { label: string; sign: string | undefined }[])
+                .filter((chip) => chip.sign)
+                .map((chip) => (
+                  <div key={chip.label} className="sign-chip">
+                    <span className="sign-chip__glyph" style={{ color: `var(--${signElement(chip.sign as string)})` }}>
+                      {SIGN_GLYPH[chip.sign as string]}
+                    </span>
+                    <span className="sign-chip__label">{chip.label}</span>
+                    <span className="sign-chip__value">{chip.sign}</span>
+                  </div>
+                ))}
+            </div>
+          ) : null}
+          <ChartWheel chart={chart} aspects={natalAspects} />
+          {chart.houseSystemFallbackReason ? (
+            <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
+              {chart.houseSystemFallbackReason}
+            </p>
+          ) : null}
+          {(chart.precision !== "exact" || !chart.asc) ? (
+            <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "48ch", margin: "10px auto 0" }}>
+              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+            </p>
+          ) : null}
+        </section>
+      </ChartImageExport>
 
       {/* ── Big Three ── */}
       <section id="big-three" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>

@@ -37,6 +37,7 @@ import { isMinorForSafety, orderPair } from "@galaxia/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { ChartImageExport, chartExportFilename } from "../../../components/chart-image-export";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES, orientSynastryWheel } from "../../../components/chart-wheel";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { InitialAvatar } from "../../../components/initial-avatar";
@@ -506,84 +507,95 @@ function ComparePageInner() {
         </section>
       ) : result ? (
         <>
-          {/* Headline */}
-          <section className="glass-card fade-in">
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap", minWidth: 0 }}>
-              <InitialAvatar name={result.personA.display_name} />
-              <span style={{ color: "var(--mist2)", fontSize: "1.1rem" }}>×</span>
-              <InitialAvatar name={result.personB.display_name} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", overflowWrap: "anywhere" }}>
-                  {result.personA.display_name} &amp; {result.personB.display_name}
-                </div>
-                <div style={{ fontSize: ".74rem", color: "var(--mist2)" }}>{relationType}</div>
-              </div>
-            </div>
-            <p className="muted" style={{ fontStyle: "italic", borderLeft: "2px solid rgba(230,174,108,.3)", paddingLeft: 12, lineHeight: 1.5 }}>
-              {compareHeadline(relationType, result.synastry.scores.overall)}
-            </p>
-            {wheel ? (
-              wheel.chart.cusps ? (
-                <div style={{ marginTop: 16 }}>
-                  <ChartWheel
-                    chart={wheel.chart}
-                    overlayChart={wheel.overlayChart}
-                    aspects={wheel.aspects}
-                  />
-                </div>
-              ) : (
-                <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
-                  {COMPARE_WHEEL_NEEDS_HOUSES}
-                </p>
-              )
-            ) : null}
-          </section>
-
-          {/* ── Compat labels (not scores) — from landing .dyn-row + galaxia.jsx sdesc() ── */}
-          <section className="glass-card fade-in fade-in-delay-1">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <p className="eyebrow" style={{ margin: 0 }}>Your dynamic</p>
-              <button className="pill-link" style={{ fontSize: ".7rem", padding: "4px 12px" }} onClick={() => setShowRaw(r => !r)}>
-                {showRaw ? "Hide numbers" : "Show numbers"}
-              </button>
-            </div>
-
-            {/* dyn table — mirrors landing .dyn */}
-            <div style={{ borderRadius: 14, background: "rgba(111,177,184,.06)", border: "1px solid rgba(111,177,184,.15)", padding: "4px 0", marginBottom: 14 }}>
-              {Object.entries(result.synastry.scores).map(([key, rawScore]) => {
-                const score = rawScore as number;
-                const { word, cls } = compatWord(score);
-                const pct = score / 100;
-                return (
-                  <div key={key} className="dyn-row" style={{ borderTop: key === "overall" ? "none" : "1px solid rgba(255,255,255,.04)" }}>
-                    <span className="dyn-row-label" style={{ fontSize: ".82rem", color: "var(--mist)" }}>{COMPAT_LABELS[key] ?? key}</span>
-                    <div className="dyn-row-value" style={{ textAlign: "right" }}>
-                      <span className={`compat-word ${cls}`} style={{ fontSize: ".88rem", fontFamily: "var(--serif)" }}>{word}</span>
-                      {/* thin underline bar sized to percentage (landing concept) */}
-                      <div style={{ height: 2, borderRadius: 999, marginTop: 3, width: `${pct * 72}px`, maxWidth: "100%", background: cls === "compat-high" ? "var(--teal)" : cls === "compat-mid" ? "var(--gold-soft)" : "var(--rose)", opacity: .7 }} />
-                      {showRaw ? <div style={{ fontSize: ".68rem", color: "var(--mist2)", marginTop: 2 }}>{score}/100</div> : null}
-                    </div>
+          {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
+          {/* Capture is the headline (avatars, names, wheel) plus the six-row
+              "Your dynamic" table and tip blocks. FlowsAndCatchesSection (the
+              full aspect list) and everything below render outside the
+              capture, matching the task's "not the full aspect list" boundary. */}
+          <ChartImageExport
+            filename={chartExportFilename(`${result.personA.display_name}-${result.personB.display_name}`, "compatibility-chart.png")}
+            label="Share chart image"
+            pairHasMinor={pairHasMinor}
+          >
+            {/* Headline */}
+            <section className="glass-card fade-in">
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap", minWidth: 0 }}>
+                <InitialAvatar name={result.personA.display_name} />
+                <span style={{ color: "var(--mist2)", fontSize: "1.1rem" }}>×</span>
+                <InitialAvatar name={result.personB.display_name} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", overflowWrap: "anywhere" }}>
+                    {result.personA.display_name} &amp; {result.personB.display_name}
                   </div>
-                );
-              })}
-            </div>
-
-            {/* ── "What [name] needs from you" — the landing's .tip block, built for the first time ── */}
-            {[result.personA, result.personB].map((person: PersonLite) => (
-              <div key={person.id} style={{
-                marginBottom: 10, padding: "13px 15px", borderRadius: 13,
-                background: "linear-gradient(165deg, rgba(255,255,255,.025), rgba(255,255,255,.008))",
-                border: "1px solid rgba(183,154,216,.12)",
-              }}>
-                <p style={{ fontFamily: "var(--sans)", fontSize: ".7rem", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 6 }}>
-                  → What {person.display_name} needs from you
-                </p>
-                <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.62, fontStyle: "italic", margin: 0 }}>
-                  {whatTheyNeed(result.synastry.scores, person, relationType, result.synastry)}
-                </p>
+                  <div style={{ fontSize: ".74rem", color: "var(--mist2)" }}>{relationType}</div>
+                </div>
               </div>
-            ))}
-          </section>
+              <p className="muted" style={{ fontStyle: "italic", borderLeft: "2px solid rgba(230,174,108,.3)", paddingLeft: 12, lineHeight: 1.5 }}>
+                {compareHeadline(relationType, result.synastry.scores.overall)}
+              </p>
+              {wheel ? (
+                wheel.chart.cusps ? (
+                  <div style={{ marginTop: 16 }}>
+                    <ChartWheel
+                      chart={wheel.chart}
+                      overlayChart={wheel.overlayChart}
+                      aspects={wheel.aspects}
+                    />
+                  </div>
+                ) : (
+                  <p className="muted" style={{ fontSize: ".76rem", marginTop: 14 }}>
+                    {COMPARE_WHEEL_NEEDS_HOUSES}
+                  </p>
+                )
+              ) : null}
+            </section>
+
+            {/* ── Compat labels (not scores) — from landing .dyn-row + galaxia.jsx sdesc() ── */}
+            <section className="glass-card fade-in fade-in-delay-1">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                <p className="eyebrow" style={{ margin: 0 }}>Your dynamic</p>
+                <button className="pill-link" style={{ fontSize: ".7rem", padding: "4px 12px" }} onClick={() => setShowRaw(r => !r)}>
+                  {showRaw ? "Hide numbers" : "Show numbers"}
+                </button>
+              </div>
+
+              {/* dyn table — mirrors landing .dyn */}
+              <div style={{ borderRadius: 14, background: "rgba(111,177,184,.06)", border: "1px solid rgba(111,177,184,.15)", padding: "4px 0", marginBottom: 14 }}>
+                {Object.entries(result.synastry.scores).map(([key, rawScore]) => {
+                  const score = rawScore as number;
+                  const { word, cls } = compatWord(score);
+                  const pct = score / 100;
+                  return (
+                    <div key={key} className="dyn-row" style={{ borderTop: key === "overall" ? "none" : "1px solid rgba(255,255,255,.04)" }}>
+                      <span className="dyn-row-label" style={{ fontSize: ".82rem", color: "var(--mist)" }}>{COMPAT_LABELS[key] ?? key}</span>
+                      <div className="dyn-row-value" style={{ textAlign: "right" }}>
+                        <span className={`compat-word ${cls}`} style={{ fontSize: ".88rem", fontFamily: "var(--serif)" }}>{word}</span>
+                        {/* thin underline bar sized to percentage (landing concept) */}
+                        <div style={{ height: 2, borderRadius: 999, marginTop: 3, width: `${pct * 72}px`, maxWidth: "100%", background: cls === "compat-high" ? "var(--teal)" : cls === "compat-mid" ? "var(--gold-soft)" : "var(--rose)", opacity: .7 }} />
+                        {showRaw ? <div style={{ fontSize: ".68rem", color: "var(--mist2)", marginTop: 2 }}>{score}/100</div> : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ── "What [name] needs from you" — the landing's .tip block, built for the first time ── */}
+              {[result.personA, result.personB].map((person: PersonLite) => (
+                <div key={person.id} style={{
+                  marginBottom: 10, padding: "13px 15px", borderRadius: 13,
+                  background: "linear-gradient(165deg, rgba(255,255,255,.025), rgba(255,255,255,.008))",
+                  border: "1px solid rgba(183,154,216,.12)",
+                }}>
+                  <p style={{ fontFamily: "var(--sans)", fontSize: ".7rem", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 6 }}>
+                    → What {person.display_name} needs from you
+                  </p>
+                  <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.62, fontStyle: "italic", margin: 0 }}>
+                    {whatTheyNeed(result.synastry.scores, person, relationType, result.synastry)}
+                  </p>
+                </div>
+              ))}
+            </section>
+          </ChartImageExport>
 
           {/* Flow / catches — shared path with /chart/compare and /s */}
           <FlowsAndCatchesSection

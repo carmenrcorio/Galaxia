@@ -21,6 +21,7 @@ import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
+import { ChartImageExport, chartExportFilename } from "../../components/chart-image-export";
 import { ChartPdfExport } from "../../components/chart-pdf-export";
 import { ChartWheel } from "../../components/chart-wheel";
 import { RelatedLinks } from "../../components/marketing/related-links";
@@ -197,20 +198,23 @@ export default function QuickChartPage() {
         </>
       ) : (
         <>
-          <NatalSignReveal
-            chart={result.chart}
-            displayDate={result.displayDate}
-            birthPlace={result.birthPlace}
-            name={name || undefined}
-            birthDate={result.birthDate}
-            birthPrecision={input.precision}
-          />
+          {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
+          <ChartImageExport filename={chartExportFilename(name, "natal-chart.png")} label="Share chart image">
+            <NatalSignReveal
+              chart={result.chart}
+              displayDate={result.displayDate}
+              birthPlace={result.birthPlace}
+              name={name || undefined}
+              birthDate={result.birthDate}
+              birthPrecision={input.precision}
+            />
 
-          {result.chart.cusps ? (
-            <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
-              <ChartWheel chart={result.chart} />
-            </section>
-          ) : null}
+            {result.chart.cusps ? (
+              <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
+                <ChartWheel chart={result.chart} />
+              </section>
+            ) : null}
+          </ChartImageExport>
 
           <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
             <button className="pill-link" onClick={() => setExpanded((e) => !e)} style={{ fontSize: ".82rem", marginBottom: expanded ? 12 : 0 }}>

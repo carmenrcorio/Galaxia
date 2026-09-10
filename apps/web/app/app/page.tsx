@@ -1375,8 +1375,8 @@ export default function AppHomePage() {
               />
             ) : null}
             {!loading && people.length >= 3 ? (
-              <Link href="/app/family-compare" className="pill-link" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
-                Compare family
+              <Link href="/app/groups" className="pill-link" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
+                Compare as a group
               </Link>
             ) : null}
             {!loading && people.length > 0 ? (

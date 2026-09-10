@@ -1,5 +1,9 @@
 /**
- * Galaxia Generations — Family Chart Comparison (Feature 2).
+ * Galaxia Generations — chart-comparison grid (Feature 2, originally
+ * "Family Chart Comparison"). Surfaced today from the Groups dashboard
+ * (any group kind — family, friends, coworkers, ...) rather than a
+ * standalone family-only page; the module/type names below are historical
+ * and unchanged, but nothing here is family-specific.
  *
  * Pure, deterministic reads over already-computed NatalCharts: no new
  * astrology, no AI, no network. "Rising" is `chart.asc` (a Sign), never a

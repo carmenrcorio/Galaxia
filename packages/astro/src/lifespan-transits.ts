@@ -9,11 +9,20 @@
  * found, never a hardcoded "Saturn return at 29" — ages vary with the exact
  * natal degree, and this module finds the actual date.
  *
- * NO FABRICATION (ENGINEERING.md §12): year-only charts are excluded, exactly
- * like `todayTransitsForChart` — their natal longitudes are sampled mid-year,
- * so a "return" computed against them would be a confident-looking guess.
- * Progressed Moon uses real secondary-progression geometry (one day after
- * birth = one year of life), not a fixed "every 2.5 years" rule of thumb.
+ * NO FABRICATION (ENGINEERING.md §12): a year-only chart's natal longitudes
+ * are sampled mid-year (the same convention `computeNatalChart` already uses
+ * as its "working date" for year precision — see `getWorkingDate`, index.ts),
+ * never a real birth day. When `precision` is `'approximate'` this module
+ * still finds real Saturn/Jupiter-return geometry against that mid-year
+ * sample, but reports it as an estimated age rather than a calendar date —
+ * the honest resolution given how much a birth-day-within-the-year shifts a
+ * slow planet's exact degree. Progressed Moon (too fast: a ~6-month birth
+ * window is a large fraction of its ~2.5yr sign-change cycle) and outer-planet
+ * conjunctions to Moon/Ascendant (Moon moves ~13°/day; Ascendant needs a
+ * birth time — neither exists for a year-only chart) are excluded outright,
+ * not degraded. Progressed Moon uses real secondary-progression geometry (one
+ * day after birth = one year of life), not a fixed "every 2.5 years" rule of
+ * thumb.
  */
 
 import { eclipticLongitude, longitudeToSign, type BodyName, type NatalChart, type Sign } from "./index";
@@ -23,6 +32,9 @@ export type LifespanTransitKind =
   | "jupiter_return"
   | "progressed_moon_sign_change"
   | "outer_conjunction";
+
+/** See `computeLifespanTransits` — governs which events are computed and how they're dated. */
+export type LifespanTransitPrecision = "exact" | "approximate";
 
 export interface LifespanTransitEvent {
   kind: LifespanTransitKind;
@@ -36,6 +48,16 @@ export interface LifespanTransitEvent {
   natalBody?: BodyName | "ascendant";
   /** Zodiac sign for progressed Moon sign changes: the sign the progressed Moon moved into. */
   sign?: Sign;
+  /**
+   * Present (`true`) only when this event was computed against a year-only
+   * chart (`precision: 'approximate'` was passed in). Absent — never
+   * `false` — for exact-precision events, so old callers/tests see the
+   * exact same shape as before. UI must render `ageEstimate`, not `dateUTC`,
+   * whenever this is `true`.
+   */
+  isApproximate?: true;
+  /** Integer estimated age at the event. Present only alongside `isApproximate: true`. */
+  ageEstimate?: number;
 }
 
 export interface LifespanTransitOptions {
@@ -106,17 +128,42 @@ function findConjunctions(
 
 /**
  * Every major life transit for one person's own chart, across their own
- * lifespan (`birthDateUTC` → `endDateUTC`): Saturn returns, Jupiter returns,
- * progressed Moon sign changes, and the outer planets (Uranus/Neptune/Pluto)
- * conjuncting natal Sun, Moon, or Ascendant. Sorted chronologically.
+ * lifespan (`birthDateUTC` → `endDateUTC`).
+ *
+ * `precision` (default `'exact'`) governs both which events are honest to
+ * compute and how they're dated:
+ *
+ * - `'exact'` (unchanged from before this parameter existed): Saturn
+ *   returns, Jupiter returns, progressed Moon sign changes, and the outer
+ *   planets (Uranus/Neptune/Pluto) conjuncting natal Sun, Moon, or
+ *   Ascendant — each dated to a real calendar date. Still refuses to run
+ *   against a year-only chart even if the caller passes `'exact'` by
+ *   mistake (no fabrication net).
+ * - `'approximate'` (year-only chart): ONLY Saturn and Jupiter returns —
+ *   estimated by `ageEstimate`, never `dateUTC`, and marked
+ *   `isApproximate: true`. `computeNatalChart` never computes Saturn/Jupiter
+ *   placements for a year-only chart (see `bodies` in `computeNatalChart`,
+ *   index.ts — only Sun/Uranus/Neptune/Pluto get year-precision confidence
+ *   handling), so their natal longitude is sampled here directly at
+ *   `birthDateUTC`, which the caller must supply as that same mid-year
+ *   instant. Progressed Moon and outer-planet conjunctions to Moon/Ascendant
+ *   are excluded outright (too fast / no birth time). Conjunctions to natal
+ *   Sun are also excluded: the codebase's own precision rules
+ *   (`evaluateSignConfidence`, index.ts; `computeGenerational`, which omits
+ *   Sun entirely for year-only cohorts) never treat a year-only Sun position
+ *   as confident — a year-only Sun sweeps all 12 signs within its
+ *   uncertainty window, so it is never usable here either.
+ *
+ * Sorted chronologically.
  */
 export function computeLifespanTransits(
   chart: NatalChart,
   birthDateUTC: string,
   endDateUTC: string,
+  precision: LifespanTransitPrecision = "exact",
   options: LifespanTransitOptions = {}
 ): LifespanTransitEvent[] {
-  if (chart.precision === "year") return [];
+  if (precision !== "approximate" && chart.precision === "year") return [];
 
   const birth = new Date(birthDateUTC);
   const end = new Date(endDateUTC);
@@ -125,11 +172,46 @@ export function computeLifespanTransits(
   }
 
   const returnOrbDeg = options.returnOrbDeg ?? 1.0;
-  const outerOrbDeg = options.outerOrbDeg ?? 1.5;
   const stepDays = options.stepDays ?? 20;
-  const moonStepYears = options.moonStepYears ?? 1 / 12;
 
   const events: LifespanTransitEvent[] = [];
+
+  function pushConjunctions(
+    kind: LifespanTransitKind,
+    transitBody: BodyName,
+    natalBody: BodyName | "ascendant",
+    natalLon: number,
+    orbLimitDeg: number,
+    approximate: boolean
+  ) {
+    for (const date of findConjunctions(transitBody, natalLon, birth, end, stepDays, orbLimitDeg)) {
+      const approxAge = Math.round(ageAtDate(date, birth));
+      events.push({
+        kind,
+        dateUTC: date.toISOString(),
+        approxAge,
+        transitBody,
+        natalBody,
+        ...(approximate ? { isApproximate: true, ageEstimate: approxAge } : {}),
+      });
+    }
+  }
+
+  if (precision === "approximate") {
+    // chart.placements has no saturn/jupiter entry for a year-only chart
+    // (see doc comment above) — sample their longitude directly at the
+    // mid-year instant the caller passed as birthDateUTC, same convention
+    // computeNatalChart already uses for year precision.
+    const natalSaturnLon = eclipticLongitude("saturn", birth);
+    const natalJupiterLon = eclipticLongitude("jupiter", birth);
+    pushConjunctions("saturn_return", "saturn", "saturn", natalSaturnLon, returnOrbDeg, true);
+    pushConjunctions("jupiter_return", "jupiter", "jupiter", natalJupiterLon, returnOrbDeg, true);
+    return events.sort((a, b) => a.dateUTC.localeCompare(b.dateUTC));
+  }
+
+  const outerOrbDeg = options.outerOrbDeg ?? 1.5;
+  const moonStepYears = options.moonStepYears ?? 1 / 12;
+
   const confidentPlacement = (body: BodyName) =>
     chart.placements.find((p) => p.body === body && p.confident !== false);
 
@@ -139,26 +221,8 @@ export function computeLifespanTransits(
   const natalMoon = confidentPlacement("moon");
   const ascLon = chart.cusps?.length === 12 ? chart.cusps[0] : undefined;
 
-  function pushConjunctions(
-    kind: LifespanTransitKind,
-    transitBody: BodyName,
-    natalBody: BodyName | "ascendant",
-    natalLon: number,
-    orbLimitDeg: number
-  ) {
-    for (const date of findConjunctions(transitBody, natalLon, birth, end, stepDays, orbLimitDeg)) {
-      events.push({
-        kind,
-        dateUTC: date.toISOString(),
-        approxAge: Math.round(ageAtDate(date, birth)),
-        transitBody,
-        natalBody,
-      });
-    }
-  }
-
-  if (natalSaturn) pushConjunctions("saturn_return", "saturn", "saturn", natalSaturn.lon, returnOrbDeg);
-  if (natalJupiter) pushConjunctions("jupiter_return", "jupiter", "jupiter", natalJupiter.lon, returnOrbDeg);
+  if (natalSaturn) pushConjunctions("saturn_return", "saturn", "saturn", natalSaturn.lon, returnOrbDeg, false);
+  if (natalJupiter) pushConjunctions("jupiter_return", "jupiter", "jupiter", natalJupiter.lon, returnOrbDeg, false);
 
   const outerBodies: BodyName[] = ["uranus", "neptune", "pluto"];
   const targets: Array<{ natalBody: BodyName | "ascendant"; lon: number }> = [];
@@ -167,7 +231,7 @@ export function computeLifespanTransits(
   if (ascLon != null) targets.push({ natalBody: "ascendant", lon: ascLon });
   for (const outer of outerBodies) {
     for (const target of targets) {
-      pushConjunctions("outer_conjunction", outer, target.natalBody, target.lon, outerOrbDeg);
+      pushConjunctions("outer_conjunction", outer, target.natalBody, target.lon, outerOrbDeg, false);
     }
   }
 

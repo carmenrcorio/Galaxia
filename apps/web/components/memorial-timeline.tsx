@@ -22,8 +22,10 @@ import {
 import {
   MEMORIAL_MILESTONE_NOTE_MAX,
   MEMORIAL_MILESTONE_TITLE_MAX,
+  memorialTimelinePrecision,
   memorialTimelineWindow,
   shouldShowMemorialTimeline,
+  splitFullName,
   validateMemorialMilestoneInput,
 } from "@galaxia/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -51,7 +53,12 @@ interface MilestoneRow {
   note: string | null;
 }
 
-/** Same precision-aware UTC-instant rebuild the person page already uses for chart recompute. */
+/**
+ * Same precision-aware UTC-instant rebuild the person page already uses for
+ * chart recompute. Used ONLY for the "Born" anchor entry, which shows this
+ * as a real calendar date — so year-only stays `null` here, always. Never
+ * feed this value into anything that will render it as a specific day.
+ */
 function rebuildBirthDateUTC(person: TimelinePerson): string | null {
   if (!person.birth_date) return null;
   const [yr, mo, dy] = person.birth_date.slice(0, 10).split("-").map(Number);
@@ -61,7 +68,22 @@ function rebuildBirthDateUTC(person: TimelinePerson): string | null {
     return new Date(Date.UTC(yr!, mo! - 1, dy!, hr!, mn!, 0) - person.tz_offset_min * 60_000).toISOString();
   }
   if (person.birth_precision === "date") return `${person.birth_date.slice(0, 10)}T12:00:00.000Z`;
-  return null; // year-only never reaches here — gated upstream (§12).
+  return null; // year-only: no real day to show as "Born" — see transitSampleDateUTC below.
+}
+
+/**
+ * Internal-only reference instant for the lifespan-transit scan on a
+ * year-only chart: the same mid-year "working date" convention
+ * `computeNatalChart` already uses for year precision (`getWorkingDate`,
+ * @galaxia/astro index.ts) — never a real birth day, never rendered to the
+ * user (unlike `rebuildBirthDateUTC`, which backs the visible "Born" line).
+ */
+function transitSampleDateUTC(person: TimelinePerson): string | null {
+  if (person.birth_precision === "year" && person.birth_date) {
+    const year = person.birth_date.slice(0, 4);
+    return `${year}-07-01T12:00:00.000Z`;
+  }
+  return rebuildBirthDateUTC(person);
 }
 
 type TimelineEntry =
@@ -123,17 +145,21 @@ export function MemorialTimeline({
   }, [loadMilestones]);
 
   const shouldShow = shouldShowMemorialTimeline(person, chart);
+  const precision = memorialTimelinePrecision(person);
+  const isApproximate = precision === "approximate";
   const birthDateUTC = rebuildBirthDateUTC(person);
+  const transitSampleUTC = transitSampleDateUTC(person);
   const { endDateUTC, endIsKnown } = memorialTimelineWindow(person);
+  const firstName = splitFullName(person.display_name).firstName || person.display_name;
 
   const lifespanEvents = useMemo(() => {
-    if (!chart || !birthDateUTC) return [] as LifespanTransitEvent[];
+    if (!chart || !transitSampleUTC) return [] as LifespanTransitEvent[];
     try {
-      return computeLifespanTransits(chart, birthDateUTC, endDateUTC);
+      return computeLifespanTransits(chart, transitSampleUTC, endDateUTC, precision);
     } catch {
       return [] as LifespanTransitEvent[];
     }
-  }, [chart, birthDateUTC, endDateUTC]);
+  }, [chart, transitSampleUTC, endDateUTC, precision]);
 
   const entries = useMemo(() => {
     const list: TimelineEntry[] = [];
@@ -240,6 +266,13 @@ export function MemorialTimeline({
           label="Share timeline"
         />
       </div>
+
+      {isApproximate ? (
+        <p className="muted" style={{ fontSize: ".76rem", lineHeight: 1.6, marginTop: 10, maxWidth: "50ch" }}>
+          {firstName}&apos;s birth date is recorded as a year only, so these moments are placed by age rather than by
+          date.
+        </p>
+      ) : null}
 
       {endIsKnown && !editingDiedOn ? (
         <p className="muted" style={{ fontSize: ".72rem", marginTop: 10 }}>
@@ -361,6 +394,11 @@ export function MemorialTimeline({
                     const copy = interpretLifespanTransitEvent(entry.event);
                     return (
                       <div>
+                        {entry.event.isApproximate ? (
+                          <p className="eyebrow" style={{ margin: "0 0 2px", color: "var(--teal)" }}>
+                            Around age {entry.event.ageEstimate}
+                          </p>
+                        ) : null}
                         <p style={{ margin: "0 0 3px", fontFamily: "var(--serif)", color: "var(--cream)", fontSize: ".92rem" }}>
                           {copy.headline}
                         </p>

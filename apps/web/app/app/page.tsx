@@ -66,6 +66,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { RelationalTransitFeed } from "../../components/relational-transit-feed";
+import { exportFilename } from "../../components/share-export-card";
+import { ShareImageButton } from "../../components/share-image-button";
+import { ShareWatermark } from "../../components/share-watermark";
 import { ThreadMenu } from "../../components/thread-menu";
 import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
@@ -155,10 +158,20 @@ export default function AppHomePage() {
   /* Atmosphere (wash + nebulae) lives on its own DPR-1 canvas, refreshed ~4×/s,
      so the motion canvas never pays a per-frame atmosphere blit. */
   const atmCanvasRef = useRef<HTMLCanvasElement>(null);
+  /* Capture target for the galaxy image export — wraps only the two canvases
+     + the film-grain overlay, never the hover inspector panel. */
+  const galaxyShareRef = useRef<HTMLDivElement>(null);
   /* entrance ignition timeline — persists across effect re-runs (e.g. hover)
      so the arrival sequence plays once on data load, not on every state change */
   const entranceStartRef = useRef<number | null>(null);
   const entranceKeyRef   = useRef<string>("");
+  /* One-time flag flipped from inside the existing draw() loop the first
+     time its own already-computed budgetArmed condition goes true — i.e.
+     the entrance sequence has finished and settled into its steady state.
+     Gates when the galaxy export control appears; never read by draw()
+     itself, so it adds a side effect without refactoring the drawing code
+     out of its useEffect. */
+  const entranceSettledFiredRef = useRef(false);
 
   /* First name only, from the shared resolver. Null when no name has been
      captured, which the greeting handles by simply not naming anyone. It is
@@ -179,6 +192,9 @@ export default function AppHomePage() {
   const [loading, setLoading]                   = useState(true);
   const [hoverPerson, setHoverPerson]           = useState<PersonRow | null>(null);
   const [ownerId, setOwnerId]                   = useState<string | null>(null);
+  /* Settled post-entrance state for the galaxy image export — see
+     entranceSettledFiredRef above. False whenever the sequence is (re)playing. */
+  const [entranceSettled, setEntranceSettled]   = useState(false);
 
   /* Nodes shimmer when that person has a real eligible nudge today — derived
      from the durable daily record, never a shared flag. */
@@ -338,6 +354,8 @@ export default function AppHomePage() {
     if (entranceKey !== entranceKeyRef.current) {
       entranceKeyRef.current = entranceKey;
       entranceStartRef.current = null;
+      entranceSettledFiredRef.current = false;
+      setEntranceSettled(false);
     }
 
     let elapsed = 0;      /* ms since entrance start (updated each frame) */
@@ -996,6 +1014,10 @@ export default function AppHomePage() {
       const budgetArmed = reduced
         ? elapsed > REDUCED_FADE + 200
         : elapsed > totalDuration + 400;
+      if (budgetArmed && !entranceSettledFiredRef.current) {
+        entranceSettledFiredRef.current = true;
+        setEntranceSettled(true);
+      }
       if (budgetArmed) {
         if (warmup < 12) { warmup++; }
         else {
@@ -1341,7 +1363,17 @@ export default function AppHomePage() {
       <section className="glass-card fade-in" style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <p className="eyebrow" style={{ margin: 0 }}>Your constellation</p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
+            {/* Capture only once the entrance sequence has settled — mid-ignition
+                is not the state anyone should screenshot. See entranceSettled. */}
+            {/* FOUNDER-REVIEW: authored — galaxy export button label. */}
+            {!loading && people.length > 0 && entranceSettled ? (
+              <ShareImageButton
+                targetRef={galaxyShareRef}
+                filename={exportFilename(null, "galaxy.png")}
+                label="Share galaxy"
+              />
+            ) : null}
             {!loading && people.length >= 3 ? (
               <Link href="/app/family-compare" className="pill-link" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
                 Compare family
@@ -1375,25 +1407,30 @@ export default function AppHomePage() {
             minHeight: 380,
             maxHeight: "min(72vh, 680px)",
           }}>
-            <canvas
-              ref={atmCanvasRef}
-              aria-hidden
-              style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%" }}
-            />
-            <canvas
-              ref={canvasRef}
-              style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%" }}
-            />
+            {/* Export capture target: the two canvases + film grain only —
+               never the hover inspector below, which stays a sibling. */}
+            <div ref={galaxyShareRef} style={{ position: "absolute", inset: 0 }}>
+              <canvas
+                ref={atmCanvasRef}
+                aria-hidden
+                style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%" }}
+              />
+              <canvas
+                ref={canvasRef}
+                style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%" }}
+              />
 
-            {/* fine film grain over the focal plane — texture, not static.
-               Static SVG noise (same recipe as CosmicBackground), very low
-               opacity, mix-blend overlay. A CSS overlay, so it costs nothing
-               per frame — the animated canvas never touches it. */}
-            <div aria-hidden style={{
-              position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
-              opacity: 0.045, mixBlendMode: "overlay",
-              backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-            }} />
+              {/* fine film grain over the focal plane — texture, not static.
+                 Static SVG noise (same recipe as CosmicBackground), very low
+                 opacity, mix-blend overlay. A CSS overlay, so it costs nothing
+                 per frame — the animated canvas never touches it. */}
+              <div aria-hidden style={{
+                position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
+                opacity: 0.045, mixBlendMode: "overlay",
+                backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+              }} />
+              <ShareWatermark />
+            </div>
 
             {/* hover inspector — glass card floating over canvas */}
             {hoverPerson ? (

@@ -48,16 +48,17 @@ async function toPngWithoutBackdropFilterClip(
 /**
  * "Share" — captures the referenced DOM node as a PNG (client-side only,
  * nothing is uploaded or persisted) and hands it to the OS share sheet when
- * available, falling back to a direct download. Used by the Memorial
- * Timeline and Family Chart Comparison "viral screenshot" share cards — both
- * render a permanent `<ShareWatermark />` inside the captured node, so the
- * exported image always carries the "galaxiamea.com" mark.
+ * available, falling back to a direct download. Used directly by the
+ * Memorial Timeline's "viral screenshot" share card, and via the shared
+ * `ShareExportCard` wrapper by every biwheel/galaxy export call site — all
+ * of them render a permanent `<ShareWatermark />` inside the captured node,
+ * so the exported image always carries the "galaxiamea.com" mark.
  *
  * Deliberately does NOT reuse the public /api/quick-share pipeline: that
  * stack mints an unauthenticated, anyone-with-the-link page for the public
- * Quick Chart funnel. Memorial milestones and a family's chart placements
- * are private, owner-authored data — the right "share" here is an image the
- * owner controls, not a new public URL into the app's data.
+ * Quick Chart funnel. A memorial milestone, a natal chart, or a private
+ * compare result is owner-authored data — the right "share" here is an
+ * image the owner controls, not a new public URL into the app's data.
  */
 export function ShareImageButton({
   targetRef,

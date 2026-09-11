@@ -363,19 +363,32 @@ const MOON_NEED: Partial<Record<string, string>> = {
   Pisces:      "gentleness and a feeling of being truly heard. They absorb the tone more than the words",
 };
 
+/**
+ * FOUNDER-REVIEW: authored — refine voice.
+ * Every value MUST be a noun phrase: it fills the blank in "they feel loved
+ * through {X}" (see whatTheyNeed() below), and "through" can only govern a
+ * noun phrase, never a to-infinitive or a second independent sentence.
+ * PHASE 1 GRAMMAR FIX: the previous Virgo value ("to have the details
+ * noticed. Effort is how they give...") produced "loved through to have the
+ * details noticed" — ungrammatical, plus a stray second sentence duplicating
+ * VENUS_HOW.Virgo. Rewrote all twelve as single noun phrases (never a
+ * to-infinitive, never a bare independent clause after a period) so every
+ * sign reads as one grammatical sentence — read each aloud in
+ * "With {sign} Venus, they feel loved through {value}." before editing.
+ */
 const VENUS_NEED: Partial<Record<string, string>> = {
-  Aries:       "direct pursuit: they want to feel chosen, not convenient",
+  Aries:       "direct pursuit, the feeling of being chosen rather than merely convenient",
   Taurus:      "tangible gestures and unhurried time together",
-  Gemini:      "curiosity and conversation as a love language",
-  Cancer:      "warmth made domestic: being included in ordinary life",
-  Leo:         "public appreciation, not just private affection",
-  Virgo:       "to have the details noticed. Effort is how they give, and how they want to receive",
-  Libra:       "harmony and reciprocity; they give generously but need it returned",
-  Scorpio:     "depth and full presence. They'd rather have intensity than pleasantry",
-  Sagittarius: "adventure shared, not just stability offered",
-  Capricorn:   "reliability as a love language. Showing up consistently is the whole thing",
-  Aquarius:    "unconventionality respected; they need to feel free within the bond",
-  Pisces:      "romance in the real sense: not grand gestures, but genuine tenderness",
+  Gemini:      "curiosity and real conversation, treated as its own love language",
+  Cancer:      "warmth made domestic, being folded into their ordinary life",
+  Leo:         "public appreciation, not only private affection",
+  Virgo:       "having the small details noticed, since effort is how they give and how they want to receive",
+  Libra:       "harmony and reciprocity, warmth given generously and returned in kind",
+  Scorpio:     "depth and full presence, intensity over pleasantry",
+  Sagittarius: "shared adventure, not stability alone",
+  Capricorn:   "reliability shown consistently, the simplest proof there is",
+  Aquarius:    "having their independence respected inside the bond",
+  Pisces:      "quiet, genuine tenderness rather than grand gestures",
 };
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -595,6 +608,13 @@ export const RELATION_HEADLINE: Partial<Record<RelationType, string>> = {
   friends: "This is chosen closeness, kept alive by showing up. Here's what comes easy, and where it needs a little care.",
   "parent-child": "This is love read through respect and room to grow. Here's where care lands clean, and where it can tip into control.",
   ancestor: "This is a bond that reaches across time. Here's what still connects you, and where the eras pull apart.",
+  // PHASE 3 (FOUNDER-REVIEW: authored — refine voice). Quick Compare's own
+  // relTypes (see apps/web/app/chart/compare/page.tsx FOCUS_TYPES) previously
+  // had no entry here and fell through to `scoreBandHeadline` — the only
+  // score-derived line on a surface that otherwise never reads
+  // `synastry.scores` for its copy. Matches the two-sentence voice above.
+  romantic: "This is a spark you're both curious about. Here's where it comes easily, and where it takes real care to turn into something steady.",
+  platonic: "This is a connection you have chosen to read together, kept easy by staying open with each other. Here is what comes easy, and where it needs a little care.",
 };
 
 /**
@@ -775,19 +795,211 @@ function cap(s: string): string {
 // ═════════════════════════════════════════════════════════════════════════
 
 /**
+ * PHASE 2 OPENER VARIETY (FOUNDER-REVIEW: authored — refine voice).
+ *
+ * DEFECT A audit: `RELATION_ACTION_REGISTER` used to hold exactly ONE opener
+ * per relationship type per nature (flows/catches) — a single fixed string
+ * that every row of that nature rendered, on every Compare page, regardless
+ * of which two bodies were actually aspected. A page with several
+ * same-nature rows (e.g. four "catches" rows) showed the identical opener
+ * sentence above every one of them.
+ *
+ * Fix: each relationship type + nature now holds a POOL of
+ * `OPENER_POOL_SIZE` distinct, hand-authored paraphrases of the same
+ * register/tone (never a different meaning — just different wording), and
+ * `pickOpener()` below selects one deterministically from the real aspect's
+ * two bodies. Selection is a pure function of the (sorted) body pair only —
+ * never the row's position on the page, never Math.random — so the exact
+ * same pair always renders the exact same opener, on every load
+ * ("Galaxia never fabricates and never varies its reading between loads").
+ *
+ * Pool size: `selectCompareAspectRows` caps a Compare page at 6 rows, and
+ * `distinct` there already dedupes so a given (unordered body pair, aspect
+ * type) can appear at most once, so a body PAIR appears at most once per
+ * page. Note also that the one shipped consumer of this opener
+ * (`FlowsAndCatchesSection`) only ever prints ONE heading per nature per
+ * page (`showOpener` shows it before the first flows row and the first
+ * catches row, then suppresses it for every later row of that nature) — so
+ * a single page can never itself render two different (or two repeated)
+ * opener headings side by side today. What the pool actually fixes is
+ * CROSS-comparison repetition: every couple used to see the exact same
+ * hardcoded heading regardless of which bodies were involved; now the
+ * heading a given couple sees is a deterministic function of their
+ * highest-priority row's real body pair, so different pairings read
+ * differently. A pool of 8 was chosen and verified (see
+ * `aspect-opener-variety.test.ts`) against the real production case that
+ * shipped this bug (Stacy/Randall, romantic: jupiter-sun, jupiter-mars,
+ * uranus-sun, uranus-mars, all "square"/catches) — all four resolve to
+ * distinct indices, so even a future consumer that renders one heading per
+ * row (instead of once per nature) would show variety for that exact case.
+ * This is a deterministic hash over a fixed pool, not an exhaustive
+ * injective proof across all 55 possible body pairs; if a future real
+ * pairing or a new per-row consumer surfaces a same-page collision, grow
+ * the pool rather than special-case it.
+ */
+const OPENER_POOL_SIZE = 8;
+
+/** Stable (non-cryptographic) string hash — same input always yields the same output. */
+function stablePairHash(bodyA: string, bodyB: string): number {
+  const key = PAIR_KEY(bodyA, bodyB);
+  let h = 0;
+  for (let i = 0; i < key.length; i++) {
+    h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  }
+  return h % OPENER_POOL_SIZE;
+}
+
+/** Picks one opener from a relationship type's pool, deterministic by the aspect's real body pair. */
+function pickOpener(pool: readonly string[], bodyA: string, bodyB: string): string {
+  return pool[stablePairHash(bodyA, bodyB)] ?? pool[0];
+}
+
+/**
  * Relationship-type REGISTER: the type-specific lead clause that sets WHO acts
  * and HOW, so the same real aspect yields different guidance for a parent-child
- * vs. friends vs. partners. Lead clause ending in a colon; the body tactic continues it.
+ * vs. friends vs. partners. Each entry ends in a colon; the body tactic
+ * continues it. "partners" and "romantic" intentionally share one pool (both
+ * are the romantic register — see `isRomanticRelation`); "friends" and
+ * "platonic" have distinct pools since their "flows" voice differs.
  * FOUNDER-REVIEW: authored — refine voice.
  */
-const RELATION_ACTION_REGISTER: Record<RelationType, { flows: string; catches: string }> = {
-  partners:       { flows: "Don't let this ease go unspoken between you:", catches: "Say the tender thing out loud before it hardens into scorekeeping:" },
-  romantic:       { flows: "Don't let this ease go unspoken between you:", catches: "Say the tender thing out loud before it hardens into scorekeeping:" },
-  "parent-child": { flows: "Use this open channel on purpose:",             catches: "As the parent, lead with backup over correction:" },
-  siblings:       { flows: "Keep the line this open:",                       catches: "Head off the old loop before you're inside it:" },
-  friends:        { flows: "Feed the momentum:",                            catches: "Assume a misread, not a slight:" },
-  platonic:       { flows: "Feed the friendship where it already flows:",    catches: "Assume a misread, not a slight:" },
-  ancestor:       { flows: "Carry this inherited current forward:",          catches: "Bridge the era, not the person:" },
+/** Shared romantic register pool — "partners" and "romantic" are the same register (see `isRomanticRelation`). */
+const ROMANTIC_ACTION_REGISTER = {
+  flows: [
+    "Don't let this ease go unspoken between you:",
+    "Let this ease show instead of assuming they already know:",
+    "Say the warm thing while it's easy, not just when it's hard:",
+    "Give this ease a voice instead of letting it stay silent:",
+    "Name the good part out loud, the same way you'd name the hard one:",
+    "Let the ease be known between you, not just felt:",
+    "Speak the warmth plainly instead of taking it as understood:",
+    "Put words to this ease before it becomes something assumed:",
+  ],
+  catches: [
+    "Say the tender thing out loud before it hardens into scorekeeping:",
+    "Name what you're actually feeling before the moment turns into a tally:",
+    "Speak the soft part now, before it becomes a complaint:",
+    "Say what's true for you before it curdles into resentment:",
+    "Get ahead of the sting: name it kindly before it festers:",
+    "Don't let this sit quietly. Say it while it's still soft:",
+    "Speak first, before the feeling calcifies into a grievance:",
+    "Put the tender part into words before it turns into a silent score:",
+  ],
+} as const;
+
+const RELATION_ACTION_REGISTER: Record<RelationType, { flows: readonly string[]; catches: readonly string[] }> = {
+  partners: ROMANTIC_ACTION_REGISTER,
+  romantic: ROMANTIC_ACTION_REGISTER,
+  "parent-child": {
+    flows: [
+      "Use this open channel on purpose:",
+      "Put this ease to work instead of letting it pass by:",
+      "Lean on this open channel when it counts:",
+      "Use the trust this channel gives you, deliberately:",
+      "Make good use of this easy opening between you:",
+      "Reach for this channel first, before things get hard:",
+      "Put this natural opening to work, on purpose:",
+      "Use this ease as the bridge it already is:",
+    ],
+    catches: [
+      "As the parent, lead with backup over correction:",
+      "As the parent, offer support before you offer the fix:",
+      "As the parent, meet the moment with backup, not a lecture:",
+      "As the parent, choose steadiness over managing the outcome:",
+      "As the parent, give room before you give a correction:",
+      "As the parent, hold the line gently instead of tightening it:",
+      "As the parent, lead with trust before you lead with a rule:",
+      "As the parent, notice the need under the behavior before you address the behavior:",
+    ],
+  },
+  siblings: {
+    flows: [
+      "Keep the line this open:",
+      "Keep using this open line while it's easy:",
+      "Protect this openness between you:",
+      "Keep this channel clear; it's worth the upkeep:",
+      "Lean on this open line while it's working:",
+      "Keep talking through this open channel:",
+      "Hold onto this easy openness on purpose:",
+      "Use this open line before it needs reopening:",
+    ],
+    catches: [
+      "Head off the old loop before you're inside it:",
+      "Name the old pattern before it pulls you both in again:",
+      "Catch the familiar loop early, before it runs its course:",
+      "Call out the old dynamic before it takes over:",
+      "Step outside the pattern before it closes around you both:",
+      "See the loop coming and name it, before you're in it:",
+      "Break the old script early, before either of you is playing a part:",
+      "Notice the familiar groove before you fall back into it:",
+    ],
+  },
+  friends: {
+    flows: [
+      "Feed the momentum:",
+      "Keep the momentum going while it's easy:",
+      "Put this energy toward something real:",
+      "Ride this momentum on purpose:",
+      "Give this easy pull somewhere to go:",
+      "Keep this going; it's worth the follow-through:",
+      "Use this momentum before it needs restarting:",
+      "Build on this while it's already moving:",
+    ],
+    catches: [
+      "Assume a misread, not a slight:",
+      "Check the intent before you react to the sting:",
+      "Read it as a mixed signal, not a message:",
+      "Ask what they meant before you decide what they meant:",
+      "Give the benefit of the doubt before the annoyance sets in:",
+      "Treat it as noise, not a verdict, until you check:",
+      "Take the confusion at face value, not as an insult:",
+      "Clarify before you conclude:",
+    ],
+  },
+  platonic: {
+    flows: [
+      "Feed the friendship where it already flows:",
+      "Put this ease toward the friendship on purpose:",
+      "Lean into what already works between you:",
+      "Keep feeding the part that's already easy:",
+      "Use this natural flow while it's here:",
+      "Build on the part of the friendship that already runs smooth:",
+      "Keep this easy current going:",
+      "Make the most of what already comes naturally:",
+    ],
+    catches: [
+      "Assume a misread, not a slight:",
+      "Check what they meant before you take it personally:",
+      "Read it as static, not a statement:",
+      "Ask before you assume the worst:",
+      "Give the mixed signal room before you react to it:",
+      "Treat the confusion as noise until you check it:",
+      "Clarify the intent before you carry the sting:",
+      "Take it as unclear, not unkind, until proven otherwise:",
+    ],
+  },
+  ancestor: {
+    flows: [
+      "Carry this inherited current forward:",
+      "Keep this inherited current running:",
+      "Pass this current along on purpose:",
+      "Let this old current keep moving through you both:",
+      "Carry what still runs true between the generations:",
+      "Keep this inherited thread alive on purpose:",
+      "Let the old current keep doing its quiet work:",
+      "Honor this current by keeping it moving:",
+    ],
+    catches: [
+      "Bridge the era, not the person:",
+      "Meet the gap in years, not a flaw in them:",
+      "Cross the era before you judge the person in it:",
+      "See the different time first, then the person in it:",
+      "Translate across the years before you take offense:",
+      "Bridge the decades between you before the disagreement:",
+      "Read the era gap before you read it as a slight:",
+      "Close the distance in years, not in affection:",
+    ],
+  },
 };
 
 /**
@@ -1123,7 +1335,8 @@ export function aspectActionParts(
   const tactic = (pair && (flows ? pair.flows : pair.catches))
     ?? (flows ? BODY_FLOW_ACTION[leadBody(a, relType).toLowerCase()] : BODY_FRICTION_ACTION[leadBody(a, relType).toLowerCase()])
     ?? "";
-  const opener = RELATION_ACTION_REGISTER[relType][flows ? "flows" : "catches"];
+  const pool = RELATION_ACTION_REGISTER[relType][flows ? "flows" : "catches"];
+  const opener = pickOpener(pool, a.from, a.to);
   return { flows, opener, tactic };
 }
 

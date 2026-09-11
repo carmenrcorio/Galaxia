@@ -183,18 +183,4 @@ export function formatPostDate(iso: string): string {
   });
 }
 
-const WORDS_PER_MINUTE = 225;
-
-/**
- * Read time estimate from word count — computed once at save time (the
- * admin editor calls this before every create/update in
- * lib/admin/posts.ts) and stored in `posts.read_time_minutes`, never
- * derived at request/render time. Same "static estimate against the real
- * body" choice the old hand-maintained BLOG_POSTS array documented for
- * itself; only the trigger (save, not a hand-picked number) has changed.
- */
-export function computeReadTimeMinutes(markdownBody: string): number {
-  const words = markdownBody.trim().split(/\s+/).filter(Boolean).length;
-  if (words === 0) return 1;
-  return Math.max(1, Math.ceil(words / WORDS_PER_MINUTE));
-}
+export { computeReadTimeMinutes } from "./read-time";

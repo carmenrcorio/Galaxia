@@ -17,6 +17,9 @@ import { Spinner } from "./spinner";
 // FOUNDER-REVIEW: picker labels — refine voice before merge.
 const RELATIONS = GALAXY_RELATION_PICKER_OPTIONS;
 
+// FOUNDER-REVIEW: quiet line while auth is still resolving on /chart.
+export const SAVE_TO_GALAXY_CHECKING = "Checking whether you are signed in.";
+
 /**
  * The Quick Chart "Save to your galaxy" CTA.
  *
@@ -86,7 +89,13 @@ export function SaveToGalaxyButton({
     }
   }
 
-  if (checkingAuth) return null;
+  if (checkingAuth) {
+    return (
+      <p className="muted" style={{ fontSize: ".88rem", minHeight: 48, display: "flex", alignItems: "center", justifyContent: "center", margin: 0 }} aria-live="polite">
+        {SAVE_TO_GALAXY_CHECKING}
+      </p>
+    );
+  }
 
   if (savedPersonId) {
     return (

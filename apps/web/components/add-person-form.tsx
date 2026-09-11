@@ -158,7 +158,7 @@ export function AddPersonForm({
         </p>
       </div>
 
-      <BirthFields input={birth} onChange={setBirth} allowNone />
+      <BirthFields input={birth} onChange={setBirth} allowNone idPrefix="add-person" />
       <button
         className="btn-primary"
         style={{ marginTop: 14, gap: 8 }}

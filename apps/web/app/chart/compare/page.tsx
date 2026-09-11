@@ -211,15 +211,6 @@ export default function QuickComparePage() {
         Enter both birth dates for a real synastry reading: where you flow, where you catch, and what each of you needs. Nothing is saved unless you choose to.
       </p>
 
-      <RelatedLinks
-        bare
-        heading="Keep reading"
-        links={[
-          { href: "/synastry-chart-meaning", label: "What a synastry chart actually tells you" },
-          { href: "/generations", label: "See the generational layer behind your compatibility" },
-        ]}
-      />
-
       {!result ? (
         <>
           {/* Mode: this choice only ever appears in compatibility mode — a
@@ -259,7 +250,7 @@ export default function QuickComparePage() {
               ) : (
                 <>
                   <input className="field" value={nameA} onChange={(e) => setNameA(e.target.value)} placeholder="Name (optional)" style={{ marginBottom: 10, borderRadius: 14 }} />
-                  <BirthFields input={inputA} onChange={setInputA} />
+                  <BirthFields input={inputA} onChange={setInputA} idPrefix="person-a" />
                 </>
               )}
             </div>
@@ -267,7 +258,7 @@ export default function QuickComparePage() {
             <div>
               <p className="eyebrow" style={{ marginBottom: 8 }}>Person B</p>
               <input className="field" value={nameB} onChange={(e) => setNameB(e.target.value)} placeholder="Name (optional)" style={{ marginBottom: 10, borderRadius: 14 }} />
-              <BirthFields input={inputB} onChange={setInputB} />
+              <BirthFields input={inputB} onChange={setInputB} idPrefix="person-b" />
             </div>
 
             <button className="btn-primary" onClick={() => runCompare(inputA, inputB)} disabled={loading} style={{ gap: 8, justifySelf: "start" }}>
@@ -392,6 +383,15 @@ export default function QuickComparePage() {
           </section>
         </>
       )}
+
+      <RelatedLinks
+        bare
+        heading="Keep reading"
+        links={[
+          { href: "/synastry-chart-meaning", label: "What a synastry chart actually tells you" },
+          { href: "/generations", label: "See the generational layer behind your compatibility" },
+        ]}
+      />
     </QuickChartShell>
   );
 }

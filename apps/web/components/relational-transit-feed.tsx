@@ -77,6 +77,36 @@ function toAffectedHits(row: RelationalTransitRow): AffectedProfileHit[] {
   }));
 }
 
+// FOUNDER-REVIEW: loading line while the feed is fetching.
+export const RELATIONAL_TRANSIT_FEED_LOADING = "Checking this week's shared transits.";
+// FOUNDER-REVIEW: empty because the owner turned alerts off.
+export const RELATIONAL_TRANSIT_FEED_OFF =
+  "This week alerts are off. Turn them on in Settings to see shared transits.";
+// FOUNDER-REVIEW: empty because no active overlapping transits.
+export const RELATIONAL_TRANSIT_FEED_EMPTY =
+  "No shared transits this week. Add more people, or check back as the sky moves.";
+
+function QuietFeedStatus({ message, off }: { message: string; off?: boolean }) {
+  return (
+    <section className="glass-card fade-in fade-in-delay-1">
+      <p className="eyebrow">This week</p>
+      <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6, margin: 0 }}>
+        {off ? (
+          <>
+            This week alerts are off. Turn them on in{" "}
+            <Link href="/app/settings" style={{ color: "var(--gold-soft)" }}>
+              Settings
+            </Link>{" "}
+            to see shared transits.
+          </>
+        ) : (
+          message
+        )}
+      </p>
+    </section>
+  );
+}
+
 function MemorialMark({ person }: { person: PersonMemorialInfo | undefined }) {
   if (!person?.passed_at) return null;
   if (usesMemorialGlyph(person)) {
@@ -131,7 +161,9 @@ export function RelationalTransitFeed({ ownerId }: { ownerId: string }) {
     });
   }, [rows, preference]);
 
-  if (loading || preference === "off" || visibleRows.length === 0) return null;
+  if (loading) return <QuietFeedStatus message={RELATIONAL_TRANSIT_FEED_LOADING} />;
+  if (preference === "off") return <QuietFeedStatus message={RELATIONAL_TRANSIT_FEED_OFF} off />;
+  if (visibleRows.length === 0) return <QuietFeedStatus message={RELATIONAL_TRANSIT_FEED_EMPTY} />;
 
   return (
     <section className="glass-card fade-in fade-in-delay-1">

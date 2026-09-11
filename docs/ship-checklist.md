@@ -48,6 +48,9 @@
    reuse the laptop CLI token). Manual `supabase functions deploy` is break-glass
    only; if you use it, keep `--no-verify-jwt` and confirm the parity workflow
    stays green.
+   `.github/workflows/migration-ledger-parity.yml` is the same shape for SQL:
+   read-only `list_migrations` vs `supabase/migrations/` (name identity). It
+   never applies. See `ENGINEERING.md` §16.
 5. Validate RLS and shared/minor guardrail behavior in staging.
 
 ## Store listing assets

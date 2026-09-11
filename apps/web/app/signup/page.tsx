@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { SignupForm } from "../../components/signup-form";
 
 const TITLE = "Start Free — Galaxia";
+// FOUNDER-REVIEW: rewritten. Signup collects name, email, and password; birth data is on /welcome.
 const DESCRIPTION =
-  "Create your Galaxia account. No credit card required — enter your birth details and see your real natal chart in under a minute.";
+  "Create your Galaxia account with your name, email, and a password. No credit card. You add birth details after you sign in.";
 
 export const metadata: Metadata = {
   title: TITLE,

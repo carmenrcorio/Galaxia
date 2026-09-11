@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-/** Pricing — two cards, real prices. The no-per-person-cap line now lives inside the card cluster, not buried in a separate list below. */
+/** Pricing: one monthly card, matching the paywall. */
 export function PricingSection() {
   return (
     <section className="container" id="pricing">
@@ -14,17 +14,11 @@ export function PricingSection() {
           </p>
         </div>
         <div className="price-cards reveal">
-          <div className="pcard glass-card pcard--best">
-            <div className="pcard-badge">Best value</div>
-            <div className="pcard-name">Yearly</div>
-            <div className="pcard-price">$89 <span>/year</span></div>
-            <div className="pcard-sub">$7.42 a month · save 26%</div>
-            <Link href="/signup" className="btn-primary" style={{ marginTop: 18, display: "inline-block" }}>Start 14 days free</Link>
-          </div>
           <div className="pcard glass-card">
+            {/* FOUNDER-REVIEW: rewritten. This is the only SKU the paywall sells. */}
             <div className="pcard-name">Monthly</div>
             <div className="pcard-price">$9.99 <span>/month</span></div>
-            <div className="pcard-sub">Billed monthly · same everything</div>
+            <div className="pcard-sub">Billed monthly · 14 days free</div>
             <Link href="/signup" className="btn-primary" style={{ marginTop: 18, display: "inline-block" }}>Start 14 days free</Link>
           </div>
         </div>

@@ -19,9 +19,10 @@ export function VelaExampleSection() {
           <span className="eyebrow">Your guide</span>
           <h2 className="vela-h2">Meet <em style={{ color: "var(--gold)" }}>Vela</em>.</h2>
           <p className="lede vela-lede">
-            Most apps talk <em>at</em> you. Vela talks with you — an astrologer who already knows both
+            {/* FOUNDER-REVIEW: rewritten. Shared spaces are unshipped; this describes private Vela only. */}
+            Most apps talk <em>at</em> you. Vela talks with you: an astrologer who already knows both
             charts and a coach who gives you something to actually do. It never invents a placement,
-            never takes a side in a shared space, and never breaches your privacy.
+            and never breaches your privacy.
           </p>
         </div>
         <div className="vela-card vela-chat glass-card reveal">

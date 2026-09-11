@@ -27,6 +27,7 @@ const LINKS: { href: string; label: string }[] = [
   { href: "/why-galaxia", label: "Why Galaxia" },
   { href: "/generations", label: "Generations" },
   { href: "/meet-vela", label: "Meet Vela" },
+  { href: "/chart", label: "Quick Chart" },
   { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
 ];

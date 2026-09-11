@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { publicEnv } from "../../lib/env";
+import { WaitlistForm } from "../../components/waitlist-form";
 
-const TITLE = "Download Galaxia — iOS & Android";
+const TITLE = "Download Galaxia";
+// FOUNDER-REVIEW: rewritten. Native apps are coming soon; notify-me is on this page.
 const DESCRIPTION =
-  "Get Galaxia on your phone. Real natal charts, synastry readings, and relationship intelligence computed from actual planetary data.";
+  "Galaxia is on the web today. Native iOS and Android apps are coming soon. Leave your email and we will tell you when they ship.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -33,9 +35,10 @@ export default function DownloadPage() {
   return (
     <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 920 }}>
       <h1 className="auth-title">Download Galaxia</h1>
+      {/* FOUNDER-REVIEW: rewritten. Web is live; native apps are coming soon. */}
       <p className="muted">
-        Use your Galaxia account on web today, then open the same account in mobile once these
-        links are available.
+        Use your Galaxia account on the web today. Native iOS and Android apps are coming soon
+        and will use the same account.
       </p>
       <section className="glass-card" style={{ marginTop: 16 }}>
         <h2 style={{ marginTop: 0 }}>Get the app</h2>
@@ -55,14 +58,23 @@ export default function DownloadPage() {
             <span className="pill-link">Android coming soon</span>
           )}
         </div>
-        {!hasAnyLink ? <p className="muted">Notify-me flow is available from the signup and landing forms.</p> : null}
+        {!hasAnyLink ? (
+          <div style={{ marginTop: 16 }}>
+            {/* FOUNDER-REVIEW: authored. Notify-me lives on this page, not on signup or the landing page. */}
+            <p className="muted" style={{ marginTop: 0 }}>
+              Leave your email and we will tell you when the apps are ready.
+            </p>
+            <WaitlistForm source="close" />
+          </div>
+        ) : null}
       </section>
       <section className="glass-card" style={{ marginTop: 16 }}>
         <h2 style={{ marginTop: 0 }}>What you get in the app</h2>
         <ul className="muted" style={{ lineHeight: 1.7 }}>
           <li>A living constellation view of the people at the center of your life.</li>
           <li>Real computed charts and relationship mapping built from astronomical data.</li>
-          <li>Vela guidance for private reflection and consented shared spaces.</li>
+          {/* FOUNDER-REVIEW: rewritten. Shared spaces are unshipped; this names private Vela only. */}
+          <li>Vela guidance for private reflection.</li>
         </ul>
       </section>
       <div style={{ marginTop: 12 }}>

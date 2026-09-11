@@ -1,0 +1,52 @@
+# Schedules the trial-email cron route (day1/day4/day11/day14 lifecycle
+# emails). There is deliberately no root vercel.json (ENGINEERING.md §2), so
+# there is no Vercel-native cron config to point at this route — this
+# workflow is the out-of-band scheduler, the same pattern as
+# relational-transits.yml and nudge-delivery.yml. See ENGINEERING.md's
+# "Cron scheduling" section.
+name: Trial Emails Cron
+
+on:
+  schedule:
+    # Daily. Off-peak UTC hour + a non-zero minute — GitHub's scheduler
+    # queue is congested at the top of every hour, which delays/drops runs.
+    - cron: "42 5 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: trial-emails-cron
+  cancel-in-progress: false
+
+jobs:
+  send:
+    name: send
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require GALAXIA_APP_URL and CRON_SECRET
+        run: |
+          if [ -z "${{ secrets.GALAXIA_APP_URL }}" ]; then
+            echo "::error::GALAXIA_APP_URL repo secret is not set (the deployed apps/web origin, e.g. https://galaxiamea.com). Add it under repo Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "::error::CRON_SECRET repo secret is not set. It must equal the CRON_SECRET env var configured on the deployed apps/web (Vercel) project, or the route 401s."
+            exit 1
+          fi
+
+      # --fail-with-body (not plain --fail) so a non-2xx response body is
+      # still written to -o and can be echoed below — plain --fail discards
+      # the body on failure, which would make a red run undiagnosable.
+      - name: POST /api/cron/trial-emails
+        run: |
+          set -o pipefail
+          HTTP_STATUS=$(curl --fail-with-body --silent --show-error --max-time 120 \
+            -o response.json -w "%{http_code}" \
+            -X POST "${{ secrets.GALAXIA_APP_URL }}/api/cron/trial-emails" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          CURL_EXIT=$?
+          echo "HTTP status: ${HTTP_STATUS}"
+          echo "Response body:"
+          cat response.json 2>/dev/null || echo "(no response body)"
+          exit "${CURL_EXIT}"

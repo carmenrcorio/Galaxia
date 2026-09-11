@@ -9,10 +9,12 @@ import { renderTrialEmail, sendEmail, type TrialEmailData, type TrialEmailKind }
  * email is due, once (idempotent via the trial_emails table). Every number is a
  * real per-user count — nothing fabricated.
  *
- * Scheduling (ops, not committed): either a Vercel cron (which auto-sends
- * `Authorization: Bearer <CRON_SECRET>`) hitting this route daily, or Supabase
- * pg_cron via net.http_post. Requires CRON_SECRET set; no-ops on emails when
- * RESEND_API_KEY is absent (see sendEmail).
+ * Scheduled from `.github/workflows/trial-emails.yml` (no committed
+ * `vercel.json`, see ENGINEERING.md §2/§14) — GitHub Actions' `schedule:`
+ * cron trigger calls this route daily over HTTPS with the same
+ * `Authorization: Bearer <CRON_SECRET>` header a Vercel Cron Job would
+ * send. Requires CRON_SECRET set; no-ops on emails when RESEND_API_KEY is
+ * absent (see sendEmail).
  */
 
 const DAY = 86_400_000;

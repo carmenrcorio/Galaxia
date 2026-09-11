@@ -1,0 +1,99 @@
+# Schedules the nudge-delivery cron routes (Phase B1 compute, Phase B2
+# send). There is deliberately no root vercel.json (ENGINEERING.md §2), so
+# there is no Vercel-native cron config to point at these routes — this
+# workflow is the out-of-band scheduler, the same pattern as
+# relational-transits.yml. See ENGINEERING.md's "Cron scheduling" section.
+#
+# Both jobs run on the SAME hourly trigger, in order (`needs: compute`):
+#   - nudge-compute writes/upserts today's person_daily_nudges rows. It is
+#     idempotent (onConflict person_id,date, ignoreDuplicates: true), so
+#     running it every hour instead of once a day is safe, not wasteful in
+#     a way that matters — it is the only way a SINGLE cron schedule can
+#     guarantee "today's" row already exists before nudge-send's local-9am
+#     check fires for every IANA timezone, including ones whose UTC offset
+#     puts their midnight (and thus their local "today") at a different
+#     point in the UTC day than most owners. A once-daily compute run
+#     unavoidably misses some offset for a fixed UTC run time (see the PR
+#     description for the arithmetic) — hourly removes the gap entirely.
+#   - nudge-send is the hourly local-9am send pass its own doc comment
+#     requires ("a single daily UTC cron cannot hit 9am local for every
+#     timezone at once") — `isDueForNudgeSend` inside the route is what
+#     actually narrows each hourly run down to the owners whose local clock
+#     just reached 9am; the workflow's job is only to call it every hour.
+name: Nudge Delivery Cron
+
+on:
+  schedule:
+    # Hourly. Off-peak minute (not :00) — GitHub's scheduler queue is
+    # congested at the top of every hour, which delays/drops runs there.
+    - cron: "13 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nudge-delivery-cron
+  cancel-in-progress: false
+
+jobs:
+  compute:
+    name: compute
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require GALAXIA_APP_URL and CRON_SECRET
+        run: |
+          if [ -z "${{ secrets.GALAXIA_APP_URL }}" ]; then
+            echo "::error::GALAXIA_APP_URL repo secret is not set (the deployed apps/web origin, e.g. https://galaxiamea.com). Add it under repo Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "::error::CRON_SECRET repo secret is not set. It must equal the CRON_SECRET env var configured on the deployed apps/web (Vercel) project, or the route 401s."
+            exit 1
+          fi
+
+      # --fail-with-body (not plain --fail) so a non-2xx response body is
+      # still written to -o and can be echoed below — plain --fail discards
+      # the body on failure, which would make a red run undiagnosable.
+      - name: POST /api/cron/nudge-compute
+        run: |
+          set -o pipefail
+          HTTP_STATUS=$(curl --fail-with-body --silent --show-error --max-time 120 \
+            -o response.json -w "%{http_code}" \
+            -X POST "${{ secrets.GALAXIA_APP_URL }}/api/cron/nudge-compute" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          CURL_EXIT=$?
+          echo "HTTP status: ${HTTP_STATUS}"
+          echo "Response body:"
+          cat response.json 2>/dev/null || echo "(no response body)"
+          exit "${CURL_EXIT}"
+
+  send:
+    name: send
+    needs: compute
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require GALAXIA_APP_URL and CRON_SECRET
+        run: |
+          if [ -z "${{ secrets.GALAXIA_APP_URL }}" ]; then
+            echo "::error::GALAXIA_APP_URL repo secret is not set (the deployed apps/web origin, e.g. https://galaxiamea.com). Add it under repo Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "::error::CRON_SECRET repo secret is not set. It must equal the CRON_SECRET env var configured on the deployed apps/web (Vercel) project, or the route 401s."
+            exit 1
+          fi
+
+      - name: POST /api/cron/nudge-send
+        run: |
+          set -o pipefail
+          HTTP_STATUS=$(curl --fail-with-body --silent --show-error --max-time 120 \
+            -o response.json -w "%{http_code}" \
+            -X POST "${{ secrets.GALAXIA_APP_URL }}/api/cron/nudge-send" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          CURL_EXIT=$?
+          echo "HTTP status: ${HTTP_STATUS}"
+          echo "Response body:"
+          cat response.json 2>/dev/null || echo "(no response body)"
+          exit "${CURL_EXIT}"

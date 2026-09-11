@@ -149,6 +149,23 @@ describe("nudge-send route — subject line inputs are structurally minor-safe",
   });
 });
 
+describe("nudge-send route — returns a JSON summary with real numeric counts, never a bare 200", () => {
+  const src = readRoute();
+
+  it("initializes usersProcessed and sent as numeric counters", () => {
+    expect(src).toMatch(/let\s+usersProcessed\s*=\s*0\s*;/);
+    expect(src).toMatch(/let\s+sent\s*=\s*0\s*;/);
+  });
+
+  it("returns ok, sent, usersProcessed, skipped, and evaluated in the success response", () => {
+    expect(src).toMatch(/return NextResponse\.json\(\{\s*ok:\s*true,\s*sent,\s*usersProcessed,\s*skipped,\s*evaluated:\s*profiles\?\.length\s*\?\?\s*0\s*\}\);/);
+  });
+
+  it("skipped is a real per-owner/per-gate breakdown, not a placeholder", () => {
+    expect(src).toMatch(/const skipped = \{\s*nullTimezone: 0,\s*notDueThisHour: 0,\s*noRowsToday: 0,\s*noEligibleAfterMinorExclusion: 0,\s*noLeadContent: 0,\s*alreadySentToday: 0,\s*noEmail: 0\s*\};/);
+  });
+});
+
 describe("nudge-send route — greets via resolveAccountName, never an email fragment", () => {
   const src = readRoute();
 

@@ -155,7 +155,7 @@ export async function sendEmail(to: string, email: RenderedEmail, headers?: Emai
     console.log(`[emails] RESEND_API_KEY absent — skipping "${email.subject}" to ${to}`);
     return false;
   }
-  const from = process.env.RESEND_FROM ?? "Galaxia <hello@galaxia.app>";
+  const from = process.env.RESEND_FROM ?? "Galaxia <hello@galaxiamea.com>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },

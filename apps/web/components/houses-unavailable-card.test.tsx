@@ -21,7 +21,7 @@ describe("HousesUnavailableCard", () => {
     expect(screen.getByText(HOUSES_UNAVAILABLE_EYEBROW)).toBeTruthy();
     expect(screen.getByText(HOUSES_UNAVAILABLE_YEAR_BODY)).toBeTruthy();
     expect(screen.getByText(HOUSES_UNAVAILABLE_YEAR_FOLLOW_UP)).toBeTruthy();
-    expect(screen.getByText(/birth date and a time/)).toBeTruthy();
+    expect(screen.getAllByText(/birth date and a time/).length).toBe(2);
     expect(screen.queryByText(HOUSES_UNAVAILABLE_DATE_BODY)).toBeNull();
   });
 

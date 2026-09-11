@@ -113,9 +113,23 @@ describe("resolveOgCompareSummary — never reads scores, never a romantic read"
     }
   });
 
-  it('falls back to the authored OG_PLATONIC_SUMMARY for "platonic" (the one type RELATION_HEADLINE omits)', () => {
-    expect(RELATION_HEADLINE.platonic).toBeUndefined();
+  // PHASE 3 update: RELATION_HEADLINE gained a "platonic" entry (previously
+  // the one non-romantic type it omitted, falling through to the score-band
+  // helper on other surfaces). Per the doc comment on resolveOgCompareSummary
+  // ("if RELATION_HEADLINE ever gains a platonic entry, that one wins
+  // instead"), the real table's own line now wins over OG_PLATONIC_SUMMARY —
+  // this is the anticipated behavior, not a regression. The fallback logic
+  // itself is still exercised, just with an explicit table that omits the
+  // key, so OG_PLATONIC_SUMMARY's own correctness stays covered.
+  it('prefers RELATION_HEADLINE\'s own "platonic" line now that the table defines one', () => {
+    expect(RELATION_HEADLINE.platonic).toBeDefined();
     const result = resolveOgCompareSummary(RELATION_HEADLINE, "platonic", "generational fallback theme");
+    expect(result).toEqual({ kind: "relationship", text: RELATION_HEADLINE.platonic });
+  });
+
+  it('falls back to the authored OG_PLATONIC_SUMMARY when a table omits "platonic"', () => {
+    const tableWithoutPlatonic = { ...RELATION_HEADLINE, platonic: undefined };
+    const result = resolveOgCompareSummary(tableWithoutPlatonic, "platonic", "generational fallback theme");
     expect(result).toEqual({ kind: "relationship", text: OG_PLATONIC_SUMMARY });
   });
 
@@ -193,7 +207,10 @@ describe("buildOgCompareCard — no scores, no romantic read, no PII, for every 
       RELATION_HEADLINE
     );
     expect(card.relationType).toBe("platonic");
-    expect(card.summary).toEqual({ kind: "relationship", text: OG_PLATONIC_SUMMARY });
+    // Now that RELATION_HEADLINE has its own "platonic" entry, that's what
+    // wins here (see the resolveOgCompareSummary tests above) — OG_PLATONIC_SUMMARY
+    // remains the fallback for a table that omits the key, not the live table.
+    expect(card.summary).toEqual({ kind: "relationship", text: RELATION_HEADLINE.platonic });
   });
 
   it("omits rising for whichever person's chart has no asc, independent of the other person", () => {

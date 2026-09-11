@@ -106,7 +106,13 @@ describe("1B parity — mobile Compare shares web's relType-keyed compareHeadlin
     expect(compareHeadline("siblings", 40)).toBe(
       "You two share a history and a floor neither of you can walk off. Here's what runs smooth between you, and where the old patterns catch."
     );
-    expect(compareHeadline("romantic", 80)).toBe("High flow. Momentum comes naturally here.");
+    // PHASE 3: "romantic" now has its own authored RELATION_HEADLINE entry
+    // (the public Quick Compare's default relType) instead of falling
+    // through to the score-band line — score-independent, same as siblings.
+    expect(compareHeadline("romantic", 80)).toBe(
+      "This is a spark you're both curious about. Here's where it comes easily, and where it takes real care to turn into something steady."
+    );
+    expect(compareHeadline("romantic", 10)).toBe(compareHeadline("romantic", 80));
   });
 });
 

@@ -24,10 +24,19 @@ const WEIGHTED = {
   general: [],
 };
 
+// PHASE 1 GRAMMAR FIX (FOUNDER-REVIEW: authored): "thoughts and talk" is a
+// compound/plural subject ("thoughts AND talk"), but every sentence template
+// below pairs THEME_WORD with a singular verb (opens/adds/is/runs/helps/
+// supports/tests/lifts/eases/presses/amplifies) — e.g. "Thoughts and talk
+// opens an easier lane between you" is a subject-verb disagreement (should
+// be "open"). Retuning the subject phrase once, here, fixes every downstream
+// sentence (drop + full_specificity, every framing) without touching any
+// verb, since "communication" is already singular and agrees with every
+// verb the templates use.
 const THEME_WORD = {
   sun: "being seen",
   moon: "the mood",
-  mercury: "thoughts and talk",
+  mercury: "communication",
   venus: "warmth and closeness",
   mars: "drive and heat",
   jupiter: "room to grow",
@@ -66,6 +75,31 @@ const FRAMING_ADDR = {
   general: { who: "them", poss: "their", tip: "Go gently." },
 };
 
+/**
+ * PHASE 2 OPENER VARIETY (FOUNDER-REVIEW: authored — refine voice).
+ * DROP_DOMAIN audit: every "partner" drop line (all 10 themes x 3 classes =
+ * 30 lines) closed with the identical FRAMING_ADDR.partner.tip
+ * ("A little steadiness between you goes far."), regardless of which planet
+ * the line was actually about. Keyed by THEME instead so the closing line is
+ * a deterministic function of the theme (same theme -> same tip, every
+ * render) without concatenating fragments at render time — this map is
+ * still baked into the literal sentence at generation time, same as every
+ * other string in copy-matrix.ts. Scoped to `dropSentence`'s partner branch
+ * only, per the audit (FULL_SPECIFICITY partner lines keep the shared tip).
+ */
+const PARTNER_DROP_TIP = {
+  sun: "Say what you noticed instead of assuming it showed.",
+  moon: "Name the feeling plainly instead of managing around it.",
+  mercury: "Say the plain version out loud instead of leaving it implied.",
+  venus: "A small warm gesture now beats a bigger one saved for later.",
+  mars: "Move on it together instead of letting the moment sit.",
+  jupiter: "Say yes to the small stretch before it turns into a debate.",
+  saturn: "Keep the one promise you made; that's the whole ask today.",
+  uranus: "Give the shift room instead of trying to pin it down.",
+  neptune: "Get specific about what you actually mean before you assume they know.",
+  pluto: "Say the real thing plainly instead of letting it sit unspoken.",
+};
+
 function dropSentence(theme, cls, framing) {
   const a = FRAMING_ADDR[framing];
   const force = THEME_WORD[theme];
@@ -80,9 +114,10 @@ function dropSentence(theme, cls, framing) {
     return `${force[0].toUpperCase()}${force.slice(1)} runs strong in them today. ${a.tip}`;
   }
   if (framing === "partner") {
-    if (cls === "flow") return `${force[0].toUpperCase()}${force.slice(1)} opens an easier lane between you. ${a.tip}`;
-    if (cls === "friction") return `${force[0].toUpperCase()}${force.slice(1)} adds friction in the bond today. ${a.tip}`;
-    return `${force[0].toUpperCase()}${force.slice(1)} is loud in the relationship today. ${a.tip}`;
+    const tip = PARTNER_DROP_TIP[theme] ?? a.tip;
+    if (cls === "flow") return `${force[0].toUpperCase()}${force.slice(1)} opens an easier lane between you. ${tip}`;
+    if (cls === "friction") return `${force[0].toUpperCase()}${force.slice(1)} adds friction in the bond today. ${tip}`;
+    return `${force[0].toUpperCase()}${force.slice(1)} is loud in the relationship today. ${tip}`;
   }
   if (framing === "colleague") {
     if (cls === "flow") return `Work weather eases — ${force} helps the day. ${a.tip}`;

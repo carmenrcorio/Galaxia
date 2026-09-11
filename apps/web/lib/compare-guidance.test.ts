@@ -1,7 +1,9 @@
 import { isMinorForSafety } from "@galaxia/core";
 import { describe, expect, it } from "vitest";
 import {
+  COMPARE_RELATION_TYPES,
   ROMANTIC_RELATION_TYPES,
+  RELATION_HEADLINE,
   aspectActionLine,
   aspectActionParts,
   availableCompareRelationTypes,
@@ -182,7 +184,11 @@ describe("PHASE 1: actionable per-aspect guidance", () => {
     const a = { from: "venus", to: "moon", harmony: 0.7 };
     const parts = aspectActionParts(a, "romantic");
     expect(parts.flows).toBe(true);
-    expect(parts.opener).toBe("Don't let this ease go unspoken between you:");
+    // PHASE 2: opener is now one of several pair-deterministic paraphrases
+    // (see aspect-opener-variety.test.ts), not a single fixed string — this
+    // pins the exact value for the venus/moon pair specifically so a future
+    // regression to the pool ordering is caught here too.
+    expect(parts.opener).toBe("Let this ease show instead of assuming they already know:");
     expect(parts.tactic.length).toBeGreaterThan(10);
     expect(aspectActionLine(a, "romantic")).toBe(`${parts.opener} ${parts.tactic}.`);
   });
@@ -267,10 +273,34 @@ describe("1B: relationship-framed Compare headline (relType-keyed, score-band fa
     }
   });
 
-  it("falls back to the original score-band line for types the picker never offers (romantic, platonic)", () => {
-    expect(compareHeadline("romantic", 75)).toBe("High flow. Momentum comes naturally here.");
-    expect(compareHeadline("platonic", 60)).toBe("Balanced. Ease and growth in equal measure.");
-    expect(compareHeadline("romantic", 30)).toBe("Growth-heavy. Real warmth under intentional care.");
+  // PHASE 3: romantic/platonic are the two RelationTypes the saved-people
+  // picker never offers, but they ARE what the public Quick Compare
+  // (/chart/compare) uses — so falling through to a score-band line here
+  // was exactly the bug the founder saw (a generic "High flow." line
+  // instead of an authored relationship read). Both now have their own
+  // RELATION_HEADLINE entry and never reach scoreBandHeadline.
+  it("romantic and platonic now have their own authored headline, regardless of score", () => {
+    const romantic = "This is a spark you're both curious about. Here's where it comes easily, and where it takes real care to turn into something steady.";
+    const platonic = "This is a connection you have chosen to read together, kept easy by staying open with each other. Here is what comes easy, and where it needs a little care.";
+    for (const overall of [12, 55, 95]) {
+      expect(compareHeadline("romantic", overall)).toBe(romantic);
+      expect(compareHeadline("platonic", overall)).toBe(platonic);
+    }
+    expect(RELATION_HEADLINE.romantic).toBe(romantic);
+    expect(RELATION_HEADLINE.platonic).toBe(platonic);
+  });
+
+  it("the score-band fallback itself is unreachable from any real RelationType (all seven now have an authored headline)", () => {
+    const ALL_RELATION_TYPES = [...COMPARE_RELATION_TYPES, "romantic", "platonic"] as RelationType[];
+    for (const t of ALL_RELATION_TYPES) {
+      // A score-band line would change between these three overalls; an
+      // authored headline never does.
+      const a = compareHeadline(t, 10);
+      const b = compareHeadline(t, 55);
+      const c = compareHeadline(t, 95);
+      expect(a, t).toBe(b);
+      expect(b, t).toBe(c);
+    }
   });
 
   it("MINOR SAFETY: a minor pairing's available/default relation types never resolve to the partners headline", () => {
@@ -297,6 +327,77 @@ describe("1C: relationshipAspectFraming() revival — text is unique, action dup
       expect(f.text).not.toBe(f.action);
       expect(f.text).toContain("Sarah's");
       expect(f.text).toContain("Ben's");
+    }
+  });
+});
+
+// PHASE 1 GRAMMAR FIX (DEFECT B): the shipped bug — "With Virgo Venus, they
+// feel loved through to have the details noticed" — came from VENUS_NEED.Virgo
+// being a to-infinitive instead of a noun phrase, so the template
+// "...they feel loved through {X}." produced an ungrammatical sentence. Every
+// one of the twelve VENUS_NEED values now reads as a single grammatical
+// sentence when substituted into that template; assert the exact rendered
+// text (not just a substring) for all twelve so a future edit that
+// reintroduces a to-infinitive or a bare independent clause fails loudly.
+describe("PHASE 1 grammar fix: every Venus sign renders a grammatical 'feel loved through' sentence", () => {
+  // Full expected sentence per sign: "With {sign} Venus, they feel loved
+  // through {need}. The way to show it: {how}." (VENUS_HOW is defined for
+  // all twelve signs, so the second sentence always appears here).
+  const EXPECTED: Record<string, string> = {
+    Aries:
+      "With Aries Venus, they feel loved through direct pursuit, the feeling of being chosen rather than merely convenient. The way to show it: pursue directly: choose them out loud instead of waiting to be chosen.",
+    Taurus:
+      "With Taurus Venus, they feel loved through tangible gestures and unhurried time together. The way to show it: make it tangible: unhurried time, a made meal, the seat kept for them.",
+    Gemini:
+      "With Gemini Venus, they feel loved through curiosity and real conversation, treated as its own love language. The way to show it: keep the conversation alive. A genuinely curious question reads as a love letter.",
+    Cancer:
+      "With Cancer Venus, they feel loved through warmth made domestic, being folded into their ordinary life. The way to show it: fold them into ordinary life: the errand, the small plan. That domestic inclusion is the intimacy they feel.",
+    Leo:
+      "With Leo Venus, they feel loved through public appreciation, not only private affection. The way to show it: appreciate them in front of others, not only in private; witnessed warmth is the real thing.",
+    Virgo:
+      "With Virgo Venus, they feel loved through having the small details noticed, since effort is how they give and how they want to receive. The way to show it: let them see you noticed the details of their effort, and name them one by one.",
+    Libra:
+      "With Libra Venus, they feel loved through harmony and reciprocity, warmth given generously and returned in kind. The way to show it: return the gesture evenly. They give generously and need to feel it come back.",
+    Scorpio:
+      "With Scorpio Venus, they feel loved through depth and full presence, intensity over pleasantry. The way to show it: give them your full, undistracted presence: depth over frequency.",
+    Sagittarius:
+      "With Sagittarius Venus, they feel loved through shared adventure, not stability alone. The way to show it: share an actual adventure instead of only offering stability. Go somewhere with them.",
+    Capricorn:
+      "With Capricorn Venus, they feel loved through reliability shown consistently, the simplest proof there is. The way to show it: show up consistently over time; here the reliability IS the romance.",
+    Aquarius:
+      "With Aquarius Venus, they feel loved through having their independence respected inside the bond. The way to show it: protect their freedom inside the bond. Don't make closeness cost their independence.",
+    Pisces:
+      "With Pisces Venus, they feel loved through quiet, genuine tenderness rather than grand gestures. The way to show it: offer sincere tenderness over grand gestures. The small true thing lands deepest.",
+  };
+
+  // Isolates the Venus clause as the ONLY sentence whatTheyNeed() produces:
+  // moon is empty (skips the Moon-need clause) with emotional score high
+  // enough to skip its reassurance fallback too, and synastry is null (skips
+  // the "tightest friction" aspect clause) — so `text` below is exactly the
+  // two authored Venus sentences, nothing appended or prepended.
+  const ISOLATED_VENUS_SCORES = { ...SCORES, emotional: 60, overall: 55 };
+  function isolatedVenusText(sign: string): string {
+    const person = { ...SARAH, venus: sign, moon: "" };
+    return whatTheyNeed(ISOLATED_VENUS_SCORES, person, "partners", null);
+  }
+
+  it("renders the exact expected sentence for all twelve signs (assert full strings, not substrings)", () => {
+    expect(Object.keys(EXPECTED).sort()).toEqual([...ALL_SIGNS].sort());
+    for (const sign of ALL_SIGNS) {
+      expect(isolatedVenusText(sign), sign).toBe(EXPECTED[sign]);
+    }
+  });
+
+  it("never produces a to-infinitive or a bare second clause after 'they feel loved through' (the exact DEFECT B shape)", () => {
+    for (const sign of ALL_SIGNS) {
+      const text = isolatedVenusText(sign);
+      const match = text.match(/they feel loved through ([^.]+)\./);
+      expect(match, sign).not.toBeNull();
+      const needClause = match![1];
+      // A to-infinitive need clause ("through to have...") is exactly the
+      // shipped Virgo bug; a bare independent clause would read as two
+      // sentences glued together with no connective.
+      expect(needClause, sign).not.toMatch(/^to [a-z]+ /);
     }
   });
 });

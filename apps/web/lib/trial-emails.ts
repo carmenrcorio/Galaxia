@@ -6,12 +6,28 @@
 
 import type { TrialEmailKind } from "./emails";
 
-export type TrialEmailSkipReason = "notDue" | "alreadySent" | "noEmail" | "noResendKey" | "sendFailed";
+export type TrialEmailSkipReason =
+  | "trialAlreadyEnded"
+  | "notDue"
+  | "alreadySent"
+  | "noEmail"
+  | "noResendKey"
+  | "sendFailed";
 
 export type TrialEmailSkipped = Record<TrialEmailSkipReason, number>;
 
 export function emptyTrialEmailSkipped(): TrialEmailSkipped {
-  return { noEmail: 0, notDue: 0, alreadySent: 0, noResendKey: 0, sendFailed: 0 };
+  return { trialAlreadyEnded: 0, noEmail: 0, notDue: 0, alreadySent: 0, noResendKey: 0, sendFailed: 0 };
+}
+
+/**
+ * Permanent backlog guard: never email a profile whose trial_ends_at is
+ * already in the past. day14 is defined as today-or-past (`daysToEnd <= 0`),
+ * so this skip — applied before the kind picker — is what keeps day14 from
+ * ever firing. Checked as `trialEndsAt < now` (strictly past).
+ */
+export function trialAlreadyEnded(trialEndsAt: number | null, now: number): boolean {
+  return trialEndsAt !== null && trialEndsAt < now;
 }
 
 /**
@@ -59,6 +75,12 @@ export type TrialEmailOutcome =
  * only consulted when the row would otherwise send.
  */
 export function classifyTrialEmailRow(facts: TrialEmailRowFacts): TrialEmailOutcome {
+  // daysToEnd < 0 ⇔ trialEndsAt < now. Applied before the kind picker so an
+  // ended trial never becomes a day14 send, even if the Resend key was unset
+  // for a stretch and a backlog piled up.
+  if (facts.daysToEnd !== null && facts.daysToEnd < 0) {
+    return { sent: false, skip: "trialAlreadyEnded" };
+  }
   const kind = pickTrialEmailKind(facts.ageDays, facts.daysToEnd, facts.peopleCount);
   if (!kind) return { sent: false, skip: "notDue" };
   if (facts.alreadyCount > 0) return { sent: false, skip: "alreadySent" };

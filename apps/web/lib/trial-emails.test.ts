@@ -5,6 +5,7 @@ import {
   emptyTrialEmailSkipped,
   pickTrialEmailKind,
   tallyTrialEmailRows,
+  trialAlreadyEnded,
   trialEmailAlreadyKeys,
   type TrialEmailRowFacts
 } from "./trial-emails";
@@ -54,7 +55,7 @@ const EVERY_BRANCH: TrialEmailRowFacts[] = [
   row({ ageDays: 1.5, daysToEnd: 12, peopleCount: 1, alreadyCount: 1 }),
   // noEmail
   row({ ageDays: 1.5, daysToEnd: 12, peopleCount: 1, hasEmail: false }),
-  // noResendKey (the 14 uncounted production rows)
+  // noResendKey (the previously uncounted send-miss)
   row({ ageDays: 1.56, daysToEnd: 12.44, peopleCount: 3, hasResendKey: false }),
   // sendFailed
   row({ ageDays: 11, daysToEnd: 3, peopleCount: 2, sendSucceeded: false }),
@@ -66,9 +67,19 @@ const EVERY_BRANCH: TrialEmailRowFacts[] = [
   row({ ageDays: 5.42, daysToEnd: 8.58, peopleCount: 2 }),
   // sent: day11
   row({ ageDays: 11, daysToEnd: 3, peopleCount: 0 }),
-  // sent: day14
+  // trialAlreadyEnded: would have been day14; never sends
   row({ ageDays: 22, daysToEnd: -8, peopleCount: 15 })
 ];
+
+describe("trialAlreadyEnded", () => {
+  it("is true only when trial_ends_at is strictly before now", () => {
+    const now = 1_000_000;
+    expect(trialAlreadyEnded(now - 1, now)).toBe(true);
+    expect(trialAlreadyEnded(now, now)).toBe(false);
+    expect(trialAlreadyEnded(now + 1, now)).toBe(false);
+    expect(trialAlreadyEnded(null, now)).toBe(false);
+  });
+});
 
 describe("pickTrialEmailKind", () => {
   it("returns day14 when the trial has already ended", () => {
@@ -119,7 +130,14 @@ describe("classifyTrialEmailRow — every skip and send branch", () => {
     expect(classifyTrialEmailRow(EVERY_BRANCH[9]!)).toEqual({ sent: true, kind: "day4_one" });
     expect(classifyTrialEmailRow(EVERY_BRANCH[10]!)).toEqual({ sent: true, kind: "day4_multi" });
     expect(classifyTrialEmailRow(EVERY_BRANCH[11]!)).toEqual({ sent: true, kind: "day11" });
-    expect(classifyTrialEmailRow(EVERY_BRANCH[12]!)).toEqual({ sent: true, kind: "day14" });
+    expect(classifyTrialEmailRow(EVERY_BRANCH[12]!)).toEqual({ sent: false, skip: "trialAlreadyEnded" });
+  });
+
+  it("never sends day14: an ended trial is skipped before the kind picker, even with a key", () => {
+    expect(
+      classifyTrialEmailRow(row({ ageDays: 22, daysToEnd: -8, peopleCount: 15 }))
+    ).toEqual({ sent: false, skip: "trialAlreadyEnded" });
+    expect(pickTrialEmailKind(22, -8, 15)).toBe("day14");
   });
 });
 
@@ -128,8 +146,9 @@ describe("tallyTrialEmailRows — invariant holds across every branch", () => {
     const summary = tallyTrialEmailRows(EVERY_BRANCH);
     expect(summary).toEqual({
       evaluated: 13,
-      sent: 5,
+      sent: 4,
       skipped: {
+        trialAlreadyEnded: 1,
         noEmail: 1,
         notDue: 4,
         alreadySent: 1,
@@ -138,6 +157,7 @@ describe("tallyTrialEmailRows — invariant holds across every branch", () => {
       }
     });
     expect(emptyTrialEmailSkipped()).toEqual({
+      trialAlreadyEnded: 0,
       noEmail: 0,
       notDue: 0,
       alreadySent: 0,
@@ -152,7 +172,7 @@ describe("tallyTrialEmailRows — invariant holds across every branch", () => {
     );
   });
 
-  it("matches the 2026-09-11 production distribution once sendEmail-false is counted", () => {
+  it("matches the 2026-09-11 production distribution with ended trials skipped, not sent", () => {
     const prodLike: TrialEmailRowFacts[] = [
       row({ ageDays: 9.66, daysToEnd: 4.34, peopleCount: 3 }), // notDue
       row({ ageDays: 1.56, daysToEnd: 12.44, peopleCount: 3, hasResendKey: false }), // day1
@@ -164,11 +184,34 @@ describe("tallyTrialEmailRows — invariant holds across every branch", () => {
     expect(summary).toEqual({
       evaluated: 15,
       sent: 0,
-      skipped: { noEmail: 0, notDue: 1, alreadySent: 0, noResendKey: 14, sendFailed: 0 }
+      skipped: {
+        trialAlreadyEnded: 8,
+        noEmail: 0,
+        notDue: 1,
+        alreadySent: 0,
+        noResendKey: 6,
+        sendFailed: 0
+      }
     });
     const result = cronSummaryResponse(summary);
     expect(result.status).toBe(200);
     expect(result.body.ok).toBe(true);
+  });
+
+  it("would send 6 of the 15 production rows if the Resend key were present, not the previous 14", () => {
+    const prodLike: TrialEmailRowFacts[] = [
+      row({ ageDays: 9.66, daysToEnd: 4.34, peopleCount: 3 }),
+      row({ ageDays: 1.56, daysToEnd: 12.44, peopleCount: 3 }),
+      ...Array.from({ length: 4 }, () => row({ ageDays: 11, daysToEnd: 3, peopleCount: 2 })),
+      ...Array.from({ length: 8 }, () => row({ ageDays: 22, daysToEnd: -8, peopleCount: 1 })),
+      row({ ageDays: 5.42, daysToEnd: 8.58, peopleCount: 2 })
+    ];
+    const summary = tallyTrialEmailRows(prodLike);
+    expect(summary.sent).toBe(6);
+    expect(summary.skipped.trialAlreadyEnded).toBe(8);
+    expect(summary.skipped.notDue).toBe(1);
+    expect(summary.evaluated).toBe(15);
+    expect(cronSummaryResponse(summary).body.ok).toBe(true);
   });
 
   it("fires ok:false when a due row is deliberately dropped from the tally", () => {

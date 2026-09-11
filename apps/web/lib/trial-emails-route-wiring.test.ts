@@ -52,6 +52,7 @@ describe("trial-emails route — returns a JSON summary with real numeric counts
 
   it("skipped is a real per-reason breakdown with every exit zeroed, including send misses", () => {
     expect(src).toContain("emptyTrialEmailSkipped");
+    expect(src).toMatch(/skipped\.trialAlreadyEnded \+= 1/);
     expect(src).toMatch(/skipped\.notDue \+= 1/);
     expect(src).toMatch(/skipped\.alreadySent \+= 1/);
     expect(src).toMatch(/skipped\.noEmail \+= 1/);
@@ -59,8 +60,17 @@ describe("trial-emails route — returns a JSON summary with real numeric counts
     expect(src).toMatch(/skipped\.sendFailed \+= 1/);
   });
 
-  it("uses pickTrialEmailKind / trialEmailAlreadyKeys from the pure lib, not a re-derived chain", () => {
+  it("uses pickTrialEmailKind / trialEmailAlreadyKeys / trialAlreadyEnded from the pure lib, not a re-derived chain", () => {
     expect(src).toContain("pickTrialEmailKind");
     expect(src).toContain("trialEmailAlreadyKeys");
+    expect(src).toContain("trialAlreadyEnded");
+  });
+
+  it("skips trialAlreadyEnded before the kind picker", () => {
+    const endedIdx = src.indexOf("trialAlreadyEnded(");
+    const pickIdx = src.indexOf("pickTrialEmailKind(");
+    expect(endedIdx).toBeGreaterThan(-1);
+    expect(pickIdx).toBeGreaterThan(-1);
+    expect(endedIdx).toBeLessThan(pickIdx);
   });
 });

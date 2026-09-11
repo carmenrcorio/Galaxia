@@ -7,6 +7,7 @@ import { renderTrialEmail, sendEmail, type TrialEmailData } from "../../../../li
 import {
   emptyTrialEmailSkipped,
   pickTrialEmailKind,
+  trialAlreadyEnded,
   trialEmailAlreadyKeys
 } from "../../../../lib/trial-emails";
 
@@ -65,6 +66,11 @@ async function handle(req: Request) {
     const trialEndsAt = profile.trial_ends_at ? new Date(profile.trial_ends_at as string).getTime() : null;
     const ageDays = (now - createdAt) / DAY;
     const daysToEnd = trialEndsAt ? (trialEndsAt - now) / DAY : null;
+
+    // Permanent rule, before the kind picker: never email a trial that has
+    // already ended. Protects against a backlog of day14s if the Resend key
+    // is unset for a few days. trial_ends_at < now; day14 therefore never fires.
+    if (trialAlreadyEnded(trialEndsAt, now)) { skipped.trialAlreadyEnded += 1; continue; }
 
     // Counts (real, per user)
     const [peopleCount, notesCount, threadsCount, groupsCount] = await Promise.all([

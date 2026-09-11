@@ -1,7 +1,16 @@
 "use client";
 
-import { useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { toSvg } from "html-to-image";
+import {
+  SHARE_IMAGE_BG,
+  SHARE_IMAGE_FAIL,
+  SHARE_SUCCESS_REVERT_MS,
+  assertCanvasHasContent,
+  shareButtonLabel,
+  shareImageOutputSize,
+  shouldRevertShareStatus,
+} from "../lib/share-image";
 import { Spinner } from "./spinner";
 
 /**
@@ -29,18 +38,23 @@ async function toPngWithoutBackdropFilterClip(
   img.crossOrigin = "anonymous";
   await new Promise<void>((resolve, reject) => {
     img.onload = () => resolve();
-    img.onerror = () => reject(new Error("Could not create the image."));
+    img.onerror = () => reject(new Error(SHARE_IMAGE_FAIL));
     img.src = fixedDataUrl;
   });
   await img.decode().catch(() => {});
 
+  const rawW = (img.naturalWidth || node.clientWidth) * options.pixelRatio;
+  const rawH = (img.naturalHeight || node.clientHeight) * options.pixelRatio;
+  const { width, height } = shareImageOutputSize(rawW, rawH);
   const canvas = document.createElement("canvas");
-  canvas.width = (img.naturalWidth || node.clientWidth) * options.pixelRatio;
-  canvas.height = (img.naturalHeight || node.clientHeight) * options.pixelRatio;
-  const ctx = canvas.getContext("2d")!;
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) throw new Error(SHARE_IMAGE_FAIL);
   ctx.fillStyle = options.backgroundColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  assertCanvasHasContent(canvas, "html-to-image");
   return canvas.toDataURL();
 }
 
@@ -49,9 +63,15 @@ async function toPngWithoutBackdropFilterClip(
  * nothing is uploaded or persisted) and hands it to the OS share sheet when
  * available, falling back to a direct download. Used by the Memorial
  * Timeline and Family Chart Comparison "viral screenshot" share cards, and
- * by every biwheel/galaxy export call site via ChartImageExport — all of
+ * by every biwheel export call site via ChartImageExport — all of
  * them render a permanent `<ShareWatermark />` inside the captured node, so
- * the exported image always carries the "galaxiamea.com" mark.
+ * the exported image always carries the "galaxiamea.com" mark. The galaxy
+ * constellation on /app passes `capture` (direct canvas blit) because
+ * html-to-image's SVG foreignObject path blanks live canvases on WebKit.
+ *
+ * Galaxy is the exception: its live <canvas> layers blank out on WebKit
+ * when cloned through html-to-image's SVG foreignObject, so that call site
+ * passes `capture` (composeGalaxySharePng) and never uses this DOM path.
  *
  * Deliberately does NOT reuse the public /api/quick-share pipeline: that
  * stack mints an unauthenticated, anyone-with-the-link page for the public
@@ -63,26 +83,46 @@ export function ShareImageButton({
   targetRef,
   filename,
   label = "Share",
+  capture,
 }: {
-  targetRef: RefObject<HTMLElement | null>;
+  targetRef?: RefObject<HTMLElement | null>;
   filename: string;
   label?: string;
+  /** Galaxy: blit the live canvases. Other call sites omit this and capture `targetRef`. */
+  capture?: () => Promise<string>;
 }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!status) return;
+    const revert = () => setStatus(null);
+    const timer = window.setTimeout(revert, SHARE_SUCCESS_REVERT_MS);
+    const onVis = () => {
+      if (shouldRevertShareStatus(document.hidden)) revert();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [status]);
+
   async function share() {
-    if (busy || !targetRef.current) return;
+    if (busy) return;
+    if (!capture && !targetRef?.current) return;
     setBusy(true);
     setError(null);
     setStatus(null);
     try {
-      const dataUrl = await toPngWithoutBackdropFilterClip(targetRef.current, {
-        pixelRatio: 2,
-        backgroundColor: "#0a0717",
-        cacheBust: true,
-      });
+      const dataUrl = capture
+        ? await capture()
+        : await toPngWithoutBackdropFilterClip(targetRef!.current!, {
+            pixelRatio: 2,
+            backgroundColor: SHARE_IMAGE_BG,
+            cacheBust: true,
+          });
 
       if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
         try {
@@ -107,7 +147,7 @@ export function ShareImageButton({
       link.click();
       setStatus("Image saved");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create the image.");
+      setError(err instanceof Error ? err.message : SHARE_IMAGE_FAIL);
     } finally {
       setBusy(false);
     }
@@ -117,7 +157,7 @@ export function ShareImageButton({
     <div style={{ display: "grid", gap: 6, justifyItems: "center" }}>
       <button type="button" className="pill-link" onClick={() => void share()} disabled={busy} style={{ gap: 8 }}>
         {busy && <Spinner size={12} />}
-        {busy ? "Creating image…" : status ?? label}
+        {shareButtonLabel(label, busy, status)}
       </button>
       {error ? <p className="error" style={{ fontSize: ".78rem", margin: 0 }}>{error}</p> : null}
     </div>

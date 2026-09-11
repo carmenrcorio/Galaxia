@@ -1,0 +1,12 @@
+## Fix synastry hydration mismatch and add Sentry (branch `cursor/fix-synastry-hydration-sentry-7945`) — 2026-09-11
+
+**Trigger**: A Playwright crawl hit minified React #418 on `/synastry-chart-meaning`. The other three posts, which share `apps/web/app/[slug]/page.tsx`, did not throw. `apps/web` also had no exception monitoring — Vercel Analytics / Speed Insights do not capture errors.
+
+`[FIXED]` **`/synastry-chart-meaning` hydration mismatch.** Unminified React named the tree: `<figure className="article-figure">` cannot be a descendant of `<p>`. The post is the only row in `posts` with markdown images (`![…](/synastry-flows-catches.png)` and `![…](/synastry-dynamic-table.png)`); the other three have no images and no blockquotes. The custom `img` override wrapped those in `<figure>` while remark still placed them inside a `<p>`, which is invalid HTML. The browser hoists the figure out of the paragraph before hydrate. The renderer now skips the `<p>` wrapper when a paragraph contains only images — valid HTML, same figure styling, no `suppressHydrationWarning`, no raw-HTML plugin. Content was not the bug (the markdown is ordinary images), so this is not a SQL migration.
+
+`[ADDED]` **Sentry on `apps/web`, privacy-constrained.** `@sentry/nextjs` captures server (`instrumentation.ts` `onRequestError`) and client (`instrumentation-client.ts` + `app/global-error.tsx`) exceptions when `NEXT_PUBLIC_SENTRY_DSN` (or server-only `SENTRY_DSN`) is set, and is a no-op when both are unset. `next.config.mjs` is not wrapped (`ENGINEERING.md` §2). `sendDefaultPii` is false; traces and session replay are off. Local-variable, request-body, and source-context integrations are disabled so a crash on `/api/quick-chart` cannot ship birth data via stack `vars` or nearby source. A shared scrubber strips birth data / birth time / lat / lng / notes / Vela conversation / emails from the event, drops stack `pre_context`/`post_context`/`vars`, and drops request bodies and query strings on `/api/quick-chart`, `/s/`, and `/app/`.
+
+**Founder env (Vercel project `galaxia`, Production + Preview):**
+- `NEXT_PUBLIC_SENTRY_DSN` — the project DSN from Sentry (Settings → Client Keys). Required for client exceptions; server reads this too.
+- Optional `SENTRY_DSN` — server-only override if you want a different DSN on the server. Not required if `NEXT_PUBLIC_SENTRY_DSN` is set.
+- Optional `SENTRY_ENVIRONMENT` — defaults to `VERCEL_ENV`.

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { notFound } from "next/navigation";
+import { ArticleMarkdown } from "../../components/blog/article-markdown";
 import { BlogHeader } from "../../components/blog/blog-header";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { JsonLd, type JsonLdObject } from "../../components/seo/json-ld";
@@ -89,27 +88,7 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
           </figure>
         ) : null}
         <h1 className="auth-title article-title">{post.title}</h1>
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            p: ({ children }) => <p className="article-p">{children}</p>,
-            h2: ({ children }) => <h2 className="article-h2">{children}</h2>,
-            h3: ({ children }) => <h2 className="article-h2">{children}</h2>,
-            blockquote: ({ children }) => <blockquote className="article-blockquote">{children}</blockquote>,
-            img: ({ src, alt }) => (
-              <figure className="article-figure">
-                <img src={typeof src === "string" ? src : undefined} alt={alt ?? ""} />
-              </figure>
-            ),
-            a: ({ href, children }) => (
-              <a href={href} target={href?.startsWith("http") ? "_blank" : undefined} rel="noreferrer">
-                {children}
-              </a>
-            )
-          }}
-        >
-          {post.body}
-        </ReactMarkdown>
+        <ArticleMarkdown>{post.body}</ArticleMarkdown>
 
         <div className="article-cta">
           <a className="btn-primary" href="https://galaxiamea.com">

@@ -44,7 +44,8 @@ const MONTHLY_PLAN = {
 
 const INCLUDED: { title: string; body: string }[] = [
   { title: "Everyone you love.", body: "No limit on how many people you add. Your grandmother should not cost extra." },
-  { title: "Real charts.", body: "Computed from precise astronomical data — placements, houses, angles, aspects, to the degree. Never guessed by an AI." },
+  // FOUNDER-REVIEW: rewritten (no U+2014).
+  { title: "Real charts.", body: "Computed from precise astronomical data: placements, houses, angles, aspects, to the degree. Never guessed by an AI." },
   { title: "Vela.", body: "An astrologer and relationship coach who knows both charts and gives you something to actually do." },
   { title: "The generational layer.", body: "See the sky your whole family was born under. Works from just a birth year." },
   { title: "Private by design.", body: "Your notes about someone are yours alone. Always. No two-way AI chat about children." },
@@ -68,7 +69,7 @@ export function deriveHeaderCopy(subscriptionStatus: string | null, trialEndsAt:
     return {
       eyebrow: "YOUR PLAN",
       headline: "You're already in.",
-      body: "You're subscribed — thank you. There's nothing more to unlock here; manage your plan from your account.",
+      body: "You're subscribed: thank you. There's nothing more to unlock here; manage your plan from your account.",
       showCheckout: false,
     };
   }
@@ -79,7 +80,7 @@ export function deriveHeaderCopy(subscriptionStatus: string | null, trialEndsAt:
       return {
         eyebrow: `${daysLeft} ${daysLeft === 1 ? "DAY" : "DAYS"} LEFT IN YOUR TRIAL`,
         headline: "Keep your galaxy.",
-        body: "Nothing here is locked — this is the whole product. Continue now, or keep exploring until your trial ends; nothing is charged until you choose to.",
+        body: "Nothing here is locked: this is the whole product. Continue now, or keep exploring until your trial ends; nothing is charged until you choose to.",
         showCheckout: true,
       };
     }
@@ -88,7 +89,7 @@ export function deriveHeaderCopy(subscriptionStatus: string | null, trialEndsAt:
     return {
       eyebrow: "YOUR TRIAL HAS ENDED",
       headline: "Keep your galaxy.",
-      body: "Everything you've built is still here — every chart, every note, every constellation you named. Continue whenever you're ready.",
+      body: "Everything you've built is still here: every chart, every note, every constellation you named. Continue whenever you're ready.",
       showCheckout: true,
     };
   }
@@ -100,7 +101,7 @@ export function deriveHeaderCopy(subscriptionStatus: string | null, trialEndsAt:
     return {
       eyebrow: "PICK UP WHERE YOU LEFT OFF",
       headline: "Keep your galaxy.",
-      body: "Everything you've built is still here — every chart, every note, every constellation you named. Continue whenever you're ready.",
+      body: "Everything you've built is still here: every chart, every note, every constellation you named. Continue whenever you're ready.",
       showCheckout: true,
     };
   }
@@ -308,7 +309,7 @@ export function Paywall({
         </div>
       ) : (
       <>
-      {/* Single monthly plan — annual/lifetime aren't set up yet, so aren't offered. */}
+      {/* Single monthly plan: annual/lifetime aren't set up yet, so aren't offered. */}
       <div className="glass-card" style={{
         textAlign: "left", padding: "16px 18px",
         display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,

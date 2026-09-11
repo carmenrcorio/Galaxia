@@ -133,10 +133,10 @@ describe("interpretTransit — typed pronoun slots (structural)", () => {
     const other = interpretTransit(hit("saturn", "sun", "conjunction"), { possessive: "their" }).short;
     const self = interpretTransit(hit("saturn", "sun", "conjunction"), { possessive: "your" }).short;
     expect(other).toBe(
-      "A serious, consolidating day for who they are — less flash, more foundation."
+      "A serious, consolidating day for who they are: less flash, more foundation."
     );
     expect(self).toBe(
-      "A serious, consolidating day for who you are — less flash, more foundation."
+      "A serious, consolidating day for who you are: less flash, more foundation."
     );
   });
 });
@@ -161,7 +161,7 @@ describe("interpretTransit — aspect quality is accurate (§8)", () => {
 describe("interpretTransit — curated meaning matches the real bodies", () => {
   it("renders the flagship Saturn square Uranus line (the spec example)", () => {
     expect(interpretTransit(hit("saturn", "uranus", "square"), { possessive: "their" }).short).toBe(
-      "A day that tests their need for freedom against real limits — patience goes far."
+      "A day that tests their need for freedom against real limits: patience goes far."
     );
   });
 

@@ -1389,7 +1389,8 @@ export default function AppHomePage() {
           </div>
         ) : people.length === 0 ? (
           <div style={{ padding: 48, textAlign: "center" }}>
-            <p className="muted" style={{ marginBottom: 16 }}>Your constellation is empty — start by adding yourself.</p>
+            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+            <p className="muted" style={{ marginBottom: 16 }}>Your constellation is empty: start by adding yourself.</p>
             <Link href="/welcome" className="btn-primary">Add yourself &amp; your people</Link>
           </div>
         ) : (
@@ -1488,7 +1489,7 @@ export default function AppHomePage() {
           <p className="eyebrow">Today in your sky</p>
           <p className="muted" style={{ fontSize: ".78rem", marginBottom: 10 }}>
             {activeTransitIds.length > 0
-              ? "Daily sky notes from each person's own chart — fixed once for the day."
+              ? "Daily sky notes from each person's own chart: fixed once for the day."
               : "No sky notes near an exact pass for anyone right now."}
           </p>
           <div style={{ display: "grid", gap: 2 }}>

@@ -87,7 +87,8 @@ export function QuickChartEntry() {
       });
     } catch {
       // FOUNDER-REVIEW: authored - mini-form network failure.
-      setError("Network error — check your connection and try again.");
+      // FOUNDER-REVIEW: rewritten (no U+2014).
+      setError("Network error. Check your connection and try again.");
     } finally {
       setLoading(false);
     }

@@ -28,7 +28,8 @@ export const MONTHS = [
 export const PRECISION_TIERS: { key: Precision; label: string; unlocks: string }[] = [
   { key: "exact", label: "Exact time", unlocks: "Full chart: Ascendant, houses, precise Moon, and all 10 planets." },
   { key: "date", label: "Date only", unlocks: "Sun, Moon, all planetary signs, and the generational layer. No Ascendant." },
-  { key: "year", label: "Year only", unlocks: "Generational layer only — good for ancestors and anyone whose date you don't know." }
+  // FOUNDER-REVIEW: rewritten (no U+2014).
+  { key: "year", label: "Year only", unlocks: "Generational layer only: good for ancestors and anyone whose date you don't know." }
 ];
 
 export const BASE_BIRTH_INPUT: BirthFormInput = {
@@ -78,7 +79,7 @@ export function BirthFields({ input, onChange, allowNone = false }: { input: Bir
   const tzLabel = resolvedPlace && input.tzId
     ? input.tzOffsetMin != null
       ? `${input.tzId} (UTC${input.tzOffsetMin >= 0 ? "+" : ""}${(input.tzOffsetMin / 60).toFixed(0)}h at birth date)`
-      : `${input.tzId} (timezone offset could not be resolved — exact-time charts need it)`
+      : `${input.tzId} (timezone offset could not be resolved: exact-time charts need it)`
     : null;
 
   const hasExactTimeAndPlace = input.precision === "exact" && resolvedPlace;
@@ -130,11 +131,11 @@ export function BirthFields({ input, onChange, allowNone = false }: { input: Bir
 
       {/* Precision selector */}
       <p style={{ fontSize: ".76rem", color: "var(--mist2)", lineHeight: 1.5, margin: 0 }}>
-        Birth time and city are optional. Pick whatever you actually know — every tier below produces a real chart; more detail just unlocks more of it.
+        Birth time and city are optional. Pick whatever you actually know: every tier below produces a real chart; more detail just unlocks more of it.
       </p>
       <div style={{ display: "grid", gap: 6 }}>
         {(allowNone
-          ? [...PRECISION_TIERS, { key: "none" as const, label: "Add birth data later", unlocks: "Just save their name and relationship now — you can add a year, date, or exact time whenever you have it (or ask them to)." }]
+          ? [...PRECISION_TIERS, { key: "none" as const, label: "Add birth data later", unlocks: "Just save their name and relationship now: you can add a year, date, or exact time whenever you have it (or ask them to)." }]
           : PRECISION_TIERS
         ).map((tier) => (
           <button
@@ -218,7 +219,7 @@ export function BirthFields({ input, onChange, allowNone = false }: { input: Bir
           {/* ── City search with disambiguation ── */}
           <div>
             <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 5 }}>
-              {input.precision === "exact" ? "Birth city — required for Ascendant and houses" : "Birth city (optional — improves precision)"}
+              {input.precision === "exact" ? "Birth city: required for Ascendant and houses" : "Birth city (optional: improves precision)"}
             </p>
 
             {/* If a place is already resolved, show confirmation + clear button */}

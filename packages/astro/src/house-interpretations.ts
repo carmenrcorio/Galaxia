@@ -36,7 +36,8 @@ export const HOUSE_MEANING: Record<HouseKey, HouseMeaning> = {
   9:  { name: "Ninth House",   domain: "Meaning & the far world", short: "belief, distance, and the bigger frame", long: "Faith, philosophy, foreign places, higher study. Where they go looking for a reason." },
   10: { name: "Tenth House",   domain: "Public role & legacy",  short: "what they're known for",             long: "Career, reputation, the thing strangers know about them. Also the parent whose expectation still hums under it all." },
   11: { name: "Eleventh House", domain: "Community & hopes",    short: "their people, and what they're building toward", long: "Friends, chosen family, the collective, and the future they'd like to live in. Where belonging is chosen rather than given." },
-  12: { name: "Twelfth House", domain: "The hidden & the undoing", short: "what runs beneath, unwatched",   long: "Solitude, the unconscious, what they hide even from themselves. Not a curse — a private room. Things here operate before they're noticed." },
+  // FOUNDER-REVIEW: rewritten (no U+2014).
+  12: { name: "Twelfth House", domain: "The hidden & the undoing", short: "what runs beneath, unwatched",   long: "Solitude, the unconscious, what they hide even from themselves. Not a curse: a private room. Things here operate before they're noticed." },
 };
 
 /** The house each planet occupies: where this force actually lives. */
@@ -60,7 +61,7 @@ export const PLANET_IN_HOUSE: Record<BodyKey, Record<HouseKey, Reading>> = {
     2:  { short: "safety is material",             long: "They need to know there's enough. Reassure them about the ground under their feet, not just your feelings." },
     3:  { short: "needs to talk it through",       long: "Feelings resolve out loud. Take away the conversation and they'll take it inside and turn it over for weeks." },
     4:  { short: "home is the whole nervous system", long: "Their emotional weather is made in the house they live in. Fix the home and much of the rest quiets down." },
-    5:  { short: "needs delight to feel safe",     long: "Play, children, romance, making things — these aren't extras, they're regulation. A joyless season hurts them physically." },
+    5:  { short: "needs delight to feel safe",     long: "Play, children, romance, making things: these aren't extras, they're regulation. A joyless season hurts them physically." },
     6:  { short: "soothes by doing the small task", long: "They handle feeling by handling something. The dishes are not avoidance; the dishes are the processing." },
     7:  { short: "needs someone across from them", long: "Their emotional equilibrium depends on a close other, which makes them devoted and easily destabilised. Consistency matters more than intensity." },
     8:  { short: "feels at depth, in private",     long: "Nothing shallow reaches them. They need one person who can go all the way down with them, and no more than one." },
@@ -109,7 +110,7 @@ export const PLANET_IN_HOUSE: Record<BodyKey, Record<HouseKey, Reading>> = {
     9:  { short: "fights for the principle",       long: "They'll go to war over a belief and be baffled that you took it personally. It genuinely wasn't about you." },
     10: { short: "ambition as an engine",          long: "Their drive is public and career-shaped. They will climb, and they will notice who helped." },
     11: { short: "fights for the group",           long: "Their aggression is collective, mobilised on behalf of others. Effective; occasionally righteous." },
-    12: { short: "anger goes underground",         long: "They don't do open conflict, and it doesn't disappear — it surfaces as exhaustion, illness, or a sudden immovable no. Give them a safe way to say it early." },
+    12: { short: "anger goes underground",         long: "They don't do open conflict, and it doesn't disappear: it surfaces as exhaustion, illness, or a sudden immovable no. Give them a safe way to say it early." },
   },
   jupiter: {
     1:  { short: "life makes room for them",       long: "They walk in expecting welcome, and often get it. The optimism is contagious and occasionally undeserved." },
@@ -190,16 +191,16 @@ export const PLANET_IN_HOUSE: Record<BodyKey, Record<HouseKey, Reading>> = {
  */
 // FOUNDER-REVIEW: authored — all twelve minor Venus-in-house shorts + longs.
 export const VENUS_IN_HOUSE_MINOR: Record<HouseKey, Reading> = {
-  1:  { short: "liked for how they show up",     long: "Warmth arrives with them. People notice them first — make sure they still feel seen for who they are underneath." },
+  1:  { short: "liked for how they show up",     long: "Warmth arrives with them. People notice them first: make sure they still feel seen for who they are underneath." },
   2:  { short: "cares about what lasts",         long: "Affection shows up in things kept, shared, and made comfortable. They care with their hands and with what they give." },
   3:  { short: "cares through talk",             long: "Being interesting to each other is the bond. Boredom, not conflict, is what cools it." },
   4:  { short: "cares by making a home",         long: "Care looks like a kitchen, a routine, a door that's open. Ordinary closeness is the whole point here." },
-  5:  { short: "cares through play and delight", long: "Play, creativity, delight. They need joy to stay in it — help them keep some lightness." },
+  5:  { short: "cares through play and delight", long: "Play, creativity, delight. They need joy to stay in it: help them keep some lightness." },
   6:  { short: "cares by doing the small thing", long: "Care shows up as the quiet errand and the thing fixed before anyone asked. Thank the tiny ones or they go quiet." },
   7:  { short: "cares about the close bond",     long: "They take close bonds seriously and will work to keep them fair. Watch that they don't serve the idea of the bond over the person." },
   8:  { short: "cares all the way, or not",      long: "Real closeness means being changed by another person. They can't do half-hearted, and pretending costs them." },
   9:  { short: "cares what widens them",         long: "They warm to a mind, a place, a belief. Show them something they hadn't considered." },
-  10: { short: "cares what they respect",        long: "Warmth is bound up with esteem. Be someone they can look up to — and be soft with them too." },
+  10: { short: "cares what they respect",        long: "Warmth is bound up with esteem. Be someone they can look up to: and be soft with them too." },
   11: { short: "cares as friend first",          long: "The bond grows out of companionship or it doesn't grow. They need to like you." },
   12: { short: "cares privately, quietly",       long: "Their tenderness runs quiet and they may not say it first. Ask directly; they'll tell you, once." },
 };
@@ -221,4 +222,4 @@ export function houseMeaning(house: HouseKey): HouseMeaning | undefined {
 
 /** Stellium: 3+ bodies in one house or sign. Worth calling out. */
 export const STELLIUM_NOTE =
-  "Three or more planets gathered here. This is where the weight of the chart falls — a concentration of energy that shapes far more of the life than any single placement would.";
+  "Three or more planets gathered here. This is where the weight of the chart falls: a concentration of energy that shapes far more of the life than any single placement would.";

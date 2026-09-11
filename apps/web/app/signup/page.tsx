@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { SignupForm } from "../../components/signup-form";
 
-const TITLE = "Start Free — Galaxia";
+// FOUNDER-REVIEW: rewritten (no U+2014).
+const TITLE = "Start free with Galaxia";
 // FOUNDER-REVIEW: rewritten. Signup collects name, email, and password; birth data is on /welcome.
 const DESCRIPTION =
   "Create your Galaxia account with your name, email, and a password. No credit card. You add birth details after you sign in.";
@@ -15,13 +16,13 @@ export const metadata: Metadata = {
     siteName: "Galaxia",
     type: "website",
     url: "/signup",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   }
 };
 

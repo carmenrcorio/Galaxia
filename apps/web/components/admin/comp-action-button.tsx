@@ -74,8 +74,9 @@ export function CompActionButton({
       transition === "grant"
         ? `Grant comp access to ${who}? This gives permanent access immediately, independent of billing.`
         : projectedAccess
-          ? `Revoke comp access for ${who}? They will keep access — their subscription or trial is still live, independent of the comp.`
-          : `Revoke comp access for ${who}? This will immediately remove access for ${who} — no active subscription or live trial is covering them.`;
+          // FOUNDER-REVIEW: rewritten (no U+2014).
+          ? `Revoke comp access for ${who}? They will keep access: their subscription or trial is still live, independent of the comp.`
+          : `Revoke comp access for ${who}? This will immediately remove access for ${who}: no active subscription or live trial is covering them.`;
     if (!window.confirm(confirmMessage)) return;
 
     setIsSubmitting(true);

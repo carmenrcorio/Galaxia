@@ -24,8 +24,9 @@ interface GroupLite {
 /** Generations Feature 3 preference — mirrors the `profiles.relational_transit_alerts` check constraint. */
 type RelationalTransitAlertsPref = "all" | "major_only" | "off";
 const RELATIONAL_TRANSIT_ALERTS_OPTIONS: { value: RelationalTransitAlertsPref; label: string; description: string }[] = [
-  { value: "all", label: "All transits", description: "Jupiter, Saturn, Uranus, Neptune, and Pluto — every relational transit we find." },
-  { value: "major_only", label: "Major only", description: "Just Saturn, Uranus, and Pluto — skip the lighter Jupiter and Neptune windows." },
+  // FOUNDER-REVIEW: rewritten (no U+2014).
+  { value: "all", label: "All transits", description: "Jupiter, Saturn, Uranus, Neptune, and Pluto: every relational transit we find." },
+  { value: "major_only", label: "Major only", description: "Just Saturn, Uranus, and Pluto. Skip the lighter Jupiter and Neptune windows." },
   { value: "off", label: "Off", description: "No relational transit alerts, in the app or by push." },
 ];
 function isRelationalTransitAlertsPref(value: unknown): value is RelationalTransitAlertsPref {
@@ -209,7 +210,7 @@ export default function SettingsPage() {
   let subscriptionCopy: string;
   if (comped) {
     // FOUNDER-REVIEW: permanent comp access — not a subscription, not a trial.
-    subscriptionCopy = "Permanent access. This account is complimentary — you are not billed.";
+    subscriptionCopy = "Permanent access. This account is complimentary: you are not billed.";
   } else if (subscriptionStatus === "trialing") {
     subscriptionCopy = trialLabel
       ? `Trial ends ${trialLabel}.`
@@ -307,7 +308,7 @@ export default function SettingsPage() {
           })}
         </div>
         <p className="muted" style={{ fontSize: ".74rem", marginTop: 10 }}>
-          Placidus is undefined at polar latitudes (above roughly 66°). If a birth place is inside the polar circles, that chart shows Whole Sign instead — and says so.
+          Placidus is undefined at polar latitudes (above roughly 66°). If a birth place is inside the polar circles, that chart shows Whole Sign instead: and says so.
         </p>
         {houseSystemStatus ? <p className={houseSystemStatus.startsWith("Saved") ? "success" : "error"} style={{ fontSize: ".78rem", marginTop: 8 }}>{houseSystemStatus}</p> : null}
       </section>
@@ -337,7 +338,7 @@ export default function SettingsPage() {
       <section className="glass-card">
         <h2 className="card-title">Generational transit alerts</h2>
         <p className="muted" style={{ marginBottom: 12 }}>
-          "This week" alerts when a slow-moving transit is hitting two or more people in your constellation at once — the sky's dynamic between you, not just what one of you is feeling alone.
+          "This week" alerts when a slow-moving transit is hitting two or more people in your constellation at once: the sky's dynamic between you, not just what one of you is feeling alone.
         </p>
         <div style={{ display: "grid", gap: 8 }}>
           {RELATIONAL_TRANSIT_ALERTS_OPTIONS.map((option) => {
@@ -370,7 +371,7 @@ export default function SettingsPage() {
 
       <section className="glass-card">
         <h2 className="card-title">Privacy</h2>
-        <p className="muted">Your private notes are visible only to you — never shared with the person they're about and never included in shared-space Vela conversations.</p>
+        <p className="muted">Your private notes are visible only to you: never shared with the person they're about and never included in shared-space Vela conversations.</p>
         <p className="muted">Shared spaces require consent from all participants and are blocked when any participant is a minor.</p>
         <p className="muted" style={{ marginTop: 10 }}>
           Export your data or delete your account from{" "}
@@ -387,7 +388,7 @@ export default function SettingsPage() {
       <section className="glass-card">
         <h2 className="card-title">Contact support</h2>
         <p className="muted" style={{ marginBottom: 12 }}>
-          Send us a note — we'll reply to {accountEmail ?? "the email on this account"}.
+          Send us a note: we'll reply to {accountEmail ?? "the email on this account"}.
         </p>
         <div style={{ display: "grid", gap: 10 }}>
           <input
@@ -429,7 +430,7 @@ export default function SettingsPage() {
       <section className="glass-card">
         <h2 className="card-title">Your people ({people.length})</h2>
         {people.length === 0 ? (
-          <p className="muted">No people yet — add yourself and your circle in <a href="/welcome" style={{ color: "var(--gold)" }}>onboarding</a>.</p>
+          <p className="muted">No people yet: add yourself and your circle in <a href="/welcome" style={{ color: "var(--gold)" }}>onboarding</a>.</p>
         ) : null}
         <div style={{ display: "grid", gap: 6 }}>
           {people.map((person) => (

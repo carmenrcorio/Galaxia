@@ -53,12 +53,13 @@ export function day1Email(d: TrialEmailData): RenderedEmail {
   const html = shell(
     p(`Hi ${d.firstName},`) +
       p(`You've added ${d.personName ?? "someone"}. That's a start.`) +
-      p("Galaxia gets more useful with every person you add — a partner, a parent, a sibling, the friend who became family. The comparison, the generational layer, the constellation itself: none of it works with one person in it.") +
+      // FOUNDER-REVIEW: rewritten (no U+2014).
+      p("Galaxia gets more useful with every person you add (a partner, a parent, a sibling, the friend who became family). The comparison, the generational layer, the constellation itself: none of it works with one person in it.") +
       p("The people you have the least information about still belong here. A birth year alone is enough to place someone in your sky.") +
       button("Add someone else →", `${d.siteUrl}/welcome`) +
       p(`Your trial runs through ${d.trialEndDate}. Nothing will be charged before then.`)
   );
-  const text = `Hi ${d.firstName},\n\nYou've added ${d.personName ?? "someone"}. That's a start.\n\nGalaxia gets more useful with every person you add — a partner, a parent, a sibling, the friend who became family. The comparison, the generational layer, the constellation itself: none of it works with one person in it.\n\nThe people you have the least information about still belong here. A birth year alone is enough to place someone in your sky.\n\nAdd someone else: ${d.siteUrl}/welcome\n\nYour trial runs through ${d.trialEndDate}. Nothing will be charged before then.`;
+  const text = `Hi ${d.firstName},\n\nYou've added ${d.personName ?? "someone"}. That's a start.\n\nGalaxia gets more useful with every person you add (a partner, a parent, a sibling, the friend who became family). The comparison, the generational layer, the constellation itself: none of it works with one person in it.\n\nThe people you have the least information about still belong here. A birth year alone is enough to place someone in your sky.\n\nAdd someone else: ${d.siteUrl}/welcome\n\nYour trial runs through ${d.trialEndDate}. Nothing will be charged before then.`;
   return { subject, html, text };
 }
 
@@ -68,11 +69,11 @@ export function day4MultiEmail(d: TrialEmailData): RenderedEmail {
   const html = shell(
     p(`Hi ${d.firstName},`) +
       p(`You've mapped ${d.peopleCount} people. Here's the part most people miss:`) +
-      p(`Open <strong style="color:${CREAM}">Compare</strong>, choose two of them, and read the "what they need from you" section. It's built from their actual placements — where you flow, where you catch, and what each of you is asking for without saying it.`) +
+      p(`Open <strong style="color:${CREAM}">Compare</strong>, choose two of them, and read the "what they need from you" section. It's built from their actual placements: where you flow, where you catch, and what each of you is asking for without saying it.`) +
       p("It's the closest thing Galaxia has to the whole point.") +
       button("Compare two people →", `${d.siteUrl}/app/compare`)
   );
-  const text = `Hi ${d.firstName},\n\nYou've mapped ${d.peopleCount} people. Here's the part most people miss:\n\nOpen Compare, choose two of them, and read the "what they need from you" section. It's built from their actual placements — where you flow, where you catch, and what each of you is asking for without saying it.\n\nIt's the closest thing Galaxia has to the whole point.\n\nCompare two people: ${d.siteUrl}/app/compare`;
+  const text = `Hi ${d.firstName},\n\nYou've mapped ${d.peopleCount} people. Here's the part most people miss:\n\nOpen Compare, choose two of them, and read the "what they need from you" section. It's built from their actual placements: where you flow, where you catch, and what each of you is asking for without saying it.\n\nIt's the closest thing Galaxia has to the whole point.\n\nCompare two people: ${d.siteUrl}/app/compare`;
   return { subject, html, text };
 }
 
@@ -82,11 +83,11 @@ export function day4OneEmail(d: TrialEmailData): RenderedEmail {
   const html = shell(
     p(`Hi ${d.firstName},`) +
       p("Right now your galaxy has one star in it, and almost nothing in Galaxia works with one star.") +
-      p("Add one person — your partner, your mother, your oldest friend — and the app becomes what it's for: a way to understand the people you actually live your life beside.") +
+      p("Add one person (your partner, your mother, your oldest friend) and the app becomes what it's for: a way to understand the people you actually live your life beside.") +
       p("If you don't have their birth time, that's fine. A date works. A year works.") +
       button("Add someone →", `${d.siteUrl}/welcome`)
   );
-  const text = `Hi ${d.firstName},\n\nRight now your galaxy has one star in it, and almost nothing in Galaxia works with one star.\n\nAdd one person — your partner, your mother, your oldest friend — and the app becomes what it's for: a way to understand the people you actually live your life beside.\n\nIf you don't have their birth time, that's fine. A date works. A year works.\n\nAdd someone: ${d.siteUrl}/welcome`;
+  const text = `Hi ${d.firstName},\n\nRight now your galaxy has one star in it, and almost nothing in Galaxia works with one star.\n\nAdd one person (your partner, your mother, your oldest friend) and the app becomes what it's for: a way to understand the people you actually live your life beside.\n\nIf you don't have their birth time, that's fine. A date works. A year works.\n\nAdd someone: ${d.siteUrl}/welcome`;
   return { subject, html, text };
 }
 
@@ -101,14 +102,14 @@ export function day11Email(d: TrialEmailData): RenderedEmail {
   </ul>`;
   const html = shell(
     p(`Hi ${d.firstName},`) +
-      p(`Your free trial of Galaxia ends on ${d.trialEndDate}, three days from now. We never asked for a card, so nothing will be charged — when the trial ends, your galaxy simply pauses until you choose to continue.`) +
+      p(`Your free trial of Galaxia ends on ${d.trialEndDate}, three days from now. We never asked for a card, so nothing will be charged. When the trial ends, your galaxy simply pauses until you choose to continue.`) +
       p("Here's what you've built:") +
       list +
-      p("All of it stays saved. If you continue, it's exactly where you left it — no limits, no upgrade, no second tier.") +
+      p("All of it stays saved. If you continue, it's exactly where you left it. No limits, no upgrade, no second tier.") +
       button("Continue with Galaxia →", `${d.siteUrl}/subscribe`) +
       p("Thank you for trying this.")
   );
-  const text = `Hi ${d.firstName},\n\nYour free trial of Galaxia ends on ${d.trialEndDate}, three days from now. We never asked for a card, so nothing will be charged — when the trial ends, your galaxy simply pauses until you choose to continue.\n\nHere's what you've built:\n- ${d.peopleCount} people in your galaxy\n- ${d.notesCount} private notes, visible only to you\n- ${d.threadsCount} conversations with Vela\n- ${d.groupsCount} constellations you named\n\nAll of it stays saved. If you continue, it's exactly where you left it — no limits, no upgrade, no second tier.\n\nContinue with Galaxia: ${d.siteUrl}/subscribe\n\nThank you for trying this.`;
+  const text = `Hi ${d.firstName},\n\nYour free trial of Galaxia ends on ${d.trialEndDate}, three days from now. We never asked for a card, so nothing will be charged. When the trial ends, your galaxy simply pauses until you choose to continue.\n\nHere's what you've built:\n- ${d.peopleCount} people in your galaxy\n- ${d.notesCount} private notes, visible only to you\n- ${d.threadsCount} conversations with Vela\n- ${d.groupsCount} constellations you named\n\nAll of it stays saved. If you continue, it's exactly where you left it. No limits, no upgrade, no second tier.\n\nContinue with Galaxia: ${d.siteUrl}/subscribe\n\nThank you for trying this.`;
   return { subject, html, text };
 }
 
@@ -118,12 +119,12 @@ export function day14Email(d: TrialEmailData): RenderedEmail {
   const html = shell(
     p(`Hi ${d.firstName},`) +
       p("Your trial has ended and we haven't charged you.") +
-      p(`Everything you built is saved — ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.`) +
+      p(`Everything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.`) +
       button("Pick up where you left off →", `${d.siteUrl}/app`) +
       p("And if it wasn't right for you: would you tell us why? One line is enough. It goes straight to the person who built this.") +
       button("Tell us what was missing", "mailto:support@galaxia.app?subject=What%20was%20missing")
   );
-  const text = `Hi ${d.firstName},\n\nYour trial has ended and we haven't charged you.\n\nEverything you built is saved — ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.\n\nPick up where you left off: ${d.siteUrl}/app\n\nAnd if it wasn't right for you: would you tell us why? One line is enough. It goes straight to the person who built this.\n\nTell us what was missing: support@galaxia.app`;
+  const text = `Hi ${d.firstName},\n\nYour trial has ended and we haven't charged you.\n\nEverything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.\n\nPick up where you left off: ${d.siteUrl}/app\n\nAnd if it wasn't right for you: would you tell us why? One line is enough. It goes straight to the person who built this.\n\nTell us what was missing: support@galaxia.app`;
   return { subject, html, text };
 }
 
@@ -152,7 +153,7 @@ export type EmailHeaders = Record<string, string>;
 export async function sendEmail(to: string, email: RenderedEmail, headers?: EmailHeaders): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
-    console.log(`[emails] RESEND_API_KEY absent — skipping "${email.subject}" to ${to}`);
+    console.log(`[emails] RESEND_API_KEY absent: skipping "${email.subject}" to ${to}`);
     return false;
   }
   const from = process.env.RESEND_FROM ?? "Galaxia <hello@galaxiamea.com>";

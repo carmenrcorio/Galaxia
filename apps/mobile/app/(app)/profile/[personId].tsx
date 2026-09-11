@@ -226,8 +226,9 @@ export default function PersonProfileScreen() {
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Big Three</Text>
-        <Text style={cardBody}>Sun: {sun?.sign ?? "—"}</Text>
-        <Text style={cardBody}>Moon: {moon?.sign ?? "—"}</Text>
+        {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+        <Text style={cardBody}>Sun: {sun?.sign ?? "·"}</Text>
+        <Text style={cardBody}>Moon: {moon?.sign ?? "·"}</Text>
         <Text style={cardBody}>Rising: {rising ?? "Unavailable without exact time/location"}</Text>
       </View>
 
@@ -284,7 +285,7 @@ export default function PersonProfileScreen() {
         </Text>
         {chart.precision === "exact" ? (
           <Text style={[cardBody, { color: tokens.colors.goldSoft }]}>
-            Houses: Uranus {chart.generational.uranusHouse ?? "—"} · Neptune {chart.generational.neptuneHouse ?? "—"} · Pluto {chart.generational.plutoHouse ?? "—"}
+            Houses: Uranus {chart.generational.uranusHouse ?? "·"} · Neptune {chart.generational.neptuneHouse ?? "·"} · Pluto {chart.generational.plutoHouse ?? "·"}
           </Text>
         ) : null}
       </View>

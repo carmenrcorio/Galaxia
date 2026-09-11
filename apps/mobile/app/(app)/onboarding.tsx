@@ -254,7 +254,8 @@ export default function OnboardingScreen() {
       {selfPerson ? (
         <>
           <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>
-            You've already added yourself as {selfPerson.display_name}. Edit your birth data from your chart — no need to add yourself again.
+            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+            You've already added yourself as {selfPerson.display_name}. Edit your birth data from your chart. No need to add yourself again.
           </Text>
           <Link href={`/profile/${selfPerson.id}`} asChild>
             <Pressable style={primaryButtonStyle}>
@@ -265,7 +266,7 @@ export default function OnboardingScreen() {
       ) : (
         <>
           <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>
-            Add your own birth data at any precision. Year-only and date-only stay first-class — timezone is only required for an exact birth time.
+            Add your own birth data at any precision. Year-only and date-only stay first-class. Timezone is only required for an exact birth time.
           </Text>
           <Text style={{ color: tokens.colors.goldSoft }}>
             Plan: {tier === "plus" ? "Galaxia+" : "Free"} · {tier === "plus" ? "unlimited people" : `${peopleLimit} people max`}
@@ -504,7 +505,7 @@ function BirthFields({
 
           {input.precision === "exact" ? (
             <>
-              <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>Birth time (24h) — hour · minute</Text>
+              <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>Birth time (24h): hour · minute</Text>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 <TextInput
                   value={input.hour != null ? String(input.hour) : ""}
@@ -598,7 +599,7 @@ function BirthFields({
       ) : null}
       {input.precision !== "exact" ? (
         <Text style={{ color: tokens.colors.mist2, fontSize: 12, lineHeight: 18 }}>
-          Date-only and year-only charts do not need a timezone — they stay honestly hedged without Ascendant or houses.
+          Date-only and year-only charts do not need a timezone: they stay honestly hedged without Ascendant or houses.
         </Text>
       ) : null}
     </View>

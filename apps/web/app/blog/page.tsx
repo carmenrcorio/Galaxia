@@ -7,8 +7,9 @@ import { CosmicBackground } from "../../components/cosmic-background";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { BLOG_CATEGORIES, getPublishedPosts } from "../../lib/blog";
 
-const TITLE = "Blog — Galaxia";
-const DESCRIPTION = "Guides for reading real birth charts — synastry, generations, and what astrology can and can't actually tell you.";
+// FOUNDER-REVIEW: rewritten (no U+2014).
+const TITLE = "Galaxia Blog";
+const DESCRIPTION = "Guides for reading real birth charts: synastry, generations, and what astrology can and can't actually tell you.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -22,13 +23,13 @@ export const metadata: Metadata = {
     siteName: "Galaxia",
     type: "website",
     url: "/blog",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   }
 };
 
@@ -50,7 +51,7 @@ export default async function BlogIndexPage() {
         <span className="eyebrow">Galaxia blog</span>
         <h1 className="page-title">Guides for the people you love.</h1>
         <p className="lede">
-          How to actually read a chart — starting with the ones for the people already in your life.
+          How to actually read a chart: starting with the ones for the people already in your life.
         </p>
 
         <nav aria-label="Categories" className="blog-tabs">

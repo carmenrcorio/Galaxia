@@ -34,33 +34,34 @@ const COPY = {
   selfEyebrow: "Step 1 · Start with you",
   selfTitle: "Let's place you in the sky first",
   selfLede:
-    "Everything in Galaxia is drawn in relation to you — so you're the first star we plot. This stays completely private; it's your map, for you.",
+    // FOUNDER-REVIEW: rewritten (no U+2014).
+    "Everything in Galaxia is drawn in relation to you, so you're the first star we plot. This stays completely private; it's your map, for you.",
   selfWhyTime:
-    "Your birth time unlocks your Rising sign and your houses — the specific, personal way your chart is yours, not just your Sun sign. Don't know it? That's completely fine. You'll still get your Sun, your Moon, and real, accurate readings — we just leave out the parts a time would decide, rather than guessing them.",
+    "Your birth time unlocks your Rising sign and your houses: the specific, personal way your chart is yours, not just your Sun sign. Don't know it? That's completely fine. You'll still get your Sun, your Moon, and real, accurate readings. We just leave out the parts a time would decide, rather than guessing them.",
   selfSaved: "You're in your sky",
 
   // Step 2 — Your first person (chrome only — fields are AddPersonForm)
   personEyebrow: "Step 2 · Add someone you love",
   personTitle: "Now add someone who matters to you",
   personLede:
-    "A partner, a parent, a best friend, a child, someone you've lost. Galaxia comes alive when it's not just you — this is where you start seeing how two skies meet.",
-  precisionTitle: "Add whatever you actually know — every level gives you something real",
+    "A partner, a parent, a best friend, a child, someone you've lost. Galaxia comes alive when it's not just you. This is where you start seeing how two skies meet.",
+  precisionTitle: "Add whatever you actually know. Every level gives you something real.",
   precisionExact:
-    "Exact birth time: the full picture — their Rising, their houses, and how your two charts line up in fine detail.",
+    "Exact birth time: the full picture. Their Rising, their houses, and how your two charts line up in fine detail.",
   precisionDate:
-    "Just the date: still their Sun, Moon, and every planet — real, accurate readings and a real comparison with you. Only the time-specific parts (Rising, houses) wait until you know more.",
+    "Just the date: still their Sun, Moon, and every planet. Real, accurate readings and a real comparison with you. Only the time-specific parts (Rising, houses) wait until you know more.",
   precisionYear:
-    "Only the year: that's the generational layer — the slow outer planets that shaped their whole era. Even just a birth year places your grandmother in your sky.",
+    "Only the year: that's the generational layer, the slow outer planets that shaped their whole era. Even just a birth year places your grandmother in your sky.",
   precisionNone:
-    "Don't know their birthday yet? Add their name now and fill in the rest whenever you have it — or ask them. Nothing is lost by starting light.",
+    "Don't know their birthday yet? Add their name now and fill in the rest whenever you have it, or ask them. Nothing is lost by starting light.",
 
   // Step 3 — What you got
   doneEyebrow: "Step 3 · Your constellation is live",
-  doneTitle: "That's your sky — here's what you can do with it",
+  doneTitle: "That's your sky. Here's what you can do with it.",
   doneLede:
-    "You've plotted your first stars. From here it only gets richer — every person you add deepens the picture. Here's where to go next:",
+    "You've plotted your first stars. From here it only gets richer. Every person you add deepens the picture. Here's where to go next:",
   pointerChart: "Open a chart to read someone's Sun, Moon, Rising, and placements in plain language.",
-  pointerCompare: "Run a Compare to see how two people's charts actually meet — where it flows and where it catches.",
+  pointerCompare: "Run a Compare to see how two people's charts actually meet: where it flows and where it catches.",
   pointerVela: "Ask Vela, your private guide, anything about the people in your sky. She reads real chart facts, never invents them."
 };
 
@@ -304,7 +305,7 @@ export default function WelcomePage() {
                   onClick={saveSelf}
                 >
                   {savingSelf && <Spinner size={13} color="#1a1206" />}
-                  {savingSelf ? "Placing you…" : "This is me — continue"}
+                  {savingSelf ? "Placing you…" : "This is me. Continue"}
                 </button>
               </section>
             ) : null}
@@ -345,7 +346,7 @@ export default function WelcomePage() {
                         await fetchPeople();
                         setStatus({
                           text: deferred
-                            ? `${displayName} is in your sky — open their profile to add a date, or ask them, whenever you're ready.`
+                            ? `${displayName} is in your sky: open their profile to add a date, or ask them, whenever you're ready.`
                             : `${displayName} is in your constellation. Add another, or continue.`,
                           ok: true
                         });
@@ -414,7 +415,7 @@ export default function WelcomePage() {
               </>
             ) : null}
 
-            {/* ── STEP 3 — What you got ────────────────────────────────────── */}
+            {/* ── STEP 3. What you got ────────────────────────────────────── */}
             {step === 3 ? (
               <>
                 <section className="glass-card fade-in">
@@ -422,7 +423,7 @@ export default function WelcomePage() {
                   <h2 className="card-title" style={{ marginBottom: 8 }}>
                     {COPY.doneTitle}
                   </h2>
-                  {/* FOUNDER-REVIEW: authored onboarding copy — refine voice. */}
+                  {/* FOUNDER-REVIEW: authored onboarding copy: refine voice. */}
                   <p className="muted" style={{ marginBottom: 16 }}>
                     {COPY.doneLede}
                   </p>
@@ -441,7 +442,7 @@ export default function WelcomePage() {
                   ) : null}
 
                   <div style={{ display: "grid", gap: 10 }}>
-                    {/* FOUNDER-REVIEW: authored next-step pointers — refine voice. */}
+                    {/* FOUNDER-REVIEW: authored next-step pointers: refine voice. */}
                     {chartTarget ? (
                       <Link
                         href={`/app/person/${chartTarget.id}`}

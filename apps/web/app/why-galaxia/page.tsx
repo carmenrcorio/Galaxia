@@ -12,9 +12,10 @@ import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { WhyNotSection } from "../../components/marketing/why-not-section";
 import { WhySection } from "../../components/marketing/why-section";
 
-const TITLE = "Why Galaxia — Relationship Intelligence, Not Horoscopes";
+// FOUNDER-REVIEW: rewritten (no U+2014).
+const TITLE = "Why Galaxia: Relationship Intelligence, Not Horoscopes";
 const DESCRIPTION =
-  "Galaxia uses computed astrology — real planetary positions, not sun-sign guesses — to map how you actually connect with the people in your life.";
+  "Galaxia uses computed astrology (real planetary positions, not sun-sign guesses) to map how you actually connect with the people in your life.";
 
 /**
  * Standalone page for the former homepage `#shift` anchor section (see
@@ -41,13 +42,13 @@ export const metadata: Metadata = {
     siteName: "Galaxia",
     type: "website",
     url: "/why-galaxia",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   }
 };
 

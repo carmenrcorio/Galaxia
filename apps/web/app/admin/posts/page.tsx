@@ -102,8 +102,9 @@ export default async function AdminPostsPage() {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  // FOUNDER-REVIEW: rewritten (no U+2014).
+  if (!iso) return "none";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "none";
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }

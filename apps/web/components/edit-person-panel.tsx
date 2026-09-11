@@ -239,8 +239,9 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
     setPassedAt(value);
     setConfirmRemembrance(false);
     setStatus(nextPassed
-      ? "Their light stays in your galaxy — remembered."
-      : "Restored — they're held as present again.");
+      // FOUNDER-REVIEW: rewritten (no U+2014).
+      ? "Their light stays in your galaxy, remembered."
+      : "Restored. They're held as present again.");
     onSaved();
   }
 
@@ -279,7 +280,7 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
               type="button"
               role="radio"
               aria-checked={starColor === null}
-              aria-label="Default — bond colour"
+              aria-label="Default, bond colour"
               onClick={() => setStarColor(null)}
               style={{
                 fontSize: 12,
@@ -447,7 +448,7 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
           {passedAt ? (
             <>
               <p style={{ margin: "0 0 8px", color: "var(--cream)", fontSize: ".9rem", lineHeight: 1.55, fontFamily: "var(--serif)" }}>
-                Remembered — their light is still arriving.
+                Remembered: their light is still arriving.
               </p>
               <p className="muted" style={{ fontSize: ".78rem", lineHeight: 1.55, marginBottom: 12 }}>
                 Their chart stays. They remain in your galaxy and in Compare. You can restore them as present anytime.
@@ -490,7 +491,7 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
           ) : !confirmRemembrance ? (
             <>
               <p className="muted" style={{ fontSize: ".84rem", lineHeight: 1.6, marginBottom: 12 }}>
-                If they&apos;ve passed, you can remember them here. Their chart stays. Their light softens into ancient light on your galaxy — still with you, still comparable.
+                If they&apos;ve passed, you can remember them here. Their chart stays. Their light softens into ancient light on your galaxy: still with you, still comparable.
               </p>
               <button
                 type="button"
@@ -507,7 +508,7 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
                 Remember {displayName.trim() || "them"}?
               </p>
               <p className="muted" style={{ fontSize: ".84rem", lineHeight: 1.6, margin: 0, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
-                Their chart and place in your galaxy stay. On the constellation they&apos;ll shine as ancient light — soft, still arriving. You can reverse this anytime. This is remembrance, not removal.
+                Their chart and place in your galaxy stay. On the constellation they&apos;ll shine as ancient light, soft, still arriving. You can reverse this anytime. This is remembrance, not removal.
               </p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                 <button
@@ -518,7 +519,7 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
                   style={{ gap: 8 }}
                 >
                   {remembranceBusy && <Spinner size={13} color="#1a1206" />}
-                  {remembranceBusy ? "Holding…" : "Yes — remember them"}
+                  {remembranceBusy ? "Holding…" : "Yes. Remember them"}
                 </button>
                 <button type="button" className="pill-link" onClick={() => setConfirmRemembrance(false)}>
                   Not now

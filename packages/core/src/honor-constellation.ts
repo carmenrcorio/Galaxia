@@ -236,8 +236,9 @@ export function honorEdgeFraming(touchesMinor: boolean): {
     kind: "remembrance",
     romantic: false,
     label: touchesMinor
-      ? "Remembrance light — continuity, never romantic"
-      : "Remembrance light — continuity",
+      // FOUNDER-REVIEW: rewritten (no U+2014).
+      ? "Remembrance light: continuity, never romantic"
+      : "Remembrance light: continuity",
   };
 }
 

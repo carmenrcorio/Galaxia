@@ -69,7 +69,8 @@ export default function AddPersonPage() {
             <section className="glass-card fade-in fade-in-delay-1">
               <p className="success" style={{ marginBottom: 12 }}>
                 {lastSaved.deferred
-                  ? `${lastSaved.displayName} is in your sky — you can add birth details whenever you're ready.`
+                  // FOUNDER-REVIEW: rewritten (no U+2014).
+                  ? `${lastSaved.displayName} is in your sky: you can add birth details whenever you're ready.`
                   : `${lastSaved.displayName} is in your constellation.`}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

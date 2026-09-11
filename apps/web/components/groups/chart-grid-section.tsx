@@ -122,7 +122,10 @@ export function ChartGridSection({ members }: ChartGridSectionProps) {
                               {cell.house ? <span className="muted" style={{ fontSize: ".68rem", display: "block" }}>House {cell.house}</span> : null}
                             </span>
                           ) : (
-                            <span className="muted" style={{ fontSize: ".78rem" }}>—</span>
+                            <span className="muted" style={{ fontSize: ".78rem" }}>
+                              {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+                              ·
+                            </span>
                           )}
                         </td>
                       );
@@ -138,7 +141,7 @@ export function ChartGridSection({ members }: ChartGridSectionProps) {
 
       {truncated ? (
         <p className="muted fade-in" style={{ fontSize: ".78rem" }}>
-          Showing the first {MAX_GRID_PEOPLE} members — the grid caps there for readability.
+          Showing the first {MAX_GRID_PEOPLE} members: the grid caps there for readability.
         </p>
       ) : null}
 
@@ -155,7 +158,7 @@ function PatternsSection({ result, totalPeople }: { result: FamilyPatternResult;
   if (!hasAny) {
     return (
       <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>
-        No two of you share a sign in the same placement, and no single element runs the group — this is a chart-wise
+        No two of you share a sign in the same placement, and no single element runs the group: this is a chart-wise
         eclectic bunch. Sometimes that&apos;s the pattern.
       </p>
     );

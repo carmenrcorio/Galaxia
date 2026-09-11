@@ -9,9 +9,10 @@ import { SectionPageIntro } from "../../components/marketing/section-page-intro"
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 
-const TITLE = "Pricing — Galaxia";
+// FOUNDER-REVIEW: rewritten (no U+2014).
+const TITLE = "Galaxia Pricing";
 const DESCRIPTION =
-  "One honest plan. See what Galaxia costs, what's included, and what you can do free — no hidden fees, no per-question charges, no subscription traps.";
+  "One honest plan. See what Galaxia costs, what's included, and what you can do free. No hidden fees, no per-question charges, no subscription traps.";
 
 /**
  * Standalone page for the former homepage `#pricing` anchor section (see
@@ -29,13 +30,13 @@ export const metadata: Metadata = {
     siteName: "Galaxia",
     type: "website",
     url: "/pricing",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   }
 };
 

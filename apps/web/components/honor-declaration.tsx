@@ -142,7 +142,8 @@ export function HonorDeclarationBox({
     setHonorSaving(false);
     setHonorStatus(
       selectedIds.length === 0
-        ? "No one carries their light on the constellation — you can add someone anytime."
+        // FOUNDER-REVIEW: rewritten (no U+2014).
+        ? "No one carries their light on the constellation: you can add someone anytime."
         : "Saved. Their light will reach the people you chose on your constellation."
     );
     onSaved?.();
@@ -178,7 +179,7 @@ export function HonorDeclarationBox({
       >
         <p className="muted" style={{ fontSize: ".75rem", margin: 0, lineHeight: 1.5 }}>
           Choose the living people in your galaxy who hold a thread of continuity with{" "}
-          {person.display_name}. Only what you pick is drawn — nothing is guessed.
+          {person.display_name}. Only what you pick is drawn: nothing is guessed.
           {subjectIsMinor ? " This is remembrance light, never romantic." : ""}
         </p>
 
@@ -186,7 +187,7 @@ export function HonorDeclarationBox({
           <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>Loading…</p>
         ) : candidates.length === 0 ? (
           <p className="muted" style={{ fontSize: ".8rem", margin: 0, lineHeight: 1.5 }}>
-            Add someone living to your galaxy first — then you can connect their light here.
+            Add someone living to your galaxy first. Then you can connect their light here.
           </p>
         ) : (
           <ul

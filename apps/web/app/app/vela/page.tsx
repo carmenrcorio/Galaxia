@@ -294,7 +294,8 @@ export default function VelaPage() {
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { error?: string };
         const msg = res.status === 503
-          ? "Vela isn't available right now — the AI provider may not be configured."
+          // FOUNDER-REVIEW: rewritten (no U+2014).
+          ? "Vela isn't available right now. The AI provider may not be configured."
           : body.error ?? `Vela responded with an error (${res.status}).`;
         setLines(prev => [...prev, { role: "vela", text: msg }]);
         setSending(false); return;
@@ -333,7 +334,7 @@ export default function VelaPage() {
         return next;
       });
     } catch {
-      setLines(prev => [...prev, { role: "vela", text: "Network error — check your connection and try again." }]);
+      setLines(prev => [...prev, { role: "vela", text: "Network error. Check your connection and try again." }]);
     } finally { setSending(false); }
   }
 
@@ -388,7 +389,7 @@ export default function VelaPage() {
               ))}
             </div>
             <p className="muted" style={{ fontSize: ".78rem", marginTop: 6 }}>
-              {mode === "ask" ? "Only you see this conversation." : "Neutral for all — no private notes. Consent required."}
+              {mode === "ask" ? "Only you see this conversation." : "Neutral for all: no private notes. Consent required."}
             </p>
           </div>
 
@@ -465,7 +466,7 @@ export default function VelaPage() {
               </p>
             </div>
           ) : null}
-          {/* One quiet caption for the whole thread — never a per-message line */}
+          {/* One quiet caption for the whole thread: never a per-message line */}
           <p style={{ margin: askingAboutHeader ? "8px 0 0" : 0, fontSize: ".7rem", color: "var(--mist2)" }}>
             {PRIVACY_CAPTION}
           </p>
@@ -479,7 +480,7 @@ export default function VelaPage() {
             </p>
             <p className="muted" style={{ fontSize: ".8rem", marginBottom: 14, maxWidth: "46ch", margin: "0 auto 14px" }}>
               A child is never part of a two-way Vela session. To get parenting guidance about {selectedSubject?.display_name ?? "them"},
-              switch to <strong>Private (ask)</strong> mode — Vela will coach you, and your child never sees the conversation.
+              switch to <strong>Private (ask)</strong> mode. Vela will coach you, and your child never sees the conversation.
             </p>
             <button className="pill-link" onClick={() => setMode("ask")} style={{ fontSize: ".82rem" }}>
               Switch to Private (ask)
@@ -581,7 +582,7 @@ export default function VelaPage() {
             <div className="vela-input-wrap" style={{ marginTop: 12 }}>
               {parentingAsk ? (
                 <p className="muted" style={{ fontSize: ".72rem", marginBottom: 6 }}>
-                  Vela will coach you as the parent — your child won't see this conversation.
+                  Vela will coach you as the parent: your child won't see this conversation.
                 </p>
               ) : null}
               <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>

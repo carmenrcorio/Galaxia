@@ -98,7 +98,8 @@ export default function QuickChartPage() {
         window.history.replaceState(null, "", `/chart?${qs}`);
       }
     } catch {
-      setError("Network error — check your connection and try again.");
+      // FOUNDER-REVIEW: rewritten (no U+2014).
+      setError("Network error. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -145,7 +146,7 @@ export default function QuickChartPage() {
   return (
     <QuickChartShell eyebrow="Quick Chart" title={title} authed={!!viewer.userId}>
       <p className="lede" style={{ marginBottom: 20 }}>
-        Enter a birth date (and time and city, if known) for a real computed natal chart — Big Three, placements, and the wheel. Nothing is saved unless you choose to.
+        Enter a birth date (and time and city, if known) for a real computed natal chart. Big Three, placements, and the wheel. Nothing is saved unless you choose to.
       </p>
 
       <RelatedLinks
@@ -187,7 +188,7 @@ export default function QuickChartPage() {
                 </button>
               )
             ) : null}
-            <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional — shown only to you, never saved or shared)" style={{ borderRadius: 14 }} />
+            <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional: shown only to you, never saved or shared)" style={{ borderRadius: 14 }} />
             <BirthFields input={input} onChange={setInput} />
             <button className="btn-primary" onClick={() => runChart(input)} disabled={loading} style={{ gap: 8, justifySelf: "start" }}>
               {loading && <Spinner size={13} color="#1a1206" />}
@@ -226,7 +227,7 @@ export default function QuickChartPage() {
                   if (p.confident === false) return (
                     <div key={p.body} style={{ display: "flex", gap: 10, alignItems: "center", opacity: .6, padding: "6px 0" }}>
                       <span style={{ width: 20, textAlign: "center" }}>{BODY_GLYPH[p.body] ?? p.body[0]}</span>
-                      <span className="muted" style={{ fontSize: ".82rem" }}>{p.body[0].toUpperCase() + p.body.slice(1)} — sign uncertain, add a birth date to settle it</span>
+                      <span className="muted" style={{ fontSize: ".82rem" }}>{p.body[0].toUpperCase() + p.body.slice(1)}: sign uncertain, add a birth date to settle it</span>
                     </div>
                   );
                   const reading = interpretPlacement(p.body as BodyKey, p.sign as SignKey, { minorSafe: chartMinorSafe });

@@ -52,7 +52,8 @@ export default async function AdminSupportPage() {
         <p className="eyebrow">Admin</p>
         <h1 className="page-title" style={{ fontSize: "1.9rem" }}>Support</h1>
         <p className="muted" style={{ marginTop: 6 }}>
-          In-app requests only — the help@ inbox is not read into this list.{" "}
+          {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+          In-app requests only: the help@ inbox is not read into this list.{" "}
           <a href={HELP_INBOX_MAILTO} style={{ color: "var(--gold)" }}>
             Open the help@ inbox ↗
           </a>
@@ -91,7 +92,7 @@ export default async function AdminSupportPage() {
                       <td>{request.subject}</td>
                       <td style={{ whiteSpace: "pre-wrap", maxWidth: 360, minWidth: 220 }}>{request.body}</td>
                       <td>{formatDateTime(request.created_at)}</td>
-                      <td>{request.handled_at ? formatDateTime(request.handled_at) : "—"}</td>
+                      <td>{request.handled_at ? formatDateTime(request.handled_at) : "none"}</td>
                       <td>
                         <SupportRequestActionButton
                           requestId={request.id}
@@ -115,9 +116,9 @@ export default async function AdminSupportPage() {
 }
 
 function formatDateTime(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "none";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "none";
   const date = d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
   const time = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   return `${date} ${time}`;

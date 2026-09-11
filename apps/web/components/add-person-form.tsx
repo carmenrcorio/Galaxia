@@ -19,7 +19,8 @@ const relationOptions = GALAXY_RELATION_PICKER_OPTIONS;
 const FIELD_COPY = {
   minorLabel: "This person is a minor (under 18)",
   minorExplain:
-    "If you're adding a child, check this. Galaxia keeps guidance about a minor private to you — there's never any two-way AI chat with a child. As a backstop, we also protect anyone whose birth date shows they're under 18 even if this is left unchecked, but checking it makes your intent clear from the start."
+    // FOUNDER-REVIEW: rewritten (no U+2014).
+    "If you're adding a child, check this. Galaxia keeps guidance about a minor private to you: there's never any two-way AI chat with a child. As a backstop, we also protect anyone whose birth date shows they're under 18 even if this is left unchecked, but checking it makes your intent clear from the start."
 };
 
 export type AddPersonSavedInfo = {
@@ -103,7 +104,7 @@ export function AddPersonForm({
       if (showStatus) {
         setStatus({
           text: deferred
-            ? `${savedName} is in your sky — open their profile to add a date, or ask them, whenever you're ready.`
+            ? `${savedName} is in your sky: open their profile to add a date, or ask them, whenever you're ready.`
             : `${savedName} is in your constellation.`,
           ok: true
         });

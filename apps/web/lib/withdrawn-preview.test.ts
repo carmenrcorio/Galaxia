@@ -14,7 +14,7 @@ describe("formatWithdrawnReasonForDisplay", () => {
     const raw =
       "Asserted a confident Cancer Sun for a year-only birth; the Sun sign is uncertain and cannot be determined from a birth year alone. Detected by fabrication audit, 2026-07-10.";
     expect(formatWithdrawnReasonForDisplay(raw)).toBe(
-      "Vela stated a Cancer Sun for a year-only birth — the Sun sign is uncertain and cannot be determined from a birth year alone. That didn't hold against the chart on file, so we withdrew that answer on July 10, 2026."
+      "Vela stated a Cancer Sun for a year-only birth: the Sun sign is uncertain and cannot be determined from a birth year alone. That didn't hold against the chart on file, so we withdrew that answer on July 10, 2026."
     );
   });
 

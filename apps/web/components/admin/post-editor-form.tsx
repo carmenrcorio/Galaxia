@@ -188,7 +188,8 @@ export function PostEditorForm({
 
         <label style={{ display: "grid", gap: 6 }}>
           <span className="muted" style={{ fontSize: ".78rem", fontWeight: 600 }}>
-            Slug <span style={{ opacity: 0.7 }}>— the post will live at /{slug || "…"}</span>
+            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+            Slug <span style={{ opacity: 0.7 }}>: the post will live at /{slug || "…"}</span>
           </span>
           <input
             className="field"

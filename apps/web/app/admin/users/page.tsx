@@ -120,7 +120,8 @@ export default async function AdminUsersPage({
                     const comp = compPillInfo(user.comped);
                     return (
                       <tr key={user.id}>
-                        <td className="admin-table-email-cell">{user.email ?? "—"}</td>
+                        {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+                        <td className="admin-table-email-cell">{user.email ?? "none"}</td>
                         <td>
                           <StatusPill label={status.label} variant={status.variant} />
                         </td>
@@ -178,8 +179,8 @@ function pageHref(page: number, search: string): string {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "none";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "none";
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }

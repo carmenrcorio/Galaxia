@@ -299,9 +299,10 @@ const SIGN_MODALITY: Record<string, "cardinal"|"fixed"|"mutable"> = {
   Gemini:"mutable",Virgo:"mutable",Sagittarius:"mutable",Pisces:"mutable"
 };
 const MODALITY_DOMINANT: Record<string, string> = {
-  cardinal: "Heavy on cardinal signs — they initiate well. Starting is the gift; finishing is the practice.",
-  fixed:    "Heavy on fixed signs — they hold their ground. Persistence is the gift; letting go is the practice.",
-  mutable:  "Heavy on mutable signs — they adapt well. Flexibility is the gift; commitment is the practice.",
+  // FOUNDER-REVIEW: rewritten (no U+2014).
+  cardinal: "Heavy on cardinal signs: they initiate well. Starting is the gift; finishing is the practice.",
+  fixed:    "Heavy on fixed signs: they hold their ground. Persistence is the gift; letting go is the practice.",
+  mutable:  "Heavy on mutable signs: they adapt well. Flexibility is the gift; commitment is the practice.",
 };
 const MODALITY_ABSENT: Record<string, string> = {
   cardinal: "Little cardinal energy. Beginning things may feel like the hard part.",
@@ -522,8 +523,8 @@ export default function PersonProfilePage() {
           const movedList = formatMovedBodies(moved);
           // FOUNDER-REVIEW: authored — chart longitude correction Record body.
           longitudeCorrectionBody = movedList
-            ? `Planet positions were corrected from the birth details already on file — not from a new edit. Bodies that moved: ${movedList}.`
-            : `Planet positions were corrected from the birth details already on file — not from a new edit.`;
+            ? `Planet positions were corrected from the birth details already on file, not from a new edit. Bodies that moved: ${movedList}.`
+            : `Planet positions were corrected from the birth details already on file, not from a new edit.`;
           await supabase.from("notes").insert({
             owner_id: uid,
             about_person: actualId,
@@ -675,10 +676,10 @@ export default function PersonProfilePage() {
           <h1 className="page-title">{person.display_name}</h1>
           {personPassed ? (
             <p className="muted" style={{ fontSize: ".88rem", margin: "4px 0 0", lineHeight: 1.5, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
-              Remembered — their light is still arriving. {person.birth_precision === "none" ? "You can still add birth data when you have it." : ""}
+              Remembered: their light is still arriving. {person.birth_precision === "none" ? "You can still add birth data when you have it." : ""}
             </p>
           ) : (
-            <p className="muted" style={{ fontSize: ".88rem", margin: 0 }}>No birth data yet — their chart is waiting.</p>
+            <p className="muted" style={{ fontSize: ".88rem", margin: 0 }}>No birth data yet: their chart is waiting.</p>
           )}
         </div>
       </div>
@@ -706,7 +707,7 @@ export default function PersonProfilePage() {
           <p className="eyebrow" style={{ marginBottom: 6 }}>Add {person.display_name}&apos;s birth data</p>
           <p className="muted" style={{ fontSize: ".84rem", lineHeight: 1.6 }}>
             A birth year adds their generational sky. A full date adds every planetary sign. An exact time and city
-            unlock houses, the Ascendant, and the precise Moon. Add whatever you have — you can always refine it later.
+            unlock houses, the Ascendant, and the precise Moon. Add whatever you have: you can always refine it later.
           </p>
         </div>
         <EditPersonPanel person={person} userId={userId ?? ""} onSaved={() => loadProfile(userId ?? "")} onDeleted={() => router.push("/app")} />
@@ -771,7 +772,7 @@ export default function PersonProfilePage() {
           <h1 className="page-title">{person.display_name}</h1>
           {personPassed ? (
             <p className="muted" style={{ fontSize: ".84rem", margin: "4px 0 6px", lineHeight: 1.5, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
-              Remembered — their chart stays with you. Their light softens into ancient light on your galaxy.
+              Remembered: their chart stays with you. Their light softens into ancient light on your galaxy.
             </p>
           ) : null}
           {sun ? (
@@ -862,7 +863,7 @@ export default function PersonProfilePage() {
 
       {/* ── Vela has said this about them (B2) ──
           Remembrance pages already expose one Ask Vela entry in RemembranceSpace.
-          Do not mount the empty "Vela on {name}" card there — it reads as a second
+          Do not mount the empty "Vela on {name}" card there: it reads as a second
           entry point even without a CTA. Pins / reopen still render when present. */}
       {showVelaOnThem ? (
         <section id="vela-on-them" className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)", scrollMarginTop: 92 }}>
@@ -887,7 +888,7 @@ export default function PersonProfilePage() {
           ) : (
             <div>
               <p className="muted" style={{ fontSize: ".82rem", marginBottom: 10 }}>
-                Nothing pinned yet. Ask Vela about {person.display_name}, then pin any insight worth keeping — it will live here.
+                Nothing pinned yet. Ask Vela about {person.display_name}, then pin any insight worth keeping: it will live here.
               </p>
               <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".8rem" }}>Ask Vela about {person.display_name}</Link>
             </div>
@@ -951,9 +952,10 @@ export default function PersonProfilePage() {
           ] as { key: string; label: string; sign: string|undefined; body: string|null; house: number|undefined; uncertain: boolean; possibleSigns: string[]|undefined }[]).map(({ key, label, sign, body, house, uncertain, possibleSigns }) => {
             if (!sign) return (
               <div key={key} className="sign-chip" style={{ opacity: .45 }}>
-                <span className="sign-chip__glyph" style={{ color: "var(--mist2)" }}>—</span>
+                {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+                <span className="sign-chip__glyph" style={{ color: "var(--mist2)" }}>·</span>
                 <span className="sign-chip__label">{label}</span>
-                <span className="sign-chip__value">{label === "Rising" ? "Exact time + city needed" : "—"}</span>
+                <span className="sign-chip__value">{label === "Rising" ? "Exact time + city needed" : "·"}</span>
               </div>
             );
             if (uncertain) return (
@@ -962,7 +964,7 @@ export default function PersonProfilePage() {
                 <span className="sign-chip__glyph" style={{ color: "var(--mist2)" }}>?</span>
                 <span className="sign-chip__label">{label}</span>
                 <span className="sign-chip__value">
-                  {possibleSigns?.length ? `Could be ${possibleSigns.join(" or ")}` : "Uncertain"} — a birth date would settle it
+                  {possibleSigns?.length ? `Could be ${possibleSigns.join(" or ")}` : "Uncertain"}: a birth date would settle it
                 </span>
               </div>
             );
@@ -1037,7 +1039,7 @@ export default function PersonProfilePage() {
           })}
         </div>
         {!chart.asc && person.birth_precision === "exact" ? (
-          <p className="muted" style={{ fontSize: ".74rem", marginTop: 10 }}>Rising sign needs a birth city — edit this profile to add one.</p>
+          <p className="muted" style={{ fontSize: ".74rem", marginTop: 10 }}>Rising sign needs a birth city: edit this profile to add one.</p>
         ) : null}
       </section>
 
@@ -1050,7 +1052,7 @@ export default function PersonProfilePage() {
           </button>
         </div>
 
-        {/* Stellium alert — highest structural priority */}
+        {/* Stellium alert: highest structural priority */}
         {stellia.map((s, i) => (
           <div key={i} style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 12, background: "rgba(230,174,108,.07)", border: "1px solid rgba(230,174,108,.25)" }}>
             <p style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--gold)", margin: "0 0 3px" }}>
@@ -1071,13 +1073,13 @@ export default function PersonProfilePage() {
           const safety = { minorSafe: personIsMinor };
           const domain = bodyDomain(bk, safety);
           if (p.confident === false) {
-            // Year-only data: the sign is not known. Say so — never interpret a guess.
+            // Year-only data: the sign is not known. Say so: never interpret a guess.
             return (
               <div key={p.body} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65 }}>
                 <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{gly}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{domain}</div>
-                  <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{p.body.charAt(0).toUpperCase() + p.body.slice(1)} — sign uncertain</div>
+                  <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{p.body.charAt(0).toUpperCase() + p.body.slice(1)}: sign uncertain</div>
                 </div>
                 <span style={{ fontSize: ".76rem", color: "var(--mist2)", fontStyle: "italic", textAlign: "right" }}>
                   {p.possibleSigns?.length ? `Could be ${p.possibleSigns.join(" or ")}` : "Needs a birth date"}
@@ -1193,7 +1195,7 @@ export default function PersonProfilePage() {
         </section>
       ) : null}
 
-      {/* ── Twelve Houses — only when cusps present ── */}
+      {/* ── Twelve Houses: only when cusps present ── */}
       {hasHouses ? (
         <section id="houses" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
@@ -1238,7 +1240,7 @@ export default function PersonProfilePage() {
                   <div style={{ paddingBottom:12,paddingLeft:42,paddingRight:6 }}>
                     <p style={{ fontSize:".82rem",color:"var(--mist)",lineHeight:1.62,margin:"0 0 8px" }}>{hm.long}</p>
                     {occupants.length === 0 ? (
-                      <p style={{ fontSize:".76rem",color:"var(--mist2)",margin:0,fontStyle:"italic" }}>No planets here. An empty house is normal — the themes it describes are present in the life, just not strongly emphasised by birth placement.</p>
+                      <p style={{ fontSize:".76rem",color:"var(--mist2)",margin:0,fontStyle:"italic" }}>No planets here. An empty house is normal: the themes it describes are present in the life, just not strongly emphasised by birth placement.</p>
                     ) : (
                       <div style={{ display:"grid",gap:4 }}>
                         {occupants.map(p => {
@@ -1266,7 +1268,7 @@ export default function PersonProfilePage() {
           <section id="houses" className="glass-card fade-in fade-in-delay-2" style={{ borderStyle: "dashed", opacity: .7, scrollMarginTop: 92 }}>
             <p className="eyebrow" style={{ marginBottom: 6 }}>{enduringEyebrow("The twelve houses")}</p>
             <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>
-              The house layer requires an exact birth time and location. Right now only the sign layer is visible — which tells you HOW each planet behaves, but not WHERE it lives in this person's life.
+              The house layer requires an exact birth time and location. Right now only the sign layer is visible: which tells you HOW each planet behaves, but not WHERE it lives in this person's life.
             </p>
             <p className="muted" style={{ fontSize: ".78rem", marginTop: 8 }}>
               Edit this profile to add a birth time and city, then the houses, Ascendant, and Midheaven will compute.
@@ -1283,13 +1285,13 @@ export default function PersonProfilePage() {
           const data = chart.generational[planet as "uranus"|"neptune"|"pluto"];
           const bk = planet as BodyKey;
           if (data.confident === false) {
-            // The planet changed sign during the birth year — we don't know which side.
+            // The planet changed sign during the birth year: we don't know which side.
             return (
               <div key={planet} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65 }}>
                 <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{BODY_GLYPH[planet] ?? planet[0].toUpperCase()}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{bodyDomain(bk, { minorSafe: personIsMinor })}</div>
-                  <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{planet.charAt(0).toUpperCase() + planet.slice(1)} — sign uncertain</div>
+                  <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{planet.charAt(0).toUpperCase() + planet.slice(1)}: sign uncertain</div>
                 </div>
                 <span style={{ fontSize: ".76rem", color: "var(--mist2)", fontStyle: "italic", textAlign: "right" }}>
                   {data.possibleSigns?.length ? `Could be ${data.possibleSigns.join(" or ")}` : "Changed sign that year"}
@@ -1326,7 +1328,7 @@ export default function PersonProfilePage() {
       <section id="notes" className="glass-card fade-in fade-in-delay-3" style={{ scrollMarginTop: 92 }}>
         <p className="eyebrow" style={{ marginBottom: 4 }}>The record</p>
         <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>
-          Owner-only · never shared. The chart never changes — this is the layer that does: everything you note, pin, and discuss about {person.display_name}, in date order.
+          Owner-only · never shared. The chart never changes: this is the layer that does: everything you note, pin, and discuss about {person.display_name}, in date order.
         </p>
         <textarea className="field field--rect" value={noteDraft} onChange={e => setNoteDraft(e.target.value)} placeholder="Log a private moment, pattern, or thing to remember…" rows={3} style={{ marginBottom: 10 }} />
         <button className="btn-primary" onClick={saveNote} disabled={noteSaving || !noteDraft.trim()} style={{ gap: 8 }}>
@@ -1339,7 +1341,7 @@ export default function PersonProfilePage() {
           </div>
         ) : (
           <p className="muted" style={{ fontSize: ".8rem", marginTop: 12 }}>
-            Nothing recorded yet — notes, saved readings, and Vela conversations about {person.display_name} will gather here.
+            Nothing recorded yet: notes, saved readings, and Vela conversations about {person.display_name} will gather here.
           </p>
         )}
       </section>

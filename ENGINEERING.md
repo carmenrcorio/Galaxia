@@ -158,7 +158,7 @@ This rule exists because the same failure shipped four times:
 
 What this means in code:
 
-- A default that stands in for missing data is only acceptable when the UI says so (e.g. "sign uncertain — could be X or Y", "Whole Sign shown because Placidus is undefined at this latitude").
+- A default that stands in for missing data is only acceptable when the UI says so (e.g. "sign uncertain: could be X or Y", "Whole Sign shown because Placidus is undefined at this latitude").
 - Labels are derived from the data (`chart.houseSystem`, the stored row), never hardcoded strings that assert a method.
 - A lookup or network failure surfaces as an error the user can read — never as an empty result, a zero, or "no results found" for an outage.
 - Uncertainty flags computed by the engine (`confident`, `possibleSigns`, `houseSystemFallbackReason`) must be respected by every surface that renders the data, including what is fed to Vela.
@@ -189,3 +189,21 @@ A `POST`-able route existing under `app/api/cron/*` is not the same as it runnin
 - **`nudge-compute`, `nudge-send`, and `trial-emails` are wired up the same way** — `.github/workflows/nudge-delivery.yml` (`compute` then `send`, `needs: compute`, hourly — see below for why `compute` also runs hourly, not daily) and `.github/workflows/trial-emails.yml` (daily). Every route's success response is already a JSON object with real numeric counts (never a bare `200`); the workflows echo status + body the same way `relational-transits.yml` does.
 - **Why `nudge-compute` runs hourly, not once a day:** `nudge-send`'s own doc comment requires an hourly trigger (`isDueForNudgeSend` narrows each hourly run to the owners whose *local* clock just reached 9am — one UTC cron can't hit "9am local" for every IANA timezone at once). A single once-daily `nudge-compute` run at a fixed UTC time provably cannot precede every timezone's local-9am check (offsets span UTC-12..UTC+14, a 26-hour spread against a 24-hour day — some offset's local-9am always lands before a fixed daily run gets to it). `nudge-compute`'s upsert is idempotent (`onConflict: person_id,date, ignoreDuplicates: true`), so running it every hour alongside `send` closes that gap exactly, at the cost of 23 extra cheap no-op passes a day rather than one real one.
 - Every workflow above needs the same two repository secrets (`GALAXIA_APP_URL`, `CRON_SECRET`) — see the PR/task that added each workflow for the exact names and value formats. A run fails loudly (`::error::`) if either is missing, rather than silently no-op'ing.
+
+---
+
+## 15. U+2014 is banned in authored user-visible copy
+
+**Rule:** Do not put an em dash (U+2014) in copy a person can read. Page titles, meta descriptions, Open Graph alt text, JSON-LD values, email subjects and bodies, marketing components, interpretation libraries, copy-matrix templates, and database-seeded post bodies are all in scope.
+
+Do not "fix" an em dash by swapping it for a hyphen or `" - "`. That is worse prose than the dash. Rewrite the sentence: two sentences, a comma, a colon when the second clause explains the first, parentheses for a real aside, or delete padding. Meaning stays the same; only punctuation and sentence shape change. Tag every rewritten user-visible string `FOUNDER-REVIEW`.
+
+**Exempt (the gate does not fail on these):**
+- Code comments (`//`, `/* */`, JSDoc, JSX `{/* */}`)
+- Tests, test fixtures, and `__tests__/` / `test/` trees
+- Docs, `CHANGELOG.md`, and `changelog.d/` fragments
+
+**CI:** `packages/astro/src/__tests__/no-em-dash-user-copy.test.ts` walks `apps/`, `packages/`, and `supabase/functions/` (`.ts`/`.tsx`/`.js`/`.mjs`/`.jsx`), strips comments, and fails on any remaining U+2014. Fixtures under `packages/astro/src/__tests__/fixtures/em-dash/` prove it fails on a planted dash and passes on a clean file. The older compare-only scanner (`no-em-dash-in-compare-copy.test.ts`) stays; do not weaken it.
+
+Blog post bodies live in `public.posts`. Never edit those rows in the dashboard. A rewrite ships as a new SQL migration (never an edit to an applied file, §2). Any live-DB check of that migration goes behind `assertDisposableDbTarget` against a disposable project, never `eigfvribtntbxyjutsma`.
+

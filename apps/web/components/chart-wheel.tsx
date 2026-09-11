@@ -40,7 +40,8 @@ export const COMPARE_WHEEL_NEEDS_HOUSES =
 
 // FOUNDER-REVIEW — overlay mounted without aspects (call-site bug, not year precision).
 export const OVERLAY_ASPECTS_MISSING_NOTE =
-  "Aspect lines need the compare aspects — none were passed to this wheel.";
+  // FOUNDER-REVIEW: rewritten (no U+2014).
+  "Aspect lines need the compare aspects: none were passed to this wheel.";
 
 export type WheelAspect = {
   from: string;
@@ -250,7 +251,7 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
   if (overlayMissingAspects && !overlayWarnOnce.current) {
     overlayWarnOnce.current = true;
     console.warn(
-      "[ChartWheel] overlayChart was mounted without aspects — synastry lines will not draw. Pass the already-computed Compare aspects."
+      "[ChartWheel] overlayChart was mounted without aspects: synastry lines will not draw. Pass the already-computed Compare aspects."
     );
   }
 
@@ -472,7 +473,7 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
           className="muted"
           style={{ fontSize: ".72rem", marginTop: 8, textAlign: "center", maxWidth: "36ch", marginLeft: "auto", marginRight: "auto", lineHeight: 1.45 }}
         >
-          Aspect lines need a birth date — a year alone can&apos;t place them honestly.
+          Aspect lines need a birth date: a year alone can&apos;t place them honestly.
         </p>
       ) : null}
       {overlayMissingAspects ? (

@@ -18,8 +18,9 @@ export const HOUSE_SYSTEM_LABEL: Record<HouseSystem, string> = {
 };
 
 export const HOUSE_SYSTEM_OPTIONS: Array<{ value: HouseSystem; label: string; description: string }> = [
-  { value: "placidus", label: "Placidus", description: "The default on astro.com and Cafe Astrology — time-based division, uneven house sizes." },
-  { value: "whole", label: "Whole Sign", description: "The oldest system — each house is one full sign, starting from the rising sign." },
+  // FOUNDER-REVIEW: rewritten (no U+2014).
+  { value: "placidus", label: "Placidus", description: "The default on astro.com and Cafe Astrology: time-based division, uneven house sizes." },
+  { value: "whole", label: "Whole Sign", description: "The oldest system: each house is one full sign, starting from the rising sign." },
   { value: "equal", label: "Equal House", description: "Twelve equal 30° houses measured from the exact Ascendant degree." }
 ];
 

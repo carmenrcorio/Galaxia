@@ -132,7 +132,8 @@ export function RemembranceSpace({
           maxWidth: "52ch",
         }}
       >
-        A private space for {person.display_name} — only you see this. Their chart stays with you;
+        {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+        A private space for {person.display_name}. Only you see this. Their chart stays with you;
         nothing here is shared.
       </p>
 
@@ -188,12 +189,12 @@ export function RemembranceSpace({
             ))}
           </ul>
           <p className="muted" style={{ fontSize: ".72rem", margin: "10px 0 0", lineHeight: 1.45 }}>
-            Only what you recorded — year-only and uncertain signs stay hedged. Nothing new is derived here.
+            Only what you recorded: year-only and uncertain signs stay hedged. Nothing new is derived here.
           </p>
         </div>
       ) : (
         <p className="muted" style={{ fontSize: ".8rem", marginBottom: 20, lineHeight: 1.55 }}>
-          No chart data yet — you can still write reflections below.
+          No chart data yet: you can still write reflections below.
         </p>
       )}
 
@@ -203,7 +204,7 @@ export function RemembranceSpace({
         <p className="muted" style={{ fontSize: ".75rem", margin: 0, lineHeight: 1.55 }}>
           Write what you want to hold. Nothing is generated for you.
           {subjectIsMinor
-            ? " Guidance about a young person stays parenting-framed — never romantic."
+            ? " Guidance about a young person stays parenting-framed: never romantic."
             : ""}
         </p>
         <textarea
@@ -270,7 +271,7 @@ export function RemembranceSpace({
         </div>
       ) : (
         <p className="muted" style={{ fontSize: ".8rem", marginTop: 18, lineHeight: 1.55 }}>
-          No reflections yet — when you&apos;re ready, write one above.
+          No reflections yet: when you&apos;re ready, write one above.
         </p>
       )}
 
@@ -288,7 +289,7 @@ export function RemembranceSpace({
       >
         <p className="muted" style={{ fontSize: ".75rem", margin: 0, lineHeight: 1.55 }}>
           Vela is available if you want company with their chart and your own words. Vela never starts
-          the conversation — you open it when you choose.
+          the conversation: you open it when you choose.
         </p>
         <Link
           href={velaHref as never}

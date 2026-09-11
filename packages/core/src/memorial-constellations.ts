@@ -57,7 +57,8 @@ export const MEMORIAL_CONSTELLATIONS = [
     name: "Orion",
     iau: "Ori",
     // FOUNDER-REVIEW: one-line sky description
-    summary: "The hunter — three belt stars between bright shoulders and knees.",
+    // FOUNDER-REVIEW: rewritten (no U+2014).
+    summary: "The hunter: three belt stars between bright shoulders and knees.",
     // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The great hunter, son of Poseidon, who could walk on water. Slain by a scorpion's sting and placed among the stars, still striding across the winter sky with his belt and sword.",
     stars: [
@@ -78,7 +79,7 @@ export const MEMORIAL_CONSTELLATIONS = [
     name: "Lyra",
     iau: "Lyr",
     // FOUNDER-REVIEW: one-line sky description
-    summary: "Vega and a small parallelogram — a compact lyre.",
+    summary: "Vega and a small parallelogram: a compact lyre.",
     // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The lyre of Orpheus, whose music could charm stones, tame beasts, and soften the hearts of the dead. After his death Zeus set his instrument in the sky.",
     stars: [
@@ -97,7 +98,7 @@ export const MEMORIAL_CONSTELLATIONS = [
     name: "Cygnus",
     iau: "Cyg",
     // FOUNDER-REVIEW: one-line sky description
-    summary: "The Northern Cross — wings spread along the Milky Way.",
+    summary: "The Northern Cross: wings spread along the Milky Way.",
     // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The swan. In one telling, Zeus in swan form; in another, the grieving friend of Phaethon who dove again and again into the river for his body until the gods, moved by his loyalty, made him a swan among the stars.",
     stars: [
@@ -170,7 +171,7 @@ export const MEMORIAL_CONSTELLATIONS = [
     name: "Ursa Major",
     iau: "UMa",
     // FOUNDER-REVIEW: one-line sky description
-    summary: "The Plough — seven bright stars of the Great Bear.",
+    summary: "The Plough: seven bright stars of the Great Bear.",
     // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "Callisto, a nymph loved by Zeus and turned into a bear by his jealous wife. Years later her own son nearly hunted her; Zeus lifted them both into the sky to keep them safe together.",
     stars: [
@@ -279,7 +280,7 @@ export const MEMORIAL_CONSTELLATIONS = [
     name: "Corona Borealis",
     iau: "CrB",
     // FOUNDER-REVIEW: one-line sky description
-    summary: "A delicate arc — a northern crown of stars.",
+    summary: "A delicate arc: a northern crown of stars.",
     // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The crown of Ariadne, given by Dionysus. When she died he threw it into the sky, its jewels becoming stars, so their love would be remembered.",
     stars: [
@@ -450,10 +451,10 @@ export function usesMemorialGlyph(person: MemorialGlyphPerson | null | undefined
 export const MEMORIAL_CONSTELLATION_PICKER_COPY = {
   label: "Their constellation",
   helper:
-    "Choose a real sky pattern for them on your galaxy — or leave ancient light, the common path.",
-  noneLabel: "None — ancient light",
+    "Choose a real sky pattern for them on your galaxy, or leave ancient light, the common path.",
+  noneLabel: "None (ancient light)",
   noneHelper:
     "No assigned pattern. They stay as soft ancient light on your constellation.",
   noneMyth:
-    "The light that was already theirs — quiet, still arriving, without a named figure.",
+    "The light that was already theirs: quiet, still arriving, without a named figure.",
 } as const;

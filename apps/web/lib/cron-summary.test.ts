@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accountedFor, cronSummaryResponse, sumSkipCounts } from "./cron-summary";
+import { accountedFor, cronSummaryResponse, isCronTallyMismatch, sumSkipCounts } from "./cron-summary";
 import { assertDisposableDbTarget } from "./test-utils/assert-not-prod";
 
 const DISPOSABLE_URL = "https://abcdefghijklmnopqrst.supabase.co";
@@ -37,8 +37,8 @@ describe("cronSummaryResponse — evaluated must equal sent + sum(skips)", () =>
     const skipped = { noEmail: 0, notDue: 1, alreadySent: 0, noResendKey: 0, sendFailed: 0 };
     const result = cronSummaryResponse({ evaluated: 15, sent: 0, skipped });
     expect(result.status).toBe(500);
-    expect(result.body.ok).toBe(false);
-    if (result.body.ok) throw new Error("expected mismatch");
+    expect(isCronTallyMismatch(result.body)).toBe(true);
+    if (!isCronTallyMismatch(result.body)) throw new Error("expected mismatch");
     expect(result.body.mismatch).toBe(1);
     expect(result.body.evaluated).toBe(15);
     expect(result.body.sent).toBe(0);
@@ -86,8 +86,8 @@ describe("cronSummaryResponse — same invariant for the other four cron skip sh
       usersProcessed: 4,
       rowsWritten: 12
     });
-    expect(result.body.ok).toBe(false);
-    if (result.body.ok) throw new Error("expected mismatch");
+    expect(isCronTallyMismatch(result.body)).toBe(true);
+    if (!isCronTallyMismatch(result.body)) throw new Error("expected mismatch");
     expect(result.body.mismatch).toBe(7);
   });
 
@@ -121,8 +121,8 @@ describe("cronSummaryResponse — same invariant for the other four cron skip sh
       sendFailed: 0
     };
     const result = cronSummaryResponse({ evaluated: 3, sent: 0, skipped, usersProcessed: 0 });
-    expect(result.body.ok).toBe(false);
-    if (result.body.ok) throw new Error("expected mismatch");
+    expect(isCronTallyMismatch(result.body)).toBe(true);
+    if (!isCronTallyMismatch(result.body)) throw new Error("expected mismatch");
     expect(result.body.mismatch).toBe(0);
   });
 
@@ -147,8 +147,8 @@ describe("cronSummaryResponse — same invariant for the other four cron skip sh
       ownersScanned: 7,
       eventsUpserted: 2
     });
-    expect(result.body.ok).toBe(false);
-    if (result.body.ok) throw new Error("expected mismatch");
+    expect(isCronTallyMismatch(result.body)).toBe(true);
+    if (!isCronTallyMismatch(result.body)) throw new Error("expected mismatch");
     expect(result.body.mismatch).toBe(15);
   });
 
@@ -166,8 +166,8 @@ describe("cronSummaryResponse — same invariant for the other four cron skip sh
       skipped: { noTokens: 2, preferenceOff: 1, majorOnlyFiltered: 1, pushFailed: 0 },
       pushed: 1
     });
-    expect(dropped.body.ok).toBe(false);
-    if (dropped.body.ok) throw new Error("expected mismatch");
+    expect(isCronTallyMismatch(dropped.body)).toBe(true);
+    if (!isCronTallyMismatch(dropped.body)) throw new Error("expected mismatch");
     expect(dropped.body.mismatch).toBe(5);
   });
 });

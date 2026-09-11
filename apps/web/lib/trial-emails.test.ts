@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cronSummaryResponse } from "./cron-summary";
+import { cronSummaryResponse, isCronTallyMismatch } from "./cron-summary";
 import {
   classifyTrialEmailRow,
   emptyTrialEmailSkipped,
@@ -179,8 +179,8 @@ describe("tallyTrialEmailRows — invariant holds across every branch", () => {
     };
     const result = cronSummaryResponse(dropped);
     expect(result.status).toBe(500);
-    expect(result.body.ok).toBe(false);
-    if (result.body.ok) throw new Error("expected mismatch");
+    expect(isCronTallyMismatch(result.body)).toBe(true);
+    if (!isCronTallyMismatch(result.body)) throw new Error("expected mismatch");
     expect(result.body.mismatch).toBe(summary.evaluated - 1);
     expect(result.body.evaluated).toBe(13);
   });

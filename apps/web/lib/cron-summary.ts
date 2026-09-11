@@ -36,3 +36,9 @@ export function cronSummaryResponse<T extends CronTally>(
   }
   return { body: { ...summary, ok: false, mismatch: accounted }, status: 500 };
 }
+
+export function isCronTallyMismatch<T extends CronTally>(
+  body: CronSummaryBody<T>
+): body is T & { ok: false; mismatch: number } {
+  return body.ok === false;
+}

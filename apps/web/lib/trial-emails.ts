@@ -77,8 +77,11 @@ export function tallyTrialEmailRows(rows: TrialEmailRowFacts[]): {
   let sent = 0;
   for (const row of rows) {
     const outcome = classifyTrialEmailRow(row);
-    if (outcome.sent) sent += 1;
-    else skipped[outcome.skip] += 1;
+    if (outcome.sent === false) {
+      skipped[outcome.skip] += 1;
+    } else {
+      sent += 1;
+    }
   }
   return { evaluated: rows.length, sent, skipped };
 }

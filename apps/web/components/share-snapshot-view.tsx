@@ -34,6 +34,7 @@ import { DynamicTableSection } from "./dynamic-table-section";
 import { FlowsAndCatchesSection } from "./flows-and-catches-section";
 import { GenerationalSection } from "./generational-section";
 import { NatalSignReveal } from "./natal-sign-reveal";
+import { HousesUnavailableCard } from "./houses-unavailable-card";
 import { QuickChartShell } from "./quick-chart-shell";
 
 function getSign(chart: NatalChart, body: string) {
@@ -65,6 +66,12 @@ function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
             <ChartWheel chart={payload.chart} exportSafe />
           </section>
         ) : null}
+        <HousesUnavailableCard
+          hasHouses={Boolean(payload.chart.cusps && payload.chart.cusps.length === 12)}
+          precision={payload.chart.precision}
+          className="glass-card fade-in"
+          style={{ marginTop: 16 }}
+        />
       </ChartImageExport>
 
       <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>

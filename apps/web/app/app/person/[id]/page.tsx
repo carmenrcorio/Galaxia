@@ -55,6 +55,7 @@ import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { InitialAvatar } from "../../../../components/initial-avatar";
 import { ChartSectionNav } from "../../../../components/chart-section-nav";
+import { HOUSES_UNAVAILABLE_EYEBROW, HousesUnavailableCard } from "../../../../components/houses-unavailable-card";
 import { MemorialTimeline } from "../../../../components/memorial-timeline";
 import { HonorDeclarationBox, HONOR_LIGHT_ANCHOR_ID } from "../../../../components/honor-declaration";
 import { RemembranceSpace } from "../../../../components/remembrance-space";
@@ -735,7 +736,10 @@ export default function PersonProfilePage() {
   const showActiveToday =
     shouldShowLiveTransits(person) &&
     Boolean(dailyNudge && dailyNudge.copy_tier !== "empty_hedge" && dailyNudge.transit_body);
-  const showHousesSection = hasHouses || person.birth_precision !== "year";
+  // Always on: occupancy list when cusps exist, otherwise HousesUnavailableCard
+  // (year, date, and exact-without-place). Year-only used to skip the section
+  // and leave a blank gap.
+  const showHousesSection = true;
   const showPastConversations = archivedThreads.length > 0;
   const showRemembrance = personPassed && !person.is_self && Boolean(userId);
   const showTimeline = shouldShowMemorialTimeline(person, chart);
@@ -1195,7 +1199,7 @@ export default function PersonProfilePage() {
         </section>
       ) : null}
 
-      {/* ── Twelve Houses: only when cusps present ── */}
+      {/* ── Twelve Houses: occupancy list, or the shared unavailable card ── */}
       {hasHouses ? (
         <section id="houses" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
@@ -1262,20 +1266,12 @@ export default function PersonProfilePage() {
             );
           })}
         </section>
-      ) : (
-        // When no houses: show a note explaining what's needed
-        person.birth_precision !== "year" ? (
-          <section id="houses" className="glass-card fade-in fade-in-delay-2" style={{ borderStyle: "dashed", opacity: .7, scrollMarginTop: 92 }}>
-            <p className="eyebrow" style={{ marginBottom: 6 }}>{enduringEyebrow("The twelve houses")}</p>
-            <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>
-              The house layer requires an exact birth time and location. Right now only the sign layer is visible: which tells you HOW each planet behaves, but not WHERE it lives in this person's life.
-            </p>
-            <p className="muted" style={{ fontSize: ".78rem", marginTop: 8 }}>
-              Edit this profile to add a birth time and city, then the houses, Ascendant, and Midheaven will compute.
-            </p>
-          </section>
-        ) : null
-      )}
+      ) : null}
+      <HousesUnavailableCard
+        hasHouses={hasHouses}
+        precision={chart.precision}
+        eyebrow={enduringEyebrow(HOUSES_UNAVAILABLE_EYEBROW)}
+      />
 
       {/* ── Generational layer ── */}
       <section id="generational" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>

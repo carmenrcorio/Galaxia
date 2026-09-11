@@ -26,6 +26,7 @@ import { ChartPdfExport } from "../../components/chart-pdf-export";
 import { ChartWheel } from "../../components/chart-wheel";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { NatalSignReveal } from "../../components/natal-sign-reveal";
+import { HousesUnavailableCard } from "../../components/houses-unavailable-card";
 import { QuickChartShell } from "../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../components/share-link-button";
@@ -206,6 +207,12 @@ export default function QuickChartPage() {
                 <ChartWheel chart={result.chart} exportSafe />
               </section>
             ) : null}
+            <HousesUnavailableCard
+              hasHouses={Boolean(result.chart.cusps && result.chart.cusps.length === 12)}
+              precision={result.chart.precision}
+              className="glass-card fade-in"
+              style={{ marginTop: 16 }}
+            />
           </ChartImageExport>
 
           <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>

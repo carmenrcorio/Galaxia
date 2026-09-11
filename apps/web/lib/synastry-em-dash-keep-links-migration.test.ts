@@ -1,20 +1,18 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { computeReadTimeMinutes } from "./read-time";
 import { assertDisposableDbTarget } from "./test-utils/assert-not-prod";
-
-/** Same formula as `computeReadTimeMinutes` in `lib/blog.ts` (words / 225, ceil). */
-function computeReadTimeMinutes(markdownBody: string): number {
-  const words = markdownBody.trim().split(/\s+/).filter(Boolean).length;
-  if (words === 0) return 1;
-  return Math.max(1, Math.ceil(words / 225));
-}
 
 const DISPOSABLE_URL = "https://abcdefghijklmnopqrst.supabase.co";
 const REPO_ROOT = join(__dirname, "..", "..", "..");
-const MIGRATION = join(
+const KEEP_LINKS = join(
   REPO_ROOT,
   "supabase/migrations/20260911233000_synastry_post_em_dash_keep_links.sql"
+);
+const STRIP = join(
+  REPO_ROOT,
+  "supabase/migrations/20260911230000_synastry_post_strip_reintroduced_em_dash.sql"
 );
 
 function postedBody(sql: string): string {
@@ -25,7 +23,7 @@ function postedBody(sql: string): string {
   return sql.slice(open + "$POST_BODY$".length, close);
 }
 
-describe("synastry em-dash keep-links migration never opens a database", () => {
+describe("synastry em-dash migrations never open a database", () => {
   afterEach(() => {
     delete process.env.ALLOW_LIVE_DB_TESTS_AGAINST;
   });
@@ -37,10 +35,22 @@ describe("synastry em-dash keep-links migration never opens a database", () => {
 });
 
 describe("20260911233000_synastry_post_em_dash_keep_links.sql", () => {
-  const sql = readFileSync(MIGRATION, "utf8");
+  const sql = readFileSync(KEEP_LINKS, "utf8");
+
+  it("is comment-only documentation for the ledger row (no second body UPDATE)", () => {
+    expect(sql).toMatch(/name\s+=\s+synastry_post_em_dash_keep_links/);
+    expect(sql).toContain("DOCUMENTATION ONLY");
+    expect(sql).toContain("synastry_post_strip_reintroduced_em_dash");
+    expect(sql).not.toMatch(/^\s*update\s+public\.posts/im);
+    expect(sql).not.toContain("$POST_BODY$");
+  });
+});
+
+describe("20260911230000_synastry_post_strip_reintroduced_em_dash.sql", () => {
+  const sql = readFileSync(STRIP, "utf8");
   const body = postedBody(sql);
 
-  it("keeps the three internal links and contains no U+2014", () => {
+  it("is the source of truth for the live body: three links, no U+2014", () => {
     expect(sql).toContain("where slug = 'synastry-chart-meaning'");
     expect(body).toContain("](/meet-vela)");
     expect(body).toContain("](/generations)");
@@ -69,8 +79,7 @@ describe("20260911233000_synastry_post_em_dash_keep_links.sql", () => {
     );
   });
 
-  it("stores read_time_minutes matching computeReadTimeMinutes on the payload", () => {
+  it("computes 6 minutes on the live payload (punctuation-only tokens are not words)", () => {
     expect(computeReadTimeMinutes(body)).toBe(6);
-    expect(sql).toMatch(/read_time_minutes\s*=\s*6/);
   });
 });

@@ -40,9 +40,10 @@ describe("interpretSynastryAspect", () => {
     expect(syn.short).toBe(ASPECT_NATURE.sextile.short);
     expect(syn.long).toBe(ASPECT_NATURE.sextile.long);
     const natalPlutoMoon = interpretAspect("pluto", "moon", "square");
+    expect(natalPlutoMoon).not.toBeNull();
     const synSameBody = interpretSynastryAspect("pluto", "pluto", "square");
     expect(synSameBody.short).toBe(ASPECT_NATURE.square.short);
-    expect(synSameBody.short).not.toBe(natalPlutoMoon.short);
+    expect(synSameBody.short).not.toBe(natalPlutoMoon!.short);
   });
 
   it("PASS 1 covers 21 pairs and PASS 2 adds 24 outer pairs (45 x 5 = 225)", () => {

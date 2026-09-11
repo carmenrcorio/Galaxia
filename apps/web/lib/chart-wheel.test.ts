@@ -2,7 +2,7 @@
  * ChartWheel visibility + main biwheel API (#88) composition.
  * No React Testing Library — renderToStaticMarkup is enough for SVG structure.
  */
-import { computeNatalChart, computeSynastry, type NatalChart } from "@galaxia/astro";
+import { computeNatalChart, computeSynastry, selectNatalAspectGeometry, type NatalChart } from "@galaxia/astro";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -28,20 +28,10 @@ const EXACT_B = {
   tzOffsetMin: -420,
 };
 
-/** Mirrors person page natalAspects (orb-sorted, slice 14, no orb < 5 cut). */
+/** Person-page wheel list: shared geometry selector (tightest 14). */
 function personPageNatalAspects(chart: NatalChart): WheelAspect[] {
   if (!chart || chart.precision === "year") return [];
-  const dedupe = new Set<string>();
-  return computeSynastry(chart, chart).aspects
-    .filter((a) => a.from !== a.to)
-    .filter((a) => {
-      const key = [a.from, a.to].sort().join(":") + ":" + a.type;
-      if (dedupe.has(key)) return false;
-      dedupe.add(key);
-      return true;
-    })
-    .sort((a, b) => a.orb - b.orb)
-    .slice(0, 14);
+  return selectNatalAspectGeometry(computeSynastry(chart, chart).aspects);
 }
 
 describe("ChartWheel aspects prop (natal)", () => {

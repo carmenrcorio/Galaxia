@@ -51,8 +51,10 @@ export function CancelSubscription({
         </p>
         {/* Optional, AFTER cancellation — clearly optional */}
         {feedbackSent ? (
-          {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-          <p className="muted" style={{ fontSize: ".84rem" }}>Thank you: that goes straight to the person who built this.</p>
+          <p className="muted" style={{ fontSize: ".84rem" }}>
+            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+            Thank you: that goes straight to the person who built this.
+          </p>
         ) : (
           <div style={{ display: "grid", gap: 8 }}>
             <label className="muted" style={{ fontSize: ".84rem" }}>

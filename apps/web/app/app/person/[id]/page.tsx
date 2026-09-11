@@ -952,9 +952,10 @@ export default function PersonProfilePage() {
           ] as { key: string; label: string; sign: string|undefined; body: string|null; house: number|undefined; uncertain: boolean; possibleSigns: string[]|undefined }[]).map(({ key, label, sign, body, house, uncertain, possibleSigns }) => {
             if (!sign) return (
               <div key={key} className="sign-chip" style={{ opacity: .45 }}>
-                <span className="sign-chip__glyph" style={{ color: "var(--mist2)" }}>. </span>
+                {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+                <span className="sign-chip__glyph" style={{ color: "var(--mist2)" }}>·</span>
                 <span className="sign-chip__label">{label}</span>
-                <span className="sign-chip__value">{label === "Rising" ? "Exact time + city needed" : ". "}</span>
+                <span className="sign-chip__value">{label === "Rising" ? "Exact time + city needed" : "·"}</span>
               </div>
             );
             if (uncertain) return (

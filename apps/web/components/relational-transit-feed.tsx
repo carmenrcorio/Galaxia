@@ -81,7 +81,7 @@ function MemorialMark({ person }: { person: PersonMemorialInfo | undefined }) {
   if (!person?.passed_at) return null;
   if (usesMemorialGlyph(person)) {
     const pattern = getMemorialConstellation(person.memorial_constellation);
-    {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+    // FOUNDER-REVIEW: rewritten (no U+2014).
     if (pattern) return <MemorialConstellationGlyph pattern={pattern} size={14} strokeWidth={1} starRadius={1} title={`${person.display_name}, remembered`} />;
   }
   return <span aria-label={`${person.display_name}, remembered`} style={{ color: "var(--gold-soft)", fontSize: ".7rem" }}>✦</span>;

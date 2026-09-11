@@ -176,7 +176,7 @@ describe("No romantic framing on any honor edge", () => {
     expect(honorEdgeFraming(false)).toEqual({
       kind: "remembrance",
       romantic: false,
-      label: "Remembrance light — continuity",
+      label: "Remembrance light: continuity",
     });
     expect(honorEdgeFraming(true).romantic).toBe(false);
     expect(honorEdgeFraming(true).label).toMatch(/never romantic/i);

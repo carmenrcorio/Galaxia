@@ -111,10 +111,10 @@ function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion,
             <div key={label} className="pdf-chip">
               <span className="pdf-chip-glyph" style={{ color: sign ? `var(--${signElement(sign)})` : undefined }}>
                 {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-                {sign ? SIGN_GLYPH[sign] : "none"}
+                {sign ? SIGN_GLYPH[sign] : "·"}
               </span>
               <span className="pdf-chip-label">{label}</span>
-              <span className="pdf-chip-value">{sign ?? (label === "Rising" ? "Needs time + city" : "none")}</span>
+              <span className="pdf-chip-value">{sign ?? (label === "Rising" ? "Needs time + city" : "·")}</span>
               {reading ? <span className="pdf-chip-reading">{reading}</span> : null}
             </div>
           ))}

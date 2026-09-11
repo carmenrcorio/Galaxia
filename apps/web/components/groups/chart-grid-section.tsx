@@ -122,8 +122,10 @@ export function ChartGridSection({ members }: ChartGridSectionProps) {
                               {cell.house ? <span className="muted" style={{ fontSize: ".68rem", display: "block" }}>House {cell.house}</span> : null}
                             </span>
                           ) : (
-                            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-                            <span className="muted" style={{ fontSize: ".78rem" }}>. </span>
+                            <span className="muted" style={{ fontSize: ".78rem" }}>
+                              {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+                              ·
+                            </span>
                           )}
                         </td>
                       );

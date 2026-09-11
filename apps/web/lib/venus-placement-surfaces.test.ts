@@ -25,7 +25,7 @@ function read(rel: string) {
 
 describe("inventory surfaces — Venus never rendered without minorSafe", () => {
   it("/chart gates via isMinorForSafety and passes chartMinorSafe into lookup + PDF", () => {
-    const src = read("../app/chart/page.tsx");
+    const src = read("../app/chart/quick-chart-page.tsx");
     expect(src).toContain("isMinorForSafety");
     expect(src).toContain("chartMinorSafe");
     expect(src).toContain("interpretPlacement(");

@@ -33,10 +33,10 @@ import { privateEnv } from "../../../../lib/env.server";
  * `daily_nudge_emails_enabled` never gating nudge compute.
  *
  * Same auth/service-role/Node-runtime shape as `../nudge-compute/route.ts`.
- * Scheduling is out-of-band (no committed `vercel.json`, see
- * ENGINEERING.md §2) — point a Vercel dashboard cron job or Supabase
- * `pg_cron` at this route with the same `Authorization: Bearer
- * <CRON_SECRET>` header.
+ * Scheduled from `.github/workflows/relational-transits.yml` (no committed
+ * `vercel.json`, see ENGINEERING.md §2/§14) — GitHub Actions' `schedule:`
+ * cron trigger calls this route over HTTPS with the same `Authorization:
+ * Bearer <CRON_SECRET>` header a Vercel Cron Job would send.
  */
 
 interface ScanPersonRow {

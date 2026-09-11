@@ -27,14 +27,13 @@ export const runtime = "nodejs";
  * copy_resolved are entirely B1's, untouched here.
  *
  * Scheduling: out-of-band only, no committed `vercel.json` (ENGINEERING.md
- * §2). Point an HOURLY Vercel dashboard cron (or Supabase `pg_cron` via
- * `net.http_post`) at this route — a single daily UTC cron cannot hit "9am
+ * §2/§14) — `.github/workflows/nudge-delivery.yml`'s `schedule:` cron
+ * trigger calls this route HOURLY — a single daily UTC cron cannot hit "9am
  * local" for every timezone at once, so each hourly run only processes
  * owners whose local clock just reached the target hour (`isDueForNudgeSend`
- * below). B1's `nudge-compute` must run before this route's send pass needs
- * that owner's rows for the day — schedule compute earlier in the day (or
- * on its own more frequent cadence) than the earliest hourly send pass that
- * could match any timezone's target hour.
+ * below). B1's `nudge-compute` runs first in that same workflow run
+ * (`needs: compute`), also hourly, so today's rows are always written
+ * before this route's send pass needs them for any timezone.
  *
  * Per-owner gates, IN THIS ORDER (the relative order of consent, then
  * minor-exclusion, then lead-selection is the CRITICAL, locked property —

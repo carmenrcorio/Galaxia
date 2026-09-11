@@ -130,3 +130,43 @@ describe("sendEmail — passes custom headers through to the Resend request body
     expect(body).not.toHaveProperty("headers");
   });
 });
+
+describe("sendEmail — From address defaults to the verified galaxiamea.com sending domain", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("defaults `from` to a galaxiamea.com address when RESEND_FROM is unset", async () => {
+    const priorResendFrom = process.env.RESEND_FROM;
+    delete process.env.RESEND_FROM;
+    try {
+      vi.stubEnv("RESEND_API_KEY", "test-key");
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await sendEmail("to@example.com", { subject: "s", html: "<p>hi</p>", text: "hi" });
+
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string);
+      expect(body.from).toContain("@galaxiamea.com");
+      expect(body.from).not.toContain("@galaxia.app");
+    } finally {
+      if (priorResendFrom === undefined) delete process.env.RESEND_FROM;
+      else process.env.RESEND_FROM = priorResendFrom;
+    }
+  });
+
+  it("still honors RESEND_FROM when set (the documented override pattern)", async () => {
+    vi.stubEnv("RESEND_API_KEY", "test-key");
+    vi.stubEnv("RESEND_FROM", "Galaxia <custom@galaxiamea.com>");
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await sendEmail("to@example.com", { subject: "s", html: "<p>hi</p>", text: "hi" });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body.from).toBe("Galaxia <custom@galaxiamea.com>");
+  });
+});

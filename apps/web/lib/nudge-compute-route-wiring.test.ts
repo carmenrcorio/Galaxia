@@ -95,6 +95,25 @@ describe("nudge-compute route — idempotent write, first-write-wins", () => {
   });
 });
 
+describe("nudge-compute route — returns a JSON summary with real numeric counts, never a bare 200", () => {
+  const src = readRoute();
+
+  it("initializes usersProcessed and rowsWritten as numeric counters", () => {
+    expect(src).toMatch(/let\s+usersProcessed\s*=\s*0\s*;/);
+    expect(src).toMatch(/let\s+rowsWritten\s*=\s*0\s*;/);
+  });
+
+  it("returns ok, usersProcessed, rowsWritten, skipped, and evaluated in the success response", () => {
+    expect(src).toMatch(
+      /return NextResponse\.json\(\{\s*ok:\s*true,\s*usersProcessed,\s*rowsWritten,\s*skipped,\s*evaluated:\s*profiles\?\.length\s*\?\?\s*0\s*\}\);/
+    );
+  });
+
+  it("skipped is a real per-owner breakdown (nullTimezone/noPeople), not a placeholder", () => {
+    expect(src).toMatch(/const skipped = \{ nullTimezone: 0, noPeople: 0 \};/);
+  });
+});
+
 describe("nudge-compute route — no email, no consent, no sending (Phase B1 scope)", () => {
   const src = readRoute();
 

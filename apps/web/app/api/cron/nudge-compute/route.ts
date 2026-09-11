@@ -36,11 +36,13 @@ import { privateEnv } from "../../../../lib/env.server";
  * A shipped) are SKIPPED entirely — never given a fabricated UTC day. They
  * get their row the normal way next time they open the app, same as today.
  *
- * Scheduling is deliberately out-of-band: there is no committed
- * `vercel.json` in this repo (see ENGINEERING.md §2). Point a Vercel
- * dashboard cron job or Supabase `pg_cron` (`net.http_post`) at this route;
- * both send/require the same `Authorization: Bearer <CRON_SECRET>` header
- * this route checks.
+ * Scheduled from `.github/workflows/nudge-delivery.yml` (no committed
+ * `vercel.json` in this repo, see ENGINEERING.md §2/§14) — runs hourly,
+ * before `nudge-send` in the same workflow run (`needs: compute`), so that
+ * every IANA timezone's local-9am send pass always finds today's row
+ * already written. GitHub Actions' `schedule:` cron trigger calls this
+ * route over HTTPS with the same `Authorization: Bearer <CRON_SECRET>`
+ * header a Vercel Cron Job would send.
  */
 
 const DAY_MS = 86_400_000;

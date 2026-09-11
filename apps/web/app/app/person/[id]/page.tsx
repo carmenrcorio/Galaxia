@@ -29,6 +29,8 @@ import {
   interpretAspect,
   interpretPlacement,
   interpretRising,
+  selectNatalAspectGeometry,
+  selectNatalAspectReadings,
   type AspectKey,
   type BodyKey,
   type SignKey,
@@ -377,20 +379,23 @@ export default function PersonProfilePage() {
     );
   }, [chart]);
 
-  const natalAspects = useMemo(() => {
+  const { natalAspects, natalAspectReadings } = useMemo(() => {
     // Aspects need real positions. Year-only charts have sampled longitudes
     // (mid-year), so aspect orbs computed from them would be fabricated.
-    if (!chart || chart.precision === "year") return [];
-    const dedupe = new Set<string>();
-    return computeSynastry(chart, chart).aspects
-      .filter(a => a.from !== a.to)
-      .filter(a => { const key = [a.from,a.to].sort().join(":")+":"+a.type; if(dedupe.has(key))return false; dedupe.add(key);return true; })
-      .sort((a, b) => a.orb - b.orb)
-      .slice(0, 14);
+    // Geometry list (wheel): tightest 14, authored or not. Reading list:
+    // authored-only so ASPECT_NATURE never occupies a reading slot.
+    if (!chart || chart.precision === "year") {
+      return { natalAspects: [] as ReturnType<typeof computeSynastry>["aspects"], natalAspectReadings: [] as ReturnType<typeof computeSynastry>["aspects"] };
+    }
+    const raw = computeSynastry(chart, chart).aspects;
+    return {
+      natalAspects: selectNatalAspectGeometry(raw),
+      natalAspectReadings: selectNatalAspectReadings(raw),
+    };
   }, [chart]);
 
   // Defined here (not with the other toggles above) because it must close over
-  // the CURRENT natalAspects. When it was a useCallback with an empty dep array
+  // the CURRENT natalAspectReadings. When it was a useCallback with an empty dep array
   // declared before natalAspects, it captured the first render's value — which
   // is [] while the chart is still loading — so "Expand all" flipped its label
   // but never added any asp-* keys to openRows (the rows never opened).
@@ -398,25 +403,25 @@ export default function PersonProfilePage() {
     setAspectsAllOpen(open);
     setOpenRows(prev => {
       const next = new Set(prev);
-      natalAspects.forEach((a, idx) => {
+      natalAspectReadings.forEach((a, idx) => {
         const k = `asp-${a.from}-${a.to}-${idx}`;
         if (open) next.add(k); else next.delete(k);
       });
       return next;
     });
-  }, [natalAspects]);
+  }, [natalAspectReadings]);
 
-  // Per-planet aspect map (for expanded placement rows)
+  // Per-planet aspect map (for expanded placement rows): authored readings only.
   const aspectsByBody = useMemo(() => {
-    const map = new Map<string, typeof natalAspects>();
-    for (const a of natalAspects) {
+    const map = new Map<string, typeof natalAspectReadings>();
+    for (const a of natalAspectReadings) {
       for (const body of [a.from, a.to]) {
         if (!map.has(body)) map.set(body, []);
         map.get(body)!.push(a);
       }
     }
     return map;
-  }, [natalAspects]);
+  }, [natalAspectReadings]);
 
   /** Detect stellia: 3+ bodies in same house OR same sign (known signs only) */
   const stellia = useMemo(() => {
@@ -744,7 +749,7 @@ export default function PersonProfilePage() {
     hasWheel: true,
     hasBigThree: true,
     hasPlacements: true,
-    hasAspects: natalAspects.length > 0,
+    hasAspects: natalAspectReadings.length > 0,
     hasHouses: showHousesSection,
     hasGenerational: true,
     hasRecord: true,
@@ -967,10 +972,14 @@ export default function PersonProfilePage() {
             const houseR = (body && house && hasHouses)
               ? (() => { const hr = interpretHouse(normaliseBody(body), house as HouseKey, safety); const hm = houseMeaning(house as HouseKey); return hm && hr.long ? { houseName: hm.name, houseDomain: hm.domain, long: hr.long } : null; })()
               : null;
-            const bodyAspects = body ? (aspectsByBody.get(body)?.map(a => ({
-              from: a.from, to: a.to, type: a.type, orb: a.orb, tight: a.orb < 2,
-              short: interpretAspect(normaliseBody(a.from), normaliseBody(a.to), normaliseAspect(a.type)).short
-            })) ?? []) : [];
+            const bodyAspects = body ? (aspectsByBody.get(body)?.map(a => {
+              const reading = interpretAspect(normaliseBody(a.from), normaliseBody(a.to), normaliseAspect(a.type));
+              if (!reading) return null;
+              return {
+                from: a.from, to: a.to, type: a.type, orb: a.orb, tight: a.orb < 2,
+                short: reading.short
+              };
+            }).filter((row): row is NonNullable<typeof row> => row !== null) ?? []) : [];
             const isOpen = openRows.has(key);
             return (
               <div key={key} style={{ borderRadius: 12, border: `1px solid ${isOpen ? "rgba(230,174,108,.22)" : "rgba(255,255,255,.06)"}`, background: "rgba(255,255,255,.025)", overflow: "hidden" }}>
@@ -1081,10 +1090,14 @@ export default function PersonProfilePage() {
           const houseR = (p.house && hasHouses)
             ? (() => { const hr = interpretHouse(bk, p.house as HouseKey, safety); const hm = houseMeaning(p.house as HouseKey); return hm && hr.long ? { houseName: hm.name, houseDomain: hm.domain, long: hr.long } : null; })()
             : null;
-          const bodyAspects = (aspectsByBody.get(p.body) ?? []).map(a => ({
-            from: a.from, to: a.to, type: a.type, orb: a.orb, tight: a.orb < 2,
-            short: interpretAspect(normaliseBody(a.from), normaliseBody(a.to), normaliseAspect(a.type)).short
-          }));
+          const bodyAspects = (aspectsByBody.get(p.body) ?? []).flatMap(a => {
+            const reading = interpretAspect(normaliseBody(a.from), normaliseBody(a.to), normaliseAspect(a.type));
+            if (!reading) return [];
+            return [{
+              from: a.from, to: a.to, type: a.type, orb: a.orb, tight: a.orb < 2,
+              short: reading.short
+            }];
+          });
           const rowKey = `pl-${p.body}`;
           const isGen  = GENERATIONAL.includes(bk);
           return (
@@ -1146,19 +1159,20 @@ export default function PersonProfilePage() {
       </section>
 
       {/* ── Key aspects ── */}
-      {natalAspects.length > 0 ? (
+      {natalAspectReadings.length > 0 ? (
         <section id="aspects" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <p className="eyebrow" style={{ margin: 0 }}>{enduringEyebrow("Key aspects")}</p>
             <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllAspects(!aspectsAllOpen)}>{aspectsAllOpen ? "Collapse all" : "Expand all"}</button>
           </div>
           <p className="muted" style={{ fontSize: ".72rem", marginBottom: 10 }}>Gold border = tight (&lt; 2°) · tightest first</p>
-          {natalAspects.map((a, idx) => {
+          {natalAspectReadings.map((a, idx) => {
             const tight = a.orb < 2, mid = a.orb < 4;
             const cls = tight ? "aspect-tight" : mid ? "aspect-mid" : "aspect-loose";
             const aspGlyph = ASPECT_GLYPH[a.type] ?? a.type[0];
             const bkA = normaliseBody(a.from), bkB = normaliseBody(a.to), ak = normaliseAspect(a.type);
             const reading = interpretAspect(bkA, bkB, ak);
+            if (!reading) return null;
             const rowKey = `asp-${a.from}-${a.to}-${idx}`;
             const isOpen = openRows.has(rowKey);
             return (

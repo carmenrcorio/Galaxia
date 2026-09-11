@@ -248,6 +248,10 @@ export const RISING: Record<SignKey, Reading> = {
 /** Aspect readings: what the geometry does to a bond. */
 export type AspectKey = "conjunction" | "sextile" | "square" | "trine" | "opposition";
 
+/**
+ * Per-type texture only. Never a stand-in for a missing pair reading.
+ * Synastry same-body misses still consult this; natal reading slots do not.
+ */
 export const ASPECT_NATURE: Record<AspectKey, { tone: "flow" | "friction" | "fusion"; short: string; long: string }> = {
   conjunction: { tone: "fusion",   short: "fused into one charge", long: "These two forces don't take turns; they move as one. Powerful, and hard to see clearly from inside." },
   sextile:     { tone: "flow",     short: "an easy, available talent", long: "It works when they reach for it, and it sits idle when they don't. A door left unlocked." },
@@ -256,14 +260,113 @@ export const ASPECT_NATURE: Record<AspectKey, { tone: "flow" | "friction" | "fus
   opposition:  { tone: "friction", short: "a balancing act, pulled two ways", long: "They swing between these poles and mistake one for the enemy. Integration, not victory, is the way through." },
 };
 
-/** Named readings for the pairs that matter most in a relationship. */
+/**
+ * NATAL ASPECT COVERAGE (locked by natalAspectCoverage(); the test fails if
+ * these numbers drift from the table below).
+ * Coverage lock: authored=38 possible=225
+ *
+ * 18 cells shipped with the original table. Batch 1 adds 20 cells in
+ * production-render frequency order (FOUNDER-REVIEW on each new string),
+ * then stops. Remaining unauthored cells never render in a reading slot.
+ */
+export const NATAL_ASPECT_BODIES: BodyKey[] = [
+  "sun", "moon", "mercury", "venus", "mars",
+  "jupiter", "saturn", "uranus", "neptune", "pluto",
+];
+export const NATAL_ASPECT_TYPES: AspectKey[] = [
+  "conjunction", "sextile", "square", "trine", "opposition",
+];
+
+/** Named readings for specific natal pairs. Unauthored cells are omitted, never filled. */
 const PAIR = (a: BodyKey, b: BodyKey) => [a, b].sort().join("-");
+
+export interface AspectCoverage {
+  authored: number;
+  possible: number;
+  unauthored: string[];
+}
+
+/** Authored / possible / missing keys for the natal ASPECT_PAIR table. */
+export function natalAspectCoverage(): AspectCoverage {
+  const unauthored: string[] = [];
+  let authored = 0;
+  for (let i = 0; i < NATAL_ASPECT_BODIES.length; i++) {
+    for (let j = i + 1; j < NATAL_ASPECT_BODIES.length; j++) {
+      const key = PAIR(NATAL_ASPECT_BODIES[i]!, NATAL_ASPECT_BODIES[j]!);
+      for (const aspect of NATAL_ASPECT_TYPES) {
+        if (ASPECT_PAIR[key]?.[aspect]) authored += 1;
+        else unauthored.push(`${key}:${aspect}`);
+      }
+    }
+  }
+  const possible =
+    (NATAL_ASPECT_BODIES.length * (NATAL_ASPECT_BODIES.length - 1) / 2) *
+    NATAL_ASPECT_TYPES.length;
+  return { authored, possible, unauthored };
+}
+
+export function hasAuthoredNatalAspect(a: BodyKey, b: BodyKey, aspect: AspectKey): boolean {
+  return Boolean(ASPECT_PAIR[PAIR(a, b)]?.[aspect]);
+}
+
+export interface NatalAspectHit {
+  from: string;
+  to: string;
+  type: string;
+  orb: number;
+}
+
+function dedupeNatalAspects<T extends NatalAspectHit>(aspects: T[]): T[] {
+  const distinct = aspects
+    .filter((a) => a.from.toLowerCase() !== a.to.toLowerCase())
+    .slice()
+    .sort((a, b) => a.orb - b.orb);
+  const seen = new Set<string>();
+  const unique: T[] = [];
+  for (const a of distinct) {
+    const pair = [a.from.toLowerCase(), a.to.toLowerCase()].sort().join("-");
+    const key = `${pair}:${a.type.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(a);
+  }
+  return unique;
+}
+
+/** Tightest distinct natal aspects for the wheel. Does not consult ASPECT_PAIR. */
+export function selectNatalAspectGeometry<T extends NatalAspectHit>(
+  aspects: T[],
+  limit = 14
+): T[] {
+  return dedupeNatalAspects(aspects).slice(0, limit);
+}
+
+/**
+ * Reading rows for Key aspects / placement expand. Authored cells only,
+ * tightest first, no padding. A shorter list is the product working.
+ */
+export function selectNatalAspectReadings<T extends NatalAspectHit>(
+  aspects: T[],
+  limit = 14
+): T[] {
+  return dedupeNatalAspects(aspects)
+    .filter((a) =>
+      hasAuthoredNatalAspect(
+        a.from.toLowerCase() as BodyKey,
+        a.to.toLowerCase() as BodyKey,
+        a.type.toLowerCase() as AspectKey
+      )
+    )
+    .slice(0, limit);
+}
 
 export const ASPECT_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> = {
   [PAIR("sun", "moon")]: {
     conjunction: { short: "what they want and what they need agree", long: "Their identity and their emotional needs point the same way, which makes them coherent and a little unexamined." },
     square:      { short: "wants one thing, needs another", long: "What makes them proud isn't what makes them safe, and they will keep choosing the first. Ask what they need, not what they want." },
     opposition:  { short: "at odds with themselves", long: "Their public self and private self were built in different rooms. Don't take the contradiction personally; it predates you." },
+    // FOUNDER-REVIEW: batch 1, rank 7 (moon-sun trine).
+    trine:       { short: "self and feeling point the same way, easily", long: "Who they are and what they need do not fight. That ease is a real gift, and it can hide from them. Ask how they are, not just how they are doing." },
   },
   [PAIR("moon", "venus")]: {
     conjunction: { short: "loves the way they feel", long: "Affection and emotional need are the same instinct in them. Withdrawing love is felt as withdrawing safety." },
@@ -274,10 +377,16 @@ export const ASPECT_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> = 
     conjunction: { short: "desire and affection, one fire", long: "They don't separate wanting from loving. It's intense, and it burns through anything lukewarm." },
     square:      { short: "wants what unsettles them", long: "Attraction and comfort pull opposite ways here. The tension is real chemistry and also real trouble." },
     opposition:  { short: "chases what it can't hold", long: "They're drawn to what resists them. Name the pattern out loud and it loosens." },
+    // FOUNDER-REVIEW: batch 1, rank 19 (mars-venus sextile).
+    sextile:     { short: "warmth and drive can work together", long: "Affection and get-up-and-go sit in easy reach of each other. It takes a little intention to use; when they do, care looks like showing up and doing the thing." },
   },
   [PAIR("mars", "moon")]: {
     square:      { short: "anger sits close to hurt", long: "The heat comes up fast because the feeling did. The fight is almost never about the thing." },
     conjunction: { short: "feels it and acts on it, instantly", long: "No gap between the emotion and the response. Give them a beat before they speak and they'll thank you." },
+    // FOUNDER-REVIEW: batch 1, rank 10 (mars-moon sextile).
+    sextile:     { short: "hurt can move into action when they let it", long: "The feeling and the drive can work together here if they reach for it. A walk, a task, a clean sentence of anger all help more than sitting on it." },
+    // FOUNDER-REVIEW: batch 1, rank 18 (mars-moon trine).
+    trine:       { short: "feeling and drive move as one", long: "They can act on what they feel without a long translation. That is a gift in a crisis and a way to skip the conversation. Invite the sentence before the action when the stakes are someone else's heart." },
   },
   [PAIR("mercury", "moon")]: {
     square:      { short: "can't say what they feel", long: "The words and the feeling live in different rooms, so they go quiet or clinical under pressure. Ask in writing." },
@@ -286,24 +395,82 @@ export const ASPECT_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> = 
   [PAIR("saturn", "moon")]: {
     square:      { short: "learned not to need", long: "Someone taught them early that needing was unsafe, so they manage instead of asking. Offer before they ask; they won't ask." },
     conjunction: { short: "carries the feeling alone", long: "Emotion arrives with a weight and a duty attached. Being allowed to be a mess is the most generous thing you can give them." },
+    // FOUNDER-REVIEW: batch 1, rank 12 (moon-saturn opposition).
+    opposition:  { short: "need on one side, duty on the other", long: "They swing between wanting to be held and insisting they can manage. Both are real. Offer care without making them ask, then let them keep their dignity." },
   },
   [PAIR("saturn", "venus")]: {
     square:      { short: "believes love must be earned", long: "They work for affection they've already got. Say it unprompted, when they've done nothing, and watch it land." },
   },
   [PAIR("pluto", "moon")]: {
     square:      { short: "feelings arrive as weather systems", long: "Emotion comes with an intensity that frightens even them. Don't fear it, and don't try to manage it for them." },
+    // FOUNDER-REVIEW: batch 1, rank 4 (moon-pluto conjunction).
+    conjunction: { short: "feeling arrives at full intensity", long: "Emotion does not arrive in sips. They live at a depth that can scare people who wanted something lighter. Stay with them in it rather than trying to turn the volume down." },
   },
   [PAIR("jupiter", "sun")]: {
     conjunction: { short: "generous, expansive, easy to like", long: "Life gives them a little more room than it gives others, and they mostly share it." },
+    // FOUNDER-REVIEW: batch 1, rank 17 (jupiter-sun opposition).
+    opposition:  { short: "the self and the bigger life pull apart", long: "They can feel torn between staying themselves and becoming larger. The job is not to pick a winner. Ask which side has been doing all the talking lately." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 1 (neptune-pluto sextile). Cohort weather; do not overclaim as a private talent.
+  [PAIR("neptune", "pluto")]: {
+    sextile: { short: "dream and overhaul in easy conversation", long: "The era they grew up in taught them that ideals and deep change can sit side by side. This is cohort weather, not a private talent; treat it as the air they breathe, and ask how it shows up in them specifically." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 2 (mercury-venus conjunction).
+  [PAIR("mercury", "venus")]: {
+    conjunction: { short: "kindness in the way they speak", long: "How they talk and how they care are the same motion. A harsh word from you lands as withdrawn affection, so say the true thing gently." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 3 (mars-mercury square).
+  [PAIR("mars", "mercury")]: {
+    square: { short: "words come out sharper than they meant", long: "They think by arguing, and the heat arrives before the sentence is finished. Give them a chance to rephrase; the first version is rarely the one they meant to keep." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 5 (pluto-uranus sextile). Cohort weather with a personal tell.
+  [PAIR("pluto", "uranus")]: {
+    sextile: { short: "change and overhaul that cooperate", long: "Their generation learned that shaking the old structure and transforming it can work together. Name the personal version: where they break a rule in order to go deeper, not just to be different." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 6 (neptune-uranus conjunction). Cohort weather.
+  [PAIR("neptune", "uranus")]: {
+    conjunction: { short: "the dream and the break arrive together", long: "They came up in a cohort that fused idealism with rupture. The personal tell is a sudden softness or a sudden exit that feels like both. Ask which one they actually needed." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 8 (mercury-sun conjunction).
+  [PAIR("mercury", "sun")]: {
+    conjunction: { short: "they become themselves by saying it", long: "Identity and voice occupy the same room. They need to talk a thing through to know what they think, so silence from you can feel like being erased. Let them hear their own mind out loud." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 9 (jupiter-moon conjunction).
+  [PAIR("jupiter", "moon")]: {
+    conjunction: { short: "feeling comes with extra room", long: "Their emotional life tends to open rather than contract. They forgive easily and may over-give. Let them be large, and also ask what they need back." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 11 (moon-neptune trine).
+  [PAIR("moon", "neptune")]: {
+    trine: { short: "feeling and imagining share a channel", long: "They pick up the mood in a room before anyone names it, and they can drown in it. Help them tell which feeling is theirs and which they borrowed." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 13 (neptune-saturn square).
+  [PAIR("neptune", "saturn")]: {
+    square: { short: "structure scrapes against the fog", long: "They try to make a plan of something that will not sit still, or they dissolve a plan that was actually working. Name the two jobs: one part of them needs a container, the other needs mystery. Give each a turn." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 14 (neptune-sun conjunction).
+  [PAIR("neptune", "sun")]: {
+    conjunction: { short: "selfhood with soft edges", long: "They become themselves through empathy, art, or a cause, and they can lose the outline of who they are inside it. Ask them to say the simple I-want, even if it feels small." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 15 (pluto-venus square). Care-framed, family-safe.
+  [PAIR("pluto", "venus")]: {
+    square: { short: "care comes with high stakes", long: "Affection is never casual here. They attach deeply and fear the loss of it. Steady, undramatic loyalty lands better than intensity that matches theirs." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 16 (jupiter-saturn sextile).
+  [PAIR("jupiter", "saturn")]: {
+    sextile: { short: "growth that can take a real shape", long: "The part of them that wants more and the part that wants a plan can actually talk to each other. Help them pick one expansion that has a container, not twenty that have none." },
+  },
+  // FOUNDER-REVIEW: batch 1, rank 20 (pluto-saturn trine).
+  [PAIR("pluto", "saturn")]: {
+    trine: { short: "endurance that can actually transform something", long: "They can stay with a hard change long enough for it to finish. The risk is making endurance the whole personality. Ask what they are allowing to end, not only what they are holding." },
   },
 };
 
-/** Resolve a reading for a specific aspect between two bodies. */
-export function interpretAspect(a: BodyKey, b: BodyKey, aspect: AspectKey): Reading {
-  const named = ASPECT_PAIR[PAIR(a, b)]?.[aspect];
-  if (named) return named;
-  const nature = ASPECT_NATURE[aspect];
-  return { short: nature.short, long: nature.long };
+/**
+ * Resolve a natal pair reading. Returns null when the cell is unauthored.
+ * Callers must not invent a substitute. ASPECT_NATURE is not a natal reading.
+ */
+export function interpretAspect(a: BodyKey, b: BodyKey, aspect: AspectKey): Reading | null {
+  return ASPECT_PAIR[PAIR(a, b)]?.[aspect] ?? null;
 }
 
 /**

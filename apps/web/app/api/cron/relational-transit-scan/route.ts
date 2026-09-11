@@ -9,6 +9,7 @@ import {
 } from "@galaxia/astro";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
+import { cronSummaryResponse } from "../../../../lib/cron-summary";
 
 /**
  * Server-side daily relational-transit scan job (Generations Feature 3).
@@ -142,5 +143,12 @@ async function handle(req: Request) {
     if (!error) eventsUpserted += data?.length ?? rows.length;
   }
 
-  return NextResponse.json({ ok: true, ownersScanned, eventsUpserted, skipped, evaluated: profiles?.length ?? 0 });
+  const { body, status } = cronSummaryResponse({
+    evaluated: profiles?.length ?? 0,
+    sent: ownersScanned,
+    skipped,
+    ownersScanned,
+    eventsUpserted
+  });
+  return NextResponse.json(body, { status });
 }

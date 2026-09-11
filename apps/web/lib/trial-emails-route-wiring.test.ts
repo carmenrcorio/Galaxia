@@ -39,16 +39,28 @@ describe("trial-emails route — fails closed like every other cron route", () =
 describe("trial-emails route — returns a JSON summary with real numeric counts, never a bare 200", () => {
   const src = readRoute();
 
-  it("returns ok, sent (per-kind numeric counts), skipped, and evaluated in the success response", () => {
-    expect(src).toMatch(/return NextResponse\.json\(\{\s*ok:\s*true,\s*sent,\s*skipped,\s*evaluated:\s*profiles\?\.length\s*\?\?\s*0\s*\}\);/);
+  it("returns the summary through cronSummaryResponse so a lost row fails closed", () => {
+    expect(src).toMatch(/from\s*"\.\.\/\.\.\/\.\.\/\.\.\/lib\/cron-summary"/);
+    expect(src).toMatch(/cronSummaryResponse\(\{\s*evaluated:\s*profiles\?\.length\s*\?\?\s*0,\s*sent,\s*skipped\s*\}\)/);
+    expect(src).toMatch(/return NextResponse\.json\(body,\s*\{\s*status\s*\}\)/);
   });
 
-  it("sent is a real per-kind counter record, initialized empty (never a placeholder string)", () => {
-    expect(src).toMatch(/const sent:\s*Record<string,\s*number>\s*=\s*\{\};/);
-    expect(src).toMatch(/sent\[kind\]\s*=\s*\(sent\[kind\]\s*\?\?\s*0\)\s*\+\s*1;/);
+  it("sent is a numeric counter (never a sparse per-kind object that can look empty on a real send)", () => {
+    expect(src).toMatch(/let sent = 0;/);
+    expect(src).toMatch(/sent \+= 1;/);
   });
 
-  it("skipped is a real per-reason breakdown (noEmail/notDue/alreadySent), not a placeholder", () => {
-    expect(src).toMatch(/const skipped = \{ noEmail: 0, notDue: 0, alreadySent: 0 \};/);
+  it("skipped is a real per-reason breakdown with every exit zeroed, including send misses", () => {
+    expect(src).toContain("emptyTrialEmailSkipped");
+    expect(src).toMatch(/skipped\.notDue \+= 1/);
+    expect(src).toMatch(/skipped\.alreadySent \+= 1/);
+    expect(src).toMatch(/skipped\.noEmail \+= 1/);
+    expect(src).toMatch(/skipped\.noResendKey \+= 1/);
+    expect(src).toMatch(/skipped\.sendFailed \+= 1/);
+  });
+
+  it("uses pickTrialEmailKind / trialEmailAlreadyKeys from the pure lib, not a re-derived chain", () => {
+    expect(src).toContain("pickTrialEmailKind");
+    expect(src).toContain("trialEmailAlreadyKeys");
   });
 });

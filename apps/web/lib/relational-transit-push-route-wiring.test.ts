@@ -43,11 +43,16 @@ describe("relational-transit-push route — returns a JSON summary with real num
     expect(src).toMatch(/let\s+pushed\s*=\s*0\s*;/);
   });
 
-  it("returns ok, evaluated, pushed, and skipped in the success response", () => {
-    expect(src).toMatch(/return NextResponse\.json\(\{\s*ok:\s*true,\s*evaluated:\s*events\.length,\s*pushed,\s*skipped\s*\}\);/);
+  it("returns the summary through cronSummaryResponse so a lost row fails closed", () => {
+    expect(src).toMatch(/from\s*"\.\.\/\.\.\/\.\.\/\.\.\/lib\/cron-summary"/);
+    expect(src).toContain("cronSummaryResponse({");
+    expect(src).toMatch(/evaluated:\s*events\.length/);
+    expect(src).toMatch(/sent:\s*pushed/);
+    expect(src).toMatch(/return NextResponse\.json\(body,\s*\{\s*status\s*\}\)/);
   });
 
-  it("skipped is a real per-event breakdown (noTokens/preferenceOff/majorOnlyFiltered), not a placeholder", () => {
-    expect(src).toMatch(/const skipped = \{ noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0 \};/);
+  it("skipped is a real per-event breakdown (noTokens/preferenceOff/majorOnlyFiltered/pushFailed), not a placeholder", () => {
+    expect(src).toMatch(/const skipped = \{ noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0, pushFailed: 0 \};/);
+    expect(src).toMatch(/skipped\.pushFailed \+= 1/);
   });
 });

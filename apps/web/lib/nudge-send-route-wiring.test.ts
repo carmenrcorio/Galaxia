@@ -130,7 +130,11 @@ describe("nudge-send route — one email per owner per day, ledger idempotency",
   });
 
   it("only inserts the ledger row after sendEmail resolves ok", () => {
-    expect(src).toMatch(/if\s*\(\s*ok\s*\)\s*\{[\s\S]{0,200}daily_nudge_emails/);
+    const sendFailedIdx = src.indexOf("skipped.sendFailed");
+    const upsertIdx = src.lastIndexOf('.from("daily_nudge_emails")');
+    expect(sendFailedIdx).toBeGreaterThan(-1);
+    expect(upsertIdx).toBeGreaterThan(sendFailedIdx);
+    expect(src).toMatch(/if\s*\(\s*!ok\s*\)\s*\{[\s\S]{0,80}sendFailed[\s\S]{0,40}continue;/);
   });
 });
 
@@ -157,12 +161,15 @@ describe("nudge-send route — returns a JSON summary with real numeric counts, 
     expect(src).toMatch(/let\s+sent\s*=\s*0\s*;/);
   });
 
-  it("returns ok, sent, usersProcessed, skipped, and evaluated in the success response", () => {
-    expect(src).toMatch(/return NextResponse\.json\(\{\s*ok:\s*true,\s*sent,\s*usersProcessed,\s*skipped,\s*evaluated:\s*profiles\?\.length\s*\?\?\s*0\s*\}\);/);
+  it("returns the summary through cronSummaryResponse so a lost row fails closed", () => {
+    expect(src).toMatch(/from\s*"\.\.\/\.\.\/\.\.\/\.\.\/lib\/cron-summary"/);
+    expect(src).toContain("cronSummaryResponse({");
+    expect(src).toMatch(/evaluated:\s*profiles\?\.length\s*\?\?\s*0/);
+    expect(src).toMatch(/return NextResponse\.json\(body,\s*\{\s*status\s*\}\)/);
   });
 
   it("skipped is a real per-owner/per-gate breakdown, not a placeholder", () => {
-    expect(src).toMatch(/const skipped = \{\s*nullTimezone: 0,\s*notDueThisHour: 0,\s*noRowsToday: 0,\s*noEligibleAfterMinorExclusion: 0,\s*noLeadContent: 0,\s*alreadySentToday: 0,\s*noEmail: 0\s*\};/);
+    expect(src).toMatch(/const skipped = \{\s*nullTimezone: 0,\s*notDueThisHour: 0,\s*noRowsToday: 0,\s*noEligibleAfterMinorExclusion: 0,\s*noLeadContent: 0,\s*alreadySentToday: 0,\s*noEmail: 0,\s*noResendKey: 0,\s*sendFailed: 0\s*\};/);
   });
 });
 

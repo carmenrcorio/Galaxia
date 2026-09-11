@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { interpretRelationalTransitHeadline, MAJOR_RELATIONAL_TRANSIT_BODIES, type AffectedProfileHit, type AspectType, type RelationalTransitBody } from "@galaxia/astro";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
+import { cronSummaryResponse } from "../../../../lib/cron-summary";
 
 /**
  * Push-send job for Generational Transit Alerts (Feature 3, part 2).
@@ -81,7 +82,7 @@ async function handle(req: Request) {
     .limit(500);
 
   const events = (rows ?? []) as RelationalTransitRow[];
-  const skipped = { noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0 };
+  const skipped = { noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0, pushFailed: 0 };
   let pushed = 0;
 
   for (const event of events) {
@@ -137,10 +138,17 @@ async function handle(req: Request) {
       pushed += 1;
     } catch {
       // Leave push_sent_at unset so a transient network failure retries next run.
+      skipped.pushFailed += 1;
       continue;
     }
     await supabase.from("relational_transits").update({ push_sent_at: new Date().toISOString() }).eq("id", event.id);
   }
 
-  return NextResponse.json({ ok: true, evaluated: events.length, pushed, skipped });
+  const { body, status } = cronSummaryResponse({
+    evaluated: events.length,
+    sent: pushed,
+    skipped,
+    pushed
+  });
+  return NextResponse.json(body, { status });
 }

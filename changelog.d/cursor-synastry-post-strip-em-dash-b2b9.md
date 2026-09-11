@@ -1,0 +1,5 @@
+## Strip reintroduced U+2014 from synastry-chart-meaning (branch `cursor/synastry-post-strip-em-dash-b2b9`) — 2026-09-11
+
+**Trigger**: `20260909120000_synastry_post_internal_links.sql` was written before the em-dash purge (`20260911161000_posts_rewrite_em_dash.sql`) and was applied to production after it. That UPDATE restored 14 U+2014 characters into the `synastry-chart-meaning` body while adding the three missing internal links.
+
+`[FIXED]` **Rewrote only the reintroduced em dashes in `public.posts.body` for slug `synastry-chart-meaning`.** New migration `supabase/migrations/20260911230000_synastry_post_strip_reintroduced_em_dash.sql`. Same rewrite approach as the original purge (comma, colon, parentheses, or two sentences; never a hyphen). The three internal links (`/meet-vela`, `/generations`, `/chart/compare`) and their anchor text are unchanged. `title`, `dek`, and `read_time_minutes` (7) are untouched. FOUNDER-REVIEW on every rewritten sentence. Neither prior migration was re-run.

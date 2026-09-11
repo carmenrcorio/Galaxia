@@ -6,6 +6,7 @@ import { BlogPostCard } from "../../../components/blog/blog-post-card";
 import { BlogZodiacTrail } from "../../../components/blog/blog-zodiac-trail";
 import { CosmicBackground } from "../../../components/cosmic-background";
 import { SiteFooter } from "../../../components/marketing/site-footer";
+import { buildCategoryMetadata } from "../../../lib/blog-metadata";
 import { BLOG_CATEGORIES, getCategory, getPublishedPostsByCategory, type BlogCategorySlug } from "../../../lib/blog";
 
 type Params = { category: string };
@@ -19,19 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const category = getCategory(slug);
   if (!category) return {};
 
-  // FOUNDER-REVIEW: rewritten (no U+2014).
-  const title = `${category.label} on the Galaxia blog`;
-  const description = `${category.label} posts from the Galaxia blog.`;
-
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: `/blog/${category.slug}`
-    },
-    openGraph: { title, description, siteName: "Galaxia", type: "website", url: `/blog/${category.slug}` },
-    twitter: { card: "summary_large_image", title, description }
-  };
+  return buildCategoryMetadata(category);
 }
 
 export const revalidate = 60;

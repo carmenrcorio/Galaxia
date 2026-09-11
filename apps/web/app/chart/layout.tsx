@@ -1,23 +1,20 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { DESCRIPTION, TITLE } from "./chart-seo";
 
 /**
- * `app/chart/page.tsx` is a client component ("use client" — it drives the
- * quick-chart form with hooks), so it cannot export `metadata` itself. This
- * layout is the server-rendered sibling that carries per-route metadata for
- * `/chart` instead of it silently inheriting the root layout's generic
- * "Galaxia" title/description, and the route's canonical the same way every
- * other public page does. `/chart/compare` has its own `layout.tsx` with its
- * own copy — this file does not apply to that nested route because Next.js
- * resolves per-segment `layout.tsx` files independently and
- * `app/chart/compare/layout.tsx` fully overrides `metadata` (including
- * `alternates`) for that subtree.
+ * The interactive form (`quick-chart-page.tsx`) is a client component
+ * ("use client" — it drives the quick-chart form with hooks), so it cannot
+ * export `metadata` itself. This layout is the server-rendered sibling that
+ * carries per-route metadata for `/chart` instead of it silently inheriting
+ * the root layout's generic "Galaxia" title/description, and the route's
+ * canonical the same way every other public page does. `/chart/compare` has
+ * its own `layout.tsx` with its own copy — this file does not apply to that
+ * nested route because Next.js resolves per-segment `layout.tsx` files
+ * independently and `app/chart/compare/layout.tsx` fully overrides
+ * `metadata` (including `alternates`) for that subtree. JSON-LD is on
+ * `page.tsx` (not here) so `/chart/compare` does not inherit a /chart graph.
  */
-// FOUNDER-REVIEW: rewritten (no U+2014).
-const TITLE = "Free Birth Chart Calculator from Galaxia";
-const DESCRIPTION =
-  "See anyone's real natal chart, free. Enter a birth date, time, and place for a computed chart with actual planetary positions, not a sun-sign guess.";
-
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,

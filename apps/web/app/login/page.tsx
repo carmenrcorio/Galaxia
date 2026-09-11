@@ -8,6 +8,7 @@ const DESCRIPTION = "Sign in to your Galaxia account.";
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
+  alternates: { canonical: "/login" },
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,

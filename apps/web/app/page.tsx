@@ -11,10 +11,10 @@ import { RevealObserver } from "../components/marketing/reveal-observer";
 import { SiteFooter } from "../components/marketing/site-footer";
 import { SOFTWARE_APPLICATION_JSON_LD } from "../lib/homepage-software-application-json-ld";
 
-// FOUNDER-REVIEW: rewritten (no U+2014).
+// FOUNDER-REVIEW: rewritten (no U+2014). Trimmed to 155 characters; hook kept.
 const TITLE = "Galaxia: Astrology for the People You Love";
 const DESCRIPTION =
-  "Galaxia reads the real birth charts of your inner circle (partner, kids, parents, siblings, friends) so you can show up for each bond with more intention. Not your horoscope.";
+  "Galaxia reads the real birth charts of your inner circle so you can show up for each bond with more intention. Not your horoscope.";
 
 /**
  * Page-specific metadata for `/` — the link every launch post (Reddit, etc.)

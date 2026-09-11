@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { BlogHeader } from "../../components/blog/blog-header";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { JsonLd, type JsonLdObject } from "../../components/seo/json-ld";
+import { buildPostMetadata } from "../../lib/blog-metadata";
 import { getPublishedPost, type BlogPost } from "../../lib/blog";
 
 const SITE_URL = "https://galaxiamea.com";
@@ -67,29 +68,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   // Prefer the post's own hero image for link previews once one is set
   // (Part C); falls back to the generic site OG card exactly like before
   // for a post that has none yet.
-  const ogImage = post.heroImageUrl
-    ? [{ url: post.heroImageUrl, alt: post.title }]
-    // FOUNDER-REVIEW: rewritten (no U+2014).
-    : [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }];
-
-  return {
-    title: post.title,
-    description: post.dek,
-    openGraph: {
-      title: post.title,
-      description: post.dek,
-      siteName: "Galaxia",
-      type: "article",
-      url: `/${post.slug}`,
-      images: ogImage
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: post.title,
-      description: post.dek,
-      images: ogImage
-    }
-  };
+  return buildPostMetadata(post);
 }
 
 export const revalidate = 60;

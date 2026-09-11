@@ -207,3 +207,25 @@ Do not "fix" an em dash by swapping it for a hyphen or `" - "`. That is worse pr
 
 Blog post bodies live in `public.posts`. Never edit those rows in the dashboard. A rewrite ships as a new SQL migration (never an edit to an applied file, §2). Any live-DB check of that migration goes behind `assertDisposableDbTarget` against a disposable project, never `eigfvribtntbxyjutsma`.
 
+---
+
+## 16. CI detects production drift; it does not apply
+
+Three separate times, production's applied-migration ledger drifted from `supabase/migrations/` because someone (or an agent) ran MCP `apply_migration` / `execute_sql` and did not everyone track it the same way: relational_transits/push_tokens, the em-dash post rewrite, then synastry internal links + star_color columns + an ad-hoc `profiles_timezone_capture_fix_search_path`. There is no CI that applies `supabase/migrations/**` on merge, and there must not be: applying SQL to production is a human decision after reading what changed.
+
+The same class of gap already had a detector for edge functions. These two checks sit together: they **detect**, they never ship.
+
+### Edge Functions Parity
+
+`.github/workflows/edge-functions-parity.yml` + `scripts/edge-function-parity.mjs`. Compares deployed source body text (`GET …/functions/{slug}/body`) to `supabase/functions/<slug>/…` on every push to `main`, a daily cron (`17 13 * * *`), and `workflow_dispatch`. Deploy stays in `deploy-edge-functions.yml` (path-filtered). See `docs/ship-checklist.md`.
+
+### Migration Ledger Parity
+
+`.github/workflows/migration-ledger-parity.yml` + `scripts/migration-ledger-parity.mjs`. Read-only `GET /v1/projects/{ref}/database/migrations` against `eigfvribtntbxyjutsma`, diffed to `supabase/migrations/*.sql`. Same trigger shape as Edge Functions Parity (every push to `main`, daily cron `41 13 * * *`, `workflow_dispatch`). Reuses the `SUPABASE_ACCESS_TOKEN` repo secret.
+
+**Identity is the snake_case name** (the filename suffix after `{YYYYMMDDHHMMSS}_`), not the version prefix. MCP `apply_migration` stamps the apply time as `version`, so requiring the committed timestamp to equal the ledger timestamp would be permanently red. A file whose name has no ledger row, or a ledger row whose name has no file, fails with the exact two-way diff in the log (`IN REPO, NOT IN PRODUCTION LEDGER` / `IN PRODUCTION LEDGER, NOT IN REPO`). Version-prefix skew on a matching name is logged as a note, not a failure.
+
+This check **does not apply migrations.** A red run means a human looks at the diff and either applies the committed file, documents an already-applied ad-hoc change as a new comment-only file, or (if the file is not idempotent and the schema already landed) asks before touching `supabase_migrations.schema_migrations` directly — that table is not a scratch pad.
+
+Do not "fix" a red run by deleting a production ledger row or by editing an already-applied SQL file (§2).
+

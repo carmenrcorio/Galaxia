@@ -1,0 +1,25 @@
+-- DOCUMENTATION ONLY. This file records a production ledger row that was
+-- never committed as its own migration. It is not a functional change.
+--
+-- Production (eigfvribtntbxyjutsma) already has:
+--   supabase_migrations.schema_migrations
+--     version = 20260820184406
+--     name    = profiles_timezone_capture_fix_search_path
+--
+-- That name does not appear anywhere in git history as a file (never added,
+-- never renamed, never deleted). It was a hand-run apply_migration during
+-- PR #137 (nudge delivery Phase A, 2026-08-20), 43 seconds after
+-- profiles_timezone_capture (ledger 20260820184323). The first apply of
+-- validate_profile_timezone() tripped a Supabase search_path advisor; the
+-- follow-up CREATE OR REPLACE pinned `SET search_path TO ''`. The committed
+-- file 20260726010000_profiles_timezone_capture.sql already contains
+-- `set search_path = ''`, so the live function matches that file and this
+-- extra ledger row has nothing left to do.
+--
+-- Live state verified 2026-09-11:
+--   public.validate_profile_timezone() LANGUAGE plpgsql SET search_path TO ''
+--   body looks up pg_catalog.pg_timezone_names and rejects unknown zones.
+--
+-- Do not re-apply this name. Production already recorded it. On a fresh
+-- database the earlier timezone-capture file already pins search_path, so
+-- running this comment-only file is a no-op.

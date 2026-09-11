@@ -156,4 +156,37 @@ describe("scrubSentryEvent", () => {
     expect(scrubbed.request?.query_string).toBe("utm=1");
     expect(scrubbed.request?.data).toEqual({ ok: "fine" });
   });
+
+  it("strips source-context and local vars from stack frames", () => {
+    const scrubbed = scrubSentryEvent({
+      exception: {
+        values: [
+          {
+            type: "Error",
+            value: "boom",
+            stacktrace: {
+              frames: [
+                {
+                  filename: "app/api/quick-chart/route.ts",
+                  context_line: "throw err;",
+                  pre_context: ['birthDate: "1990-01-15"'],
+                  post_context: ["latitude: 40.7128"],
+                  vars: { birth_time: "14:32" }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    });
+    const frame = (
+      scrubbed.exception?.values?.[0] as {
+        stacktrace: { frames: Array<Record<string, unknown>> };
+      }
+    ).stacktrace.frames[0];
+    expect(frame.pre_context).toBeUndefined();
+    expect(frame.post_context).toBeUndefined();
+    expect(frame.vars).toBeUndefined();
+    expect(frame.filename).toBe("app/api/quick-chart/route.ts");
+  });
 });

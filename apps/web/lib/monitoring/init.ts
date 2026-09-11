@@ -24,6 +24,20 @@ export function initMonitoring(): boolean {
     // birth-data forms. Neither is enabled.
     tracesSampleRate: 0,
     environment: process.env.SENTRY_ENVIRONMENT || process.env.VERCEL_ENV || process.env.NODE_ENV,
+    integrations(integrations) {
+      return integrations.filter((integration) => {
+        const name = integration.name;
+        // Local variables and request bodies are how birth data would leak
+        // from /api/quick-chart. ContextLines attaches nearby source, which
+        // can include fixture values in tests and logged payloads in app code.
+        return (
+          name !== "LocalVariables" &&
+          name !== "LocalVariablesAsync" &&
+          name !== "RequestData" &&
+          name !== "ContextLines"
+        );
+      });
+    },
     beforeSend(event) {
       return scrubSentryEvent(event as unknown as ScrubbableEvent) as unknown as typeof event;
     },

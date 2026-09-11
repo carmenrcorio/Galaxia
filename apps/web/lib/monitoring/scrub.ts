@@ -206,5 +206,24 @@ export function scrubSentryEvent<T extends ScrubbableEvent>(event: T): T {
     next.request = request;
   }
 
+  scrubStackFrames(next);
+
   return next;
+}
+
+function scrubStackFrames(event: ScrubbableEvent): void {
+  const values = event.exception?.values;
+  if (!values) return;
+  for (const item of values) {
+    const frames = (item as { stacktrace?: { frames?: Array<Record<string, unknown>> } }).stacktrace
+      ?.frames;
+    if (!frames) continue;
+    for (const frame of frames) {
+      // ContextLines / LocalVariables would otherwise ship nearby source
+      // (and any birth values sitting in that source) plus in-scope locals.
+      delete frame.pre_context;
+      delete frame.post_context;
+      delete frame.vars;
+    }
+  }
 }

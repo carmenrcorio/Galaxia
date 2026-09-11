@@ -16,6 +16,7 @@
     "@galaxia/core": "workspace:^",
     "@galaxia/vela": "workspace:^",
     "@revenuecat/purchases-js": "^1.47.2",
+    "@sentry/nextjs": "^10.74.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "@vercel/analytics": "^2.0.1",

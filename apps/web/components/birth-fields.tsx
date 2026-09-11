@@ -40,7 +40,15 @@ export const BASE_BIRTH_INPUT: BirthFormInput = {
   birthPlace: "", lat: "", lng: "", tzOffsetMin: undefined, tzId: undefined
 };
 
-export function BirthFields({ input, onChange, allowNone = false }: { input: BirthFormInput; onChange: (next: BirthFormInput) => void; allowNone?: boolean }) {
+export function BirthFields({
+  input, onChange, allowNone = false, idPrefix = "birth",
+}: {
+  input: BirthFormInput;
+  onChange: (next: BirthFormInput) => void;
+  allowNone?: boolean;
+  /** Unique prefix so two BirthFields on /chart/compare do not share ids. */
+  idPrefix?: string;
+}) {
   // Geocoder state
   const [searching, setSearching] = useState(false);
   const [candidates, setCandidates] = useState<GeoCandidate[]>([]);
@@ -168,17 +176,17 @@ export function BirthFields({ input, onChange, allowNone = false }: { input: Bir
             <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 5 }}>Birth date</p>
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 2fr", gap: 6 }}>
               {/* Month */}
-              <select className="field" aria-label="Birth month" value={input.month ?? ""} onChange={e => onChange({ ...input, month: e.target.value ? parseInt(e.target.value, 10) : undefined })}>
+              <select className="field" id={`${idPrefix}-month`} name={`${idPrefix}-month`} aria-label="Birth month" value={input.month ?? ""} onChange={e => onChange({ ...input, month: e.target.value ? parseInt(e.target.value, 10) : undefined })}>
                 <option value="">Month</option>
                 {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
               </select>
               {/* Day */}
-              <select className="field" aria-label="Birth day" value={input.day ?? ""} onChange={e => onChange({ ...input, day: e.target.value ? parseInt(e.target.value, 10) : undefined })}>
+              <select className="field" id={`${idPrefix}-day`} name={`${idPrefix}-day`} aria-label="Birth day" value={input.day ?? ""} onChange={e => onChange({ ...input, day: e.target.value ? parseInt(e.target.value, 10) : undefined })}>
                 <option value="">Day</option>
                 {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
               </select>
               {/* Year */}
-              <select className="field" aria-label="Birth year" value={input.year ?? ""} onChange={e => onChange({ ...input, year: e.target.value ? parseInt(e.target.value, 10) : undefined })}>
+              <select className="field" id={`${idPrefix}-year`} name={`${idPrefix}-year`} aria-label="Birth year" value={input.year ?? ""} onChange={e => onChange({ ...input, year: e.target.value ? parseInt(e.target.value, 10) : undefined })}>
                 <option value="">Year</option>
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
@@ -196,13 +204,13 @@ export function BirthFields({ input, onChange, allowNone = false }: { input: Bir
             <div>
               <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 5 }}>Birth time (local time at birth place)</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                <select className="field" aria-label="Birth hour" value={input.hour ?? ""} onChange={e => onChange({ ...input, hour: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })}>
+                <select className="field" id={`${idPrefix}-hour`} name={`${idPrefix}-hour`} aria-label="Birth hour" value={input.hour ?? ""} onChange={e => onChange({ ...input, hour: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })}>
                   <option value="">Hour</option>
                   {Array.from({ length: 24 }, (_, i) => i).map(h => (
                     <option key={h} value={h}>{String(h).padStart(2, "0")}:00 ({h === 0 ? "midnight" : h === 12 ? "noon" : h < 12 ? `${h} am` : `${h - 12} pm`})</option>
                   ))}
                 </select>
-                <select className="field" aria-label="Birth minute" value={input.minute ?? ""} onChange={e => onChange({ ...input, minute: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })}>
+                <select className="field" id={`${idPrefix}-minute`} name={`${idPrefix}-minute`} aria-label="Birth minute" value={input.minute ?? ""} onChange={e => onChange({ ...input, minute: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })}>
                   <option value="">Minute</option>
                   {[0,5,10,15,20,25,30,35,40,45,50,55].map(m => (
                     <option key={m} value={m}>{String(m).padStart(2, "0")}</option>

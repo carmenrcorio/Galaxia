@@ -149,15 +149,6 @@ export default function QuickChartPage() {
         Enter a birth date (and time and city, if known) for a real computed natal chart. Big Three, placements, and the wheel. Nothing is saved unless you choose to.
       </p>
 
-      <RelatedLinks
-        bare
-        heading="Keep reading"
-        links={[
-          { href: "/synastry-chart-meaning", label: "What synastry actually measures" },
-          { href: "/why-galaxia", label: "Why Galaxia reads real charts, not sun signs" },
-        ]}
-      />
-
       {!result ? (
         <>
           {/* Mode: a solo chart has no romantic/platonic dimension, so that
@@ -266,6 +257,15 @@ export default function QuickChartPage() {
           </section>
         </>
       )}
+
+      <RelatedLinks
+        bare
+        heading="Keep reading"
+        links={[
+          { href: "/synastry-chart-meaning", label: "What synastry actually measures" },
+          { href: "/why-galaxia", label: "Why Galaxia reads real charts, not sun signs" },
+        ]}
+      />
     </QuickChartShell>
   );
 }

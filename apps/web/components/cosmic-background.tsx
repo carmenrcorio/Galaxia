@@ -238,8 +238,8 @@ export function CosmicBackground() {
         filter: "blur(20px)",
       }} />
 
-      {/* #stars canvas */}
-      <canvas ref={starsRef} style={{ position: "absolute", inset: 0, zIndex: 0, width: "100%", height: "100%" }} />
+      {/* #stars canvas — decorative starfield; the wrapper is already aria-hidden. */}
+      <canvas ref={starsRef} aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 0, width: "100%", height: "100%" }} />
 
       {/* .grain — exact from landing */}
       <div style={{

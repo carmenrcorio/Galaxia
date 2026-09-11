@@ -5,6 +5,16 @@ import { NextResponse } from "next/server";
 import { publicEnv } from "./lib/env";
 
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  // Retired standalone tab. Permanent redirect so old bookmarks/nav caches
+  // land on Groups instead of a stub page that looks like a feature.
+  if (path === "/app/family-compare" || path.startsWith("/app/family-compare/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/app/groups";
+    url.search = "";
+    return NextResponse.redirect(url, 308);
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
@@ -24,7 +34,6 @@ export async function middleware(request: NextRequest) {
     data: { user }
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
   // Login required for the whole authed surface. /subscribe is authed too so a
   // logged-out user can't land there. /start is the post-login resolver — it
   // needs a user to read, then redirects on to /app or /welcome (both gated

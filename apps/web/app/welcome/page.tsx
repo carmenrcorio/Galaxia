@@ -296,7 +296,7 @@ export default function WelcomePage() {
                   </p>
                 </div>
 
-                <BirthFields input={selfInput} onChange={setSelfInput} />
+                <BirthFields input={selfInput} onChange={setSelfInput} idPrefix="self" />
 
                 <button
                   className="btn-primary"

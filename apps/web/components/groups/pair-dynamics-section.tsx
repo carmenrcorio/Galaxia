@@ -61,8 +61,21 @@ function PairDetailLine({ summary, fallback }: { summary: string; fallback: stri
   );
 }
 
+// FOUNDER-REVIEW: empty because this group has no pair highlights yet.
+export const PAIR_DYNAMICS_EMPTY =
+  "No pair highlights yet. Add members with charts so Galaxia can name the fault lines and shared generations.";
+
 export function PairDynamicsSection({ items, resolveId, onOpenPair }: PairDynamicsSectionProps) {
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return (
+      <section className="glass-card fade-in">
+        <p className="eyebrow" style={{ marginBottom: 10 }}>Pair dynamics</p>
+        <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6, margin: 0 }}>
+          {PAIR_DYNAMICS_EMPTY}
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="glass-card fade-in">

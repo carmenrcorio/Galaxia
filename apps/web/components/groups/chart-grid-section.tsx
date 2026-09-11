@@ -35,6 +35,10 @@ import { SIGN_GLYPH } from "../../lib/design";
 const MIN_GRID_PEOPLE = 3;
 const MAX_GRID_PEOPLE = 8;
 
+// FOUNDER-REVIEW: empty because the grid needs three charted members.
+export const CHART_GRID_EMPTY =
+  "Chart grid needs three people with birth charts. Add members, or their dates, to compare Sun through Mars.";
+
 interface ChartGridSectionProps {
   /** Current group's members with a resolved chart — already filtered upstream to those with one. */
   members: FamilyComparePersonInput[];
@@ -42,7 +46,16 @@ interface ChartGridSectionProps {
 
 export function ChartGridSection({ members }: ChartGridSectionProps) {
   const shareRef = useRef<HTMLDivElement>(null);
-  if (members.length < MIN_GRID_PEOPLE) return null;
+  if (members.length < MIN_GRID_PEOPLE) {
+    return (
+      <section className="glass-card fade-in">
+        <p className="eyebrow" style={{ marginBottom: 8 }}>Chart grid</p>
+        <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6, margin: 0 }}>
+          {CHART_GRID_EMPTY}
+        </p>
+      </section>
+    );
+  }
 
   const inputs = members.slice(0, MAX_GRID_PEOPLE);
   const truncated = members.length > MAX_GRID_PEOPLE;

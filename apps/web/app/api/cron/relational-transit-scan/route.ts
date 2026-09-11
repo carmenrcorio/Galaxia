@@ -25,7 +25,7 @@ import { cronSummaryResponse } from "../../../../lib/cron-summary";
  * transits are generic astrological/family information, not romantic
  * content — "Saturn is crossing where your grandfather's Sun was" is
  * exactly the spec's example, and minors' charts already surface elsewhere
- * in the app (compare, family-compare, home).
+ * in the app (compare, groups, home).
  *
  * `profiles.relational_transit_alerts` ('all' | 'major_only' | 'off') gates
  * the in-app feed and any future push send, NOT this compute step — the

@@ -190,7 +190,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Their name (optional)" style={{ borderRadius: 14 }} />
-            <BirthFields input={input} onChange={setInput} />
+            <BirthFields input={input} onChange={setInput} idPrefix="quick-check" />
 
             <button className="btn-primary" onClick={compute} disabled={computing} style={{ gap: 8 }}>
               {computing && <Spinner size={13} color="#1a1206" />}

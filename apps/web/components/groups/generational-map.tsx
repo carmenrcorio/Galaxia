@@ -41,8 +41,21 @@ interface GenerationalMapProps {
   overlay: CohortOverlayLike;
 }
 
+// FOUNDER-REVIEW: empty because the map needs two members to place.
+export const GENERATIONAL_MAP_EMPTY =
+  "The generational map needs two people. Add another member to see where the slow planets land.";
+
 export function GenerationalMap({ memberNames, overlay }: GenerationalMapProps) {
-  if (memberNames.length < 2) return null;
+  if (memberNames.length < 2) {
+    return (
+      <section className="glass-card fade-in">
+        <p className="eyebrow" style={{ marginBottom: 8 }}>Generational map</p>
+        <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6, margin: 0 }}>
+          {GENERATIONAL_MAP_EMPTY}
+        </p>
+      </section>
+    );
+  }
   const summary = generationalMapSummary(memberNames, overlay);
   const signsByMember = memberSignsFromOverlay(memberNames, overlay);
 

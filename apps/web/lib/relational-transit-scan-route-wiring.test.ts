@@ -44,10 +44,12 @@ describe("relational-transit-scan route — returns a JSON summary with real num
     expect(src).toMatch(/let\s+eventsUpserted\s*=\s*0\s*;/);
   });
 
-  it("returns ok, ownersScanned, eventsUpserted, skipped, and evaluated in the success response", () => {
-    expect(src).toMatch(
-      /return NextResponse\.json\(\{\s*ok:\s*true,\s*ownersScanned,\s*eventsUpserted,\s*skipped,\s*evaluated:\s*profiles\?\.length\s*\?\?\s*0\s*\}\);/
-    );
+  it("returns the summary through cronSummaryResponse so a lost row fails closed", () => {
+    expect(src).toMatch(/from\s*"\.\.\/\.\.\/\.\.\/\.\.\/lib\/cron-summary"/);
+    expect(src).toContain("cronSummaryResponse({");
+    expect(src).toMatch(/sent:\s*ownersScanned/);
+    expect(src).toMatch(/evaluated:\s*profiles\?\.length\s*\?\?\s*0/);
+    expect(src).toMatch(/return NextResponse\.json\(body,\s*\{\s*status\s*\}\)/);
   });
 
   it("skipped is a real per-owner breakdown (noPeople/singlePerson), not a placeholder", () => {

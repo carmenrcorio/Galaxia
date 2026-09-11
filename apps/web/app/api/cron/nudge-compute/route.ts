@@ -10,6 +10,7 @@ import {
 import { isMinorForSafety, peopleForTodaySky } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
+import { cronSummaryResponse } from "../../../../lib/cron-summary";
 
 /**
  * Server-side daily nudge compute job (nudge delivery Phase B1).
@@ -186,5 +187,12 @@ async function handle(req: Request) {
     usersProcessed += 1;
   }
 
-  return NextResponse.json({ ok: true, usersProcessed, rowsWritten, skipped, evaluated: profiles?.length ?? 0 });
+  const { body, status } = cronSummaryResponse({
+    evaluated: profiles?.length ?? 0,
+    sent: usersProcessed,
+    skipped,
+    usersProcessed,
+    rowsWritten
+  });
+  return NextResponse.json(body, { status });
 }

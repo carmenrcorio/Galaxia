@@ -2,19 +2,28 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
-import { renderTrialEmail, sendEmail, type TrialEmailData, type TrialEmailKind } from "../../../../lib/emails";
+import { cronSummaryResponse } from "../../../../lib/cron-summary";
+import { renderTrialEmail, sendEmail, type TrialEmailData } from "../../../../lib/emails";
+import {
+  emptyTrialEmailSkipped,
+  pickTrialEmailKind,
+  trialAlreadyEnded,
+  trialEmailAlreadyKeys
+} from "../../../../lib/trial-emails";
 
 /**
  * Daily trial-email cron. Evaluates every trialing user and sends whichever
  * email is due, once (idempotent via the trial_emails table). Every number is a
- * real per-user count — nothing fabricated.
+ * real per-user count — nothing fabricated. Every row that enters the loop
+ * increments exactly one of `sent` or `skipped.*`; the response fails
+ * closed (`ok: false`, HTTP 500) if that invariant does not hold.
  *
  * Scheduled from `.github/workflows/trial-emails.yml` (no committed
  * `vercel.json`, see ENGINEERING.md §2/§14) — GitHub Actions' `schedule:`
  * cron trigger calls this route daily over HTTPS with the same
  * `Authorization: Bearer <CRON_SECRET>` header a Vercel Cron Job would
  * send. Requires CRON_SECRET set; no-ops on emails when RESEND_API_KEY is
- * absent (see sendEmail).
+ * absent (see sendEmail) and counts those rows as `skipped.noResendKey`.
  */
 
 const DAY = 86_400_000;
@@ -49,14 +58,19 @@ async function handle(req: Request) {
     .eq("subscription_status", "trialing")
     .limit(1000);
 
-  const sent: Record<string, number> = {};
-  const skipped = { noEmail: 0, notDue: 0, alreadySent: 0 };
+  let sent = 0;
+  const skipped = emptyTrialEmailSkipped();
 
   for (const profile of profiles ?? []) {
     const createdAt = profile.created_at ? new Date(profile.created_at as string).getTime() : now;
     const trialEndsAt = profile.trial_ends_at ? new Date(profile.trial_ends_at as string).getTime() : null;
     const ageDays = (now - createdAt) / DAY;
     const daysToEnd = trialEndsAt ? (trialEndsAt - now) / DAY : null;
+
+    // Permanent rule, before the kind picker: never email a trial that has
+    // already ended. Protects against a backlog of day14s if the Resend key
+    // is unset for a few days. trial_ends_at < now; day14 therefore never fires.
+    if (trialAlreadyEnded(trialEndsAt, now)) { skipped.trialAlreadyEnded += 1; continue; }
 
     // Counts (real, per user)
     const [peopleCount, notesCount, threadsCount, groupsCount] = await Promise.all([
@@ -66,16 +80,11 @@ async function handle(req: Request) {
       countRows(supabase, "groups", profile.id as string)
     ]);
 
-    // Decide which email is due (priority order; one per run).
-    let kind: TrialEmailKind | null = null;
-    if (daysToEnd !== null && daysToEnd <= 0) kind = "day14";                         // trial ended, still trialing = not converted
-    else if (daysToEnd !== null && daysToEnd >= 2 && daysToEnd <= 4) kind = "day11";   // ~3 days out
-    else if (ageDays >= 3 && ageDays < 8) kind = peopleCount === 1 ? "day4_one" : peopleCount >= 2 ? "day4_multi" : null;
-    else if (ageDays < 3 && peopleCount >= 1) kind = "day1";
+    const kind = pickTrialEmailKind(ageDays, daysToEnd, peopleCount);
     if (!kind) { skipped.notDue += 1; continue; }
 
     // Idempotency: day4 has two variants — never send both.
-    const alreadyKeys = kind === "day4_one" || kind === "day4_multi" ? ["day4_one", "day4_multi"] : [kind];
+    const alreadyKeys = trialEmailAlreadyKeys(kind);
     const { data: already } = await supabase.from("trial_emails").select("kind").eq("user_id", profile.id).in("kind", alreadyKeys);
     if ((already?.length ?? 0) > 0) { skipped.alreadySent += 1; continue; }
 
@@ -83,6 +92,8 @@ async function handle(req: Request) {
     const { data: authUser } = await supabase.auth.admin.getUserById(profile.id as string);
     const to = authUser?.user?.email;
     if (!to) { skipped.noEmail += 1; continue; }
+
+    if (!process.env.RESEND_API_KEY) { skipped.noResendKey += 1; continue; }
 
     const { data: recentPerson } = await supabase
       .from("people").select("display_name").eq("owner_id", profile.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -97,15 +108,21 @@ async function handle(req: Request) {
     };
 
     const ok = await sendEmail(to, renderTrialEmail(kind, data));
-    // Log even on no-op-without-key? No: only log when actually sent, so once the
-    // key is added the email still goes out. sendEmail returns false when no key.
-    if (ok) {
-      await supabase.from("trial_emails").insert({ user_id: profile.id, kind });
-      sent[kind] = (sent[kind] ?? 0) + 1;
-    }
+    // Only log the ledger when actually sent, so a no-key / Resend-fail run
+    // still delivers on the next successful pass. Count the miss so the
+    // summary cannot silently drop the row.
+    if (!ok) { skipped.sendFailed += 1; continue; }
+
+    await supabase.from("trial_emails").insert({ user_id: profile.id, kind });
+    sent += 1;
   }
 
-  return NextResponse.json({ ok: true, sent, skipped, evaluated: profiles?.length ?? 0 });
+  const { body, status } = cronSummaryResponse({
+    evaluated: profiles?.length ?? 0,
+    sent,
+    skipped
+  });
+  return NextResponse.json(body, { status });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

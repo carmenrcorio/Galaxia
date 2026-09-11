@@ -4,6 +4,7 @@ import { ownerLocalDate } from "@galaxia/astro";
 import { resolveAccountName } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
+import { cronSummaryResponse } from "../../../../lib/cron-summary";
 import {
   effectiveMinorSafe,
   eligibleForEmailSend,
@@ -146,7 +147,9 @@ async function handle(req: Request) {
     noEligibleAfterMinorExclusion: 0,
     noLeadContent: 0,
     alreadySentToday: 0,
-    noEmail: 0
+    noEmail: 0,
+    noResendKey: 0,
+    sendFailed: 0
   };
   let usersProcessed = 0;
   let sent = 0;
@@ -266,24 +269,32 @@ async function handle(req: Request) {
       isFirstEmail
     });
 
-    const ok = await sendEmail(to, rendered, nudgeEmailHeaders(unsubscribeUrl));
-    if (ok) {
-      await supabase
-        .from("daily_nudge_emails")
-        .upsert(
-          { owner_id: profile.id, date: localDate, person_id: lead.person_id },
-          { onConflict: "owner_id,date", ignoreDuplicates: true }
-        );
-      sent += 1;
+    if (!process.env.RESEND_API_KEY) {
+      skipped.noResendKey += 1;
+      continue;
     }
+
+    const ok = await sendEmail(to, rendered, nudgeEmailHeaders(unsubscribeUrl));
+    if (!ok) {
+      skipped.sendFailed += 1;
+      continue;
+    }
+
+    await supabase
+      .from("daily_nudge_emails")
+      .upsert(
+        { owner_id: profile.id, date: localDate, person_id: lead.person_id },
+        { onConflict: "owner_id,date", ignoreDuplicates: true }
+      );
+    sent += 1;
     usersProcessed += 1;
   }
 
-  return NextResponse.json({
-    ok: true,
+  const { body, status } = cronSummaryResponse({
+    evaluated: profiles?.length ?? 0,
     sent,
-    usersProcessed,
     skipped,
-    evaluated: profiles?.length ?? 0
+    usersProcessed
   });
+  return NextResponse.json(body, { status });
 }

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { computeReadTimeMinutes, type BlogCategorySlug } from "../blog";
+import type { BlogCategorySlug } from "../blog";
+import { computeReadTimeMinutes } from "../read-time";
 import { slugify } from "../slugify";
 
 /**

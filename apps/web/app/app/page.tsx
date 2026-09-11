@@ -65,6 +65,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChartImageExportButton, ChartImageExportFrame, chartExportFilename } from "../../components/chart-image-export";
+import { composeGalaxySharePng, SHARE_IMAGE_FAIL } from "../../lib/share-image";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { RelationalTransitFeed } from "../../components/relational-transit-feed";
 import { ThreadMenu } from "../../components/thread-menu";
@@ -1378,6 +1379,12 @@ export default function AppHomePage() {
                 frameRef={galaxyFrameRef}
                 filename={chartExportFilename(null, "galaxia-constellation.png")}
                 label="Share sky image"
+                capture={() => {
+                  const atm = atmCanvasRef.current;
+                  const motion = canvasRef.current;
+                  if (!atm || !motion) throw new Error(SHARE_IMAGE_FAIL);
+                  return composeGalaxySharePng(atm, motion);
+                }}
               />
             ) : null}
           </div>

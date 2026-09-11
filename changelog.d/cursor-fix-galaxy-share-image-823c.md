@@ -1,0 +1,9 @@
+## Fix blank / slow galaxy share image and the sticky Shared label (branch `cursor/fix-galaxy-share-image-823c`) — 2026-09-11
+
+**Trigger**: the constellation-wide "Share sky image" download was a blank PNG on mobile (desktop was fine), loaded ~10s after the natal and compare shareables, and the button stayed on "Shared" after the action.
+
+`[FIXED]` **Galaxy export no longer goes through html-to-image.** Diagnosis (Playwright WebKit, same `toSvg` → `<img>` → `<canvas>` pipeline as `ShareImageButton`): live `canvas.toDataURL()` of the atmosphere and motion layers was full of stars, and a direct `drawImage` composite was also full of stars (169 non-background samples, 123KB PNG). The html-to-image path on WebKit returned a 10KB PNG of the `#0a0717` fill only (5 non-background samples, center pixel = background). Chromium painted the same html-to-image path correctly (167 samples). Natal wheel and chart-grid captures (HTML/SVG, no live canvas) were fine on WebKit. Cause is WebKit failing to rasterize html-to-image's canvas-in-SVG `foreignObject`, not CORS taint (no cross-origin images are drawn) and not a 4096px canvas overflow (phone backing store is 750×840). `/app` now calls `composeGalaxySharePng` (blit atmosphere + motion, watermark, `document.fonts.ready`, iOS 4096 cap). A blank raster throws `Could not create the image. Try again.` instead of downloading an empty file.
+
+`[FIXED]` **Share / Shared label follows actual outcome.** "Shared" / "Image saved" only after `navigator.share` resolves or the download click fires. Cancel (`AbortError`) stays on "Share". A failed or blank capture never claims success. Success reverts to the idle label after 2.8s, or immediately when the document is hidden (backgrounding the app).
+
+`[ADDED]` Unit tests for constellation-size rasters (1 / 8 / 40 people), the 4096 cap, blank detection, and the button state machine (fail, cancel, success+revert, visibility revert).

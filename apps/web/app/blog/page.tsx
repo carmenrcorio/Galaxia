@@ -5,6 +5,7 @@ import { BlogPostCard } from "../../components/blog/blog-post-card";
 import { BlogZodiacTrail } from "../../components/blog/blog-zodiac-trail";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { SiteFooter } from "../../components/marketing/site-footer";
+import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { BLOG_CATEGORIES, getPublishedPosts } from "../../lib/blog";
 
 // FOUNDER-REVIEW: rewritten (no U+2014).
@@ -43,6 +44,7 @@ export default async function BlogIndexPage() {
 
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
+      <WebPageJsonLd path="/blog" name={TITLE} description={DESCRIPTION} />
       <CosmicBackground />
       <BlogHeader />
       <main className="container blog-index-page" style={{ position: "relative", zIndex: 2 }}>

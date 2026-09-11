@@ -10,6 +10,7 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
+  alternates: { canonical: "/signup" },
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,

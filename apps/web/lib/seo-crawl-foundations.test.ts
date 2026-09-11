@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -19,6 +19,10 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
 
 function readRoute(path: string): string {
   return readFileSync(join(REPO_ROOT, path), "utf8");
+}
+
+function exists(path: string): boolean {
+  return existsSync(join(REPO_ROOT, path));
 }
 
 describe("public/robots.txt", () => {
@@ -64,7 +68,10 @@ describe("self-referencing canonical coverage on the named critical routes", () 
     ["apps/web/app/privacy/page.tsx", "/privacy"],
     ["apps/web/app/terms/page.tsx", "/terms"],
     ["apps/web/app/chart/layout.tsx", "/chart"],
-    ["apps/web/app/chart/compare/layout.tsx", "/chart/compare"]
+    ["apps/web/app/chart/compare/layout.tsx", "/chart/compare"],
+    ["apps/web/app/login/page.tsx", "/login"],
+    ["apps/web/app/signup/page.tsx", "/signup"],
+    ["apps/web/app/download/page.tsx", "/download"]
   ];
 
   for (const [path, canonical] of cases) {
@@ -77,14 +84,22 @@ describe("self-referencing canonical coverage on the named critical routes", () 
   }
 
   it("app/blog/[category]/page.tsx derives its canonical from the resolved category slug (covers /blog/guides and /blog/debunked)", () => {
-    const src = readRoute("apps/web/app/blog/[category]/page.tsx");
+    expect(readRoute("apps/web/app/blog/[category]/page.tsx")).toContain("buildCategoryMetadata(category)");
+    const src = readRoute("apps/web/lib/blog-metadata.ts");
     expect(src).toMatch(/alternates:\s*\{\s*canonical:\s*`\/blog\/\$\{category\.slug\}`\s*\}/);
+  });
+
+  it("the post template emits alternates.canonical matching the slug via buildPostMetadata", () => {
+    expect(readRoute("apps/web/app/[slug]/page.tsx")).toContain("buildPostMetadata(post)");
+    const src = readRoute("apps/web/lib/blog-metadata.ts");
+    expect(src).toMatch(/canonical:\s*`\/\$\{post\.slug\}`/);
+    expect(src).not.toMatch(/canonical:\s*`\/blog\/\$\{post\.slug\}`/);
   });
 });
 
 describe("/chart and /chart/compare stay client components with their page UI untouched", () => {
-  it("app/chart/page.tsx and app/chart/compare/page.tsx are still \"use client\" (canonical had to move to a layout, not the page)", () => {
-    expect(readRoute("apps/web/app/chart/page.tsx").startsWith('"use client"')).toBe(true);
+  it("the interactive chart form and compare page are still \"use client\" (canonical had to move to a layout, not the page)", () => {
+    expect(readRoute("apps/web/app/chart/quick-chart-page.tsx").startsWith('"use client"')).toBe(true);
     expect(readRoute("apps/web/app/chart/compare/page.tsx").startsWith('"use client"')).toBe(true);
   });
 
@@ -93,5 +108,33 @@ describe("/chart and /chart/compare stay client components with their page UI un
       const src = readRoute(path);
       expect(src).toMatch(/return children;/);
     }
+  });
+});
+
+describe("homepage meta description length", () => {
+  it("is 155 characters or fewer", () => {
+    const src = readRoute("apps/web/app/page.tsx");
+    const match = src.match(/const DESCRIPTION =\s*\n\s*"([^"]+)"/);
+    expect(match?.[1]).toBeDefined();
+    expect(match![1]!.length).toBeLessThanOrEqual(155);
+  });
+});
+
+describe("App Router icon slot", () => {
+  it("provides icon.tsx, apple-icon.tsx, and favicon.ico", () => {
+    expect(readRoute("apps/web/app/icon.tsx")).toContain("generateImageMetadata");
+    expect(readRoute("apps/web/app/apple-icon.tsx")).toContain("brandIconImage(180)");
+    expect(exists("apps/web/app/favicon.ico")).toBe(true);
+    expect(exists("apps/web/public/icon.png")).toBe(true);
+    expect(exists("apps/web/public/apple-touch-icon.png")).toBe(true);
+  });
+});
+
+describe("WebPage JSON-LD on legal, blog, and chart", () => {
+  it("privacy, terms, blog, and chart render WebPageJsonLd", () => {
+    expect(readRoute("apps/web/app/privacy/page.tsx")).toContain('WebPageJsonLd path="/privacy"');
+    expect(readRoute("apps/web/app/terms/page.tsx")).toContain('WebPageJsonLd path="/terms"');
+    expect(readRoute("apps/web/app/blog/page.tsx")).toContain('WebPageJsonLd path="/blog"');
+    expect(readRoute("apps/web/app/chart/page.tsx")).toContain('WebPageJsonLd path="/chart"');
   });
 });

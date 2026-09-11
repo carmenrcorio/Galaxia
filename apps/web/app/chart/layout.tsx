@@ -13,9 +13,10 @@ import type { ReactNode } from "react";
  * `app/chart/compare/layout.tsx` fully overrides `metadata` (including
  * `alternates`) for that subtree.
  */
-const TITLE = "Free Birth Chart Calculator — Galaxia";
+// FOUNDER-REVIEW: rewritten (no U+2014).
+const TITLE = "Free Birth Chart Calculator from Galaxia";
 const DESCRIPTION =
-  "See anyone's real natal chart, free. Enter a birth date, time, and place for a computed chart with actual planetary positions — not a sun-sign guess.";
+  "See anyone's real natal chart, free. Enter a birth date, time, and place for a computed chart with actual planetary positions, not a sun-sign guess.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -29,13 +30,13 @@ export const metadata: Metadata = {
     siteName: "Galaxia",
     type: "website",
     url: "/chart",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   }
 };
 

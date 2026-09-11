@@ -104,12 +104,12 @@ function dropSentence(theme, cls, framing) {
   const a = FRAMING_ADDR[framing];
   const force = THEME_WORD[theme];
   if (framing === "self") {
-    if (cls === "flow") return `An easier stretch — ${force} lifts your day. ${a.tip}`;
+    if (cls === "flow") return `An easier stretch: ${force} lifts your day. ${a.tip}`;
     if (cls === "friction") return `A day that tests you through ${force}. ${a.tip}`;
     return `A strong dose of ${force} is on you today. ${a.tip}`;
   }
   if (framing === "child") {
-    if (cls === "flow") return `${force[0].toUpperCase()}${force.slice(1)} sits easily with them today — good weather for parenting with softness. ${a.tip}`;
+    if (cls === "flow") return `${force[0].toUpperCase()}${force.slice(1)} sits easily with them today, good weather for parenting with softness. ${a.tip}`;
     if (cls === "friction") return `${force[0].toUpperCase()}${force.slice(1)} is pressing on them today. ${a.tip}`;
     return `${force[0].toUpperCase()}${force.slice(1)} runs strong in them today. ${a.tip}`;
   }
@@ -120,7 +120,7 @@ function dropSentence(theme, cls, framing) {
     return `${force[0].toUpperCase()}${force.slice(1)} is loud in the relationship today. ${tip}`;
   }
   if (framing === "colleague") {
-    if (cls === "flow") return `Work weather eases — ${force} helps the day. ${a.tip}`;
+    if (cls === "flow") return `Work weather eases: ${force} helps the day. ${a.tip}`;
     if (cls === "friction") return `Work weather tightens around ${force}. ${a.tip}`;
     return `${force[0].toUpperCase()}${force.slice(1)} is front-and-centre at work today. ${a.tip}`;
   }
@@ -142,7 +142,7 @@ function fullSentence(theme, cls, domain, framing) {
   }
   if (framing === "child") {
     if (cls === "flow") {
-      return `As their parent, notice how ${force} ${verb} their ${area} — meet it with softness. ${a.tip}`;
+      return `As their parent, notice how ${force} ${verb} their ${area}. Meet it with softness. ${a.tip}`;
     }
     if (cls === "friction") {
       return `As their parent, ${force} is testing their ${area}. ${a.tip}`;
@@ -168,25 +168,25 @@ function fullSentence(theme, cls, domain, framing) {
 function gentle(framing) {
   switch (framing) {
     case "self":
-      return "A quiet sky day for you — nothing urgent to act on; stay kind to yourself.";
+      return "A quiet sky day for you. Nothing urgent to act on; stay kind to yourself.";
     case "partner":
-      return "Nothing sharp in their sky to act on today — ordinary warmth is enough.";
+      return "Nothing sharp in their sky to act on today. Ordinary warmth is enough.";
     case "child":
-      return "No pointed sky weather for them today — keep the day ordinary and close.";
+      return "No pointed sky weather for them today. Keep the day ordinary and close.";
     case "family":
-      return "A gentle day in their sky — no special ask beyond ordinary care.";
+      return "A gentle day in their sky, with no special ask beyond ordinary care.";
     case "friend":
-      return "Their sky is quiet today — a light check-in is plenty.";
+      return "Their sky is quiet today. A light check-in is plenty.";
     case "colleague":
-      return "Nothing pointed in their work sky today — keep the day clear and steady.";
+      return "Nothing pointed in their work sky today. Keep the day clear and steady.";
     case "general":
-      return "A quiet sky day — nothing urgent; go gently.";
+      return "A quiet sky day. Nothing urgent; go gently.";
   }
 }
 
 const EMPTY = {
-  "hedge:year": "Birth year only — a birth date is needed for daily sky notes.",
-  "hedge:none": "No birth data yet — add it to see their sky.",
+  "hedge:year": "Birth year only: a birth date is needed for daily sky notes.",
+  "hedge:none": "No birth data yet. Add it to see their sky.",
   "hedge:quiet": "No tight sky weather near an exact pass today.",
 };
 
@@ -230,13 +230,13 @@ for (const framing of FRAMINGS) {
           if ((theme === "mars" || theme === "venus") && (domain === "venus" || domain === "mars")) {
             adultKeys.add(key);
             if (theme === "mars" && domain === "venus" && cls === "friction") {
-              full[key] = "Wanting and warmth pull apart between you today — say plainly what you each need.";
+              full[key] = "Wanting and warmth pull apart between you today. Say plainly what you each need.";
             }
             if (theme === "mars" && domain === "venus" && cls === "fusion") {
-              full[key] = "Attraction and heat run strong between you today — keep it honest.";
+              full[key] = "Attraction and heat run strong between you today. Keep it honest.";
             }
             if (theme === "venus" && domain === "mars" && cls === "fusion") {
-              full[key] = "Desire and drive point the same way between you — good chemistry, easy to rush.";
+              full[key] = "Desire and drive point the same way between you. Good chemistry, easy to rush.";
             }
           }
         }
@@ -247,7 +247,8 @@ for (const framing of FRAMINGS) {
 
 const outPath = path.join(__dirname, "../src/transit-nudge/copy-matrix.ts");
 const banner = `/**
- * FOUNDER-REVIEW: authored — transit nudge copy matrix.
+ * FOUNDER-REVIEW: authored. Transit nudge copy matrix.
+ * FOUNDER-REVIEW: rewritten (no U+2014).
  * Every value is a COMPLETE sentence. The resolver selects a key and freezes
  * the string; it never concatenates FORCE/AREA/GUIDANCE fragments.
  *
@@ -255,7 +256,7 @@ const banner = `/**
  * full_specificity=${fullCount}, empty_hedge=${Object.keys(EMPTY).length}.
  * Total authored=${dropCount + FRAMINGS.length + fullCount + Object.keys(EMPTY).length}.
  *
- * Generated by scripts/generate-nudge-copy.mjs — re-run to regenerate; edit
+ * Generated by scripts/generate-nudge-copy.mjs. Re-run to regenerate; edit
  * strings in place afterward for voice. Adult-only keys listed in ADULT_ONLY_KEYS.
  */
 

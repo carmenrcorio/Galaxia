@@ -11,9 +11,10 @@ import { RevealObserver } from "../components/marketing/reveal-observer";
 import { SiteFooter } from "../components/marketing/site-footer";
 import { SOFTWARE_APPLICATION_JSON_LD } from "../lib/homepage-software-application-json-ld";
 
-const TITLE = "Galaxia — Astrology for the People You Love";
+// FOUNDER-REVIEW: rewritten (no U+2014).
+const TITLE = "Galaxia: Astrology for the People You Love";
 const DESCRIPTION =
-  "Galaxia reads the real birth charts of your inner circle — partner, kids, parents, siblings, friends — so you can show up for each bond with more intention. Not your horoscope.";
+  "Galaxia reads the real birth charts of your inner circle (partner, kids, parents, siblings, friends) so you can show up for each bond with more intention. Not your horoscope.";
 
 /**
  * Page-specific metadata for `/` — the link every launch post (Reddit, etc.)
@@ -36,13 +37,13 @@ export const metadata: Metadata = {
     siteName: "Galaxia",
     type: "website",
     url: "/",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   }
 };
 

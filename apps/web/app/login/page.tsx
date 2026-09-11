@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { LoginForm } from "../../components/login-form";
 
-const TITLE = "Log In — Galaxia";
+// FOUNDER-REVIEW: rewritten (no U+2014).
+const TITLE = "Log in to Galaxia";
 const DESCRIPTION = "Sign in to your Galaxia account.";
 
 export const metadata: Metadata = {
@@ -13,13 +14,13 @@ export const metadata: Metadata = {
     siteName: "Galaxia",
     type: "website",
     url: "/login",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   }
 };
 

@@ -16,18 +16,19 @@ export function EdgeSection() {
             <span className="eyebrow edge-eyebrow">The edge</span>
             <h2 className="edge-h2">The sky you were all born under.</h2>
             <p className="lede edge-lede">
-              The slow planets — the ones that shape a whole generation — drift so gently that everyone
+              {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+              The slow planets (the ones that shape a whole generation) drift so gently that everyone
               born within a few years shares them. It's why siblings feel cut from the same cloth, why a
               friend group just <em>gets</em> each other, and why the people who came before you saw the
-              world the way they did. No other tool in this space reads your whole circle this way — what
+              world the way they did. No other tool in this space reads your whole circle this way: what
               you share, and where you quietly diverge.
             </p>
           </div>
           <div className="teal-callout edge-callout">
             <b style={{ color: "var(--teal)" }}>It needs only a birth year.</b>{" "}
             <span style={{ color: "var(--mist)", fontWeight: 300 }}>
-              So the people you have the least on — a grandmother, an old friend, the ones who came
-              before — still take their place in your sky.
+              So the people you have the least on (a grandmother, an old friend, the ones who came
+              before) still take their place in your sky.
             </span>
           </div>
         </div>
@@ -43,7 +44,7 @@ export function EdgeSection() {
           <span className="mock-label">Your shared sky</span>
           <div className="pl-row">
             <div className="glyph-sq" style={{ color: "var(--air)" }}>♅</div>
-            <div><div className="pl-body">Uranus in Aquarius</div><div className="pl-desc">The reformers — wired to question the rules</div></div>
+            <div><div className="pl-body">Uranus in Aquarius</div><div className="pl-desc">The reformers: wired to question the rules</div></div>
           </div>
           <div className="pl-row">
             <div className="glyph-sq" style={{ color: "var(--earth)" }}>♆</div>
@@ -55,7 +56,7 @@ export function EdgeSection() {
           </div>
           <div className="gen-split">
             <span className="mock-label" style={{ color: "var(--rose)" }}>Where you split · fault line</span>
-            <p className="gen-split-note">The youngest carries Pluto in Sagittarius — more restless and free, less guarded than the rest of you.</p>
+            <p className="gen-split-note">The youngest carries Pluto in Sagittarius: more restless and free, less guarded than the rest of you.</p>
           </div>
           <p className="mock-example-tag">Illustrative example</p>
         </div>

@@ -19,7 +19,8 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const category = getCategory(slug);
   if (!category) return {};
 
-  const title = `${category.label} — Galaxia blog`;
+  // FOUNDER-REVIEW: rewritten (no U+2014).
+  const title = `${category.label} on the Galaxia blog`;
   const description = `${category.label} posts from the Galaxia blog.`;
 
   return {

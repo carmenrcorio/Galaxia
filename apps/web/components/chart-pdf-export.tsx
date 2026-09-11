@@ -110,10 +110,11 @@ function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion,
           {bigThree.map(({ label, sign, reading }) => (
             <div key={label} className="pdf-chip">
               <span className="pdf-chip-glyph" style={{ color: sign ? `var(--${signElement(sign)})` : undefined }}>
-                {sign ? SIGN_GLYPH[sign] : "—"}
+                {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+                {sign ? SIGN_GLYPH[sign] : "none"}
               </span>
               <span className="pdf-chip-label">{label}</span>
-              <span className="pdf-chip-value">{sign ?? (label === "Rising" ? "Needs time + city" : "—")}</span>
+              <span className="pdf-chip-value">{sign ?? (label === "Rising" ? "Needs time + city" : "none")}</span>
               {reading ? <span className="pdf-chip-reading">{reading}</span> : null}
             </div>
           ))}
@@ -127,7 +128,7 @@ function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion,
                 <div key={p.body} className="pdf-placement pdf-placement--uncertain">
                   <span className="pdf-placement-glyph">{BODY_GLYPH[p.body] ?? p.body[0]}</span>
                   <span className="pdf-placement-uncertain-text">
-                    {p.body[0].toUpperCase() + p.body.slice(1)} — sign uncertain; a birth date would settle it.
+                    {p.body[0].toUpperCase() + p.body.slice(1)}: sign uncertain; a birth date would settle it.
                   </span>
                 </div>
               );
@@ -150,7 +151,7 @@ function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion,
           {hasHouses
             ? `Houses computed with the ${houseSystemLabelForChart(chart, engineVersion)} system. `
             : "Add an exact birth time and city to unlock the Ascendant, houses, and the full wheel. "}
-          Computed from precise astronomical data by Galaxia — never guessed.
+          Computed from precise astronomical data by Galaxia: never guessed.
         </p>
       </div>
     </div>

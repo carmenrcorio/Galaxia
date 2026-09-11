@@ -132,18 +132,19 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
         <h2 className="card-title" style={{ fontSize: "1rem" }}>Account details</h2>
         <table className="admin-table">
           <tbody>
-            <DetailRow label="Plan" value={user.plan ?? "—"} />
-            <DetailRow label="Tier" value={user.subscription_tier ?? "—"} />
+            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+            <DetailRow label="Plan" value={user.plan ?? "none"} />
+            <DetailRow label="Tier" value={user.subscription_tier ?? "none"} />
             <DetailRow label="Cancel at period end" value={user.cancel_at_period_end ? "Yes" : "No"} />
             <DetailRow label="Current period end" value={formatDate(user.current_period_end)} />
-            <DetailRow label="House system" value={user.house_system ?? "—"} />
-            <DetailRow label="Timezone" value={user.timezone ?? "—"} />
+            <DetailRow label="House system" value={user.house_system ?? "none"} />
+            <DetailRow label="Timezone" value={user.timezone ?? "none"} />
             <DetailRow label="Nudge emails" value={user.daily_nudge_emails_enabled ? "On" : "Off"} />
             <DetailRow
               label="Email confirmed"
               value={user.email_confirmed_at ? formatDate(user.email_confirmed_at) : "No"}
             />
-            <DetailRow label="Stripe customer" value={user.stripe_customer_id ?? "—"} />
+            <DetailRow label="Stripe customer" value={user.stripe_customer_id ?? "none"} />
           </tbody>
         </table>
       </div>
@@ -245,7 +246,7 @@ function renderAuditFieldValue(value: unknown): string {
 }
 
 function renderAuditMetadata(metadata: Record<string, unknown> | null): string {
-  if (!metadata || Object.keys(metadata).length === 0) return "—";
+  if (!metadata || Object.keys(metadata).length === 0) return "none";
   return Object.entries(metadata)
     .map(([key, value]) => `${key}: ${String(value)}`)
     .join(", ");
@@ -262,16 +263,16 @@ function initialsFor(displayName: string | null, email: string | null): string {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "none";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "none";
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
 function formatDateTime(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "none";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "none";
   const date = d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
   const time = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   return `${date} ${time}`;

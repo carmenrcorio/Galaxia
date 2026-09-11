@@ -31,7 +31,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         </h1>
         <p style={{ color: "var(--mist)", lineHeight: 1.7 }}>
           {inviter} uses Galaxia to understand the people they care about through astrology. Adding your birth
-          date — and your exact time and city, if you know them — lets them see your chart and how the two of you
+          date (and your exact time and city, if you know them) lets them see your chart and how the two of you
           connect. It takes about 30 seconds.
         </p>
         {alreadyDone ? (
@@ -59,7 +59,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 780 }}>
       <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 42 }}>This invite isn't ready yet</h1>
       <p style={{ color: "var(--mist)", lineHeight: 1.7 }}>
-        {invite.inviter_name ?? "Someone you know"} sent you this link, but shared spaces you can join this way aren't available yet — that feature is still being built.
+        {invite.inviter_name ?? "Someone you know"} sent you this link, but shared spaces you can join this way aren't available yet: that feature is still being built.
       </p>
       <p style={{ color: "var(--mist2)", marginTop: 16 }}>
         Privacy reminder: this page never shows private notes or detailed chart content.

@@ -121,7 +121,8 @@ const TRANSIT_GUIDANCE: Record<BodyKey, string> = {
   sun:     "let it be acknowledged",
   moon:    "let the feeling move through and pass",
   mercury: "say the thing plainly",
-  venus:   "reach out — small warmth counts",
+  // FOUNDER-REVIEW: rewritten (no U+2014).
+  venus:   "reach out. Small warmth counts",
   mars:    "aim the energy before it spikes",
   jupiter: "say yes to a little more than usual",
   saturn:  "patience and steady effort go far",
@@ -144,20 +145,20 @@ function cap(s: string): string {
 function composeShort(force: string, area: string, guidance: string, poss: string, tone: Tone): string {
   switch (tone) {
     case "friction":
-      return `A day that tests ${poss} ${area} against ${force} — ${guidance}.`;
+      return `A day that tests ${poss} ${area} against ${force}. ${guidance}.`;
     case "flow":
-      return `An easier day — ${poss} ${area} gets a lift from ${force}; ${guidance}.`;
+      return `An easier day. ${poss} ${area} gets a lift from ${force}; ${guidance}.`;
     case "fusion":
-      return `A day when ${poss} ${area} gets a strong dose of ${force} — ${guidance}.`;
+      return `A day when ${poss} ${area} gets a strong dose of ${force}. ${guidance}.`;
   }
 }
 
 function composeLong(force: string, area: string, guidance: string, poss: string, tone: Tone): string {
   switch (tone) {
     case "friction":
-      return `Right now ${force} is pressing on ${poss} ${area}. It can feel like friction, but it's workable — ${guidance}.`;
+      return `Right now ${force} is pressing on ${poss} ${area}. It can feel like friction, but it's workable. ${guidance}.`;
     case "flow":
-      return `Right now ${force} sits easily with ${poss} ${area} — a natural opening rather than a push. ${cap(guidance)}.`;
+      return `Right now ${force} sits easily with ${poss} ${area}: a natural opening rather than a push. ${cap(guidance)}.`;
     case "fusion":
       return `Right now ${force} is landing squarely on ${poss} ${area}, so the theme runs strong today. ${cap(guidance)}.`;
   }
@@ -191,129 +192,129 @@ const TRANSIT_PAIR: Record<string, Partial<Record<Tone, CuratedLine>>> = {
   // ── Saturn: limits, weight, the slow maturing pressure ──
   [PAIR("saturn", "moon")]: {
     friction: {
-      short: "A heavier stretch where {poss} emotional footing feels tested — steady routines and rest help more than pushing.",
+      short: "A heavier stretch where {poss} emotional footing feels tested: steady routines and rest help more than pushing.",
       // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj} + base-form verb).
       long: "Transiting Saturn is putting weight on how safe {subj} feel. Things can read as lonelier or heavier than they are; small, reliable routines steady it faster than forcing a mood.",
     },
-    fusion:   { short: "Feelings turn serious and a little heavy today — {poss} need for security is front and centre. Go gently, keep it simple." },
-    flow:     { short: "A steadying day for {poss} emotional life — good for building one habit that makes {poss} days feel safer." },
+    fusion:   { short: "Feelings turn serious and a little heavy today. {poss} need for security is front and centre. Go gently, keep it simple." },
+    flow:     { short: "A steadying day for {poss} emotional life: good for building one habit that makes {poss} days feel safer." },
   },
   [PAIR("saturn", "sun")]: {
-    friction: { short: "A day that asks a lot of {poss} sense of self — progress feels slow, but the effort counts. Pace it." },
+    friction: { short: "A day that asks a lot of {poss} sense of self: progress feels slow, but the effort counts. Pace it." },
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj} + base-form verb).
-    fusion:   { short: "A serious, consolidating day for who {subj} are — less flash, more foundation." },
+    fusion:   { short: "A serious, consolidating day for who {subj} are: less flash, more foundation." },
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj} + base-form verb).
-    flow:     { short: "Quiet, solid progress on what {subj} are building — reliable work pays off now." },
+    flow:     { short: "Quiet, solid progress on what {subj} are building: reliable work pays off now." },
   },
   [PAIR("saturn", "venus")]: {
-    friction: { short: "Warmth feels a little rationed today — {poss} bonds meet real limits. Reassurance lands better than pressure." },
-    flow:     { short: "A grounded, steady day for {poss} closest bonds — consistency and showing up feel good." },
+    friction: { short: "Warmth feels a little rationed today. {poss} bonds meet real limits. Reassurance lands better than pressure." },
+    flow:     { short: "A grounded, steady day for {poss} closest bonds: consistency and showing up feel good." },
   },
   [PAIR("saturn", "uranus")]: {
-    friction: { short: "A day that tests {poss} need for freedom against real limits — patience goes far.", long: "Transiting Saturn is pressing on {poss} urge to break out and do it differently. The pull between changing everything and staying put is real today; neither has to win right now — patience buys the better answer." },
+    friction: { short: "A day that tests {poss} need for freedom against real limits: patience goes far.", long: "Transiting Saturn is pressing on {poss} urge to break out and do it differently. The pull between changing everything and staying put is real today; neither has to win right now: patience buys the better answer." },
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj} + base-form verb).
-    fusion:   { short: "Freedom and structure collide head-on today — {subj} feel the tug between breaking out and settling down. No rush to resolve it." },
+    fusion:   { short: "Freedom and structure collide head-on today. {subj} feel the tug between breaking out and settling down. No rush to resolve it." },
   },
   [PAIR("saturn", "mars")]: {
-    friction: { short: "{poss} drive meets a wall today — frustration is likely, so put it into one steady task instead of forcing all of it." },
+    friction: { short: "{poss} drive meets a wall today: frustration is likely, so put it into one steady task instead of forcing all of it." },
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
-    flow:     { short: "Disciplined energy today — a good day for {obj} to grind out real, patient work." },
+    flow:     { short: "Disciplined energy today: a good day for {obj} to grind out real, patient work." },
   },
   // ── Jupiter: opening, optimism, room to grow ──
   [PAIR("jupiter", "sun")]: {
-    flow:   { short: "A day that widens {poss} horizons — confidence and timing are on {poss} side. Reach a little further." },
+    flow:   { short: "A day that widens {poss} horizons: confidence and timing are on {poss} side. Reach a little further." },
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
-    fusion: { short: "A genuinely expansive day for {obj} — say yes to the bigger version." },
+    fusion: { short: "A genuinely expansive day for {obj}: say yes to the bigger version." },
   },
   [PAIR("jupiter", "moon")]: {
-    flow:   { short: "An emotionally generous day — {poss} heart has more room than usual. Good for reaching out and being reached." },
-    fusion: { short: "Warm, hopeful feelings run high today — {poss} outlook lifts on its own." },
+    flow:   { short: "An emotionally generous day. {poss} heart has more room than usual. Good for reaching out and being reached." },
+    fusion: { short: "Warm, hopeful feelings run high today. {poss} outlook lifts on its own." },
   },
   [PAIR("jupiter", "venus")]: {
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
-    flow:   { short: "A warm, sociable day for {obj} — generosity and good company flow easily. A good time to connect." },
-    fusion: { short: "A big-hearted day for {poss} bonds — affection and generosity come easily." },
+    flow:   { short: "A warm, sociable day for {obj}: generosity and good company flow easily. A good time to connect." },
+    fusion: { short: "A big-hearted day for {poss} bonds: affection and generosity come easily." },
   },
   // ── Mars: heat, drive, the short fuse ──
   [PAIR("mars", "sun")]: {
-    friction: { short: "{poss} energy runs hot and patience runs short today — pick the one thing worth the push and skip the rest." },
-    fusion:   { short: "High drive and a bit of a temper today — great for action, risky for arguments. Aim it well." },
+    friction: { short: "{poss} energy runs hot and patience runs short today: pick the one thing worth the push and skip the rest." },
+    fusion:   { short: "High drive and a bit of a temper today: great for action, risky for arguments. Aim it well." },
   },
   [PAIR("mars", "moon")]: {
-    friction: { short: "Feelings and irritation sit close together today — a small thing can spark {poss} temper. Name the hurt under the heat." },
-    fusion:   { short: "Emotions run hot and fast today — the reaction comes before the thought, so give it a beat." },
+    friction: { short: "Feelings and irritation sit close together today: a small thing can spark {poss} temper. Name the hurt under the heat." },
+    fusion:   { short: "Emotions run hot and fast today: the reaction comes before the thought, so give it a beat." },
   },
   [PAIR("mars", "venus")]: {
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj}/{poss} + base-form verb).
-    friction: { short: "Wanting and warmth pull in different directions today — {subj} may feel restless in {poss} bonds. Say plainly what {subj} actually need.", adultOnly: true },
+    friction: { short: "Wanting and warmth pull in different directions today. {subj} may feel restless in {poss} bonds. Say plainly what {subj} actually need.", adultOnly: true },
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
-    fusion:   { short: "Attraction and heat run strong today for {obj} — good chemistry, quick to spark. Keep it honest.", adultOnly: true },
+    fusion:   { short: "Attraction and heat run strong today for {obj}: good chemistry, quick to spark. Keep it honest.", adultOnly: true },
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
-    flow:     { short: "An easy, affectionate energy for {obj} today — warmth and get-up-and-go point the same way." },
+    flow:     { short: "An easy, affectionate energy for {obj} today: warmth and get-up-and-go point the same way." },
   },
   [PAIR("mars", "mars")]: {
-    fusion: { short: "A high-energy day — {poss} drive is turbocharged. Point it at something physical or productive." },
+    fusion: { short: "A high-energy day. {poss} drive is turbocharged. Point it at something physical or productive." },
   },
   // ── Pluto: deep, slow, transformative pressure ──
   [PAIR("pluto", "moon")]: {
-    friction: { short: "Deep feelings surface today, stronger than the moment seems to call for — let them move through without trying to control them." },
-    fusion:   { short: "An emotionally intense day — something under the surface wants to shift. Don't force it; let it." },
+    friction: { short: "Deep feelings surface today, stronger than the moment seems to call for: let them move through without trying to control them." },
+    fusion:   { short: "An emotionally intense day: something under the surface wants to shift. Don't force it; let it." },
   },
   [PAIR("pluto", "sun")]: {
-    friction: { short: "A day of quiet power struggles — {poss} sense of self is being reshaped. Hold steady without needing to win." },
+    friction: { short: "A day of quiet power struggles. {poss} sense of self is being reshaped. Hold steady without needing to win." },
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
-    fusion:   { short: "A day of real inner change for {obj} — an old version is loosening its grip. Let it." },
+    fusion:   { short: "A day of real inner change for {obj}: an old version is loosening its grip. Let it." },
   },
   // ── Uranus: the jolt, the break from routine ──
   [PAIR("uranus", "moon")]: {
-    friction: { short: "Restlessness and a need to shake things up today — {poss} emotional routine feels too tight. Change one small thing." },
-    fusion:   { short: "A jolt to {poss} emotional world today — something wants to change. Stay loose." },
+    friction: { short: "Restlessness and a need to shake things up today. {poss} emotional routine feels too tight. Change one small thing." },
+    fusion:   { short: "A jolt to {poss} emotional world today: something wants to change. Stay loose." },
   },
   [PAIR("uranus", "sun")]: {
-    fusion: { short: "A day that breaks {poss} routine open — expect the unexpected and let it land." },
+    fusion: { short: "A day that breaks {poss} routine open: expect the unexpected and let it land." },
   },
   // ── Neptune: the soft, blurring, dreamy fog ──
   [PAIR("neptune", "moon")]: {
-    fusion:   { short: "A tender, dreamy, slightly foggy day — {poss} feelings blur at the edges. Rest and quiet help; big decisions can wait." },
+    fusion:   { short: "A tender, dreamy, slightly foggy day. {poss} feelings blur at the edges. Rest and quiet help; big decisions can wait." },
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
-    friction: { short: "Emotional signals are hard to read today — don't trust the fog to tell {obj} the whole story." },
+    friction: { short: "Emotional signals are hard to read today: don't trust the fog to tell {obj} the whole story." },
   },
   [PAIR("neptune", "sun")]: {
-    friction: { short: "{poss} sense of direction feels hazy today — a day to drift a little, not to decide." },
+    friction: { short: "{poss} sense of direction feels hazy today: a day to drift a little, not to decide." },
   },
   // ── Venus: warmth, ease, connection (all family-safe) ──
   [PAIR("venus", "moon")]: {
-    flow:   { short: "A soft, affectionate day — {poss} closest bonds feel easy and warm. Enjoy the closeness." },
+    flow:   { short: "A soft, affectionate day. {poss} closest bonds feel easy and warm. Enjoy the closeness." },
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
-    fusion: { short: "Warmth is front and centre today — a lovely day for {obj} to feel connected." },
+    fusion: { short: "Warmth is front and centre today: a lovely day for {obj} to feel connected." },
   },
   [PAIR("venus", "venus")]: {
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
-    flow: { short: "An easy, pleasant day for {obj} — good company and small comforts land well." },
+    flow: { short: "An easy, pleasant day for {obj}: good company and small comforts land well." },
   },
   // ── Mercury: thinking, talking, small decisions ──
   [PAIR("mercury", "moon")]: {
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj} + base-form verb).
-    friction: { short: "Thoughts and feelings tangle today — {subj} may say it sideways. Ask what {subj} actually feel." },
+    friction: { short: "Thoughts and feelings tangle today. {subj} may say it sideways. Ask what {subj} actually feel." },
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}/{subj} + base-form verb).
-    flow:     { short: "A good day for {obj} to say how {subj} feel — words and emotions line up." },
+    flow:     { short: "A good day for {obj} to say how {subj} feel: words and emotions line up." },
   },
   [PAIR("mercury", "mercury")]: {
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
-    flow: { short: "A quick, clear-thinking day for {obj} — good for conversations and decisions." },
+    flow: { short: "A quick, clear-thinking day for {obj}: good for conversations and decisions." },
   },
   // ── Sun: vitality, focus, being seen ──
   [PAIR("sun", "sun")]: {
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
-    fusion: { short: "A day that puts {obj} in the spotlight — energy and focus return. Use it." },
+    fusion: { short: "A day that puts {obj} in the spotlight: energy and focus return. Use it." },
   },
   [PAIR("sun", "moon")]: {
-    flow: { short: "A day when {poss} outer life and inner needs line up — things feel a little more whole." },
+    flow: { short: "A day when {poss} outer life and inner needs line up: things feel a little more whole." },
   },
   // ── Moon: the fast, monthly emotional weather ──
   [PAIR("moon", "moon")]: {
     // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj} + base-form verb).
-    fusion: { short: "The monthly reset of {poss} emotional weather — a day to notice how {subj} actually feel and recalibrate." },
+    fusion: { short: "The monthly reset of {poss} emotional weather: a day to notice how {subj} actually feel and recalibrate." },
   },
 };
 

@@ -87,17 +87,18 @@ export const PLANET_IN_SIGN: Record<BodyKey, Record<SignKey, Reading>> = {
   // ─────────────────────────── MOON ───────────────────────────
   moon: {
     Aries:       { short: "feels fast, forgives fast", long: "The flare is real and it's over in minutes; they're baffled that you're still holding it an hour later. Say the hard thing directly, then let it go as fast as they do." },
-    Taurus:      { short: "soothed by the physical", long: "Safety is sensory: the same meal, the same side of the bed, a hand on their back. In a crisis, don't process — feed them and sit close." },
+    // FOUNDER-REVIEW: rewritten (no U+2014).
+    Taurus:      { short: "soothed by the physical", long: "Safety is sensory: the same meal, the same side of the bed, a hand on their back. In a crisis, don't process: feed them and sit close." },
     Gemini:      { short: "talks its way to calm", long: "They need to narrate a feeling before they can feel it, and it will change three times while they do. Don't hold them to the first version." },
     Cancer:      { short: "tidal, and remembers everything", long: "Their moods have weather and their memory keeps receipts, especially for tenderness. A small ritual of care will steady them faster than any conversation." },
     Leo:         { short: "needs warmth spoken aloud", long: "They need to be told, not shown, and they'll wilt while insisting they're fine. It costs you one sentence and it lasts them a week." },
-    Virgo:       { short: "worries as a love language", long: "Anxiety is how they metabolise care; the list is a form of devotion. Don't tell them to relax — help them do one thing on the list." },
+    Virgo:       { short: "worries as a love language", long: "Anxiety is how they metabolise care; the list is a form of devotion. Don't tell them to relax: help them do one thing on the list." },
     Libra:       { short: "settled by fairness and peace", long: "Conflict genuinely destabilises them, so they'll agree to things they resent. Ask twice, and make it safe for the second answer to be different." },
     Scorpio:     { short: "intense, private, all or nothing", long: "They feel at a depth they won't narrate, and being watched too closely makes them close. Loyalty opens them; interrogation seals them shut." },
     Sagittarius: { short: "needs air to feel safe", long: "They soothe by moving, by leaving the room, by planning something far away. Following them out is a kindness; cornering them is not." },
-    Capricorn:   { short: "self-soothes by handling it", long: "They meet feeling with competence and would rather manage than be comforted. Don't offer to fix it — sit with them while they do." },
+    Capricorn:   { short: "self-soothes by handling it", long: "They meet feeling with competence and would rather manage than be comforted. Don't offer to fix it: sit with them while they do." },
     Aquarius:    { short: "steps back to feel", long: "They go clinical under emotional pressure, which reads as cold and is actually self-protection. Give them the distance and they'll return with something honest." },
-    Pisces:      { short: "absorbent, permeable, tender", long: "They cry at things that aren't theirs and feel the room before anyone speaks. Ask what they're carrying — half of it belongs to someone else." },
+    Pisces:      { short: "absorbent, permeable, tender", long: "They cry at things that aren't theirs and feel the room before anyone speaks. Ask what they're carrying: half of it belongs to someone else." },
   },
 
   // ─────────────────────────── MERCURY ───────────────────────────
@@ -127,7 +128,7 @@ export const PLANET_IN_SIGN: Record<BodyKey, Record<SignKey, Reading>> = {
     Libra:       { short: "loves the us of it", long: "They're happiest inside a partnership and will keep the peace past the point of honesty. Make disagreement safe or you'll never know what they want." },
     Scorpio:     { short: "loves totally, guards fiercely", long: "There's no shallow end. They'll test you before they trust you, and once they do, it's absolute and they expect the same." },
     Sagittarius: { short: "loves without a cage", long: "They stay when they're free to leave, and freedom is the price of their loyalty. Grip tighter and you'll get less." },
-    Capricorn:   { short: "loves by building with you", long: "They're not effusive; they're reliable. The mortgage, the ride at 4am, the plan for ten years out — that's the love letter." },
+    Capricorn:   { short: "loves by building with you", long: "They're not effusive; they're reliable. The mortgage, the ride at 4am, the plan for ten years out: that's the love letter." },
     Aquarius:    { short: "loves as friend first", long: "They need intellectual companionship more than romance and get claustrophobic in intensity. Space is not rejection here." },
     Pisces:      { short: "loves without edges", long: "They merge, sometimes past where they end. Help them keep a self, or they'll dissolve into you and resent it later." },
   },
@@ -158,7 +159,7 @@ export const PLANET_IN_SIGN: Record<BodyKey, Record<SignKey, Reading>> = {
     Virgo:       { short: "grows through service", long: "Meaning arrives through useful work done well. They undersell themselves; say the compliment specifically." },
     Libra:       { short: "grows through partnership", long: "Their luck runs through other people. The right relationship genuinely changes their life's trajectory." },
     Scorpio:     { short: "grows by going under", long: "They gain from what most people avoid: the crisis, the truth, the buried thing. They're not morbid; they're unafraid." },
-    Sagittarius: { short: "grows by going far", long: "Travel, study, belief — anything that widens the frame. A small life makes them small." },
+    Sagittarius: { short: "grows by going far", long: "Travel, study, belief: anything that widens the frame. A small life makes them small." },
     Capricorn:   { short: "grows by earning", long: "Their expansion is slow and permanent. Nothing they've built will need rebuilding." },
     Aquarius:    { short: "grows in the collective", long: "They flourish where the work is bigger than them and shared. Community, cause, or nothing." },
     Pisces:      { short: "grows by letting go", long: "Their abundance comes through compassion, art, and surrender. Grasping is the one thing that closes it." },
@@ -214,11 +215,11 @@ export const PLANET_IN_SIGN: Record<BodyKey, Record<SignKey, Reading>> = {
 
   // ────────────────── PLUTO (generational) ──────────────────
   pluto: {
-    Aries:       { short: "a generation that transforms by force", long: "Their cohort's power is initiation — beginning the thing that cannot be taken back." },
+    Aries:       { short: "a generation that transforms by force", long: "Their cohort's power is initiation: beginning the thing that cannot be taken back." },
     Taurus:      { short: "a generation remaking value itself", long: "What is worth something, who owns the earth, what a body is for. That's their upheaval." },
     Gemini:      { short: "a generation transformed by ideas", long: "Their power moves through language, and so does their damage." },
     Cancer:      { short: "a generation that rebuilt the family", long: "Their cohort was forged by upheaval in home and homeland, and rebuilt both." },
-    Leo:         { short: "a generation that seized the self", long: "Their era made individual will an engine — creative, and hard to govern." },
+    Leo:         { short: "a generation that seized the self", long: "Their era made individual will an engine: creative, and hard to govern." },
     Virgo:       { short: "a generation transformed through crisis and repair", long: "Their power is in the work of healing what broke, exactingly." },
     Libra:       { short: "a generation that broke and remade the couple", long: "Their era rewrote marriage, fairness, and what people owe each other." },
     Scorpio:     { short: "intensity, loyalty, all-or-nothing depth", long: "This cohort treats trust as absolute and betrayal as final. Deep instincts around honesty, and no patience for the surface." },
@@ -480,14 +481,14 @@ export function interpretAspect(a: BodyKey, b: BodyKey, aspect: AspectKey): Read
  */
 // FOUNDER-REVIEW: authored — all twelve minor Venus shorts + longs.
 export const VENUS_IN_SIGN_MINOR: Record<SignKey, Reading> = {
-  Aries:       { short: "cares by going first", long: "They show liking by starting — the invite, the plan, the dare. Waiting around for someone else to begin feels like being left out." },
+  Aries:       { short: "cares by going first", long: "They show liking by starting: the invite, the plan, the dare. Waiting around for someone else to begin feels like being left out." },
   Taurus:      { short: "cares by staying", long: "Loyalty looks like the same snack, the same spot, showing up again tomorrow. They prove it by not disappearing." },
   Gemini:      { short: "cares by talking", long: "Attention is the affection; a stream of jokes and links is the whole point. Being ignored lands harder than a disagreement." },
   Cancer:      { short: "cares by looking after", long: "They fold people into their care and remember what you like. Quiet distance scares them more than a frank talk." },
   Leo:         { short: "cares big, needs it said", long: "They give warmth loudly and need it named back. A specific compliment steadies them more than a shrug." },
   Virgo:       { short: "cares by noticing", long: "They show it in the small fix and the errand nobody asked for. Thank the tiny ones out loud or they quietly stop." },
   Libra:       { short: "cares about the we", long: "They feel best when things between people are fair and kind, and will smooth over a fight to keep the peace. Ask twice what they actually want." },
-  Scorpio:     { short: "cares all the way, or not", long: "Trust is the gate. Once you're in, it's loyal and serious — and they expect the same care back." },
+  Scorpio:     { short: "cares all the way, or not", long: "Trust is the gate. Once you're in, it's loyal and serious: and they expect the same care back." },
   Sagittarius: { short: "cares with room to roam", long: "They stay close when they're free to explore. Holding too tight gets you less of them, not more." },
   Capricorn:   { short: "cares by being reliable", long: "Not the loudest about feelings; the ride, the plan, the kept promise is the letter. Count on what they do." },
   Aquarius:    { short: "cares as friend first", long: "Companionship and shared ideas matter more than intensity. Space usually means trust, not rejection." },

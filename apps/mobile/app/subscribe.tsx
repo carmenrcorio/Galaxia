@@ -32,7 +32,8 @@ export default function SubscribeScreen() {
   // FOUNDER-REVIEW: authored — mobile paywall when trial/subscription ended.
   const body =
     status === "trialing" && trialDaysLeft === 0
-      ? "Your trial has ended. Everything you've built is still here — every chart, every note, every constellation. Continue on the web whenever you're ready."
+      // FOUNDER-REVIEW: rewritten (no U+2014).
+      ? "Your trial has ended. Everything you've built is still here: every chart, every note, every constellation. Continue on the web whenever you're ready."
       : "Access is paused on this account. Everything you've built is still here. Continue on the web to keep using Galaxia.";
 
   return (
@@ -58,7 +59,7 @@ export default function SubscribeScreen() {
           paddingVertical: 12
         }}
       >
-        <Text style={{ color: tokens.colors.ink, textAlign: "center", fontWeight: "700" }}>I continued — refresh</Text>
+        <Text style={{ color: tokens.colors.ink, textAlign: "center", fontWeight: "700" }}>I continued: refresh</Text>
       </Pressable>
       <Pressable
         onPress={() => void signOut()}

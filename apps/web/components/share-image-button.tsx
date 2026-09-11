@@ -94,7 +94,8 @@ export function ShareImageButton({
             return;
           }
         } catch (shareErr) {
-          // A cancelled OS share sheet is not an error — just fall through
+          // FOUNDER-REVIEW: rewritten (no U+2014).
+          // A cancelled OS share sheet is not an error: just fall through
           // to the direct download below without surfacing anything red.
           if (shareErr instanceof DOMException && shareErr.name === "AbortError") return;
         }

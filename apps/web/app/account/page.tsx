@@ -167,7 +167,8 @@ export default function AccountPage() {
             </p>
           ) : null}
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
-            {email} stays your login — it's never shown as your name.
+            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+            {email} stays your login: it's never shown as your name.
           </p>
           {nameStatus ? (
             <p className={nameStatus === "Saved." ? "success" : "error"} style={{ fontSize: 13, marginTop: 8 }}>{nameStatus}</p>

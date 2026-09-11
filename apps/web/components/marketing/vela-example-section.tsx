@@ -36,11 +36,12 @@ export function VelaExampleSection() {
             </div>
             <div className="bubble bubble-vela">
               <div className="bubble-sender">Vela</div>
-              I don't have her exact birth time, so I won't claim anything about her houses or Rising —
-              that'd be guessing. But from her Taurus Moon and Capricorn Sun, here's what I can say with
+              {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+              I don't have her exact birth time, so I won't claim anything about her houses or Rising.
+              That'd be guessing. But from her Taurus Moon and Capricorn Sun, here's what I can say with
               confidence: she's wired to feel safe through steadiness and competence, not reassurance.
               When you jump in to help, a Capricorn Sun kid can read it as "you don't think I can do this
-              myself." Try sitting near her without taking over — presence, not correction. Let her ask.
+              myself." Try sitting near her without taking over (presence, not correction). Let her ask.
             </div>
           </div>
         </div>

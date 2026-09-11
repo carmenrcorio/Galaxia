@@ -69,7 +69,8 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   // for a post that has none yet.
   const ogImage = post.heroImageUrl
     ? [{ url: post.heroImageUrl, alt: post.title }]
-    : [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia — astrology for the people you love" }];
+    // FOUNDER-REVIEW: rewritten (no U+2014).
+    : [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }];
 
   return {
     title: post.title,

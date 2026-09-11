@@ -83,7 +83,8 @@ function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
                   <div key={p.body} style={{ display: "flex", gap: 10, alignItems: "center", opacity: 0.6, padding: "6px 0" }}>
                     <span style={{ width: 20, textAlign: "center" }}>{BODY_GLYPH[p.body] ?? p.body[0]}</span>
                     <span className="muted" style={{ fontSize: ".82rem" }}>
-                      {p.body[0].toUpperCase() + p.body.slice(1)} — sign uncertain, add a birth date to settle it
+                      {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+                      {p.body[0].toUpperCase() + p.body.slice(1)}: sign uncertain, add a birth date to settle it
                     </span>
                   </div>
                 );
@@ -233,7 +234,7 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
         {framing.blockRomanticMinorRender ? null : !payload.synastry ? (
           <section className="glass-card fade-in fade-in-delay-1">
             <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>
-              One of you has year-only birth data, so a full synastry read isn&apos;t possible — the planet-to-planet
+              One of you has year-only birth data, so a full synastry read isn&apos;t possible: the planet-to-planet
               aspects would be guesses. What the generational layer shows: {payload.generational.theme}
             </p>
           </section>

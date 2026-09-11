@@ -15,7 +15,7 @@ describe("skyTodayEmail", () => {
   const base = {
     ownerFirstName: "Carmen",
     subjectPersonName: "Alex",
-    copyResolved: "Venus trine your Moon today — a softer, more receptive stretch.",
+    copyResolved: "Venus trine your Moon today: a softer, more receptive stretch.",
     siteUrl: "https://galaxia.app",
     unsubscribeUrl: "https://galaxia.app/api/nudge-email/unsubscribe?token=abc-123"
   };
@@ -77,10 +77,9 @@ describe("skyTodayEmail", () => {
   });
 
   it("no CHROME copy (subject, greeting, first-send line, footer) uses an em dash (founder style rule)", () => {
-    // copy_resolved itself legitimately uses em dashes (the astrology copy
-    // library's established voice, packages/astro/src/transit-nudge/copy-matrix.ts)
-    // — untouchable, per Phase 0. Strip it out before checking the CHROME
-    // this phase actually authored.
+    // copy_resolved is authored elsewhere (copy-matrix) and is checked
+    // verbatim here; this assertion is only about email chrome. Strip the
+    // fixture body before checking the chrome this test actually authored.
     const rendered = skyTodayEmail({ ...base, isFirstEmail: true });
     const chromeHtml = rendered.html.replaceAll(base.copyResolved, "");
     const chromeText = rendered.text.replaceAll(base.copyResolved, "");

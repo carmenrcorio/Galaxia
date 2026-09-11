@@ -7,9 +7,10 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "Do I need everyone's exact birth time?",
     a: (
       <>
-        No — and that's the point. An exact time unlocks the deepest detail (houses, your rising sign,
+        {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+        No. And that's the point. An exact time unlocks the deepest detail (houses, your rising sign,
         the precise Moon). But the signs, the compatibility reads, and the entire generational layer
-        work from just a birth date — often just a <em>year</em>. Add the people you have, at whatever
+        work from just a birth date: often just a <em>year</em>. Add the people you have, at whatever
         detail you have. The grandmother you only know a birth year for still belongs in your sky.
       </>
     ),
@@ -18,7 +19,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "Is this actually private?",
     a: (
       <>
-        Completely. The notes you keep about someone are yours alone — never shared, never shown to
+        Completely. The notes you keep about someone are yours alone: never shared, never shown to
         them, never fed into a conversation they can see. Anything about your children stays private
         to you. The people in here are the ones you love most; we treat that the way it deserves.
       </>
@@ -28,7 +29,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "Is it real astrology, or AI making things up?",
     a: (
       <>
-        Real. Every chart is computed from precise astronomical data — the actual positions of the
+        Real. Every chart is computed from precise astronomical data: the actual positions of the
         planets at the moment someone was born. Vela, the guide, only ever interprets what's real. She
         never invents a placement.
       </>
@@ -38,7 +39,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "Who is Galaxia for?",
     a: (
       <>
-        Anyone who wants to understand the people already in their life — a partner, kids, parents,
+        Anyone who wants to understand the people already in their life: a partner, kids, parents,
         siblings, the friends who became family, the ones who came before. It's not for swiping on
         strangers, and it's not a daily horoscope. It's for tending the bonds that actually make a life.
       </>
@@ -49,7 +50,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     // a native-app claim the product does not make. Galaxia is web-only; the honest
     // answer is simply that it's live now, with nothing to install.
     q: "When can I use it?",
-    a: <>Available now on the web — no downloads, nothing to install. Sign up and you're in.</>,
+    a: <>Available now on the web: no downloads, nothing to install. Sign up and you're in.</>,
   },
 ];
 
@@ -59,7 +60,7 @@ export function FaqSection() {
   // page-wide RevealObserver (`classList.add("in")`). That works for static
   // sections, but these FAQ rows re-render on every open/close: React rebuilds
   // each row's `className` from the values below and, because it doesn't know
-  // about the imperatively-added `in`, wipes it — reverting the row to
+  // about the imperatively-added `in`, wipes it: reverting the row to
   // `.reveal`'s `opacity:0; translateY(26px)` and making the whole item vanish
   // on click. Owning reveal state in React keeps `in` on re-render.
   const [revealedSet, setRevealedSet] = useState<Set<number>>(new Set());

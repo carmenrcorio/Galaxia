@@ -22,9 +22,10 @@ export function PricingSection() {
             <Link href="/signup" className="btn-primary" style={{ marginTop: 18, display: "inline-block" }}>Start 14 days free</Link>
           </div>
         </div>
-        <p className="price-no-cap reveal">✦ No per-person cap — your grandmother shouldn't cost extra.</p>
+        {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+        <p className="price-no-cap reveal">✦ No per-person cap: your grandmother shouldn't cost extra.</p>
         <div className="incl glass-card reveal">
-          <div className="incl-row"><span className="incl-star">✦</span><p><b>Real charts.</b> Computed from precise astronomical data — placements, houses, angles, aspects, to the degree. Never guessed by an AI.</p></div>
+          <div className="incl-row"><span className="incl-star">✦</span><p><b>Real charts.</b> Computed from precise astronomical data: placements, houses, angles, aspects, to the degree. Never guessed by an AI.</p></div>
           <div className="incl-row"><span className="incl-star">✦</span><p><b>Vela.</b> An astrologer and relationship coach who knows both charts and gives you something to actually do.</p></div>
           <div className="incl-row"><span className="incl-star">✦</span><p><b>The generational layer.</b> See the sky your whole family was born under. Works from just a birth year.</p></div>
           <div className="incl-row"><span className="incl-star">✦</span><p><b>Private by design.</b> Your notes about someone are yours alone. Always. No two-way AI chat about children.</p></div>

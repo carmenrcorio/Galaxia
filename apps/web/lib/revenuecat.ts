@@ -263,7 +263,8 @@ export function purchaseErrorCopy(
     case RC_ERROR_CODE.userCancelled:
       return null;
     case RC_ERROR_CODE.paymentPending:
-      return "Your payment is still being confirmed. We'll unlock your galaxy as soon as it clears — no need to pay again.";
+      // FOUNDER-REVIEW: rewritten (no U+2014).
+      return "Your payment is still being confirmed. We'll unlock your galaxy as soon as it clears: no need to pay again.";
     case RC_ERROR_CODE.alreadyPurchased:
       return "You're already subscribed. Refresh this page, or manage your plan from your account.";
   }
@@ -280,7 +281,7 @@ export function purchaseErrorCopy(
     case RC_ERROR_CODE.unsupported:
     case RC_ERROR_CODE.invalidAppUserId:
       // Nothing the user can do — payments are misconfigured on our side.
-      return "Payments aren't set up correctly right now. This is on us, not you — please try again later.";
+      return "Payments aren't set up correctly right now. This is on us, not you: please try again later.";
     default:
       // Includes unknownBackend (16) and storeProblem (2) once a checkout setup
       // rejection has been ruled out above. We do not know whether a charge was

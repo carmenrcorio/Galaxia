@@ -12,14 +12,15 @@ const TEASERS: Teaser[] = [
   {
     eyebrow: "The shift",
     title: "Why Galaxia",
-    body: "Astrology forgot the people you love. Galaxia reads the real charts of your partner, kids, parents, siblings, and friends — not just yours — so you can show up for each bond with more intention.",
+    // FOUNDER-REVIEW: rewritten (no U+2014).
+    body: "Astrology forgot the people you love. Galaxia reads the real charts of your partner, kids, parents, siblings, and friends (not just yours) so you can show up for each bond with more intention.",
     href: "/why-galaxia",
     cta: "Why Galaxia"
   },
   {
     eyebrow: "The edge",
     title: "Generations",
-    body: "The slow planets shape a whole generation, not just one person. See the sky your whole family or friend group shares — and where you quietly diverge — from just a birth year.",
+    body: "The slow planets shape a whole generation, not just one person. See the sky your whole family or friend group shares, and where you quietly diverge, from just a birth year.",
     href: "/generations",
     cta: "Explore Generations"
   },
@@ -34,14 +35,14 @@ const TEASERS: Teaser[] = [
   {
     eyebrow: "Built on trust",
     title: "Private by design",
-    body: "Your notes about someone are yours alone, always. No two-way AI chat with children, and every chart comes from real astronomical data — never an AI guess.",
+    body: "Your notes about someone are yours alone, always. No two-way AI chat with children, and every chart comes from real astronomical data: never an AI guess.",
     href: "/security",
     cta: "See how we protect you"
   },
   {
     eyebrow: "Pricing",
     title: "One honest plan",
-    body: "No feature tiers, no per-person fees, no upsells — the same everything, for everyone you add. Start with 14 days free.",
+    body: "No feature tiers, no per-person fees, no upsells: the same everything, for everyone you add. Start with 14 days free.",
     href: "/pricing",
     cta: "View pricing"
   }

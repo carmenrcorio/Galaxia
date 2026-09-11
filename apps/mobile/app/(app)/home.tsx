@@ -441,7 +441,8 @@ export default function HomeScreen() {
         <Text style={cardTitle}>Today in your sky</Text>
         <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
           {activeTransitIds.length > 0
-            ? "Daily sky notes from each person's own chart — fixed once for the day."
+            // FOUNDER-REVIEW: rewritten (no U+2014).
+            ? "Daily sky notes from each person's own chart: fixed once for the day."
             : "No sky notes near an exact pass for anyone right now."}
         </Text>
         {personSkies.map((sky) => {

@@ -34,8 +34,9 @@ export function Hero() {
             Understand <em>the people you love</em>, through their real charts.
           </h1>
           <p className="lede fade-in fade-in-delay-2" style={{ marginTop: 18 }}>
+            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
             Galaxia reads the real birth charts of the small, close circle you actually steer your life
-            by — partner, kids, parents, siblings, friends — then helps you show up for each bond with
+            by (partner, kids, parents, siblings, friends), then helps you show up for each bond with
             more intention. Not your horoscope. Not for swiping on strangers.
           </p>
           <div className="hero-actions fade-in fade-in-delay-3">

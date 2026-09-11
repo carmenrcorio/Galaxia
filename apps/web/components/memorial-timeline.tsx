@@ -257,7 +257,7 @@ export function MemorialTimeline({
           <p className="eyebrow" style={{ marginBottom: 6, color: "rgba(111,177,184,.9)" }}>Timeline</p>
           <p className="muted" style={{ fontSize: ".84rem", lineHeight: 1.6, margin: 0, maxWidth: "50ch" }}>
             {person.display_name}&apos;s major life transits, gently interleaved with the moments you&apos;ve chosen to
-            keep. Their chart never changes — this is the layer that holds what mattered.
+            keep. Their chart never changes. This is the layer that holds what mattered.
           </p>
         </div>
         <ShareImageButton
@@ -330,7 +330,7 @@ export function MemorialTimeline({
           <p className="muted" style={{ fontSize: ".82rem" }}>Gathering their timeline…</p>
         ) : entries.length === 0 ? (
           <p className="muted" style={{ fontSize: ".84rem", lineHeight: 1.6 }}>
-            Their timeline is still quiet. Add the moments that mattered — a wedding, a move, the year they started
+            Their timeline is still quiet. Add the moments that mattered: a wedding, a move, the year they started
             something that became who they were.
           </p>
         ) : (

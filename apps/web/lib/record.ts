@@ -120,7 +120,8 @@ export function formatWithdrawnReasonForDisplay(
   const assertedMatch = head.match(/^Asserted\s+(.+)$/i);
   if (assertedMatch) {
     const detail = stripConfidentTag(assertedMatch[1]!)
-      .replace(/;\s*/g, " — ")
+      // FOUNDER-REVIEW: rewritten (no U+2014).
+      .replace(/;\s*/g, ": ")
       .replace(/\ba confident\b/gi, "a");
     // FOUNDER-REVIEW: authored — asserted-without-computed withdrawal preview
     // (e.g. year-only birth where a concrete sign cannot be supported).

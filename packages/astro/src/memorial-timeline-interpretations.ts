@@ -20,8 +20,9 @@ import type { LifespanTransitEvent } from "./lifespan-transits";
 import type { BodyName } from "./index";
 
 const OUTER_PLANET_THEME: Partial<Record<BodyName, string>> = {
-  uranus: "a break from the familiar — change arriving whether or not it was invited",
-  neptune: "a softening of the edges — dreams, faith, or loss loosening the grip of the everyday",
+  // FOUNDER-REVIEW: rewritten (no U+2014).
+  uranus: "a break from the familiar: change arriving whether or not it was invited",
+  neptune: "a softening of the edges: dreams, faith, or loss loosening the grip of the everyday",
   pluto: "a deep, slow-moving pressure to shed something and become someone a little different",
 };
 
@@ -47,13 +48,13 @@ export function interpretLifespanTransitEvent(event: LifespanTransitEvent): Memo
       return {
         headline: `Saturn return, around age ${event.approxAge}`,
         body:
-          "A turning point — a reckoning with who they'd become, and the quiet work of building something that could last.",
+          "A turning point: a reckoning with who they'd become, and the quiet work of building something that could last.",
       };
     case "jupiter_return":
       return {
         headline: `Jupiter return, around age ${event.approxAge}`,
         body:
-          "A season that widened their world — a chance to grow, to reach further, to say yes to more of what was possible.",
+          "A season that widened their world: a chance to grow, to reach further, to say yes to more of what was possible.",
       };
     case "progressed_moon_sign_change":
       return {
@@ -61,7 +62,7 @@ export function interpretLifespanTransitEvent(event: LifespanTransitEvent): Memo
           ? `Their inner world shifted into ${event.sign}, around age ${event.approxAge}`
           : `Their inner world shifted, around age ${event.approxAge}`,
         body: event.sign
-          ? `What steadied them emotionally changed its shape around this time — a new, ${event.sign}-toned chapter of what they needed to feel safe and at home in themselves.`
+          ? `What steadied them emotionally changed its shape around this time: a new, ${event.sign}-toned chapter of what they needed to feel safe and at home in themselves.`
           : "What steadied them emotionally changed its shape around this time.",
       };
     case "outer_conjunction": {

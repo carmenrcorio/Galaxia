@@ -86,7 +86,8 @@ export default function SettingsScreen() {
   let subscriptionBody: string;
   if (comped) {
     // FOUNDER-REVIEW: permanent comp access — not a subscription, not a trial.
-    subscriptionBody = "Permanent access. This account is complimentary — you are not billed.";
+    // FOUNDER-REVIEW: rewritten (no U+2014).
+    subscriptionBody = "Permanent access. This account is complimentary. You are not billed.";
   } else if (subStatus === "trialing") {
     subscriptionBody = `14 days, everything included. ${trialDaysLeft} left in your trial.`;
   } else if (subStatus === "active" && cancelAtPeriodEnd) {

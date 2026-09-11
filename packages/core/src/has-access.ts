@@ -79,4 +79,5 @@ export function trialDaysRemaining(trialEndsAt: string | Date | null | undefined
 
 // FOUNDER-REVIEW: authored — vela-chat 403 when profile missing or unentitled.
 export const VELA_ENTITLEMENT_REQUIRED_ERROR =
-  "Access required. Your trial has ended or your subscription is inactive — continue on the web to keep using Vela.";
+  // FOUNDER-REVIEW: rewritten (no U+2014).
+  "Access required. Your trial has ended or your subscription is inactive. Continue on the web to keep using Vela.";

@@ -81,9 +81,10 @@ function MemorialMark({ person }: { person: PersonMemorialInfo | undefined }) {
   if (!person?.passed_at) return null;
   if (usesMemorialGlyph(person)) {
     const pattern = getMemorialConstellation(person.memorial_constellation);
-    if (pattern) return <MemorialConstellationGlyph pattern={pattern} size={14} strokeWidth={1} starRadius={1} title={`${person.display_name} — remembered`} />;
+    {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+    if (pattern) return <MemorialConstellationGlyph pattern={pattern} size={14} strokeWidth={1} starRadius={1} title={`${person.display_name}, remembered`} />;
   }
-  return <span aria-label={`${person.display_name} — remembered`} style={{ color: "var(--gold-soft)", fontSize: ".7rem" }}>✦</span>;
+  return <span aria-label={`${person.display_name}, remembered`} style={{ color: "var(--gold-soft)", fontSize: ".7rem" }}>✦</span>;
 }
 
 export function RelationalTransitFeed({ ownerId }: { ownerId: string }) {
@@ -136,7 +137,7 @@ export function RelationalTransitFeed({ ownerId }: { ownerId: string }) {
     <section className="glass-card fade-in fade-in-delay-1">
       <p className="eyebrow">This week</p>
       <p className="muted" style={{ fontSize: ".78rem", marginBottom: 10 }}>
-        Transits moving across more than one person in your constellation at once — the sky's dynamic between you, not just what one of you is feeling alone.
+        Transits moving across more than one person in your constellation at once: the sky's dynamic between you, not just what one of you is feeling alone.
       </p>
       <div style={{ display: "grid", gap: 10 }}>
         {visibleRows.map((row) => {
@@ -197,7 +198,7 @@ export function RelationalTransitFeed({ ownerId }: { ownerId: string }) {
                       {isOpen ? "Show less" : "Read more"}
                     </button>
                     {velaHref ? (
-                      // Dynamic, caller-built href — not a literal route — so
+                      // Dynamic, caller-built href (not a literal route) so
                       // Next's typedRoutes can't narrow it to `Route`. Same
                       // `as never` escape used in require-admin.ts / app-nav.tsx.
                       <Link href={velaHref as never} style={{ color: "var(--gold-soft)", fontSize: ".76rem", textDecoration: "none" }}>
@@ -215,7 +216,7 @@ export function RelationalTransitFeed({ ownerId }: { ownerId: string }) {
   );
 }
 
-/** Deep-links into Vela pre-loaded with the two (or first two) affected people and a prefilled question — never auto-sent. */
+/** Deep-links into Vela pre-loaded with the two (or first two) affected people and a prefilled question: never auto-sent. */
 function buildVelaHref(row: RelationalTransitRow, affected: AffectedProfileHit[]): string | null {
   const uniqueIds = Array.from(new Set(affected.map((a) => a.personId)));
   if (uniqueIds.length === 0) return null;

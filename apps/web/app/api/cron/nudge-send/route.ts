@@ -76,14 +76,11 @@ export const maxDuration = 800;
  * `copy_resolved`, never a theme/domain word, and (by the ordering above)
  * never a minor's name.
  *
- * HARD BLOCKER before any real send to the real user base: the
- * `[MAILING ADDRESS]` placeholder in the email footer (`lib/emails.ts`,
- * mirroring the same open placeholder in `content/legal/privacy-policy.md`)
- * must be filled with a real physical address (CAN-SPAM). This route can be
- * built, deployed, and exercised against a single test recipient before
- * that — it must not be pointed at the real profiles table in production
- * (i.e. the cron trigger itself must stay unconfigured) until the address
- * is real.
+ * CAN-SPAM: the email footer (`lib/emails.ts`'s `complianceFooterHtml`/
+ * `complianceFooterText`, shared with `content/legal/privacy-policy.md`'s
+ * Section 15 contact block) now carries the real legal entity and physical
+ * mailing address, so this route is no longer blocked on that front before
+ * pointing at the real `profiles` table.
  */
 
 interface ProfileRow {

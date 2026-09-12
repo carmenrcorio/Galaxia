@@ -161,15 +161,15 @@ export default function AppHomePage() {
      so the arrival sequence plays once on data load, not on every state change */
   const entranceStartRef = useRef<number | null>(null);
   const entranceKeyRef   = useRef<string>("");
-  /* Flips true once the entrance ignition has finished and the sky is in its
-     settled ambient-idle state (mirrors the existing budgetArmed gate inside
-     draw() below), gating the image export button so a capture never lands
-     mid-animation. Reset alongside the entrance itself on a fresh data load. */
+  /* Flips true once the entrance ignition has finished — used only inside
+     the draw loop's adaptive budget, not to hide the share button. */
   const entranceSettledRef = useRef(false);
-  const [entranceSettled, setEntranceSettled] = useState(false);
   /* Captured region for the "share this sky" export: the canvas stack plus
      the film-grain overlay, watermarked by ChartImageExportFrame. */
   const galaxyFrameRef = useRef<HTMLDivElement>(null);
+  /* Bound inside the canvas effect: redraws THIS account's settled sky onto
+     offscreen canvases and returns a PNG Blob. Never a fixture constellation. */
+  const galaxyCaptureRef = useRef<null | (() => Promise<Blob>)>(null);
 
   /* First name only, from the shared resolver. Null when no name has been
      captured, which the greeting handles by simply not naming anyone. It is
@@ -212,8 +212,8 @@ export default function AppHomePage() {
     const canvas = canvasRef.current;
     const atmCanvas = atmCanvasRef.current;
     if (!canvas || !atmCanvas) return;
-    const cx = canvas.getContext("2d");
-    const atmCtx = atmCanvas.getContext("2d");
+    let cx = canvas.getContext("2d");
+    let atmCtx = atmCanvas.getContext("2d");
     if (!cx || !atmCtx) return;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -350,11 +350,13 @@ export default function AppHomePage() {
       entranceKeyRef.current = entranceKey;
       entranceStartRef.current = null;
       entranceSettledRef.current = false;
-      setEntranceSettled(false);
     }
 
     let elapsed = 0;      /* ms since entrance start (updated each frame) */
     let globalFade = 1;   /* reduced-motion fade progress */
+    /* True while paintFrame is drawing the share snapshot so bodies/labels
+       use the settled, full-quality stack (not a dim twinkle phase). */
+    let forExport = false;
 
     /* ── adaptive performance: drop the extra bloom layer if a frame budget
        is blown, so mobile degrades (fewer glow layers) rather than janks.
@@ -624,7 +626,7 @@ export default function AppHomePage() {
          pulse: ~45–100s (was ~14–30s). Amplitude unchanged (~0.065). Same
          rate under lowPerf — no faster path on small viewports. Per-star
          phase (phases[i].ph) staggers them so they don't pulse in unison. */
-      const tw    = reduced ? 1 : (1 + 0.04 * Math.sin(t * 0.00018 * phases[i].sp + phases[i].ph)
+      const tw    = (reduced || forExport) ? 1 : (1 + 0.04 * Math.sin(t * 0.00018 * phases[i].sp + phases[i].ph)
                                      + 0.025 * Math.sin(t * 0.0001 + phases[i].ph * 1.7));
 
       cx.save();
@@ -788,7 +790,7 @@ export default function AppHomePage() {
       }
 
       /* travelling light pulse — only once the line is fully drawn */
-      if (!reduced && progress >= 0.999) {
+      if (!reduced && !forExport && progress >= 0.999) {
         const linkIdx = links.indexOf(link);
         const tt = ((t * 0.0002 + linkIdx * 0.3) % 1);
         const px = (1-tt)*(1-tt)*posA.x + 2*(1-tt)*tt*cpx + tt*tt*posB.x;
@@ -859,7 +861,7 @@ export default function AppHomePage() {
       cx.setLineDash([]);
 
       /* slower water-tinted pulse — never the cream synastry bead */
-      if (!reduced && progress >= 0.999) {
+      if (!reduced && !forExport && progress >= 0.999) {
         const tt = ((t * 0.00011 + edgeIndex * 0.37) % 1);
         const px = (1 - tt) * (1 - tt) * posA.x + 2 * (1 - tt) * tt * cpx + tt * tt * posB.x;
         const py = (1 - tt) * (1 - tt) * posA.y + 2 * (1 - tt) * tt * cpy + tt * tt * posB.y;
@@ -995,47 +997,50 @@ export default function AppHomePage() {
     }
 
     /* ── render loop ── */
-    const draw = () => {
-      t = performance.now();
-      if (entranceStartRef.current == null) entranceStartRef.current = t;
-      elapsed = t - entranceStartRef.current;
-      globalFade = reduced ? clamp01(elapsed / REDUCED_FADE) : 1;
+    const paintFrame = (opts?: { scheduleRaf?: boolean; exportSettled?: boolean }) => {
+      forExport = opts?.exportSettled === true;
+      if (forExport) {
+        elapsed = totalDuration + 500;
+        globalFade = 1;
+        t = (entranceStartRef.current ?? performance.now()) + totalDuration + 500;
+      } else {
+        t = performance.now();
+        if (entranceStartRef.current == null) entranceStartRef.current = t;
+        elapsed = t - entranceStartRef.current;
+        globalFade = reduced ? clamp01(elapsed / REDUCED_FADE) : 1;
 
-      /* adaptive frame-budget tracking. Skip entrance + a short settle so the
-         ignition cascade (extra glow flares) cannot permanently shed the home
-         sky. Shed order: ambient meteors first, then existing lowPerf stack.
-         Recover with hysteresis when the EMA drops back under budget. */
-      const dt = t - lastFrame; lastFrame = t;
-      const budgetArmed = reduced
-        ? elapsed > REDUCED_FADE + 200
-        : elapsed > totalDuration + 400;
-      if (budgetArmed) {
-        if (warmup < 12) { warmup++; }
-        else {
-          emaFrameMs = emaFrameMs * 0.9 + dt * 0.1;
-          if (!meteorsOff && emaFrameMs > 24) meteorsOff = true;
-          if (!lowPerf && emaFrameMs > 26) {
-            lowPerf = true; /* ~<38fps: shed a glow layer */
-            meteorsOff = true;
-          }
-          /* recover with tight hysteresis when steady-state is back under budget */
-          if (lowPerf && emaFrameMs < 23) lowPerf = false;
-          if (!reduced && meteorsOff && !lowPerf && emaFrameMs < 21) {
-            meteorsOff = false;
+        /* adaptive frame-budget tracking. Skip entrance + a short settle so the
+           ignition cascade (extra glow flares) cannot permanently shed the home
+           sky. Shed order: ambient meteors first, then existing lowPerf stack.
+           Recover with hysteresis when the EMA drops back under budget. */
+        const dt = t - lastFrame; lastFrame = t;
+        const budgetArmed = reduced
+          ? elapsed > REDUCED_FADE + 200
+          : elapsed > totalDuration + 400;
+        if (budgetArmed) {
+          if (warmup < 12) { warmup++; }
+          else {
+            emaFrameMs = emaFrameMs * 0.9 + dt * 0.1;
+            if (!meteorsOff && emaFrameMs > 24) meteorsOff = true;
+            if (!lowPerf && emaFrameMs > 26) {
+              lowPerf = true; /* ~<38fps: shed a glow layer */
+              meteorsOff = true;
+            }
+            /* recover with tight hysteresis when the EMA drops back under budget */
+            if (lowPerf && emaFrameMs < 23) lowPerf = false;
+            if (!reduced && meteorsOff && !lowPerf && emaFrameMs < 21) {
+              meteorsOff = false;
+            }
           }
         }
-      }
-      if (lowPerf !== lastLowPerf) {
-        lastLowPerf = lowPerf;
-        atmDirty = true; /* puff count / breath quality changes with lowPerf */
-      }
+        if (lowPerf !== lastLowPerf) {
+          lastLowPerf = lowPerf;
+          atmDirty = true; /* puff count / breath quality changes with lowPerf */
+        }
 
-      /* Entrance has finished and the sky has settled into ambient idle
-         motion (same gate as budgetArmed), safe for the export button to
-         appear, so a capture never lands mid-ignition. */
-      if (budgetArmed && !entranceSettledRef.current) {
-        entranceSettledRef.current = true;
-        setEntranceSettled(true);
+        if (budgetArmed && !entranceSettledRef.current) {
+          entranceSettledRef.current = true;
+        }
       }
 
       /* Motion canvas is transparent over the atmosphere canvas — clear only. */
@@ -1078,7 +1083,7 @@ export default function AppHomePage() {
          nebulae). Motion canvas never composites atmosphere. */
       const nebFade = reduced ? globalFade : clamp01((elapsed - 200) / 1200);
       const bakeEvery = nebFade < 0.999 ? 120 : ATM_BAKE_MS;
-      if (atmDirty || t - lastAtmBake > bakeEvery) {
+      if (forExport || atmDirty || t - lastAtmBake > bakeEvery) {
         const aw = W(), ah = H();
         atmCtx.clearRect(0, 0, aw, ah);
         atmCtx.drawImage(washCanvas, 0, 0, aw, ah);
@@ -1099,7 +1104,7 @@ export default function AppHomePage() {
          invisible against the wash, so parents looked "outer" by landmarks. */
       {
         const { cx: rcx, cy: rcy, radX, radY } = ringGeom();
-        const breath = (!reduced && !lowPerf)
+        const breath = (!reduced && !lowPerf && !forExport)
           ? 0.012 * Math.sin(t * 0.00035)
           : 0;
         const baseAlpha = lowPerf ? 0.22 : 0.20;
@@ -1143,25 +1148,74 @@ export default function AppHomePage() {
       });
 
       /* ambient streaks behind the stars — atmosphere only, never data */
-      drawMeteors();
+      if (!forExport) drawMeteors();
 
-      /* nodes */
+      /* nodes — export never bakes the hover inspector highlight */
       for (let i = 0; i < people.length; i++) {
         const q     = positions[i];
-        const isHov = hoverPerson?.id === people[i].id;
-        const isAct = activeTransitIds.includes(people[i].id);
+        const isHov = forExport ? false : hoverPerson?.id === people[i].id;
+        const isAct = forExport ? false : activeTransitIds.includes(people[i].id);
         const lp    = labelPosById.get(people[i].id) ?? { x: q.x, y: q.y + 20 };
         drawBody(i, q, isHov, isAct, lp);
       }
 
       /* keep animating: idle life forever when not reduced; under reduced motion
          only until the gentle fade completes, then rest as a static sky */
+      if (opts?.scheduleRaf === false) return;
       if (!reduced) raf = requestAnimationFrame(draw);
       else if (globalFade < 1) raf = requestAnimationFrame(draw);
     };
 
+    const draw = () => paintFrame();
+
+    galaxyCaptureRef.current = async () => {
+      cancelAnimationFrame(raf);
+      const motionOff = document.createElement("canvas");
+      motionOff.width = Math.max(1, canvas.width);
+      motionOff.height = Math.max(1, canvas.height);
+      const mctx = motionOff.getContext("2d", { willReadFrequently: true, alpha: true });
+      const atmOff = document.createElement("canvas");
+      atmOff.width = Math.max(1, atmCanvas.width);
+      atmOff.height = Math.max(1, atmCanvas.height);
+      const actx = atmOff.getContext("2d", { willReadFrequently: true, alpha: true });
+      if (!mctx || !actx) throw new Error(SHARE_IMAGE_FAIL);
+      mctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      actx.setTransform(ATM_DPR, 0, 0, ATM_DPR, 0, 0);
+
+      const prevCx = cx;
+      const prevAtm = atmCtx;
+      const prevLow = lowPerf;
+      const prevMeteors = meteorsOff;
+      const prevElapsed = elapsed;
+      const prevFade = globalFade;
+      const prevT = t;
+      const prevDirty = atmDirty;
+      cx = mctx;
+      atmCtx = actx;
+      /* Full glow stack of THIS account's seats — not the live lowPerf shed
+         and not a fixture constellation. */
+      lowPerf = false;
+      meteorsOff = true;
+      atmDirty = true;
+      try {
+        paintFrame({ scheduleRaf: false, exportSettled: true });
+        return await composeGalaxySharePng(atmOff, motionOff, { cssWidth: W() });
+      } finally {
+        cx = prevCx;
+        atmCtx = prevAtm;
+        lowPerf = prevLow;
+        meteorsOff = prevMeteors;
+        elapsed = prevElapsed;
+        globalFade = prevFade;
+        t = prevT;
+        atmDirty = prevDirty;
+        if (!reduced || globalFade < 1) raf = requestAnimationFrame(draw);
+      }
+    };
+
     draw();
 
+    /* hover */
     /* hover */
     const onMove = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -1179,6 +1233,7 @@ export default function AppHomePage() {
     canvas.addEventListener("click", onClick);
 
     return () => {
+      galaxyCaptureRef.current = null;
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       canvas.removeEventListener("pointermove", onMove);
@@ -1373,17 +1428,19 @@ export default function AppHomePage() {
                 + Add person
               </Link>
             ) : null}
-            {!loading && people.length > 0 && entranceSettled ? (
+            {!loading && people.length > 0 ? (
               // FOUNDER-REVIEW: authored - "Share sky image" export label
               <ChartImageExportButton
                 frameRef={galaxyFrameRef}
                 filename={chartExportFilename(null, "galaxia-constellation.png")}
                 label="Share sky image"
-                capture={() => {
-                  const atm = atmCanvasRef.current;
-                  const motion = canvasRef.current;
-                  if (!atm || !motion) throw new Error(SHARE_IMAGE_FAIL);
-                  return composeGalaxySharePng(atm, motion);
+                capture={async () => {
+                  const until = Date.now() + 2000;
+                  while (!galaxyCaptureRef.current && Date.now() < until) {
+                    await new Promise((r) => setTimeout(r, 16));
+                  }
+                  if (!galaxyCaptureRef.current) throw new Error(SHARE_IMAGE_FAIL);
+                  return galaxyCaptureRef.current();
                 }}
               />
             ) : null}

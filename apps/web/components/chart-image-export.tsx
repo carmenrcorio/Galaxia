@@ -8,9 +8,10 @@
  * /app) cannot drift from each other.
  *
  * Built entirely on the existing ShareImageButton (html-to-image plus OS
- * share or download, except the galaxy view which blits its live canvases
- * directly — WebKit blanks html-to-image's canvas-in-SVG clone) and
- * ShareWatermark. No new capture library.
+ * share or download, except the galaxy view which redraws the signed-in
+ * account's settled sky onto offscreen canvases — WebKit blanks html-to-image's
+ * canvas-in-SVG clone, and iOS GPU-promoted on-screen canvases read back empty)
+ * and ShareWatermark. No new capture library.
  *
  * Minor gate: `pairHasMinor` hides the control on compare surfaces only
  * (ENGINEERING.md section 9 / section 13: never let a romantic or attraction
@@ -87,10 +88,10 @@ export function ChartImageExportButton({
   label?: string;
   pairHasMinor?: boolean;
   /**
-   * Galaxy: blit the two live canvases instead of html-to-image. WebKit
-   * paints html-to-image's canvas-in-SVG clone as a blank background.
+   * Galaxy: redraw this account's settled sky onto offscreen canvases
+   * (iOS cannot read GPU-promoted on-screen canvases). Returns a PNG Blob.
    */
-  capture?: () => Promise<string>;
+  capture?: () => Promise<string | Blob>;
 }) {
   if (pairHasMinor) return null;
   return <ShareImageButton targetRef={frameRef} filename={filename} label={label} capture={capture} />;

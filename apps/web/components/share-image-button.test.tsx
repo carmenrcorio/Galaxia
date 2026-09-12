@@ -26,7 +26,7 @@ function stubShare(shareImpl: () => Promise<void>) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => ({
-      blob: async () => new Blob([new Uint8Array([1, 2, 3])], { type: "image/png" }),
+      blob: async () => new Blob([new Uint8Array(128).fill(7)], { type: "image/png" }),
     })),
   );
   return share;
@@ -104,5 +104,38 @@ describe("ShareImageButton label state machine", () => {
     render(<ShareImageButton targetRef={ref} filename="x.png" label="Share" />);
     fireEvent.click(screen.getByRole("button"));
     expect(screen.getByRole("button").textContent).toBe("Share");
+  });
+
+  it("shares a Blob capture without fetching a data URL", async () => {
+    const share = stubShare(async () => {});
+    const blob = new Blob([new Uint8Array(128).fill(7)], { type: "image/png" });
+    render(
+      <ShareImageButton
+        filename="sky.png"
+        label="Share"
+        capture={async () => blob}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button"));
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
+    expect(fetch).not.toHaveBeenCalled();
+    const payload = share.mock.calls.at(0)?.at(0) as { files?: File[] } | undefined;
+    expect(payload?.files?.[0]).toBeInstanceOf(File);
+    expect(payload?.files?.[0]?.name).toBe("sky.png");
+    expect(payload?.files?.[0]?.type).toBe("image/png");
+  });
+
+  it("does not say Shared when the capture blob is empty", async () => {
+    stubShare(async () => {});
+    render(
+      <ShareImageButton
+        filename="sky.png"
+        label="Share"
+        capture={async () => new Blob([], { type: "image/png" })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button"));
+    await waitFor(() => expect(screen.getByText(SHARE_IMAGE_FAIL)).toBeTruthy());
+    expect(screen.queryByText("Shared")).toBeNull();
   });
 });

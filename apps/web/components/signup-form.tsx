@@ -19,6 +19,7 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [status, setStatus] = useState<"idle" | "submitting" | "confirm">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -128,7 +129,27 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
         <input id="signup-password" className="field" required minLength={PASSWORD_MIN_LENGTH} autoComplete="new-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
         {/* FOUNDER-REVIEW: authored password hint. */}
         <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>{PASSWORD_RULE_HINT}</p>
-        <button className="pill-link pill-link--gold" type="submit" disabled={status === "submitting"}>
+        {/* COPPA age gate: required on account creation, never on login. Purely
+            client-side (no birth-data column, no server enforcement) — the
+            submit button stays disabled until this is checked. */}
+        <label className="muted" style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: ".85rem" }} htmlFor="signup-age-gate">
+          <input
+            id="signup-age-gate"
+            data-testid="age-gate-checkbox"
+            type="checkbox"
+            required
+            checked={ageConfirmed}
+            onChange={(event) => setAgeConfirmed(event.target.checked)}
+            style={{ marginTop: 3 }}
+          />
+          <span>I confirm I am 18 years of age or older.</span>
+        </label>
+        <button
+          className="pill-link pill-link--gold"
+          type="submit"
+          disabled={status === "submitting" || !ageConfirmed}
+          style={{ opacity: !ageConfirmed && status !== "submitting" ? 0.5 : 1 }}
+        >
           {status === "submitting" ? "Creating account..." : "Create account"}
         </button>
         {/* FOUNDER-REVIEW: authored */}

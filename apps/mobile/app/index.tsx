@@ -1,7 +1,7 @@
 import { tokens } from "@galaxia/ui";
 import { Redirect } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { resolvePublicIndexGate } from "../src/lib/authed-route-gate";
 import { supabase } from "../src/lib/supabase";
 import { useAuth } from "../src/providers/auth-provider";
@@ -19,6 +19,9 @@ export default function PublicIndexScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // COPPA age gate, required for account creation only (never for sign-in),
+  // purely client-side: no birth-data column, no server enforcement.
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   const gate = resolvePublicIndexGate({
     authLoading,
@@ -115,14 +118,39 @@ export default function PublicIndexScreen() {
           {submitting ? "Please wait..." : "Sign in"}
         </Text>
       </Pressable>
+      <TouchableOpacity
+        testID="age-gate-checkbox"
+        onPress={() => setAgeConfirmed((prev) => !prev)}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: ageConfirmed }}
+        style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}
+      >
+        <View
+          style={{
+            width: 20,
+            height: 20,
+            marginTop: 1,
+            borderRadius: 4,
+            borderWidth: 1,
+            borderColor: ageConfirmed ? tokens.colors.gold : tokens.colors.line,
+            backgroundColor: ageConfirmed ? tokens.colors.gold : "transparent",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          {ageConfirmed ? <Text style={{ color: tokens.colors.ink, fontSize: 13, fontWeight: "700" }}>{"\u2713"}</Text> : null}
+        </View>
+        <Text style={{ color: tokens.colors.mist, flex: 1, lineHeight: 18 }}>I confirm I am 18 years of age or older.</Text>
+      </TouchableOpacity>
       <Pressable
         onPress={() => authenticate("sign-up")}
-        disabled={submitting}
+        disabled={submitting || !ageConfirmed}
         style={{
           borderWidth: 1,
           borderColor: tokens.colors.line,
           borderRadius: 999,
-          paddingVertical: 12
+          paddingVertical: 12,
+          opacity: submitting || !ageConfirmed ? 0.5 : 1
         }}
       >
         <Text style={{ color: tokens.colors.cream, textAlign: "center", fontWeight: "700" }}>Create account</Text>

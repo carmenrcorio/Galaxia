@@ -30,11 +30,15 @@ export async function POST(req: Request) {
   const houseSystem = body.houseSystem === "whole" || body.houseSystem === "equal" ? body.houseSystem : "placidus";
   const chart = computeNatalChart({ ...built.birth, houseSystem });
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     chart,
     birthDate: built.birthDate,
     birthPlace: built.birthPlace,
     displayDate: built.displayDate,
     tzOffsetMin: built.tzOffsetMin
   });
+  // Same birth input always produces the same chart, so let Vercel's edge
+  // cache absorb repeated identical requests from this uncapped, public route.
+  response.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=60");
+  return response;
 }

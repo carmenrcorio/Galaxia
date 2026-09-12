@@ -53,11 +53,21 @@ export async function POST(req: Request) {
     // Year-only charts have sampled (mid-year) positions — a full synastry read
     // would be fabricated. The generational layer is the honest comparison.
     const generational = compareGenerational(chartA.generational as GenSignature, chartB.generational as GenSignature);
-    return NextResponse.json({ chartA, chartB, synastry: null, generational, pairHasMinor });
+    const response = NextResponse.json({ chartA, chartB, synastry: null, generational, pairHasMinor });
+    // Same pair of birth inputs always produces the same result, so let
+    // Vercel's edge cache absorb repeated identical requests from this
+    // uncapped, public route.
+    response.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=60");
+    return response;
   }
 
   const synastry = computeSynastry(chartA, chartB);
   const generational = compareGenerational(chartA.generational as GenSignature, chartB.generational as GenSignature);
 
-  return NextResponse.json({ chartA, chartB, synastry, generational, pairHasMinor });
+  const response = NextResponse.json({ chartA, chartB, synastry, generational, pairHasMinor });
+  // Same pair of birth inputs always produces the same result, so let
+  // Vercel's edge cache absorb repeated identical requests from this
+  // uncapped, public route.
+  response.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=60");
+  return response;
 }

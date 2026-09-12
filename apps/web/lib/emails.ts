@@ -151,9 +151,11 @@ export type EmailHeaders = Record<string, string>;
  * safe to run before the key is configured. Returns true if actually sent.
  */
 export async function sendEmail(to: string, email: RenderedEmail, headers?: EmailHeaders): Promise<boolean> {
+  const { createHash } = await import("node:crypto");
+  const recipientId = createHash("sha256").update(to).digest("hex").slice(0, 12);
   const key = process.env.RESEND_API_KEY;
   if (!key) {
-    console.log(`[emails] RESEND_API_KEY absent: skipping "${email.subject}" to ${to}`);
+    console.log(`[emails] skipped ${recipientId}: RESEND_API_KEY absent, skipping "${email.subject}"`);
     return false;
   }
   const from = process.env.RESEND_FROM ?? "Galaxia <hello@galaxiamea.com>";
@@ -170,7 +172,7 @@ export async function sendEmail(to: string, email: RenderedEmail, headers?: Emai
     })
   });
   if (!res.ok) {
-    console.error(`[emails] Resend failed (${res.status}) for "${email.subject}" to ${to}`);
+    console.error(`[emails] send failed for ${recipientId} (${res.status}): "${email.subject}"`);
     return false;
   }
   return true;

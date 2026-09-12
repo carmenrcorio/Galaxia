@@ -38,6 +38,10 @@ import {
   interpretHouse,
   STELLIUM_NOTE,
   type HouseKey,
+  generationNameForYear,
+  PLUTO_SIGN_EXTENDED,
+  getFamilyBridge,
+  type PlutoSignExtended,
 } from "@galaxia/astro";
 import {
   buildPersonPageNavSections,
@@ -142,7 +146,7 @@ function HouseBadge({ house }: { house: number }) {
 /* ─── ExpandRow — the single expandable row used throughout ─────────────── */
 function ExpandRow({
   open, onToggle, label, domain, degree, house, el, glyph, short, long,
-  houseReading, planetAspects, hasHouses
+  houseReading, planetAspects, hasHouses, plutoExtended
 }: {
   open: boolean; onToggle: () => void;
   label: string; domain?: string; degree?: string; house?: number;
@@ -152,7 +156,13 @@ function ExpandRow({
   /** Per-planet aspects — rendered in expanded state */
   planetAspects?: Array<{ from: string; to: string; type: string; orb: number; short: string; tight: boolean }>;
   hasHouses?: boolean;
+  /** Pluto-only extended content (Corruption Signature, historical figures, era events).
+   *  Renders after the long description, expanded state only. Caller is responsible
+   *  for only passing this when the placement's sign is confident (never for a
+   *  guessed year-only sign — §12). */
+  plutoExtended?: PlutoSignExtended | null;
 }) {
+  const [openEraEvent, setOpenEraEvent] = useState<string | null>(null);
   return (
     <div style={{ borderBottom: "1px solid rgba(183,154,216,.08)" }}>
       <button
@@ -231,6 +241,59 @@ function ExpandRow({
                   );
                 })}
               </div>
+            </div>
+          ) : null}
+          {/* Block 4: PLUTO EXTENDED — corruption signature, historical figures, era events */}
+          {plutoExtended ? (
+            <div style={{ display: "grid", gap: 12 }}>
+              <div>
+                <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--gold-soft)", margin: "0 0 4px" }}>
+                  The corruption signature
+                </p>
+                <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{plutoExtended.corruptionSignature}</p>
+              </div>
+              {plutoExtended.historicalFigures.length > 0 ? (
+                <div>
+                  <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--mist2)", margin: "0 0 6px" }}>
+                    Others who carried this
+                  </p>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {plutoExtended.historicalFigures.map((figure) => (
+                      <div key={figure.name}>
+                        <p style={{ fontSize: ".82rem", color: "var(--cream)", margin: 0 }}>
+                          <strong>{figure.name}</strong>: {figure.knownFor}
+                        </p>
+                        <p className="muted" style={{ fontSize: ".76rem", lineHeight: 1.5, margin: "2px 0 0" }}>{figure.plutoBridge}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {plutoExtended.eraEvents.length > 0 ? (
+                <div>
+                  <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--mist2)", margin: "0 0 6px" }}>
+                    What they lived through
+                  </p>
+                  <div className="prompt-chips">
+                    {plutoExtended.eraEvents.map((event) => (
+                      <button
+                        key={event.label}
+                        type="button"
+                        className="prompt-chip"
+                        onClick={() => setOpenEraEvent(prev => prev === event.label ? null : event.label)}
+                        aria-expanded={openEraEvent === event.label}
+                      >
+                        {event.label}
+                      </button>
+                    ))}
+                  </div>
+                  {openEraEvent ? (
+                    <p className="muted" style={{ fontSize: ".8rem", lineHeight: 1.55, marginTop: 8 }}>
+                      {plutoExtended.eraEvents.find(e => e.label === openEraEvent)?.detail}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -333,6 +396,8 @@ export default function PersonProfilePage() {
   const [chartCorrectionNotice, setChartCorrectionNotice] = useState<string | null>(null);
   /** Durable daily nudge — same row home reads; never recompute copy on open. */
   const [dailyNudge, setDailyNudge] = useState<PersonDailyNudgeRecord | null>(null);
+  /** Viewer's own confident Pluto sign — Family Bridge only, fetched only when this person is not the viewer's own self-chart. */
+  const [viewerPlutoSign, setViewerPlutoSign] = useState<SignKey | null>(null);
 
   const [openRows, setOpenRows]     = useState<Set<string>>(new Set(["sun","moon","rising"]));
   const [placementsAllOpen, setPlacementsAllOpen] = useState(false);
@@ -484,7 +549,7 @@ export default function PersonProfilePage() {
     // Progressive capture: a person with no chart yet (birth_precision 'none')
     // is not an error — render the "add birth data" state instead of failing.
     if (cErr || !cData) {
-      setPerson(personRow); setChart(null); setDailyNudge(null);
+      setPerson(personRow); setChart(null); setDailyNudge(null); setViewerPlutoSign(null);
       await loadRecord(uid, actualId);
       setLoading(false);
       return;
@@ -553,6 +618,27 @@ export default function PersonProfilePage() {
     }
     setPerson(personRow); setChart(chartData); setEngineVersion(version);
     setChartCorrectionNotice(longitudeCorrectionBody);
+
+    // Family Bridge (Generational layer): only meaningful when viewing
+    // someone else's chart, so only fetched then. Mirrors the "self" id
+    // lookup above (owner_id + is_self, unique by index, no tie-breaker
+    // needed). A missing self-person, missing self-chart, or an unconfident
+    // self Pluto sign all degrade to null — the card is simply omitted,
+    // never rendered from a guessed sign (§12).
+    if (personRow.is_self) {
+      setViewerPlutoSign(null);
+    } else {
+      const { data: selfPersonRow } = await supabase
+        .from("people").select("id").eq("owner_id", uid).eq("is_self", true).maybeSingle();
+      if (selfPersonRow?.id) {
+        const { data: selfChartRow } = await supabase
+          .from("charts").select("data").eq("person_id", selfPersonRow.id).maybeSingle();
+        const selfPluto = (selfChartRow?.data as NatalChart | undefined)?.generational?.pluto;
+        setViewerPlutoSign(selfPluto?.confident ? (selfPluto.sign as SignKey) : null);
+      } else {
+        setViewerPlutoSign(null);
+      }
+    }
 
     // Durable daily nudge — shared with home. Build once if missing for today.
     if (shouldShowLiveTransits(personRow)) {
@@ -764,6 +850,12 @@ export default function PersonProfilePage() {
 
   const enduringEyebrow = (label: string) =>
     personPassed ? `${label} · who they were` : label;
+
+  // Generation name header (Generational layer). Birth year comes from the
+  // already-loaded birth_date (year-only precision stores it as YYYY-01-01,
+  // same convention rebuildDateUTC relies on above) — no new fetch needed.
+  const birthYear = person.birth_date ? parseInt(person.birth_date.slice(0, 4), 10) : null;
+  const generationInfo = birthYear !== null && !Number.isNaN(birthYear) ? generationNameForYear(birthYear) : null;
 
   return (
     <main className={`app-content${personPassed ? " app-content--remembrance" : ""}`}>
@@ -1276,6 +1368,11 @@ export default function PersonProfilePage() {
       {/* ── Generational layer ── */}
       <section id="generational" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
         <p className="eyebrow" style={{ marginBottom: 6 }}>{enduringEyebrow("Generational layer")}</p>
+        {generationInfo ? (
+          <p style={{ fontSize: ".78rem", color: "var(--cream)", fontWeight: 600, marginBottom: 2 }}>
+            {generationInfo.name} · {generationInfo.span}
+          </p>
+        ) : null}
         <p className="muted" style={{ fontSize: ".8rem", marginBottom: 12 }}>{chart.generational.cohortLabel}</p>
         {(["uranus","neptune","pluto"] as const).map(planet => {
           const data = chart.generational[planet as "uranus"|"neptune"|"pluto"];
@@ -1298,6 +1395,11 @@ export default function PersonProfilePage() {
           const sk = normaliseSign(data.sign);
           const reading = interpretPlacement(bk, sk, { minorSafe: personIsMinor });
           const rowKey = `gen-${planet}`;
+          // Pluto only, and only for a confident sign — never render extended
+          // content (corruption signature / historical figures / era events)
+          // from a guessed sign (§12). Uranus and Neptune rows are unchanged.
+          const plutoExtended: PlutoSignExtended | null =
+            planet === "pluto" ? PLUTO_SIGN_EXTENDED[sk] ?? null : null;
           return (
             <ExpandRow key={planet} open={openRows.has(rowKey)} onToggle={() => toggleRow(rowKey)}
               label={`${planet.charAt(0).toUpperCase() + planet.slice(1)} in ${data.sign}`}
@@ -1305,9 +1407,25 @@ export default function PersonProfilePage() {
               glyph={BODY_GLYPH[planet] ?? planet[0].toUpperCase()}
               short={reading.short} long={reading.long}
               hasHouses={false}
+              plutoExtended={plutoExtended}
             />
           );
         })}
+        {/* Family Bridge — only when viewing someone else's chart, both Pluto
+            signs are confident, and the pair has authored copy. Never falls
+            back to a generic line (§12): no entry means no card. */}
+        {!person.is_self && viewerPlutoSign && chart.generational.pluto.confident ? (() => {
+          const bridge = getFamilyBridge(viewerPlutoSign, chart.generational.pluto.sign);
+          if (!bridge) return null;
+          return (
+            <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 12, border: "1px solid rgba(183,154,216,.22)", background: "rgba(255,255,255,.025)" }}>
+              <p className="eyebrow" style={{ marginBottom: 6 }}>
+                You + {person.relation || person.display_name}
+              </p>
+              <p style={{ fontSize: ".84rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{bridge}</p>
+            </div>
+          );
+        })() : null}
       </section>
 
       {/* ── Memorial Timeline (Generations Feature 1) — passed, non-self; year-only charts get age-based, not date-based, transits ── */}

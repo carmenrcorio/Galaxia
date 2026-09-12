@@ -637,6 +637,7 @@ export * from "./synastry-interpretations";
 export * from "./house-interpretations";
 export * from "./transit-interpretations";
 export * from "./generational-interpretations";
+export * from "./generational-layer";
 
 export * from "./compare-guidance";
 

@@ -46,9 +46,27 @@ describe("relational-transit-push route — returns a JSON summary with real num
   it("returns the summary through cronSummaryResponse so a lost row fails closed", () => {
     expect(src).toMatch(/from\s*"\.\.\/\.\.\/\.\.\/\.\.\/lib\/cron-summary"/);
     expect(src).toContain("cronSummaryResponse({");
-    expect(src).toMatch(/evaluated:\s*events\.length/);
+    expect(src).toMatch(/evaluated:\s*walk\.evaluated/);
     expect(src).toMatch(/sent:\s*pushed/);
+    expect(src).toMatch(/pages:\s*walk\.pages/);
+    expect(src).toMatch(/truncated:\s*walk\.truncated/);
     expect(src).toMatch(/return NextResponse\.json\(body,\s*\{\s*status\s*\}\)/);
+  });
+
+  it("paginates events with an id cursor instead of a silent .limit(500)", () => {
+    expect(src).toMatch(/export const maxDuration\s*=\s*800/);
+    expect(src).toContain("walkCronPages");
+    expect(src).toMatch(/\.gt\("id",\s*lastId\)/);
+    expect(src).not.toMatch(/\.limit\(500\)/);
+  });
+
+  it("checks response.ok before marking push_sent_at, and does not mark on Expo HTTP failure", () => {
+    expect(src).toMatch(/if\s*\(\s*!response\.ok\s*\)/);
+    expect(src).toMatch(/skipped\.pushFailed \+= 1/);
+    const okIdx = src.indexOf("!response.ok");
+    const markIdx = src.lastIndexOf('update({ push_sent_at:');
+    expect(okIdx).toBeGreaterThan(-1);
+    expect(markIdx).toBeGreaterThan(okIdx);
   });
 
   it("skipped is a real per-event breakdown (noTokens/preferenceOff/majorOnlyFiltered/pushFailed), not a placeholder", () => {

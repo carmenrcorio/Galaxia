@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { interpretRelationalTransitHeadline, MAJOR_RELATIONAL_TRANSIT_BODIES, type AffectedProfileHit, type AspectType, type RelationalTransitBody } from "@galaxia/astro";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
-import { cronSummaryResponse } from "../../../../lib/cron-summary";
+import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary";
 
 /**
  * Push-send job for Generational Transit Alerts (Feature 3, part 2).
@@ -50,6 +50,8 @@ interface RelationalTransitRow {
   }>;
 }
 
+export const maxDuration = 800;
+
 export async function GET(req: Request) {
   return handle(req);
 }
@@ -73,19 +75,25 @@ async function handle(req: Request) {
   const supabase = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, { auth: { persistSession: false } });
 
   const now = Date.now();
-  const { data: rows } = await supabase
-    .from("relational_transits")
-    .select("id, owner_id, transit_body, aspect_type, affected_profiles")
-    .is("push_sent_at", null)
-    .gte("active_from", new Date(now - LOOKBACK_MS).toISOString())
-    .lte("active_from", new Date(now).toISOString())
-    .limit(500);
-
-  const events = (rows ?? []) as RelationalTransitRow[];
   const skipped = { noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0, pushFailed: 0 };
   let pushed = 0;
 
-  for (const event of events) {
+  const walk = await walkCronPages({
+    fetchPage: async (lastId, pageSize) => {
+      let query = supabase
+        .from("relational_transits")
+        .select("id, owner_id, transit_body, aspect_type, affected_profiles")
+        .is("push_sent_at", null)
+        .gte("active_from", new Date(now - LOOKBACK_MS).toISOString())
+        .lte("active_from", new Date(now).toISOString())
+        .order("id", { ascending: true })
+        .limit(pageSize);
+      if (lastId) query = query.gt("id", lastId);
+      const { data, error } = await query;
+      if (error) throw new Error(`relational-transit-push: event page fetch failed: ${error.message}`);
+      return (data ?? []) as RelationalTransitRow[];
+    },
+    visit: async (event) => {
     const { data: profileRow } = await supabase
       .from("profiles")
       .select("relational_transit_alerts")
@@ -94,21 +102,21 @@ async function handle(req: Request) {
     const preference = (profileRow?.relational_transit_alerts as "all" | "major_only" | "off" | null) ?? "all";
     if (preference === "off") {
       skipped.preferenceOff += 1;
-      continue;
+      return;
     }
     if (preference === "major_only" && !MAJOR_RELATIONAL_TRANSIT_BODIES.includes(event.transit_body)) {
       skipped.majorOnlyFiltered += 1;
       // Still mark sent — this event will never qualify under this
       // preference; re-checking it every run forever would be pointless.
       await supabase.from("relational_transits").update({ push_sent_at: new Date().toISOString() }).eq("id", event.id);
-      continue;
+      return;
     }
 
     const { data: tokenRows } = await supabase.from("push_tokens").select("expo_push_token").eq("owner_id", event.owner_id);
     const tokens = (tokenRows ?? []).map((r) => r.expo_push_token as string);
     if (!tokens.length) {
       skipped.noTokens += 1;
-      continue;
+      return;
     }
 
     const affected: AffectedProfileHit[] = event.affected_profiles.map((a) => ({
@@ -130,25 +138,39 @@ async function handle(req: Request) {
     }));
 
     try {
-      await fetch(EXPO_PUSH_URL, {
+      const response = await fetch(EXPO_PUSH_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(messages),
       });
-      pushed += 1;
-    } catch {
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        console.error("relational-transit-push: Expo push rejected", {
+          status: response.status,
+          body,
+          eventId: event.id
+        });
+        skipped.pushFailed += 1;
+        return;
+      }
+    } catch (err) {
       // Leave push_sent_at unset so a transient network failure retries next run.
+      console.error("relational-transit-push: Expo fetch threw", err);
       skipped.pushFailed += 1;
-      continue;
+      return;
     }
     await supabase.from("relational_transits").update({ push_sent_at: new Date().toISOString() }).eq("id", event.id);
-  }
+    pushed += 1;
+    }
+  });
 
   const { body, status } = cronSummaryResponse({
-    evaluated: events.length,
+    evaluated: walk.evaluated,
     sent: pushed,
     skipped,
-    pushed
+    pushed,
+    pages: walk.pages,
+    truncated: walk.truncated
   });
   return NextResponse.json(body, { status });
 }

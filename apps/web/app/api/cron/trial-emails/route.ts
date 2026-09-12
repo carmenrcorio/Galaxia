@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
-import { cronSummaryResponse } from "../../../../lib/cron-summary";
+import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary";
 import { renderTrialEmail, sendEmail, type TrialEmailData } from "../../../../lib/emails";
 import {
   emptyTrialEmailSkipped,
@@ -28,6 +28,10 @@ import {
 
 const DAY = 86_400_000;
 
+// Vercel Pro max. Combined with the 700s soft budget in walkCronPages so a
+// large trialing set cannot silently stop after the first 1000 rows.
+export const maxDuration = 800;
+
 export async function GET(req: Request) {
   return handle(req);
 }
@@ -52,75 +56,110 @@ async function handle(req: Request) {
   const siteUrl = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
   const now = Date.now();
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, display_name, subscription_status, trial_ends_at, created_at")
-    .eq("subscription_status", "trialing")
-    .limit(1000);
-
   let sent = 0;
   const skipped = emptyTrialEmailSkipped();
 
-  for (const profile of profiles ?? []) {
-    const createdAt = profile.created_at ? new Date(profile.created_at as string).getTime() : now;
-    const trialEndsAt = profile.trial_ends_at ? new Date(profile.trial_ends_at as string).getTime() : null;
-    const ageDays = (now - createdAt) / DAY;
-    const daysToEnd = trialEndsAt ? (trialEndsAt - now) / DAY : null;
+  const walk = await walkCronPages({
+    fetchPage: async (lastId, pageSize) => {
+      let query = supabase
+        .from("profiles")
+        .select("id, display_name, subscription_status, trial_ends_at, created_at")
+        .eq("subscription_status", "trialing")
+        .order("id", { ascending: true })
+        .limit(pageSize);
+      if (lastId) query = query.gt("id", lastId);
+      const { data, error } = await query;
+      if (error) throw new Error(`trial-emails: profile page fetch failed: ${error.message}`);
+      return (data ?? []) as {
+        id: string;
+        display_name: string | null;
+        subscription_status: string;
+        trial_ends_at: string | null;
+        created_at: string | null;
+      }[];
+    },
+    visit: async (profile) => {
+      const createdAt = profile.created_at ? new Date(profile.created_at).getTime() : now;
+      const trialEndsAt = profile.trial_ends_at ? new Date(profile.trial_ends_at).getTime() : null;
+      const ageDays = (now - createdAt) / DAY;
+      const daysToEnd = trialEndsAt ? (trialEndsAt - now) / DAY : null;
 
-    // Permanent rule, before the kind picker: never email a trial that has
-    // already ended. Protects against a backlog of day14s if the Resend key
-    // is unset for a few days. trial_ends_at < now; day14 therefore never fires.
-    if (trialAlreadyEnded(trialEndsAt, now)) { skipped.trialAlreadyEnded += 1; continue; }
+      // Permanent rule, before the kind picker: never email a trial that has
+      // already ended. Protects against a backlog of day14s if the Resend key
+      // is unset for a few days. trial_ends_at < now; day14 therefore never fires.
+      if (trialAlreadyEnded(trialEndsAt, now)) { skipped.trialAlreadyEnded += 1; return; }
 
-    // Counts (real, per user)
-    const [peopleCount, notesCount, threadsCount, groupsCount] = await Promise.all([
-      countRows(supabase, "people", profile.id as string),
-      countRows(supabase, "notes", profile.id as string),
-      countRows(supabase, "threads", profile.id as string),
-      countRows(supabase, "groups", profile.id as string)
-    ]);
+      // Counts (real, per user)
+      const [peopleCount, notesCount, threadsCount, groupsCount] = await Promise.all([
+        countRows(supabase, "people", profile.id),
+        countRows(supabase, "notes", profile.id),
+        countRows(supabase, "threads", profile.id),
+        countRows(supabase, "groups", profile.id)
+      ]);
 
-    const kind = pickTrialEmailKind(ageDays, daysToEnd, peopleCount);
-    if (!kind) { skipped.notDue += 1; continue; }
+      const kind = pickTrialEmailKind(ageDays, daysToEnd, peopleCount);
+      if (!kind) { skipped.notDue += 1; return; }
 
-    // Idempotency: day4 has two variants — never send both.
-    const alreadyKeys = trialEmailAlreadyKeys(kind);
-    const { data: already } = await supabase.from("trial_emails").select("kind").eq("user_id", profile.id).in("kind", alreadyKeys);
-    if ((already?.length ?? 0) > 0) { skipped.alreadySent += 1; continue; }
+      // Idempotency: day4 has two variants — never send both.
+      const alreadyKeys = trialEmailAlreadyKeys(kind);
+      const { data: already } = await supabase.from("trial_emails").select("kind").eq("user_id", profile.id).in("kind", alreadyKeys);
+      if ((already?.length ?? 0) > 0) { skipped.alreadySent += 1; return; }
 
-    // Resolve email + a real person name.
-    const { data: authUser } = await supabase.auth.admin.getUserById(profile.id as string);
-    const to = authUser?.user?.email;
-    if (!to) { skipped.noEmail += 1; continue; }
+      // Resolve email + a real person name.
+      const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
+      const to = authUser?.user?.email;
+      if (!to) { skipped.noEmail += 1; return; }
 
-    if (!process.env.RESEND_API_KEY) { skipped.noResendKey += 1; continue; }
+      if (!process.env.RESEND_API_KEY) { skipped.noResendKey += 1; return; }
 
-    const { data: recentPerson } = await supabase
-      .from("people").select("display_name").eq("owner_id", profile.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const { data: recentPerson } = await supabase
+        .from("people").select("display_name").eq("owner_id", profile.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
 
-    const firstName = ((profile.display_name as string | null) ?? to.split("@")[0] ?? "there").split(" ")[0];
-    const data: TrialEmailData = {
-      firstName,
-      personName: (recentPerson?.display_name as string | null) ?? undefined,
-      peopleCount, notesCount, threadsCount, groupsCount,
-      trialEndDate: trialEndsAt ? new Date(trialEndsAt).toLocaleDateString("en-GB", { day: "numeric", month: "long" }) : "soon",
-      siteUrl
-    };
+      const firstName = ((profile.display_name as string | null) ?? to.split("@")[0] ?? "there").split(" ")[0];
+      const data: TrialEmailData = {
+        firstName,
+        personName: (recentPerson?.display_name as string | null) ?? undefined,
+        peopleCount, notesCount, threadsCount, groupsCount,
+        trialEndDate: trialEndsAt ? new Date(trialEndsAt).toLocaleDateString("en-GB", { day: "numeric", month: "long" }) : "soon",
+        siteUrl
+      };
 
-    const ok = await sendEmail(to, renderTrialEmail(kind, data));
-    // Only log the ledger when actually sent, so a no-key / Resend-fail run
-    // still delivers on the next successful pass. Count the miss so the
-    // summary cannot silently drop the row.
-    if (!ok) { skipped.sendFailed += 1; continue; }
+      // Claim the unique (user_id, kind) slot BEFORE sending so a crash
+      // between Resend and the ledger cannot double-send next run.
+      // trial_emails has no status column and sent_at is NOT NULL DEFAULT now(),
+      // so the row's existence is pending/sent/failed. A failed send leaves the
+      // row in place to prevent a retry storm.
+      const { error: claimError } = await supabase.from("trial_emails").insert({ user_id: profile.id, kind });
+      if (claimError) {
+        if (claimError.code === "23505") {
+          skipped.alreadySent += 1;
+        } else {
+          console.error("trial-emails: ledger claim failed", claimError);
+          skipped.sendFailed += 1;
+        }
+        return;
+      }
 
-    await supabase.from("trial_emails").insert({ user_id: profile.id, kind });
-    sent += 1;
-  }
+      const ok = await sendEmail(to, renderTrialEmail(kind, data));
+      if (!ok) {
+        console.error("trial-emails: send failed; leaving ledger row to prevent retry storm", {
+          userId: profile.id,
+          kind
+        });
+        skipped.sendFailed += 1;
+        return;
+      }
+
+      sent += 1;
+    }
+  });
 
   const { body, status } = cronSummaryResponse({
-    evaluated: profiles?.length ?? 0,
+    evaluated: walk.evaluated,
     sent,
-    skipped
+    skipped,
+    pages: walk.pages,
+    truncated: walk.truncated
   });
   return NextResponse.json(body, { status });
 }

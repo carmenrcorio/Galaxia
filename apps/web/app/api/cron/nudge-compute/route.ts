@@ -10,7 +10,11 @@ import {
 import { isMinorForSafety, peopleForTodaySky } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
-import { cronSummaryResponse } from "../../../../lib/cron-summary";
+import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary";
+
+// Vercel Pro max. Combined with the 700s soft budget in walkCronPages so a
+// large profiles table cannot silently stop after the first 1000 rows.
+export const maxDuration = 800;
 
 /**
  * Server-side daily nudge compute job (nudge delivery Phase B1).
@@ -80,33 +84,40 @@ async function handle(req: Request) {
 
   const supabase = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, { auth: { persistSession: false } });
 
-  // Only users with a stored, non-null tz — Phase A's one prerequisite
-  // input. Never fabricate one for anyone else (skip, don't guess UTC).
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, timezone")
-    .not("timezone", "is", null)
-    .limit(1000);
-
   const skipped = { nullTimezone: 0, noPeople: 0 };
   let usersProcessed = 0;
   let rowsWritten = 0;
 
-  for (const profile of profiles ?? []) {
-    const ownerId = profile.id as string;
-    const timezone = (profile.timezone as string | null) ?? null;
+  const walk = await walkCronPages({
+    fetchPage: async (lastId, pageSize) => {
+      // Only users with a stored, non-null tz — Phase A's one prerequisite
+      // input. Never fabricate one for anyone else (skip, don't guess UTC).
+      let query = supabase
+        .from("profiles")
+        .select("id, timezone")
+        .not("timezone", "is", null)
+        .order("id", { ascending: true })
+        .limit(pageSize);
+      if (lastId) query = query.gt("id", lastId);
+      const { data, error } = await query;
+      if (error) throw new Error(`nudge-compute: profile page fetch failed: ${error.message}`);
+      return (data ?? []) as { id: string; timezone: string | null }[];
+    },
+    visit: async (profile) => {
+    const ownerId = profile.id;
+    const timezone = profile.timezone ?? null;
     // Belt-and-suspenders — the query already filters non-null server-side,
     // but never proceed to compute a day for a falsy tz under any path.
     if (!timezone) {
       skipped.nullTimezone += 1;
-      continue;
+      return;
     }
 
     const { data: idRows } = await supabase.from("people").select("id").eq("owner_id", ownerId);
     const personIds = (idRows ?? []).map((r) => r.id as string);
     if (!personIds.length) {
       skipped.noPeople += 1;
-      continue;
+      return;
     }
 
     // The one new input this phase adds: the owner's real calendar day,
@@ -185,14 +196,17 @@ async function handle(req: Request) {
       if (!error) rowsWritten += rowsToUpsert.length;
     }
     usersProcessed += 1;
-  }
+    }
+  });
 
   const { body, status } = cronSummaryResponse({
-    evaluated: profiles?.length ?? 0,
+    evaluated: walk.evaluated,
     sent: usersProcessed,
     skipped,
     usersProcessed,
-    rowsWritten
+    rowsWritten,
+    pages: walk.pages,
+    truncated: walk.truncated
   });
   return NextResponse.json(body, { status });
 }

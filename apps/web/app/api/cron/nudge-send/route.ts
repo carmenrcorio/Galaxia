@@ -4,7 +4,7 @@ import { ownerLocalDate } from "@galaxia/astro";
 import { resolveAccountName } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
-import { cronSummaryResponse } from "../../../../lib/cron-summary";
+import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary";
 import {
   effectiveMinorSafe,
   eligibleForEmailSend,
@@ -16,6 +16,10 @@ import { nudgeEmailHeaders, sendEmail, skyTodayEmail } from "../../../../lib/ema
 
 // Uses the service-role Supabase client, so it must run on the Node runtime.
 export const runtime = "nodejs";
+
+// Vercel Pro max. Combined with the 700s soft budget in walkCronPages so a
+// large opted-in set cannot silently stop after the first 1000 rows.
+export const maxDuration = 800;
 
 /**
  * The server-side "your sky today" send job (nudge delivery Phase B2).
@@ -130,16 +134,6 @@ async function handle(req: Request) {
   const siteUrl = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
   const now = new Date();
 
-  // Gate 1 (consent) at the query level. Gate 2 (tz required at all) is the
-  // same "never fabricate a day/hour" posture nudge-compute takes for a null
-  // timezone — skip, don't guess.
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, timezone, daily_nudge_emails_enabled, display_name, pinned_sky_person_id, unsubscribe_token")
-    .eq("daily_nudge_emails_enabled", true)
-    .not("timezone", "is", null)
-    .limit(1000);
-
   const skipped = {
     nullTimezone: 0,
     notDueThisHour: 0,
@@ -154,18 +148,35 @@ async function handle(req: Request) {
   let usersProcessed = 0;
   let sent = 0;
 
-  for (const profile of (profiles ?? []) as ProfileRow[]) {
+  const walk = await walkCronPages({
+    fetchPage: async (lastId, pageSize) => {
+      // Gate 1 (consent) at the query level. Gate 2 (tz required at all) is the
+      // same "never fabricate a day/hour" posture nudge-compute takes for a null
+      // timezone — skip, don't guess.
+      let query = supabase
+        .from("profiles")
+        .select("id, timezone, daily_nudge_emails_enabled, display_name, pinned_sky_person_id, unsubscribe_token")
+        .eq("daily_nudge_emails_enabled", true)
+        .not("timezone", "is", null)
+        .order("id", { ascending: true })
+        .limit(pageSize);
+      if (lastId) query = query.gt("id", lastId);
+      const { data, error } = await query;
+      if (error) throw new Error(`nudge-send: profile page fetch failed: ${error.message}`);
+      return (data ?? []) as ProfileRow[];
+    },
+    visit: async (profile) => {
     const timezone = profile.timezone;
     if (!timezone) {
       skipped.nullTimezone += 1;
-      continue;
+      return;
     }
 
     // Gate 2: hourly-cron local-hour check. Never fabricate "now" in UTC —
     // this is genuinely this owner's local clock, via Intl.
     if (!isDueForNudgeSend(now, timezone)) {
       skipped.notDueThisHour += 1;
-      continue;
+      return;
     }
 
     const localDate = ownerLocalDate(now, timezone);
@@ -177,7 +188,7 @@ async function handle(req: Request) {
       .eq("date", localDate);
     if (!nudgeRows?.length) {
       skipped.noRowsToday += 1;
-      continue;
+      return;
     }
 
     const personIds = nudgeRows.map((r) => r.person_id as string);
@@ -215,14 +226,14 @@ async function handle(req: Request) {
     const eligible = eligibleForEmailSend(rows);
     if (!eligible.length) {
       skipped.noEligibleAfterMinorExclusion += 1;
-      continue;
+      return;
     }
 
     // Gate 5: one lead nudge, never a digest.
     const lead = pickLeadNudgeRow(eligible, profile.pinned_sky_person_id);
     if (!lead) {
       skipped.noLeadContent += 1;
-      continue;
+      return;
     }
 
     // Gate 6: idempotency ledger, checked LAST — right before sending.
@@ -234,14 +245,14 @@ async function handle(req: Request) {
       .maybeSingle();
     if (alreadySent) {
       skipped.alreadySentToday += 1;
-      continue;
+      return;
     }
 
     const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
     const to = authUser?.user?.email;
     if (!to) {
       skipped.noEmail += 1;
-      continue;
+      return;
     }
 
     const selfPerson = [...peopleById.values()].find((p) => p.is_self);
@@ -271,30 +282,54 @@ async function handle(req: Request) {
 
     if (!process.env.RESEND_API_KEY) {
       skipped.noResendKey += 1;
-      continue;
+      return;
     }
 
-    const ok = await sendEmail(to, rendered, nudgeEmailHeaders(unsubscribeUrl));
-    if (!ok) {
-      skipped.sendFailed += 1;
-      continue;
-    }
-
-    await supabase
+    // Claim the unique (owner_id, date) slot BEFORE sending so a crash
+    // between Resend and the ledger cannot double-send next run.
+    // daily_nudge_emails has no status column and sent_at is NOT NULL DEFAULT
+    // now(), so the row's existence is pending/sent/failed. A failed send
+    // leaves the row in place to prevent a retry storm.
+    const { data: claimed, error: claimError } = await supabase
       .from("daily_nudge_emails")
       .upsert(
         { owner_id: profile.id, date: localDate, person_id: lead.person_id },
         { onConflict: "owner_id,date", ignoreDuplicates: true }
-      );
+      )
+      .select("owner_id")
+      .maybeSingle();
+    if (claimError) {
+      console.error("nudge-send: ledger claim failed", claimError);
+      skipped.sendFailed += 1;
+      return;
+    }
+    if (!claimed) {
+      skipped.alreadySentToday += 1;
+      return;
+    }
+
+    const ok = await sendEmail(to, rendered, nudgeEmailHeaders(unsubscribeUrl));
+    if (!ok) {
+      console.error("nudge-send: send failed; leaving ledger row to prevent retry storm", {
+        ownerId: profile.id,
+        date: localDate
+      });
+      skipped.sendFailed += 1;
+      return;
+    }
+
     sent += 1;
     usersProcessed += 1;
-  }
+    }
+  });
 
   const { body, status } = cronSummaryResponse({
-    evaluated: profiles?.length ?? 0,
+    evaluated: walk.evaluated,
     sent,
     skipped,
-    usersProcessed
+    usersProcessed,
+    pages: walk.pages,
+    truncated: walk.truncated
   });
   return NextResponse.json(body, { status });
 }

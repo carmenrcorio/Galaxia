@@ -95,7 +95,7 @@ describe("nudge-send route — gate order: consent -> local-hour -> minor-exclus
   });
 
   it("skips the owner entirely (continue) when nothing survives minor-exclusion — never falls back to a filtered row", () => {
-    expect(src).toMatch(/if\s*\(\s*!eligible\.length\s*\)\s*\{[\s\S]{0,120}continue;/);
+    expect(src).toMatch(/if\s*\(\s*!eligible\.length\s*\)\s*\{[\s\S]{0,120}return;/);
   });
 
   it("imports pickLeadNudgeRow / eligibleForEmailSend / isDueForNudgeSend / effectiveMinorSafe from the pure lib, not re-derived inline", () => {
@@ -129,12 +129,14 @@ describe("nudge-send route — one email per owner per day, ledger idempotency",
     expect(src).toMatch(/\.eq\("date",\s*localDate\)/);
   });
 
-  it("only inserts the ledger row after sendEmail resolves ok", () => {
-    const sendFailedIdx = src.indexOf("skipped.sendFailed");
-    const upsertIdx = src.lastIndexOf('.from("daily_nudge_emails")');
-    expect(sendFailedIdx).toBeGreaterThan(-1);
-    expect(upsertIdx).toBeGreaterThan(sendFailedIdx);
-    expect(src).toMatch(/if\s*\(\s*!ok\s*\)\s*\{[\s\S]{0,80}sendFailed[\s\S]{0,40}continue;/);
+  it("claims the ledger row BEFORE sendEmail, and leaves it on send failure (no delete)", () => {
+    const sendIdx = src.indexOf("sendEmail(");
+    const claimIdx = src.lastIndexOf('.from("daily_nudge_emails")', sendIdx);
+    expect(sendIdx).toBeGreaterThan(-1);
+    expect(claimIdx).toBeGreaterThan(-1);
+    expect(claimIdx).toBeLessThan(sendIdx);
+    expect(src).toMatch(/if\s*\(\s*!ok\s*\)\s*\{[\s\S]{0,200}sendFailed[\s\S]{0,80}return;/);
+    expect(src).not.toMatch(/\.from\("daily_nudge_emails"\)[\s\S]{0,120}\.delete\(/);
   });
 });
 
@@ -164,8 +166,17 @@ describe("nudge-send route — returns a JSON summary with real numeric counts, 
   it("returns the summary through cronSummaryResponse so a lost row fails closed", () => {
     expect(src).toMatch(/from\s*"\.\.\/\.\.\/\.\.\/\.\.\/lib\/cron-summary"/);
     expect(src).toContain("cronSummaryResponse({");
-    expect(src).toMatch(/evaluated:\s*profiles\?\.length\s*\?\?\s*0/);
+    expect(src).toMatch(/evaluated:\s*walk\.evaluated/);
+    expect(src).toMatch(/pages:\s*walk\.pages/);
+    expect(src).toMatch(/truncated:\s*walk\.truncated/);
     expect(src).toMatch(/return NextResponse\.json\(body,\s*\{\s*status\s*\}\)/);
+  });
+
+  it("paginates profiles with an id cursor instead of a silent .limit(1000)", () => {
+    expect(src).toMatch(/export const maxDuration\s*=\s*800/);
+    expect(src).toContain("walkCronPages");
+    expect(src).toMatch(/\.gt\("id",\s*lastId\)/);
+    expect(src).not.toMatch(/\.limit\(1000\)/);
   });
 
   it("skipped is a real per-owner/per-gate breakdown, not a placeholder", () => {

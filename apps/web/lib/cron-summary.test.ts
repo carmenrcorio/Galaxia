@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { accountedFor, cronSummaryResponse, isCronTallyMismatch, sumSkipCounts } from "./cron-summary";
+import { describe, expect, it, vi } from "vitest";
+import {
+  accountedFor,
+  cronSummaryResponse,
+  isCronTallyMismatch,
+  sumSkipCounts,
+  walkCronPages
+} from "./cron-summary";
 import { assertDisposableDbTarget } from "./test-utils/assert-not-prod";
 
 const DISPOSABLE_URL = "https://abcdefghijklmnopqrst.supabase.co";
@@ -169,5 +175,92 @@ describe("cronSummaryResponse — same invariant for the other four cron skip sh
     expect(isCronTallyMismatch(dropped.body)).toBe(true);
     if (!isCronTallyMismatch(dropped.body)) throw new Error("expected mismatch");
     expect(dropped.body.mismatch).toBe(5);
+  });
+});
+
+describe("walkCronPages — cursor pages accumulate and the tally still reconciles", () => {
+  it("walks two pages, threads lastId, and cronSummaryResponse stays ok:true", async () => {
+    const pages: Array<{ id: string }[]> = [
+      [{ id: "aaa" }, { id: "bbb" }],
+      [{ id: "ccc" }, { id: "ddd" }]
+    ];
+    const cursors: Array<string | null> = [];
+    let pageIdx = 0;
+    const skipped = { noPeople: 0 };
+    let sent = 0;
+
+    const walk = await walkCronPages({
+      pageSize: 2,
+      fetchPage: async (lastId) => {
+        cursors.push(lastId);
+        return pages[pageIdx++] ?? [];
+      },
+      visit: async (row) => {
+        if (row.id === "bbb") skipped.noPeople += 1;
+        else sent += 1;
+      }
+    });
+
+    expect(cursors).toEqual([null, "bbb", "ddd"]);
+    expect(walk.pages).toBe(2);
+    expect(walk.evaluated).toBe(4);
+    expect(walk.truncated).toBe(false);
+    expect(sent + skipped.noPeople).toBe(walk.evaluated);
+
+    const result = cronSummaryResponse({
+      evaluated: walk.evaluated,
+      sent,
+      skipped,
+      pages: walk.pages,
+      truncated: walk.truncated
+    });
+    expect(result.status).toBe(200);
+    expect(result.body).toMatchObject({
+      ok: true,
+      evaluated: 4,
+      sent: 3,
+      skipped: { noPeople: 1 },
+      pages: 2,
+      truncated: false
+    });
+  });
+
+  it("stops mid-page when the time budget fires, logs, and still returns ok:true with truncated", async () => {
+    let t = 0;
+    const skipped = { leftover: 0 };
+    let sent = 0;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const walk = await walkCronPages({
+        pageSize: 2,
+        startedAtMs: 0,
+        timeBudgetMs: 50,
+        now: () => t,
+        fetchPage: async (lastId) => {
+          if (!lastId) return [{ id: "a" }, { id: "b" }];
+          return [{ id: "c" }, { id: "d" }];
+        },
+        visit: async () => {
+          sent += 1;
+          t = 100;
+        }
+      });
+      expect(walk.evaluated).toBe(1);
+      expect(walk.pages).toBe(1);
+      expect(walk.truncated).toBe(true);
+      expect(warn).toHaveBeenCalled();
+      const result = cronSummaryResponse({
+        evaluated: walk.evaluated,
+        sent,
+        skipped,
+        pages: walk.pages,
+        truncated: walk.truncated
+      });
+      expect(result.status).toBe(200);
+      expect(result.body.ok).toBe(true);
+      expect(result.body).toMatchObject({ truncated: true, pages: 1, evaluated: 1, sent: 1 });
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

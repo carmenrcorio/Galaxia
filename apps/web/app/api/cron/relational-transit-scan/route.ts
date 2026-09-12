@@ -9,7 +9,7 @@ import {
 } from "@galaxia/astro";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
-import { cronSummaryResponse } from "../../../../lib/cron-summary";
+import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary";
 
 /**
  * Server-side daily relational-transit scan job (Generations Feature 3).
@@ -56,6 +56,8 @@ export async function POST(req: Request) {
   return handle(req);
 }
 
+export const maxDuration = 800;
+
 async function handle(req: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
@@ -71,15 +73,21 @@ async function handle(req: Request) {
 
   const supabase = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, { auth: { persistSession: false } });
 
-  const { data: profiles } = await supabase.from("profiles").select("id").limit(1000);
-
   const whenUTC = new Date().toISOString();
   const skipped = { noPeople: 0, singlePerson: 0 };
   let ownersScanned = 0;
   let eventsUpserted = 0;
 
-  for (const profile of profiles ?? []) {
-    const ownerId = profile.id as string;
+  const walk = await walkCronPages({
+    fetchPage: async (lastId, pageSize) => {
+      let query = supabase.from("profiles").select("id").order("id", { ascending: true }).limit(pageSize);
+      if (lastId) query = query.gt("id", lastId);
+      const { data, error } = await query;
+      if (error) throw new Error(`relational-transit-scan: profile page fetch failed: ${error.message}`);
+      return (data ?? []) as { id: string }[];
+    },
+    visit: async (profile) => {
+    const ownerId = profile.id;
 
     const { data: peopleRows } = await supabase
       .from("people")
@@ -90,7 +98,7 @@ async function handle(req: Request) {
     if (people.length < 2) {
       skipped.noPeople += people.length === 0 ? 1 : 0;
       skipped.singlePerson += people.length === 1 ? 1 : 0;
-      continue;
+      return;
     }
 
     const personIds = people.map((p) => p.id);
@@ -111,12 +119,12 @@ async function handle(req: Request) {
     }
     if (inputs.length < 2) {
       skipped.singlePerson += 1;
-      continue;
+      return;
     }
 
     const events = scanRelationalTransits(inputs, whenUTC);
     ownersScanned += 1;
-    if (!events.length) continue;
+    if (!events.length) return;
 
     const rows = events.map((event) => ({
       owner_id: ownerId,
@@ -141,14 +149,17 @@ async function handle(req: Request) {
       .upsert(rows, { onConflict: "owner_id,dedup_key" })
       .select("id");
     if (!error) eventsUpserted += data?.length ?? rows.length;
-  }
+    }
+  });
 
   const { body, status } = cronSummaryResponse({
-    evaluated: profiles?.length ?? 0,
+    evaluated: walk.evaluated,
     sent: ownersScanned,
     skipped,
     ownersScanned,
-    eventsUpserted
+    eventsUpserted,
+    pages: walk.pages,
+    truncated: walk.truncated
   });
   return NextResponse.json(body, { status });
 }

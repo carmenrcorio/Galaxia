@@ -41,8 +41,27 @@ describe("trial-emails route — returns a JSON summary with real numeric counts
 
   it("returns the summary through cronSummaryResponse so a lost row fails closed", () => {
     expect(src).toMatch(/from\s*"\.\.\/\.\.\/\.\.\/\.\.\/lib\/cron-summary"/);
-    expect(src).toMatch(/cronSummaryResponse\(\{\s*evaluated:\s*profiles\?\.length\s*\?\?\s*0,\s*sent,\s*skipped\s*\}\)/);
+    expect(src).toContain("cronSummaryResponse({");
+    expect(src).toMatch(/evaluated:\s*walk\.evaluated/);
+    expect(src).toMatch(/pages:\s*walk\.pages/);
+    expect(src).toMatch(/truncated:\s*walk\.truncated/);
     expect(src).toMatch(/return NextResponse\.json\(body,\s*\{\s*status\s*\}\)/);
+  });
+
+  it("paginates trialing profiles with an id cursor instead of a silent .limit(1000)", () => {
+    expect(src).toMatch(/export const maxDuration\s*=\s*800/);
+    expect(src).toContain("walkCronPages");
+    expect(src).toMatch(/\.gt\("id",\s*lastId\)/);
+    expect(src).not.toMatch(/\.limit\(1000\)/);
+  });
+
+  it("claims the trial_emails ledger row BEFORE sendEmail, and leaves it on send failure", () => {
+    const sendIdx = src.indexOf("sendEmail(");
+    const insertIdx = src.indexOf('.from("trial_emails").insert');
+    expect(sendIdx).toBeGreaterThan(-1);
+    expect(insertIdx).toBeGreaterThan(-1);
+    expect(insertIdx).toBeLessThan(sendIdx);
+    expect(src).not.toMatch(/\.from\("trial_emails"\)[\s\S]{0,120}\.delete\(/);
   });
 
   it("sent is a numeric counter (never a sparse per-kind object that can look empty on a real send)", () => {

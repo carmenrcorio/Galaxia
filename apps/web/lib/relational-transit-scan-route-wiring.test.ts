@@ -48,8 +48,17 @@ describe("relational-transit-scan route — returns a JSON summary with real num
     expect(src).toMatch(/from\s*"\.\.\/\.\.\/\.\.\/\.\.\/lib\/cron-summary"/);
     expect(src).toContain("cronSummaryResponse({");
     expect(src).toMatch(/sent:\s*ownersScanned/);
-    expect(src).toMatch(/evaluated:\s*profiles\?\.length\s*\?\?\s*0/);
+    expect(src).toMatch(/evaluated:\s*walk\.evaluated/);
+    expect(src).toMatch(/pages:\s*walk\.pages/);
+    expect(src).toMatch(/truncated:\s*walk\.truncated/);
     expect(src).toMatch(/return NextResponse\.json\(body,\s*\{\s*status\s*\}\)/);
+  });
+
+  it("paginates profiles with an id cursor instead of a silent .limit(1000)", () => {
+    expect(src).toMatch(/export const maxDuration\s*=\s*800/);
+    expect(src).toContain("walkCronPages");
+    expect(src).toMatch(/\.gt\("id",\s*lastId\)/);
+    expect(src).not.toMatch(/\.limit\(1000\)/);
   });
 
   it("skipped is a real per-owner breakdown (noPeople/singlePerson), not a placeholder", () => {

@@ -261,7 +261,7 @@ function ExpandRow({
                     {plutoExtended.historicalFigures.map((figure) => (
                       <div key={figure.name}>
                         <p style={{ fontSize: ".82rem", color: "var(--cream)", margin: 0 }}>
-                          <strong>{figure.name}</strong> — {figure.knownFor}
+                          <strong>{figure.name}</strong>: {figure.knownFor}
                         </p>
                         <p className="muted" style={{ fontSize: ".76rem", lineHeight: 1.5, margin: "2px 0 0" }}>{figure.plutoBridge}</p>
                       </div>

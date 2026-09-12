@@ -65,13 +65,12 @@ async function toPngWithoutBackdropFilterClip(
  * Timeline and Family Chart Comparison "viral screenshot" share cards, and
  * by every biwheel export call site via ChartImageExport — all of
  * them render a permanent `<ShareWatermark />` inside the captured node, so
- * the exported image always carries the "galaxiamea.com" mark. The galaxy
- * constellation on /app passes `capture` (direct canvas blit) because
- * html-to-image's SVG foreignObject path blanks live canvases on WebKit.
+ * the exported image always carries the "galaxiamea.com" mark.
  *
- * Galaxy is the exception: its live <canvas> layers blank out on WebKit
- * when cloned through html-to-image's SVG foreignObject, so that call site
- * passes `capture` (composeGalaxySharePng) and never uses this DOM path.
+ * Galaxy is the exception: /app redraws the signed-in account's settled
+ * constellation onto offscreen canvases and passes `capture` (a PNG Blob).
+ * It never uses this DOM path, never reads GPU-promoted on-screen
+ * canvases, and never substitutes a fixture sky.
  *
  * Deliberately does NOT reuse the public /api/quick-share pipeline: that
  * stack mints an unauthenticated, anyone-with-the-link page for the public
@@ -88,8 +87,8 @@ export function ShareImageButton({
   targetRef?: RefObject<HTMLElement | null>;
   filename: string;
   label?: string;
-  /** Galaxy: blit the live canvases. Other call sites omit this and capture `targetRef`. */
-  capture?: () => Promise<string>;
+  /** Galaxy: PNG Blob (or data URL) of the live sky. Other call sites omit this and capture `targetRef`. */
+  capture?: () => Promise<string | Blob>;
 }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -116,17 +115,21 @@ export function ShareImageButton({
     setError(null);
     setStatus(null);
     try {
-      const dataUrl = capture
+      const captured = capture
         ? await capture()
         : await toPngWithoutBackdropFilterClip(targetRef!.current!, {
             pixelRatio: 2,
             backgroundColor: SHARE_IMAGE_BG,
             cacheBust: true,
           });
+      const blob =
+        captured instanceof Blob
+          ? captured
+          : await (await fetch(captured)).blob();
+      if (blob.size < 64) throw new Error(SHARE_IMAGE_FAIL);
 
       if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
         try {
-          const blob = await (await fetch(dataUrl)).blob();
           const file = new File([blob], filename, { type: "image/png" });
           if (navigator.canShare({ files: [file] })) {
             await navigator.share({ files: [file] });
@@ -141,10 +144,14 @@ export function ShareImageButton({
         }
       }
 
+      // Object URL, not a data: URL — iOS Safari has saved empty files from
+      // large data: hrefs even when the in-memory PNG was fine.
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.download = filename;
-      link.href = dataUrl;
+      link.href = url;
       link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 2000);
       setStatus("Image saved");
     } catch (err) {
       setError(err instanceof Error ? err.message : SHARE_IMAGE_FAIL);

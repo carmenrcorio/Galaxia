@@ -4,11 +4,12 @@
  * The galaxy constellation is two live <canvas> layers. html-to-image's
  * toSvg path clones those via canvas.toDataURL() into an SVG foreignObject
  * and then rasterizes the SVG onto a new canvas. WebKit (iOS Safari) paints
- * that nested canvas-in-SVG as a solid background even though
- * canvas.toDataURL() of the live layers themselves is full of stars — the
- * natal wheel and chart-grid shareables do not hit this path because they
- * are HTML/SVG, not live canvases. composeGalaxySharePng() blit the two
- * canvases directly and never goes through foreignObject.
+ * that nested canvas-in-SVG as a solid background. Reading the on-screen
+ * canvases with drawImage / toDataURL is also empty on iOS when they are
+ * GPU-promoted (`position: absolute`). /app therefore redraws THIS
+ * account's settled sky onto offscreen canvases (`willReadFrequently`) and
+ * composeGalaxySharePng() composites those. Natal / compare stay on the
+ * HTML/SVG html-to-image path.
  */
 
 export const SHARE_IMAGE_BG = "#0a0717";
@@ -185,11 +186,32 @@ export function paintConstellationFixture(
   };
 }
 
+export function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob || blob.size < 64) {
+        console.error("Share image toBlob produced an empty file", { size: blob?.size ?? 0 });
+        reject(new Error(SHARE_IMAGE_FAIL));
+        return;
+      }
+      resolve(blob);
+    }, "image/png");
+  });
+}
+
+/**
+ * Composite atmosphere + motion. Sources should be CPU-backed (offscreen,
+ * `willReadFrequently`) — iOS Safari's GPU-promoted on-screen canvases
+ * (`position: absolute`) often `drawImage` as empty even though they paint
+ * on screen. Asserts content BEFORE the watermark so a gold "galaxiamea.com"
+ * cannot mask a blank sky. Returns a PNG Blob (no data-URL); iOS Web Share
+ * of a large `data:` URL is a known empty-file failure.
+ */
 export async function composeGalaxySharePng(
   atm: HTMLCanvasElement,
   motion: HTMLCanvasElement,
-  options?: { maxDim?: number },
-): Promise<string> {
+  options?: { maxDim?: number; cssWidth?: number },
+): Promise<Blob> {
   if (typeof document !== "undefined" && document.fonts?.ready) {
     await document.fonts.ready.catch(() => {});
   }
@@ -205,15 +227,15 @@ export async function composeGalaxySharePng(
   ctx.fillRect(0, 0, width, height);
   ctx.drawImage(atm, 0, 0, width, height);
   ctx.drawImage(motion, 0, 0, width, height);
-  const cssW = motion.clientWidth || atm.clientWidth || width;
+  assertCanvasHasContent(canvas, "galaxy");
+  const cssW = options?.cssWidth || motion.clientWidth || atm.clientWidth || width;
   const cssScale = width / Math.max(cssW, 1);
   ctx.fillStyle = "rgba(230,174,108,0.5)";
   ctx.font = `${Math.max(9, Math.round(10 * cssScale))}px Inter, system-ui, sans-serif`;
   ctx.textAlign = "right";
   ctx.textBaseline = "bottom";
   ctx.fillText("galaxiamea.com", width - 14 * cssScale, height - 10 * cssScale);
-  assertCanvasHasContent(canvas, "galaxy");
-  return canvas.toDataURL("image/png");
+  return canvasToPngBlob(canvas);
 }
 
 export function assertCanvasHasContent(canvas: HTMLCanvasElement, label = "share"): void {

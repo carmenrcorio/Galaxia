@@ -85,6 +85,28 @@ describe("composeGalaxyRasters constellation sizes", () => {
   });
 });
 
+describe("blank assert is independent of the watermark", () => {
+  it("a background-only raster fails even if a later watermark would add gold pixels", () => {
+    const width = 64;
+    const height = 64;
+    const data = new Uint8ClampedArray(width * height * 4);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = SHARE_IMAGE_BG_RGB[0];
+      data[i + 1] = SHARE_IMAGE_BG_RGB[1];
+      data[i + 2] = SHARE_IMAGE_BG_RGB[2];
+      data[i + 3] = 255;
+    }
+    const { nonBg, sampled } = countNonBackgroundSamples(data, width, height);
+    expect(isBlankShareRaster(nonBg, sampled)).toBe(true);
+    data[(width * height - 2) * 4] = 230;
+    data[(width * height - 2) * 4 + 1] = 174;
+    data[(width * height - 2) * 4 + 2] = 108;
+    data[(width * height - 2) * 4 + 3] = 128;
+    const afterMark = countNonBackgroundSamples(data, width, height);
+    expect(afterMark.nonBg).toBeGreaterThan(nonBg);
+  });
+});
+
 describe("share button label state machine", () => {
   it("stays on Share until a confirmed success", () => {
     expect(shareButtonLabel("Share sky image", false, null)).toBe("Share sky image");

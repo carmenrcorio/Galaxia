@@ -3,9 +3,23 @@ import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { publicEnv } from "./lib/env";
+import { getClientKeyFromHeaders, isRateLimited } from "./lib/rate-limit";
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  // Public, unauthenticated chart-compute routes: no login, so a rate limit
+  // is the only abuse cap. Checked and returned before any auth/session work
+  // below — these two paths never need the Supabase client. See
+  // lib/rate-limit.ts for why this is in-memory and per-instance.
+  if (path === "/api/quick-chart" || path === "/api/quick-compare") {
+    const key = getClientKeyFromHeaders(request.headers);
+    if (isRateLimited(key)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+    return NextResponse.next({ request });
+  }
+
   // Retired standalone tab. Permanent redirect so old bookmarks/nav caches
   // land on Groups instead of a stub page that looks like a feature.
   if (path === "/app/family-compare" || path.startsWith("/app/family-compare/")) {
@@ -93,5 +107,16 @@ export const config = {
   // /admin here is page routes only (the layout-guarded surface), not
   // /api/admin/** — those handlers must independently return a JSON 403 via
   // requireAdminApi() even for an anonymous caller, not a login redirect.
-  matcher: ["/app/:path*", "/account/:path*", "/admin/:path*", "/welcome", "/start", "/subscribe"]
+  // /api/quick-chart and /api/quick-compare are matched only for the rate
+  // limit above (handled and returned before the auth logic runs).
+  matcher: [
+    "/app/:path*",
+    "/account/:path*",
+    "/admin/:path*",
+    "/welcome",
+    "/start",
+    "/subscribe",
+    "/api/quick-chart",
+    "/api/quick-compare"
+  ]
 };

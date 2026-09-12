@@ -102,14 +102,17 @@ We share information only in these circumstances:
 
 **With service providers (subprocessors).** We use trusted third parties to run the Service. They may process information on our behalf only to provide services to us, and are bound by confidentiality and data-protection obligations. Our current categories of subprocessors are:
 
-| Provider | Purpose |
-| :---- | :---- |
-| Supabase | Database, authentication, and storage of account and chart data |
-| Vercel | Application hosting and delivery |
-| RevenueCat | Subscription management and entitlements |
-| Stripe | Payment processing |
-| Resend | Sending and delivery of transactional email |
-| Anthropic | AI processing for the Vela feature |
+| Provider | Purpose | Location |
+| :---- | :---- | :---- |
+| Supabase | Database, authentication, and storage of account and chart data | United States |
+| Vercel | Application hosting and delivery | United States |
+| RevenueCat | Subscription management and entitlements | United States |
+| Stripe | Payment processing | United States |
+| Resend | Sending and delivery of transactional email | United States |
+| Anthropic | AI processing for the Vela feature | United States |
+| Sentry (Functional Software, Inc.) | Error monitoring | United States |
+| Open-Meteo | Weather/astronomical data | Switzerland |
+| Expo (Expo Technology, Inc.) | Mobile push notifications | United States |
 
 **For legal reasons.** We may disclose information if required to do so by law, regulation, legal process, or governmental request, or where we believe disclosure is reasonably necessary to protect the rights, property, or safety of Galaxia, our users, or the public, or to prevent or address fraud, security, or technical issues.
 
@@ -185,4 +188,6 @@ We may update this Policy from time to time. When we make material changes, we w
 
 If you have questions about this Policy or our privacy practices, contact us at:
 
-**\[LEGAL ENTITY NAME\]** Email: [help@galaxiamea.com](mailto:help@galaxiamea.com) \[MAILING ADDRESS, if you choose or are required to provide one\]  
+**GALAXIA MEA LLC**  
+Email: [help@galaxiamea.com](mailto:help@galaxiamea.com)  
+Mailing address: 1 Shadowrock Ct, Simpsonville, SC 29680  

@@ -1,5 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { nudgeEmailHeaders, nudgeEmailSubject, sendEmail, skyTodayEmail } from "./emails";
+import {
+  day1Email,
+  day4MultiEmail,
+  day4OneEmail,
+  day11Email,
+  day14Email,
+  nudgeEmailHeaders,
+  nudgeEmailSubject,
+  sendEmail,
+  skyTodayEmail,
+  type TrialEmailData
+} from "./emails";
 
 describe("nudgeEmailSubject — generic, name-only, structurally cannot leak copy_resolved", () => {
   it("takes only a name and never mentions a theme/domain word", () => {
@@ -63,10 +74,20 @@ describe("skyTodayEmail", () => {
     expect(rendered.html).toContain(`${base.siteUrl}/app`);
   });
 
-  it("includes the mailing-address placeholder in the footer (FOUNDER-REVIEW blocker, not silently dropped)", () => {
+  it("includes the real legal entity and mailing address in the footer (CAN-SPAM)", () => {
     const rendered = skyTodayEmail(base);
-    expect(rendered.html).toContain("[MAILING ADDRESS]");
-    expect(rendered.text).toContain("[MAILING ADDRESS]");
+    expect(rendered.html).toContain("Galaxia Mea LLC");
+    expect(rendered.html).toContain("1 Shadowrock Ct, Simpsonville, SC 29680");
+    expect(rendered.text).toContain("Galaxia Mea LLC");
+    expect(rendered.text).toContain("1 Shadowrock Ct, Simpsonville, SC 29680");
+    expect(rendered.html).not.toContain("[MAILING ADDRESS]");
+    expect(rendered.text).not.toContain("[MAILING ADDRESS]");
+  });
+
+  it("states why the recipient is receiving the email, alongside the unsubscribe link", () => {
+    const rendered = skyTodayEmail(base);
+    expect(rendered.html).toContain("You are receiving this email because you signed up for Galaxia Mea.");
+    expect(rendered.text).toContain("You are receiving this email because you signed up for Galaxia Mea.");
   });
 
   it("adds the why-you're-getting-this line only on the first email", () => {
@@ -168,4 +189,48 @@ describe("sendEmail — From address defaults to the verified galaxiamea.com sen
     const body = JSON.parse(init.body as string);
     expect(body.from).toBe("Galaxia <custom@galaxiamea.com>");
   });
+});
+
+describe("Trial emails — CAN-SPAM footer (legal entity, mailing address, working unsubscribe link)", () => {
+  const base: TrialEmailData = {
+    firstName: "Sam",
+    personName: "Riley",
+    peopleCount: 3,
+    notesCount: 2,
+    threadsCount: 1,
+    groupsCount: 1,
+    trialEndDate: "24 July",
+    siteUrl: "https://galaxia.app"
+  };
+  const renderers: [string, (d: TrialEmailData) => { html: string; text: string }][] = [
+    ["day1Email", day1Email],
+    ["day4MultiEmail", day4MultiEmail],
+    ["day4OneEmail", day4OneEmail],
+    ["day11Email", day11Email],
+    ["day14Email", day14Email]
+  ];
+
+  for (const [name, render] of renderers) {
+    it(`${name} includes the legal entity, mailing address, and unsubscribe link in both html and text`, () => {
+      const rendered = render(base);
+      expect(rendered.html).toContain("Galaxia Mea LLC");
+      expect(rendered.html).toContain("1 Shadowrock Ct, Simpsonville, SC 29680");
+      expect(rendered.html).toContain(`${base.siteUrl}/account/notifications`);
+      expect(rendered.text).toContain("Galaxia Mea LLC");
+      expect(rendered.text).toContain("1 Shadowrock Ct, Simpsonville, SC 29680");
+      expect(rendered.text).toContain(`${base.siteUrl}/account/notifications`);
+    });
+
+    it(`${name} states why the recipient is receiving the email`, () => {
+      const rendered = render(base);
+      expect(rendered.html).toContain("You are receiving this email because you signed up for Galaxia Mea.");
+      expect(rendered.text).toContain("You are receiving this email because you signed up for Galaxia Mea.");
+    });
+
+    it(`${name} footer copy never uses an em dash (founder style rule)`, () => {
+      const rendered = render(base);
+      expect(rendered.html.slice(rendered.html.indexOf("Galaxia Mea LLC"))).not.toContain("\u2014");
+      expect(rendered.text.slice(rendered.text.indexOf("Galaxia Mea LLC"))).not.toContain("\u2014");
+    });
+  }
 });

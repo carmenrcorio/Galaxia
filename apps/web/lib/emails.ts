@@ -47,9 +47,44 @@ function p(text: string): string {
   return `<p style="color:${MIST};margin:0 0 14px">${text}</p>`;
 }
 
+/**
+ * CAN-SPAM footer: real legal entity + physical mailing address + a working
+ * opt-out link, required on every commercial email (nudges, trial emails,
+ * digests, any promotional content). Never added to a purely transactional
+ * email (password reset, magic link) — those are sent by Supabase Auth's own
+ * GoTrue templates, not through this module, so there is nothing to add it
+ * to here. `unsubscribeUrl` is caller-provided so each email kind can point
+ * at whichever opt-out mechanism actually governs it (the nudge email's own
+ * no-login token route for `skyTodayEmail`; the account notification
+ * settings page for the trial emails, which have no separate consent flag).
+ */
+const LEGAL_ENTITY_ADDRESS_LINE = "Galaxia Mea LLC · 1 Shadowrock Ct, Simpsonville, SC 29680 · help@galaxiamea.com";
+
+function complianceFooterHtml(unsubscribeUrl: string): string {
+  return `<p style="color:#8076a6;font-size:11px;margin-top:28px;line-height:1.6">
+        ${LEGAL_ENTITY_ADDRESS_LINE}<br /><br />
+        You are receiving this email because you signed up for Galaxia Mea. To unsubscribe, <a href="${unsubscribeUrl}" style="color:#8076a6;text-decoration:underline">visit this link</a>.
+      </p>`;
+}
+
+function complianceFooterText(unsubscribeUrl: string): string {
+  return `${LEGAL_ENTITY_ADDRESS_LINE}\n\nYou are receiving this email because you signed up for Galaxia Mea. To unsubscribe, visit: ${unsubscribeUrl}`;
+}
+
+/**
+ * Trial emails have no per-category consent flag of their own (unlike the
+ * nudge email's `daily_nudge_emails_enabled` + token route), so their
+ * opt-out link points at the account notification settings page rather
+ * than a token that would resolve to the wrong toggle.
+ */
+function trialUnsubscribeUrl(siteUrl: string): string {
+  return `${siteUrl}/account/notifications`;
+}
+
 /** Day 1 — after they add their first person. */
 export function day1Email(d: TrialEmailData): RenderedEmail {
   const subject = "Your sky has one star in it";
+  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
   const html = shell(
     p(`Hi ${d.firstName},`) +
       p(`You've added ${d.personName ?? "someone"}. That's a start.`) +
@@ -57,43 +92,49 @@ export function day1Email(d: TrialEmailData): RenderedEmail {
       p("Galaxia gets more useful with every person you add (a partner, a parent, a sibling, the friend who became family). The comparison, the generational layer, the constellation itself: none of it works with one person in it.") +
       p("The people you have the least information about still belong here. A birth year alone is enough to place someone in your sky.") +
       button("Add someone else →", `${d.siteUrl}/welcome`) +
-      p(`Your trial runs through ${d.trialEndDate}. Nothing will be charged before then.`)
+      p(`Your trial runs through ${d.trialEndDate}. Nothing will be charged before then.`) +
+      complianceFooterHtml(unsubscribeUrl)
   );
-  const text = `Hi ${d.firstName},\n\nYou've added ${d.personName ?? "someone"}. That's a start.\n\nGalaxia gets more useful with every person you add (a partner, a parent, a sibling, the friend who became family). The comparison, the generational layer, the constellation itself: none of it works with one person in it.\n\nThe people you have the least information about still belong here. A birth year alone is enough to place someone in your sky.\n\nAdd someone else: ${d.siteUrl}/welcome\n\nYour trial runs through ${d.trialEndDate}. Nothing will be charged before then.`;
+  const text = `Hi ${d.firstName},\n\nYou've added ${d.personName ?? "someone"}. That's a start.\n\nGalaxia gets more useful with every person you add (a partner, a parent, a sibling, the friend who became family). The comparison, the generational layer, the constellation itself: none of it works with one person in it.\n\nThe people you have the least information about still belong here. A birth year alone is enough to place someone in your sky.\n\nAdd someone else: ${d.siteUrl}/welcome\n\nYour trial runs through ${d.trialEndDate}. Nothing will be charged before then.\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, html, text };
 }
 
 /** Day 4 — if they have 2+ people. */
 export function day4MultiEmail(d: TrialEmailData): RenderedEmail {
   const subject = `What ${d.personName ?? "they"} needs from you`;
+  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
   const html = shell(
     p(`Hi ${d.firstName},`) +
       p(`You've mapped ${d.peopleCount} people. Here's the part most people miss:`) +
       p(`Open <strong style="color:${CREAM}">Compare</strong>, choose two of them, and read the "what they need from you" section. It's built from their actual placements: where you flow, where you catch, and what each of you is asking for without saying it.`) +
       p("It's the closest thing Galaxia has to the whole point.") +
-      button("Compare two people →", `${d.siteUrl}/app/compare`)
+      button("Compare two people →", `${d.siteUrl}/app/compare`) +
+      complianceFooterHtml(unsubscribeUrl)
   );
-  const text = `Hi ${d.firstName},\n\nYou've mapped ${d.peopleCount} people. Here's the part most people miss:\n\nOpen Compare, choose two of them, and read the "what they need from you" section. It's built from their actual placements: where you flow, where you catch, and what each of you is asking for without saying it.\n\nIt's the closest thing Galaxia has to the whole point.\n\nCompare two people: ${d.siteUrl}/app/compare`;
+  const text = `Hi ${d.firstName},\n\nYou've mapped ${d.peopleCount} people. Here's the part most people miss:\n\nOpen Compare, choose two of them, and read the "what they need from you" section. It's built from their actual placements: where you flow, where you catch, and what each of you is asking for without saying it.\n\nIt's the closest thing Galaxia has to the whole point.\n\nCompare two people: ${d.siteUrl}/app/compare\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, html, text };
 }
 
 /** Day 4 — if they have only 1 person (the at-risk path). */
 export function day4OneEmail(d: TrialEmailData): RenderedEmail {
   const subject = "Galaxia needs one more person";
+  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
   const html = shell(
     p(`Hi ${d.firstName},`) +
       p("Right now your galaxy has one star in it, and almost nothing in Galaxia works with one star.") +
       p("Add one person (your partner, your mother, your oldest friend) and the app becomes what it's for: a way to understand the people you actually live your life beside.") +
       p("If you don't have their birth time, that's fine. A date works. A year works.") +
-      button("Add someone →", `${d.siteUrl}/welcome`)
+      button("Add someone →", `${d.siteUrl}/welcome`) +
+      complianceFooterHtml(unsubscribeUrl)
   );
-  const text = `Hi ${d.firstName},\n\nRight now your galaxy has one star in it, and almost nothing in Galaxia works with one star.\n\nAdd one person (your partner, your mother, your oldest friend) and the app becomes what it's for: a way to understand the people you actually live your life beside.\n\nIf you don't have their birth time, that's fine. A date works. A year works.\n\nAdd someone: ${d.siteUrl}/welcome`;
+  const text = `Hi ${d.firstName},\n\nRight now your galaxy has one star in it, and almost nothing in Galaxia works with one star.\n\nAdd one person (your partner, your mother, your oldest friend) and the app becomes what it's for: a way to understand the people you actually live your life beside.\n\nIf you don't have their birth time, that's fine. A date works. A year works.\n\nAdd someone: ${d.siteUrl}/welcome\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, html, text };
 }
 
 /** Day 11 — the honest reminder, card-optional rewrite (approved). */
 export function day11Email(d: TrialEmailData): RenderedEmail {
   const subject = "Three days left in your trial";
+  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
   const list = `<ul style="color:${MIST};margin:0 0 14px;padding-left:18px">
     <li><strong style="color:${CREAM}">${d.peopleCount}</strong> people in your galaxy</li>
     <li><strong style="color:${CREAM}">${d.notesCount}</strong> private notes, visible only to you</li>
@@ -107,24 +148,27 @@ export function day11Email(d: TrialEmailData): RenderedEmail {
       list +
       p("All of it stays saved. If you continue, it's exactly where you left it. No limits, no upgrade, no second tier.") +
       button("Continue with Galaxia →", `${d.siteUrl}/subscribe`) +
-      p("Thank you for trying this.")
+      p("Thank you for trying this.") +
+      complianceFooterHtml(unsubscribeUrl)
   );
-  const text = `Hi ${d.firstName},\n\nYour free trial of Galaxia ends on ${d.trialEndDate}, three days from now. We never asked for a card, so nothing will be charged. When the trial ends, your galaxy simply pauses until you choose to continue.\n\nHere's what you've built:\n- ${d.peopleCount} people in your galaxy\n- ${d.notesCount} private notes, visible only to you\n- ${d.threadsCount} conversations with Vela\n- ${d.groupsCount} constellations you named\n\nAll of it stays saved. If you continue, it's exactly where you left it. No limits, no upgrade, no second tier.\n\nContinue with Galaxia: ${d.siteUrl}/subscribe\n\nThank you for trying this.`;
+  const text = `Hi ${d.firstName},\n\nYour free trial of Galaxia ends on ${d.trialEndDate}, three days from now. We never asked for a card, so nothing will be charged. When the trial ends, your galaxy simply pauses until you choose to continue.\n\nHere's what you've built:\n- ${d.peopleCount} people in your galaxy\n- ${d.notesCount} private notes, visible only to you\n- ${d.threadsCount} conversations with Vela\n- ${d.groupsCount} constellations you named\n\nAll of it stays saved. If you continue, it's exactly where you left it. No limits, no upgrade, no second tier.\n\nContinue with Galaxia: ${d.siteUrl}/subscribe\n\nThank you for trying this.\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, html, text };
 }
 
 /** Day 14 — trial ended, not converted. */
 export function day14Email(d: TrialEmailData): RenderedEmail {
   const subject = "Your galaxy is still here";
+  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
   const html = shell(
     p(`Hi ${d.firstName},`) +
       p("Your trial has ended and we haven't charged you.") +
       p(`Everything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.`) +
       button("Pick up where you left off →", `${d.siteUrl}/app`) +
       p("And if it wasn't right for you: would you tell us why? One line is enough. It goes straight to the person who built this.") +
-      button("Tell us what was missing", "mailto:support@galaxia.app?subject=What%20was%20missing")
+      button("Tell us what was missing", "mailto:support@galaxia.app?subject=What%20was%20missing") +
+      complianceFooterHtml(unsubscribeUrl)
   );
-  const text = `Hi ${d.firstName},\n\nYour trial has ended and we haven't charged you.\n\nEverything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.\n\nPick up where you left off: ${d.siteUrl}/app\n\nAnd if it wasn't right for you: would you tell us why? One line is enough. It goes straight to the person who built this.\n\nTell us what was missing: support@galaxia.app`;
+  const text = `Hi ${d.firstName},\n\nYour trial has ended and we haven't charged you.\n\nEverything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.\n\nPick up where you left off: ${d.siteUrl}/app\n\nAnd if it wasn't right for you: would you tell us why? One line is enough. It goes straight to the person who built this.\n\nTell us what was missing: support@galaxia.app\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, html, text };
 }
 
@@ -216,11 +260,6 @@ export function nudgeEmailSubject(subjectPersonName: string): string {
   return `Your sky today, for ${subjectPersonName}`;
 }
 
-// FOUNDER-REVIEW: real physical mailing address required before this ships
-// to any real recipient — CAN-SPAM requires one in every commercial email.
-// Mirrors the same open placeholder in content/legal/privacy-policy.md.
-const MAILING_ADDRESS_PLACEHOLDER = "[MAILING ADDRESS]";
-
 export function skyTodayEmail(d: SkyTodayEmailData): RenderedEmail {
   const subject = nudgeEmailSubject(d.subjectPersonName);
   const greeting = d.ownerFirstName ? `Hi ${d.ownerFirstName},` : "Hi,";
@@ -235,10 +274,7 @@ export function skyTodayEmail(d: SkyTodayEmailData): RenderedEmail {
       p(d.copyResolved) +
       (firstEmailLine ? p(firstEmailLine) : "") +
       button("Open your galaxy →", `${d.siteUrl}/app`) +
-      `<p style="color:#8076a6;font-size:11px;margin-top:28px;line-height:1.6">
-        Galaxia, ${MAILING_ADDRESS_PLACEHOLDER}<br />
-        <a href="${d.unsubscribeUrl}" style="color:#8076a6;text-decoration:underline">Unsubscribe from daily sky emails</a>
-      </p>`
+      complianceFooterHtml(d.unsubscribeUrl)
   );
 
   const text = [
@@ -251,8 +287,7 @@ export function skyTodayEmail(d: SkyTodayEmailData): RenderedEmail {
     "",
     `Open your galaxy: ${d.siteUrl}/app`,
     "",
-    `Galaxia, ${MAILING_ADDRESS_PLACEHOLDER}`,
-    `Unsubscribe from daily sky emails: ${d.unsubscribeUrl}`
+    complianceFooterText(d.unsubscribeUrl)
   ].filter((line) => line !== "").join("\n");
 
   return { subject, html, text };

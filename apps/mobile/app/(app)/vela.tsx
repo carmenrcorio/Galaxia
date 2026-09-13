@@ -137,8 +137,13 @@ export default function VelaScreen() {
   };
 
   const functionUrl = useMemo(() => {
-    const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
-    const base = env.EXPO_PUBLIC_SUPABASE_URL;
+    // Must stay a literal `process.env.EXPO_PUBLIC_SUPABASE_URL` member
+    // access, never an alias. See `src/lib/supabase.ts` / `src/lib/env.ts`:
+    // babel-preset-expo's inliner rewrites only that exact shape, and Metro's
+    // runtime `process.env` object exists in development only, so an aliased
+    // read is undefined in a real production bundle.
+    const hasProcessEnv = typeof process !== "undefined" && !!process.env;
+    const base = hasProcessEnv ? process.env.EXPO_PUBLIC_SUPABASE_URL : undefined;
     return base ? `${base}/functions/v1/vela-chat` : null;
   }, []);
 

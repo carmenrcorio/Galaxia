@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
 import { getPreferredHouseSystem } from "../../../../lib/house-system";
+import { inviteAcceptPeopleUpdate } from "../../../../lib/invite-birth-data";
 import { invitePersonOwnedByInviter } from "../../../../lib/invite-ownership";
 
 /**
@@ -73,15 +74,9 @@ export async function POST(req: Request) {
   const houseSystem = await getPreferredHouseSystem(supabase, invite.from_user as string);
   const natal = computeNatalChart({ ...built.birth, houseSystem });
 
-  const { error: pErr } = await supabase.from("people").update({
-    birth_date: built.birthDate,
-    birth_time: built.birthTime,
-    birth_place: built.birthPlace,
-    birth_precision: input.precision,
-    birth_lat: built.birth.lat ?? null,
-    birth_lng: built.birth.lng ?? null,
-    tz_offset_min: built.tzOffsetMin ?? null,
-  }).eq("id", invite.person_id).eq("owner_id", invite.from_user);
+  const { error: pErr } = await supabase.from("people").update(
+    inviteAcceptPeopleUpdate(built, input.precision)
+  ).eq("id", invite.person_id).eq("owner_id", invite.from_user);
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 400 });
 
   const { error: cErr } = await supabase.from("charts").upsert({

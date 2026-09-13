@@ -16,6 +16,7 @@ import { isMinorForSafety } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { GenerationalSection } from "../../src/components/generational-section";
 import { supabase } from "../../src/lib/supabase";
 import { useAuth } from "../../src/providers/auth-provider";
 import { useEntitlement } from "../../src/providers/entitlement-provider";
@@ -307,15 +308,7 @@ export default function CompareScreen() {
             <Text style={cardBody}>Top tension aspect: {formatAspect(result.synastry.aspects.filter((a) => a.harmony < 0)[0])}</Text>
           </View>
 
-          <View style={cardStyle}>
-            <Text style={cardTitle}>Generational call-out</Text>
-            <Text style={cardBody}>
-              {result.generational.sameGeneration
-                ? `Born under similar sky signatures (${result.generational.shared.map((s) => `${s.planet} in ${s.sign}`).join(", ")}).`
-                : `Generational fault lines: ${result.generational.diverged.map((d) => `${d.planet} ${d.signA} vs ${d.signB}`).join(" · ")}.`}
-            </Text>
-            <Text style={cardBody}>{result.generational.theme}</Text>
-          </View>
+          <GenerationalSection generational={result.generational} />
 
           <View style={cardStyle}>
             <Text style={cardTitle}>Understand each other</Text>

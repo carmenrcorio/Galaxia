@@ -24,8 +24,38 @@ export function generationNameForYear(
 
 export interface HistoricalFigure {
   name: string;
+  /**
+   * Publicly documented birth date: "YYYY-MM-DD" when the full date is
+   * settled, "YYYY" when only the year is. Never a guessed day: a year-only
+   * value stays year-only through `figureBirth`, so the engine reports the
+   * sign as unsettled (§12) instead of sampling a fabricated date.
+   */
+  born: string;
   knownFor: string;
   plutoBridge: string;
+}
+
+const FULL_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const YEAR_ONLY = /^\d{4}$/;
+
+/**
+ * Parse a `HistoricalFigure.born` value into `computeGenerational` arguments.
+ *
+ * Sampling at noon UTC keeps the result independent of which side of midnight
+ * a birth timezone falls on: the three generational planets move well under a
+ * degree a day, so no figure can change sign inside their own birth day.
+ */
+export function figureBirth(born: string): { dateUTC: string; precision: "date" | "year" } {
+  if (YEAR_ONLY.test(born)) return { dateUTC: `${born}-01-01T12:00:00.000Z`, precision: "year" };
+  if (FULL_DATE.test(born)) {
+    const dateUTC = `${born}T12:00:00.000Z`;
+    const parsed = new Date(dateUTC);
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== born) {
+      throw new Error(`HistoricalFigure.born is not a real calendar date: "${born}"`);
+    }
+    return { dateUTC, precision: "date" };
+  }
+  throw new Error(`HistoricalFigure.born must be "YYYY-MM-DD" or "YYYY", received: "${born}"`);
 }
 
 export interface EraEvent {
@@ -35,7 +65,9 @@ export interface EraEvent {
 
 export interface PlutoSignExtended {
   corruptionSignature: string;
-  historicalFigures: HistoricalFigure[]; // FOUNDER-REVIEW: natal Pluto verified by birth year
+  // FOUNDER-REVIEW: every figure's natal Pluto is verified against the sign
+  // they are filed under by test/generational-layer.test.ts, from `born`.
+  historicalFigures: HistoricalFigure[];
   eraEvents: EraEvent[];
 }
 
@@ -46,11 +78,11 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
       "Power weaponized the language of home and family itself. Fascism across Europe and Asia promised to restore the hearth, protect the bloodline, and secure the homeland, then burned the world doing it. At home, the Depression stripped households bare through forces no individual could see or stop. This generation learned early that the things you were told to protect could become instruments of destruction, and that 'family values' could be the cover story for catastrophe.",
     historicalFigures: [
       // FOUNDER-REVIEW: all born 1926–1935, Pluto in Cancer confirmed by year
-      { name: "Martin Luther King Jr.", knownFor: "Civil rights leader", plutoBridge: "Pluto in Cancer as the will to protect the beloved community, and the willingness to die for it." },
-      { name: "Audrey Hepburn", knownFor: "Actress and humanitarian", plutoBridge: "A childhood surviving Nazi occupation became the fuel for a life spent feeding the world's most vulnerable children." },
-      { name: "Anne Frank", knownFor: "Diarist, Holocaust victim", plutoBridge: "Wrote about the human need for home and hope from inside the hiding place that couldn't hold." },
-      { name: "Grace Kelly", knownFor: "Actress, Princess of Monaco", plutoBridge: "Transformed the domestic ideal into a public institution: literal royalty reframed as homemaker." },
-      { name: "James Dean", knownFor: "Actor, cultural icon", plutoBridge: "The rebel without a cause, Cancer's wound made visible: belonging nowhere, hungry for a home that never quite existed." },
+      { name: "Martin Luther King Jr.", born: "1929-01-15", knownFor: "Civil rights leader", plutoBridge: "Pluto in Cancer as the will to protect the beloved community, and the willingness to die for it." },
+      { name: "Audrey Hepburn", born: "1929-05-04", knownFor: "Actress and humanitarian", plutoBridge: "A childhood surviving Nazi occupation became the fuel for a life spent feeding the world's most vulnerable children." },
+      { name: "Anne Frank", born: "1929-06-12", knownFor: "Diarist, Holocaust victim", plutoBridge: "Wrote about the human need for home and hope from inside the hiding place that couldn't hold." },
+      { name: "Grace Kelly", born: "1929-11-12", knownFor: "Actress, Princess of Monaco", plutoBridge: "Transformed the domestic ideal into a public institution: literal royalty reframed as homemaker." },
+      { name: "James Dean", born: "1931-02-08", knownFor: "Actor, cultural icon", plutoBridge: "The rebel without a cause, Cancer's wound made visible: belonging nowhere, hungry for a home that never quite existed." },
     ],
     eraEvents: [
       { label: "The Great Depression", detail: "The household economy collapsed. Saving everything, wasting nothing, became survival, a reflex that never left." },
@@ -66,11 +98,11 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
       "The hero's ego, unchecked. This generation was handed a postwar world and told it was theirs: the most prosperous, the most powerful, the most special. The shadow is the narcissism that calcified: the leader who needs to be worshipped, the parent who can't let a child become their own person, the generation that consumed what prior generations built and called it vision. The corruption of Leo's gold is the king who forgets the kingdom exists for the people, not the other way around.",
     historicalFigures: [
       // FOUNDER-REVIEW: all born 1938–1957, Pluto in Leo confirmed by year
-      { name: "Tina Turner", knownFor: "Singer, survivor, icon", plutoBridge: "Power reclaimed entirely on her own terms after years of being held by force: Pluto in Leo's full redemption arc." },
-      { name: "Muhammad Ali", knownFor: "Boxer and activist", plutoBridge: "'I am the greatest' as political act, not vanity: the Boomer who used the spotlight to demand justice." },
-      { name: "Jimi Hendrix", knownFor: "Guitarist, musical revolutionary", plutoBridge: "Sound as pure power. The electric guitar as a way to set the world on fire and mean it." },
-      { name: "David Bowie", knownFor: "Musician, shape-shifter", plutoBridge: "Reinvented himself across five decades and invited a generation to do the same: Leo Pluto as the refusal to be fixed." },
-      { name: "Steve Jobs", knownFor: "Apple co-founder", plutoBridge: "Made the machine personal and beautiful: Leo's insistence that what the world uses should also be worthy of admiration." },
+      { name: "Tina Turner", born: "1939-11-26", knownFor: "Singer, survivor, icon", plutoBridge: "Power reclaimed entirely on her own terms after years of being held by force: Pluto in Leo's full redemption arc." },
+      { name: "Muhammad Ali", born: "1942-01-17", knownFor: "Boxer and activist", plutoBridge: "'I am the greatest' as political act, not vanity: the Boomer who used the spotlight to demand justice." },
+      { name: "Jimi Hendrix", born: "1942-11-27", knownFor: "Guitarist, musical revolutionary", plutoBridge: "Sound as pure power. The electric guitar as a way to set the world on fire and mean it." },
+      { name: "David Bowie", born: "1947-01-08", knownFor: "Musician, shape-shifter", plutoBridge: "Reinvented himself across five decades and invited a generation to do the same: Leo Pluto as the refusal to be fixed." },
+      { name: "Steve Jobs", born: "1955-02-24", knownFor: "Apple co-founder", plutoBridge: "Made the machine personal and beautiful: Leo's insistence that what the world uses should also be worthy of admiration." },
     ],
     eraEvents: [
       { label: "Postwar Boom", detail: "The economy exploded. Suburban homes, new cars, and television arrived all at once: Leo's landscape of abundance and spectacle." },
@@ -86,11 +118,11 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
       "Perfection weaponized into control. This generation rebuilt the systems the Boomers handed them (healthcare, labor, technology, the environment) through meticulous, largely uncelebrated work. The shadow is the self-criticism that became other-criticism: the impossible standard, the body that was never right, the workaholic who burned out serving a corporation that didn't notice. The corruption of Virgo's precision is the healer who turns the scalpel on themselves.",
     historicalFigures: [
       // FOUNDER-REVIEW: all born 1956–1971, Pluto in Virgo confirmed by year
-      { name: "Princess Diana", knownFor: "Princess of Wales, humanitarian", plutoBridge: "Brought the camera into AIDS wards and minefields: Virgo Pluto as service that refuses to look away from what's uncomfortable." },
-      { name: "Barack Obama", knownFor: "44th U.S. President", plutoBridge: "The meticulous case for change: Virgo Pluto as the insistence that policy is the detail where justice actually lives or dies." },
-      { name: "Michael Jackson", knownFor: "Musician, global icon", plutoBridge: "The perfectionist who remade popular culture one precise gesture at a time, and was consumed by the standard he set." },
-      { name: "Kurt Cobain", knownFor: "Musician, Nirvana frontman", plutoBridge: "Named the exhaustion of performing competence for a world that wanted polish without pain: Virgo's wound at full volume." },
-      { name: "Madonna", knownFor: "Musician, cultural provocateur", plutoBridge: "Controlled every detail of her own image and used that control to rewrite what women in public were allowed to be." },
+      { name: "Princess Diana", born: "1961-07-01", knownFor: "Princess of Wales, humanitarian", plutoBridge: "Brought the camera into AIDS wards and minefields: Virgo Pluto as service that refuses to look away from what's uncomfortable." },
+      { name: "Barack Obama", born: "1961-08-04", knownFor: "44th U.S. President", plutoBridge: "The meticulous case for change: Virgo Pluto as the insistence that policy is the detail where justice actually lives or dies." },
+      { name: "Michael Jackson", born: "1958-08-29", knownFor: "Musician, global icon", plutoBridge: "The perfectionist who remade popular culture one precise gesture at a time, and was consumed by the standard he set." },
+      { name: "Kurt Cobain", born: "1967-02-20", knownFor: "Musician, Nirvana frontman", plutoBridge: "Named the exhaustion of performing competence for a world that wanted polish without pain: Virgo's wound at full volume." },
+      { name: "Madonna", born: "1958-08-16", knownFor: "Musician, cultural provocateur", plutoBridge: "Controlled every detail of her own image and used that control to rewrite what women in public were allowed to be." },
     ],
     eraEvents: [
       { label: "Vietnam War", detail: "Gen X children watched the war on television and saw what the hero story looked like when it broke." },
@@ -106,11 +138,21 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
       "Justice as performance without delivery. This generation fought to make the systems fairer (for women, for queer people, for people of color) and the systems smiled and stalled and made incremental gestures while the underlying imbalance held. The shadow of Libra's scales is the endless negotiation that becomes an excuse not to act: the committee, the both-sides framing, the compromise that leaves the most vulnerable exactly where they were. Beauty used to distract. Fairness invoked to delay.",
     historicalFigures: [
       // FOUNDER-REVIEW: all born 1971–1983, Pluto in Libra confirmed by year
-      { name: "Beyoncé", knownFor: "Musician, cultural force", plutoBridge: "Turned the pop spectacle into a sustained argument about beauty, power, and who gets to write history: Libra Pluto at its most deliberate." },
-      { name: "Eminem", knownFor: "Rapper, songwriter", plutoBridge: "Made white America look at itself through hip-hop's mirror: the Libra instinct for uncomfortable confrontation dressed as entertainment." },
-      { name: "Aaliyah", knownFor: "Singer, actress", plutoBridge: "Quiet authority: the artist who moved with complete ease inside a music industry that routinely consumed women." },
-      { name: "Biggie Smalls", knownFor: "Rapper, storyteller", plutoBridge: "Narrated the weight of systemic imbalance with an ease that made the injustice impossible to ignore." },
-      { name: "Britney Spears", knownFor: "Singer, survivor", plutoBridge: "Her public unraveling and subsequent legal fight became a generational conversation about who controls women's lives and how." },
+      { name: "Beyoncé", born: "1981-09-04", knownFor: "Musician, cultural force", plutoBridge: "Turned the pop spectacle into a sustained argument about beauty, power, and who gets to write history: Libra Pluto at its most deliberate." },
+      // FOUNDER-REVIEW: Eminem is the reason this file stores a full date and
+      // not a birth year. 1972 is a Pluto boundary year (Libra from 1971-10-05,
+      // retrograde back to Virgo 1972-04-17, Libra again from 1972-07-30), so
+      // the year alone resolves to "Libra or Virgo" and settles nothing. His
+      // October birth is Libra at 2.75 degrees.
+      { name: "Eminem", born: "1972-10-17", knownFor: "Rapper, songwriter", plutoBridge: "Made white America look at itself through hip-hop's mirror: the Libra instinct for uncomfortable confrontation dressed as entertainment." },
+      { name: "Aaliyah", born: "1979-01-16", knownFor: "Singer, actress", plutoBridge: "Quiet authority: the artist who moved with complete ease inside a music industry that routinely consumed women." },
+      // FOUNDER-REVIEW: this list held five figures. Biggie Smalls (born
+      // 1972-05-21) was removed, not moved: he was born inside that same
+      // retrograde window, so his natal Pluto is Virgo 29 degrees 24 minutes,
+      // not Libra. Refiling him under Virgo needs a plutoBridge written in
+      // Virgo's register (his Libra line leads on "systemic imbalance"), which
+      // is founder copy, so the slot is left open rather than filled wrong.
+      { name: "Britney Spears", born: "1981-12-02", knownFor: "Singer, survivor", plutoBridge: "Her public unraveling and subsequent legal fight became a generational conversation about who controls women's lives and how." },
     ],
     eraEvents: [
       { label: "The Internet", detail: "Information became infinitely available and infinitely manipulable: Libra's scales tipped in both directions at once." },
@@ -126,15 +168,15 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
       "Power structures exposed, and then monetized. This generation arrived with the tools to see through everything: the institutions, the myths, the curated identities. The shadow is the collapse into cynicism, the conspiracy that fills the void when no institution holds, the intimacy economy that turns vulnerability itself into content. Scorpio's gift is truth-telling; its corruption is the exposure that serves no one except the one holding the camera.",
     historicalFigures: [
       // FOUNDER-REVIEW: all born 1983–1995, Pluto in Scorpio confirmed by year
-      { name: "Taylor Swift", knownFor: "Musician, cultural figure", plutoBridge: "Documented her own emotional underworld in real time and turned the power struggle over her own catalog into a public education." },
-      { name: "Kendrick Lamar", knownFor: "Rapper, Pulitzer Prize winner", plutoBridge: "Took the Scorpio instinct to excavate (self, community, history) and made it the most precise moral argument in American music." },
-      { name: "Ariana Grande", knownFor: "Singer", plutoBridge: "Performed publicly through collective trauma and personal grief, transforming loss into the most-streamed thing of the year." },
+      { name: "Taylor Swift", born: "1989-12-13", knownFor: "Musician, cultural figure", plutoBridge: "Documented her own emotional underworld in real time and turned the power struggle over her own catalog into a public education." },
+      { name: "Kendrick Lamar", born: "1987-06-17", knownFor: "Rapper, Pulitzer Prize winner", plutoBridge: "Took the Scorpio instinct to excavate (self, community, history) and made it the most precise moral argument in American music." },
+      { name: "Ariana Grande", born: "1993-06-26", knownFor: "Singer", plutoBridge: "Performed publicly through collective trauma and personal grief, transforming loss into the most-streamed thing of the year." },
       // FOUNDER-REVIEW: new entry, authored for Rihanna specifically. Born
       // 1988-02-20, natal Pluto in Scorpio (engine-verified). She takes the
       // slot vacated by Malala Yousafzai, whose 1997 birth puts her Pluto in
       // Sagittarius; none of Malala's copy was reused here.
-      { name: "Rihanna", knownFor: "Musician, Fenty founder", plutoBridge: "Had her private life turned into public property young, then spent the next decade buying the machinery that sold it." },
-      { name: "Harry Styles", knownFor: "Musician", plutoBridge: "Dismantled the rules around gender in popular culture simply by refusing to acknowledge them as rules." },
+      { name: "Rihanna", born: "1988-02-20", knownFor: "Musician, Fenty founder", plutoBridge: "Had her private life turned into public property young, then spent the next decade buying the machinery that sold it." },
+      { name: "Harry Styles", born: "1994-02-01", knownFor: "Musician", plutoBridge: "Dismantled the rules around gender in popular culture simply by refusing to acknowledge them as rules." },
     ],
     eraEvents: [
       { label: "September 11", detail: "The generation that grew up post-9/11 has never known a world where mass security theater wasn't normal." },
@@ -150,9 +192,9 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
       "Freedom as escape rather than expansion. This generation grew up in the age of infinite information and used it to go everywhere mentally without necessarily landing anywhere. The shadow of Sagittarius's great question is the belief that the answer is always somewhere else: the influencer who travels everywhere and is at home nowhere, the algorithm-shaped conviction that one's personal truth is everyone's universal truth. The archer who fires without looking at where the arrow lands.",
     historicalFigures: [
       // FOUNDER-REVIEW: all born 1995–2008, Pluto in Sagittarius confirmed by year
-      { name: "Billie Eilish", knownFor: "Musician", plutoBridge: "Built a global audience from her childhood bedroom and used the reach to refuse the image the industry wanted: the Sagittarian who named the cage." },
-      { name: "Greta Thunberg", knownFor: "Climate activist", plutoBridge: "Turned a school strike into a planetary movement: Sagittarius Pluto as the individual voice that insists the biggest possible problem is everyone's business." },
-      { name: "Olivia Rodrigo", knownFor: "Musician", plutoBridge: "Documented the specific emotional vocabulary of her generation with enough precision that it became universal." },
+      { name: "Billie Eilish", born: "2001-12-18", knownFor: "Musician", plutoBridge: "Built a global audience from her childhood bedroom and used the reach to refuse the image the industry wanted: the Sagittarian who named the cage." },
+      { name: "Greta Thunberg", born: "2003-01-03", knownFor: "Climate activist", plutoBridge: "Turned a school strike into a planetary movement: Sagittarius Pluto as the individual voice that insists the biggest possible problem is everyone's business." },
+      { name: "Olivia Rodrigo", born: "2003-02-20", knownFor: "Musician", plutoBridge: "Documented the specific emotional vocabulary of her generation with enough precision that it became universal." },
       // FOUNDER-REVIEW: moved here from Scorpio. Born 1997-07-12, so her natal
       // Pluto is in Sagittarius (engine-verified), not Scorpio as previously
       // listed. `knownFor` is carried over verbatim. `plutoBridge` is rewritten:
@@ -160,7 +202,7 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
       // force that refuses to be extinguished," which reads Scorpio (survival,
       // intensity) under a Sagittarius heading. This one leads on the outward
       // moral argument and its widening reach instead.
-      { name: "Malala Yousafzai", knownFor: "Activist, Nobel Peace Prize laureate", plutoBridge: "Carried the case for every girl's education from one valley to the floor of the UN: Sagittarius Pluto as a conviction that will not stop widening its audience." },
+      { name: "Malala Yousafzai", born: "1997-07-12", knownFor: "Activist, Nobel Peace Prize laureate", plutoBridge: "Carried the case for every girl's education from one valley to the floor of the UN: Sagittarius Pluto as a conviction that will not stop widening its audience." },
     ],
     eraEvents: [
       { label: "Social Media", detail: "The world connected and fragmented simultaneously. Everyone's opinion became a broadcast." },

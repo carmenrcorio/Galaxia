@@ -32,18 +32,25 @@ describe("/app/compare mounts the shared GenerationalSection", () => {
   });
 });
 
-describe("mobile Compare drops the ancestralHeadline duplicate", () => {
+describe("mobile Compare mounts its native GenerationalSection", () => {
   it("no longer constructs or renders the duplicate era headline", () => {
     const src = read("apps/mobile/app/(app)/compare.tsx");
     expect(src).not.toContain("ancestralHeadline");
     expect(src).not.toContain(DUPLICATE_HEADLINE);
   });
 
-  it("does not yet have a native GenerationalSection (deferred port)", () => {
+  it("mounts the native GenerationalSection, wired to the shared curated lookup", () => {
     const src = read("apps/mobile/app/(app)/compare.tsx");
-    expect(src).not.toContain("GenerationalSection");
-    expect(src).not.toContain("genFrame");
-    expect(src).not.toContain("genPlacement");
-    expect(src).not.toContain("genHeadline");
+    expect(src).toContain('from "../../src/components/generational-section"');
+    expect(src).toContain("<GenerationalSection generational={result.generational} />");
+
+    const section = read("apps/mobile/src/components/generational-section.tsx");
+    expect(section).toContain('from "../lib/generational-callout"');
+    expect(section).toContain("buildGenerationalCallout");
+
+    const callout = read("apps/mobile/src/lib/generational-callout.ts");
+    expect(callout).toContain("genFrame");
+    expect(callout).toContain("genPlacement");
+    expect(callout).toContain("genHeadline");
   });
 });

@@ -102,6 +102,7 @@ describe("sharedSkyPartialOverlaps", () => {
       sign: "Capricorn",
       names: ["Camila", "Emilio"],
       totalMembers: 3,
+      pairEraGapBand: "mid",
     });
   });
   it("returns nothing when every sign group is a singleton", () => {
@@ -255,6 +256,7 @@ describe("describePartialOverlap", () => {
     sign: "Taurus",
     names: ["Camila", "Emilio"],
     totalMembers: 4,
+    pairEraGapBand: "adjacent" as const,
   };
   const majorityUranus = {
     planet: "uranus",
@@ -266,28 +268,56 @@ describe("describePartialOverlap", () => {
   it("pair versus majority produce different tails", () => {
     const pair = describePartialOverlap(pairUranus);
     const majority = describePartialOverlap(majorityUranus);
-    expect(pair).toContain(SHARED_SKY_TAIL.pair.uranus);
+    expect(pair).toContain(SHARED_SKY_TAIL.pair.uranus.adjacent);
     expect(majority).toContain(SHARED_SKY_TAIL.majority.uranus);
-    expect(SHARED_SKY_TAIL.pair.uranus).not.toBe(SHARED_SKY_TAIL.majority.uranus);
+    expect(SHARED_SKY_TAIL.pair.uranus.adjacent).not.toBe(SHARED_SKY_TAIL.majority.uranus);
     expect(pair).not.toBe(majority);
   });
 
-  it("each planet produces a different tail", () => {
+  it("each planet produces a different tail, and each planet's pair tail changes by era-gap band", () => {
     const tails = (["uranus", "neptune", "pluto"] as const).map((planet) => {
       const sentence = describePartialOverlap({
         planet,
         sign: "Pisces",
         names: ["Camila", "Emilio"],
         totalMembers: 4,
+        pairEraGapBand: "mid",
       });
       expect(sentence).toContain(GEN_PLANET_MEANING[planet]);
-      expect(sentence).toContain(SHARED_SKY_TAIL.pair[planet]);
-      return SHARED_SKY_TAIL.pair[planet];
+      expect(sentence).toContain(SHARED_SKY_TAIL.pair[planet].mid);
+      return SHARED_SKY_TAIL.pair[planet].mid;
     });
     expect(new Set(tails).size).toBe(3);
+    for (const planet of ["uranus", "neptune", "pluto"] as const) {
+      const bandTails = Object.values(SHARED_SKY_TAIL.pair[planet]);
+      expect(new Set(bandTails).size).toBe(bandTails.length);
+    }
+    const allPairTails = (["uranus", "neptune", "pluto"] as const).flatMap((planet) =>
+      Object.values(SHARED_SKY_TAIL.pair[planet])
+    );
     const majorityTails = (["uranus", "neptune", "pluto"] as const).map((planet) => SHARED_SKY_TAIL.majority[planet]);
     const wholeTails = (["uranus", "neptune", "pluto"] as const).map((planet) => SHARED_SKY_TAIL.whole[planet]);
-    expect(new Set([...tails, ...majorityTails, ...wholeTails]).size).toBe(9);
+    expect(new Set([...allPairTails, ...majorityTails, ...wholeTails]).size).toBe(15);
+  });
+
+  it("Uranus pair tails now resolve by era-gap band, not by sign label alone", () => {
+    const near = describePartialOverlap({
+      planet: "uranus",
+      sign: "Taurus",
+      names: ["Camila", "Emilio"],
+      totalMembers: 4,
+      pairEraGapBand: "adjacent",
+    });
+    const far = describePartialOverlap({
+      planet: "uranus",
+      sign: "Aries",
+      names: ["Carmen Sofia", "Gabriel"],
+      totalMembers: 4,
+      pairEraGapBand: "distant",
+    });
+    expect(near).toContain(SHARED_SKY_TAIL.pair.uranus.adjacent);
+    expect(far).toContain(SHARED_SKY_TAIL.pair.uranus.distant);
+    expect(SHARED_SKY_TAIL.pair.uranus.adjacent).not.toBe(SHARED_SKY_TAIL.pair.uranus.distant);
   });
 
   it("carries GEN_PLANET_MEANING so the line says what the planet means", () => {
@@ -296,6 +326,7 @@ describe("describePartialOverlap", () => {
       sign: "Pisces",
       names: ["Camila", "Emilio"],
       totalMembers: 3,
+      pairEraGapBand: "adjacent",
     });
     expect(sentence).toContain(GEN_PLANET_MEANING.neptune);
     expect(sentence).toContain("Camila and Emilio");
@@ -357,6 +388,60 @@ describe("sharedSkyLines", () => {
     const tails = lines.map((line) => line.tail);
     expect(tails.length).toBeGreaterThan(1);
     expect(new Set(tails).size).toBe(tails.length);
+  });
+
+  it("pair tails use computed era-gap bands (same band matches, different band diverges)", () => {
+    const camilaEmilio = sharedSkyLines(
+      {
+        sharedSky: [],
+        faultLines: [
+          {
+            planet: "uranus",
+            groups: [
+              { sign: "Taurus", names: ["Camila", "Emilio"] },
+              { sign: "Aries", names: ["Carmen"] },
+            ],
+          },
+        ],
+      },
+      3
+    )[0]!;
+    const carmenGabrielAdjacent = sharedSkyLines(
+      {
+        sharedSky: [],
+        faultLines: [
+          {
+            planet: "uranus",
+            groups: [
+              { sign: "Aries", names: ["Carmen Sofia", "Gabriel"] },
+              { sign: "Taurus", names: ["Lucia"] },
+            ],
+          },
+        ],
+      },
+      3
+    )[0]!;
+    const carmenGabrielDistant = sharedSkyLines(
+      {
+        sharedSky: [],
+        faultLines: [
+          {
+            planet: "uranus",
+            groups: [
+              { sign: "Aries", names: ["Carmen Sofia", "Gabriel"] },
+              { sign: "Libra", names: ["Lucia"] },
+            ],
+          },
+        ],
+      },
+      3
+    )[0]!;
+
+    expect(camilaEmilio.tail).toContain(SHARED_SKY_TAIL.pair.uranus.adjacent);
+    expect(carmenGabrielAdjacent.tail).toContain(SHARED_SKY_TAIL.pair.uranus.adjacent);
+    expect(camilaEmilio.tail).toBe(carmenGabrielAdjacent.tail);
+    expect(carmenGabrielDistant.tail).toContain(SHARED_SKY_TAIL.pair.uranus.distant);
+    expect(camilaEmilio.tail).not.toBe(carmenGabrielDistant.tail);
   });
 
   it("groups partial overlaps by the set of members, one sentence per set", () => {

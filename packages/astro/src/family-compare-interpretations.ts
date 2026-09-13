@@ -35,7 +35,7 @@ export function interpretSharedPlacement(pattern: SharedPlacementPattern, totalP
   const domain = PLANET_GROUP_DOMAIN[pattern.planet];
   const label = pattern.planet === "rising" ? "Rising" : `${pattern.planet[0]!.toUpperCase()}${pattern.planet.slice(1)}`;
   // FOUNDER-REVIEW: rewritten (no U+2014).
-  return `${countPhrase(pattern.personIds.length, totalPeople)} carry ${pattern.sign} ${label}. ${domain}, and here it runs ${vibe}.`;
+  return `${countPhrase(pattern.personIds.length, totalPeople)} carry ${pattern.sign} ${label}, which shapes ${domain}, and here it runs ${vibe}.`;
 }
 
 const GROUP_ELEMENT_DOMINANT: Record<Element, string> = {

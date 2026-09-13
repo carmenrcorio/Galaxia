@@ -152,6 +152,32 @@ describe("interpretation copy", () => {
     expect(interpretSharedPlacement(sunShare, 2)).toContain("All of you");
   });
 
+  it("shared-placement copy stays grammatical across all six personal planets", () => {
+    const planets = [
+      { planet: "sun", sign: "Aries" },
+      { planet: "moon", sign: "Taurus" },
+      { planet: "rising", sign: "Gemini" },
+      { planet: "mercury", sign: "Cancer" },
+      { planet: "venus", sign: "Leo" },
+      { planet: "mars", sign: "Virgo" },
+    ] as const;
+    for (const entry of planets) {
+      const copy = interpretSharedPlacement(
+        {
+          planet: entry.planet,
+          sign: entry.sign,
+          personIds: ["a", "b"],
+          personNames: ["Ada", "Bo"],
+        },
+        3
+      );
+      // Regression guard: no period immediately followed by a lowercase
+      // domain-fragment clause.
+      expect(copy).not.toMatch(/\.\s+[a-z]/);
+      expect(copy).toContain("which shapes");
+    }
+  });
+
   it("interpretDominantElement and interpretMissingElement/Modality never mention an element that wasn't actually detected", () => {
     const result = detectFamilyPatterns([
       { id: "b1", name: "One", chart: PERSON_B },

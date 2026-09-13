@@ -15,6 +15,7 @@ export const GEN_PLANETS = ["uranus", "neptune", "pluto"] as const;
 export type GenPlanetKey = (typeof GEN_PLANETS)[number];
 
 export type SharedSkyCoverage = "whole" | "majority" | "pair";
+export type PairEraGapBand = "adjacent" | "mid" | "distant";
 
 // FOUNDER-REVIEW: authored. One-line domain gloss per generational planet. Static, never generated.
 export const GEN_PLANET_MEANING: Record<GenPlanetKey, string> = {
@@ -29,7 +30,11 @@ export const GEN_PLANET_MEANING: Record<GenPlanetKey, string> = {
  * never resolve to the same ending. Looked up, never generated at render.
  */
 // FOUNDER-REVIEW: authored. Shared Sky tails by (coverage, planet).
-export const SHARED_SKY_TAIL: Record<SharedSkyCoverage, Record<GenPlanetKey, string>> = {
+export const SHARED_SKY_TAIL: {
+  whole: Record<GenPlanetKey, string>;
+  majority: Record<GenPlanetKey, string>;
+  pair: Record<GenPlanetKey, Record<PairEraGapBand, string>>;
+} = {
   whole: {
     uranus: "This is the climate of change the whole group grew up in.",
     neptune: "This is the dream, and the fog, the whole group inherited.",
@@ -41,11 +46,77 @@ export const SHARED_SKY_TAIL: Record<SharedSkyCoverage, Record<GenPlanetKey, str
     pluto: "Most of the group was shaped by the same era of power, so the majority's instincts about control set the tone.",
   },
   pair: {
-    uranus: "A pair who break the mold the same way, even when the rest of the group does not.",
-    neptune: "A pair who dream in the same key. That private weather does not fill the room.",
-    pluto: "Those two were taught the same lesson about power, so they can lock in while others cannot.",
+    uranus: {
+      // FOUNDER-REVIEW: authored. Pair-only tail varies by Uranus era gap band (to the nearest non-sharer sign group).
+      adjacent: "They are only one Uranus chapter away from the rest of the room, so they can translate change without sounding alien.",
+      // FOUNDER-REVIEW: authored. Pair-only tail varies by Uranus era gap band (to the nearest non-sharer sign group).
+      mid: "They sit a few Uranus chapters from the room's center, so their pace of change can feel out of sync in both directions.",
+      // FOUNDER-REVIEW: authored. Pair-only tail varies by Uranus era gap band (to the nearest non-sharer sign group).
+      distant: "They stand several Uranus chapters from the room's center, so they may read disruption much earlier or later than everyone else.",
+    },
+    neptune: {
+      // FOUNDER-REVIEW: authored. Pair-only tail varies by Neptune era gap band (to the nearest non-sharer sign group).
+      adjacent: "Their shared Neptune dream sits near the room's, so the ideals differ by tone more than by direction.",
+      // FOUNDER-REVIEW: authored. Pair-only tail varies by Neptune era gap band (to the nearest non-sharer sign group).
+      mid: "Their Neptune dream comes from a different chapter, close enough to recognize and far enough to misread.",
+      // FOUNDER-REVIEW: authored. Pair-only tail varies by Neptune era gap band (to the nearest non-sharer sign group).
+      distant: "Their Neptune dream was formed far from the room's weather, so they may carry a vision others do not immediately trust.",
+    },
+    pluto: {
+      // FOUNDER-REVIEW: authored. Pair-only tail varies by Pluto era gap band (to the nearest non-sharer sign group).
+      adjacent: "Their Pluto lesson is one era from the room's, so control clashes are usually about style, not intent.",
+      // FOUNDER-REVIEW: authored. Pair-only tail varies by Pluto era gap band (to the nearest non-sharer sign group).
+      mid: "Their Pluto lesson comes from a clearly different era, so they can agree on stakes while disagreeing on how power should move.",
+      // FOUNDER-REVIEW: authored. Pair-only tail varies by Pluto era gap band (to the nearest non-sharer sign group).
+      distant: "Their Pluto lesson sits generations from the room's center, so they may lock in with each other while others read the stakes differently.",
+    },
   },
 };
+
+const ZODIAC_SIGNS = [
+  "Aries",
+  "Taurus",
+  "Gemini",
+  "Cancer",
+  "Leo",
+  "Virgo",
+  "Libra",
+  "Scorpio",
+  "Sagittarius",
+  "Capricorn",
+  "Aquarius",
+  "Pisces",
+] as const;
+
+const PAIR_ERA_GAP_RULES: Record<GenPlanetKey, { adjacentMax: number; midMax: number }> = {
+  // Uranus: ~84-year orbit, ~7 years per sign -> 1 sign ~7y, 2-3 signs ~14-21y, 4+ signs ~28y+.
+  uranus: { adjacentMax: 1, midMax: 3 },
+  // Neptune: ~165-year orbit, ~13.75 years per sign -> 1 sign ~14y, 2 signs ~28y, 3+ signs ~41y+.
+  neptune: { adjacentMax: 1, midMax: 2 },
+  // Pluto: ~248-year orbit with variable sign dwell (~12-31y). Band by sign steps: 1 sign (adjacent era), 2 signs (mid), 3+ signs (distant era).
+  pluto: { adjacentMax: 1, midMax: 2 },
+};
+
+function zodiacSignStepsApart(signA: string, signB: string): number | null {
+  const indexA = ZODIAC_SIGNS.indexOf(signA as (typeof ZODIAC_SIGNS)[number]);
+  const indexB = ZODIAC_SIGNS.indexOf(signB as (typeof ZODIAC_SIGNS)[number]);
+  if (indexA === -1 || indexB === -1) return null;
+  const raw = Math.abs(indexA - indexB);
+  return Math.min(raw, ZODIAC_SIGNS.length - raw);
+}
+
+function pairEraGapBand(planet: string, sharedSign: string, otherSigns: readonly string[]): PairEraGapBand {
+  if (!isGenPlanet(planet) || otherSigns.length === 0) return "distant";
+  const signSteps = otherSigns
+    .map((otherSign) => zodiacSignStepsApart(sharedSign, otherSign))
+    .filter((steps): steps is number => steps !== null);
+  if (signSteps.length === 0) return "distant";
+  const nearestGap = Math.min(...signSteps);
+  const rule = PAIR_ERA_GAP_RULES[planet];
+  if (nearestGap <= rule.adjacentMax) return "adjacent";
+  if (nearestGap <= rule.midMax) return "mid";
+  return "distant";
+}
 
 export function isGenPlanet(planet: string): planet is GenPlanetKey {
   return (GEN_PLANETS as readonly string[]).includes(planet);
@@ -57,8 +128,13 @@ export function coverageShape(sharerCount: number, totalMembers: number): Shared
   return "majority";
 }
 
-export function sharedSkyTail(coverage: SharedSkyCoverage, planet: string): string | undefined {
+export function sharedSkyTail(
+  coverage: SharedSkyCoverage,
+  planet: string,
+  pairBand: PairEraGapBand = "distant"
+): string | undefined {
   if (!isGenPlanet(planet)) return undefined;
+  if (coverage === "pair") return SHARED_SKY_TAIL.pair[planet][pairBand];
   return SHARED_SKY_TAIL[coverage][planet];
 }
 
@@ -167,6 +243,11 @@ export interface PartialOverlap {
   names: string[];
   /** Full roster size. Needed to distinguish a pair (2) from a majority (3+ of N). */
   totalMembers: number;
+  /**
+   * Pair-only era-gap band against the nearest non-sharer sign group on this
+   * planet. Undefined for majority/whole coverage.
+   */
+  pairEraGapBand?: PairEraGapBand;
 }
 
 /**
@@ -184,7 +265,14 @@ export function sharedSkyPartialOverlaps(
   for (const line of faultLines) {
     for (const g of line.groups) {
       if (g.names.length >= 2 && g.names.length < totalMembers) {
-        overlaps.push({ planet: line.planet, sign: g.sign, names: [...g.names], totalMembers });
+        const otherSigns = line.groups.filter((other) => other !== g).map((other) => other.sign);
+        overlaps.push({
+          planet: line.planet,
+          sign: g.sign,
+          names: [...g.names],
+          totalMembers,
+          pairEraGapBand: g.names.length === 2 ? pairEraGapBand(line.planet, g.sign, otherSigns) : undefined,
+        });
       }
     }
   }
@@ -232,9 +320,9 @@ function glossForPlanets(planets: readonly string[]): string {
     .join("; ");
 }
 
-function tailForPlanets(coverage: SharedSkyCoverage, planets: readonly string[]): string {
-  return planets
-    .map((planet) => sharedSkyTail(coverage, planet))
+function tailForOverlaps(coverage: SharedSkyCoverage, overlaps: readonly Pick<PartialOverlap, "planet" | "pairEraGapBand">[]): string {
+  return overlaps
+    .map((overlap) => sharedSkyTail(coverage, overlap.planet, overlap.pairEraGapBand))
     .filter((tail): tail is string => Boolean(tail))
     .join(" ");
 }
@@ -254,7 +342,7 @@ function fullShareLine(planet: string, sign: string): SharedSkyLine {
   const coverage: SharedSkyCoverage = "whole";
   const placements = [{ planet, sign }];
   const gloss = glossForPlanets([planet]);
-  const tail = tailForPlanets(coverage, [planet]);
+  const tail = tailForOverlaps(coverage, [{ planet }]);
   const lead = `Everyone shares ${placementPhrase(placements)}`;
   return {
     key: `whole:${planet}-${sign}`,
@@ -271,9 +359,9 @@ function clusterLine(overlaps: PartialOverlap[]): SharedSkyLine {
   const first = overlaps[0]!;
   const coverage = coverageShape(first.names.length, first.totalMembers);
   const placements = overlaps.map((o) => ({ planet: o.planet, sign: o.sign }));
-  const planets = placements.map((p) => p.planet);
+  const planets = overlaps.map((p) => p.planet);
   const gloss = glossForPlanets(planets);
-  const tail = tailForPlanets(coverage, planets);
+  const tail = tailForOverlaps(coverage, overlaps);
   const lead = `${joinNames(first.names)} share ${placementPhrase(placements)}`;
   return {
     key: `partial:${[...first.names].sort().join(",")}:${planets.join(",")}`,

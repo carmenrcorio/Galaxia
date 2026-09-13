@@ -123,6 +123,15 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
       { name: "Michael Jackson", born: "1958-08-29", knownFor: "Musician, global icon", plutoBridge: "The perfectionist who remade popular culture one precise gesture at a time, and was consumed by the standard he set." },
       { name: "Kurt Cobain", born: "1967-02-20", knownFor: "Musician, Nirvana frontman", plutoBridge: "Named the exhaustion of performing competence for a world that wanted polish without pain: Virgo's wound at full volume." },
       { name: "Madonna", born: "1958-08-16", knownFor: "Musician, cultural provocateur", plutoBridge: "Controlled every detail of her own image and used that control to rewrite what women in public were allowed to be." },
+      // FOUNDER-REVIEW: refiled here from Libra (PR #215 removed him rather
+      // than move him, leaving the plutoBridge for a follow-up). Born
+      // 1972-05-21, five weeks into the 1972 retrograde dip that also makes
+      // Eminem's list a boundary case: his natal Pluto is Virgo 29 degrees 24
+      // minutes retrograde, 0.59 degrees from the Libra cusp (engine-verified,
+      // six times the engine's ~0.1 degree tolerance, cross-checked against
+      // astro.com). plutoBridge is new copy in Virgo's register; the old
+      // Libra line ("systemic imbalance") was not reused or adapted.
+      { name: "Biggie Smalls", born: "1972-05-21", knownFor: "Rapper, storyteller", plutoBridge: "Rhymed in exact inventory: names, numbers, consequences, never approximate. Virgo Pluto's eye for exactly what's wrong." },
     ],
     eraEvents: [
       { label: "Vietnam War", detail: "Gen X children watched the war on television and saw what the hero story looked like when it broke." },
@@ -146,12 +155,12 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
       // October birth is Libra at 2.75 degrees.
       { name: "Eminem", born: "1972-10-17", knownFor: "Rapper, songwriter", plutoBridge: "Made white America look at itself through hip-hop's mirror: the Libra instinct for uncomfortable confrontation dressed as entertainment." },
       { name: "Aaliyah", born: "1979-01-16", knownFor: "Singer, actress", plutoBridge: "Quiet authority: the artist who moved with complete ease inside a music industry that routinely consumed women." },
-      // FOUNDER-REVIEW: this list held five figures. Biggie Smalls (born
-      // 1972-05-21) was removed, not moved: he was born inside that same
+      // FOUNDER-REVIEW: this list held five figures until PR #215 removed
+      // Biggie Smalls (born 1972-05-21): he was born inside that same
       // retrograde window, so his natal Pluto is Virgo 29 degrees 24 minutes,
-      // not Libra. Refiling him under Virgo needs a plutoBridge written in
-      // Virgo's register (his Libra line leads on "systemic imbalance"), which
-      // is founder copy, so the slot is left open rather than filled wrong.
+      // not Libra. He is now refiled under Virgo with a fresh plutoBridge in
+      // Virgo's register (his old Libra line, "systemic imbalance", was not
+      // reused). See the Virgo list below and changelog.d for this branch.
       { name: "Britney Spears", born: "1981-12-02", knownFor: "Singer, survivor", plutoBridge: "Her public unraveling and subsequent legal fight became a generational conversation about who controls women's lives and how." },
     ],
     eraEvents: [

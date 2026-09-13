@@ -34,6 +34,7 @@ import {
   type BodyKey,
   selectCompareAspectRows,
   whatTheyNeed,
+  relationshipWatchLine,
   type RelationType,
 } from "@galaxia/astro";
 import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety } from "@galaxia/core";
@@ -218,6 +219,11 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
                 <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.6, fontStyle: "italic", margin: 0 }}>
                   {whatTheyNeed(result.synastry.scores, { display_name: name || "They" }, focus, result.synastry)}
                 </p>
+                {relationshipWatchLine(result.synastry.scores, focus, result.synastry) ? (
+                  <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6, fontStyle: "italic", margin: 0, borderLeft: "2px solid rgba(183,154,216,.35)", paddingLeft: 12 }}>
+                    {relationshipWatchLine(result.synastry.scores, focus, result.synastry)}
+                  </p>
+                ) : null}
                 <div>
                   <p className="eyebrow" style={{ marginBottom: 6 }}>Where it flows and catches</p>
                   {selectCompareAspectRows(result.synastry.aspects, focus, 4).map((a, idx) => {

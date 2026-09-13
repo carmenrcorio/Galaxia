@@ -20,6 +20,7 @@ import {
   type NatalChart,
   type BirthFormInput,
   isRomanticRelation,
+  relationshipWatchLine,
   whatTheyNeed,
   type RelationType,
 } from "@galaxia/astro";
@@ -345,7 +346,10 @@ export default function QuickComparePage() {
                 </p>
               </section>
             ) : (
-              <DynamicTableSection scores={result.synastry.scores}>
+              <DynamicTableSection
+                scores={result.synastry.scores}
+                watchLine={relationshipWatchLine(result.synastry.scores, relationType, result.synastry as never)}
+              >
                 {[personA!, personB!].map((person) => (
                   <div key={person.display_name} style={{ marginBottom: 10, padding: "13px 15px", borderRadius: 13, background: "linear-gradient(165deg, rgba(255,255,255,.025), rgba(255,255,255,.008))", border: "1px solid rgba(183,154,216,.12)" }}>
                     <p style={{ fontSize: ".7rem", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 6 }}>

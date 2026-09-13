@@ -82,6 +82,33 @@ export interface SynastryResult {
   };
 }
 
+/**
+ * Canonical row order for the six synastry score dimensions. Overall is the
+ * headline number and must render first. Matches `computeSynastry()`'s
+ * object-literal insertion order and `COMPAT_LABELS` in the web app.
+ * UI must iterate this list, never `Object.entries(scores)`, because stored
+ * snapshots (JSONB / `JSON.parse`) can reshuffle keys.
+ */
+export const SYNASTRY_SCORE_ORDER = [
+  "overall",
+  "emotional",
+  "communication",
+  "warmth",
+  "values",
+  "stability",
+] as const;
+
+export type SynastryScoreKey = (typeof SYNASTRY_SCORE_ORDER)[number];
+
+/** Score rows in `SYNASTRY_SCORE_ORDER`, skipping keys the payload omitted. */
+export function orderedScoreEntries(
+  scores: Record<string, number>
+): { key: SynastryScoreKey; score: number }[] {
+  return SYNASTRY_SCORE_ORDER.flatMap((key) =>
+    typeof scores[key] === "number" ? [{ key, score: scores[key] as number }] : []
+  );
+}
+
 export interface TransitHit {
   transitBody: BodyName;
   natalBody: BodyName;

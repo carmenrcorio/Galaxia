@@ -119,6 +119,17 @@ describe("source wiring — compare bi-wheel + shared flows/catches", () => {
     expect(share).toContain("overlayChart={payload.chartB}");
     expect(share).toContain("aspects={payload.synastry.aspects}");
     expect(share).toContain("FlowsAndCatchesSection");
+    expect(share).toContain("relationshipWatchLine");
+    expect(quick).toContain("relationshipWatchLine");
+  });
+
+  it("Your dynamic rows iterate SYNASTRY_SCORE_ORDER, not Object.entries(scores)", () => {
+    const dyn = readFileSync(resolve(__dirname, "../components/dynamic-table-section.tsx"), "utf8");
+    const app = readFileSync(resolve(__dirname, "../app/app/compare/page.tsx"), "utf8");
+    expect(dyn).toContain("orderedScoreEntries");
+    expect(dyn).not.toContain("Object.entries(scores)");
+    expect(app).toContain("orderedScoreEntries");
+    expect(app).not.toContain("Object.entries(result.synastry.scores)");
   });
 });
 

@@ -1,12 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { computeNatalChart } from "../src/index";
-import { detectFamilyPatterns, extractFamilyPlacements, FAMILY_COMPARE_PLANETS } from "../src/family-compare";
+import { computeNatalChart, type Sign } from "../src/index";
+import { detectFamilyPatterns, extractFamilyPlacements, FAMILY_COMPARE_PLANETS, FAMILY_PLANET_LABEL } from "../src/family-compare";
 import {
   interpretDominantElement,
   interpretMissingElement,
   interpretMissingModality,
   interpretSharedPlacement,
+  SHARED_PLACEMENT_GUIDANCE,
 } from "../src/family-compare-interpretations";
+
+const SIGNS: Sign[] = [
+  "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+  "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
+];
+const FALLBACK_MARKER = "which shapes";
 
 // Ground truth from computeNatalChart itself (verified once via a scratch
 // script) — these are the engine's real placements for these exact births,
@@ -174,8 +181,78 @@ describe("interpretation copy", () => {
       // Regression guard: no period immediately followed by a lowercase
       // domain-fragment clause.
       expect(copy).not.toMatch(/\.\s+[a-z]/);
-      expect(copy).toContain("which shapes");
+      expect(copy).not.toContain(FALLBACK_MARKER);
     }
+  });
+
+  it("all 72 planet/sign combinations resolve to distinct bespoke copy, not the mechanical fallback", () => {
+    const fullOutputs = new Set<string>();
+    const bodies = new Set<string>();
+    for (const planet of FAMILY_COMPARE_PLANETS) {
+      for (const sign of SIGNS) {
+        const tableBody = SHARED_PLACEMENT_GUIDANCE[planet][sign];
+        expect(tableBody, `${planet} ${sign} table entry`).toBeTruthy();
+        expect(tableBody).not.toContain("\u2014");
+
+        const copy = interpretSharedPlacement(
+          {
+            planet,
+            sign,
+            personIds: ["a", "b"],
+            personNames: ["Ada", "Bo"],
+          },
+          3
+        );
+        const label = FAMILY_PLANET_LABEL[planet];
+        const prefix = `Two of you carry ${sign} ${label}: `;
+        expect(copy.startsWith(prefix), `${planet} ${sign} prefix`).toBe(true);
+        expect(copy).not.toContain(FALLBACK_MARKER);
+        expect(copy).not.toMatch(/\.\s+[a-z]/);
+        expect(copy).toContain(sign);
+        expect(copy).toContain(label);
+
+        const body = copy.slice(prefix.length);
+        expect(body).toBe(tableBody);
+        expect(fullOutputs.has(copy), `duplicate full output: ${planet} ${sign}`).toBe(false);
+        expect(bodies.has(body), `duplicate body: ${planet} ${sign}`).toBe(false);
+        fullOutputs.add(copy);
+        bodies.add(body);
+      }
+    }
+    expect(fullOutputs.size).toBe(72);
+    expect(bodies.size).toBe(72);
+  });
+
+  it("countPhrase still varies the prefix without changing the authored body", () => {
+    const pattern = {
+      planet: "moon" as const,
+      sign: "Aquarius" as const,
+      personIds: ["a", "b"],
+      personNames: ["Ada", "Bo"],
+    };
+    const twoOfThree = interpretSharedPlacement(pattern, 3);
+    const allOfYou = interpretSharedPlacement(pattern, 2);
+    expect(twoOfThree.startsWith("Two of you carry Aquarius Moon: ")).toBe(true);
+    expect(allOfYou.startsWith("All of you carry Aquarius Moon: ")).toBe(true);
+    expect(twoOfThree.slice("Two of you carry Aquarius Moon: ".length)).toBe(
+      allOfYou.slice("All of you carry Aquarius Moon: ".length)
+    );
+    expect(allOfYou).toContain("When this group needs comfort");
+  });
+
+  it("falls back to PLANET_GROUP_DOMAIN + SIGN_VIBE only when a combination is missing", () => {
+    const copy = interpretSharedPlacement(
+      {
+        planet: "sun",
+        sign: "NotASign" as Sign,
+        personIds: ["a", "b"],
+        personNames: ["Ada", "Bo"],
+      },
+      3
+    );
+    expect(copy).toContain(FALLBACK_MARKER);
+    expect(copy).toContain("Two of you");
+    expect(copy).toContain("NotASign");
   });
 
   it("interpretDominantElement and interpretMissingElement/Modality never mention an element that wasn't actually detected", () => {

@@ -6,6 +6,9 @@ import {
   describePairHighlight,
   describePartialOverlap,
   distinctSignCountForPlanet,
+  FAULT_LINE_PAIR_LEAD,
+  FAULT_LINES_LEAD_SHIFTING,
+  FAULT_LINES_LEAD_TWO_WAY,
   faultLinesInterpretation,
   generationalMapSummary,
   GEN_PLANET_MEANING,
@@ -14,10 +17,12 @@ import {
   joinNames,
   parsePairNames,
   parsePairSummary,
+  SAME_GENERATION_LEAD,
   SHARED_SKY_TAIL,
   sharedSkyLines,
   sharedSkyPartialOverlaps,
   SHARED_SKY_NO_OVERLAP_NOTE,
+  toPlanetCountBand,
   type CohortOverlayLike,
 } from "./groups-copy";
 
@@ -136,21 +141,92 @@ describe("SHARED_SKY_NO_OVERLAP_NOTE", () => {
 });
 
 describe("faultLinesInterpretation", () => {
+  const twoWay = (
+    planets: Array<{ planet: string; minoritySign: string; majoritySign: string }>
+  ): CohortOverlayLike["faultLines"] =>
+    planets.map((p) => ({
+      planet: p.planet,
+      groups: [
+        { sign: p.majoritySign, names: ["Camila", "Emilio"] },
+        { sign: p.minoritySign, names: ["Carmen"] },
+      ],
+    }));
+
   it("returns empty string when there are no fault lines", () => {
     expect(faultLinesInterpretation([])).toBe("");
   });
-  it("names the minority against the majority when the same 2-way split repeats on every planet", () => {
-    const faultLines: CohortOverlayLike["faultLines"] = [
-      { planet: "uranus", groups: [{ sign: "Taurus", names: ["Camila", "Emilio"] }, { sign: "Sagittarius", names: ["Carmen"] }] },
-      { planet: "neptune", groups: [{ sign: "Pisces", names: ["Camila", "Emilio"] }, { sign: "Capricorn", names: ["Carmen"] }] },
-      { planet: "pluto", groups: [{ sign: "Capricorn", names: ["Camila", "Emilio"] }, { sign: "Scorpio", names: ["Carmen"] }] },
-    ];
+  it("names the minority, majority, and all three planets when the same 2-way split repeats", () => {
+    const faultLines: CohortOverlayLike["faultLines"] = twoWay([
+      { planet: "uranus", majoritySign: "Taurus", minoritySign: "Sagittarius" },
+      { planet: "neptune", majoritySign: "Pisces", minoritySign: "Capricorn" },
+      { planet: "pluto", majoritySign: "Capricorn", minoritySign: "Scorpio" },
+    ]);
     const text = faultLinesInterpretation(faultLines);
     expect(text).toContain("two distinct generational cohorts");
-    expect(text).toContain("On every slow-moving planet");
+    expect(text).toContain("Uranus, Neptune, and Pluto");
+    expect(text).not.toContain("slow-moving");
     expect(text).toContain("Carmen's instincts were shaped by a different era than Camila and Emilio's");
+    expect(text).toBe(
+      FAULT_LINES_LEAD_TWO_WAY[3]("Uranus, Neptune, and Pluto", "Carmen", "Camila and Emilio")
+    );
   });
-  it("falls back to a generic split narration when the partition differs per planet", () => {
+  it("names the two planets when a 2-way split repeats on a pair of them", () => {
+    const text = faultLinesInterpretation(
+      twoWay([
+        { planet: "uranus", majoritySign: "Taurus", minoritySign: "Sagittarius" },
+        { planet: "neptune", majoritySign: "Pisces", minoritySign: "Capricorn" },
+      ])
+    );
+    expect(text).toContain("Uranus and Neptune");
+    expect(text).toContain("The same split runs through both planets");
+    expect(text).not.toContain("Pluto");
+    expect(text).not.toContain("slow-moving");
+  });
+  it("names the single planet that creates a 2-way split", () => {
+    const text = faultLinesInterpretation(
+      twoWay([{ planet: "pluto", majoritySign: "Capricorn", minoritySign: "Scorpio" }])
+    );
+    expect(text).toContain("Pluto is the one planet that splits them");
+    expect(text).not.toContain("Uranus");
+    expect(text).not.toContain("Neptune");
+  });
+  it("bands 1, 2, and 3 produce distinct 2-way leads, and same count with different planets differs", () => {
+    const onePluto = faultLinesInterpretation(
+      twoWay([{ planet: "pluto", majoritySign: "Capricorn", minoritySign: "Scorpio" }])
+    );
+    const oneUranus = faultLinesInterpretation(
+      twoWay([{ planet: "uranus", majoritySign: "Taurus", minoritySign: "Sagittarius" }])
+    );
+    const twoUN = faultLinesInterpretation(
+      twoWay([
+        { planet: "uranus", majoritySign: "Taurus", minoritySign: "Sagittarius" },
+        { planet: "neptune", majoritySign: "Pisces", minoritySign: "Capricorn" },
+      ])
+    );
+    const twoUP = faultLinesInterpretation(
+      twoWay([
+        { planet: "uranus", majoritySign: "Taurus", minoritySign: "Sagittarius" },
+        { planet: "pluto", majoritySign: "Capricorn", minoritySign: "Scorpio" },
+      ])
+    );
+    const three = faultLinesInterpretation(
+      twoWay([
+        { planet: "uranus", majoritySign: "Taurus", minoritySign: "Sagittarius" },
+        { planet: "neptune", majoritySign: "Pisces", minoritySign: "Capricorn" },
+        { planet: "pluto", majoritySign: "Capricorn", minoritySign: "Scorpio" },
+      ])
+    );
+    expect(new Set([onePluto, twoUN, three]).size).toBe(3);
+    expect(onePluto).not.toBe(oneUranus);
+    expect(onePluto).toContain("Pluto");
+    expect(oneUranus).toContain("Uranus");
+    expect(twoUN).not.toBe(twoUP);
+    expect(twoUN).toContain("Neptune");
+    expect(twoUN).not.toContain("Pluto");
+    expect(twoUP).toContain("Pluto");
+    expect(twoUP).not.toContain("Neptune");
+  });
+  it("names the planets when the partition differs per planet, without the slow-moving fallback", () => {
     const faultLines: CohortOverlayLike["faultLines"] = [
       { planet: "uranus", groups: [{ sign: "Taurus", names: ["Camila"] }, { sign: "Aquarius", names: ["Emilio", "Carmen"] }] },
       { planet: "pluto", groups: [{ sign: "Capricorn", names: ["Camila", "Carmen"] }, { sign: "Scorpio", names: ["Emilio"] }] },
@@ -159,6 +235,38 @@ describe("faultLinesInterpretation", () => {
     expect(text).toContain("shift depending on the planet");
     expect(text).toContain("Uranus");
     expect(text).toContain("Pluto");
+    expect(text).not.toContain("slow-moving");
+    expect(text).toBe(FAULT_LINES_LEAD_SHIFTING[2]("Uranus and Pluto"));
+  });
+  it("shifting count-1 names the planet and does not claim the split moves by planet", () => {
+    const text = faultLinesInterpretation([
+      {
+        planet: "neptune",
+        groups: [
+          { sign: "Pisces", names: ["Camila"] },
+          { sign: "Capricorn", names: ["Emilio"] },
+          { sign: "Aquarius", names: ["Carmen"] },
+        ],
+      },
+    ]);
+    expect(text).toContain("Neptune");
+    expect(text).not.toContain("shift depending on the planet");
+    expect(text).toBe(FAULT_LINES_LEAD_SHIFTING[1]("Neptune"));
+  });
+  it("shifting leads differ by planet set at the same count", () => {
+    const uranusPluto = faultLinesInterpretation([
+      { planet: "uranus", groups: [{ sign: "Taurus", names: ["Camila"] }, { sign: "Aquarius", names: ["Emilio"] }, { sign: "Leo", names: ["Carmen"] }] },
+      { planet: "pluto", groups: [{ sign: "Capricorn", names: ["Camila", "Carmen"] }, { sign: "Scorpio", names: ["Emilio"] }] },
+    ]);
+    const neptunePluto = faultLinesInterpretation([
+      { planet: "neptune", groups: [{ sign: "Pisces", names: ["Camila"] }, { sign: "Capricorn", names: ["Emilio"] }, { sign: "Leo", names: ["Carmen"] }] },
+      { planet: "pluto", groups: [{ sign: "Capricorn", names: ["Camila", "Carmen"] }, { sign: "Scorpio", names: ["Emilio"] }] },
+    ]);
+    expect(uranusPluto).not.toBe(neptunePluto);
+    expect(uranusPluto).toContain("Uranus");
+    expect(uranusPluto).not.toContain("Neptune");
+    expect(neptunePluto).toContain("Neptune");
+    expect(neptunePluto).not.toContain("Uranus");
   });
 });
 
@@ -224,20 +332,22 @@ describe("parsePairNames", () => {
 });
 
 describe("describePairHighlight", () => {
-  it("leads with a plain-English sentence and badges a full fault line", () => {
+  it("leads with a plain-English sentence and badges a full fault line, naming all three planets", () => {
     const result = describePairHighlight(
       "Carmen",
       "Camila",
       "Fault line: uranus Taurus/Sagittarius · neptune Pisces/Capricorn · pluto Capricorn/Scorpio."
     );
     expect(result.badge).toBe("FAULT LINE");
-    expect(result.sentence).toContain("Carmen and Camila diverge on every generational planet");
+    expect(result.sentence).toContain("Carmen and Camila diverge on Uranus, Neptune, and Pluto");
+    expect(result.sentence).not.toContain("every generational planet");
     expect(result.detail).toBe("Uranus Taurus/Sagittarius · Neptune Pisces/Capricorn · Pluto Capricorn/Scorpio");
   });
-  it("leads with a plain-English sentence and badges a same-generation pair", () => {
+  it("leads with a plain-English sentence and badges a same-generation pair, naming all three planets", () => {
     const result = describePairHighlight("Camila", "Emilio", "Same generation (uranus Taurus, neptune Pisces, pluto Capricorn).");
     expect(result.badge).toBe("SAME GENERATION");
-    expect(result.sentence).toContain("Camila and Emilio share every generational planet");
+    expect(result.sentence).toContain("Camila and Emilio share Uranus, Neptune, and Pluto");
+    expect(result.sentence).not.toContain("every generational planet");
   });
   it("mentions the still-shared planet when only some diverge", () => {
     const result = describePairHighlight("Carmen", "Camila", "Fault line: uranus Taurus/Sagittarius · neptune Pisces/Capricorn.");
@@ -247,6 +357,96 @@ describe("describePairHighlight", () => {
     const result = describePairHighlight("A", "B", "Same generation vibes, roughly.");
     expect(result.badge).toBe("SAME GENERATION");
     expect(result.sentence).toBe("Same generation vibes, roughly.");
+  });
+
+  it("Same Generation bands 1, 2, and 3 are structurally distinct and name the planets", () => {
+    const one = describePairHighlight("Camila", "Emilio", "Same generation (uranus Taurus).");
+    const two = describePairHighlight("Camila", "Emilio", "Same generation (uranus Taurus, neptune Pisces).");
+    const three = describePairHighlight("Camila", "Emilio", "Same generation (uranus Taurus, neptune Pisces, pluto Capricorn).");
+    expect(one.badge).toBe("SAME GENERATION");
+    expect(two.badge).toBe("SAME GENERATION");
+    expect(three.badge).toBe("SAME GENERATION");
+    expect(one.sentence).toBe(SAME_GENERATION_LEAD[1]("Camila", "Emilio", "Uranus"));
+    expect(two.sentence).toBe(SAME_GENERATION_LEAD[2]("Camila", "Emilio", "Uranus and Neptune"));
+    expect(three.sentence).toBe(SAME_GENERATION_LEAD[3]("Camila", "Emilio", "Uranus, Neptune, and Pluto"));
+    expect(one.sentence).toContain("That one planet");
+    expect(two.sentence).toContain("Those two planets");
+    expect(three.sentence).toContain("Uranus, Neptune, and Pluto");
+    expect(new Set([one.sentence, two.sentence, three.sentence]).size).toBe(3);
+  });
+
+  it("Same Generation same-count pairs with different planets produce different sentences", () => {
+    const uranusNeptune = describePairHighlight("Camila", "Emilio", "Same generation (uranus Taurus, neptune Pisces).");
+    const uranusPluto = describePairHighlight("Camila", "Emilio", "Same generation (uranus Taurus, pluto Capricorn).");
+    const neptunePluto = describePairHighlight("Camila", "Emilio", "Same generation (neptune Pisces, pluto Capricorn).");
+    expect(uranusNeptune.sentence).not.toBe(uranusPluto.sentence);
+    expect(uranusNeptune.sentence).not.toBe(neptunePluto.sentence);
+    expect(uranusPluto.sentence).not.toBe(neptunePluto.sentence);
+    expect(uranusNeptune.sentence).toContain("Uranus and Neptune");
+    expect(uranusNeptune.sentence).not.toContain("Pluto");
+    expect(uranusPluto.sentence).toContain("Uranus and Pluto");
+    expect(uranusPluto.sentence).not.toContain("Neptune");
+    expect(neptunePluto.sentence).toContain("Neptune and Pluto");
+    expect(neptunePluto.sentence).not.toContain("Uranus");
+    const oneUranus = describePairHighlight("Camila", "Emilio", "Same generation (uranus Taurus).");
+    const onePluto = describePairHighlight("Camila", "Emilio", "Same generation (pluto Capricorn).");
+    expect(oneUranus.sentence).not.toBe(onePluto.sentence);
+    expect(oneUranus.sentence).toContain("Uranus");
+    expect(onePluto.sentence).toContain("Pluto");
+  });
+
+  it("Fault Line bands 1, 2, and 3 are structurally distinct and name the planets", () => {
+    const one = describePairHighlight("Carmen", "Camila", "Fault line: uranus Taurus/Sagittarius.");
+    const two = describePairHighlight("Carmen", "Camila", "Fault line: uranus Taurus/Sagittarius · neptune Pisces/Capricorn.");
+    const three = describePairHighlight(
+      "Carmen",
+      "Camila",
+      "Fault line: uranus Taurus/Sagittarius · neptune Pisces/Capricorn · pluto Capricorn/Scorpio."
+    );
+    expect(one.badge).toBe("FAULT LINE");
+    expect(two.badge).toBe("FAULT LINE");
+    expect(three.badge).toBe("FAULT LINE");
+    expect(one.sentence).toBe(FAULT_LINE_PAIR_LEAD[1]("Carmen", "Camila", "Uranus", "Neptune and Pluto"));
+    expect(two.sentence).toBe(FAULT_LINE_PAIR_LEAD[2]("Carmen", "Camila", "Uranus and Neptune", "Pluto"));
+    expect(three.sentence).toBe(FAULT_LINE_PAIR_LEAD[3]("Carmen", "Camila", "Uranus, Neptune, and Pluto", ""));
+    expect(one.sentence).toContain("That one planet");
+    expect(two.sentence).toContain("Those two planets");
+    expect(three.sentence).toContain("Uranus, Neptune, and Pluto");
+    expect(new Set([one.sentence, two.sentence, three.sentence]).size).toBe(3);
+  });
+
+  it("Fault Line same-count pairs with different planets produce different sentences", () => {
+    const uranusNeptune = describePairHighlight("Carmen", "Camila", "Fault line: uranus Taurus/Sagittarius · neptune Pisces/Capricorn.");
+    const uranusPluto = describePairHighlight("Carmen", "Camila", "Fault line: uranus Taurus/Sagittarius · pluto Capricorn/Scorpio.");
+    expect(uranusNeptune.sentence).not.toBe(uranusPluto.sentence);
+    expect(uranusNeptune.sentence).toContain("Uranus and Neptune");
+    expect(uranusNeptune.sentence).toContain("share Pluto");
+    expect(uranusNeptune.sentence).not.toContain("share Neptune");
+    expect(uranusPluto.sentence).toContain("Uranus and Pluto");
+    expect(uranusPluto.sentence).toContain("share Neptune");
+    expect(uranusPluto.sentence).not.toContain("share Pluto");
+    const oneUranus = describePairHighlight("Carmen", "Camila", "Fault line: uranus Taurus/Sagittarius.");
+    const onePluto = describePairHighlight("Carmen", "Camila", "Fault line: pluto Capricorn/Scorpio.");
+    expect(oneUranus.sentence).not.toBe(onePluto.sentence);
+    expect(oneUranus.sentence).toContain("diverge on Uranus");
+    expect(oneUranus.sentence).toContain("share Neptune and Pluto");
+    expect(onePluto.sentence).toContain("diverge on Pluto");
+    expect(onePluto.sentence).toContain("share Uranus and Neptune");
+  });
+
+  it("keeps the chip-row detail line as planet/sign facts, not as the lead", () => {
+    const result = describePairHighlight("Camila", "Emilio", "Same generation (uranus Taurus, neptune Pisces).");
+    expect(result.detail).toBe("Uranus Taurus · Neptune Pisces");
+    expect(result.sentence).not.toBe(result.detail);
+  });
+});
+
+describe("toPlanetCountBand", () => {
+  it("maps 1, 2, and 3+ onto the enumerable axis", () => {
+    expect(toPlanetCountBand(1)).toBe(1);
+    expect(toPlanetCountBand(2)).toBe(2);
+    expect(toPlanetCountBand(3)).toBe(3);
+    expect(toPlanetCountBand(4)).toBe(3);
   });
 });
 
@@ -545,6 +745,16 @@ describe("em dash purge in Groups user-facing copy", () => {
       describePairHighlight("Carmen", "Camila", "Fault line: uranus Taurus/Sagittarius · neptune Pisces/Capricorn · pluto Capricorn/Scorpio.").sentence,
       describePairHighlight("Camila", "Emilio", "Same generation (uranus Taurus, neptune Pisces, pluto Capricorn).").sentence,
       describePairHighlight("Carmen", "Camila", "Fault line: uranus Taurus/Sagittarius · neptune Pisces/Capricorn.").sentence,
+      describePairHighlight("Camila", "Emilio", "Same generation (uranus Taurus).").sentence,
+      describePairHighlight("Camila", "Emilio", "Same generation (uranus Taurus, neptune Pisces).").sentence,
+      describePairHighlight("Carmen", "Camila", "Fault line: uranus Taurus/Sagittarius.").sentence,
+      faultLinesInterpretation([
+        { planet: "pluto", groups: [{ sign: "Capricorn", names: ["Camila", "Emilio"] }, { sign: "Scorpio", names: ["Carmen"] }] },
+      ]),
+      faultLinesInterpretation([
+        { planet: "uranus", groups: [{ sign: "Taurus", names: ["Camila"] }, { sign: "Aquarius", names: ["Emilio"] }, { sign: "Leo", names: ["Carmen"] }] },
+        { planet: "pluto", groups: [{ sign: "Capricorn", names: ["Camila", "Carmen"] }, { sign: "Scorpio", names: ["Emilio"] }] },
+      ]),
     ];
     for (const sample of samples) {
       expect(sample).not.toContain("\u2014");

@@ -30,6 +30,8 @@ import {
   relationHasHouseLens,
   relationHouseHint,
   relationHouseOverlays,
+  orderedScoreEntries,
+  relationshipWatchLine,
   whatTheyNeed,
   type RelationType,
 } from "@galaxia/astro";
@@ -559,8 +561,7 @@ function ComparePageInner() {
 
               {/* dyn table — mirrors landing .dyn */}
               <div style={{ borderRadius: 14, background: "rgba(111,177,184,.06)", border: "1px solid rgba(111,177,184,.15)", padding: "4px 0", marginBottom: 14 }}>
-                {Object.entries(result.synastry.scores).map(([key, rawScore]) => {
-                  const score = rawScore as number;
+                {orderedScoreEntries(result.synastry.scores).map(({ key, score }) => {
                   const { word, cls } = compatWord(score);
                   const pct = score / 100;
                   return (
@@ -592,6 +593,21 @@ function ComparePageInner() {
                   </p>
                 </div>
               ))}
+              {relationshipWatchLine(result.synastry.scores, relationType, result.synastry) ? (
+                <p
+                  className="muted"
+                  style={{
+                    fontSize: ".82rem",
+                    lineHeight: 1.62,
+                    fontStyle: "italic",
+                    margin: "4px 0 0",
+                    borderLeft: "2px solid rgba(183,154,216,.35)",
+                    paddingLeft: 12,
+                  }}
+                >
+                  {relationshipWatchLine(result.synastry.scores, relationType, result.synastry)}
+                </p>
+              ) : null}
             </section>
           </ChartImageExport>
 

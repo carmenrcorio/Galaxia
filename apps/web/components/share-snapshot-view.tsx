@@ -10,6 +10,7 @@
 import {
   bodyDomain,
   interpretPlacement,
+  relationshipWatchLine,
   whatTheyNeed,
   type BodyKey,
   type NatalChart,
@@ -246,7 +247,10 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
             </p>
           </section>
         ) : (
-          <DynamicTableSection scores={payload.synastry.scores}>
+          <DynamicTableSection
+            scores={payload.synastry.scores}
+            watchLine={relationshipWatchLine(payload.synastry.scores, relationType, payload.synastry as never)}
+          >
             {[personA, personB].map((person) => (
               <div
                 key={person.display_name}

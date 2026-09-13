@@ -13,6 +13,7 @@ import {
   isRomanticRelation,
   orbStrength,
   relationshipAspectFraming,
+  relationshipWatchLine,
   suggestCompareRelationType,
   whatTheyNeed,
   type RelationType,
@@ -148,6 +149,14 @@ describe("PHASE 2: 'what they need' becomes need + how", () => {
     const text = whatTheyNeed(SCORES, SARAH, "partners", SYNASTRY);
     expect(text).toContain("Cancer Venus");
     expect(text).toContain("The way to show it:");
+  });
+
+  it("platonic closer is not duplicated into each person card", () => {
+    const text = whatTheyNeed(SCORES, SARAH, "platonic", SYNASTRY);
+    expect(text).not.toContain("the real signal to watch");
+    const once = relationshipWatchLine(SCORES, "platonic", SYNASTRY);
+    expect(once).toContain("mercury-mars square (1.2°)");
+    expect(relationshipWatchLine(SCORES, "friends", SYNASTRY)).toBeNull();
   });
 });
 
@@ -328,6 +337,25 @@ describe("1C: relationshipAspectFraming() revival — text is unique, action dup
       expect(f.text).toContain("Sarah's");
       expect(f.text).toContain("Ben's");
     }
+  });
+
+  it("Mercury-Mars and Uranus-Jupiter catching lines no longer share a body", () => {
+    const framing = relationshipAspectFraming(
+      {
+        aspects: [
+          { from: "mercury", to: "mars", type: "square", orb: 0.9, harmony: -1 },
+          { from: "uranus", to: "jupiter", type: "square", orb: 1.0, harmony: -1 },
+          { from: "moon", to: "jupiter", type: "trine", orb: 2.0, harmony: 0.7 },
+        ],
+      } as never,
+      "platonic",
+      "DANIEL",
+      "SARAH"
+    );
+    const lenses = framing.map((f) => f.text.replace(/^.*?°\)\s*/, ""));
+    expect(new Set(lenses).size).toBe(lenses.length);
+    const talkPast = framing.filter((f) => f.text.includes("talk past each other"));
+    expect(talkPast).toHaveLength(0);
   });
 });
 

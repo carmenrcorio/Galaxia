@@ -1,0 +1,5 @@
+## Shared Placement: bespoke per-sign copy (branch `cursor/shared-placement-per-sign-5a60`) — 2026-09-13
+
+**Trigger**: Chart Grid Shared Placement sentences were assembled from two small lookup tables (`PLANET_GROUP_DOMAIN` × `SIGN_VIBE`), so all 72 planet/sign combinations rendered from the same 18 fragments. The 1:1 compare view already has authored per-combination guidance; the group view did not.
+
+`[ADDED]` **Bespoke Shared Placement copy for all 72 planet × sign combinations** (`packages/astro/src/family-compare-shared-placement.ts`). `interpretSharedPlacement()` now looks up a hand-authored body keyed by the real computed planet and sign, prefixed by the existing `countPhrase()` (`Two of you` / `Three of you` / `All of you` / `N of you`). Each string names what's true, then says what it looks like or what to do. Count logic, pattern detection, and which placements get flagged as shared are unchanged. `PLANET_GROUP_DOMAIN` + `SIGN_VIBE` remain as a fallback only. Every new string is tagged `FOUNDER-REVIEW`. No em dashes (U+2014).

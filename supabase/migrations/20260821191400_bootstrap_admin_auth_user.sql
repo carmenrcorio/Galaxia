@@ -1,0 +1,48 @@
+-- Make the first-admin bootstrap in the next migration possible on a
+-- database that has never had a signup.
+--
+-- WHY THIS FILE IS BACK-DATED. 20260821191500_admin_role_foundation.sql
+-- ends by seeding the founder into admin_users:
+--
+--   insert into public.admin_users (owner_id, role)
+--   values ('8112465c-f74b-4842-9ef4-9d30e98d4ccb', 'admin')
+--   on conflict (owner_id) do nothing;
+--
+-- admin_users.owner_id references auth.users(id), and that migration is
+-- correct to key the founder off a stable auth.users id rather than a
+-- mutable email. But it carries an unstated precondition: that the
+-- founder's account already exists. True in production, false in a project
+-- created from this repo, where auth.users is empty and the insert fails:
+--
+--   ERROR: insert or update on table "admin_users"
+--          violates foreign key constraint "admin_users_owner_id_fkey"
+--
+-- This is the second of the two reasons the committed history could not be
+-- replayed from nothing, and like the first it can only be fixed by a file
+-- that runs earlier, hence the timestamp one minute ahead of its target.
+--
+-- APPLYING THIS TO PRODUCTION IS A NO-OP, AND PROVABLY SO. The guard is
+-- "only when auth.users is completely empty", not "only when this id is
+-- missing". An empty auth table means a brand new throwaway project, since
+-- a database serving real people always has accounts in it: production held
+-- 17 when this was written. The narrower "insert if this id is absent"
+-- would have been a loaded gun, because it would happily manufacture a
+-- founder row in any real database that had somehow lost it.
+--
+-- The row this creates is a shell that cannot be logged into: id only, no
+-- password, no confirmed email, no identity record. It exists so a foreign
+-- key has something to point at while a disposable database is being built,
+-- and it grants nothing that admin_users would not already grant on a
+-- preview branch seeded any other way. Note that it does fire
+-- on_auth_user_created from 20260710163000_trial_model.sql, so the founder
+-- also lands a trialing profiles row, which is the same state any real
+-- signup reaches and keeps a fresh database self consistent.
+--
+-- Known limit, written down rather than papered over: a database with at
+-- least one account but no founder row still fails the next migration. That
+-- is deliberate. Such a database is not a fresh project, and silently
+-- injecting an admin into it is the outcome worth avoiding most.
+
+insert into auth.users (id)
+select '8112465c-f74b-4842-9ef4-9d30e98d4ccb'
+ where not exists (select 1 from auth.users);

@@ -58,7 +58,6 @@ export default function CompareScreen() {
     personB: PersonLite;
     synastry: ReturnType<typeof computeSynastry>;
     generational: ReturnType<typeof compareGenerational>;
-    ancestralHeadline: string | null;
   } | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
@@ -157,13 +156,7 @@ export default function CompareScreen() {
       estimateYearGap(selectedA, selectedB)
     );
 
-    const ageGap = estimateYearGap(selectedA, selectedB) ?? 0;
-    const ancestralHeadline =
-      relationType === "ancestor" || selectedA.relation === "ancestor" || selectedB.relation === "ancestor" || ageGap >= 18
-        ? `This connection spans different eras. The generational layer is the headline. ${generational.theme}`
-        : null;
-
-    setResult({ personA: selectedA, personB: selectedB, synastry, generational, ancestralHeadline });
+    setResult({ personA: selectedA, personB: selectedB, synastry, generational });
     setStatus(null);
   };
 
@@ -322,7 +315,6 @@ export default function CompareScreen() {
                 : `Generational fault lines: ${result.generational.diverged.map((d) => `${d.planet} ${d.signA} vs ${d.signB}`).join(" · ")}.`}
             </Text>
             <Text style={cardBody}>{result.generational.theme}</Text>
-            {result.ancestralHeadline ? <Text style={{ color: tokens.colors.goldSoft, lineHeight: 20 }}>{result.ancestralHeadline}</Text> : null}
           </View>
 
           <View style={cardStyle}>

@@ -230,3 +230,11 @@ describe("BUG 3 — exact birth refuses without timezone; low-precision still sa
     expect(deleted).toBe(true);
   });
 });
+
+describe("mobile Compare does not duplicate generational.theme", () => {
+  it("does not construct or render ancestralHeadline", () => {
+    const src = readFileSync(resolve(__dirname, "../../app/(app)/compare.tsx"), "utf8");
+    expect(src).not.toContain("ancestralHeadline");
+    expect(src).not.toContain("This connection spans different eras. The generational layer is the headline.");
+  });
+});

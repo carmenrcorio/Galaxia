@@ -75,6 +75,18 @@ This section is essential to the Service and to your use of it.
 
 **Indemnity for third-party data.** You agree to indemnify and hold us harmless from claims arising out of information you provide about other people or your use of readings about them, as described in Section 13\.
 
+<!-- FOUNDER-REVIEW: added. Invitation-flow addendum, covers both the birth_data flow and the constellation_connect flow (schema merged as PR #217). changelog.d/cursor-invitation-legal-addendum-5920.md -->
+**Invitation feature.** If you use Galaxia's invitation feature to invite another person to provide their own information, whether to complete a profile you started for them or, where available, to connect their own account and share a copy of their chart with you, Galaxia does not send that invitation on your behalf. You share a link through whatever channel you choose, and Galaxia has no visibility into how or to whom you send it.
+
+<!-- FOUNDER-REVIEW: added. Invitation-flow addendum. changelog.d/cursor-invitation-legal-addendum-5920.md -->
+**Your representations.** By generating an invitation link, you represent that you have a personal or preexisting relationship with the person you intend to send it to, that you will not use this feature to contact anyone without a personal connection or to send unsolicited or bulk communications, and that where the invited person's information becomes visible to you, you understand it was provided by that person directly, not by you, and you will not use it in a way that violates their reasonable expectation of privacy.
+
+<!-- FOUNDER-REVIEW: added. Invitation-flow addendum. changelog.d/cursor-invitation-legal-addendum-5920.md -->
+**Consent by the invited person.** A person who accepts an invitation and submits their own information, or creates an account to do so, is deemed to consent to Galaxia processing that information as described in our Privacy Policy, by the act of submitting the form or completing signup. Galaxia does not independently verify the relationship between the two parties beyond what is represented above.
+
+<!-- FOUNDER-REVIEW: added. Invitation-flow addendum. changelog.d/cursor-invitation-legal-addendum-5920.md -->
+**Platform role and indemnity.** Galaxia facilitates the technical transmission and storage of information you and your invitees choose to share through this feature. It does not review, endorse, or verify the accuracy of that information or the legitimacy of the relationship between you. You agree to defend, indemnify, and hold harmless Galaxia Mea LLC, its operators, and affiliates against any claims, liabilities, or damages arising from your use of this feature, including from inviting someone without a proper basis to do so.
+
 ---
 
 ## 7\. The Vela AI guide

@@ -20,13 +20,20 @@
         "backgroundColor": "#191331"
       }
     },
-    "plugins": ["expo-router", "expo-notifications"],
+    "plugins": [
+      "expo-router",
+      "expo-notifications"
+    ],
     "experiments": {
       "typedRoutes": true
     },
+    "owner": "galaxiamea",
     "extra": {
       "eas": {
-        "projectId": "replace-with-eas-project-id"
+        "projectId": "2b9a7e31-c55f-4636-92d2-fbcf9e89dbe8"
+      },
+      "router": {
+        "origin": false
       }
     }
   }

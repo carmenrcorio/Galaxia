@@ -74,7 +74,7 @@ export default function PersonProfileScreen() {
 
     const [{ data: personData, error: personError }, { data: chartData, error: chartError }, { data: noteData, error: noteError }] = await Promise.all([
       supabase.from("people").select("id, display_name, relation, birth_precision, is_self").eq("id", actualPersonId).single(),
-      supabase.from("charts").select("data").eq("person_id", actualPersonId).single(),
+      supabase.from("charts").select("data").eq("person_id", actualPersonId).maybeSingle(),
       supabase.from("notes").select("id, body, created_at").eq("about_person", actualPersonId).order("created_at", { ascending: false }).limit(20)
     ]);
 
@@ -82,16 +82,18 @@ export default function PersonProfileScreen() {
       setStatus(personError?.message ?? "Unable to load person.");
       return;
     }
-    if (chartError || !chartData) {
-      setStatus(chartError?.message ?? "Unable to load chart.");
-      return;
-    }
-    if (noteError) {
+    // Progressive capture, web parity (apps/web/app/app/person/[id]/page.tsx): a
+    // person saved with birth_precision "none" has no charts row at all. That is
+    // not a failure, so the read uses maybeSingle and a null chart renders the
+    // "no birth data yet" state instead of blocking the whole screen.
+    if (chartError) {
+      setStatus(chartError.message);
+    } else if (noteError) {
       setStatus(noteError.message);
     }
 
     setPerson(personData);
-    setChart(chartData.data as NatalChart);
+    setChart((chartData?.data as NatalChart | undefined) ?? null);
     setNotes(noteData ?? []);
   };
 
@@ -195,7 +197,7 @@ export default function PersonProfileScreen() {
     );
   }, [chart]);
 
-  if (!person || !chart) {
+  if (!person) {
     return (
       <View style={{ flex: 1, backgroundColor: tokens.colors.ink, justifyContent: "center", alignItems: "center", padding: 20 }}>
         <Text style={{ color: tokens.colors.cream, textAlign: "center" }}>{status ?? "Loading profile..."}</Text>
@@ -208,9 +210,9 @@ export default function PersonProfileScreen() {
     );
   }
 
-  const sun = chart.placements.find((placement) => placement.body === "sun");
-  const moon = chart.placements.find((placement) => placement.body === "moon");
-  const rising = chart.asc;
+  const sun = chart?.placements.find((placement) => placement.body === "sun");
+  const moon = chart?.placements.find((placement) => placement.body === "moon");
+  const rising = chart?.asc;
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink2 }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 90 }}>
@@ -224,71 +226,86 @@ export default function PersonProfileScreen() {
         </Pressable>
       </Link>
 
-      <View style={cardStyle}>
-        <Text style={cardTitle}>Big Three</Text>
-        {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-        <Text style={cardBody}>Sun: {sun?.sign ?? "·"}</Text>
-        <Text style={cardBody}>Moon: {moon?.sign ?? "·"}</Text>
-        <Text style={cardBody}>Rising: {rising ?? "Unavailable without exact time/location"}</Text>
-      </View>
-
-      <View style={cardStyle}>
-        <Text style={cardTitle}>{chart.precision === "exact" ? "Natal wheel" : "Sign strip"}</Text>
-        {chart.precision === "exact" ? (
-          <View style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.gold, width: 220, height: 220, alignSelf: "center", alignItems: "center", justifyContent: "center" }}>
-            <Text style={{ color: tokens.colors.gold }}>Wheel placeholder</Text>
-            <Text style={{ color: tokens.colors.mist, fontSize: 12, marginTop: 4 }}>SVG wheel component next slice</Text>
+      {chart ? (
+        <>
+          <View style={cardStyle}>
+            <Text style={cardTitle}>Big Three</Text>
+            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+            <Text style={cardBody}>Sun: {sun?.sign ?? "·"}</Text>
+            <Text style={cardBody}>Moon: {moon?.sign ?? "·"}</Text>
+            <Text style={cardBody}>Rising: {rising ?? "Unavailable without exact time/location"}</Text>
           </View>
-        ) : (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {chart.placements.map((placement) => (
-              <View key={placement.body} style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 6, paddingHorizontal: 10 }}>
-                <Text style={{ color: tokens.colors.cream, textTransform: "capitalize" }}>
-                  {placement.body}: {placement.sign}
-                </Text>
+
+          <View style={cardStyle}>
+            <Text style={cardTitle}>{chart.precision === "exact" ? "Natal wheel" : "Sign strip"}</Text>
+            {chart.precision === "exact" ? (
+              <View style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.gold, width: 220, height: 220, alignSelf: "center", alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ color: tokens.colors.gold }}>Wheel placeholder</Text>
+                <Text style={{ color: tokens.colors.mist, fontSize: 12, marginTop: 4 }}>SVG wheel component next slice</Text>
               </View>
+            ) : (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {chart.placements.map((placement) => (
+                  <View key={placement.body} style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 6, paddingHorizontal: 10 }}>
+                    <Text style={{ color: tokens.colors.cream, textTransform: "capitalize" }}>
+                      {placement.body}: {placement.sign}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View style={cardStyle}>
+            <Text style={cardTitle}>Elemental balance</Text>
+            {elementBalance ? (
+              <Text style={cardBody}>
+                Fire {elementBalance.fire} · Earth {elementBalance.earth} · Air {elementBalance.air} · Water {elementBalance.water}
+              </Text>
+            ) : null}
+          </View>
+
+          <View style={cardStyle}>
+            <Text style={cardTitle}>Placements</Text>
+            {chart.placements.map((placement) => (
+              <Text key={placement.body} style={cardBody}>
+                {placement.body.toUpperCase()} {placement.sign} {placement.degree.toFixed(1)}°{placement.house ? ` · House ${placement.house}` : ""}
+              </Text>
             ))}
           </View>
-        )}
-      </View>
 
-      <View style={cardStyle}>
-        <Text style={cardTitle}>Elemental balance</Text>
-        {elementBalance ? (
+          <View style={cardStyle}>
+            <Text style={cardTitle}>Generational layer</Text>
+            <Text style={badgeStyle}>Reads from your birth year</Text>
+            <Text style={cardBody}>{chart.generational.cohortLabel}</Text>
+            <Text style={cardBody}>
+              Uranus in {chart.generational.uranus.sign}: {describeGenerationalArchetype("Uranus", chart.generational.uranus.sign)}
+            </Text>
+            <Text style={cardBody}>
+              Neptune in {chart.generational.neptune.sign}: {describeGenerationalArchetype("Neptune", chart.generational.neptune.sign)}
+            </Text>
+            <Text style={cardBody}>
+              Pluto in {chart.generational.pluto.sign}: {describeGenerationalArchetype("Pluto", chart.generational.pluto.sign)}
+            </Text>
+            {chart.precision === "exact" ? (
+              <Text style={[cardBody, { color: tokens.colors.goldSoft }]}>
+                Houses: Uranus {chart.generational.uranusHouse ?? "·"} · Neptune {chart.generational.neptuneHouse ?? "·"} · Pluto {chart.generational.plutoHouse ?? "·"}
+              </Text>
+            ) : null}
+          </View>
+        </>
+      ) : (
+        <View style={cardStyle}>
+          {/* FOUNDER-REVIEW: new copy for a person saved without birth data.
+              Mobile has no birth-data editor yet, so this states the situation
+              without promising a control that is not here. */}
+          <Text style={cardTitle}>No birth data yet</Text>
           <Text style={cardBody}>
-            Fire {elementBalance.fire} · Earth {elementBalance.earth} · Air {elementBalance.air} · Water {elementBalance.water}
+            There is no chart to show until {person.display_name}&apos;s birth data is added. A birth year on its own is
+            enough for the generational layer.
           </Text>
-        ) : null}
-      </View>
-
-      <View style={cardStyle}>
-        <Text style={cardTitle}>Placements</Text>
-        {chart.placements.map((placement) => (
-          <Text key={placement.body} style={cardBody}>
-            {placement.body.toUpperCase()} {placement.sign} {placement.degree.toFixed(1)}°{placement.house ? ` · House ${placement.house}` : ""}
-          </Text>
-        ))}
-      </View>
-
-      <View style={cardStyle}>
-        <Text style={cardTitle}>Generational layer</Text>
-        <Text style={badgeStyle}>Reads from your birth year</Text>
-        <Text style={cardBody}>{chart.generational.cohortLabel}</Text>
-        <Text style={cardBody}>
-          Uranus in {chart.generational.uranus.sign}: {describeGenerationalArchetype("Uranus", chart.generational.uranus.sign)}
-        </Text>
-        <Text style={cardBody}>
-          Neptune in {chart.generational.neptune.sign}: {describeGenerationalArchetype("Neptune", chart.generational.neptune.sign)}
-        </Text>
-        <Text style={cardBody}>
-          Pluto in {chart.generational.pluto.sign}: {describeGenerationalArchetype("Pluto", chart.generational.pluto.sign)}
-        </Text>
-        {chart.precision === "exact" ? (
-          <Text style={[cardBody, { color: tokens.colors.goldSoft }]}>
-            Houses: Uranus {chart.generational.uranusHouse ?? "·"} · Neptune {chart.generational.neptuneHouse ?? "·"} · Pluto {chart.generational.plutoHouse ?? "·"}
-          </Text>
-        ) : null}
-      </View>
+        </View>
+      )}
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Private notes</Text>

@@ -190,3 +190,114 @@ describe(ADMIN_BOOTSTRAP, () => {
     expect(body).not.toMatch(/insert\s+into\s+public\.admin_users/i);
   });
 });
+
+/**
+ * A third replay defect, distinct from the two above: CREATE POLICY has no
+ * IF NOT EXISTS form in Postgres, so any migration whose "create policy"
+ * statement is not preceded by "drop policy if exists" for the same name
+ * can only ever run once against a given database. That is invisible to
+ * the from-scratch "Supabase Preview" check, since a fresh database has
+ * never seen the policy before, but it is exactly what stopped production
+ * (eigfvribtntbxyjutsma) from reconciling: six of these policies had
+ * already been applied under a ledger version that does not match their
+ * committed filename timestamp (the version skew ENGINEERING.md section 16
+ * documents as expected from MCP apply_migration), so a deploy that
+ * reconciles by version rather than by name still saw each of the six
+ * committed timestamps as pending and reran the file, which failed with
+ * "policy ... already exists". Confirmed against production's live
+ * pg_policy for all six before writing the fix.
+ *
+ * 20260725035959_owner_policy_replay_guard.sql clears each policy first,
+ * guarded so the clear is a no-op both when the table does not exist yet
+ * (a fresh replay, where the bare create policy below it is the first and
+ * only run) and when the policy has already been removed. This test finds
+ * every bare create policy in the history and asserts each one is either
+ * self-guarded or covered by the replay guard, so a future migration that
+ * reintroduces this shape fails loudly here instead of silently blocking
+ * production again.
+ */
+describe("bare create policy statements cannot be re-run, and are all protected", () => {
+  const REPLAY_GUARD = "20260725035959_owner_policy_replay_guard.sql";
+  const names = migrationNames();
+  const guardIndex = names.indexOf(REPLAY_GUARD);
+  const guardSql = stripSqlComments(readMigration(REPLAY_GUARD));
+
+  // The six confirmed, as of this writing, to already be applied on
+  // production (eigfvribtntbxyjutsma) under a ledger version that does not
+  // match their own committed filename timestamp, which is what makes each
+  // one a real target rather than a hypothetical one. Not a scan for every
+  // bare "create policy" in the whole history: many earlier ones (for
+  // example 20260629220500_add_owner_rls_policies.sql) were applied with a
+  // ledger version that does match their filename, so a version-keyed
+  // deploy has no reason to ever try them a second time, and flagging them
+  // here would be a false positive rather than a real risk.
+  const KNOWN_OFFENDERS = [
+    { file: "20260725040000_person_daily_nudges.sql", policy: "person_daily_nudges owner all", table: "person_daily_nudges" },
+    { file: "20260725050000_vela_chat_rate_limit.sql", policy: "vela_rate_limits owner read", table: "vela_rate_limits" },
+    { file: "20260822120000_admin_safe_actions_and_support_queue.sql", policy: "support_requests owner insert", table: "support_requests" },
+    { file: "20260909020000_memorial_milestones.sql", policy: "memorial_milestones owner all", table: "memorial_milestones" },
+    { file: "20260909030000_relational_transits.sql", policy: "relational_transits owner all", table: "relational_transits" },
+    { file: "20260909040000_push_tokens.sql", policy: "push_tokens owner all", table: "push_tokens" }
+  ];
+
+  it("finds the replay guard, sorted before everything it protects", () => {
+    expect(guardIndex).toBeGreaterThanOrEqual(0);
+    for (const { file } of KNOWN_OFFENDERS) {
+      expect(names.indexOf(file), `${file} must sort after the replay guard`).toBeGreaterThan(
+        guardIndex
+      );
+    }
+  });
+
+  it("each known offender is still a bare, unguarded create policy in its own file", () => {
+    // Pins the shape of the defect this guard exists for. If a future edit
+    // to one of these already-applied files added its own "drop policy if
+    // exists" (which ENGINEERING.md section 2 forbids doing to an applied
+    // migration anyway), this test would catch the drift rather than let
+    // the guard silently become redundant.
+    for (const { file, policy } of KNOWN_OFFENDERS) {
+      const lines = stripSqlComments(readMigration(file)).split("\n");
+      const idx = lines.findIndex((line) => line.startsWith(`create policy "${policy}"`));
+      expect(idx, `${file} must still contain create policy "${policy}"`).toBeGreaterThanOrEqual(0);
+      const precedingLines = lines.slice(Math.max(0, idx - 3), idx).join("\n");
+      expect(precedingLines).not.toContain(`drop policy if exists "${policy}"`);
+    }
+  });
+
+  it("covers every known offender with a guarded drop", () => {
+    for (const { policy, table } of KNOWN_OFFENDERS) {
+      expect(guardSql, `"${policy}" on ${table} must be dropped by the replay guard`).toContain(
+        `drop policy if exists "${policy}" on public.${table}`
+      );
+    }
+  });
+
+  it("guards each drop on the target table already existing, for empty-database safety", () => {
+    for (const table of [
+      "person_daily_nudges",
+      "vela_rate_limits",
+      "support_requests",
+      "memorial_milestones",
+      "relational_transits",
+      "push_tokens"
+    ]) {
+      expect(guardSql).toContain(`to_regclass('public.${table}')`);
+    }
+  });
+
+  it("every dropped policy is recreated again later, so the guard changes nothing about the final shape", () => {
+    const wrap = stripSqlComments(
+      readMigration("20260913030100_wrap_auth_uid_in_rls_policies.sql")
+    );
+    for (const policy of [
+      "person_daily_nudges owner all",
+      "vela_rate_limits owner read",
+      "support_requests owner insert",
+      "memorial_milestones owner all",
+      "relational_transits owner all",
+      "push_tokens owner all"
+    ]) {
+      expect(wrap).toContain(`drop policy if exists "${policy}"`);
+    }
+  });
+});

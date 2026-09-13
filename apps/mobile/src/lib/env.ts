@@ -1,28 +1,48 @@
 /**
  * Mobile public env reads (the `apps/web/lib/env.ts` counterpart).
  *
- * Reads use the same defensive `globalThis.process?.env` accessor already used
- * by `src/lib/supabase.ts` and `app/(app)/vela.tsx`. `EXPO_PUBLIC_*` values are
- * inlined into the bundle by Metro at build time, so the read happens inside
- * each function rather than at module scope: that is what lets a caller decide
- * whether a missing value is fatal, and it keeps these helpers testable.
+ * ## Why the read is written this exact way
  *
- * Why this cannot fall back to a default: `apps/web` resolves a missing
- * `NEXT_PUBLIC_SITE_URL` against `window.location.origin`, and a native client
- * has no such origin. Inventing one would ship a link that silently points at
- * the wrong host, which ENGINEERING.md §12 forbids. So a missing site URL
- * fails with a message naming the variable (§6) instead of degrading.
+ * `EXPO_PUBLIC_*` values are not read from the device at runtime. In a
+ * production bundle they exist only because `babel-preset-expo`'s
+ * `expo-inline-production-environment-variables` plugin rewrote them into
+ * string literals at build time, and that plugin fires on one syntactic shape
+ * only: a member expression whose object matches the pattern `process.env`
+ * with a literal `EXPO_PUBLIC_`-prefixed key. Reading through a local alias
+ * (`const env = globalThis.process?.env; env.EXPO_PUBLIC_SITE_URL`) or through
+ * a computed key (`env[SITE_URL_VAR]`) is invisible to it, and
+ * `@expo/metro-config`'s serializer injects the runtime `process.env` object
+ * in development only. Either of those shapes therefore yields `undefined` in
+ * a release build even when the variable is correctly set in EAS.
  *
- * The throw is deliberately lazy. Unlike `supabase.ts`, which throws at module
- * scope because nothing in the app works without a backend, `requireSiteUrl` is
- * called at the moment a link is actually assembled. A build that never opens a
- * web link is not bricked at startup by a variable it does not use.
+ * So the access below is a deliberate literal `process.env.EXPO_PUBLIC_SITE_URL`,
+ * kept behind a `typeof process` guard for environments that have no `process`
+ * at all. `SITE_URL_VAR` exists to name the variable in messages and tests; it
+ * is never used as a lookup key, because a computed key would break the inline.
+ *
+ * ## Why there is no fallback value
+ *
+ * `apps/web` resolves a missing `NEXT_PUBLIC_SITE_URL` against
+ * `window.location.origin`, and a native client has no such origin. Inventing
+ * one would ship a link that silently points at the wrong host, which
+ * ENGINEERING.md §12 forbids. A missing site URL therefore fails with a message
+ * naming the variable (§6) instead of degrading.
+ *
+ * ## Why the throw is lazy
+ *
+ * Unlike `supabase.ts`, which throws at module scope because nothing in the app
+ * works without a backend, `requireSiteUrl` is called at the moment a link is
+ * actually assembled. A build that never opens a web link is not bricked at
+ * startup by a variable it does not use.
  */
 
+/** The variable's name, for messages and tests. Never used as a lookup key. */
 export const SITE_URL_VAR = "EXPO_PUBLIC_SITE_URL";
 
-function readEnv(): Record<string, string | undefined> {
-  return (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
+function readSiteUrlVar(): string | undefined {
+  if (typeof process === "undefined" || !process.env) return undefined;
+  // Must stay a literal `process.env.EXPO_PUBLIC_SITE_URL` access. See above.
+  return process.env.EXPO_PUBLIC_SITE_URL;
 }
 
 /**
@@ -32,7 +52,7 @@ function readEnv(): Record<string, string | undefined> {
  * must produce a URL use `requireSiteUrl`.
  */
 export function siteUrl(): string | null {
-  const trimmed = readEnv()[SITE_URL_VAR]?.trim();
+  const trimmed = readSiteUrlVar()?.trim();
   if (!trimmed) return null;
   return trimmed.replace(/\/+$/, "");
 }

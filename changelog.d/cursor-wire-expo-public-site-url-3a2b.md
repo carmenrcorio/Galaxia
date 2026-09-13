@@ -12,11 +12,28 @@ feature, and not one `https://` literal, so there was no way to construct a
 counterpart mobile never had (`docs/ship-checklist.md` had carried "Env module
 public/private split" as an open follow-up). Exports `siteUrl()` (the trimmed
 origin with trailing slashes stripped, or `null`), `requireSiteUrl()`,
-`siteUrlFor(path)`, `missingSiteUrlMessage()`, and `SITE_URL_VAR`. Reads use the
-same defensive `globalThis.process?.env` accessor already duplicated in
-`src/lib/supabase.ts` and `app/(app)/vela.tsx`, and happen inside each function
-rather than at module scope, which is what lets callers choose whether a missing
-value is fatal.
+`siteUrlFor(path)`, `missingSiteUrlMessage()`, and `SITE_URL_VAR`. The read
+happens inside each function rather than at module scope, which is what lets
+callers choose whether a missing value is fatal.
+
+`[DECISION]` **The read is a literal `process.env.EXPO_PUBLIC_SITE_URL` access,
+and that shape is an invariant rather than a style choice.** This branch
+originally copied the `globalThis.process?.env` alias pattern used by
+`src/lib/supabase.ts` and `app/(app)/vela.tsx`, then measured what that compiles
+to. `babel-preset-expo`'s `expo-inline-production-environment-variables` plugin
+rewrites **only** a member expression whose object matches the pattern
+`process.env` with a literal `EXPO_PUBLIC_`-prefixed key
+(`node_modules/babel-preset-expo/build/inline-env-vars.js`), and
+`@expo/metro-config`'s `environmentVariableSerializerPlugin` injects the runtime
+`process.env` object **in development only**, explicitly deferring to that Babel
+inlining in production. Running the real file through the real production
+pipeline (`caller.isDev: false`, `platform: ios`) confirms it: an aliased read
+and a computed-key read both survive as property accesses on an object that does
+not exist in a release bundle, so they evaluate to `undefined` even when the
+variable is correctly set in EAS, while the literal access becomes
+`return "https://galaxiamea.com";`. Four tests in `env.test.ts` pin the shape,
+comments stripped first so the module's own warning prose does not satisfy them;
+they were confirmed to go red against the aliased version.
 
 `[DECISION]` **The throw is lazy, not module-scope.** `src/lib/supabase.ts`
 throws at import time because nothing in the app works without a backend. Doing
@@ -45,11 +62,29 @@ variable. This is the first consumer, chosen because the affordance already
 existed and was dead; the `/connect/{token}` share link the plan calls for lands
 with that feature.
 
-`[ADDED]` **`src/lib/env.test.ts`** (18 tests): unset, blank, and
+`[OPEN]` **The same measurement says `EXPO_PUBLIC_SUPABASE_URL` and
+`EXPO_PUBLIC_SUPABASE_ANON_KEY` are `undefined` in a production bundle today.**
+`src/lib/supabase.ts` and `app/(app)/vela.tsx` both read through the aliased
+shape (`const env = globalThis.process?.env ?? {}; env.EXPO_PUBLIC_SUPABASE_URL`),
+which the inliner cannot see. In Expo Go and `expo start` this works, because the
+dev serializer injects the runtime object, which is why it has never been
+noticed: no production EAS build has shipped
+(`app.json` still carries `"projectId": "replace-with-eas-project-id"`). A
+release build should therefore throw `supabase.ts`'s own "Missing
+EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY" at startup no matter
+how EAS is configured. **Not fixed here**, deliberately: it is a separate defect
+in the auth and Vela paths that deserves its own slice and its own verification
+rather than riding along in an env-var wiring change (`ENGINEERING.md` §4, §10).
+The fix is mechanical, replacing each aliased read with a literal
+`process.env.EXPO_PUBLIC_…` access behind a `typeof process` guard, exactly as
+`src/lib/env.ts` now does.
+
+`[ADDED]` **`src/lib/env.test.ts`** (22 tests): unset, blank, and
 whitespace-only all yield `null`; trailing slashes never double on a join; the
 value is re-read per call rather than captured once at module load;
 `requireSiteUrl`/`siteUrlFor` throw naming `EXPO_PUBLIC_SITE_URL` and provably
-return no usable value when unset; plus wiring assertions in the
+return no usable value when unset; the production-inlinable access shape is
+pinned; plus wiring assertions in the
 `mobile-safety-parity.test.ts` house style that `subscribe.tsx` goes through
 `siteUrlFor`, holds no hardcoded origin and no `https://` literal at all, opens
 the resolved URL rather than a `galaxia://` scheme, and logs rather than

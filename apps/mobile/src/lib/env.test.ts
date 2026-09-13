@@ -106,6 +106,43 @@ describe("siteUrlFor builds an absolute web URL or refuses", () => {
   });
 });
 
+describe("the read stays in the one shape Metro can inline for production", () => {
+  // Comments are stripped first: the module's own doc comment names the broken
+  // shapes in order to warn against them, and that prose is not code.
+  const code = readFileSync(resolve(__dirname, "./env.ts"), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^[ \t]*\/\/.*$/gm, "");
+
+  // babel-preset-expo's expo-inline-production-environment-variables plugin
+  // rewrites ONLY a member expression whose object matches the pattern
+  // `process.env` with a literal EXPO_PUBLIC_-prefixed key, and
+  // @expo/metro-config injects a runtime `process.env` object in development
+  // only. Reading through an alias or a computed key therefore compiles to a
+  // property access on an object that does not exist in a release bundle,
+  // yielding `undefined` even when the variable IS set in EAS. That would make
+  // the app refuse to build a link in exactly the builds that ship, so the
+  // access shape is an invariant, not a style preference. Do not "tidy" this
+  // into the aliased shape used by supabase.ts and vela.tsx.
+  it("reads the variable as a literal process.env member access", () => {
+    expect(code).toContain("process.env.EXPO_PUBLIC_SITE_URL");
+  });
+
+  it("never reads it through an alias of process.env", () => {
+    expect(code).not.toMatch(/\.process\?\.env/);
+    expect(code).not.toMatch(/=\s*process\.env\s*[;,)]/);
+  });
+
+  it("never reads it through a computed key, including SITE_URL_VAR", () => {
+    expect(code).not.toMatch(/\[\s*SITE_URL_VAR\s*\]/);
+    expect(code).not.toMatch(/env\[[^\]]+\]/);
+  });
+
+  it("keeps SITE_URL_VAR as the name used in the message, matching the read", () => {
+    expect(SITE_URL_VAR).toBe("EXPO_PUBLIC_SITE_URL");
+    expect(missingSiteUrlMessage()).toContain(SITE_URL_VAR);
+  });
+});
+
 describe("wiring: the paywall builds its web link through siteUrlFor", () => {
   const src = readFileSync(resolve(__dirname, "../../app/subscribe.tsx"), "utf8");
 

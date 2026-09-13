@@ -23,6 +23,17 @@
    the clear, so marking them secret would be a false claim. The app throws on a
    missing Supabase pair (`src/lib/supabase.ts`) and refuses to render a web
    link on a missing site URL (`src/lib/env.ts`); neither one guesses a value.
+
+   Two non-obvious things about how these values actually reach the device:
+   - A release bundle contains them only because Babel rewrote each
+     `process.env.EXPO_PUBLIC_…` access into a string literal, and that rewrite
+     matches one syntactic shape only. Reading through an alias or a computed
+     key compiles to a property access that is `undefined` on device even when
+     EAS is configured correctly. See the comment at the top of
+     `apps/mobile/src/lib/env.ts`.
+   - Metro caches transform results without keying on env values, so after
+     changing one of these locally you need `expo start --clear` or the old
+     value keeps getting bundled.
 4. Login and configure credentials:
    - `eas login`
    - `eas build:configure`

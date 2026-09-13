@@ -691,18 +691,10 @@ export function whatTheyNeed(
     );
   }
 
-  // Platonic surfaces a real Mercury-domain aspect (communication is the
-  // platonic-relevant register) when one exists among the aspects already
-  // computed for these two actual charts — never invented, never shown if
-  // none exists.
-  if (relType === "platonic") {
-    const mercuryAspect = receivingAspects.find((a) => a.from.toLowerCase() === "mercury" || a.to.toLowerCase() === "mercury");
-    if (mercuryAspect) {
-      parts.push(`As friends, how you talk matters more than how you feel about each other: the ${mercuryAspect.from}–${mercuryAspect.to} ${mercuryAspect.type} (${mercuryAspect.orb.toFixed(1)}°) is the real signal to watch.`);
-    } else if (scores.communication < 60) {
-      parts.push(`As friends, the honest read is in how you talk to each other, not how you feel about each other. That's the register worth tending here.`);
-    }
-  }
+  // Platonic relationship-level watch line used to live here, so both
+  // "What X needs from you" cards ended with the same Mercury-aspect
+  // sentence. It is a pair-level insight, not a per-person need: render it
+  // once via `relationshipWatchLine()`, never inside this function.
 
   // FOUNDER-REVIEW: authored placeholder — refine voice.
   // Siblings & friends read this person's REAL Mercury sign (communication is
@@ -768,6 +760,37 @@ export function whatTheyNeed(
   }
 
   return parts.join(" ");
+}
+
+/**
+ * FOUNDER-REVIEW: authored — refine voice.
+ * Relationship-level closer that used to be appended inside every
+ * `whatTheyNeed()` card for `relType === "platonic"`. It reads the pair's
+ * synastry (the tightest Mercury-domain aspect, or a communication-score
+ * fallback), so it is the same sentence for both people. Callers must
+ * render it once, in a shared location, not inside each person card.
+ */
+export function relationshipWatchLine(
+  scores: Record<string, number>,
+  relType: RelationType,
+  synastry: SynastryResult | null
+): string | null {
+  if (relType !== "platonic") return null;
+
+  const receivingAspects = synastry?.aspects
+    .filter((a) => a.orb < 4)
+    .sort((a, b) => a.orb - b.orb)
+    .slice(0, 3) ?? [];
+  const mercuryAspect = receivingAspects.find(
+    (a) => a.from.toLowerCase() === "mercury" || a.to.toLowerCase() === "mercury"
+  );
+  if (mercuryAspect) {
+    return `As friends, how you talk matters more than how you feel about each other: the ${mercuryAspect.from}-${mercuryAspect.to} ${mercuryAspect.type} (${mercuryAspect.orb.toFixed(1)}°) is the real signal to watch.`;
+  }
+  if (scores.communication < 60) {
+    return "As friends, the honest read is in how you talk to each other, not how you feel about each other. That's the register worth tending here.";
+  }
+  return null;
 }
 
 function cap(s: string): string {
@@ -1366,6 +1389,260 @@ export function orbStrength(orb: number): OrbStrength {
 }
 
 /**
+ * FOUNDER-REVIEW: authored — refine voice.
+ *
+ * Pair-keyed aspect-summary lens. `relationshipAspectFraming` used to append
+ * `RELATION_ASPECT_FRAME[relType]` (one flows string and one catches string
+ * per relationship type) to every line. Two distinct catching aspects then
+ * rendered byte-identical bodies: the live DANIEL & SARAH platonic share
+ * showed Mercury square Mars (0.9°) and Uranus square Jupiter (1.0°) both
+ * ending "is where you talk past each other; slow down and confirm you mean
+ * the same thing." Same class of bug as the earlier ASPECT_ACTION
+ * leadBody collapse: the lookup ignored the actual unordered pair. Keyed by
+ * PAIR_KEY, like ASPECT_ACTION. RELATION_ASPECT_FRAME remains a last-resort
+ * fallback if a future BodyName has no pair entry.
+ *
+ * Grammar: each value is a predicate that continues
+ * "{NameA}'s {Body} {aspect} {NameB}'s {Body} (orb°) {lens}".
+ * Family-safe: no attraction/desire/romance language (this list renders for
+ * every RelationType, including parent-child).
+ */
+const ASPECT_SUMMARY_FRAME: Record<string, { flows: string; catches: string }> = {
+  [PAIR_KEY("sun", "moon")]: {
+    catches: "is where being seen and feeling safe pull different ways, so one of you performs while the other hides.",
+    flows: "is where pride and comfort point the same way, and you rarely have to choose between them.",
+  },
+  [PAIR_KEY("moon", "venus")]: {
+    catches: "is where reaching for warmth and needing safety take turns, so closeness arrives and then pulls back.",
+    flows: "is where affection and comfort are cheap to give, and the bond runs on that easy warmth.",
+  },
+  [PAIR_KEY("mars", "venus")]: {
+    catches: "is where wanting and comfort pull opposite ways, so the heat shows up as friction instead of ease.",
+    flows: "is where wanting and warmth point the same way, and a small deliberate gesture keeps it lit.",
+  },
+  [PAIR_KEY("mars", "moon")]: {
+    catches: "is where heat sits on a hurt, so the volume arrives before the feeling has a name.",
+    flows: "is where you read each other fast, and acting on the feeling early saves the speech later.",
+  },
+  [PAIR_KEY("mercury", "moon")]: {
+    catches: "is where the words will not match the feeling, and pushing for it out loud makes them go clinical.",
+    flows: "is where naming the feeling comes easily, and asking how it landed keeps the channel honest.",
+  },
+  [PAIR_KEY("mercury", "mars")]: {
+    catches: "is where talk turns into a contest, and being right starts to matter more than being understood.",
+    flows: "is where you can think out loud and move on it in the same breath, without the talk stalling the act.",
+  },
+  [PAIR_KEY("mercury", "venus")]: {
+    catches: "is where the critique arrives before the warmth, so the correction lands as a chill instead of help.",
+    flows: "is where the easy, affectionate way you talk can carry the harder conversations too.",
+  },
+  [PAIR_KEY("saturn", "moon")]: {
+    catches: "is where needing learned to feel unsafe, so they will not ask, and unprompted care is what softens the wall.",
+    flows: "is where reliable presence is the reassurance the bond actually runs on.",
+  },
+  [PAIR_KEY("saturn", "venus")]: {
+    catches: "is where warmth feels like it has to be earned, so the unprompted kind is the only kind that lands.",
+    flows: "is where commitment and warmth reinforce each other, and consistency reads as care.",
+  },
+  [PAIR_KEY("saturn", "mercury")]: {
+    catches: "is where caution meets quick talk, so the ask needs a why and a timeline they can plan around.",
+    flows: "is where you can be both careful and clear, and the agreements you make actually hold.",
+  },
+  [PAIR_KEY("saturn", "sun")]: {
+    catches: "is where an unspoken expectation reads as management, and dignity is what they will actually meet.",
+    flows: "is where you steady each other's ambitions, a quiet backing that is easy to leave unsaid.",
+  },
+  [PAIR_KEY("sun", "mercury")]: {
+    catches: "is where identity and opinion collide, and editing the idea lands as editing the person.",
+    flows: "is where your minds meet easily, so thinking out loud together is how the real decisions get made.",
+  },
+  [PAIR_KEY("jupiter", "sun")]: {
+    catches: "is where one of you sizes it bigger, and the real work is agreeing how far this actually goes.",
+    flows: "is where shared optimism is a resource, and pointing it at something you both want makes it count.",
+  },
+  [PAIR_KEY("jupiter", "moon")]: {
+    catches: "is where big-picture hope meets a tender mood, and cheering them out of the feeling misses it.",
+    flows: "is where warmth and optimism feed each other, and the bond grows by dreaming out loud together.",
+  },
+  [PAIR_KEY("moon", "moon")]: {
+    catches: "is where two raw feelings spike at once, and they need a witness more than they need a match.",
+    flows: "is where you feel the shift before it is said, so a check-in early is the whole maintenance.",
+  },
+  [PAIR_KEY("mercury", "mercury")]: {
+    catches: "is where you talk past each other until someone slows down and confirms you mean the same thing.",
+    flows: "is where the everyday back-and-forth is the maintenance the whole bond depends on.",
+  },
+  [PAIR_KEY("sun", "sun")]: {
+    catches: "is where two strong selves collide, and being seen turns into a contest instead of a welcome.",
+    flows: "is where you recognize what the other is, and saying it out loud stops it from being assumed.",
+  },
+  [PAIR_KEY("venus", "venus")]: {
+    catches: "is where what you each treasure differs, so name the value under the preference before you negotiate the thing.",
+    flows: "is where you already speak a shared language of warmth, and it goes quiet if you stop spending it.",
+  },
+  [PAIR_KEY("mars", "mars")]: {
+    catches: "is where two drives push at once, and it becomes a fight over who leads unless you decide first.",
+    flows: "is where shared momentum wants a real project, not just a spark to spend.",
+  },
+  [PAIR_KEY("jupiter", "jupiter")]: {
+    catches: "is where you both inflate the same plan, and two people sizing it bigger need someone counting the cost.",
+    flows: "is where matched optimism is rare fuel, so aim it at something you will actually build.",
+  },
+  [PAIR_KEY("jupiter", "mars")]: {
+    catches: "is where drive and the big idea egg each other on, and the pair commits to more than it can carry.",
+    flows: "is where energy and optimism line up, so the risk is scattering it, not lacking it.",
+  },
+  [PAIR_KEY("jupiter", "mercury")]: {
+    catches: "is where the talk runs ahead of what is real, and enthusiasm inflates the details before anyone pins them.",
+    flows: "is where you widen each other's frame, so use it to plan and not just to riff.",
+  },
+  [PAIR_KEY("jupiter", "neptune")]: {
+    catches: "is where the vision gets rosy and vague at once, and you believe hardest right where it is least specific.",
+    flows: "is where the ideal version is a gift, but only if one true next step touches ground.",
+  },
+  [PAIR_KEY("jupiter", "pluto")]: {
+    catches: "is where stakes and ambition both climb, so keep the aim in the open instead of underground.",
+    flows: "is where shared conviction runs deep, and it counts when you aim it on purpose.",
+  },
+  [PAIR_KEY("jupiter", "saturn")]: {
+    catches: "is where one wants to widen and the other wants to secure, and treating them as opposing votes stalls both.",
+    flows: "is where optimism and caution can balance, so you can dream big and still keep your footing.",
+  },
+  [PAIR_KEY("jupiter", "uranus")]: {
+    catches: "is where the urge to leap outruns the plan, and excitement is not the same as agreeing what stays fixed.",
+    flows: "is where you spot a new opening early and can actually move on it before the moment cools.",
+  },
+  [PAIR_KEY("jupiter", "venus")]: {
+    catches: "is where generosity tips into too much, and overdoing warmth buries the plainer thing they needed.",
+    flows: "is where affection comes easy and large, so spend it out loud before it gets assumed.",
+  },
+  [PAIR_KEY("mars", "neptune")]: {
+    catches: "is where the drive goes murky and the effort scatters, because what it is chasing stayed unnamed.",
+    flows: "is where imagination can steer the action, and you move on a feeling before it is fully spelled out.",
+  },
+  [PAIR_KEY("mars", "pluto")]: {
+    catches: "is where the push turns into a power contest, and the fight becomes the point instead of the want.",
+    flows: "is where combined force wants a real obstacle outside the two of you to push against.",
+  },
+  [PAIR_KEY("mars", "saturn")]: {
+    catches: "is where the drive keeps hitting the brake, and pushing harder just grinds; the pace needs to be agreed.",
+    flows: "is where you can push and pace at once, which is how this pair actually finishes things.",
+  },
+  [PAIR_KEY("mars", "sun")]: {
+    catches: "is where the drive reads as a challenge to who they are, and the heat is really about being taken seriously.",
+    flows: "is where you spur each other on, so put that toward something instead of at each other.",
+  },
+  [PAIR_KEY("mars", "uranus")]: {
+    catches: "is where the impulse fires before the thought, and the spark is worth keeping but not obeying blindly.",
+    flows: "is where fast, inventive energy improvises well under pressure, if you give it something live to solve.",
+  },
+  [PAIR_KEY("mercury", "neptune")]: {
+    catches: "is where the words go foggy and you fill the gap with a story; most of the trouble here is imagined, not said.",
+    flows: "is where you catch each other's drift in half-said things, so trust the read but still check it landed.",
+  },
+  [PAIR_KEY("mercury", "pluto")]: {
+    catches: "is where a talk turns into an interrogation, and digging extracts less than making it safe to say the real thing.",
+    flows: "is where you can go to the hard subject without flinching, which few pairs can, so do it on purpose.",
+  },
+  [PAIR_KEY("mercury", "uranus")]: {
+    catches: "is where the thinking jumps track mid-conversation, and the pair loses each other in the leaps.",
+    flows: "is where quick, unexpected thinking gets somewhere, so chase the tangent while it is alive.",
+  },
+  [PAIR_KEY("moon", "neptune")]: {
+    catches: "is where the mood turns hazy and you cannot tell whose feeling it is, so name your own first.",
+    flows: "is where you feel each other's states early, and it deepens when you honor that out loud instead of just sensing it.",
+  },
+  [PAIR_KEY("moon", "pluto")]: {
+    catches: "is where the feeling comes up huge, and managing it down reads as a threat; meet the intensity plainly.",
+    flows: "is where you can sit in the heavy stuff together, which is rare, so do not keep it shallow.",
+  },
+  [PAIR_KEY("moon", "uranus")]: {
+    catches: "is where the mood shifts without warning, and pinning down the cause cages the comfort they actually need.",
+    flows: "is where you give each other room to feel oddly, and protecting that matters more than smoothing it out.",
+  },
+  [PAIR_KEY("neptune", "neptune")]: {
+    catches: "is where you both drift into the ideal and lose the plan, so two dreamers need a fact between them.",
+    flows: "is where you dream in the same key, so build something with it instead of just floating in it.",
+  },
+  [PAIR_KEY("neptune", "pluto")]: {
+    catches: "is where the depth gets murky and hard to name, so go slow and stay specific or the important thing dissolves.",
+    flows: "is where the bond works underground; trust it, and still name what is actually happening.",
+  },
+  [PAIR_KEY("neptune", "saturn")]: {
+    catches: "is where the dream meets the hard limit, and grieving the ideal blocks the small real version you could build.",
+    flows: "is where structure can give the dream a shape, so turn the ideal into one thing you can actually hold.",
+  },
+  [PAIR_KEY("neptune", "sun")]: {
+    catches: "is where you are loving the idea of them more than the person, so look at who is actually there.",
+    flows: "is where you see the best in each other; name what you admire without inflating it into someone they are not.",
+  },
+  [PAIR_KEY("neptune", "uranus")]: {
+    catches: "is where the vision keeps shifting shape, so agree on one thing that stays true before you remake it again.",
+    flows: "is where you see past the usual together, and can picture something genuinely new.",
+  },
+  [PAIR_KEY("neptune", "venus")]: {
+    catches: "is where the affection goes dreamy and unreal, so keep the warmth attached to the actual person.",
+    flows: "is where tender, imaginative warmth wants to be given freely, and still kept honest.",
+  },
+  [PAIR_KEY("pluto", "pluto")]: {
+    catches: "is where you both grip the same thing hard, and two people this intense need someone to loosen first.",
+    flows: "is where you do not flinch from the deep stuff together, so take something real all the way down.",
+  },
+  [PAIR_KEY("pluto", "saturn")]: {
+    catches: "is where control tightens on both sides; name the fear under the grip before it becomes a standoff.",
+    flows: "is where you can commit deep and hold, so put that toward a thing worth the endurance.",
+  },
+  [PAIR_KEY("pluto", "sun")]: {
+    catches: "is where the intensity aims at who they are, and the urge to remake them crowds out admiring them.",
+    flows: "is where each other's depth can strengthen who you are, if you back rather than overwhelm.",
+  },
+  [PAIR_KEY("pluto", "uranus")]: {
+    catches: "is where the urge to blow it up and the urge to go deep collide, and destruction gets mistaken for depth.",
+    flows: "is where you can go deep and break an old pattern at once, if you point it at the thing that needs to move.",
+  },
+  [PAIR_KEY("pluto", "venus")]: {
+    catches: "is where warmth goes to a test or a hold, so let it be intense without making it a grip.",
+    flows: "is where warmth goes all the way down, so trust it instead of guarding it.",
+  },
+  [PAIR_KEY("saturn", "saturn")]: {
+    catches: "is where you both wait for the other to give first, and two people who think warmth is earned can stand there forever.",
+    flows: "is where two careful people make agreements that actually hold, so build the long thing together.",
+  },
+  [PAIR_KEY("saturn", "uranus")]: {
+    catches: "is where one holds the line and the other breaks it, so put the fixed and the free in the same plan.",
+    flows: "is where discipline and invention can balance: keep what works while you change what does not.",
+  },
+  [PAIR_KEY("sun", "uranus")]: {
+    catches: "is where being seen collides with needing to be free, and attention reads as control unless it leaves room.",
+    flows: "is where there is easy respect for difference, so name the thing that makes them un-ordinary.",
+  },
+  [PAIR_KEY("sun", "venus")]: {
+    catches: "is where pride and affection tangle, and they need to feel liked, not just handled, so let the warmth come first.",
+    flows: "is where there is an easy, flattering warmth, so say what you enjoy in each other before it is assumed.",
+  },
+  [PAIR_KEY("uranus", "uranus")]: {
+    catches: "is where you both bolt at the same restriction, and two people who need this much room can drift right apart.",
+    flows: "is where you let one another be genuinely different, and that freedom is the thing that makes it work.",
+  },
+  [PAIR_KEY("uranus", "venus")]: {
+    catches: "is where affection needs room and consistency at once, so ask which one they need today instead of assuming.",
+    flows: "is where the warmth is electric and unconventional, so enjoy the spark without trying to make it settle.",
+  },
+};
+
+/** Pair-keyed summary lens, with RELATION_ASPECT_FRAME as last-resort fallback. */
+export function aspectSummaryLens(
+  a: { from: string; to: string; harmony: number },
+  relType: RelationType
+): string {
+  const flows = a.harmony >= 0;
+  const pair = ASPECT_SUMMARY_FRAME[PAIR_KEY(a.from, a.to)];
+  if (pair) return flows ? pair.flows : pair.catches;
+  const frame = RELATION_ASPECT_FRAME[relType];
+  return flows ? frame.flows : frame.catches;
+}
+
+/**
  * 2-3 aspect-framing lines that read the TIGHTEST type-relevant aspects in
  * relationship terms. Everything factual (bodies, aspect type, orb, harmony
  * sign) is straight from computeSynastry — `from` is Person A's body, `to` is
@@ -1379,7 +1656,6 @@ export function relationshipAspectFraming(
   nameB: string
 ): { text: string; action: string; flows: boolean; aspect: Aspect }[] {
   const priority = RELATION_BODY_PRIORITY[relType];
-  const frame = RELATION_ASPECT_FRAME[relType];
   const relevantAll = synastry.aspects
     .filter((a) => priority.includes(a.from) || priority.includes(a.to))
     .slice()
@@ -1404,7 +1680,7 @@ export function relationshipAspectFraming(
 
   return picked.map((a) => {
     const flows = a.harmony >= 0;
-    const lens = flows ? frame.flows : frame.catches;
+    const lens = aspectSummaryLens(a, relType);
     const text = `${nameA}'s ${cap(a.from)} ${a.type} ${nameB}'s ${cap(a.to)} (${a.orb.toFixed(1)}°) ${lens}`;
     return { text, action: aspectActionLine(a, relType), flows, aspect: a as Aspect };
   });

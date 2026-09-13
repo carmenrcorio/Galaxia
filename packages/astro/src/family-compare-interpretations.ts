@@ -10,6 +10,10 @@
 
 import { SIGN_VIBE } from "./compare-guidance";
 import type { Element, FamilyPlanet, Modality, SharedPlacementPattern } from "./family-compare";
+import { SHARED_PLACEMENT_GUIDANCE } from "./family-compare-shared-placement";
+
+export { SHARED_PLACEMENT_GUIDANCE } from "./family-compare-shared-placement";
+export type { SharedPlacementGuidance } from "./family-compare-shared-placement";
 
 const PLANET_GROUP_DOMAIN: Record<FamilyPlanet, string> = {
   sun: "what this group shines toward and builds its identity around",
@@ -29,13 +33,23 @@ function countPhrase(shareCount: number, totalPeople: number): string {
   return `${shareCount} of you`;
 }
 
-/** e.g. "Three of you carry Capricorn Moon — how this group feels things and comforts each other, and here it runs disciplined, ambitious, quietly loyal." */
+/**
+ * Shared-placement sentence for the Chart Grid patterns list.
+ * Count prefix stays in `countPhrase()`; the body is the per-combination
+ * lookup. Mechanical PLANET_GROUP_DOMAIN + SIGN_VIBE assembly is fallback
+ * only (should never fire: the table covers all 6 planets × 12 signs).
+ */
 export function interpretSharedPlacement(pattern: SharedPlacementPattern, totalPeople: number): string {
+  const label = pattern.planet === "rising" ? "Rising" : `${pattern.planet[0]!.toUpperCase()}${pattern.planet.slice(1)}`;
+  const prefix = `${countPhrase(pattern.personIds.length, totalPeople)} carry ${pattern.sign} ${label}`;
+  const body = SHARED_PLACEMENT_GUIDANCE[pattern.planet]?.[pattern.sign];
+  if (body) {
+    return `${prefix}: ${body}`;
+  }
   const vibe = SIGN_VIBE[pattern.sign] ?? pattern.sign.toLowerCase();
   const domain = PLANET_GROUP_DOMAIN[pattern.planet];
-  const label = pattern.planet === "rising" ? "Rising" : `${pattern.planet[0]!.toUpperCase()}${pattern.planet.slice(1)}`;
-  // FOUNDER-REVIEW: rewritten (no U+2014).
-  return `${countPhrase(pattern.personIds.length, totalPeople)} carry ${pattern.sign} ${label}, which shapes ${domain}, and here it runs ${vibe}.`;
+  // FOUNDER-REVIEW: rewritten (no U+2014). Mechanical fallback only.
+  return `${prefix}, which shapes ${domain}, and here it runs ${vibe}.`;
 }
 
 const GROUP_ELEMENT_DOMINANT: Record<Element, string> = {

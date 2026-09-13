@@ -7,6 +7,7 @@
  * Does not re-derive scores or override band colors.
  */
 
+import { orderedScoreEntries } from "@galaxia/astro";
 import type { ReactNode } from "react";
 import { COMPAT_LABELS, compatWord } from "../lib/design";
 
@@ -20,9 +21,11 @@ type Props = {
   scores: DynamicScores;
   /** "What X needs from you" callouts (and any other section body). */
   children?: ReactNode;
+  /** Relationship-level insight rendered once, not inside a person card. */
+  watchLine?: string | null;
 };
 
-export function DynamicTableSection({ scores, children }: Props) {
+export function DynamicTableSection({ scores, children, watchLine }: Props) {
   return (
     <section className="glass-card fade-in fade-in-delay-1">
       <p className="eyebrow" style={{ marginBottom: 12 }}>Your dynamic</p>
@@ -38,7 +41,7 @@ export function DynamicTableSection({ scores, children }: Props) {
           marginBottom: 14,
         }}
       >
-        {Object.entries(scores).map(([key, score]) => {
+        {orderedScoreEntries(scores).map(({ key, score }) => {
           const { word, cls } = compatWord(score);
           return (
             <div
@@ -57,6 +60,21 @@ export function DynamicTableSection({ scores, children }: Props) {
         })}
       </div>
       {children}
+      {watchLine ? (
+        <p
+          className="muted"
+          style={{
+            fontSize: ".82rem",
+            lineHeight: 1.62,
+            fontStyle: "italic",
+            margin: "4px 0 0",
+            borderLeft: "2px solid rgba(183,154,216,.35)",
+            paddingLeft: 12,
+          }}
+        >
+          {watchLine}
+        </p>
+      ) : null}
     </section>
   );
 }

@@ -30,6 +30,8 @@ import {
   relationHasHouseLens,
   relationHouseHint,
   relationHouseOverlays,
+  orderedScoreEntries,
+  relationshipWatchLine,
   whatTheyNeed,
   type RelationType,
 } from "@galaxia/astro";
@@ -40,10 +42,11 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ChartImageExport, chartExportFilename } from "../../../components/chart-image-export";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES, orientSynastryWheel } from "../../../components/chart-wheel";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
+import { GenerationalSection } from "../../../components/generational-section";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
-import { COMPAT_LABELS, SIGN_GLYPH, compatWord } from "../../../lib/design";
+import { COMPAT_LABELS, compatWord } from "../../../lib/design";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 interface PersonLite {
@@ -256,9 +259,6 @@ function ComparePageInner() {
     }
     const synastry     = computeSynastry(natalA, natalB);
     const generational = compareGenerational(natalA.generational as GenSignature, natalB.generational as GenSignature, estimateYearGap(selectedA, selectedB));
-    const ageGap = estimateYearGap(selectedA, selectedB) ?? 0;
-    const ancestralHeadline = relationType === "ancestor" || ageGap >= 18
-      ? `This connection spans different eras. The generational layer is the headline. ${generational.theme}` : null;
 
     // Enrich PersonLite with chart placements for chart-specific guidance.
     // A sign the engine flagged as uncertain is not used for guidance copy.
@@ -303,7 +303,6 @@ function ComparePageInner() {
       birthFingerprint: birthFp,
       synastry,
       generational,
-      ancestralHeadline,
     });
 
     // Load prior saved readings for this pair (immutable, dated snapshots).
@@ -562,8 +561,7 @@ function ComparePageInner() {
 
               {/* dyn table — mirrors landing .dyn */}
               <div style={{ borderRadius: 14, background: "rgba(111,177,184,.06)", border: "1px solid rgba(111,177,184,.15)", padding: "4px 0", marginBottom: 14 }}>
-                {Object.entries(result.synastry.scores).map(([key, rawScore]) => {
-                  const score = rawScore as number;
+                {orderedScoreEntries(result.synastry.scores).map(({ key, score }) => {
                   const { word, cls } = compatWord(score);
                   const pct = score / 100;
                   return (
@@ -595,6 +593,21 @@ function ComparePageInner() {
                   </p>
                 </div>
               ))}
+              {relationshipWatchLine(result.synastry.scores, relationType, result.synastry) ? (
+                <p
+                  className="muted"
+                  style={{
+                    fontSize: ".82rem",
+                    lineHeight: 1.62,
+                    fontStyle: "italic",
+                    margin: "4px 0 0",
+                    borderLeft: "2px solid rgba(183,154,216,.35)",
+                    paddingLeft: 12,
+                  }}
+                >
+                  {relationshipWatchLine(result.synastry.scores, relationType, result.synastry)}
+                </p>
+              ) : null}
             </section>
           </ChartImageExport>
 
@@ -635,26 +648,7 @@ function ComparePageInner() {
             </section>
           ) : null}
 
-          {/* Generational */}
-          <section className="glass-card fade-in fade-in-delay-2">
-            <p className="eyebrow" style={{ marginBottom: 8 }}>Generational call-out</p>
-            <p className="muted" style={{ fontSize: ".88rem", lineHeight: 1.6 }}>{result.generational.theme}</p>
-            {result.generational.shared.length > 0 ? (
-              <p className="muted" style={{ fontSize: ".8rem", marginTop: 8 }}>
-                Shared sky: {result.generational.shared.map((s: any) => `${SIGN_GLYPH[s.sign] ?? ""} ${s.planet} in ${s.sign}`).join(" · ")}
-              </p>
-            ) : null}
-            {result.generational.diverged.length > 0 ? (
-              <div className="teal-callout" style={{ marginTop: 10 }}>
-                <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>
-                  Fault line: {result.generational.diverged.map((d: any) => `${d.planet}: ${d.signA} vs ${d.signB}`).join(" · ")}
-                </p>
-              </div>
-            ) : null}
-            {result.ancestralHeadline ? (
-              <p style={{ color: "var(--gold-soft)", fontSize: ".82rem", fontStyle: "italic", marginTop: 10 }}>{result.ancestralHeadline}</p>
-            ) : null}
-          </section>
+          <GenerationalSection generational={result.generational} />
 
           {/* Ask Vela — carry the full pair context so Vela opens on Focus=pair.
               Minor safety (ENGINEERING.md §9): Vela opens in private (ask) mode by

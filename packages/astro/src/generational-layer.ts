@@ -129,7 +129,11 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
       { name: "Taylor Swift", knownFor: "Musician, cultural figure", plutoBridge: "Documented her own emotional underworld in real time and turned the power struggle over her own catalog into a public education." },
       { name: "Kendrick Lamar", knownFor: "Rapper, Pulitzer Prize winner", plutoBridge: "Took the Scorpio instinct to excavate (self, community, history) and made it the most precise moral argument in American music." },
       { name: "Ariana Grande", knownFor: "Singer", plutoBridge: "Performed publicly through collective trauma and personal grief, transforming loss into the most-streamed thing of the year." },
-      { name: "Malala Yousafzai", knownFor: "Activist, Nobel Peace Prize laureate", plutoBridge: "Survived an assassination attempt for the right to learn: Scorpio Pluto as the force that refuses to be extinguished." },
+      // FOUNDER-REVIEW: new entry, authored for Rihanna specifically. Born
+      // 1988-02-20, natal Pluto in Scorpio (engine-verified). She takes the
+      // slot vacated by Malala Yousafzai, whose 1997 birth puts her Pluto in
+      // Sagittarius; none of Malala's copy was reused here.
+      { name: "Rihanna", knownFor: "Musician, Fenty founder", plutoBridge: "Had her private life turned into public property young, then spent the next decade buying the machinery that sold it." },
       { name: "Harry Styles", knownFor: "Musician", plutoBridge: "Dismantled the rules around gender in popular culture simply by refusing to acknowledge them as rules." },
     ],
     eraEvents: [
@@ -149,6 +153,14 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
       { name: "Billie Eilish", knownFor: "Musician", plutoBridge: "Built a global audience from her childhood bedroom and used the reach to refuse the image the industry wanted: the Sagittarian who named the cage." },
       { name: "Greta Thunberg", knownFor: "Climate activist", plutoBridge: "Turned a school strike into a planetary movement: Sagittarius Pluto as the individual voice that insists the biggest possible problem is everyone's business." },
       { name: "Olivia Rodrigo", knownFor: "Musician", plutoBridge: "Documented the specific emotional vocabulary of her generation with enough precision that it became universal." },
+      // FOUNDER-REVIEW: moved here from Scorpio. Born 1997-07-12, so her natal
+      // Pluto is in Sagittarius (engine-verified), not Scorpio as previously
+      // listed. `knownFor` is carried over verbatim. `plutoBridge` is rewritten:
+      // the Scorpio line led on surviving the assassination attempt and "the
+      // force that refuses to be extinguished," which reads Scorpio (survival,
+      // intensity) under a Sagittarius heading. This one leads on the outward
+      // moral argument and its widening reach instead.
+      { name: "Malala Yousafzai", knownFor: "Activist, Nobel Peace Prize laureate", plutoBridge: "Carried the case for every girl's education from one valley to the floor of the UN: Sagittarius Pluto as a conviction that will not stop widening its audience." },
     ],
     eraEvents: [
       { label: "Social Media", detail: "The world connected and fragmented simultaneously. Everyone's opinion became a broadcast." },

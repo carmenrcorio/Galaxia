@@ -1,17 +1,20 @@
 import {
   buildBirthInput,
   computeNatalChart,
+  CHART_ENGINE_VERSION,
   formatDateForConfirmation,
   searchPlaces,
   type BirthFormInput,
-  type GeoCandidate,
-  type Precision
+  type FormPrecision,
+  type GeoCandidate
 } from "@galaxia/astro";
 import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety, type GalaxyPickerRelation } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { deferredPersonRow } from "../../src/lib/deferred-person-row";
+import { getPreferredHouseSystem } from "../../src/lib/house-system";
 import { supabase } from "../../src/lib/supabase";
 import { useAuth } from "../../src/providers/auth-provider";
 import { useEntitlement } from "../../src/providers/entitlement-provider";
@@ -33,11 +36,22 @@ const MONTHS = [
   "December"
 ];
 
-const precisionTiers: { key: Precision; label: string; unlocks: string }[] = [
+type PrecisionTier = { key: FormPrecision; label: string; unlocks: string };
+
+const precisionTiers: PrecisionTier[] = [
   { key: "exact", label: "Exact", unlocks: "Full chart with houses, ascendant, and precise Moon details. Requires birth place + timezone." },
   { key: "date", label: "Date only", unlocks: "Reliable planetary signs and generational layer. No timezone needed." },
   { key: "year", label: "Year / decade", unlocks: "Generational layer and broad archetypal context. No timezone needed." }
 ];
+
+// FOUNDER-REVIEW: new mobile precision option. Label and description are web's
+// existing "Add birth data later" tier verbatim (apps/web/components/birth-fields.tsx)
+// so the two surfaces offer the same choice in the same words.
+const deferredTier: PrecisionTier = {
+  key: "none",
+  label: "Add birth data later",
+  unlocks: "Just save their name and relationship now: you can add a year, date, or exact time whenever you have it (or ask them)."
+};
 
 // FOUNDER-REVIEW: picker labels — refine voice before merge.
 const relationOptions = GALAXY_RELATION_PICKER_OPTIONS;
@@ -115,13 +129,32 @@ export default function OnboardingScreen() {
       throw new Error("Please sign in first.");
     }
 
+    // Progressive capture, web parity (apps/web/lib/persist-person.ts): a person
+    // with no birth data has no chart at all. buildBirthInput deliberately throws
+    // on "none" rather than synthesizing a date, so this branch returns first.
+    if (input.precision === "none") {
+      const { error } = await supabase.from("people").insert(
+        deferredPersonRow({
+          ownerId: session.user.id,
+          displayName,
+          relation,
+          isSelf,
+          isMinor
+        })
+      );
+      if (error) {
+        throw new Error(error.message);
+      }
+      return;
+    }
+
     // Shared buildBirthInput refuses exact precision without a resolved timezone
     // (never stamps local wall-clock as UTC). Date-only / year-only do not need tz.
     const built = buildBirthInput(input);
-    const natal = computeNatalChart({
-      ...built.birth,
-      houseSystem: "placidus"
-    });
+    // The user's saved preference, not a hardcoded system: a chart saved from the
+    // phone used to claim Placidus even when Settings said Whole Sign or Equal.
+    const houseSystem = await getPreferredHouseSystem(supabase, session.user.id);
+    const natal = computeNatalChart({ ...built.birth, houseSystem });
     // natal.houseSystem is the system the engine actually computed (it can
     // fall back to Whole Sign at polar latitudes) — store that, never a claim.
 
@@ -131,7 +164,7 @@ export default function OnboardingScreen() {
     const effectiveIsMinor = isMinorForSafety({
       isMinor,
       birthDate: built.birthDate,
-      birthPrecision: input.precision === "none" ? "none" : input.precision
+      birthPrecision: input.precision
     });
 
     const { data: person, error: personError } = await supabase
@@ -161,7 +194,7 @@ export default function OnboardingScreen() {
       person_id: person.id,
       house_system: natal.houseSystem ?? null,
       data: natal,
-      engine_version: 2
+      engine_version: CHART_ENGINE_VERSION
     });
 
     if (chartError) {
@@ -223,6 +256,8 @@ export default function OnboardingScreen() {
         setStatus(`Free tier limit reached (${peopleLimit} people). Upgrade in settings for unlimited people.`);
         return;
       }
+      const deferred = personInput.precision === "none";
+      const savedName = personName.trim();
       await persistPerson({
         displayName: personName,
         relation: personRelation,
@@ -235,7 +270,13 @@ export default function OnboardingScreen() {
       setPersonRelation("friend");
       setPersonInput(baseInput);
       await fetchPeople();
-      setStatus("Person added to your constellation.");
+      setStatus(
+        deferred
+          // FOUNDER-REVIEW: new copy for the deferred-birth-data save. Mobile has
+          // no birth-data editor yet, so this promises nothing web-only.
+          ? `${savedName} is in your sky. No birth data yet, and nothing is lost by starting light.`
+          : "Person added to your constellation."
+      );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to add person.");
     } finally {
@@ -325,7 +366,7 @@ export default function OnboardingScreen() {
       <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
         Galaxia also automatically protects anyone whose birth date shows they're under 18, even if this stays off.
       </Text>
-      <BirthFields input={personInput} onChange={setPersonInput} />
+      <BirthFields input={personInput} onChange={setPersonInput} allowNone />
       <Pressable onPress={savePerson} disabled={!canSavePerson || savingPerson} style={primaryButtonStyle}>
         <Text style={primaryButtonLabel}>{savingPerson ? "Saving..." : "Add person"}</Text>
       </Pressable>
@@ -363,10 +404,16 @@ export default function OnboardingScreen() {
 
 function BirthFields({
   input,
-  onChange
+  onChange,
+  allowNone = false
 }: {
   input: BirthFormInput;
   onChange: (next: BirthFormInput) => void;
+  /**
+   * Offer the "add birth data later" tier. Web parity: only the add-person form
+   * passes it, so your own profile still starts from a real birth date.
+   */
+  allowNone?: boolean;
 }) {
   const [cityQuery, setCityQuery] = useState(input.birthPlace ?? "");
   const [searching, setSearching] = useState(false);
@@ -434,29 +481,19 @@ function BirthFields({
     setSearchError(null);
   };
 
+  // Deferred birth data: the tier picker is the whole form. No date, no time,
+  // and no place to collect, so nothing below is rendered.
+  if (input.precision === "none") {
+    return (
+      <View style={{ gap: 10 }}>
+        <PrecisionPicker input={input} onChange={onChange} allowNone={allowNone} />
+      </View>
+    );
+  }
+
   return (
     <View style={{ gap: 10 }}>
-      <View style={{ gap: 8 }}>
-        {precisionTiers.map((tier) => (
-          <Pressable
-            key={tier.key}
-            onPress={() => onChange({ ...baseInput, precision: tier.key })}
-            style={{
-              backgroundColor: input.precision === tier.key ? tokens.colors.ink3 : tokens.colors.ink2,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: input.precision === tier.key ? tokens.colors.gold : tokens.colors.line,
-              padding: 12,
-              gap: 4
-            }}
-          >
-            <Text style={{ color: input.precision === tier.key ? tokens.colors.gold : tokens.colors.cream, fontWeight: "700" }}>
-              {tier.label}
-            </Text>
-            <Text style={{ color: tokens.colors.mist, lineHeight: 18 }}>{tier.unlocks}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <PrecisionPicker input={input} onChange={onChange} allowNone={allowNone} />
 
       {input.precision === "year" ? (
         <TextInput
@@ -602,6 +639,42 @@ function BirthFields({
           Date-only and year-only charts do not need a timezone: they stay honestly hedged without Ascendant or houses.
         </Text>
       ) : null}
+    </View>
+  );
+}
+
+function PrecisionPicker({
+  input,
+  onChange,
+  allowNone
+}: {
+  input: BirthFormInput;
+  onChange: (next: BirthFormInput) => void;
+  allowNone: boolean;
+}) {
+  const tiers = allowNone ? [...precisionTiers, deferredTier] : precisionTiers;
+
+  return (
+    <View style={{ gap: 8 }}>
+      {tiers.map((tier) => (
+        <Pressable
+          key={tier.key}
+          onPress={() => onChange({ ...baseInput, precision: tier.key })}
+          style={{
+            backgroundColor: input.precision === tier.key ? tokens.colors.ink3 : tokens.colors.ink2,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: input.precision === tier.key ? tokens.colors.gold : tokens.colors.line,
+            padding: 12,
+            gap: 4
+          }}
+        >
+          <Text style={{ color: input.precision === tier.key ? tokens.colors.gold : tokens.colors.cream, fontWeight: "700" }}>
+            {tier.label}
+          </Text>
+          <Text style={{ color: tokens.colors.mist, lineHeight: 18 }}>{tier.unlocks}</Text>
+        </Pressable>
+      ))}
     </View>
   );
 }

@@ -409,41 +409,77 @@ function partitionKey(groups: Array<{ names: string[] }>): string {
     .join("|");
 }
 
+/** How many of the three generational planets are in play. Always 1, 2, or 3. */
+export type PlanetCountBand = 1 | 2 | 3;
+
+export function toPlanetCountBand(count: number): PlanetCountBand {
+  if (count >= 3) return 3;
+  if (count === 2) return 2;
+  return 1;
+}
+
+function planetPhrase(planets: readonly string[]): string {
+  return joinNames(planets.map((planet) => capitalizeWord(planet)));
+}
+
+type TwoWayFaultLeadFn = (planets: string, minority: string, majority: string) => string;
+type ShiftingFaultLeadFn = (planets: string) => string;
+
+/**
+ * Fault Lines section lead, clean 2-way split (same people on each side of
+ * every listed planet). Banded by how many planets create the split.
+ */
+export const FAULT_LINES_LEAD_TWO_WAY: Record<PlanetCountBand, TwoWayFaultLeadFn> = {
+  // FOUNDER-REVIEW: authored. Fault Lines lead, 2-way split, 1 planet.
+  1: (planets, minority, majority) =>
+    `This group spans two distinct generational cohorts. ${planets} is the one planet that splits them: ${minority}'s instincts were shaped by a different era than ${majority}'s.`,
+  // FOUNDER-REVIEW: authored. Fault Lines lead, 2-way split, 2 planets.
+  2: (planets, minority, majority) =>
+    `This group spans two distinct generational cohorts. On ${planets}, ${minority}'s instincts were shaped by a different era than ${majority}'s. The same split runs through both planets.`,
+  // FOUNDER-REVIEW: authored. Fault Lines lead, 2-way split, all 3 planets.
+  3: (planets, minority, majority) =>
+    `This group spans two distinct generational cohorts. On ${planets}, ${minority}'s instincts were shaped by a different era than ${majority}'s, which is both what makes this group rich and where its deepest friction lives.`,
+};
+
+/**
+ * Fault Lines section lead when the people on each side change by planet.
+ * Banded by how many planets create a split.
+ */
+export const FAULT_LINES_LEAD_SHIFTING: Record<PlanetCountBand, ShiftingFaultLeadFn> = {
+  // FOUNDER-REVIEW: authored. Fault Lines lead, shifting partition, 1 planet.
+  1: (planets) =>
+    `${planets} splits this group along more than one sign. That split is real: different people carry the friction depending on what is being negotiated.`,
+  // FOUNDER-REVIEW: authored. Fault Lines lead, shifting partition, 2 planets.
+  2: (planets) =>
+    `This group's generational fault lines shift depending on the planet. ${planets} each split the group along a different line. Different people carry the friction depending on what is being negotiated.`,
+  // FOUNDER-REVIEW: authored. Fault Lines lead, shifting partition, all 3 planets.
+  3: (planets) =>
+    `${planets} each split this group along a different line. The fault line moves with the planet, so different people carry the friction depending on what is being negotiated.`,
+};
+
 /**
  * Interpretive paragraph that precedes the planet-by-planet Fault Lines
  * list. Derived entirely from the shape of `faultLines` (who splits from
  * whom, and whether that split repeats across planets) — never a new
  * astrology fact, only a narration of the partition the engine already
- * produced.
+ * produced. Banded by planet count (1 / 2 / 3) so the lead names the
+ * actual planets instead of a generic "slow-moving" phrase.
  */
 export function faultLinesInterpretation(faultLines: CohortOverlayLike["faultLines"]): string {
   if (faultLines.length === 0) return "";
   const keys = faultLines.map((l) => partitionKey(l.groups));
   const allSamePartition = keys.every((k) => k === keys[0]);
-  const planetLabels = faultLines.map((l) => capitalizeWord(l.planet));
-
-  const planetsPhrase =
-    faultLines.length === 3
-      ? "On every slow-moving planet"
-      : faultLines.length === 2
-        ? "On most of the slow-moving planets"
-        : `On ${planetLabels[0]}`;
+  const planets = planetPhrase(faultLines.map((l) => l.planet));
+  const band = toPlanetCountBand(faultLines.length);
 
   if (allSamePartition && faultLines[0]!.groups.length === 2) {
     const [g1, g2] = faultLines[0]!.groups;
     const minority = g1!.names.length <= g2!.names.length ? g1! : g2!;
     const majority = minority === g1 ? g2! : g1!;
-    return (
-      `This group spans two distinct generational cohorts. ${planetsPhrase}, ${joinNames(minority.names)}'s instincts were ` +
-      `shaped by a different era than ${joinNames(majority.names)}'s, which is both what makes this group rich and where its deepest friction lives.`
-    );
+    return FAULT_LINES_LEAD_TWO_WAY[band](planets, joinNames(minority.names), joinNames(majority.names));
   }
 
-  const planetsList = joinNames(planetLabels);
-  return (
-    `This group's generational fault lines shift depending on the planet. ${planetsList} ${faultLines.length === 1 ? "splits" : "each split"} ` +
-    "the group along a different line. That range is real: different people carry the friction depending on what's being negotiated."
-  );
+  return FAULT_LINES_LEAD_SHIFTING[band](planets);
 }
 
 /**
@@ -579,6 +615,51 @@ export interface PairHighlightPresentation {
   detail: string;
 }
 
+type PairShareLeadFn = (nameA: string, nameB: string, planets: string) => string;
+type PairFaultLeadFn = (nameA: string, nameB: string, planets: string, remainder: string) => string;
+
+/**
+ * Pair Dynamics Same Generation lead, banded by how many generational
+ * planets the pair shares. Each template names those planets.
+ *
+ * `compareGenerational` currently classifies a pair as same-generation only
+ * when 2 or 3 planets are shared; the 1-planet band is still authored so the
+ * axis stays fully enumerable if a persisted summary lists a single share.
+ */
+export const SAME_GENERATION_LEAD: Record<PlanetCountBand, PairShareLeadFn> = {
+  // FOUNDER-REVIEW: authored. Pair Dynamics Same Generation, 1 shared planet.
+  1: (nameA, nameB, planets) =>
+    `${nameA} and ${nameB} share ${planets}. That one planet is a common thread in how they were formed.`,
+  // FOUNDER-REVIEW: authored. Pair Dynamics Same Generation, 2 shared planets.
+  2: (nameA, nameB, planets) =>
+    `${nameA} and ${nameB} share ${planets}. Those two planets give them enough common generational ground to feel like the same era.`,
+  // FOUNDER-REVIEW: authored. Pair Dynamics Same Generation, all 3 shared.
+  3: (nameA, nameB, planets) =>
+    `${nameA} and ${nameB} share ${planets}. Their instincts about change, ideals, and power all come from the same era.`,
+};
+
+/**
+ * Pair Dynamics Fault Line lead, banded by how many generational planets
+ * the pair diverges on. Each template names those planets. Counts 1 and 2
+ * also name the still-shared remainder (a lossless complement of the three
+ * generational planets, never a new fact).
+ *
+ * `compareGenerational` currently emits a fault-line summary when fewer
+ * than 2 planets are shared (so 2 or 3 diverge); the 1-planet band is still
+ * authored so the axis stays fully enumerable.
+ */
+export const FAULT_LINE_PAIR_LEAD: Record<PlanetCountBand, PairFaultLeadFn> = {
+  // FOUNDER-REVIEW: authored. Pair Dynamics Fault Line, 1 diverged planet.
+  1: (nameA, nameB, planets, remainder) =>
+    `${nameA} and ${nameB} diverge on ${planets}. That one planet is the generational split between them, and they still share ${remainder}.`,
+  // FOUNDER-REVIEW: authored. Pair Dynamics Fault Line, 2 diverged planets.
+  2: (nameA, nameB, planets, remainder) =>
+    `${nameA} and ${nameB} diverge on ${planets}. Those two planets are a real generational fault line, though they still share ${remainder}.`,
+  // FOUNDER-REVIEW: authored. Pair Dynamics Fault Line, all 3 diverged.
+  3: (nameA, nameB, planets) =>
+    `${nameA} and ${nameB} diverge on ${planets}. Their instincts about change, ideals, and power were shaped by different eras.`,
+};
+
 /**
  * Turns a raw pair highlight (names + the persisted summary string) into a
  * scannable badge, a plain-English lead sentence, and a secondary detail
@@ -594,24 +675,30 @@ export function describePairHighlight(nameA: string, nameB: string, summary: str
     return { badge: looksShared ? "SAME GENERATION" : "FAULT LINE", sentence: summary, detail: summary };
   }
 
-  const planetLabels = parsed.planets.map((p) => capitalizeWord(p.planet));
+  const planetKeys = parsed.planets.map((p) => p.planet).filter(Boolean);
+  if (planetKeys.length === 0) {
+    return {
+      badge: parsed.sameGeneration ? "SAME GENERATION" : "FAULT LINE",
+      sentence: summary,
+      detail: summary,
+    };
+  }
+
+  const band = toPlanetCountBand(planetKeys.length);
+  const planets = planetPhrase(planetKeys);
 
   if (parsed.sameGeneration) {
     const detail = parsed.planets.map((p) => `${capitalizeWord(p.planet)} ${p.sign}`).join(" · ");
-    const sentence =
-      planetLabels.length >= GEN_PLANETS.length
-        ? `${nameA} and ${nameB} share every generational planet. Their instincts about change, ideals, and power trace back to the same era.`
-        : `${nameA} and ${nameB} share ${joinNames(planetLabels)}, enough common generational ground to feel like the same era.`;
-    return { badge: "SAME GENERATION", sentence, detail };
+    return { badge: "SAME GENERATION", sentence: SAME_GENERATION_LEAD[band](nameA, nameB, planets), detail };
   }
 
-  const divergedKeys = parsed.planets.map((p) => p.planet);
-  const remainder = GEN_PLANETS.filter((p) => !divergedKeys.includes(p)).map(capitalizeWord);
+  const remainderKeys = GEN_PLANETS.filter((p) => !planetKeys.includes(p));
+  const remainder = planetPhrase(remainderKeys);
   const detail = parsed.planets.map((p) => `${capitalizeWord(p.planet)} ${p.signA}/${p.signB}`).join(" · ");
   const sentence =
-    planetLabels.length >= GEN_PLANETS.length
-      ? `${nameA} and ${nameB} diverge on every generational planet. Their instincts about change, ideals, and power were shaped by different eras.`
-      : `${nameA} and ${nameB} diverge on ${joinNames(planetLabels)}${remainder.length > 0 ? `, though they still share ${joinNames(remainder)}` : ""}, a real generational fault line between them.`;
+    (band === 1 || band === 2) && remainder.length === 0
+      ? FAULT_LINE_PAIR_LEAD[3](nameA, nameB, planets, "")
+      : FAULT_LINE_PAIR_LEAD[band](nameA, nameB, planets, remainder);
   return { badge: "FAULT LINE", sentence, detail };
 }
 

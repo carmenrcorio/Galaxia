@@ -16,7 +16,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { computeNatalChart, type BodyName } from "../index";
+import { computeNatalChart, type Aspect, type BodyName } from "../index";
 import {
   aspectSummaryLens,
   relationshipAspectFraming,
@@ -51,7 +51,7 @@ describe("aspect-summary pair key (DANIEL & SARAH reproduction)", () => {
       { from: "mercury", to: "mars", type: "square", orb: 0.9, harmony: -1 },
       { from: "uranus", to: "jupiter", type: "square", orb: 1.0, harmony: -1 },
       { from: "moon", to: "jupiter", type: "trine", orb: 2.0, harmony: 0.8 },
-    ],
+    ] as Aspect[],
   };
 
   it("Mercury-Mars and Uranus-Jupiter platonic catches render distinct bodies", () => {

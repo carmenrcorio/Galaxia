@@ -82,6 +82,18 @@ This section is central to Galaxia and to your responsibilities.
 
 **Minors you add.** You may indicate that a person you add is a minor. When a person is indicated as, or is calculated to be, a minor, the Service applies safety limitations to the content shown about them, including restricting romantic or partnership-oriented interpretation. You must not use the Service to add a minor for any purpose that would sexualize, endanger, or harm that minor, and you represent that you have an appropriate basis for including any minor in your galaxy.
 
+<!-- FOUNDER-REVIEW: added. Invitation-flow addendum, covers both the birth_data flow and the constellation_connect flow (schema merged as PR #217). changelog.d/cursor-invitation-legal-addendum-5920.md -->
+**Information from invitations.** When you use Galaxia's invitation feature, the person you invite may submit their own information directly to us, either to complete a profile you started (their birth date, time, and place) or, where the feature supports it, by creating their own account and choosing to share a copy of their computed chart with you. We do not receive this information from you. The invited person provides it themselves, and we do not collect their name, email, or phone number as part of sending the invitation, since Galaxia does not send the invitation, you do.
+
+<!-- FOUNDER-REVIEW: added. Invitation-flow addendum. changelog.d/cursor-invitation-legal-addendum-5920.md -->
+**How we use it.** We use information submitted through an invitation solely to complete the profile or connection you and the invited person set up together, and, where the invited person has chosen to share a copy of their chart with you, to make that chart available to you within the app. We do not sell, rent, or use this information for independent marketing, and we do not use it to contact the invited person unless they create their own Galaxia account.
+
+<!-- FOUNDER-REVIEW: added. Invitation-flow addendum. changelog.d/cursor-invitation-legal-addendum-5920.md -->
+**Retention.** An invitation link expires 14 days after it is created if not accepted. An expired, unaccepted invitation carries no personal information forward, since the invited person never submitted anything through it. Once an invitation is accepted, the information the invited person submitted is retained as part of their profile subject to the retention and deletion terms described elsewhere in this Privacy Policy.
+
+<!-- FOUNDER-REVIEW: added. Invitation-flow addendum. changelog.d/cursor-invitation-legal-addendum-5920.md -->
+**Rights of the invited person.** A person who submitted their own information through an invitation may request access to, correction of, or deletion of that information by contacting [help@galaxiamea.com](mailto:help@galaxiamea.com), in the same manner as any other person whose information appears in another user's galaxy.
+
 ---
 
 ## 6\. Vela (AI features) and how your data is processed by AI

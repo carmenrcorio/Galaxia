@@ -7,13 +7,40 @@
    - app icons/splash assets
 2. Set EAS project:
    - replace `expo.extra.eas.projectId`
-3. Login and configure credentials:
+3. Set the mobile env vars. **`EXPO_PUBLIC_*` values are inlined into the JS
+   bundle by Metro at build time, so nothing in this repo supplies them and a
+   build without them is broken.** There is no committed `.env` and `eas.json`
+   carries no `env` block. Set all three on the EAS project (`eas env:create`,
+   or the Expo dashboard) for each of the `development`, `preview`, and
+   `production` profiles, and in each developer's untracked
+   `apps/mobile/.env` for local `expo start`:
+   - `EXPO_PUBLIC_SUPABASE_URL`
+   - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+   - `EXPO_PUBLIC_SITE_URL` = `https://galaxiamea.com` (the origin used to build
+     shareable web links, e.g. the paywall's "Open Galaxia on the web")
+
+   Visibility is **Plain text**, not Secret: these land in the shipped bundle in
+   the clear, so marking them secret would be a false claim. The app throws on a
+   missing Supabase pair (`src/lib/supabase.ts`) and refuses to render a web
+   link on a missing site URL (`src/lib/env.ts`); neither one guesses a value.
+
+   Two non-obvious things about how these values actually reach the device:
+   - A release bundle contains them only because Babel rewrote each
+     `process.env.EXPO_PUBLIC_…` access into a string literal, and that rewrite
+     matches one syntactic shape only. Reading through an alias or a computed
+     key compiles to a property access that is `undefined` on device even when
+     EAS is configured correctly. See the comment at the top of
+     `apps/mobile/src/lib/env.ts`.
+   - Metro caches transform results without keying on env values, so after
+     changing one of these locally you need `expo start --clear` or the old
+     value keeps getting bundled.
+4. Login and configure credentials:
    - `eas login`
    - `eas build:configure`
-4. Build:
+5. Build:
    - iOS preview/prod: `eas build --platform ios --profile preview|production`
    - Android preview/prod: `eas build --platform android --profile preview|production`
-5. Submit:
+6. Submit:
    - iOS: `eas submit --platform ios --profile production`
    - Android: `eas submit --platform android --profile production`
 

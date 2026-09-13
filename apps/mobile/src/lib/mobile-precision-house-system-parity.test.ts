@@ -132,5 +132,9 @@ describe("mobile can save a person with no birth data (web precision parity)", (
     expect(profileSrc).not.toContain("Unable to load chart.");
     expect(profileSrc).not.toContain("if (!person || !chart)");
     expect(profileSrc).toContain("No birth data yet");
+    // A failed read is kept apart from an absent chart, so an outage is never
+    // rendered as missing birth data (ENGINEERING §12).
+    expect(profileSrc).toContain("chartLoadError");
+    expect(profileSrc).toContain("Chart could not be loaded");
   });
 });

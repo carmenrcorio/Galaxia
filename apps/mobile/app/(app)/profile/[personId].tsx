@@ -39,6 +39,8 @@ export default function PersonProfileScreen() {
   const router = useRouter();
   const [person, setPerson] = useState<PersonRow | null>(null);
   const [chart, setChart] = useState<NatalChart | null>(null);
+  /** Set only when the chart read itself failed, never when a person simply has no chart. */
+  const [chartLoadError, setChartLoadError] = useState<string | null>(null);
   const [notes, setNotes] = useState<NoteRow[]>([]);
   const [noteDraft, setNoteDraft] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -85,15 +87,16 @@ export default function PersonProfileScreen() {
     // Progressive capture, web parity (apps/web/app/app/person/[id]/page.tsx): a
     // person saved with birth_precision "none" has no charts row at all. That is
     // not a failure, so the read uses maybeSingle and a null chart renders the
-    // "no birth data yet" state instead of blocking the whole screen.
-    if (chartError) {
-      setStatus(chartError.message);
-    } else if (noteError) {
+    // "no birth data yet" state instead of blocking the whole screen. A read that
+    // actually failed is kept apart from that, so an outage is never shown as an
+    // empty chart (ENGINEERING §12).
+    if (noteError) {
       setStatus(noteError.message);
     }
 
     setPerson(personData);
     setChart((chartData?.data as NatalChart | undefined) ?? null);
+    setChartLoadError(chartError?.message ?? null);
     setNotes(noteData ?? []);
   };
 
@@ -294,6 +297,13 @@ export default function PersonProfileScreen() {
             ) : null}
           </View>
         </>
+      ) : chartLoadError ? (
+        <View style={cardStyle}>
+          {/* FOUNDER-REVIEW: a failed chart read says so. It is never shown as
+              an empty chart or as missing birth data (ENGINEERING §12). */}
+          <Text style={cardTitle}>Chart could not be loaded</Text>
+          <Text style={cardBody}>{chartLoadError}</Text>
+        </View>
       ) : (
         <View style={cardStyle}>
           {/* FOUNDER-REVIEW: new copy for a person saved without birth data.

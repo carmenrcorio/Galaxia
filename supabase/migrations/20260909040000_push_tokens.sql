@@ -12,7 +12,7 @@ create table if not exists push_tokens (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   expo_push_token text not null unique,
-    10|  platform text check (platform in ('ios', 'android')),
+  platform text check (platform in ('ios', 'android')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -24,7 +24,7 @@ create index if not exists push_tokens_owner_idx on push_tokens (owner_id);
 
 alter table push_tokens enable row level security;
 
-    20|create policy "push_tokens owner all"
+create policy "push_tokens owner all"
 on push_tokens for all
 using (owner_id = auth.uid())
 with check (owner_id = auth.uid());
@@ -34,7 +34,7 @@ with check (owner_id = auth.uid());
 -- daily_nudge_emails' ledger role but inline on the row itself since a
 -- relational transit is already a de-duplicated single event, not a
 -- per-day fan-out.
-    30|alter table relational_transits
+alter table relational_transits
   add column if not exists push_sent_at timestamptz default null;
 
 comment on column public.relational_transits.push_sent_at is
@@ -44,7 +44,7 @@ comment on column public.relational_transits.push_sent_at is
 -- Same convention as the two prior Feature 3 migrations: every existing
 -- statement unchanged, one new statement added, no signature change.
 -- push_tokens.owner_id already has `on delete cascade` to auth.users, but
-   40|-- purge_own_account_data doesn't delete the auth.users row itself (that is
+-- purge_own_account_data doesn't delete the auth.users row itself (that is
 -- a separate, deliberate step elsewhere), so an explicit delete here is
 -- still needed — same reasoning as every other owner-scoped table in this
 -- function.
@@ -55,7 +55,7 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-    50|declare
+declare
   uid uuid := auth.uid();
 begin
   if uid is null then
@@ -66,7 +66,7 @@ begin
 
   delete from notes where owner_id = uid;
 
-    60|  update notes
+  update notes
     set about_person = null
     where about_person in (select id from people where owner_id = uid);
 
@@ -77,7 +77,7 @@ begin
     where person_id in (select id from people where owner_id = uid)
        or owner_id = uid;
 
-    70|  delete from daily_nudge_emails where owner_id = uid;
+  delete from daily_nudge_emails where owner_id = uid;
 
   delete from memorial_milestones
     where profile_id in (select id from people where owner_id = uid)
@@ -87,7 +87,7 @@ begin
 
   -- New: push_tokens.owner_id only (no people FK).
   delete from push_tokens where owner_id = uid;
-    80|
+
   delete from transits
     where person_id in (select id from people where owner_id = uid);
 
@@ -97,7 +97,7 @@ begin
   delete from group_members
     where group_id in (select id from groups where owner_id = uid);
 
-    90|  delete from threads where owner_id = uid;
+  delete from threads where owner_id = uid;
 
   update threads
     set subject_person = null
@@ -107,7 +107,7 @@ begin
     set group_id = null
     where group_id in (select id from groups where owner_id = uid);
 
-   100|  delete from groups where owner_id = uid;
+  delete from groups where owner_id = uid;
 
   -- Clear pin before people delete (FK ondelete set null also covers this).
   update profiles set pinned_sky_person_id = null where id = uid;
@@ -117,7 +117,7 @@ begin
   delete from trial_emails where user_id = uid;
   delete from invites where from_user = uid;
 
-   110|  delete from support_requests where owner_id = uid;
+  delete from support_requests where owner_id = uid;
   update support_requests set handled_by = null where handled_by = uid;
 
   delete from profiles where id = uid;

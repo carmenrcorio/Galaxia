@@ -17,6 +17,7 @@ import {
   isMinorForSafety,
   normalizeStarColorForWrite,
   normalizeStarScale,
+  usesAncientLight,
   STAR_SCALE_MAX,
   STAR_SCALE_MIN,
   type ChartPrecision,
@@ -519,7 +520,7 @@ export function EditPersonPanel({
         )}
       </div>
 
-      {input.precision !== "exact" && userId ? (
+      {input.precision !== "exact" && userId && !usesAncientLight(person) ? (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(183,154,216,.1)" }}>
           <p className="muted" style={{ fontSize: ".76rem", marginBottom: 8 }}>Don't have their exact details? Let them fill it in:</p>
           <AskBirthData personId={person.id} personName={person.display_name} userId={userId} />

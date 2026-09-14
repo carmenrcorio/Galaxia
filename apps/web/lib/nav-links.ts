@@ -65,8 +65,14 @@ export const SITE_FOOTER_LINKS: NavLink[] = [
  * as a match for an arbitrary path.
  */
 export const SYNASTRY_CHART_MEANING_HREF = "/synastry-chart-meaning";
+export const SUN_SIGN_NOT_PERSONALITY_HREF = "/sun-sign-not-personality";
 
-export const PUBLISHED_BLOG_POST_HREFS: readonly string[] = [SYNASTRY_CHART_MEANING_HREF];
+export const PUBLISHED_BLOG_POST_HREFS: readonly string[] = [
+  SYNASTRY_CHART_MEANING_HREF,
+  SUN_SIGN_NOT_PERSONALITY_HREF,
+];
+
+export const FOR_WORK_CHART_CTA: NavLink = { href: "/chart", label: "Try a free chart" };
 
 export const RELATED_LINKS = {
   whyGalaxia: [
@@ -105,9 +111,11 @@ export const RELATED_LINKS = {
     { href: "/generations", label: "See the generational layer behind your compatibility" },
   ],
   forWork: [
-    { href: "/why-galaxia", label: "See how Galaxia works" },
-    { href: "/security", label: "How we protect the people you add" },
-    { href: "/pricing", label: "One honest plan" },
+    { href: "/chart", label: "Try a free chart" },
+    { href: "/generations", label: "See how the generational layer works" },
+    { href: "/meet-vela", label: "Ask Vela before a hard conversation" },
+    { href: "/pricing", label: "See what's included" },
+    { href: SUN_SIGN_NOT_PERSONALITY_HREF, label: "Your sun sign is not your personality" },
   ],
   press: [
     { href: "/why-galaxia", label: "Why Galaxia exists" },
@@ -183,6 +191,7 @@ export function ctaInternalHrefs(): string[] {
     MARKETING_NAV_LOGIN.href,
     HERO_PRIMARY_CTA.href,
     HERO_HOW_IT_WORKS.href,
+    FOR_WORK_CHART_CTA.href,
     ...NOT_FOUND_LINKS.map((l) => l.href),
     SHARE_NOT_FOUND_CTA.href,
     CHART_MODE_SINGLE.href,

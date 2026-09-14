@@ -22,7 +22,8 @@ const SITE_URL = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
  * were homepage anchors (#shift, #generations, #vela, #trust, #pricing);
  * each now has its own standalone route (a bookmarked `/#generations`-style
  * link redirects there client-side — see components/marketing/hash-
- * redirect.tsx) and is listed here like any other page.
+ * redirect.tsx) and is listed here like any other page. `/for-work` is a
+ * new standalone professional-use page (not a former homepage anchor).
  *
  * Post URLs (`/${slug}`) are read from the `posts` table at request time
  * (getPublishedPosts — published rows only, via lib/blog.ts) rather than

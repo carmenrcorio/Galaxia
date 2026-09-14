@@ -42,6 +42,7 @@ const LAYER_ONE_VISIBLE = [
   "apps/web/components/marketing/hero.tsx",
   "apps/web/components/marketing/quick-chart-entry.tsx",
   "apps/web/components/marketing/for-work-section.tsx",
+  "apps/web/components/marketing/for-work-sections.tsx",
   "apps/web/components/marketing/press-kit-section.tsx",
   "apps/web/app/welcome/page.tsx",
   "apps/mobile/app/(app)/onboarding.tsx",

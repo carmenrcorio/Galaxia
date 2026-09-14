@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CosmicBackground } from "../../../components/cosmic-background";
+import { SHARE_NOT_FOUND_CTA } from "../../../lib/nav-links";
 
 export default function ShareNotFound() {
   return (
@@ -12,8 +13,8 @@ export default function ShareNotFound() {
         <p className="muted" style={{ lineHeight: 1.65, marginBottom: 24 }}>
           The share link may be mistyped or no longer exists. It never opens someone else&apos;s reading.
         </p>
-        <Link href="/chart" className="pill-link">
-          Try a free chart
+        <Link href={SHARE_NOT_FOUND_CTA.href as never} className="pill-link">
+          {SHARE_NOT_FOUND_CTA.label}
         </Link>
       </main>
     </div>

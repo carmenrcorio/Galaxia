@@ -8,6 +8,7 @@ import { RevealObserver } from "../../components/marketing/reveal-observer";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
+import { RELATED_LINKS } from "../../lib/nav-links";
 
 // FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Generations: Your Family's Astrology, Together | Galaxia";
@@ -49,19 +50,8 @@ export default function GenerationsPage() {
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Generations" lede={DESCRIPTION} />
         <EdgeSection />
-        <RelatedLinks
-          heading="Keep exploring"
-          links={[
-            { href: "/meet-vela", label: "Ask Vela about generational patterns" },
-            { href: "/security", label: "How we protect your family's data" },
-          ]}
-        />
-        <RelatedLinks
-          heading="From the blog"
-          links={[
-            { href: "/synastry-chart-meaning", label: "What synastry actually measures" },
-          ]}
-        />
+        <RelatedLinks heading="Keep exploring" links={RELATED_LINKS.generations} />
+        <RelatedLinks heading="From the blog" links={RELATED_LINKS.generationsBlog} />
         <CloseSection />
       </main>
       <SiteFooter />

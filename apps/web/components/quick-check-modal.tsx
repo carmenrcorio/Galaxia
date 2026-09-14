@@ -43,6 +43,7 @@ import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
 import { COMPAT_LABELS, compatWord } from "../lib/design";
 import { getPreferredHouseSystem } from "../lib/house-system";
+import { EMPTY_STATE_WELCOME_HREF } from "../lib/nav-links";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";
 
@@ -167,7 +168,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
         ) : noSelf ? (
           <div style={{ textAlign: "center" }}>
             <p className="muted" style={{ marginBottom: 12 }}>Add your own birth data first to run a quick check.</p>
-            <Link href="/welcome" className="btn-primary">Add my birth data</Link>
+            <Link href={EMPTY_STATE_WELCOME_HREF as never} className="btn-primary">Add my birth data</Link>
           </div>
         ) : savedId ? (
           <div style={{ textAlign: "center" }}>

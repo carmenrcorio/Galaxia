@@ -8,6 +8,7 @@ import { SectionPageIntro } from "../../components/marketing/section-page-intro"
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { VelaExampleSection } from "../../components/marketing/vela-example-section";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
+import { RELATED_LINKS } from "../../lib/nav-links";
 
 // FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Meet Vela, Your AI Astrology Guide | Galaxia";
@@ -49,13 +50,7 @@ export default function MeetVelaPage() {
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Meet Vela" lede={DESCRIPTION} />
         <VelaExampleSection />
-        <RelatedLinks
-          heading="Keep exploring"
-          links={[
-            { href: "/why-galaxia", label: "See how Galaxia computes your chart" },
-            { href: "/pricing", label: "See what's included in your plan" },
-          ]}
-        />
+        <RelatedLinks heading="Keep exploring" links={RELATED_LINKS.meetVela} />
         <CloseSection />
       </main>
       <SiteFooter />

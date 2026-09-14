@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Spinner } from "../../../components/spinner";
 import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "@galaxia/astro";
 import { publicEnv } from "../../../lib/env";
+import { EMPTY_STATE_WELCOME_HREF } from "../../../lib/nav-links";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 interface PersonLite {
@@ -430,7 +431,7 @@ export default function SettingsPage() {
       <section className="glass-card">
         <h2 className="card-title">Your people ({people.length})</h2>
         {people.length === 0 ? (
-          <p className="muted">No people yet: add yourself and your circle in <a href="/welcome" style={{ color: "var(--gold)" }}>onboarding</a>.</p>
+          <p className="muted">No people yet: add yourself and your circle in <a href={EMPTY_STATE_WELCOME_HREF} style={{ color: "var(--gold)" }}>onboarding</a>.</p>
         ) : null}
         <div style={{ display: "grid", gap: 6 }}>
           {people.map((person) => (

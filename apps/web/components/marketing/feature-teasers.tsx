@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FEATURE_TEASER_LINKS } from "../../lib/nav-links";
 
 type Teaser = {
   eyebrow: string;
@@ -14,37 +15,37 @@ const TEASERS: Teaser[] = [
     title: "Why Galaxia",
     // FOUNDER-REVIEW: rewritten (no U+2014).
     body: "Astrology forgot the people you love. Galaxia reads the real charts of your partner, kids, parents, siblings, and friends (not just yours) so you can show up for each bond with more intention.",
-    href: "/why-galaxia",
-    cta: "Why Galaxia"
+    href: FEATURE_TEASER_LINKS[0].href,
+    cta: FEATURE_TEASER_LINKS[0].label
   },
   {
     eyebrow: "The edge",
     title: "Generations",
     body: "The slow planets shape a whole generation, not just one person. See the sky your whole family or friend group shares, and where you quietly diverge, from just a birth year.",
-    href: "/generations",
-    cta: "Explore Generations"
+    href: FEATURE_TEASER_LINKS[1].href,
+    cta: FEATURE_TEASER_LINKS[1].label
   },
   {
     eyebrow: "Your guide",
     title: "Meet Vela",
     // FOUNDER-REVIEW: rewritten. Shared spaces are unshipped; this describes private Vela only.
     body: "Vela is your AI astrologer and relationship coach, grounded in both real charts and plain good sense. It never invents a placement, and never breaches your privacy.",
-    href: "/meet-vela",
-    cta: "Meet Vela"
+    href: FEATURE_TEASER_LINKS[2].href,
+    cta: FEATURE_TEASER_LINKS[2].label
   },
   {
     eyebrow: "Built on trust",
     title: "Private by design",
     body: "Your notes about someone are yours alone, always. No two-way AI chat with children, and every chart comes from real astronomical data: never an AI guess.",
-    href: "/security",
-    cta: "See how we protect you"
+    href: FEATURE_TEASER_LINKS[3].href,
+    cta: FEATURE_TEASER_LINKS[3].label
   },
   {
     eyebrow: "Pricing",
     title: "One honest plan",
     body: "No feature tiers, no per-person fees, no upsells: the same everything, for everyone you add. Start with 14 days free.",
-    href: "/pricing",
-    cta: "View pricing"
+    href: FEATURE_TEASER_LINKS[4].href,
+    cta: FEATURE_TEASER_LINKS[4].label
   }
 ];
 

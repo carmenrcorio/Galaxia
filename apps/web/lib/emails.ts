@@ -5,6 +5,8 @@
  * passed in by the caller; nothing is fabricated.
  */
 
+import { EMAIL_PATHS } from "./nav-links";
+
 export type TrialEmailKind = "day1" | "day4_one" | "day4_multi" | "day11" | "day14";
 
 export interface TrialEmailData {
@@ -78,7 +80,7 @@ function complianceFooterText(unsubscribeUrl: string): string {
  * than a token that would resolve to the wrong toggle.
  */
 function trialUnsubscribeUrl(siteUrl: string): string {
-  return `${siteUrl}/account/notifications`;
+  return `${siteUrl}${EMAIL_PATHS.notifications}`;
 }
 
 /** Day 1 — after they add their first person. */
@@ -91,11 +93,11 @@ export function day1Email(d: TrialEmailData): RenderedEmail {
       // FOUNDER-REVIEW: rewritten (no U+2014).
       p("Galaxia gets more useful with every person you add (a partner, a parent, a sibling, the friend who became family). The comparison, the generational layer, the constellation itself: none of it works with one person in it.") +
       p("The people you have the least information about still belong here. A birth year alone is enough to place someone in your sky.") +
-      button("Add someone else →", `${d.siteUrl}/welcome`) +
+      button("Add someone else →", `${d.siteUrl}${EMAIL_PATHS.welcome}`) +
       p(`Your trial runs through ${d.trialEndDate}. Nothing will be charged before then.`) +
       complianceFooterHtml(unsubscribeUrl)
   );
-  const text = `Hi ${d.firstName},\n\nYou've added ${d.personName ?? "someone"}. That's a start.\n\nGalaxia gets more useful with every person you add (a partner, a parent, a sibling, the friend who became family). The comparison, the generational layer, the constellation itself: none of it works with one person in it.\n\nThe people you have the least information about still belong here. A birth year alone is enough to place someone in your sky.\n\nAdd someone else: ${d.siteUrl}/welcome\n\nYour trial runs through ${d.trialEndDate}. Nothing will be charged before then.\n\n${complianceFooterText(unsubscribeUrl)}`;
+  const text = `Hi ${d.firstName},\n\nYou've added ${d.personName ?? "someone"}. That's a start.\n\nGalaxia gets more useful with every person you add (a partner, a parent, a sibling, the friend who became family). The comparison, the generational layer, the constellation itself: none of it works with one person in it.\n\nThe people you have the least information about still belong here. A birth year alone is enough to place someone in your sky.\n\nAdd someone else: ${d.siteUrl}${EMAIL_PATHS.welcome}\n\nYour trial runs through ${d.trialEndDate}. Nothing will be charged before then.\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, html, text };
 }
 
@@ -108,10 +110,10 @@ export function day4MultiEmail(d: TrialEmailData): RenderedEmail {
       p(`You've mapped ${d.peopleCount} people. Here's the part most people miss:`) +
       p(`Open <strong style="color:${CREAM}">Compare</strong>, choose two of them, and read the "what they need from you" section. It's built from their actual placements: where you flow, where you catch, and what each of you is asking for without saying it.`) +
       p("It's the closest thing Galaxia has to the whole point.") +
-      button("Compare two people →", `${d.siteUrl}/app/compare`) +
+      button("Compare two people →", `${d.siteUrl}${EMAIL_PATHS.compare}`) +
       complianceFooterHtml(unsubscribeUrl)
   );
-  const text = `Hi ${d.firstName},\n\nYou've mapped ${d.peopleCount} people. Here's the part most people miss:\n\nOpen Compare, choose two of them, and read the "what they need from you" section. It's built from their actual placements: where you flow, where you catch, and what each of you is asking for without saying it.\n\nIt's the closest thing Galaxia has to the whole point.\n\nCompare two people: ${d.siteUrl}/app/compare\n\n${complianceFooterText(unsubscribeUrl)}`;
+  const text = `Hi ${d.firstName},\n\nYou've mapped ${d.peopleCount} people. Here's the part most people miss:\n\nOpen Compare, choose two of them, and read the "what they need from you" section. It's built from their actual placements: where you flow, where you catch, and what each of you is asking for without saying it.\n\nIt's the closest thing Galaxia has to the whole point.\n\nCompare two people: ${d.siteUrl}${EMAIL_PATHS.compare}\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, html, text };
 }
 
@@ -124,10 +126,10 @@ export function day4OneEmail(d: TrialEmailData): RenderedEmail {
       p("Right now your galaxy has one star in it, and almost nothing in Galaxia works with one star.") +
       p("Add one person (your partner, your mother, your oldest friend) and the app becomes what it's for: a way to understand the people you actually live your life beside.") +
       p("If you don't have their birth time, that's fine. A date works. A year works.") +
-      button("Add someone →", `${d.siteUrl}/welcome`) +
+      button("Add someone →", `${d.siteUrl}${EMAIL_PATHS.welcome}`) +
       complianceFooterHtml(unsubscribeUrl)
   );
-  const text = `Hi ${d.firstName},\n\nRight now your galaxy has one star in it, and almost nothing in Galaxia works with one star.\n\nAdd one person (your partner, your mother, your oldest friend) and the app becomes what it's for: a way to understand the people you actually live your life beside.\n\nIf you don't have their birth time, that's fine. A date works. A year works.\n\nAdd someone: ${d.siteUrl}/welcome\n\n${complianceFooterText(unsubscribeUrl)}`;
+  const text = `Hi ${d.firstName},\n\nRight now your galaxy has one star in it, and almost nothing in Galaxia works with one star.\n\nAdd one person (your partner, your mother, your oldest friend) and the app becomes what it's for: a way to understand the people you actually live your life beside.\n\nIf you don't have their birth time, that's fine. A date works. A year works.\n\nAdd someone: ${d.siteUrl}${EMAIL_PATHS.welcome}\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, html, text };
 }
 
@@ -147,11 +149,11 @@ export function day11Email(d: TrialEmailData): RenderedEmail {
       p("Here's what you've built:") +
       list +
       p("All of it stays saved. If you continue, it's exactly where you left it. No limits, no upgrade, no second tier.") +
-      button("Continue with Galaxia →", `${d.siteUrl}/subscribe`) +
+      button("Continue with Galaxia →", `${d.siteUrl}${EMAIL_PATHS.subscribe}`) +
       p("Thank you for trying this.") +
       complianceFooterHtml(unsubscribeUrl)
   );
-  const text = `Hi ${d.firstName},\n\nYour free trial of Galaxia ends on ${d.trialEndDate}, three days from now. We never asked for a card, so nothing will be charged. When the trial ends, your galaxy simply pauses until you choose to continue.\n\nHere's what you've built:\n- ${d.peopleCount} people in your galaxy\n- ${d.notesCount} private notes, visible only to you\n- ${d.threadsCount} conversations with Vela\n- ${d.groupsCount} constellations you named\n\nAll of it stays saved. If you continue, it's exactly where you left it. No limits, no upgrade, no second tier.\n\nContinue with Galaxia: ${d.siteUrl}/subscribe\n\nThank you for trying this.\n\n${complianceFooterText(unsubscribeUrl)}`;
+  const text = `Hi ${d.firstName},\n\nYour free trial of Galaxia ends on ${d.trialEndDate}, three days from now. We never asked for a card, so nothing will be charged. When the trial ends, your galaxy simply pauses until you choose to continue.\n\nHere's what you've built:\n- ${d.peopleCount} people in your galaxy\n- ${d.notesCount} private notes, visible only to you\n- ${d.threadsCount} conversations with Vela\n- ${d.groupsCount} constellations you named\n\nAll of it stays saved. If you continue, it's exactly where you left it. No limits, no upgrade, no second tier.\n\nContinue with Galaxia: ${d.siteUrl}${EMAIL_PATHS.subscribe}\n\nThank you for trying this.\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, html, text };
 }
 
@@ -163,12 +165,12 @@ export function day14Email(d: TrialEmailData): RenderedEmail {
     p(`Hi ${d.firstName},`) +
       p("Your trial has ended and we haven't charged you.") +
       p(`Everything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.`) +
-      button("Pick up where you left off →", `${d.siteUrl}/app`) +
+      button("Pick up where you left off →", `${d.siteUrl}${EMAIL_PATHS.app}`) +
       p("And if it wasn't right for you: would you tell us why? One line is enough. It goes straight to the person who built this.") +
       button("Tell us what was missing", "mailto:support@galaxia.app?subject=What%20was%20missing") +
       complianceFooterHtml(unsubscribeUrl)
   );
-  const text = `Hi ${d.firstName},\n\nYour trial has ended and we haven't charged you.\n\nEverything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.\n\nPick up where you left off: ${d.siteUrl}/app\n\nAnd if it wasn't right for you: would you tell us why? One line is enough. It goes straight to the person who built this.\n\nTell us what was missing: support@galaxia.app\n\n${complianceFooterText(unsubscribeUrl)}`;
+  const text = `Hi ${d.firstName},\n\nYour trial has ended and we haven't charged you.\n\nEverything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.\n\nPick up where you left off: ${d.siteUrl}${EMAIL_PATHS.app}\n\nAnd if it wasn't right for you: would you tell us why? One line is enough. It goes straight to the person who built this.\n\nTell us what was missing: support@galaxia.app\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, html, text };
 }
 
@@ -273,7 +275,7 @@ export function skyTodayEmail(d: SkyTodayEmailData): RenderedEmail {
       p(`Here's what's moving for <strong style="color:${CREAM}">${d.subjectPersonName}</strong> today:`) +
       p(d.copyResolved) +
       (firstEmailLine ? p(firstEmailLine) : "") +
-      button("Open your galaxy →", `${d.siteUrl}/app`) +
+      button("Open your galaxy →", `${d.siteUrl}${EMAIL_PATHS.app}`) +
       complianceFooterHtml(d.unsubscribeUrl)
   );
 
@@ -285,7 +287,7 @@ export function skyTodayEmail(d: SkyTodayEmailData): RenderedEmail {
     d.copyResolved,
     firstEmailLine ? `\n${firstEmailLine}` : "",
     "",
-    `Open your galaxy: ${d.siteUrl}/app`,
+    `Open your galaxy: ${d.siteUrl}${EMAIL_PATHS.app}`,
     "",
     complianceFooterText(d.unsubscribeUrl)
   ].filter((line) => line !== "").join("\n");

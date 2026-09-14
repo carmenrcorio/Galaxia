@@ -8,7 +8,7 @@ export interface RelatedLinkItem {
 
 interface Props {
   heading: string;
-  links: RelatedLinkItem[];
+  links: readonly RelatedLinkItem[];
   /**
    * Skip the section's own `.container` (max-width + gutters). Set this
    * when the caller already renders inside a `.container` — e.g. the Quick

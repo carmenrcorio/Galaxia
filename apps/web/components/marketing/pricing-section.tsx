@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MARKETING_NAV_SIGNUP } from "../../lib/nav-links";
 
 /** Pricing: one monthly card, matching the paywall. */
 export function PricingSection() {
@@ -19,7 +20,7 @@ export function PricingSection() {
             <div className="pcard-name">Monthly</div>
             <div className="pcard-price">$9.99 <span>/month</span></div>
             <div className="pcard-sub">Billed monthly · 14 days free</div>
-            <Link href="/signup" className="btn-primary" style={{ marginTop: 18, display: "inline-block" }}>Start 14 days free</Link>
+            <Link href={MARKETING_NAV_SIGNUP.href as never} className="btn-primary" style={{ marginTop: 18, display: "inline-block" }}>{MARKETING_NAV_SIGNUP.label}</Link>
           </div>
         </div>
         {/* FOUNDER-REVIEW: rewritten (no U+2014). */}

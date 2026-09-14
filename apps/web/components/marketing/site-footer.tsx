@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SITE_FOOTER_LINKS } from "../../lib/nav-links";
 
 /**
  * Site-wide footer, shared by the homepage, the standalone marketing pages
@@ -16,16 +17,9 @@ export function SiteFooter() {
           <p>The people you love, written in the stars. · © 2026 Galaxia</p>
         </div>
         <div className="site-footer-links">
-          <Link href="/why-galaxia">Why Galaxia</Link>
-          <Link href="/generations">Generations</Link>
-          <Link href="/meet-vela">Meet Vela</Link>
-          <Link href="/security">Security</Link>
-          <Link href="/pricing">Pricing</Link>
-          <Link href="/chart">Quick Chart</Link>
-          <Link href="/download">Download</Link>
-          <Link href="/blog">Blog</Link>
-          <Link href="/privacy">Privacy</Link>
-          <Link href="/terms">Terms</Link>
+          {SITE_FOOTER_LINKS.map((l) => (
+            <Link key={l.href} href={l.href as never}>{l.label}</Link>
+          ))}
         </div>
       </div>
     </footer>

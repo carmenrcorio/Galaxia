@@ -32,6 +32,7 @@ import { SaveToGalaxyButton } from "../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../components/share-link-button";
 import { Spinner } from "../../components/spinner";
 import { BODY_GLYPH, signElement } from "../../lib/design";
+import { RELATED_LINKS, CHART_MODE_COMPARE } from "../../lib/nav-links";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../lib/quick-chart";
 import { useViewer } from "../../lib/use-viewer";
 
@@ -161,8 +162,8 @@ export default function QuickChartPage() {
               <button type="button" className="pill-link" aria-pressed style={{ fontSize: ".82rem", padding: "8px 16px", borderColor: "rgba(230,174,108,.5)", color: "var(--gold)" }}>
                 Single chart
               </button>
-              <Link href="/chart/compare" className="pill-link" style={{ fontSize: ".82rem", padding: "8px 16px" }}>
-                Check compatibility
+              <Link href={CHART_MODE_COMPARE.href as never} className="pill-link" style={{ fontSize: ".82rem", padding: "8px 16px" }}>
+                {CHART_MODE_COMPARE.label}
               </Link>
             </div>
           </section>
@@ -268,10 +269,7 @@ export default function QuickChartPage() {
       <RelatedLinks
         bare
         heading="Keep reading"
-        links={[
-          { href: "/synastry-chart-meaning", label: "What synastry actually measures" },
-          { href: "/why-galaxia", label: "Why Galaxia reads real charts, not sun signs" },
-        ]}
+        links={RELATED_LINKS.chart}
       />
     </QuickChartShell>
   );

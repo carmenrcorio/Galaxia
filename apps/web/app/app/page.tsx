@@ -13,8 +13,8 @@
  *   onto two CSS-rotating canvases (inner 2+3 clockwise 90s, outer 4+5
  *   counter-clockwise 70s). Partner is a tight binary at the core (not a guide).
  *   Seat radius = guide radius = ringBandRadius(own ring) (+ small within-band
- *   jitter). Angle = f(id). Geometry is a true circle (radX === radY) so
- *   co-ring parents share one Euclidean pixel radius.
+ *   jitter). Angle = f(id). Geometry is galaxyGeometry() — independent radX/radY
+ *   with an eccentricity cap — so co-ring people sit on the same elliptical band.
  * - Radial glow halo: createRadialGradient, 5-11×R depending on data precision (sharp=crisp, year=diffuse)
  * - Links: quadratic bezier + gradient between node element colours + travelling light pulse
  * - Gentle tangential drift (stays on band), disabled under prefers-reduced-motion
@@ -40,14 +40,18 @@ import {
 import {
   ELEMENT_NODE_COLORS,
   GALAXY_GUIDE_RINGS,
+  GLOW_OUTER_SCALE,
   HONOR_LINE_STYLE,
   RING_BAND_COLORS,
   HONOR_RELATION_TYPE,
+  clampSeatRn,
   elementFromRelation,
   formFromRelation,
+  galaxyGeometry,
   galaxyLabelHalfWidthPx,
   galaxyLabelOffsets,
   galaxySeatsResolved,
+  glyphRadiusPx,
   hash01,
   effectiveSeat,
   pointerToCustomPosition,
@@ -56,12 +60,15 @@ import {
   hasPassed,
   honorEdgesFromDeclaredRows,
   isMinorForSafety,
+  nodeDrawnExtent,
+  normalizeStarScale,
   peopleForTodaySky,
   resolveAccountName,
   resolveNodeColor,
   ringBandRadius,
   ringIndex,
   shouldOfferFirstRunRestart,
+  starCoreRadius,
   sunSignFromChart,
   usesMemorialGlyph,
   type HonorEdge,
@@ -102,6 +109,8 @@ interface PersonRow {
   memorial_constellation?: string | null;
   /** Owner-chosen polar seat. NULL = derived default from galaxySeatsResolved. */
   custom_position?: CustomGalaxyPosition | null;
+  /** Visual size multiplier. NULL = 1.0. Does not affect seat position. */
+  star_scale?: number | null;
   sunSign?: string | null;
 }
 interface LinkRow { fromId: string; toId: string; scoreA: number; elA: string; elB: string; }
@@ -143,11 +152,6 @@ function hexA(hex: string, a: number): string {
 }
 
 type RingBand = (typeof RING_BAND_COLORS)[keyof typeof RING_BAND_COLORS];
-
-/** Same padding as `ringGeom()`. Seats and guide bands share one radius. */
-function constellationRad(cssW: number, cssH: number): number {
-  return Math.max(70, Math.min(cssW / 2 - 44, cssH / 2 - 48));
-}
 
 function paintNebulaBand(
   ctx: CanvasRenderingContext2D,
@@ -217,24 +221,20 @@ function paintGuideRingsOnto(
   dpr: number,
   rings: readonly number[],
 ) {
-  const cx = (cssW / 2) * dpr;
-  const cy = (cssH / 2) * dpr;
-  const rad = constellationRad(cssW, cssH) * dpr;
+  const geom = galaxyGeometry(cssW, cssH);
+  const cx = geom.cx * dpr;
+  const cy = geom.cy * dpr;
   for (const ring of rings) {
     if (ring !== 2 && ring !== 3 && ring !== 4 && ring !== 5) continue;
     const band = RING_BAND_COLORS[ring];
     const rn = ringBandRadius(ring);
-    const rx = rad * rn;
-    const ry = rad * rn;
+    const rx = geom.radX * rn * dpr;
+    const ry = geom.radY * rn * dpr;
     paintNebulaBand(ctx, cx, cy, rx, ry, band, dpr);
     const count = Math.min(80, Math.max(20, Math.round((2 * Math.PI * rx) / dpr / 8)));
     drawRingStardust(ctx, cx, cy, rx, ry, band.core, count, ring * 31, dpr);
   }
 }
-
-/* Outer node halo loudness — radius + alphas together (−30%). Single tunable;
-   inner bloom / lowPerf shed untouched. */
-const GLOW_OUTER_SCALE = 0.7;
 
 /* ── generational cohort colour, DERIVED from the outer-planet signature ──
    A cohort is anchored by its Pluto sign (the slowest visible planet, ~12–30
@@ -612,14 +612,19 @@ export default function AppHomePage() {
       };
     }
 
-    /* TRUE CIRCLES — radX === radY. An ellipse makes the same seat `rn` land
-       at different Euclidean distances by angle, so co-ring parents (Mommy at
-       ~−25° / Daddy at ~104°) read as different bands: one near the guide,
-       one "dropped" toward the rim. Same rn must mean the same pixel radius. */
+    /* Independent radX / radY from galaxyGeometry — seats and guides share it. */
     function ringGeom() {
-      const cssW = W(), cssH = H();
-      const rad = constellationRad(cssW, cssH);
-      return { cx: cssW / 2, cy: cssH / 2, radX: rad, radY: rad };
+      return galaxyGeometry(W(), H());
+    }
+
+    function nodeExtent(p: PersonRow): number {
+      return nodeDrawnExtent({
+        form: formFromRelation(p.is_self, p.relation, p.passed_at),
+        memorial: usesMemorialGlyph(p),
+        lite: lowPerf,
+        precision: p.birth_precision,
+        starScale: p.star_scale,
+      });
     }
 
     /* Label clearance used when clamping seats into the frame (CSS px). */
@@ -646,7 +651,9 @@ export default function AppHomePage() {
       const p = people[i];
       const geom = ringGeom();
       const seat = seatsById.get(p.id) ?? { nx: 0, ny: 0, angle: 0, rn: 0 };
-      return effectiveSeat(overlayPerson(p), seat.angle, seat.rn, geom.cx, geom.cy, geom.radX);
+      return effectiveSeat(overlayPerson(p), seat.angle, seat.rn, geom, {
+        extent: nodeExtent(p),
+      });
     }
 
     function basePos(i: number): { x: number; y: number } {
@@ -738,10 +745,10 @@ export default function AppHomePage() {
     }
 
     function coreR(p: PersonRow): number {
-      if (usesMemorialGlyph(p)) return 17; /* glyph half-extent for labels / flare (≥+50%) */
+      const scale = normalizeStarScale(p.star_scale);
+      if (usesMemorialGlyph(p)) return glyphRadiusPx(lowPerf, scale);
       const form = formFromRelation(p.is_self, p.relation, p.passed_at);
-      const base = form === "self" ? 7 : form === "ancient" ? 3.4 : form === "moon" ? 4.2 : 5;
-      return base;
+      return starCoreRadius(form) * scale;
     }
 
     /**
@@ -758,8 +765,9 @@ export default function AppHomePage() {
       scale: number,
       twinkle: number,
       isHovered: boolean,
+      starScale: unknown,
     ) {
-      const radius = (lowPerf ? 18 : 21) * scale * (isHovered ? 1.08 : 1);
+      const radius = glyphRadiusPx(lowPerf, starScale) * scale * (isHovered ? 1.08 : 1);
       /* stroke-light on purpose — larger seat, not thicker ink */
       const lineW = lowPerf ? 0.85 : 1.05;
       const starR = (lowPerf ? 1.25 : 1.45) * scale;
@@ -872,7 +880,7 @@ export default function AppHomePage() {
           fg.addColorStop(1, hexA(col, 0));
           cx.beginPath(); cx.arc(q.x, q.y, fr, 0, Math.PI * 2); cx.fillStyle = fg; cx.fill();
         }
-        drawMemorialGlyph(q, col, memorialPattern, scale, tw, isHovered);
+        drawMemorialGlyph(q, col, memorialPattern, scale, tw, isHovered, p.star_scale);
         if (isActive && !reduced) {
           cx.beginPath();
           cx.arc(q.x, q.y, R0 * (1.55 + 0.25 * Math.sin(t * 0.025 + phases[i].ph)), 0, Math.PI * 2);
@@ -1223,7 +1231,10 @@ export default function AppHomePage() {
       let bestD = Infinity;
       for (let i = 0; i < people.length; i++) {
         const q = positions[i];
-        const hitR = usesMemorialGlyph(people[i]) ? 28 : 22;
+        const hitR = Math.max(
+          usesMemorialGlyph(people[i]) ? 28 : 22,
+          nodeExtent(people[i]) * 0.55,
+        );
         const d = Math.hypot(mx - q.x, my - q.y);
         if (d < hitR && d < bestD) {
           bestD = d;
@@ -1342,13 +1353,13 @@ export default function AppHomePage() {
 
       const pending = pendingPositionRef.current;
       if (!forExport && pending && dragRef.current?.active) {
-        const { cx: rcx, cy: rcy, radX } = ringGeom();
+        const { cx: rcx, cy: rcy, radX, radY } = ringGeom();
         cx.save();
         cx.setLineDash([4, 6]);
         cx.strokeStyle = "rgba(255,255,255,0.25)";
         cx.lineWidth = 1;
         cx.beginPath();
-        cx.arc(rcx, rcy, pending.radiusPct * radX, 0, Math.PI * 2);
+        cx.ellipse(rcx, rcy, pending.radiusPct * radX, pending.radiusPct * radY, 0, 0, Math.PI * 2);
         cx.stroke();
         cx.restore();
       }
@@ -1497,7 +1508,7 @@ export default function AppHomePage() {
       if (!dragRef.current) {
         const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
         setHoverPerson(hit);
-        canvas.style.cursor = hit ? "pointer" : "default";
+        canvas.style.cursor = !hit ? "default" : hit.is_self ? "pointer" : "grab";
         return;
       }
       const dx = e.clientX - dragRef.current.startX;
@@ -1515,12 +1526,16 @@ export default function AppHomePage() {
       canvas.style.cursor = "grabbing";
       const geom = ringGeom();
       const polar = pointerToCustomPosition(e.clientX - rect.left, e.clientY - rect.top, geom);
+      const dragged = people.find((p) => p.id === dragRef.current!.personId);
+      const rn = dragged
+        ? clampSeatRn(polar.angle, polar.radius_pct, geom, nodeExtent(dragged))
+        : polar.radius_pct;
       dragRef.current.currentAngle = polar.angle;
-      dragRef.current.currentRadiusPct = polar.radius_pct;
+      dragRef.current.currentRadiusPct = rn;
       pendingPositionRef.current = {
         personId: dragRef.current.personId,
         angle: polar.angle,
-        radiusPct: polar.radius_pct,
+        radiusPct: rn,
       };
     };
 
@@ -1537,7 +1552,12 @@ export default function AppHomePage() {
       }
 
       suppressClickRef.current = true;
-      const custom_position = { angle: currentAngle, radius_pct: currentRadiusPct };
+      const geom = ringGeom();
+      const dragged = people.find((p) => p.id === personId);
+      const radius_pct = dragged
+        ? clampSeatRn(currentAngle, currentRadiusPct, geom, nodeExtent(dragged))
+        : currentRadiusPct;
+      const custom_position = { angle: currentAngle, radius_pct };
       const owner = ownerIdRef.current;
       setPeople((prev) => prev.map((p) => (p.id === personId ? { ...p, custom_position } : p)));
       if (!owner) {
@@ -1608,7 +1628,7 @@ export default function AppHomePage() {
       const localDate = ownerLocalDate();
       const [profileRes, peopleRes, chartRes, threadRes, relRes, nudgeRes, recentRes] = await Promise.all([
         supabase.from("profiles").select("display_name, pinned_sky_person_id, onboarding_step, onboarding_completed_at").eq("id", uid).single(),
-        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position").eq("owner_id", uid).order("created_at", { ascending: true }),
+        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode, subject_person, pair_low, pair_high").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6),
         supabase.from("relationships").select("person_a, person_b, relation_type").eq("owner_id", uid).eq("relation_type", HONOR_RELATION_TYPE),

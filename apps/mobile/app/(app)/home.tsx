@@ -13,15 +13,20 @@ import {
   type RelationalTransitPersonInput
 } from "@galaxia/astro";
 import {
+  galaxyGeometry,
   galaxySeatXY,
   galaxySeatsResolved,
   effectiveSeat,
   constellationSkeletonSeats,
+  formFromRelation,
   isMinorForSafety,
+  nodeDrawnExtent,
+  normalizeStarScale,
   peopleForTodaySky,
   resolveAccountName,
   ringIndex,
   sunSignFromChart,
+  usesMemorialGlyph,
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
@@ -47,6 +52,8 @@ interface PersonRow {
   /** Remembrance marker — passed people are excluded from live "Today in your sky". */
   passed_at?: string | null;
   custom_position?: { angle: number; radius_pct: number } | null;
+  star_scale?: number | null;
+  memorial_constellation?: string | null;
   sunSign?: string | null;
 }
 
@@ -87,7 +94,6 @@ interface PersonSky {
 type RelationalTransitRow = ThisWeekRow;
 
 const CONSTELLATION_BOX_HEIGHT = 340;
-const CONSTELLATION_GEOM = { cx: 170, cy: 170, radX: 120, radY: 120 };
 const SKELETON_SEATS = constellationSkeletonSeats();
 const CONSTELLATION_CROSSFADE_MS = 250;
 
@@ -117,6 +123,7 @@ export default function HomeScreen() {
   const [homeStatus, setHomeStatus] = useState<string | null>(null);
   const [homeLoading, setHomeLoading] = useState(true);
   const [constellationFailed, setConstellationFailed] = useState(false);
+  const [boxWidth, setBoxWidth] = useState(340);
   const shimmer = useRef(new Animated.Value(0.45)).current;
   const skeletonFade = useRef(new Animated.Value(1)).current;
   const liveFade = useRef(new Animated.Value(0)).current;
@@ -176,11 +183,16 @@ export default function HomeScreen() {
     ]).start();
   }, [homeLoading, constellationFailed, people.length, reduceMotion, skeletonFade, liveFade]);
 
+  const constellationGeom = useMemo(
+    () => galaxyGeometry(boxWidth, CONSTELLATION_BOX_HEIGHT),
+    [boxWidth],
+  );
+
   /* Same learnable seats as web `/app`: f(id, own ring) via galaxySeatsResolved
-     (near-collision nudge on the ring by stable id order). Fixed ellipse geom
-     for the home glance card — not the full canvas, but the same norms. */
+     (near-collision nudge on the ring by stable id order). galaxyGeometry is
+     the only source — same ellipse as the web canvas, sized to this glance card. */
   const constellationPositions = useMemo(() => {
-    const geom = CONSTELLATION_GEOM;
+    const geom = constellationGeom;
     const seats = galaxySeatsResolved(
       people.map((person) => ({
         id: person.id,
@@ -194,13 +206,20 @@ export default function HomeScreen() {
         person,
         seat.angle,
         seat.rn,
-        geom.cx,
-        geom.cy,
-        geom.radX,
+        geom,
+        {
+          extent: nodeDrawnExtent({
+            form: formFromRelation(person.is_self, person.relation, person.passed_at),
+            memorial: usesMemorialGlyph(person),
+            lite: true,
+            precision: person.birth_precision,
+            starScale: person.star_scale,
+          }),
+        },
       );
       return { personId: person.id, x, y };
     });
-  }, [people]);
+  }, [people, constellationGeom]);
 
   const positionMap = useMemo(
     () =>
@@ -237,7 +256,7 @@ export default function HomeScreen() {
       const nowISO = new Date().toISOString();
       const [{ data: profile }, { data: peopleRows, error: peopleError }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: transitRows }, { data: upcomingRows }] = await Promise.all([
       supabase.from("profiles").select("display_name, pinned_sky_person_id, timezone, relational_transit_alerts").eq("id", session.user.id).single(),
-      supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, custom_position").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
+      supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, custom_position, star_scale, memorial_constellation").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
       personIds.length
         ? supabase.from("charts").select("person_id, data").in("person_id", personIds)
         : Promise.resolve({ data: [] as { person_id: string; data: NatalChart }[] }),
@@ -508,7 +527,13 @@ export default function HomeScreen() {
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Constellation</Text>
-        <View style={{ height: CONSTELLATION_BOX_HEIGHT, borderRadius: 16, borderWidth: 1, borderColor: tokens.colors.line, backgroundColor: tokens.colors.ink, overflow: "hidden" }}>
+        <View
+          style={{ height: CONSTELLATION_BOX_HEIGHT, borderRadius: 16, borderWidth: 1, borderColor: tokens.colors.line, backgroundColor: tokens.colors.ink, overflow: "hidden" }}
+          onLayout={(event) => {
+            const w = event.nativeEvent.layout.width;
+            if (w > 0) setBoxWidth(w);
+          }}
+        >
           {constellationFailed ? (
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 12 }}>
               {/* FOUNDER-REVIEW: CONSTELLATION_LOAD_ERROR */}
@@ -533,7 +558,7 @@ export default function HomeScreen() {
             <>
               <Animated.View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: skeletonFade }}>
                 {SKELETON_SEATS.map((seat) => {
-                  const { x, y } = galaxySeatXY(seat, CONSTELLATION_GEOM);
+                  const { x, y } = galaxySeatXY(seat, constellationGeom);
                   const size = 3 + seat.size * 3;
                   return (
                     <View
@@ -581,12 +606,13 @@ export default function HomeScreen() {
             const person = people.find((row) => row.id === position.personId);
             if (!person) return null;
             const isActive = activeTransitIds.includes(person.id);
+            const size = 20 * normalizeStarScale(person.star_scale);
             return (
               <View key={person.id} style={{ position: "absolute", left: position.x - 24, top: position.y - 24, alignItems: "center", width: 48 }}>
                 <Animated.View
                   style={{
-                    width: 20,
-                    height: 20,
+                    width: size,
+                    height: size,
                     borderRadius: 999,
                     backgroundColor: person.is_self ? tokens.colors.gold : tokens.colors.teal,
                     borderWidth: 1,

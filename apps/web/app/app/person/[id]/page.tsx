@@ -103,6 +103,7 @@ interface PersonRow {
   memorial_constellation?: string | null;
   is_self?: boolean;
   custom_position?: { angle: number; radius_pct: number } | null;
+  star_scale?: number | null;
 }
 /* ─── Normalise engine output to library key conventions ─────────────────── */
 function normaliseBody(b: string): BodyKey { return b.toLowerCase() as BodyKey; }
@@ -520,7 +521,7 @@ export default function PersonProfilePage() {
       : personId;
     if (!actualId) { setStatus("No self profile yet."); setLoading(false); return; }
     const [{ data: pData, error: pErr }, { data: cData, error: cErr }] = await Promise.all([
-      supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, died_on, star_color, memorial_constellation, custom_position").eq("id", actualId).single(),
+      supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, died_on, star_color, memorial_constellation, custom_position, star_scale").eq("id", actualId).single(),
       supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualId).single()
     ]);
     if (pErr || !pData) { setStatus(pErr?.message ?? "Unable to load person."); setLoading(false); return; }

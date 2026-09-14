@@ -47,6 +47,36 @@ export const GALAXY_RING_NORMS: Readonly<Record<number, number>> = {
 /** Semantic rings that draw soft concentric guides (sketch Rings 1–4). */
 export const GALAXY_GUIDE_RINGS = [2, 3, 4, 5] as const;
 
+/** Horizontal inset from the stage edge to the galaxy ellipse. */
+export const GALAXY_GUTTER_X = 44;
+/** Vertical inset from the stage edge to the galaxy ellipse. */
+export const GALAXY_GUTTER_Y = 48;
+/** Floor for radX / radY so a tiny stage still has a readable core. */
+export const GALAXY_MIN_R = 70;
+/** Cap |radX/radY| so the galaxy never looks squashed. */
+export const GALAXY_MAX_ECC = 1.3;
+/** Pixel pad between a node's drawn extent and the canvas edge. */
+export const GALAXY_SEAT_MARGIN = 6;
+
+export type GalaxyGeometry = {
+  cx: number;
+  cy: number;
+  radX: number;
+  radY: number;
+};
+
+/**
+ * Single geometry source for web and mobile. Independent axes, then an
+ * eccentricity cap so a wide stage fills horizontally without a pancake.
+ */
+export function galaxyGeometry(width: number, height: number): GalaxyGeometry {
+  let radX = Math.max(GALAXY_MIN_R, width / 2 - GALAXY_GUTTER_X);
+  let radY = Math.max(GALAXY_MIN_R, height / 2 - GALAXY_GUTTER_Y);
+  if (radY > 0 && radX / radY > GALAXY_MAX_ECC) radX = radY * GALAXY_MAX_ECC;
+  if (radX > 0 && radY / radX > GALAXY_MAX_ECC) radY = radX * GALAXY_MAX_ECC;
+  return { cx: width / 2, cy: height / 2, radX, radY };
+}
+
 /** Soft nebula-band colours for the four guide rings. Keys match `GALAXY_GUIDE_RINGS`. */
 export const RING_BAND_COLORS = {
   2: { core: "#d4a855", glow: "#f0d9a6", width: 1.8, opacity: 0.50 },
@@ -175,7 +205,7 @@ export interface GalaxySeatNorm {
   ny: number;
   /** Radians; 0 = +x (canvas right), grows clockwise-down with canvas y. */
   angle: number;
-  /** Normalised radius in [0, 1] (+ small within-band jitter). */
+  /** Normalised radius (band seats in ~[0, 1]; custom seats may exceed 1). */
   rn: number;
 }
 
@@ -342,7 +372,9 @@ export function galaxySeatXY(
 
 /**
  * Owner-chosen polar seat on the constellation (`people.custom_position`).
- * `radius_pct` is the same space as `GalaxySeatNorm.rn` (0.05–1.0 of max orbit).
+ * `radius_pct` is the same space as `GalaxySeatNorm.rn`. Floor 0.05; no
+ * authored ceiling of 1. The live bound is `maxSeatRadius` (canvas geometry).
+ * `CUSTOM_RADIUS_SANITY_MAX` is a data-guard only (DB check constraint).
  */
 export type CustomGalaxyPosition = {
   angle: number;
@@ -350,7 +382,40 @@ export type CustomGalaxyPosition = {
 };
 
 export const CUSTOM_RADIUS_MIN = 0.05;
-export const CUSTOM_RADIUS_MAX = 1.0;
+/** Data-guard ceiling. Never the binding limit in normal drag/render. */
+export const CUSTOM_RADIUS_SANITY_MAX = 2.5;
+/** @deprecated Use CUSTOM_RADIUS_SANITY_MAX. Not a live geometry cap. */
+export const CUSTOM_RADIUS_MAX = CUSTOM_RADIUS_SANITY_MAX;
+
+/**
+ * Largest `rn` that keeps a node of `extent` (CSS px) inside the canvas.
+ * Axes bound independently so the ellipse never walks off an edge.
+ */
+export function maxSeatRadius(
+  angle: number,
+  geo: GalaxyGeometry,
+  extent: number,
+  margin: number = GALAXY_SEAT_MARGIN,
+): number {
+  const halfW = geo.cx - margin - extent;
+  const halfH = geo.cy - margin - extent;
+  const absC = Math.abs(Math.cos(angle));
+  const absS = Math.abs(Math.sin(angle));
+  const limX = absC < 1e-6 ? Number.POSITIVE_INFINITY : halfW / (absC * geo.radX);
+  const limY = absS < 1e-6 ? Number.POSITIVE_INFINITY : halfH / (absS * geo.radY);
+  return Math.max(CUSTOM_RADIUS_MIN, Math.min(limX, limY));
+}
+
+export function clampSeatRn(
+  angle: number,
+  rn: number,
+  geo: GalaxyGeometry,
+  extent: number,
+  margin: number = GALAXY_SEAT_MARGIN,
+): number {
+  const maxRn = maxSeatRadius(angle, geo, extent, margin);
+  return Math.min(maxRn, Math.max(CUSTOM_RADIUS_MIN, rn));
+}
 
 export function parseCustomPosition(raw: unknown): CustomGalaxyPosition | null {
   if (raw == null || typeof raw !== "object") return null;
@@ -360,26 +425,31 @@ export function parseCustomPosition(raw: unknown): CustomGalaxyPosition | null {
   return { angle: rec.angle, radius_pct: rec.radius_pct };
 }
 
+/** Floor only. The canvas-edge bound is `maxSeatRadius`, not a constant. */
 export function clampCustomPosition(pos: CustomGalaxyPosition): CustomGalaxyPosition {
   return {
     angle: pos.angle,
-    radius_pct: Math.min(CUSTOM_RADIUS_MAX, Math.max(CUSTOM_RADIUS_MIN, pos.radius_pct)),
+    radius_pct: Math.max(CUSTOM_RADIUS_MIN, pos.radius_pct),
   };
 }
 
-/** Polar seat from a CSS-pixel pointer relative to canvas geometry. */
+/**
+ * Polar seat from a CSS-pixel pointer. Inverts the same ellipse as
+ * `effectiveSeat`: nx = dx/radX, ny = dy/radY, rn = hypot(nx, ny).
+ */
 export function pointerToCustomPosition(
   px: number,
   py: number,
-  geom: { cx: number; cy: number; radX: number },
+  geom: GalaxyGeometry,
 ): CustomGalaxyPosition {
   const dx = px - geom.cx;
   const dy = py - geom.cy;
-  const maxR = geom.radX || 1;
-  return clampCustomPosition({
-    angle: Math.atan2(dy, dx),
-    radius_pct: Math.hypot(dx, dy) / maxR,
-  });
+  const nx = dx / (geom.radX || 1);
+  const ny = dy / (geom.radY || 1);
+  return {
+    angle: Math.atan2(ny, nx),
+    radius_pct: Math.max(CUSTOM_RADIUS_MIN, Math.hypot(nx, ny)),
+  };
 }
 
 export function customPositionToSeat(pos: CustomGalaxyPosition): GalaxySeatNorm {
@@ -392,37 +462,43 @@ export type PersonWithCustomPos = {
   custom_position?: CustomGalaxyPosition | null;
 };
 
+export type SeatEdgeClamp = {
+  /** Largest drawn radius of this node (glow or glyph), CSS px. */
+  extent: number;
+  margin?: number;
+};
+
 /**
  * Pixel seat for a person. Self is always the galactic core.
- * `defaultRn` is `GalaxySeatNorm.rn` (0–1), not pixels. Returned `rn` is also
- * normalised 0–1 so callers can feed `galaxySeatXY` / labels without a unit mixup.
+ * Place at cx + cos(a)*rn*radX, cy + sin(a)*rn*radY.
+ * When `clamp` is passed, `rn` is bounded by `maxSeatRadius` before x/y.
  */
 export function effectiveSeat(
   person: PersonWithCustomPos,
   defaultAngle: number,
   defaultRn: number,
-  cx: number,
-  cy: number,
-  maxRadius: number,
+  geom: GalaxyGeometry,
+  clamp?: SeatEdgeClamp,
 ): { x: number; y: number; angle: number; rn: number } {
   if (person.is_self) {
-    return { x: cx, y: cy, angle: 0, rn: 0 };
+    return { x: geom.cx, y: geom.cy, angle: 0, rn: 0 };
   }
   const custom = parseCustomPosition(person.custom_position);
+  let angle = defaultAngle;
+  let rn = defaultRn;
   if (custom) {
-    const { angle, radius_pct } = clampCustomPosition(custom);
-    return {
-      x: cx + Math.cos(angle) * radius_pct * maxRadius,
-      y: cy + Math.sin(angle) * radius_pct * maxRadius,
-      angle,
-      rn: radius_pct,
-    };
+    const clamped = clampCustomPosition(custom);
+    angle = clamped.angle;
+    rn = clamped.radius_pct;
+  }
+  if (clamp) {
+    rn = clampSeatRn(angle, rn, geom, clamp.extent, clamp.margin ?? GALAXY_SEAT_MARGIN);
   }
   return {
-    x: cx + Math.cos(defaultAngle) * defaultRn * maxRadius,
-    y: cy + Math.sin(defaultAngle) * defaultRn * maxRadius,
-    angle: defaultAngle,
-    rn: defaultRn,
+    x: geom.cx + Math.cos(angle) * rn * geom.radX,
+    y: geom.cy + Math.sin(angle) * rn * geom.radY,
+    angle,
+    rn,
   };
 }
 

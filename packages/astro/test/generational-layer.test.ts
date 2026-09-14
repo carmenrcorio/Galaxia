@@ -1,10 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
+  ERA_READING_HEADING,
+  ERA_READING_LABELS,
   GENERATION_BY_YEAR,
   PLUTO_SIGN_EXTENDED,
+  PROFESSIONAL_PERSON_RELATIONS,
+  WORK_VIEW_HEADING,
+  WORK_VIEW_LABELS,
   figureBirth,
   generationNameForYear,
+  generationalLeadForPair,
   getFamilyBridge,
+  getPlutoEraReading,
+  getPlutoWorkView,
+  isProfessionalPersonRelation,
+  plutoSignsFromRelation,
+  plutoSourceLine,
 } from "../src/generational-layer";
 import { computeGenerational, computeNatalChart } from "../src/index";
 
@@ -155,5 +166,141 @@ describe("getFamilyBridge", () => {
 
   it("returns null for an unauthored pair", () => {
     expect(getFamilyBridge("Scorpio", "Aquarius")).toBeNull();
+  });
+});
+
+const AUTHORED_SIGNS = Object.keys(PLUTO_SIGN_EXTENDED) as Array<keyof typeof PLUTO_SIGN_EXTENDED>;
+
+describe("eraReading (Phase 1: plain-language lead)", () => {
+  it("is present with all four fields for every authored Pluto sign", () => {
+    for (const sign of AUTHORED_SIGNS) {
+      const reading = PLUTO_SIGN_EXTENDED[sign]!.eraReading;
+      expect(reading.authority.length, `${sign} authority`).toBeGreaterThan(40);
+      expect(reading.institutions.length, `${sign} institutions`).toBeGreaterThan(40);
+      expect(reading.change.length, `${sign} change`).toBeGreaterThan(40);
+      expect(reading.trust.length, `${sign} trust`).toBeGreaterThan(40);
+      expect(getPlutoEraReading(sign)).toBe(reading);
+    }
+  });
+
+  it("does not lead the era reading with a planet name (source line does that)", () => {
+    for (const sign of AUTHORED_SIGNS) {
+      const reading = PLUTO_SIGN_EXTENDED[sign]!.eraReading;
+      for (const [field, text] of Object.entries(reading)) {
+        expect(text, `${sign}.${field}`).not.toMatch(/^Pluto\b/);
+        expect(text, `${sign}.${field}`).not.toMatch(/^Uranus\b/);
+        expect(text, `${sign}.${field}`).not.toMatch(/^Neptune\b/);
+      }
+    }
+  });
+
+  it("returns null for an unauthored sign instead of fabricating", () => {
+    expect(getPlutoEraReading("Aries")).toBeNull();
+    expect(getPlutoEraReading("Aquarius")).toBeNull();
+  });
+
+  it("keeps the placement visible as a source line", () => {
+    expect(plutoSourceLine("Virgo")).toBe("Source: Pluto in Virgo");
+    expect(ERA_READING_HEADING.length).toBeGreaterThan(0);
+    expect(ERA_READING_LABELS.authority).toBe("Authority");
+    expect(ERA_READING_LABELS.institutions).toBe("Institutions");
+    expect(ERA_READING_LABELS.change).toBe("Change");
+    expect(ERA_READING_LABELS.trust).toBe("Trust");
+  });
+});
+
+describe("workView (Phase 2: professional lead)", () => {
+  const FORBIDDEN = [
+    /\bhiring\b/i,
+    /\bhire[ds]?\b/i,
+    /\bcandidate/i,
+    /\bpromot(e|ion|ed|ing)\b/i,
+    /\bperformance\b/i,
+    /\bcompetence\b/i,
+    /\bcompetent\b/i,
+    /\bproductiv/i,
+    /\bshortlist/i,
+  ];
+
+  it("is present with respect, decisions, and friction for every authored sign", () => {
+    for (const sign of AUTHORED_SIGNS) {
+      const view = PLUTO_SIGN_EXTENDED[sign]!.workView;
+      expect(view.respect.length, `${sign} respect`).toBeGreaterThan(20);
+      expect(view.decisions.length, `${sign} decisions`).toBeGreaterThan(20);
+      expect(view.friction.length, `${sign} friction`).toBeGreaterThan(20);
+      expect(getPlutoWorkView(sign)).toBe(view);
+    }
+  });
+
+  it("contains no hiring, performance, or competence claims", () => {
+    for (const sign of AUTHORED_SIGNS) {
+      const view = PLUTO_SIGN_EXTENDED[sign]!.workView;
+      const blob = `${view.respect} ${view.decisions} ${view.friction}`;
+      for (const pattern of FORBIDDEN) {
+        expect(blob, `${sign} ${pattern}`).not.toMatch(pattern);
+      }
+    }
+  });
+
+  it("returns null for an unauthored sign instead of fabricating", () => {
+    expect(getPlutoWorkView("Pisces")).toBeNull();
+  });
+
+  it("unlocks from the same person.relation tags compare already maps to working frames", () => {
+    for (const tag of PROFESSIONAL_PERSON_RELATIONS) {
+      expect(isProfessionalPersonRelation(tag), tag).toBe(true);
+    }
+    expect(isProfessionalPersonRelation("partner")).toBe(false);
+    expect(isProfessionalPersonRelation(null)).toBe(false);
+    expect(WORK_VIEW_HEADING.length).toBeGreaterThan(0);
+    expect(WORK_VIEW_LABELS.respect).toContain("respect");
+    expect(WORK_VIEW_LABELS.decisions).toContain("decisions");
+    expect(WORK_VIEW_LABELS.friction).toContain("friction");
+  });
+});
+
+describe("generationalLeadForPair", () => {
+  it("returns one lead when Pluto is shared", () => {
+    const leads = generationalLeadForPair({
+      shared: [{ planet: "pluto", sign: "Virgo" }],
+      diverged: [],
+    });
+    expect(leads).toHaveLength(1);
+    expect(leads[0]!.sign).toBe("Virgo");
+    expect(leads[0]!.source).toBe("Source: Pluto in Virgo");
+    expect(leads[0]!.workView).toBe(PLUTO_SIGN_EXTENDED.Virgo!.workView);
+  });
+
+  it("returns two leads when Pluto diverges, skipping unauthored signs", () => {
+    const leads = generationalLeadForPair({
+      shared: [],
+      diverged: [{ planet: "pluto", signA: "Scorpio", signB: "Aries" }],
+    });
+    expect(leads.map((lead) => lead.sign)).toEqual(["Scorpio"]);
+  });
+
+  it("returns null signs rather than inventing a Pluto when the lists omit it", () => {
+    expect(plutoSignsFromRelation({ shared: [], diverged: [] })).toBeNull();
+    expect(generationalLeadForPair({ shared: [], diverged: [] })).toEqual([]);
+  });
+});
+
+describe("authored era and work strings contain no em dashes", () => {
+  it("scans every eraReading and workView field", () => {
+    for (const sign of AUTHORED_SIGNS) {
+      const entry = PLUTO_SIGN_EXTENDED[sign]!;
+      const blobs = [
+        ...Object.values(entry.eraReading),
+        ...Object.values(entry.workView),
+        ERA_READING_HEADING,
+        WORK_VIEW_HEADING,
+        ...Object.values(ERA_READING_LABELS),
+        ...Object.values(WORK_VIEW_LABELS),
+        plutoSourceLine(sign),
+      ];
+      for (const text of blobs) {
+        expect(text.includes("\u2014"), text.slice(0, 80)).toBe(false);
+      }
+    }
   });
 });

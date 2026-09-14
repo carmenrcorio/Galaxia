@@ -5,10 +5,16 @@
  */
 
 import {
+  ERA_READING_HEADING,
+  ERA_READING_LABELS,
+  WORK_VIEW_HEADING,
+  WORK_VIEW_LABELS,
   genFrame,
   genHeadline,
   genPlacement,
+  generationalLeadForPair,
   type GenPlanet,
+  type GenerationalLeadEntry,
   type Sign
 } from "@galaxia/astro";
 
@@ -33,6 +39,7 @@ export type DivergedGenCard = {
 
 export type GenerationalCalloutModel = {
   headline: string;
+  leads: GenerationalLeadEntry[];
   shared: SharedGenCard[];
   diverged: DivergedGenCard[];
 };
@@ -101,7 +108,10 @@ export function buildGenerationalCallout(data: GenerationalCalloutData): Generat
   }
   return {
     headline: genHeadline(data.shared.length, data.diverged.length),
+    leads: generationalLeadForPair(data),
     shared,
     diverged
   };
 }
+
+export { ERA_READING_HEADING, ERA_READING_LABELS, WORK_VIEW_HEADING, WORK_VIEW_LABELS };

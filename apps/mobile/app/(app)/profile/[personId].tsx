@@ -1,4 +1,14 @@
-import type { NatalChart } from "@galaxia/astro";
+import type { NatalChart, SignKey } from "@galaxia/astro";
+import {
+  ERA_READING_HEADING,
+  ERA_READING_LABELS,
+  WORK_VIEW_HEADING,
+  WORK_VIEW_LABELS,
+  getPlutoEraReading,
+  getPlutoWorkView,
+  isProfessionalPersonRelation,
+  plutoSourceLine
+} from "@galaxia/astro";
 import {
   OWNED_DELETE_COPY,
   ASPECTS_UNAVAILABLE_YEAR_BODY,
@@ -378,6 +388,39 @@ export default function PersonProfileScreen() {
               <Text style={cardBody}>
                 Pluto in {chart.generational.pluto.sign}: {describeGenerationalArchetype("Pluto", chart.generational.pluto.sign)}
               </Text>
+              {chart.generational.pluto.confident !== false ? (() => {
+                const sign = chart.generational.pluto.sign as SignKey;
+                const era = getPlutoEraReading(sign);
+                const professional = isProfessionalPersonRelation(person.relation);
+                const work = professional ? getPlutoWorkView(sign) : null;
+                if (!era && !work) return null;
+                return (
+                  <View style={{ gap: 6, marginTop: 8 }}>
+                    {work ? (
+                      <>
+                        <Text style={{ color: tokens.colors.mist2, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" }}>
+                          {WORK_VIEW_HEADING}
+                        </Text>
+                        <Text style={cardBody}>{WORK_VIEW_LABELS.respect}. {work.respect}</Text>
+                        <Text style={cardBody}>{WORK_VIEW_LABELS.decisions}. {work.decisions}</Text>
+                        <Text style={cardBody}>{WORK_VIEW_LABELS.friction}. {work.friction}</Text>
+                      </>
+                    ) : null}
+                    {era ? (
+                      <>
+                        <Text style={{ color: tokens.colors.mist2, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" }}>
+                          {ERA_READING_HEADING}
+                        </Text>
+                        <Text style={cardBody}>{ERA_READING_LABELS.authority}. {era.authority}</Text>
+                        <Text style={cardBody}>{ERA_READING_LABELS.institutions}. {era.institutions}</Text>
+                        <Text style={cardBody}>{ERA_READING_LABELS.change}. {era.change}</Text>
+                        <Text style={cardBody}>{ERA_READING_LABELS.trust}. {era.trust}</Text>
+                      </>
+                    ) : null}
+                    <Text style={[cardBody, { color: tokens.colors.mist2 }]}>{plutoSourceLine(sign)}</Text>
+                  </View>
+                );
+              })() : null}
               {chart.precision === "exact" ? (
                 <Text style={[cardBody, { color: tokens.colors.goldSoft }]}>
                   Houses: Uranus {chart.generational.uranusHouse ?? "·"} · Neptune {chart.generational.neptuneHouse ?? "·"} · Pluto {chart.generational.plutoHouse ?? "·"}

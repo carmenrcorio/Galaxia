@@ -41,6 +41,7 @@ import {
   generationNameForYear,
   PLUTO_SIGN_EXTENDED,
   getFamilyBridge,
+  isProfessionalPersonRelation,
   type PlutoSignExtended,
 } from "@galaxia/astro";
 import {
@@ -72,6 +73,7 @@ import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../.
 import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
+import { GenerationalEraSurface } from "../../../../components/generational-era-surface";
 import { InitialAvatar } from "../../../../components/initial-avatar";
 import { PersonProfileNav, ChartVocabSubhead } from "../../../../components/chart-section-nav";
 import { HousesUnavailableCard } from "../../../../components/houses-unavailable-card";
@@ -165,7 +167,7 @@ function HouseBadge({ house }: { house: number }) {
 /* ─── ExpandRow — the single expandable row used throughout ─────────────── */
 function ExpandRow({
   open, onToggle, label, domain, degree, house, el, glyph, short, long,
-  houseReading, planetAspects, hasHouses, plutoExtended
+  houseReading, planetAspects, hasHouses, plutoExtended, plutoSign, showWorkView
 }: {
   open: boolean; onToggle: () => void;
   label: string; domain?: string; degree?: string; house?: number;
@@ -175,11 +177,15 @@ function ExpandRow({
   /** Per-planet aspects — rendered in expanded state */
   planetAspects?: Array<{ from: string; to: string; type: string; orb: number; short: string; tight: boolean }>;
   hasHouses?: boolean;
-  /** Pluto-only extended content (Corruption Signature, historical figures, era events).
+  /** Pluto-only extended content (era reading, work view, corruption signature, figures, events).
    *  Renders after the long description, expanded state only. Caller is responsible
    *  for only passing this when the placement's sign is confident (never for a
    *  guessed year-only sign — §12). */
   plutoExtended?: PlutoSignExtended | null;
+  /** Confident Pluto sign for the era / work lookup. Never a guessed sign. */
+  plutoSign?: SignKey;
+  /** Professional recorded relationship: work view leads the Pluto block. */
+  showWorkView?: boolean;
 }) {
   const [openEraEvent, setOpenEraEvent] = useState<string | null>(null);
   return (
@@ -262,9 +268,14 @@ function ExpandRow({
               </div>
             </div>
           ) : null}
-          {/* Block 4: PLUTO EXTENDED — corruption signature, historical figures, era events */}
-          {plutoExtended ? (
+          {/* Block 4: PLUTO EXTENDED — era reading (and work view when professional), then shadow, figures, events */}
+          {plutoExtended && plutoSign ? (
             <div style={{ display: "grid", gap: 12 }}>
+              <GenerationalEraSurface
+                sign={plutoSign}
+                showWorkView={Boolean(showWorkView)}
+                showSource
+              />
               <div>
                 <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--gold-soft)", margin: "0 0 4px" }}>
                   The corruption signature
@@ -1571,6 +1582,8 @@ export default function PersonProfilePage() {
               short={reading.short} long={reading.long}
               hasHouses={false}
               plutoExtended={plutoExtended}
+              plutoSign={plutoExtended ? sk : undefined}
+              showWorkView={isProfessionalPersonRelation(person.relation)}
             />
           );
         })}

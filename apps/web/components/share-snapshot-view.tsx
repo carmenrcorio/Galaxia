@@ -10,6 +10,7 @@
 import {
   bodyDomain,
   interpretPlacement,
+  isProfessionalRelation,
   relationshipWatchLine,
   whatTheyNeed,
   type BodyKey,
@@ -293,7 +294,10 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
       )}
 
       {!framing.blockRomanticMinorRender ? (
-        <GenerationalSection generational={payload.generational} />
+        <GenerationalSection
+          generational={payload.generational}
+          professional={isProfessionalRelation(relationType)}
+        />
       ) : null}
     </>
   );

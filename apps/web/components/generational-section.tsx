@@ -10,13 +10,18 @@
  */
 
 import {
+  WORK_VIEW_FOR_WORK_HREF,
+  WORK_VIEW_FOR_WORK_LINK,
   genFrame,
   genHeadline,
   genPlacement,
+  generationalLeadForPair,
   type GenPlanet,
   type Sign,
 } from "@galaxia/astro";
+import Link from "next/link";
 import { SIGN_GLYPH } from "../lib/design";
+import { GenerationalEraSurface } from "./generational-era-surface";
 
 export type GenerationalSectionData = {
   shared: { planet: string; sign: string }[];
@@ -57,14 +62,36 @@ function logMiss(planet: string, sign: string) {
 
 type Props = {
   generational: GenerationalSectionData;
+  /** True when the compare frame is a professional recorded relationship. */
+  professional?: boolean;
 };
 
-export function GenerationalSection({ generational }: Props) {
+export function GenerationalSection({ generational, professional = false }: Props) {
   const headline = genHeadline(generational.shared.length, generational.diverged.length);
+  const leads = generationalLeadForPair(generational);
 
   return (
     <section className="glass-card fade-in fade-in-delay-2">
       <p className="eyebrow" style={{ marginBottom: 8 }}>Generational call-out</p>
+      {leads.length > 0 ? (
+        <div style={{ display: "grid", gap: 16, marginBottom: 14 }}>
+          {leads.map((lead) => (
+            <GenerationalEraSurface
+              key={lead.sign}
+              sign={lead.sign}
+              showWorkView={professional}
+              showSource
+            />
+          ))}
+          {professional ? (
+            <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>
+              <Link href={WORK_VIEW_FOR_WORK_HREF as never} className="pill-link">
+                {WORK_VIEW_FOR_WORK_LINK}
+              </Link>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6 }}>
         {headline}
       </p>

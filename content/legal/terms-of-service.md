@@ -162,9 +162,9 @@ You may stop using the Service and delete your account at any time. We may suspe
 
 ## 15\. Governing law and disputes
 
-These Terms are governed by the laws of the State of \[GOVERNING STATE — recommended: the state where your entity is organized or where you operate, e.g., South Carolina\], without regard to its conflict-of-laws rules. \[CONFIRM the governing state and whether you want to include an arbitration clause and/or a class-action waiver. These meaningfully affect how disputes are resolved and should be decided with counsel; if included, they typically require specific formatting and notice to be enforceable.\]
+These Terms are governed by the laws of the State of South Carolina, without regard to its conflict-of-laws rules.
 
-Subject to the above, you agree that the state and federal courts located in \[COUNTY/STATE\] will have exclusive jurisdiction over any dispute not subject to arbitration, and you consent to personal jurisdiction there.
+Subject to the above, you agree that the state and federal courts located in Greenville County, South Carolina will have exclusive jurisdiction over any dispute not subject to arbitration, and you consent to personal jurisdiction there.
 
 ---
 

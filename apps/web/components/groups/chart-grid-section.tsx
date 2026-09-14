@@ -27,6 +27,7 @@ import {
   type FamilyPatternResult,
   type FamilyPlanet,
 } from "@galaxia/astro";
+import { sunSignFromChart } from "@galaxia/core";
 import { InitialAvatar } from "../initial-avatar";
 import { ShareImageButton } from "../share-image-button";
 import { ShareWatermark } from "../share-watermark";
@@ -95,7 +96,7 @@ export function ChartGridSection({ members, allowShare = true }: ChartGridSectio
                   {result.people.map((p) => (
                     <th key={p.id} style={{ padding: "8px 10px", textAlign: "center", minWidth: 130 }}>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                        <InitialAvatar name={p.name} size="sm" />
+                        <InitialAvatar name={p.name} size="sm" personId={p.id} sunSign={sunSignFromChart(p.chart)} />
                         <span style={{ fontFamily: "var(--serif)", color: "var(--cream)", fontSize: ".84rem", display: "flex", alignItems: "center", gap: 4 }}>
                           {p.name}
                           {p.passed ? <span aria-label="remembered" style={{ color: "var(--gold-soft)", fontSize: ".72rem" }}>✦</span> : null}

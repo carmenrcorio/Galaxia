@@ -8,12 +8,14 @@ import {
   PERSON_GROUP_LABEL,
   PERSON_TAB_LABEL,
   PERSON_TAB_VOCAB,
+  sunSignFromChart,
   type PersonGroupKey
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { InitialAvatar } from "../../../src/components/initial-avatar";
 import { supabase } from "../../../src/lib/supabase";
 import { useAuth } from "../../../src/providers/auth-provider";
 
@@ -227,13 +229,19 @@ export default function PersonProfileScreen() {
   const isMemorial = hasPassed(person) && !person.is_self;
   const secondGroup: PersonGroupKey = isMemorial ? "remembrance" : "yours";
   const groupKeys: PersonGroupKey[] = ["them", secondGroup];
+  const sunSign = sunSignFromChart(chart);
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink2 }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 90 }}>
-      <Text style={{ color: tokens.colors.cream, fontSize: 31, fontWeight: "700" }}>{person.display_name}</Text>
-      <Text style={{ color: tokens.colors.mist }}>
-        {person.relation} · {person.birth_precision}
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <InitialAvatar name={person.display_name} size="lg" personId={person.id} sunSign={sunSign} memorial={isMemorial} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: tokens.colors.cream, fontSize: 31, fontWeight: "700" }}>{person.display_name}</Text>
+          <Text style={{ color: tokens.colors.mist }}>
+            {person.relation} · {person.birth_precision}{isMemorial ? " · remembered" : ""}
+          </Text>
+        </View>
+      </View>
       <Link href="/compare" asChild>
         <Pressable style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 10, paddingHorizontal: 14 }}>
           <Text style={{ color: tokens.colors.cream, fontWeight: "700" }}>Compare with someone</Text>

@@ -19,6 +19,8 @@ const GROUP_KINDS: GroupKind[] = ["siblings", "friends", "family", "group"];
 interface PersonLite {
   id: string;
   display_name: string;
+  sunSign?: string | null;
+  passed_at?: string | null;
 }
 
 interface ManageGroupAccordionProps {
@@ -143,7 +145,7 @@ export function ManageGroupAccordion({
                 aria-pressed={selected}
               >
                 <span className="group-member-chip__check" aria-hidden="true">{selected ? "✓" : ""}</span>
-                <InitialAvatar name={p.display_name} size="sm" />
+                <InitialAvatar name={p.display_name} size="sm" personId={p.id} sunSign={p.sunSign} memorial={Boolean(p.passed_at)} />
                 <span>{p.display_name}</span>
               </button>
             );

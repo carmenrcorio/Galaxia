@@ -1,6 +1,6 @@
 "use client";
 
-import { isMinorForSafety, orderPair } from "@galaxia/core";
+import { isMinorForSafety, orderPair, sunSignFromChart } from "@galaxia/core";
 import { detectCrisisLanguage, splitVelaReply } from "@galaxia/vela";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -14,6 +14,8 @@ type Scope     = "person" | "pair" | "group";
 interface PersonLite {
   id: string; display_name: string; is_minor: boolean;
   birth_date: string | null; birth_precision: "none" | "exact" | "date" | "year" | null;
+  passed_at?: string | null;
+  sunSign?: string | null;
 }
 interface GroupLite  { id: string; name: string; }
 /** Single source of truth (ENGINEERING.md §9) — never read person.is_minor directly. */
@@ -134,10 +136,20 @@ export default function VelaPage() {
       setAccessToken(session.access_token);
       setUserId(user.id);
       const [{ data: pd }, { data: gd }] = await Promise.all([
-        supabase.from("people").select("id, display_name, is_minor, birth_date, birth_precision").eq("owner_id", user.id).order("display_name"),
+        supabase.from("people").select("id, display_name, is_minor, birth_date, birth_precision, passed_at").eq("owner_id", user.id).order("display_name"),
         supabase.from("groups").select("id, name").eq("owner_id", user.id).order("name")
       ]);
       const allPeople = (pd ?? []) as PersonLite[];
+      const ids = allPeople.map((p) => p.id);
+      if (ids.length) {
+        const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
+        const sunById = new Map<string, string>();
+        for (const row of chartRows ?? []) {
+          const sign = sunSignFromChart(row.data as { placements?: Array<{ body: string; sign: string; confident?: boolean }> });
+          if (sign) sunById.set(row.person_id as string, sign);
+        }
+        for (const p of allPeople) p.sunSign = sunById.get(p.id) ?? null;
+      }
       setPeople(allPeople);
       setGroups((gd ?? []) as GroupLite[]);
 
@@ -404,26 +416,46 @@ export default function VelaPage() {
               ))}
             </div>
             {scope !== "group"
-              ? <select className="field" style={{ borderRadius: 14, marginBottom: 8 }}
-                  value={subjectId ?? ""}
-                  onChange={e => setSubjectId(e.target.value)}>
-                  {people.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.display_name}{minorOf(p) ? " (minor)" : ""}
-                    </option>
-                  ))}
-                </select>
+              ? (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                  {people.map((p) => {
+                    const selected = subjectId === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className={`group-member-chip${selected ? " group-member-chip--selected" : ""}`}
+                        aria-pressed={selected}
+                        onClick={() => setSubjectId(p.id)}
+                      >
+                        <InitialAvatar name={p.display_name} size="sm" personId={p.id} sunSign={p.sunSign} memorial={Boolean(p.passed_at)} />
+                        <span>{p.display_name}{minorOf(p) ? " (minor)" : ""}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
               : null}
             {scope === "pair"
-              ? <select className="field" style={{ borderRadius: 14, marginBottom: 8 }}
-                  value={pairId ?? ""}
-                  onChange={e => setPairId(e.target.value)}>
-                  {people.map(p => (
-                    <option key={`pair-${p.id}`} value={p.id}>
-                      {p.display_name}{minorOf(p) ? " (minor)" : ""}
-                    </option>
-                  ))}
-                </select>
+              ? (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                  {people.map((p) => {
+                    const selected = pairId === p.id;
+                    return (
+                      <button
+                        key={`pair-${p.id}`}
+                        type="button"
+                        className={`group-member-chip${selected ? " group-member-chip--selected" : ""}`}
+                        aria-pressed={selected}
+                        onClick={() => setPairId(p.id)}
+                      >
+                        <InitialAvatar name={p.display_name} size="sm" personId={p.id} sunSign={p.sunSign} memorial={Boolean(p.passed_at)} />
+                        <span>{p.display_name}{minorOf(p) ? " (minor)" : ""}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
               : null}
             {scope === "group"
               ? <select className="field" style={{ borderRadius: 14, marginBottom: 8 }}
@@ -460,7 +492,30 @@ export default function VelaPage() {
         <div style={{ marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid rgba(183,154,216,.1)" }}>
           {askingAboutHeader && askingAboutAvatar ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <InitialAvatar name={askingAboutAvatar} size="sm" />
+              {scope === "group" ? (
+                <InitialAvatar name={askingAboutAvatar} size="sm" personId={selectedGroup?.id ?? askingAboutAvatar} />
+              ) : (
+                <span className="avatar-cluster">
+                  {scopeSubject ? (
+                    <InitialAvatar
+                      name={scopeSubject.display_name}
+                      size="sm"
+                      personId={scopeSubject.id}
+                      sunSign={scopeSubject.sunSign}
+                      memorial={Boolean(scopeSubject.passed_at)}
+                    />
+                  ) : null}
+                  {scope === "pair" && selectedPair ? (
+                    <InitialAvatar
+                      name={selectedPair.display_name}
+                      size="sm"
+                      personId={selectedPair.id}
+                      sunSign={selectedPair.sunSign}
+                      memorial={Boolean(selectedPair.passed_at)}
+                    />
+                  ) : null}
+                </span>
+              )}
               <p className="eyebrow" style={{ margin: 0 }}>
                 Asking about {askingAboutHeader}
               </p>

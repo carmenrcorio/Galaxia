@@ -785,7 +785,7 @@ export default function PersonProfilePage() {
   if (!chart) return (
     <main className={`app-content${personPassed ? " app-content--remembrance" : ""}`}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }} className="fade-in">
-        <InitialAvatar name={person.display_name} size="lg" />
+        <InitialAvatar name={person.display_name} size="lg" personId={person.id} memorial={personPassed} />
         <div>
           <p className="eyebrow">{person.relation}</p>
           <h1 className="page-title">{person.display_name}</h1>
@@ -913,7 +913,13 @@ export default function PersonProfilePage() {
 
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }} className="fade-in">
-        <InitialAvatar name={person.display_name} size="lg" />
+        <InitialAvatar
+          name={person.display_name}
+          size="lg"
+          personId={person.id}
+          sunSign={sun && sun.confident !== false ? sun.sign : null}
+          memorial={personPassed}
+        />
         <div>
           <p className="eyebrow">{person.relation} · {person.birth_precision} precision{personPassed ? " · remembered" : ""}</p>
           <h1 className="page-title">{person.display_name}</h1>

@@ -12,6 +12,8 @@ import { InitialAvatar } from "../initial-avatar";
 export interface GroupSelectorMember {
   id: string;
   name: string;
+  sunSign?: string | null;
+  memorial?: boolean;
 }
 
 export interface GroupSelectorItem {
@@ -49,7 +51,7 @@ export function GroupSelector({ groups, activeId, onSelect, onCreateNew }: Group
             <div className="group-switcher-card__name">{g.name}</div>
             <div className="avatar-cluster">
               {g.members.slice(0, CLUSTER_CAP).map((m) => (
-                <InitialAvatar key={m.id} name={m.name} size="sm" />
+                <InitialAvatar key={m.id} name={m.name} size="sm" personId={m.id} sunSign={m.sunSign} memorial={m.memorial} />
               ))}
               {g.members.length > CLUSTER_CAP ? (
                 <span style={{ fontSize: 11, color: "var(--mist2)", marginLeft: 8, alignSelf: "center" }}>

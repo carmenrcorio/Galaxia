@@ -531,19 +531,21 @@ select.field--rect {
 .avatar {
   width: 42px; height: 42px; border-radius: 50%;
   display: grid; place-items: center;
+  position: relative;
   font-family: var(--serif); font-size: 1.05rem;
   color: #1a1206; font-weight: 600; flex-shrink: 0;
 }
 .avatar-sm { width: 28px; height: 28px; font-size: .75rem; }
 .avatar-lg { width: 54px; height: 54px; font-size: 1.3rem; }
-
-/* palette from landing avatar gradient pattern */
-.av-0 { background: linear-gradient(150deg, #6FB1B8, #4d8a91); }
-.av-1 { background: linear-gradient(150deg, var(--gold-bright), var(--gold)); }
-.av-2 { background: linear-gradient(150deg, var(--air), #8a6fb0); }
-.av-3 { background: linear-gradient(150deg, #DA8C8C, #b86464); }
-.av-4 { background: linear-gradient(150deg, #E0825C, #c05a38); }
-.av-5 { background: linear-gradient(150deg, var(--earth), #9a8a50); }
+.avatar__star {
+  position: absolute;
+  right: -3px;
+  bottom: -2px;
+  font-size: 0.55em;
+  line-height: 1;
+  color: var(--gold-soft);
+  text-shadow: 0 0 4px var(--ink);
+}
 
 /* overlapping cluster (from landing .cluster) */
 .avatar-cluster { display: flex; }

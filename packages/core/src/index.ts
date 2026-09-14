@@ -68,6 +68,8 @@ export * from "./first-run";
 
 export * from "./star-color";
 
+export * from "./person-chip-color";
+
 export * from "./memorial-constellations";
 
 export * from "./galaxy-seat";

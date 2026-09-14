@@ -1,7 +1,6 @@
 import {
   interpretRelationalTransitDynamicLead,
   interpretRelationalTransitPlanetNote,
-  namedPeoplePhrase,
   type AffectedProfileHit,
   type AspectType,
   type RelationalTransitBody,
@@ -9,6 +8,7 @@ import {
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { Pressable, Text, View } from "react-native";
+import { InitialAvatar } from "./initial-avatar";
 
 export interface ThisWeekRow {
   id: string;
@@ -85,6 +85,7 @@ export function ThisWeekCard({
   nextDateISO,
   compact,
   onSeeToday,
+  personChip,
 }: {
   loading: boolean;
   preference: "all" | "major_only" | "off";
@@ -92,6 +93,8 @@ export function ThisWeekCard({
   nextDateISO: string | null;
   compact: boolean;
   onSeeToday?: () => void;
+  /** Sun + memorial from the people row — chips never invent a local color. */
+  personChip?: Record<string, { sunSign?: string | null; memorial?: boolean }>;
 }) {
   const shown = compact ? rows.slice(0, THIS_WEEK_HOME_LIMIT) : rows;
   const overflow = compact ? Math.max(0, rows.length - shown.length) : 0;
@@ -139,13 +142,13 @@ export function ThisWeekCard({
       </Text>
       {shown.map((row) => {
         const affected = toAffectedHits(row);
-        const names = namedPeoplePhrase(affected);
         const dynamicLead = interpretRelationalTransitDynamicLead({ aspectType: row.aspect_type });
         const planetNote = interpretRelationalTransitPlanetNote({
           transitBody: row.transit_body,
           aspectType: row.aspect_type,
           affected,
         });
+        const uniquePeople = Array.from(new Map(affected.map((a) => [a.personId, a])).values());
         return (
           <View
             key={row.id}
@@ -159,9 +162,20 @@ export function ThisWeekCard({
               gap: 2,
             }}
           >
-            <Text style={{ color: tokens.colors.cream, fontWeight: "700", fontSize: compact ? 14 : 15, lineHeight: 19 }}>
-              {names}
-            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+              {uniquePeople.map((p) => (
+                <View key={p.personId} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <InitialAvatar
+                    name={p.personName}
+                    size="sm"
+                    personId={p.personId}
+                    sunSign={personChip?.[p.personId]?.sunSign}
+                    memorial={personChip?.[p.personId]?.memorial}
+                  />
+                  <Text style={{ color: tokens.colors.cream, fontWeight: "700", fontSize: compact ? 13 : 14 }}>{p.personName}</Text>
+                </View>
+              ))}
+            </View>
             <Text style={{ color: tokens.colors.mist, fontSize: compact ? 12 : 13, lineHeight: 17 }}>{dynamicLead}</Text>
             <Text style={{ color: tokens.colors.goldSoft, fontSize: 11 }}>{planetNote}</Text>
           </View>

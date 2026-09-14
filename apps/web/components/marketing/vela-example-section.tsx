@@ -27,7 +27,7 @@ export function VelaExampleSection() {
         </div>
         <div className="vela-card vela-chat glass-card reveal">
           <div className="vela-chat-bar">
-            <InitialAvatar name="Vela" size="sm" />
+            <InitialAvatar name="Vela" size="sm" personId="marketing:vela" />
             <span className="mock-label">An example of how Vela responds</span>
           </div>
           <div className="chat-thread" style={{ maxHeight: "none" }}>

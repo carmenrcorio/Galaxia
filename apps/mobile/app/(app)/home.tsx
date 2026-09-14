@@ -21,12 +21,14 @@ import {
   peopleForTodaySky,
   resolveAccountName,
   ringIndex,
+  sunSignFromChart,
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, Text, View } from "react-native";
 import { ThisWeekCard, type ThisWeekRow } from "../../src/components/this-week-card";
+import { InitialAvatar } from "../../src/components/initial-avatar";
 import { cacheGet, cacheSet } from "../../src/lib/cache";
 import { supabase } from "../../src/lib/supabase";
 import { backfillProfileTimezoneIfMissing } from "../../src/lib/timezone";
@@ -45,6 +47,7 @@ interface PersonRow {
   /** Remembrance marker — passed people are excluded from live "Today in your sky". */
   passed_at?: string | null;
   custom_position?: { angle: number; radius_pct: number } | null;
+  sunSign?: string | null;
 }
 
 interface LinkRow {
@@ -53,10 +56,18 @@ interface LinkRow {
   score: number;
 }
 
+interface ThreadChipPerson {
+  id: string;
+  name: string;
+  sunSign?: string | null;
+  memorial?: boolean;
+}
+
 interface ThreadChip {
   id: string;
   mode: "ask" | "shared";
   preview: string;
+  people: ThreadChipPerson[];
 }
 
 /* One person's sky today — durable person_daily_nudges row (frozen copy). */
@@ -67,6 +78,7 @@ interface PersonSky {
   isMinor: boolean;
   precision: PersonRow["birth_precision"];
   hasChart: boolean;
+  sunSign?: string | null;
   nudge: PersonDailyNudgeRecord;
 }
 
@@ -229,7 +241,7 @@ export default function HomeScreen() {
       personIds.length
         ? supabase.from("charts").select("person_id, data").in("person_id", personIds)
         : Promise.resolve({ data: [] as { person_id: string; data: NatalChart }[] }),
-      supabase.from("threads").select("id, mode").eq("owner_id", session.user.id).eq("status", "active").order("created_at", { ascending: false }).limit(8),
+      supabase.from("threads").select("id, mode, subject_person, pair_low, pair_high").eq("owner_id", session.user.id).eq("status", "active").order("created_at", { ascending: false }).limit(8),
       personIds.length
         ? supabase.from("person_daily_nudges").select("*").eq("owner_id", session.user.id).eq("date", localDate).in("person_id", personIds)
         : Promise.resolve({ data: [] as Record<string, unknown>[] }),
@@ -317,6 +329,10 @@ export default function HomeScreen() {
       );
 
       const chartById = new Map<string, NatalChart>((chartRows ?? []).map((row) => [row.person_id as string, row.data as NatalChart]));
+      for (const person of castPeople) {
+        person.sunSign = sunSignFromChart(chartById.get(person.id));
+      }
+      setPeople([...castPeople]);
       const calculatedLinks: LinkRow[] = [];
       for (let i = 0; i < castPeople.length; i += 1) {
         for (let j = i + 1; j < castPeople.length; j += 1) {
@@ -387,12 +403,16 @@ export default function HomeScreen() {
           }),
           precision: person.birth_precision,
           hasChart: Boolean(chartById.get(person.id)),
+          sunSign: person.sunSign ?? sunSignFromChart(chartById.get(person.id)),
           nudge
         };
       });
       setPersonSkies(skies);
 
-      const threads = (threadRows ?? []) as Array<{ id: string; mode: "ask" | "shared" }>;
+      const threads = (threadRows ?? []) as Array<{
+        id: string; mode: "ask" | "shared";
+        subject_person: string | null; pair_low: string | null; pair_high: string | null;
+      }>;
       if (threads.length === 0) {
         setThreadChips([]);
         await cacheSet(cacheKey, { welcomeName: resolvedFirstName, people: castPeople, links: finalLinks, personSkies: skies, threadChips: [] });
@@ -414,10 +434,17 @@ export default function HomeScreen() {
           previewByThread.set(threadId, (messageRow.body as string).slice(0, 72));
         }
       }
+      const byId = new Map(castPeople.map((p) => [p.id, p]));
+      const chipPeople = (ids: Array<string | null>) =>
+        [...new Set(ids.filter((id): id is string => Boolean(id)))].flatMap((id) => {
+          const p = byId.get(id);
+          return p ? [{ id: p.id, name: p.display_name, sunSign: p.sunSign, memorial: Boolean(p.passed_at) }] : [];
+        });
       const computedThreadChips = threads.map((thread) => ({
         id: thread.id,
         mode: thread.mode,
-        preview: previewByThread.get(thread.id) ?? "Resume this thread"
+        preview: previewByThread.get(thread.id) ?? "Resume this thread",
+        people: chipPeople([thread.subject_person, thread.pair_low, thread.pair_high]),
       }));
 
       setThreadChips(computedThreadChips);
@@ -474,6 +501,9 @@ export default function HomeScreen() {
         nextDateISO={nextRelationalDateISO}
         compact
         onSeeToday={() => scrollRef.current?.scrollTo({ y: todayY.current, animated: true })}
+        personChip={Object.fromEntries(
+          people.map((p) => [p.id, { sunSign: p.sunSign, memorial: Boolean(p.passed_at) }])
+        )}
       />
 
       <View style={cardStyle}>
@@ -607,9 +637,13 @@ export default function HomeScreen() {
                   borderLeftWidth: 2,
                   borderLeftColor: hasHit ? tokens.colors.gold : tokens.colors.line,
                   backgroundColor: hasHit ? "rgba(230,174,108,0.06)" : "transparent",
-                  gap: 2
+                  gap: 2,
+                  flexDirection: "row",
+                  alignItems: "flex-start"
                 }}
               >
+                <InitialAvatar name={sky.name} size="sm" personId={sky.id} sunSign={sky.sunSign} />
+                <View style={{ flex: 1, gap: 2 }}>
                 <Text style={{ color: tokens.colors.cream, fontWeight: "600", fontSize: 13 }}>
                   {sky.isSelf ? "You" : sky.name}
                 </Text>
@@ -624,6 +658,7 @@ export default function HomeScreen() {
                   {nudge.copy_resolved}
                 </Text>
                 {proof ? <Text style={{ color: tokens.colors.mist2, fontSize: 11 }}>{proof}</Text> : null}
+                </View>
               </Pressable>
             </Link>
           );
@@ -641,11 +676,16 @@ export default function HomeScreen() {
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {threadChips.map((thread) => (
               <Link key={thread.id} href={{ pathname: "/vela", params: { threadId: thread.id } }} asChild>
-                <Pressable style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingHorizontal: 12, paddingVertical: 8, maxWidth: "100%" }}>
-                  <Text style={{ color: tokens.colors.goldSoft, fontSize: 12 }}>{thread.mode.toUpperCase()}</Text>
-                  <Text style={{ color: tokens.colors.cream }} numberOfLines={1}>
-                    {thread.preview}
-                  </Text>
+                <Pressable style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingHorizontal: 12, paddingVertical: 8, maxWidth: "100%", flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  {thread.people?.slice(0, 2).map((person) => (
+                    <InitialAvatar key={person.id} name={person.name} size="sm" personId={person.id} sunSign={person.sunSign} memorial={person.memorial} />
+                  ))}
+                  <View style={{ flexShrink: 1 }}>
+                    <Text style={{ color: tokens.colors.goldSoft, fontSize: 12 }}>{thread.mode.toUpperCase()}</Text>
+                    <Text style={{ color: tokens.colors.cream }} numberOfLines={1}>
+                      {thread.preview}
+                    </Text>
+                  </View>
                 </Pressable>
               </Link>
             ))}

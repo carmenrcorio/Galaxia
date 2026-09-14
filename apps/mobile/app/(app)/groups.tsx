@@ -3,12 +3,14 @@ import {
   OWNED_DELETE_COPY,
   formatGroupDeleteConfirmation,
   isBelowGroupMinimum,
-  readyMembersForCohortOverlay
+  readyMembersForCohortOverlay,
+  sunSignFromChart
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { InitialAvatar } from "../../src/components/initial-avatar";
 import { fetchGroupsCurrentReading, upsertGroupsCurrentReading } from "../../src/lib/groups-cohort";
 import { supabase } from "../../src/lib/supabase";
 import { useAuth } from "../../src/providers/auth-provider";
@@ -19,6 +21,8 @@ type GroupKind = "siblings" | "friends" | "family" | "group";
 interface PersonLite {
   id: string;
   display_name: string;
+  passed_at?: string | null;
+  sunSign?: string | null;
 }
 
 interface GroupRow {
@@ -116,14 +120,25 @@ export default function GroupsScreen() {
     if (!session?.user.id) return;
     const { data, error } = await supabase
       .from("people")
-      .select("id, display_name")
+      .select("id, display_name, passed_at")
       .eq("owner_id", session.user.id)
       .order("display_name", { ascending: true });
     if (error) {
       setStatus(error.message);
       return;
     }
-    setPeople((data ?? []) as PersonLite[]);
+    const rows = (data ?? []) as PersonLite[];
+    const ids = rows.map((r) => r.id);
+    if (ids.length) {
+      const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
+      const sunById = new Map<string, string>();
+      for (const row of chartRows ?? []) {
+        const sign = sunSignFromChart(row.data as NatalChart);
+        if (sign) sunById.set(row.person_id as string, sign);
+      }
+      for (const row of rows) row.sunSign = sunById.get(row.id) ?? null;
+    }
+    setPeople(rows);
   };
 
   const fetchGroups = async () => {
@@ -518,10 +533,14 @@ export default function GroupsScreen() {
                   borderRadius: 999,
                   borderWidth: 1,
                   borderColor: selected ? tokens.colors.gold : tokens.colors.line,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6
                 }}
               >
+                <InitialAvatar name={person.display_name} size="sm" personId={person.id} sunSign={person.sunSign} memorial={Boolean(person.passed_at)} />
                 <Text style={{ color: selected ? tokens.colors.gold : tokens.colors.cream }}>{person.display_name}</Text>
               </Pressable>
             );

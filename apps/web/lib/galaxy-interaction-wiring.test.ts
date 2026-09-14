@@ -55,3 +55,27 @@ describe("galaxy interaction — rings toggle + custom_position", () => {
     expect(home).toContain("overlay.custom_position) return base");
   });
 });
+
+describe("galaxy interaction — no floating hover card", () => {
+  it("does not render a glass inspector over the constellation canvas", () => {
+    expect(home).not.toContain("Click to open profile");
+    expect(home).not.toContain("hover inspector");
+    expect(home).not.toContain("ConnectInviteButton");
+    expect(home).not.toMatch(/position:\s*"absolute",\s*top:\s*16,\s*right:\s*16/);
+  });
+
+  it("opens a person on click and keeps hold-to-drag distinct from tap", () => {
+    expect(home).toContain("if (hit) router.push(`/app/person/${hit.id}`)");
+    expect(home).toContain("suppressClickRef");
+    expect(home).toContain("Click is only suppressed when a real drag happened (active && moved)");
+    expect(home).toContain('canvas.style.cursor = hit ? "pointer" : "default"');
+  });
+
+  it("keeps canvas name labels and uses the legend strip for hover identity", () => {
+    expect(home).toContain("cx.fillText(p.display_name");
+    expect(home).toContain("hoverPerson.display_name");
+    expect(home).toContain("hoverPerson.relation");
+    expect(home).toContain("Click a star to open");
+    expect(home).toContain("Hide orbital rings");
+  });
+});

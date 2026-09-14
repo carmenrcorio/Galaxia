@@ -56,9 +56,9 @@ describe("galaxy geometry / glyph scale / free placement wiring", () => {
     expect(mobileHome).toContain("star_scale");
   });
 
-  it("uses grab cursor on draggable nodes", () => {
-    expect(home).toContain('hit.is_self ? "pointer" : "grab"');
+  it("uses grabbing cursor while dragging", () => {
     expect(home).toContain('canvas.style.cursor = "grabbing"');
+    expect(home).not.toContain('hit.is_self ? "pointer" : "grab"');
   });
 
   it("does not retune label font, offset, or collision solver", () => {

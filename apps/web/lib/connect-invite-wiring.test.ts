@@ -89,13 +89,13 @@ describe("constellation connect UI wiring", () => {
     expect(lib).toContain('band === "children"');
   });
 
-  it("wires generate onto the person profile, edit panel, and constellation hover card", () => {
+  it("wires generate onto the person profile and edit panel, not the constellation overlay", () => {
     const person = read("apps/web/app/app/person/[id]/page.tsx");
     const edit = read("apps/web/components/edit-person-panel.tsx");
     const home = read("apps/web/app/app/page.tsx");
     expect(person).toContain("ConnectInviteButton");
     expect(edit).toContain("ConnectInviteButton");
-    expect(home).toContain("ConnectInviteButton");
+    expect(home).not.toContain("ConnectInviteButton");
     expect(home).toContain("unackedPersonIds");
     expect(home).not.toContain("notifications");
   });

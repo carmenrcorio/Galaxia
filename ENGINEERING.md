@@ -31,6 +31,8 @@ Deploys broke repeatedly because an agent rewrote infrastructure config it did n
 
 There is deliberately **no root `vercel.json`.** Vercel's native Next.js detection with Root Directory `apps/web` is the working configuration. Do not add one back.
 
+**GitHub's Vercel status is last-writer-wins.** Opening a PR in the same minute as the branch push can start two preview deploys of the same commit. On a one-concurrent-build plan the second often Errors (empty `previewUrl`) and overwrites the Ready status even though the first deploy completed. Do not add `vercel.json` or change project settings to "fix" this. Push a follow-up commit after the PR exists so a single deploy runs.
+
 ---
 
 ## 3. Work is not done until it is on `main` and deployed

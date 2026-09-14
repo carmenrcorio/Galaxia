@@ -33,7 +33,7 @@ function assertIndexSet(sql: string) {
   expect(body).toMatch(/on public\.notes \(about_person, created_at desc\)/);
   expect(body).toContain("messages_thread_id_created_at_idx");
   expect(body).toMatch(/on public\.messages \(thread_id, created_at desc\)/);
-  expect([...sql.matchAll(/create index if not exists/gi)]).toHaveLength(5);
+  expect([...body.matchAll(/create index if not exists/g)]).toHaveLength(5);
   expect(body).not.toContain("concurrently");
   expect(body).not.toContain("create policy");
   expect(body).not.toContain("alter table");

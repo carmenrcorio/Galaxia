@@ -4,6 +4,7 @@ import {
   GALAXY_COLLISION_JOIN,
   GALAXY_COLLISION_SEP,
   GALAXY_LABEL_CHAR_PX,
+  GALAXY_LABEL_EDGE_MARGIN_PX,
   GALAXY_LABEL_JOIN_PX,
   GALAXY_MAX_RING,
   GALAXY_RING_JITTER,
@@ -12,6 +13,7 @@ import {
   GALAXY_RING_NORMS,
   RING_BAND_COLORS,
   angularDiff,
+  clampGalaxyLabelPosition,
   galaxyLabelHalfWidthPx,
   galaxyLabelOffsets,
   galaxySeatAngle,
@@ -275,6 +277,51 @@ describe("galaxyLabelHalfWidthPx", () => {
       5,
     );
     expect(galaxyLabelHalfWidthPx(long)).toBeGreaterThan(GALAXY_LABEL_JOIN_PX / 2);
+  });
+});
+
+describe("clampGalaxyLabelPosition", () => {
+  const margin = GALAXY_LABEL_EDGE_MARGIN_PX;
+  const textWidth = 80;
+  const textHeight = 11;
+  const canvasW = 375;
+  const canvasH = 500;
+
+  it("leaves a centre label unchanged", () => {
+    const rawX = canvasW / 2;
+    const rawY = canvasH / 2;
+    expect(clampGalaxyLabelPosition(rawX, rawY, textWidth, textHeight, canvasW, canvasH)).toEqual({
+      x: rawX,
+      y: rawY,
+    });
+  });
+
+  it("keeps the full measured width inside the left and right edges", () => {
+    const left = clampGalaxyLabelPosition(4, 250, textWidth, textHeight, canvasW, canvasH);
+    expect(left.x).toBe(textWidth / 2 + margin);
+    expect(left.x - textWidth / 2).toBeGreaterThanOrEqual(margin);
+    const right = clampGalaxyLabelPosition(canvasW - 4, 250, textWidth, textHeight, canvasW, canvasH);
+    expect(right.x).toBe(canvasW - textWidth / 2 - margin);
+    expect(right.x + textWidth / 2).toBeLessThanOrEqual(canvasW - margin);
+  });
+
+  it("keeps the full measured height inside the top and bottom edges", () => {
+    const top = clampGalaxyLabelPosition(180, 2, textWidth, textHeight, canvasW, canvasH);
+    expect(top.y).toBe(textHeight / 2 + margin);
+    expect(top.y - textHeight / 2).toBeGreaterThanOrEqual(margin);
+    const bottom = clampGalaxyLabelPosition(180, canvasH - 2, textWidth, textHeight, canvasW, canvasH);
+    expect(bottom.y).toBe(canvasH - textHeight / 2 - margin);
+    expect(bottom.y + textHeight / 2).toBeLessThanOrEqual(canvasH - margin);
+  });
+
+  it("does not shift a centre label on a 1280-wide canvas", () => {
+    const wide = 1280;
+    const rawX = wide / 2;
+    const rawY = 360;
+    expect(clampGalaxyLabelPosition(rawX, rawY, 96, 11, wide, 720)).toEqual({
+      x: rawX,
+      y: rawY,
+    });
   });
 });
 

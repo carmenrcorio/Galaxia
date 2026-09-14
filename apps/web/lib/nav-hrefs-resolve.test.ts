@@ -7,10 +7,12 @@ import {
   APP_NAV_BRAND_HREF,
   APP_NAV_LINKS,
   EMAIL_PATHS,
+  MARKETING_NAV_LOGIN,
   MARKETING_NAV_SIGNUP,
   PERSON_PROFILE_HREF_PREFIX,
   personProfileHref,
   signupWithNextHref,
+  loginWithNextHref,
   EMPTY_STATE_SETTINGS_HREF,
   EMPTY_STATE_WELCOME_HREF,
   THIS_WEEK_HREF,
@@ -174,6 +176,12 @@ describe("signed-in chart save hrefs", () => {
     );
   });
 
+  it("loginWithNextHref keeps next on the marketing login route", () => {
+    expect(loginWithNextHref("/connect/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).toBe(
+      `${MARKETING_NAV_LOGIN.href}?next=${encodeURIComponent("/connect/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")}`,
+    );
+  });
+
   it("SaveToGalaxyButton reads those builders instead of hardcoded paths", () => {
     const src = readWeb("components/save-to-galaxy-button.tsx");
     expect(src).toContain("personProfileHref");
@@ -208,6 +216,12 @@ describe("retired Quick Chart paths redirect in next.config", () => {
     expect(src).toMatch(/permanent:\s*true/);
     expect(src).not.toContain("vercel.json");
     expect(existsSync(join(WEB_APP_DIR, "account/subscription/page.tsx"))).toBe(false);
+  });
+
+  it("strips a trailing slash on /connect/:token so a pasted token still lands", () => {
+    const src = readFileSync(join(WEB_ROOT, "next.config.mjs"), "utf8");
+    expect(src).toMatch(/source:\s*["']\/connect\/:token\/["']/);
+    expect(src).toMatch(/destination:\s*["']\/connect\/:token["']/);
   });
 });
 

@@ -10,6 +10,11 @@ const nextConfig = {
       { source: "/quick-chart", destination: "/chart", permanent: true },
       { source: "/app/quick-chart", destination: "/chart", permanent: true },
       { source: "/account/subscription", destination: "/app/settings", permanent: true },
+      // Constellation-connect landing. ENGINEERING.md §2 exception, same
+      // class as the retired-URL redirects above: a trailing slash must not
+      // 404 a pasteable token. Kind-aware /invite → /connect lives in the
+      // invite route so birth_data keeps /invite/[token].
+      { source: "/connect/:token/", destination: "/connect/:token", permanent: true },
     ];
   },
 };

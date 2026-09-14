@@ -164,6 +164,11 @@ export function signupWithNextHref(nextPath: string): string {
   return `${MARKETING_NAV_SIGNUP.href}?next=${encodeURIComponent(nextPath)}`;
 }
 
+/** Inverse of signupWithNextHref: keep `next` when the visitor flips to login. */
+export function loginWithNextHref(nextPath: string): string {
+  return `${MARKETING_NAV_LOGIN.href}?next=${encodeURIComponent(nextPath)}`;
+}
+
 export const EMPTY_STATE_WELCOME_HREF = "/welcome";
 /**
  * Re-entry into first-run orientation for someone who skipped it. `restart=1`

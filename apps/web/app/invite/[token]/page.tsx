@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { permanentRedirect } from "next/navigation";
 import { InviteBirthDataForm } from "../../../components/invite-birth-data-form";
+import { connectPath } from "../../../lib/connect-invite";
 import { getInviteByToken } from "../../../lib/invites";
 
 export const metadata: Metadata = {
@@ -17,6 +19,10 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         <p style={{ color: "var(--mist)" }}>This invite token is invalid, expired, or revoked.</p>
       </main>
     );
+  }
+
+  if (invite.kind === "constellation_connect") {
+    permanentRedirect(connectPath(token));
   }
 
   // ── Birth-data request (E3): the invited person fills in their own details ──

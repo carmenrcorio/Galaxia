@@ -69,6 +69,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AskBirthData } from "../../../../components/ask-birth-data";
 import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../../components/chart-precision-indicator";
+import { ConnectInviteButton } from "../../../../components/connect-invite-button";
 import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
@@ -102,6 +103,7 @@ interface PersonRow {
   /** Assigned memorial pattern id; null = ancient light when passed. */
   memorial_constellation?: string | null;
   is_self?: boolean;
+  linked_user_id?: string | null;
   custom_position?: { angle: number; radius_pct: number } | null;
 }
 /* ─── Normalise engine output to library key conventions ─────────────────── */
@@ -510,6 +512,23 @@ export default function PersonProfilePage() {
     return `${yr}-01-01T00:00:00.000Z`;
   }
 
+  async function acknowledgeConnectIfNeeded(uid: string, person: PersonRow) {
+    if (person.is_self) return;
+    const { data } = await supabase
+      .from("invites")
+      .select("id, person_id, accepted_by")
+      .eq("from_user", uid)
+      .eq("kind", "constellation_connect")
+      .eq("status", "accepted")
+      .is("sender_ack_at", null);
+    const match = (data ?? []).find((row) =>
+      row.person_id === person.id || (Boolean(person.linked_user_id) && row.accepted_by === person.linked_user_id),
+    );
+    if (match) {
+      await supabase.rpc("acknowledge_connect_accept", { p_invite_id: match.id });
+    }
+  }
+
   async function loadProfile(uid: string) {
     setLoading(true);
     // A unique index on people(owner_id) WHERE is_self makes more than one
@@ -520,11 +539,12 @@ export default function PersonProfilePage() {
       : personId;
     if (!actualId) { setStatus("No self profile yet."); setLoading(false); return; }
     const [{ data: pData, error: pErr }, { data: cData, error: cErr }] = await Promise.all([
-      supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, died_on, star_color, memorial_constellation, custom_position").eq("id", actualId).single(),
+      supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, died_on, star_color, memorial_constellation, custom_position, linked_user_id").eq("id", actualId).single(),
       supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualId).single()
     ]);
     if (pErr || !pData) { setStatus(pErr?.message ?? "Unable to load person."); setLoading(false); return; }
     const personRow = pData as PersonRow & { tz_offset_min?: number | null };
+    void acknowledgeConnectIfNeeded(uid, personRow);
     // Progressive capture: a person with no chart yet (birth_precision 'none')
     // is not an error — render the "add birth data" state instead of failing.
     if (cErr || !cData) {
@@ -903,6 +923,11 @@ export default function PersonProfilePage() {
         <div style={{ borderTop: "1px solid rgba(183,154,216,.1)", paddingTop: 14 }}>
           <p className="eyebrow" style={{ marginBottom: 8 }}>Don&apos;t know their details?</p>
           {userId ? <AskBirthData personId={person.id} personName={person.display_name} userId={userId} /> : null}
+          {userId ? (
+            <div style={{ marginTop: 10 }}>
+              <ConnectInviteButton person={person} />
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -1026,6 +1051,7 @@ export default function PersonProfilePage() {
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
+        {userId ? <ConnectInviteButton person={person} compact /> : null}
         {/* Remembrance keeps a single Ask Vela entry inside RemembranceSpace — no header duplicate. */}
         {!showRemembrance ? (
           <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Ask Vela</Link>

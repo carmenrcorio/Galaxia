@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SignupForm } from "../../components/signup-form";
+import { authReturnPath } from "../../lib/safe-next-path";
 
 // FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Start free with Galaxia";
@@ -27,9 +28,10 @@ export const metadata: Metadata = {
   }
 };
 
-export default async function SignupPage({ searchParams }: { searchParams: Promise<{ email?: string; next?: string }> }) {
+export default async function SignupPage({ searchParams }: { searchParams: Promise<{ email?: string; next?: string; redirect?: string }> }) {
   const resolved = await searchParams;
   const initialEmail = resolved.email ?? "";
+  const nextPath = authReturnPath(resolved, "/welcome");
   return (
     <main className="container" style={{ paddingTop: 72, paddingBottom: 72, maxWidth: 820 }}>
       <h1 className="auth-title">Create your Galaxia account</h1>
@@ -37,7 +39,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
         Sign up once and use your account on web today. When mobile links are live, this same
         account carries over.
       </p>
-      <SignupForm initialEmail={initialEmail} nextPath={resolved.next} />
+      <SignupForm initialEmail={initialEmail} nextPath={nextPath} />
     </main>
   );
 }

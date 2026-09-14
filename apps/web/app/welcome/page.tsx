@@ -16,11 +16,9 @@ const baseInput: BirthFormInput = BASE_BIRTH_INPUT;
 
 /* ─── Guided onboarding copy ───────────────────────────────────────────────
  * All user-facing onboarding voice lives here so the founder can refine it in
- * one place. Tone target: warm, plain-language, zero jargon, written for
- * someone whose only astrology exposure is a daily horoscope. The precision
- * story is framed positively at every turn — more data = more resolution,
- * never "you're missing something." A faint star is not less loved, only less
- * known. Nothing here ever implies missing data breaks the product.
+ * one place. First ninety seconds are layer one (`design/galaxia-voice-layers.md`):
+ * lead with outcome, astrology is not the first word, never "an astrology app."
+ * Step 3 hands the user into layer two (natal, synastry, aspects, houses).
  *
  * Field-level add-person copy (minor checkbox, etc.) lives on AddPersonForm so
  * the standalone /app/add-person page stays in sync — do not duplicate it here.
@@ -30,39 +28,39 @@ const baseInput: BirthFormInput = BASE_BIRTH_INPUT;
 const COPY = {
   steps: ["You", "Your first person", "What you got"] as const,
 
-  // Step 1 — You
+  // Step 1 — You (layer one: first ninety seconds lead with outcome)
   selfEyebrow: "Step 1 · Start with you",
-  selfTitle: "Let's place you in the sky first",
+  selfTitle: "Start with you, so you can show up for everyone else",
   selfLede:
-    // FOUNDER-REVIEW: rewritten (no U+2014).
-    "Everything in Galaxia is drawn in relation to you, so you're the first star we plot. This stays completely private; it's your map, for you.",
+    // FOUNDER-REVIEW: layer-one onboarding. Outcome first; astrology is not the first word.
+    "Galaxia is for the people already in your life. We plot you first because every reading is drawn in relation to you. This stays completely private.",
   selfWhyTime:
-    "Your birth time unlocks your Rising sign and your houses: the specific, personal way your chart is yours, not just your Sun sign. Don't know it? That's completely fine. You'll still get your Sun, your Moon, and real, accurate readings. We just leave out the parts a time would decide, rather than guessing them.",
+    "A birth time gives a sharper picture of how you are built. Without it, you still get a real reading from the date. We never guess the parts a time would decide.",
   selfSaved: "You're in your sky",
 
   // Step 2 — Your first person (chrome only — fields are AddPersonForm)
   personEyebrow: "Step 2 · Add someone you love",
   personTitle: "Now add someone who matters to you",
   personLede:
-    "A partner, a parent, a best friend, a child, someone you've lost. Galaxia comes alive when it's not just you. This is where you start seeing how two skies meet.",
+    "A partner, a parent, a best friend, a child, someone you've lost. Galaxia comes alive when it's not just you. This is where you start seeing how to tend the bond.",
   precisionTitle: "Add whatever you actually know. Every level gives you something real.",
   precisionExact:
-    "Exact birth time: the full picture. Their Rising, their houses, and how your two charts line up in fine detail.",
+    "Exact birth time: the fullest picture of how they're built, including the time-specific parts.",
   precisionDate:
-    "Just the date: still their Sun, Moon, and every planet. Real, accurate readings and a real comparison with you. Only the time-specific parts (Rising, houses) wait until you know more.",
+    "Just the date: still a real, accurate reading of how they're built, and a real comparison with you. Only the time-specific parts wait until you know more.",
   precisionYear:
-    "Only the year: that's the generational layer, the slow outer planets that shaped their whole era. Even just a birth year places your grandmother in your sky.",
+    "Only the year: that's enough to place them in your sky, and to see the slow outer planets that shaped their whole era.",
   precisionNone:
     "Don't know their birthday yet? Add their name now and fill in the rest whenever you have it, or ask them. Nothing is lost by starting light.",
 
-  // Step 3 — What you got
+  // Step 3 — What you got (handoff into layer two)
   doneEyebrow: "Step 3 · Your constellation is live",
   doneTitle: "That's your sky. Here's what you can do with it.",
   doneLede:
     "You've plotted your first stars. From here it only gets richer. Every person you add deepens the picture. Here's where to go next:",
-  pointerChart: "Open a chart to read someone's Sun, Moon, Rising, and placements in plain language.",
-  pointerCompare: "Run a Compare to see how two people's charts actually meet: where it flows and where it catches.",
-  pointerVela: "Ask Vela, your private guide, anything about the people in your sky. She reads real chart facts, never invents them."
+  pointerChart: "Open a natal chart to read someone's Sun, Moon, Rising, placements, aspects, and houses in plain language.",
+  pointerCompare: "Run a Compare to see the synastry: the aspects between two charts, where it flows and where it catches.",
+  pointerVela: "Ask Vela, your private guide, anything about the people in your sky. She names the aspect she is reading, and never invents a placement."
 };
 
 /* ─── Progress header ─────────────────────────────────────────────────────── */

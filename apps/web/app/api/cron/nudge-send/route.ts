@@ -4,6 +4,7 @@ import { ownerLocalDate } from "@galaxia/astro";
 import { resolveAccountName } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
+import { cronBearerMatches } from "../../../../lib/cron-auth";
 import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary";
 import {
   effectiveMinorSafe,
@@ -119,9 +120,8 @@ async function handle(req: Request) {
   if (!secret) {
     return NextResponse.json({ error: "CRON_SECRET is not configured; refusing to run." }, { status: 503 });
   }
-  const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!cronBearerMatches(req.headers.get("authorization"), secret)) {
+    return new NextResponse(null, { status: 401 });
   }
   if (!publicEnv.supabaseUrl || !privateEnv.serviceRole) {
     return NextResponse.json({ error: "Server not configured." }, { status: 500 });

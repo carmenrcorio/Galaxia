@@ -1,0 +1,5 @@
+## Constant-time CRON_SECRET bearer comparison (branch `cursor/cron-bearer-constant-time-edd0`) — 2026-09-14
+
+**Trigger**: all five `apps/web` cron routes authenticated with a plain `auth !== \`Bearer ${secret}\`` string compare, which is not constant-time.
+
+`[FIXED]` **Cron bearer auth now uses `node:crypto` `timingSafeEqual` via one shared helper.** `apps/web/lib/cron-auth.ts` `cronBearerMatches` always compares two buffers of `expected.length` (so `timingSafeEqual` never throws) and mixes the length check into the result with a bitwise AND — no early `length !==` return that would reintroduce the timing signal. All five cron routes call it (`trial-emails`, `nudge-compute`, `nudge-send`, `relational-transit-scan`, `relational-transit-push`). A mismatch still 401s, now with an empty body (no `"Unauthorized."` detail); the supplied token is never logged. Unset `CRON_SECRET` is still 503 with the existing config error. Route feature logic is unchanged; no new dependencies. RevenueCat's `verifyWebhookAuth` is intentionally untouched (it stays XOR-loop and client-bundle-safe, no Node built-ins).

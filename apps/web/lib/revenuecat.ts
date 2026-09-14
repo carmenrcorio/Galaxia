@@ -1,5 +1,7 @@
 import type { SubscriptionStatus } from "@galaxia/core";
 
+export { RC_ENTITLEMENT_ID } from "@galaxia/core";
+
 /**
  * RevenueCat Web Billing — pure, framework-free helpers shared by the webhook
  * route (server) and the paywall (client). No secrets, no SDK, no Node built-ins
@@ -12,9 +14,6 @@ import type { SubscriptionStatus } from "@galaxia/core";
  * It never reads or writes `comped`. The webhook is the source of truth for
  * paid billing status only.
  */
-
-/** The single entitlement that unlocks the product. Checked client-side after a purchase. */
-export const RC_ENTITLEMENT_ID = "GalaxiaMea App Unlimited";
 
 /** We launch monthly-only; annual/lifetime are not set up in RevenueCat yet. */
 export const RC_PLAN = "monthly";

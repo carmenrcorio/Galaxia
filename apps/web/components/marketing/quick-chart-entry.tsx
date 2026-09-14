@@ -110,9 +110,10 @@ export function QuickChartEntry() {
       {/* FOUNDER-REVIEW: authored - hero Quick Chart entry framing. */}
       <div className="quick-chart-entry-copy">
         <span className="eyebrow">Try it free</span>
-        <h2 className="quick-chart-entry-h">See someone&rsquo;s real chart.</h2>
+        <h2 className="quick-chart-entry-h">See how someone you love is built.</h2>
         <p className="quick-chart-entry-lede">
-          Enter a name and birthday. No signup. You get a real computed chart, not a daily horoscope.
+          {/* FOUNDER-REVIEW: layer-one ATF try-it. Outcome first; not an astrology app. */}
+          Enter a name and birthday. No signup. Not a daily horoscope.
         </p>
       </div>
 

@@ -43,7 +43,7 @@ describe("app/sitemap.ts — /login and /signup excluded", () => {
   });
 
   it("keeps every other previously-listed static route", () => {
-    for (const route of ["/", "/blog", "/privacy", "/terms", "/download", "/chart", "/chart/compare"]) {
+    for (const route of ["/", "/blog", "/privacy", "/terms", "/download", "/chart", "/chart/compare", "/for-work", "/press"]) {
       expect(src).toContain(`"${route}"`);
     }
   });

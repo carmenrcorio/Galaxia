@@ -1,11 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
   REDACTED,
+  isIdentifierSegment,
   isSensitiveFieldName,
   isSensitiveRequestPath,
+  nextSegmentIsIdentifier,
+  redactPathname,
+  redactRequestUrl,
   scrubSentryEvent,
   type ScrubbableEvent
 } from "./scrub";
+
+const PERSON_ID = "550e8400-e29b-41d4-a716-446655440000";
+const USER_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+const POST_ID = "11111111-2222-4333-8444-555555555555";
+const SUPPORT_ID = "99999999-aaaa-4bbb-8ccc-dddddddddddd";
+const SHARE_TOKEN = "vvgfUWf_oEKLJu68AEF9rw";
+const INVITE_TOKEN = "c0ffee00c0ffee00c0ffee00c0ffee00";
 
 /**
  * A payload that looks like what a crash on /api/quick-chart, /s/, or
@@ -77,18 +88,91 @@ describe("isSensitiveFieldName", () => {
 });
 
 describe("isSensitiveRequestPath", () => {
-  it("matches /api/quick-chart, /s/, and /app/", () => {
+  it("matches Quick Chart/Compare/Share, /s/, /invite/, /r/, /app/, and /admin/", () => {
     expect(isSensitiveRequestPath("https://galaxiamea.com/api/quick-chart")).toBe(true);
     expect(isSensitiveRequestPath("/api/quick-chart?lat=1")).toBe(true);
+    expect(isSensitiveRequestPath("/api/quick-compare")).toBe(true);
+    expect(isSensitiveRequestPath("/api/quick-share")).toBe(true);
     expect(isSensitiveRequestPath("/s/abc123")).toBe(true);
+    expect(isSensitiveRequestPath("/invite/c0ffee")).toBe(true);
+    expect(isSensitiveRequestPath("/api/invite/birth-data")).toBe(true);
+    expect(isSensitiveRequestPath("/r/jane-doe")).toBe(true);
     expect(isSensitiveRequestPath("/app/person/1")).toBe(true);
     expect(isSensitiveRequestPath("/app")).toBe(true);
+    expect(isSensitiveRequestPath(`/admin/users/${USER_ID}`)).toBe(true);
+    expect(isSensitiveRequestPath(`/api/admin/users/${USER_ID}/comp/grant`)).toBe(true);
+    expect(isSensitiveRequestPath("/api/nudge-email/unsubscribe")).toBe(true);
   });
 
   it("does not match public marketing routes", () => {
     expect(isSensitiveRequestPath("/synastry-chart-meaning")).toBe(false);
     expect(isSensitiveRequestPath("/chart")).toBe(false);
     expect(isSensitiveRequestPath("/blog")).toBe(false);
+    expect(isSensitiveRequestPath("/blog/guides")).toBe(false);
+    expect(isSensitiveRequestPath("/login")).toBe(false);
+  });
+});
+
+describe("identifier path segments", () => {
+  it("recognises UUIDs, hyphenless invite tokens, emails, and share tokens", () => {
+    expect(isIdentifierSegment(PERSON_ID)).toBe(true);
+    expect(isIdentifierSegment(INVITE_TOKEN)).toBe(true);
+    expect(isIdentifierSegment("jane@galaxia.test")).toBe(true);
+    expect(isIdentifierSegment(SHARE_TOKEN)).toBe(true);
+    expect(isIdentifierSegment("guides")).toBe(false);
+    expect(isIdentifierSegment("synastry-chart-meaning")).toBe(false);
+    expect(isIdentifierSegment("person")).toBe(false);
+  });
+
+  it("treats collection nouns and single-letter prefixes as identifier carriers", () => {
+    expect(nextSegmentIsIdentifier("/app/person/")).toBe(true);
+    expect(nextSegmentIsIdentifier("/admin/users/")).toBe(true);
+    expect(nextSegmentIsIdentifier("/api/admin/users/")).toBe(true);
+    expect(nextSegmentIsIdentifier("/api/admin/support/")).toBe(true);
+    expect(nextSegmentIsIdentifier("/api/admin/posts/")).toBe(true);
+    expect(nextSegmentIsIdentifier("/invite/")).toBe(true);
+    expect(nextSegmentIsIdentifier("/s/")).toBe(true);
+    expect(nextSegmentIsIdentifier("/r/")).toBe(true);
+    expect(nextSegmentIsIdentifier("/blog/")).toBe(false);
+    expect(nextSegmentIsIdentifier("/")).toBe(false);
+  });
+});
+
+describe("redactPathname / redactRequestUrl", () => {
+  it("keeps the route pattern and redacts only identifier values", () => {
+    expect(redactPathname(`/app/person/${PERSON_ID}`)).toBe(`/app/person/${REDACTED}`);
+    expect(redactPathname(`/s/${SHARE_TOKEN}/opengraph-image`)).toBe(`/s/${REDACTED}/opengraph-image`);
+    expect(redactPathname(`/invite/${INVITE_TOKEN}`)).toBe(`/invite/${REDACTED}`);
+    expect(redactPathname("/r/jane-doe")).toBe(`/r/${REDACTED}`);
+    expect(redactPathname(`/admin/users/${USER_ID}`)).toBe(`/admin/users/${REDACTED}`);
+    expect(redactPathname(`/api/admin/users/${USER_ID}/comp/grant`)).toBe(
+      `/api/admin/users/${REDACTED}/comp/grant`
+    );
+    expect(redactPathname(`/api/admin/users/${USER_ID}/resend-email`)).toBe(
+      `/api/admin/users/${REDACTED}/resend-email`
+    );
+    expect(redactPathname(`/api/admin/support/${SUPPORT_ID}/close`)).toBe(
+      `/api/admin/support/${REDACTED}/close`
+    );
+    expect(redactPathname(`/admin/posts/${POST_ID}`)).toBe(`/admin/posts/${REDACTED}`);
+  });
+
+  it("does not redact public blog slugs or categories", () => {
+    expect(redactPathname("/synastry-chart-meaning")).toBe("/synastry-chart-meaning");
+    expect(redactPathname("/blog/guides")).toBe("/blog/guides");
+    expect(redactPathname("/blog/debunked")).toBe("/blog/debunked");
+    expect(redactPathname("/chart/compare")).toBe("/chart/compare");
+  });
+
+  it("drops query strings on privacy-bearing routes and redacts ids in login next=", () => {
+    expect(redactRequestUrl(`https://galaxiamea.com/app/person/${PERSON_ID}?threadId=${PERSON_ID}`)).toBe(
+      `https://galaxiamea.com/app/person/${REDACTED}`
+    );
+    expect(redactRequestUrl(`/login?next=/app/person/${PERSON_ID}`)).toBe(
+      `/login?next=/app/person/${REDACTED}`
+    );
+    expect(redactRequestUrl("/signup?email=jane@galaxia.test")).toBe(`/signup?email=${REDACTED}`);
+    expect(redactRequestUrl("/synastry-chart-meaning?utm=1")).toBe("/synastry-chart-meaning?utm=1");
   });
 });
 
@@ -129,7 +213,7 @@ describe("scrubSentryEvent", () => {
 
   it("scrubs query strings on /s/ and /app/ as well as /api/quick-chart", () => {
     for (const url of [
-      "https://galaxiamea.com/s/tok123?lat=1&lng=2",
+      `https://galaxiamea.com/s/${SHARE_TOKEN}?lat=1&lng=2`,
       "https://galaxiamea.com/app/compare?birthDate=1990-01-15"
     ]) {
       const scrubbed = scrubSentryEvent({
@@ -138,6 +222,31 @@ describe("scrubSentryEvent", () => {
       expect(scrubbed.request?.query_string).toBeUndefined();
       expect(scrubbed.request?.data).toBe(REDACTED);
       expect(scrubbed.request?.url).not.toContain("?");
+      expect(JSON.stringify(scrubbed)).not.toContain(SHARE_TOKEN);
+    }
+  });
+
+  it("drops body and query on /invite, /r, and /admin identifier routes", () => {
+    const cases = [
+      `https://galaxiamea.com/invite/${INVITE_TOKEN}`,
+      "https://galaxiamea.com/r/jane-doe",
+      `https://galaxiamea.com/admin/users/${USER_ID}?q=jane@galaxia.test`,
+      `https://galaxiamea.com/api/admin/users/${USER_ID}/resend-email`
+    ];
+    for (const url of cases) {
+      const scrubbed = scrubSentryEvent({
+        request: {
+          url: `${url}${url.includes("?") ? "" : "?token=secret"}`,
+          query_string: "token=secret",
+          data: { birthDate: "1990-01-15" }
+        }
+      });
+      expect(scrubbed.request?.query_string).toBeUndefined();
+      expect(scrubbed.request?.data).toBe(REDACTED);
+      expect(scrubbed.request?.url).not.toContain("?");
+      expect(JSON.stringify(scrubbed)).not.toContain(INVITE_TOKEN);
+      expect(JSON.stringify(scrubbed)).not.toContain(USER_ID);
+      expect(JSON.stringify(scrubbed)).not.toContain("jane-doe");
     }
   });
 
@@ -155,6 +264,56 @@ describe("scrubSentryEvent", () => {
     expect(scrubbed.request?.url).toContain("utm=1");
     expect(scrubbed.request?.query_string).toBe("utm=1");
     expect(scrubbed.request?.data).toEqual({ ok: "fine" });
+  });
+
+  it("redacts person ids in the URL, breadcrumbs, tags, and context", () => {
+    const url = `https://galaxiamea.com/app/person/${PERSON_ID}`;
+    const scrubbed = scrubSentryEvent({
+      transaction: `GET /app/person/${PERSON_ID}`,
+      culprit: `/app/person/${PERSON_ID}`,
+      tags: { url, transaction: `/app/person/${PERSON_ID}` },
+      contexts: {
+        trace: { trace_id: "abcd".repeat(8) },
+        nextjs: { route: `/app/person/${PERSON_ID}` }
+      },
+      extra: { href: url },
+      request: {
+        url: `${url}?threadId=${PERSON_ID}`,
+        query_string: `threadId=${PERSON_ID}`,
+        data: { note: "private" },
+        headers: { Referer: `https://galaxiamea.com/app/person/${PERSON_ID}` }
+      },
+      breadcrumbs: [
+        {
+          category: "navigation",
+          data: { from: "/app", to: `/app/person/${PERSON_ID}` }
+        },
+        {
+          category: "http",
+          data: { url, method: "GET" }
+        }
+      ]
+    });
+
+    const json = JSON.stringify(scrubbed);
+    expect(json).not.toContain(PERSON_ID);
+    expect(scrubbed.request?.url).toBe(`https://galaxiamea.com/app/person/${REDACTED}`);
+    expect(scrubbed.request?.query_string).toBeUndefined();
+    expect(scrubbed.request?.data).toBe(REDACTED);
+    expect(scrubbed.transaction).toBe(`GET /app/person/${REDACTED}`);
+    expect(scrubbed.culprit).toBe(`/app/person/${REDACTED}`);
+    expect(scrubbed.tags?.url).toBe(`https://galaxiamea.com/app/person/${REDACTED}`);
+    expect(scrubbed.tags?.transaction).toBe(`/app/person/${REDACTED}`);
+    expect(scrubbed.contexts?.nextjs).toEqual({ route: `/app/person/${REDACTED}` });
+    expect((scrubbed.contexts?.trace as { trace_id: string }).trace_id).toBe("abcd".repeat(8));
+    expect(scrubbed.extra?.href).toBe(`https://galaxiamea.com/app/person/${REDACTED}`);
+    expect(scrubbed.breadcrumbs?.[0]?.data).toEqual({ from: "/app", to: `/app/person/${REDACTED}` });
+    expect((scrubbed.breadcrumbs?.[1]?.data as { url: string }).url).toBe(
+      `https://galaxiamea.com/app/person/${REDACTED}`
+    );
+    expect((scrubbed.request?.headers as Record<string, unknown>).Referer).toBe(
+      `https://galaxiamea.com/app/person/${REDACTED}`
+    );
   });
 
   it("strips source-context and local vars from stack frames", () => {

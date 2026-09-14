@@ -26,4 +26,10 @@ describe("error monitoring wiring", () => {
     const src = readSrc("next.config.mjs");
     expect(src).not.toMatch(/withSentryConfig|sentry/);
   });
+
+  it("scrubs breadcrumbs at record time, not only at send time", () => {
+    const src = readSrc("lib/monitoring/init.ts");
+    expect(src).toContain("beforeBreadcrumb");
+    expect(src).toContain("scrubBreadcrumb");
+  });
 });

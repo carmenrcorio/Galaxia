@@ -47,11 +47,13 @@ export const SITE_FOOTER_LINKS: NavLink[] = [
   { href: "/why-galaxia", label: "How it works" },
   { href: "/generations", label: "Your people" },
   { href: "/meet-vela", label: "Ask Vela" },
+  { href: "/for-work", label: "For work" },
   { href: "/security", label: "Security" },
   { href: "/pricing", label: "Pricing" },
   { href: "/chart", label: "Free chart" },
   { href: "/download", label: "Download" },
   { href: "/blog", label: "Blog" },
+  { href: "/press", label: "Press" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
 ];
@@ -102,6 +104,16 @@ export const RELATED_LINKS = {
     { href: SYNASTRY_CHART_MEANING_HREF, label: "What a synastry chart actually tells you" },
     { href: "/generations", label: "See the generational layer behind your compatibility" },
   ],
+  forWork: [
+    { href: "/why-galaxia", label: "See how Galaxia works" },
+    { href: "/security", label: "How we protect the people you add" },
+    { href: "/pricing", label: "One honest plan" },
+  ],
+  press: [
+    { href: "/why-galaxia", label: "Why Galaxia exists" },
+    { href: "/for-work", label: "Galaxia for work" },
+    { href: "/security", label: "Privacy and data" },
+  ],
 } as const satisfies Record<string, readonly NavLink[]>;
 
 // FOUNDER-REVIEW: teaser CTAs only. Card H3 titles stay on the page names.
@@ -116,7 +128,7 @@ export const FEATURE_TEASER_LINKS: NavLink[] = [
 // FOUNDER-REVIEW: outcome-led homepage primary CTA. Destination is the public free chart.
 export const HERO_PRIMARY_CTA: NavLink = { href: "/chart", label: "See someone's chart free" };
 
-export const HERO_HOW_IT_WORKS: NavLink = { href: "/why-galaxia#how", label: "See how it works" };
+export const HERO_HOW_IT_WORKS: NavLink = { href: "/#how", label: "See how it works" };
 
 export const NOT_FOUND_LINKS: NavLink[] = [
   { href: "/", label: "Back to home" },
@@ -130,6 +142,8 @@ export const CHART_MODE_COMPARE: NavLink = { href: "/chart/compare", label: "Che
 
 export const EMPTY_STATE_WELCOME_HREF = "/welcome";
 export const EMPTY_STATE_SETTINGS_HREF = "/app/settings";
+export const THIS_WEEK_HREF = "/app/this-week";
+export const TODAY_SKY_HREF = "/app#today-in-your-sky";
 
 export const SETTINGS_CANCEL_HREF = "/account/cancel?from=settings";
 
@@ -179,7 +193,7 @@ export function ctaInternalHrefs(): string[] {
 }
 
 export function emptyStateInternalHrefs(): string[] {
-  return uniqueHrefs([EMPTY_STATE_WELCOME_HREF, EMPTY_STATE_SETTINGS_HREF]);
+  return uniqueHrefs([EMPTY_STATE_WELCOME_HREF, EMPTY_STATE_SETTINGS_HREF, THIS_WEEK_HREF, TODAY_SKY_HREF]);
 }
 
 export function emailInternalHrefs(): string[] {

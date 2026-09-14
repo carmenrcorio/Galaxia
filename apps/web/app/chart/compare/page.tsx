@@ -210,7 +210,7 @@ export default function QuickComparePage() {
   return (
     <QuickChartShell eyebrow="Quick Compatibility" title={fromShareLink ? "A compatibility reading" : viewer.userId ? "Check your compatibility." : "Check your compatibility, free."} authed={!!viewer.userId}>
       <p className="lede" style={{ marginBottom: 20 }}>
-        Enter both birth dates for a real synastry reading: where you flow, where you catch, and what each of you needs. Nothing is saved unless you choose to.
+        Enter both birth dates for a real synastry reading: the aspects between you, where you flow, where you catch, and what each of you needs. Nothing is saved unless you choose to.
       </p>
 
       {!result ? (

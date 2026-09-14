@@ -24,8 +24,10 @@ export function FeaturesSection() {
             <span className="step-num">01. Add</span>
             <h3>Add anyone in your life.</h3>
             <p>
-              A name and a birth date is enough to start: a full birth time and place unlocks the
-              deepest detail. Add the people you have, at whatever precision you have.{" "}
+              {/* FOUNDER-REVIEW: layer-two how-it-works. Astrology vocabulary stays. */}
+              A name and a birth date is enough to start a natal chart: a full birth time and place
+              unlocks Rising, houses, and the precise Moon. Add the people you have, at whatever
+              precision you have.{" "}
               <em>Depth for the astrology lover; clarity for everyone else.</em>
             </p>
           </div>
@@ -59,9 +61,11 @@ export function FeaturesSection() {
             <span className="step-num">02. Understand</span>
             <h3>Understand what's between you.</h3>
             <p>
-              Compare any two people and see where you flow, where you catch, and exactly what each of
-              you needs from the other, read differently whether you're partners, parent and child, or
-              siblings. <em>Not a dating-app score. A real map.</em>
+              {/* FOUNDER-REVIEW: layer-two how-it-works. Synastry and aspects stay. */}
+              Compare any two natal charts (synastry) and see the aspects between you: where you
+              flow, where you catch, and exactly what each of you needs from the other, read
+              differently whether you're partners, parent and child, or siblings.{" "}
+              <em>Not a dating-app score. A real map.</em>
             </p>
           </div>
           <div className="mock glass-card">
@@ -112,9 +116,9 @@ export function FeaturesSection() {
               <div className="bubble bubble-user">Why do we keep having the same fight?</div>
               <div className="bubble bubble-vela">
                 <div className="bubble-sender">Vela</div>
-                Here's the root: you move fast and say it out loud; Daniel goes quiet to keep the peace.
-                Winning isn't the goal. Naming the pattern before you're in it is. Try: "we're doing the
-                thing again, can we slow down?"
+                Your Mars square his Saturn is the root: you move fast and say it out loud; Daniel
+                goes quiet to keep the peace. Winning isn't the goal. Naming the pattern before you're
+                in it is. Try: "we're doing the thing again, can we slow down?"
               </div>
             </div>
             <p className="mock-example-tag">Illustrative example</p>

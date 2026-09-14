@@ -9,6 +9,8 @@ import {
   EMAIL_PATHS,
   EMPTY_STATE_SETTINGS_HREF,
   EMPTY_STATE_WELCOME_HREF,
+  THIS_WEEK_HREF,
+  TODAY_SKY_HREF,
   FEATURE_TEASER_LINKS,
   MARKETING_NAV_ACTIONS,
   MARKETING_NAV_BRAND_HREF,
@@ -228,11 +230,13 @@ describe("footer hrefs resolve to App Router pages", () => {
       "/why-galaxia",
       "/generations",
       "/meet-vela",
+      "/for-work",
       "/security",
       "/pricing",
       "/chart",
       "/download",
       "/blog",
+      "/press",
       "/privacy",
       "/terms",
     ]);
@@ -240,11 +244,13 @@ describe("footer hrefs resolve to App Router pages", () => {
       "How it works",
       "Your people",
       "Ask Vela",
+      "For work",
       "Security",
       "Pricing",
       "Free chart",
       "Download",
       "Blog",
+      "Press",
       "Privacy",
       "Terms",
     ]);
@@ -294,6 +300,8 @@ describe("CTA hrefs resolve to App Router pages", () => {
     assertRendersFromConfig(readWeb("app/meet-vela/page.tsx"), ["RELATED_LINKS.meetVela"], "meet-vela leftover literal");
     assertRendersFromConfig(readWeb("app/security/page.tsx"), ["RELATED_LINKS.security"], "security leftover literal");
     assertRendersFromConfig(readWeb("app/pricing/page.tsx"), ["RELATED_LINKS.pricing"], "pricing leftover literal");
+    assertRendersFromConfig(readWeb("app/for-work/page.tsx"), ["RELATED_LINKS.forWork"], "for-work leftover literal");
+    assertRendersFromConfig(readWeb("app/press/page.tsx"), ["RELATED_LINKS.press"], "press leftover literal");
     assertRendersFromConfig(readWeb("app/chart/quick-chart-page.tsx"), ["RELATED_LINKS.chart", "CHART_MODE_COMPARE"], "quick-chart leftover literal");
     assertRendersFromConfig(readWeb("app/chart/compare/page.tsx"), ["RELATED_LINKS.chartCompare", "CHART_MODE_SINGLE"], "quick-compare leftover literal");
   });
@@ -329,6 +337,8 @@ describe("empty-state hrefs resolve to App Router pages", () => {
   it("welcome and settings empty-state destinations stay on real routes", () => {
     expect(EMPTY_STATE_WELCOME_HREF).toBe("/welcome");
     expect(EMPTY_STATE_SETTINGS_HREF).toBe("/app/settings");
+    expect(THIS_WEEK_HREF).toBe("/app/this-week");
+    expect(TODAY_SKY_HREF).toBe("/app#today-in-your-sky");
   });
 
   it("empty-state surfaces render from the exported hrefs", () => {
@@ -339,7 +349,7 @@ describe("empty-state hrefs resolve to App Router pages", () => {
     );
     assertRendersFromConfig(
       readWeb("components/relational-transit-feed.tsx"),
-      ["EMPTY_STATE_SETTINGS_HREF"],
+      ["EMPTY_STATE_SETTINGS_HREF", "THIS_WEEK_HREF", "TODAY_SKY_HREF"],
       "transit-feed leftover literal",
     );
     assertRendersFromConfig(
@@ -459,13 +469,15 @@ describe("Galaxia contact and domain literals", () => {
   });
 });
 
-describe("public sitemap routes are unchanged", () => {
-  it("still lists the same public paths, with no /for-work", () => {
+describe("public sitemap routes are unchanged by this relabel", () => {
+  it("still lists the public paths, including /for-work and /press from main", () => {
     const src = readWeb("app/sitemap.ts");
     const routesBlock = src.match(/const routes = \[([\s\S]*?)\];/)?.[1] ?? "";
     expect(routesBlock).toContain('"/why-galaxia"');
     expect(routesBlock).toContain('"/generations"');
     expect(routesBlock).toContain('"/meet-vela"');
+    expect(routesBlock).toContain('"/for-work"');
+    expect(routesBlock).toContain('"/press"');
     expect(routesBlock).toContain('"/security"');
     expect(routesBlock).toContain('"/pricing"');
     expect(routesBlock).toContain('"/blog"');
@@ -474,8 +486,6 @@ describe("public sitemap routes are unchanged", () => {
     expect(routesBlock).toContain('"/download"');
     expect(routesBlock).toContain('"/chart"');
     expect(routesBlock).toContain('"/chart/compare"');
-    expect(routesBlock).not.toContain('"/for-work"');
-    expect(src).not.toContain('"/for-work"');
   });
 });
 

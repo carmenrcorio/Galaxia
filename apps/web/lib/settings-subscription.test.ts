@@ -25,9 +25,11 @@ function snapshot(partial: Partial<SettingsSubscriptionSnapshot>): SettingsSubsc
 }
 
 describe("RC entitlement id is not this hang", () => {
-  it("the dashboard entitlement id lives in revenuecat.ts, not in this panel", async () => {
-    const { RC_ENTITLEMENT_ID } = await import("./revenuecat");
-    expect(RC_ENTITLEMENT_ID).toBe("GalaxiaMea App Unlimited");
+  it("the dashboard entitlement id lives in @galaxia/core, not in this panel", async () => {
+    const { RC_ENTITLEMENT_ID } = await import("@galaxia/core");
+    const { RC_ENTITLEMENT_ID: fromWeb } = await import("./revenuecat");
+    expect(fromWeb).toBe(RC_ENTITLEMENT_ID);
+    expect(RC_ENTITLEMENT_ID.length).toBeGreaterThan(0);
   });
 });
 

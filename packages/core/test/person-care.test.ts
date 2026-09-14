@@ -191,6 +191,16 @@ describe("buildPersonPageNavSections — nav syncs with rendered sections", () =
     expect(PERSON_TAB_VOCAB.houses).toBe("Houses");
     expect(PERSON_TAB_VOCAB["big-three"]).toBe("Big three");
   });
+
+  // Voice-layers (#236) pin Wheel / Placements / Aspects / Houses as the
+  // inner-layer chart terms. Chip chrome uses PERSON_TAB_LABEL (this PR);
+  // the four terms stay on PERSON_TAB_VOCAB as in-section subheads.
+  it("keeps Wheel, Placements, Aspects, and Houses as the inner-voice chart vocab", () => {
+    expect(PERSON_TAB_VOCAB["chart-wheel"]).toBe("Wheel");
+    expect(PERSON_TAB_VOCAB.placements).toBe("Placements");
+    expect(PERSON_TAB_VOCAB.aspects).toBe("Aspects");
+    expect(PERSON_TAB_VOCAB.houses).toBe("Houses");
+  });
 });
 
 describe("passed minor still minor (care does not strip safety)", () => {

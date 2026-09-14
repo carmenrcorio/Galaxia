@@ -691,7 +691,7 @@ function GroupsPageInner() {
         </>
       ) : null}
 
-      {!showEmptyLanding ? (
+      {rosterReady && !showEmptyLanding ? (
         <ManageGroupAccordion
           open={manageOpen}
           onToggle={setManageOpen}

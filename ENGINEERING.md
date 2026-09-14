@@ -227,6 +227,8 @@ The same class of gap already had a detector for edge functions. These two check
 
 **Identity is the snake_case name** (the filename suffix after `{YYYYMMDDHHMMSS}_`), not the version prefix. MCP `apply_migration` stamps the apply time as `version`, so requiring the committed timestamp to equal the ledger timestamp would be permanently red. A file whose name has no ledger row, or a ledger row whose name has no file, fails with the exact two-way diff in the log (`IN REPO, NOT IN PRODUCTION LEDGER` / `IN PRODUCTION LEDGER, NOT IN REPO`). Version-prefix skew on a matching name is logged as a note, not a failure.
 
+**TIMESTAMP RULE:** Before creating any migration file, run `npx supabase migration list` and find the highest existing timestamp. Your new file must be at least 60 seconds later. Never create two migrations within 60 seconds. Parallel branches that ignore this will conflict at merge time. `schema_migrations.version` is a primary key, so two files that share a prefix cannot both be recorded, and `npx supabase migration list` can pair only one of them as REMOTE YES.
+
 This check **does not apply migrations.** A red run means a human looks at the diff and either applies the committed file, documents an already-applied ad-hoc change as a new comment-only file, or (if the file is not idempotent and the schema already landed) asks before touching `supabase_migrations.schema_migrations` directly — that table is not a scratch pad.
 
 Do not "fix" a red run by deleting a production ledger row or by editing an already-applied SQL file (§2).

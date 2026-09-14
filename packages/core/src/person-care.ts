@@ -83,7 +83,7 @@ export const PERSON_TAB_VOCAB: Partial<Record<PersonNavSectionId, string>> = {
  * no dead anchors. Callers pass flags derived from the same conditions
  * that gate each section in the person page JSX.
  */
-export function buildPersonPageNavSections(input: {
+export type PersonPageNavFlags = {
   hasRemembrance: boolean;
   hasTimeline: boolean;
   hasActiveToday: boolean;
@@ -97,7 +97,85 @@ export function buildPersonPageNavSections(input: {
   hasRecord: boolean;
   hasPastConversations: boolean;
   hasHonorBox: boolean;
-}): PersonNavSection[] {
+};
+
+export type PersonGroupKey = "now" | "them" | "yours" | "remembrance";
+
+export type PersonPageGroup = {
+  key: PersonGroupKey;
+  label: string;
+  sections: PersonNavSection[];
+};
+
+/**
+ * FOUNDER-REVIEW: top-level person-profile groups. Remembrance is the
+ * memorial-surface placeholder (label-rename left that chip as Remembrance).
+ */
+export const PERSON_GROUP_LABEL: Record<PersonGroupKey, string> = {
+  now: "Now",
+  them: "Them",
+  yours: "Yours",
+  remembrance: "Remembrance",
+};
+
+/** Static home for each section. Memorial Record sections remap at group time. */
+export const PERSON_SECTION_GROUP: Record<PersonNavSectionId, PersonGroupKey> = {
+  "active-today": "now",
+  "vela-on-them": "now",
+  "big-three": "them",
+  placements: "them",
+  aspects: "them",
+  houses: "them",
+  generational: "them",
+  "chart-wheel": "them",
+  notes: "yours",
+  "past-conversations": "yours",
+  remembrance: "remembrance",
+  "memorial-timeline": "remembrance",
+  "honor-light": "remembrance",
+};
+
+const THEM_SECTION_ORDER: PersonNavSectionId[] = [
+  "big-three",
+  "placements",
+  "aspects",
+  "houses",
+  "generational",
+  "chart-wheel",
+];
+
+const REMEMBRANCE_SECTION_ORDER: PersonNavSectionId[] = [
+  "remembrance",
+  "memorial-timeline",
+  "honor-light",
+  "notes",
+  "past-conversations",
+];
+
+const GROUP_STRIP_LIVING: PersonGroupKey[] = ["now", "them", "yours"];
+const GROUP_STRIP_MEMORIAL: PersonGroupKey[] = ["now", "them", "remembrance"];
+
+export function isPersonNavSectionId(id: string): id is PersonNavSectionId {
+  return Object.prototype.hasOwnProperty.call(PERSON_SECTION_GROUP, id);
+}
+
+/**
+ * Parent group for a section. On a memorial profile Yours is replaced, so
+ * Record / Earlier answers resolve under Remembrance (hashes still work).
+ */
+export function groupForPersonSection(id: PersonNavSectionId, isMemorial: boolean): PersonGroupKey {
+  if (isMemorial && (id === "notes" || id === "past-conversations")) return "remembrance";
+  return PERSON_SECTION_GROUP[id];
+}
+
+function sortGroupSections(key: PersonGroupKey, sections: PersonNavSection[]): PersonNavSection[] {
+  const order =
+    key === "them" ? THEM_SECTION_ORDER : key === "remembrance" ? REMEMBRANCE_SECTION_ORDER : null;
+  if (!order) return sections;
+  return [...sections].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+}
+
+export function buildPersonPageNavSections(input: PersonPageNavFlags): PersonNavSection[] {
   const sections: PersonNavSection[] = [];
   if (input.hasRemembrance) sections.push({ id: "remembrance", label: PERSON_TAB_LABEL.remembrance });
   if (input.hasTimeline) sections.push({ id: "memorial-timeline", label: PERSON_TAB_LABEL["memorial-timeline"] });
@@ -113,4 +191,63 @@ export function buildPersonPageNavSections(input: {
   if (input.hasPastConversations) sections.push({ id: "past-conversations", label: PERSON_TAB_LABEL["past-conversations"] });
   if (input.hasHonorBox) sections.push({ id: "honor-light", label: PERSON_TAB_LABEL["honor-light"] });
   return sections;
+}
+
+export function buildPersonPageGroups(
+  input: PersonPageNavFlags & { isMemorial: boolean }
+): PersonPageGroup[] {
+  const sections = buildPersonPageNavSections(input);
+  const keys = input.isMemorial ? GROUP_STRIP_MEMORIAL : GROUP_STRIP_LIVING;
+  const buckets = new Map<PersonGroupKey, PersonNavSection[]>(keys.map((key) => [key, []]));
+  for (const section of sections) {
+    const key = groupForPersonSection(section.id, input.isMemorial);
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(section);
+  }
+  return keys
+    .map((key) => ({
+      key,
+      label: PERSON_GROUP_LABEL[key],
+      sections: sortGroupSections(key, buckets.get(key) ?? []),
+    }))
+    .filter((group) => group.sections.length > 0);
+}
+
+export type PersonPageEntry = {
+  group: PersonGroupKey;
+  sectionId: PersonNavSectionId | null;
+};
+
+/**
+ * Deep-link + default-group resolver. Hash wins, then ?transit=1, then Now
+ * when there is a live sky note today, otherwise Them.
+ */
+export function resolvePersonPageEntry(input: {
+  hash: string | null | undefined;
+  transit: string | null | undefined;
+  hasActiveToday: boolean;
+  isMemorial: boolean;
+  groups: PersonPageGroup[];
+}): PersonPageEntry {
+  const available = new Set(input.groups.flatMap((group) => group.sections.map((section) => section.id)));
+  const presentGroups = new Set(input.groups.map((group) => group.key));
+  const rawHash = (input.hash ?? "").replace(/^#/, "");
+
+  if (rawHash && isPersonNavSectionId(rawHash)) {
+    const group = groupForPersonSection(rawHash, input.isMemorial);
+    if (presentGroups.has(group)) {
+      return { group, sectionId: available.has(rawHash) ? rawHash : null };
+    }
+  }
+
+  if (input.transit === "1" && available.has("active-today")) {
+    return { group: "now", sectionId: "active-today" };
+  }
+
+  if (input.hasActiveToday && presentGroups.has("now")) {
+    return { group: "now", sectionId: null };
+  }
+
+  if (presentGroups.has("them")) return { group: "them", sectionId: null };
+  return { group: input.groups[0]?.key ?? "them", sectionId: null };
 }

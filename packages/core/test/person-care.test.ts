@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildPersonPageGroups,
   buildPersonPageNavSections,
+  groupForPersonSection,
+  PERSON_GROUP_LABEL,
   PERSON_TAB_LABEL,
   PERSON_TAB_VOCAB,
+  resolvePersonPageEntry,
+  type PersonGroupKey,
   isMinorForSafety,
   peopleForTodaySky,
   shouldShowLiveTransits,
@@ -200,6 +205,194 @@ describe("buildPersonPageNavSections — nav syncs with rendered sections", () =
     expect(PERSON_TAB_VOCAB.placements).toBe("Placements");
     expect(PERSON_TAB_VOCAB.aspects).toBe("Aspects");
     expect(PERSON_TAB_VOCAB.houses).toBe("Houses");
+  });
+});
+
+const LIVING_FLAGS = {
+  hasRemembrance: false,
+  hasTimeline: false,
+  hasActiveToday: true,
+  hasVelaOnThem: true,
+  hasWheel: true,
+  hasBigThree: true,
+  hasPlacements: true,
+  hasAspects: true,
+  hasHouses: true,
+  hasGenerational: true,
+  hasRecord: true,
+  hasPastConversations: true,
+  hasHonorBox: false,
+} as const;
+
+const MEMORIAL_FLAGS = {
+  hasRemembrance: true,
+  hasTimeline: true,
+  hasActiveToday: false,
+  hasVelaOnThem: false,
+  hasWheel: true,
+  hasBigThree: true,
+  hasPlacements: true,
+  hasAspects: true,
+  hasHouses: true,
+  hasGenerational: true,
+  hasRecord: true,
+  hasPastConversations: true,
+  hasHonorBox: true,
+} as const;
+
+describe("person profile groups", () => {
+  it("names the four groups in founder-approved copy", () => {
+    expect(PERSON_GROUP_LABEL).toEqual({
+      now: "Now",
+      them: "Them",
+      yours: "Yours",
+      remembrance: "Remembrance",
+    });
+  });
+
+  it("buckets a living profile into Now, Them, Yours with founder Them order", () => {
+    const groups = buildPersonPageGroups({ ...LIVING_FLAGS, isMemorial: false });
+    expect(groups.map((g) => g.key)).toEqual(["now", "them", "yours"]);
+    expect(groups.map((g) => g.label)).toEqual(["Now", "Them", "Yours"]);
+    expect(groups.find((g) => g.key === "now")?.sections.map((s) => s.id)).toEqual([
+      "active-today",
+      "vela-on-them",
+    ]);
+    expect(groups.find((g) => g.key === "them")?.sections.map((s) => s.id)).toEqual([
+      "big-three",
+      "placements",
+      "aspects",
+      "houses",
+      "generational",
+      "chart-wheel",
+    ]);
+    expect(groups.find((g) => g.key === "yours")?.sections.map((s) => s.id)).toEqual([
+      "notes",
+      "past-conversations",
+    ]);
+  });
+
+  it("replaces Yours with Remembrance on a memorial profile", () => {
+    const groups = buildPersonPageGroups({ ...MEMORIAL_FLAGS, isMemorial: true });
+    expect(groups.map((g) => g.key)).toEqual(["them", "remembrance"]);
+    expect(groups.find((g) => g.key === "yours")).toBeUndefined();
+    expect(groups.find((g) => g.key === "now")).toBeUndefined();
+    expect(groups.find((g) => g.key === "remembrance")?.sections.map((s) => s.id)).toEqual([
+      "remembrance",
+      "memorial-timeline",
+      "honor-light",
+      "notes",
+      "past-conversations",
+    ]);
+  });
+
+  it("maps every known hash to its parent group", () => {
+    expect(groupForPersonSection("active-today", false)).toBe("now");
+    expect(groupForPersonSection("vela-on-them", false)).toBe("now");
+    expect(groupForPersonSection("big-three", false)).toBe("them");
+    expect(groupForPersonSection("placements", false)).toBe("them");
+    expect(groupForPersonSection("aspects", false)).toBe("them");
+    expect(groupForPersonSection("houses", false)).toBe("them");
+    expect(groupForPersonSection("generational", false)).toBe("them");
+    expect(groupForPersonSection("chart-wheel", false)).toBe("them");
+    expect(groupForPersonSection("notes", false)).toBe("yours");
+    expect(groupForPersonSection("past-conversations", false)).toBe("yours");
+    expect(groupForPersonSection("remembrance", true)).toBe("remembrance");
+    expect(groupForPersonSection("memorial-timeline", true)).toBe("remembrance");
+    expect(groupForPersonSection("honor-light", true)).toBe("remembrance");
+    expect(groupForPersonSection("notes", true)).toBe("remembrance");
+    expect(groupForPersonSection("past-conversations", true)).toBe("remembrance");
+  });
+});
+
+describe("resolvePersonPageEntry", () => {
+  const living = buildPersonPageGroups({ ...LIVING_FLAGS, isMemorial: false });
+  const emptyNow = buildPersonPageGroups({ ...LIVING_FLAGS, hasActiveToday: false, isMemorial: false });
+  const memorial = buildPersonPageGroups({ ...MEMORIAL_FLAGS, isMemorial: true });
+
+  it("defaults to Now when there is a live sky note today", () => {
+    expect(
+      resolvePersonPageEntry({
+        hash: null,
+        transit: null,
+        hasActiveToday: true,
+        isMemorial: false,
+        groups: living,
+      })
+    ).toEqual({ group: "now", sectionId: null });
+  });
+
+  it("defaults to Them when Now has no active content today", () => {
+    expect(
+      resolvePersonPageEntry({
+        hash: "",
+        transit: null,
+        hasActiveToday: false,
+        isMemorial: false,
+        groups: emptyNow,
+      })
+    ).toEqual({ group: "them", sectionId: null });
+  });
+
+  it("resolves ?transit=1 to Now scrolled to #active-today", () => {
+    expect(
+      resolvePersonPageEntry({
+        hash: null,
+        transit: "1",
+        hasActiveToday: true,
+        isMemorial: false,
+        groups: living,
+      })
+    ).toEqual({ group: "now", sectionId: "active-today" });
+  });
+
+  it("lets a section hash win over ?transit=1", () => {
+    expect(
+      resolvePersonPageEntry({
+        hash: "#placements",
+        transit: "1",
+        hasActiveToday: true,
+        isMemorial: false,
+        groups: living,
+      })
+    ).toEqual({ group: "them", sectionId: "placements" });
+  });
+
+  it("opens the parent group for each of the thirteen bookmarkable hashes", () => {
+    const livingCases: Array<[string, PersonGroupKey]> = [
+      ["active-today", "now"],
+      ["vela-on-them", "now"],
+      ["chart-wheel", "them"],
+      ["big-three", "them"],
+      ["placements", "them"],
+      ["aspects", "them"],
+      ["houses", "them"],
+      ["generational", "them"],
+      ["notes", "yours"],
+      ["past-conversations", "yours"],
+    ];
+    for (const [id, group] of livingCases) {
+      expect(
+        resolvePersonPageEntry({
+          hash: `#${id}`,
+          transit: null,
+          hasActiveToday: true,
+          isMemorial: false,
+          groups: living,
+        })
+      ).toEqual({ group, sectionId: id });
+    }
+    for (const id of ["remembrance", "memorial-timeline", "honor-light"] as const) {
+      expect(
+        resolvePersonPageEntry({
+          hash: `#${id}`,
+          transit: null,
+          hasActiveToday: false,
+          isMemorial: true,
+          groups: memorial,
+        })
+      ).toEqual({ group: "remembrance", sectionId: id });
+    }
   });
 });
 

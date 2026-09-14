@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * Sticky, phone-first horizontal chip rail for long chart pages.
- * Anchors only — parent passes the sections that actually render
- * (see buildPersonPageNavSections) so there are never dead links.
+ * Person profile chrome: three top-level groups plus a wrap jump list
+ * for the active group. Jump chips wrap; they are not a nested horizontal
+ * scroller (see ChartSectionNav list: flex-wrap, no overflow-x).
  */
 
-import type { PersonNavSection } from "@galaxia/core";
+import type { PersonGroupKey, PersonNavSection, PersonPageGroup } from "@galaxia/core";
 
 /**
  * Quiet astrology-term line inside a renamed person-profile section.
@@ -21,9 +21,11 @@ export function ChartVocabSubhead({ term }: { term: string }) {
 export function ChartSectionNav({
   sections,
   ariaLabel = "Jump to section",
+  onJump,
 }: {
   sections: PersonNavSection[];
   ariaLabel?: string;
+  onJump?: (id: PersonNavSection["id"]) => void;
 }) {
   if (sections.length === 0) return null;
 
@@ -31,49 +33,21 @@ export function ChartSectionNav({
     <nav
       className="chart-section-nav"
       aria-label={ariaLabel}
-      style={{
-        position: "sticky",
-        top: 68,
-        zIndex: 25,
-        margin: "0 0 4px",
-        padding: "8px 0",
-        background: "linear-gradient(180deg, rgba(10,7,23,.92), rgba(10,7,23,.72))",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        borderBottom: "1px solid rgba(255,255,255,.05)",
-      }}
     >
-      <ul
-        className="chart-section-nav__list"
-        style={{
-          listStyle: "none",
-          margin: 0,
-          padding: 0,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 6,
-          maxWidth: "100%",
-        }}
-      >
+      <ul className="chart-section-nav__list">
         {sections.map((s) => (
           <li key={s.id} style={{ flexShrink: 0 }}>
             <a
               href={`#${s.id}`}
               className="chart-section-nav__chip"
-              style={{
-                display: "inline-block",
-                padding: "6px 11px",
-                borderRadius: 999,
-                fontSize: ".72rem",
-                fontWeight: 600,
-                letterSpacing: ".02em",
-                color: "var(--mist)",
-                background: "rgba(255,255,255,.04)",
-                border: "1px solid rgba(183,154,216,.18)",
-                textDecoration: "none",
-                whiteSpace: "nowrap",
-                lineHeight: 1.2,
-              }}
+              onClick={
+                onJump
+                  ? (event) => {
+                      event.preventDefault();
+                      onJump(s.id);
+                    }
+                  : undefined
+              }
             >
               {s.label}
             </a>
@@ -81,5 +55,57 @@ export function ChartSectionNav({
         ))}
       </ul>
     </nav>
+  );
+}
+
+export function PersonProfileNav({
+  groups,
+  activeGroup,
+  onGroupChange,
+  onJump,
+  personName,
+}: {
+  groups: PersonPageGroup[];
+  activeGroup: PersonGroupKey;
+  onGroupChange: (group: PersonGroupKey) => void;
+  onJump: (id: PersonNavSection["id"]) => void;
+  personName: string;
+}) {
+  if (groups.length === 0) return null;
+  const jump = groups.find((group) => group.key === activeGroup)?.sections ?? [];
+
+  return (
+    <div className="person-profile-nav">
+      <div
+        className="person-group-tabs"
+        role="tablist"
+        aria-label={`Sections of ${personName}'s profile`}
+      >
+        {groups.map((group) => {
+          const selected = group.key === activeGroup;
+          return (
+            <button
+              key={group.key}
+              type="button"
+              role="tab"
+              id={`person-group-${group.key}`}
+              aria-selected={selected}
+              aria-controls={`person-group-panel-${group.key}`}
+              className="person-group-tab"
+              onClick={() => onGroupChange(group.key)}
+            >
+              {group.label}
+            </button>
+          );
+        })}
+      </div>
+      {jump.length > 1 ? (
+        <ChartSectionNav
+          sections={jump}
+          ariaLabel={`Jump within ${groups.find((g) => g.key === activeGroup)?.label ?? "this group"}`}
+          onJump={onJump}
+        />
+      ) : null}
+    </div>
   );
 }

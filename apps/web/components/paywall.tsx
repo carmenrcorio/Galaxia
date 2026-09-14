@@ -1,6 +1,6 @@
 "use client";
 
-import { trialDaysRemaining } from "@galaxia/core";
+import { RC_ENTITLEMENT_ID, trialDaysRemaining } from "@galaxia/core";
 import {
   Purchases,
   PurchasesError,
@@ -9,7 +9,6 @@ import {
 import { useState } from "react";
 import { publicEnv } from "../lib/env";
 import {
-  RC_ENTITLEMENT_ID,
   isCheckoutSetupRejection,
   parseRcBackendFailure,
   purchaseErrorCopy,

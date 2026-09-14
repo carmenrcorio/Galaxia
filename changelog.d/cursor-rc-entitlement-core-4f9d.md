@@ -1,0 +1,11 @@
+## RevenueCat entitlement identifier lives in `@galaxia/core` (branch `cursor/rc-entitlement-core-4f9d`) — 2026-09-14
+
+**Trigger**: Phase 0 diagnosis of the purchase-flow entitlement name. The configured RevenueCat entitlement is `GalaxiaMea App Unlimited`. Application code already used that exact string in `apps/web/lib/revenuecat.ts` (`RC_ENTITLEMENT_ID`); the retired `GalaxiaMea App Pro` identifier exists only in historical changelog fragments (#63/#64). This is **not** the Settings subscription panel hang (`changelog.d/cursor-fix-settings-subscription-hang-05f1.md`): that hang was `Purchases.getCustomerInfo()` plus treating a null `profiles.subscription_status` as infinite loading. A mismatched entitlement name would break only the paywall's post-purchase `customerInfo.entitlements.active[...]` lookup (the "access is still syncing" branch). The webhook maps by `event.type`, not the entitlement id, so it would still write `profiles.subscription_status`. `hasAccess` reads that column and never the RevenueCat string.
+
+`[CHANGED]` **`RC_ENTITLEMENT_ID` is one exported constant in `@galaxia/core`.** `packages/core/src/rc-entitlement.ts` is the only production source of the dashboard identifier. `apps/web/lib/revenuecat.ts` re-exports it; `apps/web/components/paywall.tsx` imports it from `@galaxia/core`. No other `apps/` / `packages/` / `supabase/functions/` TypeScript file may contain the literal `GalaxiaMea App Unlimited` or the retired `GalaxiaMea App Pro`.
+
+`[ADDED]` **Scan test `packages/core/test/rc-entitlement-id.test.ts`.** Pins the dashboard id character-for-character and fails if either literal reappears outside the core export.
+
+`[TESTED]` **Grant path still closed.** Client code (paywall, Settings panel, mobile entitlement provider) only reads `subscription_status`. Authenticated column grants still omit billing columns. The webhook route is the only production `.update` that writes `subscription_status`. Forged/missing `Authorization` on `POST /api/webhooks/revenuecat` still returns 401 before any profile write (PR #63 fail-closed proof, re-run).
+
+`[DECISION]` **Pricing unchanged.** One monthly plan at $9.99. Vela stays included. `@galaxia/core` `hasAccess` is unchanged.

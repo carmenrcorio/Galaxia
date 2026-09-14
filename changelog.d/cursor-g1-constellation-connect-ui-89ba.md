@@ -1,4 +1,4 @@
-## Constellation Connect UI (branch `cursor/g1-constellation-connect-ui-89ba`) — 2026-09-14
+## Constellation Connect UI (branch `cursor/g1-constellation-connect-ui-89ba`), 2026-09-14
 
 **Trigger**: Backend for constellation connect is already on main (schema PR #217, nine RPCs PR #225, legal addendum PR #224). Nothing in the UI called `create_connect_invite`, `accept_connect_invite`, or `revoke_connect_invite`. This branch finishes the five UI slices so a sender can text a `/connect/[token]` link and both people can land on a comparison.
 
@@ -6,10 +6,14 @@
 
 `[ADDED]` **Generate, copy, and native share.** Person profile, edit panel, and the constellation hover card call `create_connect_invite`. Child-band relations and `isMinorForSafety` hide the action. Merge target (`p_person_id`) is only sent for an unlinked `birth_precision = none` star.
 
-`[ADDED]` **Pending connections on `/app/settings`.** Lists the sender's open `constellation_connect` invites with recipient name, relation, time remaining, and Revoke (`revoke_connect_invite`). Empty state: "No pending invites."
+`[ADDED]` **Pending invites on `/app/settings`.** Lists the sender's open `constellation_connect` invites with recipient name, relation, time remaining, and Revoke (`revoke_connect_invite`). Empty state: "Nothing pending right now."
 
 `[ADDED]` **Reciprocal compare after accept.** Success shows an interstitial (`See your comparison` / `Go to my constellation`) instead of bouncing to `/app`. Comparison preloads `/app/compare?a=&b=` (the authed compare that can load stored charts). `/chart/compare` is the public birth-form flow and cannot preload a linked chart that has no birth fields. Sender-side unread is a gold dot on the person star, dismissed by `acknowledge_connect_accept` when the profile opens. No notification table.
 
-`[ADDED]` **Rate limit on `create_connect_invite`.** New migration `20260914260000_create_connect_invite_rate_limit.sql` (does not edit the applied RPC file). Caps pending non-expired invites created by `auth.uid()` in the last 24 hours at 10. The generate UI surfaces "Too many open invitations. Revoke some before sending more." with a link to the pending list. Timestamp bumped so it runs after `20260914240000_comparison_history.sql` and `20260914250000_weekly_constellation_letter.sql`.
+`[ADDED]` **Rate limit on `create_connect_invite`.** New migration `20260914260000_create_connect_invite_rate_limit.sql` (does not edit the applied RPC file). Caps pending non-expired invites created by `auth.uid()` in the last 24 hours at 10. The generate UI surfaces "You have too many invites still open. Revoke one before sending another." with a link to the pending list. Timestamp bumped so it runs after `20260914240000_comparison_history.sql` and `20260914250000_weekly_constellation_letter.sql`.
 
 `[UNCHANGED]` **`hasAccess` is not involved.** Auth is required to accept; a paid plan is not. `kind = birth_data` is untouched. No second invitations table. No per-person caps.
+
+`[CHANGED]` **Pending-row fallback.** A `create_connect_invite` row with `p_person_id` null no longer shows "New connection". The relation label is the primary label. A row with a person_id still shows name plus relation. An empty relation label omits the relation and the separator.
+
+`[FIXED]` **`next build` typedRoutes.** `permanentRedirect(connectPath(token))` and the inverse `/invite/${token}` redirect are type-only `as never` casts. Same pattern as `save-to-galaxy-button.tsx` (#270). No route change.

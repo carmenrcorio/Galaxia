@@ -3,7 +3,7 @@ import { LoginForm } from "../../components/login-form";
 import { authReturnPath } from "../../lib/safe-next-path";
 
 // FOUNDER-REVIEW: rewritten (no U+2014).
-const TITLE = "Log in to Galaxia";
+const TITLE = "Sign in to Galaxia";
 const DESCRIPTION = "Sign in to your Galaxia account.";
 
 export const metadata: Metadata = {

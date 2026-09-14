@@ -15,7 +15,7 @@ describe("constellation connect UI wiring", () => {
     expect(existsSync(join(REPO_ROOT, "apps/web/app/connect/[token]/page.tsx"))).toBe(true);
     const invite = read("apps/web/app/invite/[token]/page.tsx");
     expect(invite).toContain('invite.kind === "constellation_connect"');
-    expect(invite).toContain("permanentRedirect(connectPath(token))");
+    expect(invite).toContain("permanentRedirect(connectPath(token) as never)");
     const connect = read("apps/web/app/connect/[token]/page.tsx");
     expect(connect).toContain("ConnectAcceptView");
     expect(connect).toContain("getConnectInviteLanding");

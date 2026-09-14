@@ -161,6 +161,7 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
       </form>
       {status === "confirm" ? <p className="success">Check your email to confirm your account.</p> : null}
       {error ? <p className="error">{error}</p> : null}
+      {/* FOUNDER-REVIEW: Already have an account? Sign in. */}
       <p className="muted">
         Already have an account?{" "}
         <Link
@@ -170,7 +171,7 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
               : "/login") as never
           }
         >
-          Log in
+          Sign in
         </Link>
       </p>
       <p className="muted">

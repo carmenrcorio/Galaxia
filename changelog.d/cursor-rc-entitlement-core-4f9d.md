@@ -6,6 +6,6 @@
 
 `[ADDED]` **Scan test `packages/core/test/rc-entitlement-id.test.ts`.** Pins the dashboard id character-for-character and fails if either literal reappears outside the core export.
 
-`[TESTED]` **Grant path still closed.** Client code (paywall, Settings panel, mobile entitlement provider) only reads `subscription_status`. Authenticated column grants still omit billing columns. The webhook route is the only production `.update` that writes `subscription_status`. Forged/missing `Authorization` on `POST /api/webhooks/revenuecat` still returns 401 before any profile write (PR #63 fail-closed proof, re-run).
+`[TESTED]` **Grant path still closed.** Client code (paywall, Settings panel, mobile entitlement provider) only reads `subscription_status`. Authenticated column grants still omit billing columns. The webhook route is the only production `.update` that writes `subscription_status`. PR #63 fail-closed proof re-run against `POST /api/webhooks/revenuecat`: missing `Authorization` → **401** `{"error":"Unauthorized."}`; forged `Authorization` → **401** `{"error":"Unauthorized."}`; valid `Authorization` with an unknown `app_user_id` → **200** `{"ok":true,"matched":false}` (auth passed, no profile row, no status write). `pnpm typecheck` and `pnpm test` are green from the repo root.
 
 `[DECISION]` **Pricing unchanged.** One monthly plan at $9.99. Vela stays included. `@galaxia/core` `hasAccess` is unchanged.

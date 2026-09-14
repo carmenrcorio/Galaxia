@@ -17,6 +17,8 @@ export type RelationshipType =
   | "child"
   | "grandchild"
   | "parent"
+  | "mother"
+  | "father"
   | "grandparent"
   | "sibling"
   | "friend"
@@ -33,6 +35,7 @@ export type RelationshipType =
   | "professor"
   | "mentor"
   | "acquaintance"
+  | "other"
   | "ancestor"
   | "self";
 
@@ -60,6 +63,8 @@ export function describeGenerationalArchetype(planet: "Pluto" | "Neptune" | "Ura
 export * from "./minor-safety";
 
 export * from "./galaxy-orbit";
+
+export * from "./first-run";
 
 export * from "./star-color";
 

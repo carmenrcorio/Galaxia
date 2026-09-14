@@ -1,75 +1,116 @@
 "use client";
 
-import { type BirthFormInput } from "@galaxia/astro";
+import { singleChartNeed, type BirthFormInput, type NatalChart, type SingleChartNeed } from "@galaxia/astro";
+import {
+  FIRST_RUN_RELATION_OPTIONS,
+  FIRST_RUN_STEPS,
+  firstRunRelationById,
+  isFirstRunSettled,
+  type FirstRunRelationOption,
+  type FirstRunStep,
+} from "@galaxia/core";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { AddPersonForm } from "../../components/add-person-form";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AddPersonForm, type AddPersonSavedInfo } from "../../components/add-person-form";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
 import { CosmicBackground } from "../../components/cosmic-background";
-import { InitialAvatar } from "../../components/initial-avatar";
 import { Spinner } from "../../components/spinner";
+import {
+  readFirstRunProfile,
+  recordFirstRunStep,
+  reopenFirstRun,
+  resolveFirstRunEntry,
+  settleFirstRun,
+} from "../../lib/first-run";
 import { persistPerson } from "../../lib/persist-person";
 import { decodeBirthQuery } from "../../lib/quick-chart";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
 
-const baseInput: BirthFormInput = BASE_BIRTH_INPUT;
-
-/* ─── Guided onboarding copy ───────────────────────────────────────────────
- * All user-facing onboarding voice lives here so the founder can refine it in
- * one place. First ninety seconds are layer one (`design/galaxia-voice-layers.md`):
- * lead with outcome, astrology is not the first word, never "an astrology app."
- * Step 3 hands the user into layer two (natal, synastry, aspects, houses).
+/* ─── First-run orientation copy ───────────────────────────────────────────
+ * The flow leads with the other person: the reader reads one true sentence
+ * about someone they actually know before they are asked for anything about
+ * themselves.
  *
- * Field-level add-person copy (minor checkbox, etc.) lives on AddPersonForm so
- * the standalone /app/add-person page stays in sync — do not duplicate it here.
+ * All user-facing voice lives here so the founder can refine it in one place.
+ * Steps 1 and 2 are layer one (`design/galaxia-voice-layers.md`): lead with the
+ * outcome, astrology is not the first word. Step 3 is where layer two starts,
+ * because the statement names the placement it came from.
+ *
+ * Field-level copy (the minor checkbox, the precision tiers) lives on
+ * AddPersonForm and BirthFields so the standalone /app/add-person page cannot
+ * drift from this one. Never duplicate it here.
  * ────────────────────────────────────────────────────────────────────────── */
 
-// FOUNDER-REVIEW: authored onboarding copy — refine voice.
+// FOUNDER-REVIEW: authored first-run copy — refine voice.
 const COPY = {
-  steps: ["You", "Your first person", "What you got"] as const,
+  pageEyebrow: "First run",
+  pageTitle: "Start with someone you already know",
+  stepLabels: ["Who", "Them", "What they need", "You", "Next"] as const,
+  skip: "Skip for now",
 
-  // Step 1 — You (layer one: first ninety seconds lead with outcome)
-  selfEyebrow: "Step 1 · Start with you",
-  selfTitle: "Start with you, so you can show up for everyone else",
-  selfLede:
-    // FOUNDER-REVIEW: layer-one onboarding. Outcome first; astrology is not the first word.
-    "Galaxia is for the people already in your life. We plot you first because every reading is drawn in relation to you. This stays completely private.",
-  selfWhyTime:
-    "A birth time gives a sharper picture of how you are built. Without it, you still get a real reading from the date. We never guess the parts a time would decide.",
-  selfSaved: "You're in your sky",
+  // Step 1 — who
+  whoEyebrow: "Step 1 of 5",
+  whoTitle: "Who do you want to understand first?",
+  whoLede:
+    "Pick one person. You are not committing to anything, and you can add everyone else afterwards.",
 
-  // Step 2 — Your first person (chrome only — fields are AddPersonForm)
-  personEyebrow: "Step 2 · Add someone you love",
-  personTitle: "Now add someone who matters to you",
-  personLede:
-    "A partner, a parent, a best friend, a child, someone you've lost. Galaxia comes alive when it's not just you. This is where you start seeing how to tend the bond.",
-  precisionTitle: "Add whatever you actually know. Every level gives you something real.",
-  precisionExact:
-    "Exact birth time: the fullest picture of how they're built, including the time-specific parts.",
-  precisionDate:
-    "Just the date: still a real, accurate reading of how they're built, and a real comparison with you. Only the time-specific parts wait until you know more.",
-  precisionYear:
-    "Only the year: that's enough to place them in your sky, and to see the slow outer planets that shaped their whole era.",
-  precisionNone:
-    "Don't know their birthday yet? Add their name now and fill in the rest whenever you have it, or ask them. Nothing is lost by starting light.",
+  // Step 2 — their birth details
+  birthEyebrow: "Step 2 of 5",
+  birthTitle: "What do you know about their birth?",
+  birthLede:
+    "Whatever you have is enough to begin. Every level below produces a real chart, computed from real ephemeris data. More detail just unlocks more of it.",
+  birthSubmit: "Read what this says",
+  birthSaving: "Reading the sky…",
+  birthNoDeferral:
+    "This one step needs a birth year at minimum, because the next screen shows you something true about them and there is nothing true to show without it.",
 
-  // Step 3 — What you got (handoff into layer two)
-  doneEyebrow: "Step 3 · Your constellation is live",
-  doneTitle: "That's your sky. Here's what you can do with it.",
-  doneLede:
-    "You've plotted your first stars. From here it only gets richer. Every person you add deepens the picture. Here's where to go next:",
-  pointerChart: "Open a natal chart to read someone's Sun, Moon, Rising, placements, aspects, and houses in plain language.",
-  pointerCompare: "Run a Compare to see the synastry: the aspects between two charts, where it flows and where it catches.",
-  pointerVela: "Ask Vela, your private guide, anything about the people in your sky. She names the aspect she is reading, and never invents a placement."
+  // Step 3 — the statement
+  readingEyebrow: "Step 3 of 5",
+  readingTitle: (name: string) => `One true thing about ${name}`,
+  readingProvenance: "Computed from their birth data. Not generated, not guessed.",
+  readingGenerational:
+    "A birth year settles only the slowest planets, so this describes the era that shaped them rather than them alone. Add their date and this gets personal.",
+  readingEmpty: (name: string) =>
+    `The year you gave does not settle a single placement for ${name}, so there is nothing true to say yet. Add their birth date from their profile and this fills in straight away.`,
+  readingRefused: (name: string) =>
+    `${name} is a minor, so this is saved as an unspecified relationship. Galaxia never holds a romantic or partner framing against a child.`,
+  readingContinue: "See what this means between you",
+  readingContinueHasSelf: "Back to the next step",
+
+  // Step 4 — you
+  youEyebrow: "Step 4 of 5",
+  youTitle: (name: string) => `Now you, so we can read the two of you together`,
+  youLede: (name: string) =>
+    `One chart tells you how ${name} is built. Two charts tell you what happens in the room when you are both in it. Your details stay private, and they are never shown to anyone.`,
+  youNamePlaceholder: "Your name",
+  youSubmit: "This is me. Continue",
+  youSaving: "Placing you…",
+
+  // Step 5 — next
+  nextEyebrow: "Step 5 of 5",
+  nextTitle: "Your sky has started. Where next?",
+  nextAddTitle: "Add another person",
+  nextAddBody:
+    "The picture gets richer with every person in it. Same few questions, same few seconds.",
+  nextCompareTitle: "See the two of you compared",
+  nextCompareBody:
+    "The synastry between your two charts: the aspects, where it flows easily, and where it catches.",
+  nextRememberTitle: "Remember someone you have lost",
+  // Existing remembrance language, carried over from the marketing section and
+  // the person editor rather than written again.
+  nextRememberBody:
+    "The loved ones you've lost are still part of your sky. Their chart stays. Their light softens into ancient light on your galaxy: still with you, still comparable.",
+  nextHome: "Open Galaxia Mea",
 };
 
 /* ─── Progress header ─────────────────────────────────────────────────────── */
-function StepProgress({ current }: { current: 1 | 2 | 3 }) {
+function StepProgress({ current }: { current: FirstRunStep }) {
+  const index = FIRST_RUN_STEPS.indexOf(current);
   return (
-    <div style={{ display: "flex", gap: 8, marginBottom: 4 }} aria-label={`Step ${current} of 3`}>
-      {COPY.steps.map((label, i) => {
-        const n = (i + 1) as 1 | 2 | 3;
-        const state = n < current ? "done" : n === current ? "current" : "todo";
+    <div style={{ display: "flex", gap: 8, marginBottom: 4 }} aria-label={`Step ${index + 1} of ${FIRST_RUN_STEPS.length}`}>
+      {COPY.stepLabels.map((label, i) => {
+        const state = i < index ? "done" : i === index ? "current" : "todo";
         return (
           <div key={label} style={{ flex: 1, minWidth: 0 }}>
             <div
@@ -78,7 +119,7 @@ function StepProgress({ current }: { current: 1 | 2 | 3 }) {
                 borderRadius: 999,
                 background:
                   state === "todo" ? "rgba(183,154,216,.18)" : "linear-gradient(90deg, var(--gold-bright), var(--gold))",
-                opacity: state === "current" ? 1 : state === "done" ? 0.85 : 1
+                opacity: state === "current" ? 1 : state === "done" ? 0.85 : 1,
               }}
             />
             <div
@@ -90,7 +131,7 @@ function StepProgress({ current }: { current: 1 | 2 | 3 }) {
                 color: state === "todo" ? "var(--mist2)" : "var(--gold)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
-                whiteSpace: "nowrap"
+                whiteSpace: "nowrap",
               }}
             >
               {label}
@@ -102,72 +143,64 @@ function StepProgress({ current }: { current: 1 | 2 | 3 }) {
   );
 }
 
+/** The person the reader is currently being shown, held across steps 2 to 5. */
+type Subject = {
+  personId: string;
+  displayName: string;
+  natal: NatalChart | null;
+  isMinor: boolean;
+  refusedRelation: string | null;
+};
+
 /* ─── WelcomePage ─────────────────────────────────────────────────────────── */
 export default function WelcomePage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<FirstRunStep>("person");
+  const [leaving, setLeaving] = useState(false);
+
+  const [choice, setChoice] = useState<FirstRunRelationOption | null>(null);
+  const [subject, setSubject] = useState<Subject | null>(null);
+  const [hasSelf, setHasSelf] = useState(false);
 
   const [selfName, setSelfName] = useState("");
-  const [selfInput, setSelfInput] = useState<BirthFormInput>(baseInput);
+  const [selfInput, setSelfInput] = useState<BirthFormInput>(BASE_BIRTH_INPUT);
+  const [savingSelf, setSavingSelf] = useState(false);
+
   const [prefillName, setPrefillName] = useState("");
   const [prefillBirth, setPrefillBirth] = useState<BirthFormInput | undefined>(undefined);
-  const [people, setPeople] = useState<
-    Array<{ id: string; display_name: string; relation: string; birth_precision: string; is_self: boolean }>
-  >([]);
-  const [savingSelf, setSavingSelf] = useState(false);
   const [status, setStatus] = useState<{ text: string; ok: boolean } | null>(null);
 
-  // No people cap. Value compounds with every person added; nothing is gated.
-  const canSaveSelf = selfName.trim().length > 1;
+  // Recording progress must never block the reader, so the write is fired and
+  // the UI moves on. See lib/first-run.ts for why that trade is the right way
+  // round.
+  const goTo = useCallback(
+    (next: FirstRunStep, id: string | null) => {
+      setStatus(null);
+      setStep(next);
+      if (id) void recordFirstRunStep(supabase, id, next);
+    },
+    [supabase]
+  );
 
-  // BUG A: never show the create-self form to someone who already has a self.
-  const selfPerson = people.find((p) => p.is_self) ?? null;
-  const otherPeople = people.filter((p) => !p.is_self);
+  const leave = useCallback(
+    async (outcome: "done" | "skipped", href: string) => {
+      setLeaving(true);
+      if (userId) await settleFirstRun(supabase, userId, outcome);
+      router.push(href as never);
+    },
+    [router, supabase, userId]
+  );
 
-  // Resume at the right step: no self → step 1; self but no one else → step 2;
-  // an established constellation → the "what you got" recap. The /start
-  // resolver normally sends established users straight to /app, but if they do
-  // reach here we still land them on the recap rather than the empty step 1.
-  // Returning users who want to add someone use /app/add-person — not this flow.
-  const resolveStep = (rows: typeof people): 1 | 2 | 3 => {
-    const hasSelf = rows.some((p) => p.is_self);
-    const hasOther = rows.some((p) => !p.is_self);
-    if (!hasSelf) return 1;
-    if (!hasOther) return 2;
-    return 3;
-  };
-
-  useEffect(() => {
-    const load = async () => {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-      setUserId(user.id);
-      const { data: peopleRows } = await supabase
-        .from("people")
-        .select("id, display_name, relation, birth_precision, is_self")
-        .eq("owner_id", user.id)
-        .order("created_at", { ascending: false });
-      const rows = peopleRows ?? [];
-      setPeople(rows);
-      setStep(resolveStep(rows));
-      setLoading(false);
-    };
-    void load();
-  }, [supabase]);
-
-  // Quick Chart hand-off: /chart's "Save to your galaxy" (signed-out path)
-  // sends the visitor through /signup?next=/welcome?prefill=...&name=...
-  // Prefill only — never auto-submitted, always reviewed and confirmed here.
-  // It prefills the "add a person" form, so if it fires, jump to that step.
+  // Quick Chart hand-off: /chart's "Save to your galaxy" sends a signed-out
+  // visitor through /signup?next=/welcome?prefill=...&name=... Prefill only,
+  // never auto-submitted, always reviewed here.
+  const restartRef = useRef(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    restartRef.current = params.get("restart") === "1";
     const prefill = decodeBirthQuery(params);
     if (!prefill) return;
     const name = params.get("name");
@@ -175,16 +208,79 @@ export default function WelcomePage() {
     setPrefillBirth(prefill);
   }, []);
 
-  const fetchPeople = async (): Promise<typeof people> => {
-    if (!userId) return people;
-    const { data } = await supabase
-      .from("people")
-      .select("id, display_name, relation, birth_precision, is_self")
-      .eq("owner_id", userId)
-      .order("created_at", { ascending: false });
-    const rows = data ?? [];
-    setPeople(rows);
-    return rows;
+  useEffect(() => {
+    const load = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      setUserId(user.id);
+
+      let profile = await readFirstRunProfile(supabase, user.id);
+      // An explicit restart is the door back in for someone who skipped. It
+      // clears the settled state rather than rendering the flow over a row
+      // that still says "finished", which would resettle on the next write.
+      if (restartRef.current && isFirstRunSettled(profile)) {
+        await reopenFirstRun(supabase, user.id);
+        profile = { onboarding_step: null, onboarding_completed_at: null };
+      }
+
+      const { data: peopleRows } = await supabase
+        .from("people")
+        .select("id, display_name, is_self, is_minor, created_at")
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false });
+      const rows = peopleRows ?? [];
+
+      // Settled and not explicitly restarted: the flow is over, and the
+      // constellation is where they belong.
+      if (isFirstRunSettled(profile) && !restartRef.current) {
+        router.replace("/app");
+        return;
+      }
+
+      const entry = resolveFirstRunEntry(profile, rows);
+      setHasSelf(entry.record.hasSelf);
+
+      // Resuming into the reading needs the person and the chart back. Both
+      // come from the record, so a resumed reading is the same true sentence
+      // the reader would have seen, never a re-derived approximation.
+      if (entry.step === "reading" || entry.step === "you") {
+        const latest = rows.find((p) => p.is_self !== true);
+        if (latest) {
+          const { data: chart } = await supabase
+            .from("charts")
+            .select("data")
+            .eq("person_id", latest.id)
+            .maybeSingle();
+          setSubject({
+            personId: latest.id,
+            displayName: latest.display_name,
+            natal: (chart?.data as NatalChart | undefined) ?? null,
+            isMinor: latest.is_minor === true,
+            refusedRelation: null,
+          });
+        }
+      }
+
+      setStep(entry.step);
+      setLoading(false);
+    };
+    void load();
+  }, [router, supabase]);
+
+  const onPersonSaved = (info: AddPersonSavedInfo) => {
+    setSubject({
+      personId: info.personId,
+      displayName: info.displayName,
+      natal: info.natal,
+      isMinor: info.isMinor,
+      refusedRelation: info.refusedRelation,
+    });
+    goTo("reading", userId);
   };
 
   const saveSelf = async () => {
@@ -195,48 +291,35 @@ export default function WelcomePage() {
     setSavingSelf(true);
     setStatus(null);
     try {
-      // Re-check the database immediately before inserting — not the `people`
-      // state loaded on mount, which can be stale (a second tab, a slow
-      // reload, another device). This closes the race the old mount-only
-      // check left open; the unique index below is the real backstop.
+      // Re-check immediately before inserting rather than trusting state
+      // loaded on mount, which a second tab can have made stale. The partial
+      // unique index people_one_self_per_owner is the real backstop.
       const { data: existingSelf } = await supabase
         .from("people")
-        .select("id, display_name")
+        .select("id")
         .eq("owner_id", userId)
         .eq("is_self", true)
         .maybeSingle();
       if (existingSelf) {
-        const rows = await fetchPeople();
-        setStep(resolveStep(rows));
-        setStatus({ text: "You're already in your sky. Let's add the people around you.", ok: true });
+        setHasSelf(true);
+        goTo("next", userId);
         return;
       }
-      const { natal } = await persistPerson(supabase, {
+      await persistPerson(supabase, {
+        userId,
         displayName: selfName,
         relation: "self",
         isSelf: true,
         isMinor: false,
         input: selfInput,
-        userId
       });
-      await fetchPeople();
-      const risingNote = natal?.asc
-        ? ` Your Rising is ${natal.asc}.`
-        : selfInput.precision === "exact"
-          ? " (Resolve a birth city to unlock your Rising and houses.)"
-          : "";
-      setStatus({ text: `You're placed.${risingNote} Now for the people around you.`, ok: true });
-      setStep(2);
+      setHasSelf(true);
+      goTo("next", userId);
     } catch (error) {
-      // A unique-violation from people_one_self_per_owner means a self was
-      // created concurrently (another tab/device) between our check and our
-      // insert. The database is the real backstop for that race — never a
-      // fabricated "success" here, and never a raw Postgres error surfaced.
       const message = error instanceof Error ? error.message : "Unable to save.";
       if (message.includes("people_one_self_per_owner")) {
-        const rows = await fetchPeople();
-        setStep(resolveStep(rows));
-        setStatus({ text: "You're already in your sky (added just now, perhaps in another tab). Let's keep going.", ok: true });
+        setHasSelf(true);
+        goTo("next", userId);
       } else {
         setStatus({ text: message, ok: false });
       }
@@ -245,17 +328,34 @@ export default function WelcomePage() {
     }
   };
 
-  // "View a chart" target for the recap: your own chart if present, else the
-  // first person you added. Never a fabricated id.
-  const chartTarget = selfPerson ?? otherPeople[0] ?? null;
+  /**
+   * The one true statement. Derived from the chart the engine actually
+   * computed for this person, and null when that chart settles nothing. There
+   * is deliberately no fallback line.
+   */
+  const need: SingleChartNeed | null = useMemo(() => {
+    if (!subject) return null;
+    return singleChartNeed(subject.natal, {
+      name: subject.displayName,
+      minorSafe: subject.isMinor,
+    });
+  }, [subject]);
+
+  const startAnother = (option: FirstRunRelationOption | null) => {
+    setChoice(option);
+    setSubject(null);
+    goTo(option ? "birth" : "person", userId);
+  };
+
+  const canSaveSelf = selfName.trim().length > 1;
 
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
       <CosmicBackground />
       <main className="app-content">
         <div className="fade-in">
-          <p className="eyebrow">Onboarding</p>
-          <h1 className="page-title">Build your constellation</h1>
+          <p className="eyebrow">{COPY.pageEyebrow}</p>
+          <h1 className="page-title">{COPY.pageTitle}</h1>
           <StepProgress current={step} />
         </div>
 
@@ -267,214 +367,240 @@ export default function WelcomePage() {
           </div>
         ) : (
           <>
-            {/* ── STEP 1 — You ─────────────────────────────────────────────── */}
-            {step === 1 ? (
+            {/* ── STEP 1 — who ──────────────────────────────────────────── */}
+            {step === "person" ? (
               <section className="glass-card fade-in">
-                <p className="eyebrow">{COPY.selfEyebrow}</p>
+                <p className="eyebrow">{COPY.whoEyebrow}</p>
                 <h2 className="card-title" style={{ marginBottom: 8 }}>
-                  {COPY.selfTitle}
+                  {COPY.whoTitle}
                 </h2>
-                {/* FOUNDER-REVIEW: authored onboarding copy — refine voice. */}
+                <p className="muted" style={{ marginBottom: 16 }}>
+                  {COPY.whoLede}
+                </p>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {FIRST_RUN_RELATION_OPTIONS.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className="pill-link"
+                      data-first-run-option={option.id}
+                      style={{ textAlign: "left", padding: "12px 16px", fontSize: ".95rem" }}
+                      onClick={() => {
+                        setChoice(option);
+                        goTo("birth", userId);
+                      }}
+                    >
+                      {/* FOUNDER-REVIEW: first-run relationship quick option. */}
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {/* ── STEP 2 — their birth details ──────────────────────────── */}
+            {step === "birth" && choice ? (
+              <section className="glass-card fade-in">
+                <p className="eyebrow">{COPY.birthEyebrow}</p>
+                <h2 className="card-title" style={{ marginBottom: 8 }}>
+                  {COPY.birthTitle}
+                </h2>
                 <p className="muted" style={{ marginBottom: 14 }}>
-                  {COPY.selfLede}
+                  {COPY.birthLede}
+                </p>
+                <div className="teal-callout" style={{ marginBottom: 16 }}>
+                  <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.55, margin: 0 }}>
+                    {COPY.birthNoDeferral}
+                  </p>
+                </div>
+
+                {userId ? (
+                  <AddPersonForm
+                    userId={userId}
+                    initialName={prefillName}
+                    initialBirth={prefillBirth}
+                    initialRelation={choice.relation}
+                    relationLocked
+                    /* The next screen shows a true statement, which needs a
+                       chart. Offering a tier that computes none would set the
+                       reader up for an empty screen. */
+                    allowDeferred={false}
+                    passedAt={choice.memorial ? new Date().toISOString() : null}
+                    resetOnSave={false}
+                    showStatus={false}
+                    submitLabel={COPY.birthSubmit}
+                    savingLabel={COPY.birthSaving}
+                    onSaved={onPersonSaved}
+                    onError={(message) => setStatus({ text: message, ok: false })}
+                  />
+                ) : (
+                  <p className="error">Please sign in first.</p>
+                )}
+              </section>
+            ) : null}
+
+            {/* ── STEP 3 — one true statement ───────────────────────────── */}
+            {step === "reading" && subject ? (
+              <section className="glass-card fade-in">
+                <p className="eyebrow">{COPY.readingEyebrow}</p>
+                <h2 className="card-title" style={{ marginBottom: 14 }}>
+                  {COPY.readingTitle(subject.displayName)}
+                </h2>
+
+                {subject.refusedRelation ? (
+                  <p className="muted" style={{ marginBottom: 14, fontSize: ".82rem" }}>
+                    {COPY.readingRefused(subject.displayName)}
+                  </p>
+                ) : null}
+
+                {need ? (
+                  <>
+                    <div className="teal-callout" data-first-run-statement>
+                      <p
+                        className="eyebrow"
+                        style={{ marginBottom: 8 }}
+                      >
+                        {need.domain} · {need.lead}
+                      </p>
+                      <p style={{ color: "var(--cream)", fontSize: "1.02rem", lineHeight: 1.65, margin: 0 }}>
+                        {need.statement}
+                      </p>
+                    </div>
+                    <p className="muted" style={{ fontSize: ".76rem", marginTop: 10 }}>
+                      {COPY.readingProvenance}
+                    </p>
+                    {need.generational ? (
+                      <p className="muted" style={{ fontSize: ".76rem", marginTop: 6 }}>
+                        {COPY.readingGenerational}
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="muted" data-first-run-statement-empty>
+                    {COPY.readingEmpty(subject.displayName)}
+                  </p>
+                )}
+
+                <button
+                  className="btn-primary"
+                  style={{ marginTop: 18 }}
+                  onClick={() => goTo(hasSelf ? "next" : "you", userId)}
+                >
+                  {hasSelf ? COPY.readingContinueHasSelf : COPY.readingContinue}
+                </button>
+              </section>
+            ) : null}
+
+            {/* ── STEP 4 — you ──────────────────────────────────────────── */}
+            {step === "you" ? (
+              <section className="glass-card fade-in">
+                <p className="eyebrow">{COPY.youEyebrow}</p>
+                <h2 className="card-title" style={{ marginBottom: 8 }}>
+                  {COPY.youTitle(subject?.displayName ?? "")}
+                </h2>
+                <p className="muted" style={{ marginBottom: 14 }}>
+                  {COPY.youLede(subject?.displayName ?? "them")}
                 </p>
 
                 <input
                   className="field"
                   value={selfName}
                   onChange={(e) => setSelfName(e.target.value)}
-                  placeholder="Your name"
+                  placeholder={COPY.youNamePlaceholder}
                   style={{ marginBottom: 12, borderRadius: 14 }}
                 />
-
-                {/* FOUNDER-REVIEW: authored onboarding copy — refine voice. */}
-                <div className="teal-callout" style={{ marginBottom: 14 }}>
-                  <p style={{ fontSize: ".84rem", color: "var(--mist)", lineHeight: 1.6, margin: 0 }}>
-                    <strong style={{ color: "var(--cream)" }}>Why we ask for a birth time.</strong> {COPY.selfWhyTime}
-                  </p>
-                </div>
-
                 <BirthFields input={selfInput} onChange={setSelfInput} idPrefix="self" />
 
                 <button
                   className="btn-primary"
                   style={{ marginTop: 16, gap: 8 }}
                   disabled={!canSaveSelf || savingSelf}
-                  onClick={saveSelf}
+                  onClick={() => void saveSelf()}
                 >
                   {savingSelf && <Spinner size={13} color="#1a1206" />}
-                  {savingSelf ? "Placing you…" : "This is me. Continue"}
+                  {savingSelf ? COPY.youSaving : COPY.youSubmit}
                 </button>
               </section>
             ) : null}
 
-            {/* ── STEP 2 — Your first person ───────────────────────────────── */}
-            {step === 2 ? (
-              <>
-                <section className="glass-card fade-in">
-                  <p className="eyebrow">{COPY.personEyebrow}</p>
-                  <h2 className="card-title" style={{ marginBottom: 8 }}>
-                    {COPY.personTitle}
-                  </h2>
-                  {/* FOUNDER-REVIEW: authored onboarding copy — refine voice. */}
-                  <p className="muted" style={{ marginBottom: 14 }}>
-                    {COPY.personLede}
-                  </p>
+            {/* ── STEP 5 — next ─────────────────────────────────────────── */}
+            {step === "next" ? (
+              <section className="glass-card fade-in">
+                <p className="eyebrow">{COPY.nextEyebrow}</p>
+                <h2 className="card-title" style={{ marginBottom: 16 }}>
+                  {COPY.nextTitle}
+                </h2>
 
-                  {/* FOUNDER-REVIEW: authored precision-spectrum copy — refine voice. */}
-                  <div className="teal-callout" style={{ marginBottom: 16 }}>
-                    <p style={{ fontSize: ".82rem", color: "var(--cream)", fontWeight: 600, margin: "0 0 8px" }}>
-                      {COPY.precisionTitle}
-                    </p>
-                    <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
-                      <li style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.55 }}>{COPY.precisionExact}</li>
-                      <li style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.55 }}>{COPY.precisionDate}</li>
-                      <li style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.55 }}>{COPY.precisionYear}</li>
-                      <li style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.55 }}>{COPY.precisionNone}</li>
-                    </ul>
-                  </div>
+                <div style={{ display: "grid", gap: 10 }}>
+                  <button
+                    type="button"
+                    className="glass-card"
+                    style={{ padding: "12px 16px", textAlign: "left", cursor: "pointer" }}
+                    onClick={() => startAnother(null)}
+                  >
+                    <strong style={{ color: "var(--gold)", display: "block", marginBottom: 2 }}>
+                      {COPY.nextAddTitle}
+                    </strong>
+                    <span className="muted" style={{ fontSize: ".82rem" }}>{COPY.nextAddBody}</span>
+                  </button>
 
-                  {userId ? (
-                    <AddPersonForm
-                      userId={userId}
-                      initialName={prefillName}
-                      initialBirth={prefillBirth}
-                      showStatus={false}
-                      onSaved={async ({ displayName, deferred }) => {
-                        await fetchPeople();
-                        setStatus({
-                          text: deferred
-                            ? `${displayName} is in your sky: open their profile to add a date, or ask them, whenever you're ready.`
-                            : `${displayName} is in your constellation. Add another, or continue.`,
-                          ok: true
-                        });
-                      }}
-                      onError={(message) => setStatus({ text: message, ok: false })}
-                    />
-                  ) : (
-                    <p className="error">Please sign in first.</p>
-                  )}
-                </section>
+                  {/* The memorial option, named on this screen rather than left
+                      to be discovered on a person's profile later. */}
+                  <button
+                    type="button"
+                    className="glass-card"
+                    data-first-run-remember
+                    style={{ padding: "12px 16px", textAlign: "left", cursor: "pointer" }}
+                    onClick={() => startAnother(firstRunRelationById("lost"))}
+                  >
+                    <strong style={{ color: "var(--gold)", display: "block", marginBottom: 2 }}>
+                      {COPY.nextRememberTitle}
+                    </strong>
+                    <span className="muted" style={{ fontSize: ".82rem" }}>{COPY.nextRememberBody}</span>
+                  </button>
 
-                {status ? <p className={status.ok ? "success" : "error"}>{status.text}</p> : null}
+                  <button
+                    type="button"
+                    className="glass-card"
+                    style={{ padding: "12px 16px", textAlign: "left", cursor: "pointer" }}
+                    disabled={leaving}
+                    onClick={() => void leave("done", "/app/compare")}
+                  >
+                    <strong style={{ color: "var(--gold)", display: "block", marginBottom: 2 }}>
+                      {COPY.nextCompareTitle}
+                    </strong>
+                    <span className="muted" style={{ fontSize: ".82rem" }}>{COPY.nextCompareBody}</span>
+                  </button>
+                </div>
 
-                {otherPeople.length > 0 ? (
-                  <section className="glass-card fade-in fade-in-delay-1">
-                    <p className="eyebrow">In your sky so far ({people.length})</p>
-                    <div style={{ display: "grid", gap: 10, marginTop: 6 }}>
-                      {people.map((p) => (
-                        <div
-                          key={p.id}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 12,
-                            padding: "8px 0",
-                            borderBottom: "1px solid rgba(183,154,216,.1)"
-                          }}
-                        >
-                          <InitialAvatar name={p.display_name} size="sm" />
-                          <div>
-                            <div style={{ color: "var(--cream)", fontWeight: 600 }}>{p.display_name}</div>
-                            <div className="muted" style={{ fontSize: 12 }}>
-                              {p.is_self ? "you" : p.relation} · {p.birth_precision}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      className="btn-primary"
-                      style={{ marginTop: 16 }}
-                      onClick={() => {
-                        setStatus(null);
-                        setStep(3);
-                      }}
-                    >
-                      Continue to your constellation
-                    </button>
-                  </section>
-                ) : (
-                  <div className="fade-in">
-                    {/* Never a dead end: momentum matters more than completeness.
-                        You can always add people later from home. */}
-                    <button
-                      type="button"
-                      className="pill-link"
-                      onClick={() => {
-                        setStatus(null);
-                        setStep(3);
-                      }}
-                    >
-                      I'll add someone later
-                    </button>
-                  </div>
-                )}
-              </>
+                <button
+                  className="btn-primary"
+                  style={{ marginTop: 18 }}
+                  disabled={leaving}
+                  onClick={() => void leave("done", "/app")}
+                >
+                  {COPY.nextHome}
+                </button>
+              </section>
             ) : null}
 
-            {/* ── STEP 3. What you got ────────────────────────────────────── */}
-            {step === 3 ? (
-              <>
-                <section className="glass-card fade-in">
-                  <p className="eyebrow">{COPY.doneEyebrow}</p>
-                  <h2 className="card-title" style={{ marginBottom: 8 }}>
-                    {COPY.doneTitle}
-                  </h2>
-                  {/* FOUNDER-REVIEW: authored onboarding copy: refine voice. */}
-                  <p className="muted" style={{ marginBottom: 16 }}>
-                    {COPY.doneLede}
-                  </p>
+            {status ? <p className={status.ok ? "success" : "error"}>{status.text}</p> : null}
 
-                  {people.length > 0 ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
-                      <div className="avatar-cluster">
-                        {people.slice(0, 5).map((p) => (
-                          <InitialAvatar key={p.id} name={p.display_name} size="sm" />
-                        ))}
-                      </div>
-                      <span className="muted" style={{ fontSize: ".84rem" }}>
-                        {people.length} {people.length === 1 ? "star" : "stars"} in your sky
-                      </span>
-                    </div>
-                  ) : null}
-
-                  <div style={{ display: "grid", gap: 10 }}>
-                    {/* FOUNDER-REVIEW: authored next-step pointers: refine voice. */}
-                    {chartTarget ? (
-                      <Link
-                        href={`/app/person/${chartTarget.id}`}
-                        className="glass-card"
-                        style={{ padding: "12px 16px", textDecoration: "none" }}
-                      >
-                        <strong style={{ color: "var(--gold)", display: "block", marginBottom: 2 }}>View a chart →</strong>
-                        <span className="muted" style={{ fontSize: ".82rem" }}>{COPY.pointerChart}</span>
-                      </Link>
-                    ) : null}
-                    <Link href="/app/compare" className="glass-card" style={{ padding: "12px 16px", textDecoration: "none" }}>
-                      <strong style={{ color: "var(--gold)", display: "block", marginBottom: 2 }}>Run a Compare →</strong>
-                      <span className="muted" style={{ fontSize: ".82rem" }}>{COPY.pointerCompare}</span>
-                    </Link>
-                    <Link href="/app/vela" className="glass-card" style={{ padding: "12px 16px", textDecoration: "none" }}>
-                      <strong style={{ color: "var(--gold)", display: "block", marginBottom: 2 }}>Ask Vela →</strong>
-                      <span className="muted" style={{ fontSize: ".82rem" }}>{COPY.pointerVela}</span>
-                    </Link>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
-                    <Link className="btn-primary" href="/app">
-                      Open Galaxia Mea
-                    </Link>
-                    <Link href="/app/add-person" className="pill-link">
-                      Add more people
-                    </Link>
-                  </div>
-                </section>
-              </>
+            {/* Skippable at any point. Never a dead end, and never a step the
+                reader is trapped in. */}
+            {step !== "next" ? (
+              <div className="fade-in" style={{ marginTop: 14 }}>
+                <button
+                  type="button"
+                  className="pill-link"
+                  data-first-run-skip
+                  disabled={leaving}
+                  onClick={() => void leave("skipped", "/app")}
+                >
+                  {COPY.skip}
+                </button>
+              </div>
             ) : null}
-
-            {/* Step 1 surfaces its own inline status below the form */}
-            {step === 1 && status ? <p className={status.ok ? "success" : "error"}>{status.text}</p> : null}
           </>
         )}
       </main>

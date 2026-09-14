@@ -141,6 +141,12 @@ export const CHART_MODE_SINGLE: NavLink = { href: "/chart", label: "Single chart
 export const CHART_MODE_COMPARE: NavLink = { href: "/chart/compare", label: "Check compatibility" };
 
 export const EMPTY_STATE_WELCOME_HREF = "/welcome";
+/**
+ * Re-entry into first-run orientation for someone who skipped it. `restart=1`
+ * is what re-opens a settled flow; without it /welcome sends a settled account
+ * straight back to the constellation.
+ */
+export const FIRST_RUN_RESTART_HREF = "/welcome?restart=1";
 export const EMPTY_STATE_SETTINGS_HREF = "/app/settings";
 export const THIS_WEEK_HREF = "/app/this-week";
 export const TODAY_SKY_HREF = "/app#today-in-your-sky";
@@ -193,7 +199,13 @@ export function ctaInternalHrefs(): string[] {
 }
 
 export function emptyStateInternalHrefs(): string[] {
-  return uniqueHrefs([EMPTY_STATE_WELCOME_HREF, EMPTY_STATE_SETTINGS_HREF, THIS_WEEK_HREF, TODAY_SKY_HREF]);
+  return uniqueHrefs([
+    EMPTY_STATE_WELCOME_HREF,
+    FIRST_RUN_RESTART_HREF,
+    EMPTY_STATE_SETTINGS_HREF,
+    THIS_WEEK_HREF,
+    TODAY_SKY_HREF,
+  ]);
 }
 
 export function emailInternalHrefs(): string[] {

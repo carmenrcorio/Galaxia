@@ -85,6 +85,13 @@ const OUTER_RELS = new Set([
   "mentor",
   "acquaintance",
 ]);
+/**
+ * `other` is the one picker value that deliberately asserts nothing about the
+ * bond. It resolves `known: true` (it is a real picker value, not stray free
+ * text) but keeps band `unknown`, because naming a band we were never told
+ * would be a label applied to data we do not have (ENGINEERING.md §12).
+ */
+const UNSPECIFIED_RELS = new Set(["other"]);
 const PARENT_FORM_RELS = new Set([
   "parent",
   "mother",
@@ -98,6 +105,12 @@ const PARENT_FORM_RELS = new Set([
  * Canonical picker values for add/edit flows (web + mobile), ordered inner → outer.
  * `self` is handled separately (is_self). `ancestor` is a deceased-forebear tag.
  * `pet` is intentionally absent — own branch later.
+ *
+ * MIRRORED IN SQL: public.galaxy_relations (seeded by
+ * 20260913170000_constellation_connect_schema_completion.sql, extended by
+ * 20260914170000_galaxy_relations_first_run_values.sql) is read by
+ * create_connect_invite to validate a relation. Adding a value here without a
+ * matching migration silently breaks connect invites for that value.
  */
 // FOUNDER-REVIEW: picker labels — refine voice before merge.
 export const GALAXY_RELATION_PICKER_OPTIONS = [
@@ -105,6 +118,12 @@ export const GALAXY_RELATION_PICKER_OPTIONS = [
   { value: "child", label: "Child" },
   { value: "grandchild", label: "Grandchild" },
   { value: "parent", label: "Parent" },
+  // `mother` / `father` were already resolvable synonyms (FAMILY_RELS,
+  // PARENT_FORM_RELS) long before they were pickable. The first-run flow asks
+  // "my mother" / "my father" in those words, so the stored relation now keeps
+  // them instead of flattening both to `parent`.
+  { value: "mother", label: "Mother" },
+  { value: "father", label: "Father" },
   { value: "sibling", label: "Sibling" },
   { value: "grandparent", label: "Grandparent" },
   { value: "friend", label: "Friend" },
@@ -121,6 +140,7 @@ export const GALAXY_RELATION_PICKER_OPTIONS = [
   { value: "professor", label: "Professor" },
   { value: "mentor", label: "Mentor" },
   { value: "acquaintance", label: "Acquaintance" },
+  { value: "other", label: "Other" },
   { value: "ancestor", label: "Ancestor" },
 ] as const;
 
@@ -176,6 +196,9 @@ export function resolveGalaxyRelation(rel: string | null | undefined): ResolvedG
   if (normalized === "ancestor") {
     /* Deceased forebear — outer ancient band; does not imply writing passed_at. */
     return { normalized, known: true, band: "passed", ring: 6 };
+  }
+  if (UNSPECIFIED_RELS.has(normalized)) {
+    return { normalized, known: true, band: "unknown", ring: 4 };
   }
   return { normalized, known: false, band: "unknown", ring: 4 };
 }

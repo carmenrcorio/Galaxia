@@ -123,11 +123,76 @@ textarea:focus-visible {
   touch-action: manipulation;
 }
 
-/* Person / chart quick-nav — sticky chip rail, phone-first (wrap, not sidebar) */
+/* Person / chart quick-nav — sticky group tabs + wrap jump, not nested scrollers */
+.person-profile-nav {
+  position: sticky;
+  top: 68px;
+  z-index: 25;
+  margin: 0 0 4px;
+  padding: 8px 0 6px;
+  background: linear-gradient(180deg, rgba(10,7,23,.92), rgba(10,7,23,.72));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.person-group-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 8px;
+}
+.person-group-tab {
+  min-height: 36px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--mist);
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(183,154,216,.18);
+  cursor: pointer;
+}
+.person-group-tab[aria-selected="true"] {
+  color: var(--ink, #1a1206);
+  background: var(--gold);
+  border-color: rgba(230,174,108,.55);
+}
+.person-group-panel[hidden] {
+  display: none;
+}
+.person-group-panel section,
+.person-group-panel [id="remembrance"],
+.person-group-panel [id="memorial-timeline"],
+.person-group-panel [id="honor-light"] {
+  scroll-margin-top: 156px;
+}
 .chart-section-nav {
   min-width: 0;
 }
+.chart-section-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 100%;
+}
 .chart-section-nav__chip {
+  display: inline-block;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--mist);
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(183,154,216,.18);
+  text-decoration: none;
+  white-space: nowrap;
+  line-height: 1.2;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -147,8 +212,7 @@ textarea:focus-visible {
   outline: none;
 }
 @media (max-width: 480px) {
-  .chart-section-nav {
-    /* Stay under app sticky nav; horizontal chips wrap so phones never need a sidebar */
+  .person-profile-nav {
     top: 60px;
     margin-left: -2px;
     margin-right: -2px;

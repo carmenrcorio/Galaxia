@@ -139,8 +139,12 @@ describe("VERIFY (live DB): purge_own_account_data clears thread_participants an
       target_user_id: null
     });
 
+    // Purge now deletes auth.users in the same transaction. GoTrue
+    // deleteUser is then a 404, which is success.
     const { error: deleteErr } = await admin.auth.admin.deleteUser(departingId);
-    expect(deleteErr).toBeNull();
+    expect(
+      deleteErr === null || /not found/i.test(deleteErr.message ?? "")
+    ).toBe(true);
     departingId = "";
   });
 });

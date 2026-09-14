@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import {
   ACCOUNT_DELETE_COPY,
   DELETE_CONFIRMATION_WORD,
@@ -37,8 +36,8 @@ describe("account-data helpers", () => {
     expect(EXPORT_PROFILE_FIELDS).not.toContain("subscription_tier");
   });
 
-  it("auth-close failure copy names the one Galaxia contact address", () => {
-    expect(ACCOUNT_DELETE_COPY.errorAuthCloseFailed).toContain(GALAXIA_HELP_EMAIL);
-    expect(ACCOUNT_DELETE_COPY.errorAuthCloseFailed).not.toContain(["galaxia", "app"].join("."));
+  it("delete failure copy does not claim a partial delete succeeded", () => {
+    expect(ACCOUNT_DELETE_COPY.errorGeneric).toMatch(/Nothing was removed/);
+    expect(ACCOUNT_DELETE_COPY).not.toHaveProperty("errorAuthCloseFailed");
   });
 });

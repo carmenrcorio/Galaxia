@@ -22,8 +22,11 @@ describe("nudge-send route — fails closed like nudge-compute/trial-emails", ()
   it("503s when CRON_SECRET is unset, 401s on a wrong/missing bearer header", () => {
     expect(src).toContain("const secret = process.env.CRON_SECRET;");
     expect(src).toMatch(/if\s*\(\s*!secret\s*\)\s*\{[\s\S]{0,200}status:\s*503/);
+    expect(src).toContain("cronBearerMatches");
     expect(src).toContain('req.headers.get("authorization")');
-    expect(src).toMatch(/auth !== `Bearer \$\{secret\}`[\s\S]{0,200}status:\s*401/);
+    expect(src).toMatch(/!cronBearerMatches\(req\.headers\.get\("authorization"\),\s*secret\)[\s\S]{0,200}status:\s*401/);
+    expect(src).toMatch(/new NextResponse\(null,\s*\{\s*status:\s*401\s*\}\)/);
+    expect(src).not.toMatch(/auth\s*!==\s*`Bearer \$\{secret\}`/);
   });
 
   it("uses a service-role client with persistSession: false", () => {

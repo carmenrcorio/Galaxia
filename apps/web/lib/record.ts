@@ -1,7 +1,9 @@
 import {
   recordEntryMatches,
   sanitizeFtsQuery,
+  sanitizePinTheme,
   sanitizeRecordTags,
+  type PinThemeId,
   type RecordKind,
   type RecordTagId,
   type RecordViewFilters
@@ -40,6 +42,8 @@ export interface RecordEntry {
   withdrawnReason?: string | null;
   /** Curated optional tags. Conversations have none. */
   tags?: RecordTagId[];
+  /** Curated optional theme on a vela_pin. Other kinds stay null. */
+  theme?: PinThemeId | null;
 }
 
 export type RecordScope =
@@ -55,6 +59,7 @@ interface NoteRow {
   group_id?: string | null;
   withdrawn_at?: string | null; withdrawn_reason?: string | null;
   tags?: unknown;
+  theme?: unknown;
 }
 
 function noteToEntry(row: NoteRow): RecordEntry {
@@ -71,7 +76,8 @@ function noteToEntry(row: NoteRow): RecordEntry {
     sourceThreadId: row.source_thread_id ?? null,
     groupId: row.group_id ?? null,
     withdrawnReason: withdrawnDisplay,
-    tags: sanitizeRecordTags(row.tags)
+    tags: sanitizeRecordTags(row.tags),
+    theme: sanitizePinTheme(row.theme)
   };
 }
 
@@ -310,16 +316,18 @@ export async function setThreadStatus(supabase: SupabaseClient, threadId: string
 }
 
 /**
- * The last N pinned Vela insights about a person (or any pair containing them).
- * Powers the "Vela has said this about them" module.
+ * Pinned Vela insights about a person (or any pair containing them).
+ * Powers the "Vela has said this about them" module. Default cap is high so
+ * search and grouping can see the person's set; the UI collapses to five.
  */
 export async function fetchVelaPins(
   supabase: SupabaseClient,
   ownerId: string,
   personId: string,
-  limit = 2
+  limit = 200,
+  filters?: { q?: string }
 ): Promise<RecordEntry[]> {
-  const { data } = await supabase
+  let query = supabase
     .from("notes")
     .select("*")
     .eq("owner_id", ownerId)
@@ -327,20 +335,22 @@ export async function fetchVelaPins(
     .or(`about_person.eq.${personId},pair_low.eq.${personId},pair_high.eq.${personId}`)
     .order("created_at", { ascending: false })
     .limit(limit);
-  return (data ?? []).map((r) => {
-    const row = r as NoteRow;
-    const withdrawn = Boolean(row.withdrawn_at);
-    const withdrawnDisplay = withdrawn
-      ? formatWithdrawnReasonForDisplay(row.withdrawn_reason)
-      : null;
-    return {
-      id: row.id, kind: "vela_pin" as const,
-      body: withdrawn ? (withdrawnDisplay as string) : row.body,
-      createdAt: row.created_at, sourceThreadId: row.source_thread_id ?? null,
-      withdrawnReason: withdrawnDisplay,
-      tags: sanitizeRecordTags(row.tags)
-    };
-  });
+  const fts = sanitizeFtsQuery(filters?.q ?? "");
+  if (fts) query = query.textSearch("body", fts, { type: "plain", config: "english" });
+  let { data, error } = await query;
+  if (error && fts) {
+    query = supabase
+      .from("notes")
+      .select("*")
+      .eq("owner_id", ownerId)
+      .eq("kind", "vela_pin")
+      .or(`about_person.eq.${personId},pair_low.eq.${personId},pair_high.eq.${personId}`)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    const retried = await query;
+    data = retried.data;
+  }
+  return (data ?? []).map((r) => noteToEntry(r as NoteRow));
 }
 
 /**
@@ -358,5 +368,24 @@ export async function updateNoteTags(
     .update({ tags: sanitizeRecordTags(tags) })
     .eq("id", noteId)
     .eq("owner_id", ownerId);
+  return { error: error?.message ?? null };
+}
+
+/**
+ * Set or clear the curated theme on a vela_pin. Always scopes by owner_id and
+ * kind so a stolen note id cannot write another person's row or a non-pin.
+ */
+export async function updateNoteTheme(
+  supabase: SupabaseClient,
+  ownerId: string,
+  noteId: string,
+  theme: PinThemeId | null
+): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from("notes")
+    .update({ theme: sanitizePinTheme(theme) })
+    .eq("id", noteId)
+    .eq("owner_id", ownerId)
+    .eq("kind", "vela_pin");
   return { error: error?.message ?? null };
 }

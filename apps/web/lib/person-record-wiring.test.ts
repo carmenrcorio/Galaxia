@@ -19,6 +19,8 @@ describe("source wiring: person Record search stays owner-only and keeps the com
     expect(src).toContain("widenRecordSearch");
     expect(src).toContain("fetchRecord(supabase, uid, { personId: actualId }, 200)");
     expect(src).toContain("fetchRecord(supabase, userId, { personId: person.id }, 200, filters)");
+    expect(src).toContain("fetchVelaPins(supabase, uid, actualId, 200)");
+    expect(src).toContain("VelaPinsPanel");
   });
 
   it("fetchRecord always filters notes by owner_id and uses FTS on plaintext body", () => {
@@ -28,6 +30,7 @@ describe("source wiring: person Record search stays owner-only and keeps the com
     expect(src).toContain('.eq("id", noteId)');
     expect(src).toContain('.eq("owner_id", ownerId)');
     expect(src).toContain("update({ tags: sanitizeRecordTags(tags) })");
+    expect(src).toContain("update({ theme: sanitizePinTheme(theme) })");
     expect(src).not.toContain("drop policy");
   });
 });

@@ -3,11 +3,15 @@
 import { useState } from "react";
 import { publicEnv } from "../lib/env";
 // FOUNDER-REVIEW: generate/share copy lives in lib/connect-invite.ts (CONNECT_INVITE_ACTION, CONNECT_LINK_EXPIRES, CONNECT_RATE_LIMIT).
+// FOUNDER-REVIEW: Creating link…, Copy, Copied, Share, Invite link.
 import {
+  CONNECT_GENERIC_ERROR,
   CONNECT_INVITE_ACTION,
+  CONNECT_LINK_CREATE_FAILED,
   CONNECT_LINK_EXPIRES,
-  CONNECT_RATE_LIMIT,
   CONNECT_PENDING_HREF,
+  CONNECT_PENDING_TITLE,
+  CONNECT_RATE_LIMIT,
   CONNECT_SHARE_TEXT,
   CONNECT_SHARE_TITLE,
   canOfferConnectInvite,
@@ -56,13 +60,14 @@ export function ConnectInviteButton({
         setError(CONNECT_RATE_LIMIT);
         return;
       }
-      setError(rpcError.message);
+      console.error(rpcError.message);
+      setError(CONNECT_GENERIC_ERROR);
       return;
     }
     const row = Array.isArray(data) ? data[0] : data;
     const token = row?.token as string | undefined;
     if (!token) {
-      setError("The invite could not be created.");
+      setError(CONNECT_LINK_CREATE_FAILED);
       return;
     }
     const base = publicEnv.siteUrl || (typeof window !== "undefined" ? window.location.origin : "");
@@ -102,7 +107,7 @@ export function ConnectInviteButton({
             value={link}
             onFocus={(e) => e.currentTarget.select()}
             style={{ fontSize: ".78rem" }}
-            aria-label="Connection invite link"
+            aria-label="Invite link"
           />
           <button type="button" className="pill-link" onClick={() => void copy()} style={{ flexShrink: 0 }}>
             {copied ? "Copied" : "Copy"}
@@ -136,7 +141,7 @@ export function ConnectInviteButton({
             <>
               {" "}
               <a href={CONNECT_PENDING_HREF} style={{ color: "var(--gold)" }}>
-                Pending connections
+                {CONNECT_PENDING_TITLE}
               </a>
             </>
           ) : null}

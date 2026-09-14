@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   CONNECT_BLOCKED_RELATIONS,
   CONNECT_SHARING,
+  CONNECT_UNKNOWN_SENDER,
   CONNECT_WHAT_GALAXIA_IS,
   canOfferConnectInvite,
+  connectAcceptLabel,
   connectCompareHref,
   connectInviteTimeRemaining,
   connectLandingHeadline,
@@ -86,9 +88,9 @@ describe("relation helpers", () => {
     expect(reverseConnectRelation("friend")).toBe("friend");
   });
 
-  it("labels picker values and falls back without fabricating", () => {
+  it("labels picker values and returns empty when the relation is missing", () => {
     expect(connectRelationLabel("partner")).toBe("Partner");
-    expect(connectRelationLabel(null)).toBe("someone in their life");
+    expect(connectRelationLabel(null)).toBe("");
   });
 });
 
@@ -133,5 +135,11 @@ describe("founder-review copy", () => {
     expect(CONNECT_WHAT_GALAXIA_IS).not.toMatch(/astrology\s+app/i);
     expect(connectLandingHeadline("Maya", "partner")).toBe("Maya invited you to connect as their partner.");
     expect(connectLandingHeadline("Maya", "")).toBe("Maya invited you to connect.");
+  });
+
+  it("uses Accept and connect for the unknown sender and the first name otherwise", () => {
+    expect(connectAcceptLabel(CONNECT_UNKNOWN_SENDER)).toBe("Accept and connect");
+    expect(connectAcceptLabel("Someone you know")).toBe("Accept and connect");
+    expect(connectAcceptLabel("Alex Reyes")).toBe("Connect with Alex");
   });
 });

@@ -128,7 +128,7 @@ export function connectRelationLabel(relation: string | null | undefined): strin
   const hit = GALAXY_RELATION_PICKER_OPTIONS.find((o) => o.value === relation);
   if (hit) return hit.label;
   const trimmed = (relation ?? "").trim();
-  return trimmed ? trimmed.replace(/-/g, " ") : "someone in their life";
+  return trimmed ? trimmed.replace(/-/g, " ") : "";
 }
 
 export function connectInviteTimeRemaining(expiresAt: string, now: Date = new Date()): string {
@@ -167,7 +167,7 @@ export function landingStatusFromInvite(
 
 // FOUNDER-REVIEW: layer-one one-sentence framing on the connect landing.
 export const CONNECT_WHAT_GALAXIA_IS =
-  "Galaxia is a private space for understanding the people you love, and what they need from you.";
+  "Galaxia is a private space for understanding the people closest to you, and what they need from you.";
 
 // FOUNDER-REVIEW: locked disclosure. Chart and comparison yes; birth date, time, place, notes, and app activity no.
 export const CONNECT_SHARING =
@@ -176,48 +176,76 @@ export const CONNECT_SHARING =
 // FOUNDER-REVIEW: logged-out primary action on /connect/[token].
 export const CONNECT_CTA_SIGNUP = "Create your account to connect";
 
-// FOUNDER-REVIEW: logged-in accept action.
-export const CONNECT_CTA_ACCEPT = "Accept and connect";
-
 // FOUNDER-REVIEW: already-accepted token.
-export const CONNECT_ALREADY_ACTIVE = "This connection is already active.";
+export const CONNECT_ALREADY_ACTIVE = "You're already connected.";
 
-// FOUNDER-REVIEW: expired or revoked token. Ask the sender for a fresh link.
-export const CONNECT_EXPIRED = "This link has expired. Ask the sender for a new one.";
+// FOUNDER-REVIEW: expired or revoked token heading. One sentence.
+export const CONNECT_EXPIRED_TITLE = "This link has expired.";
 
-// FOUNDER-REVIEW: you opened your own invite.
-export const CONNECT_SELF_INVITE = "This is your own invite. Send it to the other person instead.";
+// FOUNDER-REVIEW: expired or revoked token body. Ask for a new link.
+export const CONNECT_EXPIRED_BODY = "Ask whoever sent it for a new one.";
 
-// FOUNDER-REVIEW: recipient still needs their own birth details before accept.
-export const CONNECT_NEEDS_SELF =
-  "Add your own birth details first. Then come back to this link to finish connecting.";
+// FOUNDER-REVIEW: you opened your own invite heading.
+export const CONNECT_SELF_INVITE_TITLE = "This is your own invite.";
 
-// FOUNDER-REVIEW: 14-day expiry on a freshly generated link.
-export const CONNECT_LINK_EXPIRES = "This link expires in 14 days.";
+// FOUNDER-REVIEW: you opened your own invite body.
+export const CONNECT_SELF_INVITE_BODY = "Send it to the person you want to connect with.";
+
+// FOUNDER-REVIEW: recipient still needs their own birth details heading.
+export const CONNECT_NEEDS_SELF_TITLE = "Add your birth details first.";
+
+// FOUNDER-REVIEW: recipient still needs their own birth details body.
+export const CONNECT_NEEDS_SELF_BODY = "We'll bring you back here to finish connecting.";
+
+// FOUNDER-REVIEW: interstitial body after accept. Charts are allowed after accept.
+export const CONNECT_CONNECTED_BODY = "Want to see how your charts compare?";
+
+// FOUNDER-REVIEW: the invite could not be opened.
+export const CONNECT_OPEN_FAILED = "This invite could not be opened.";
+
+// FOUNDER-REVIEW: generate failed to return a token.
+export const CONNECT_LINK_CREATE_FAILED = "The link could not be created.";
+
+// FOUNDER-REVIEW: generic fallback so a database error never reaches the person.
+export const CONNECT_GENERIC_ERROR = "Something went wrong. Try again in a moment.";
+
+// FOUNDER-REVIEW: fallback inviter name when the landing has no display name.
+export const CONNECT_UNKNOWN_SENDER = "Someone you know";
+
+// FOUNDER-REVIEW: 14-day expiry on a freshly generated link, plus who it is for.
+export const CONNECT_LINK_EXPIRES =
+  "This link expires in 14 days. Anyone who opens it can connect with you, so send it only to them.";
 
 // FOUNDER-REVIEW: generate action on a person profile and on the constellation hover card.
 export const CONNECT_INVITE_ACTION = "Invite to connect";
 
 // FOUNDER-REVIEW: create_connect_invite rate-limit message, with a link to the pending list.
 export const CONNECT_RATE_LIMIT =
-  "Too many open invitations. Revoke some before sending more.";
+  "You have too many invites still open. Revoke one before sending another.";
 
 // FOUNDER-REVIEW: empty pending list on Settings.
-export const CONNECT_EMPTY_PENDING = "No pending invites.";
+export const CONNECT_EMPTY_PENDING = "Nothing pending right now.";
 
 // FOUNDER-REVIEW: pending list section title.
-export const CONNECT_PENDING_TITLE = "Pending connections";
+export const CONNECT_PENDING_TITLE = "Pending invites";
 
-// FOUNDER-REVIEW: interstitial after accept. Inner copy: charts, because they just accepted.
+// FOUNDER-REVIEW: interstitial after accept. Title only. One sentence.
 export function connectConnectedHeading(senderName: string): string {
-  return `You and ${senderName} are connected. Want to see how your charts interact?`;
+  return `You and ${senderName} are connected.`;
+}
+
+// FOUNDER-REVIEW: logged-in accept action. First name when we have a real sender.
+export function connectAcceptLabel(inviterName: string): string {
+  const first = (inviterName ?? "").trim().split(/\s+/)[0];
+  if (!first || inviterName.trim() === CONNECT_UNKNOWN_SENDER) return "Accept and connect";
+  return `Connect with ${first}`;
 }
 
 // FOUNDER-REVIEW: interstitial primary action.
 export const CONNECT_SEE_COMPARISON = "See your comparison";
 
 // FOUNDER-REVIEW: interstitial secondary action.
-export const CONNECT_GO_CONSTELLATION = "Go to my constellation";
+export const CONNECT_GO_CONSTELLATION = "Go to your constellation";
 
 // FOUNDER-REVIEW: landing headline. Sender display name plus the relation they chose.
 export function connectLandingHeadline(inviterName: string, relation: string): string {

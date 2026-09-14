@@ -315,6 +315,11 @@ describe("empty-state hrefs resolve to App Router pages", () => {
       "settings empty leftover literal",
     );
     assertRendersFromConfig(
+      readWeb("components/settings-subscription-panel.tsx"),
+      ["SETTINGS_CANCEL_HREF", "EMAIL_PATHS.subscribe"],
+      "settings subscription leftover literal",
+    );
+    assertRendersFromConfig(
       readWeb("app/app/person/[id]/page.tsx"),
       ["EMPTY_STATE_WELCOME_HREF"],
       "person empty leftover literal",

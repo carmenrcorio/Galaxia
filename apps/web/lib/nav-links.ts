@@ -124,6 +124,8 @@ export const CHART_MODE_COMPARE: NavLink = { href: "/chart/compare", label: "Che
 export const EMPTY_STATE_WELCOME_HREF = "/welcome";
 export const EMPTY_STATE_SETTINGS_HREF = "/app/settings";
 
+export const SETTINGS_CANCEL_HREF = "/account/cancel?from=settings";
+
 export const EMAIL_PATHS = {
   welcome: "/welcome",
   compare: "/app/compare",
@@ -163,6 +165,8 @@ export function ctaInternalHrefs(): string[] {
     SHARE_NOT_FOUND_CTA.href,
     CHART_MODE_SINGLE.href,
     CHART_MODE_COMPARE.href,
+    SETTINGS_CANCEL_HREF,
+    EMAIL_PATHS.subscribe,
   ]);
 }
 

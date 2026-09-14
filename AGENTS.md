@@ -1,5 +1,7 @@
 # AGENTS.md
 
+TIMESTAMP RULE: new `supabase/migrations/` files must be at least 60 seconds after the highest timestamp from `npx supabase migration list` (ENGINEERING.md §16).
+
 ## Supabase pre-flight (run before any migration task)
 
 Before writing or applying any migration, confirm the CLI can see

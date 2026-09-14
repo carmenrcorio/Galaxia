@@ -87,6 +87,8 @@ describe("constellation connect UI wiring", () => {
     expect(button).toContain("canOfferConnectInvite(person)");
     expect(lib).toContain("isMinorForSafety");
     expect(lib).toContain('band === "children"');
+    expect(lib).toContain("usesAncientLight");
+    expect(lib).toContain("passed_at");
   });
 
   it("wires generate onto the person profile and edit panel, not the constellation overlay", () => {
@@ -94,7 +96,9 @@ describe("constellation connect UI wiring", () => {
     const edit = read("apps/web/components/edit-person-panel.tsx");
     const home = read("apps/web/app/app/page.tsx");
     expect(person).toContain("ConnectInviteButton");
+    expect(person).toContain("!usesAncientLight(person)");
     expect(edit).toContain("ConnectInviteButton");
+    expect(edit).toContain("!usesAncientLight(person)");
     expect(home).not.toContain("ConnectInviteButton");
     expect(home).toContain("unackedPersonIds");
     expect(home).not.toContain("notifications");

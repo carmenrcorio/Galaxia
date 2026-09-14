@@ -28,16 +28,19 @@ export function Hero() {
           <span className="eyebrow fade-in">Galaxia · your inner circle</span>
           {/* FOUNDER-REVIEW: "The night sky belongs to everyone. Yours doesn't." moved to WhySection (/why-galaxia). */}
           <h1 className="hero-h1 fade-in fade-in-delay-1">
-            {/* FOUNDER-REVIEW: outcome-led homepage headline. Two lines, no third. */}
-            Every app like this is about you.
-            <br />
-            This one is about <em>them</em>.
+            {/* FOUNDER-REVIEW: homepage hero headline. */}
+            Better understand the people in your life.
           </h1>
           <p className="lede fade-in fade-in-delay-2" style={{ marginTop: 18 }}>
-            {/* FOUNDER-REVIEW: outcome-led homepage subhead. */}
+            {/* FOUNDER-REVIEW: homepage hero subheading. */}
+            Yes, it uses astrology. No, it will not tell you to avoid Geminis.
+          </p>
+          <p className="lede fade-in fade-in-delay-2" style={{ marginTop: 14 }}>
+            {/* FOUNDER-REVIEW: homepage hero body. */}
             Galaxia builds a real chart for every person in your life, your partner,
             your mother, your difficult colleague, the ones you have lost, and tells you
-            in plain language what each of them needs from you.
+            in plain language what each of them needs from you (breaks down their nature
+            so you can see what few ever will try to).
           </p>
           <div className="hero-actions fade-in fade-in-delay-3">
             <div
@@ -62,12 +65,6 @@ export function Hero() {
         </div>
       </div>
       <QuickChartEntry />
-      <p className="lede fade-in fade-in-delay-3" style={{ marginTop: "clamp(28px, 4vw, 44px)", maxWidth: "36ch" }}>
-        {/* FOUNDER-REVIEW: standalone line after the free chart, before the teaser cards. */}
-        The sky has been used to explain ourselves for three thousand years.
-        <br />
-        We pointed it at the people we love instead.
-      </p>
     </header>
   );
 }

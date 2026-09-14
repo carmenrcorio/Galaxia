@@ -52,6 +52,7 @@ import {
   resolvePersonPageEntry,
   hasPassed,
   isMinorForSafety,
+  usesAncientLight,
   shouldShowLiveTransits,
   shouldShowMemorialTimeline,
   CHART_PRECISION_NONE_WAITING,
@@ -933,15 +934,15 @@ export default function PersonProfilePage() {
           onOpenChange={handleEditOpenChange}
           upgradeTo={editUpgradeTo}
         />
+        {userId && !usesAncientLight(person) ? (
         <div style={{ borderTop: "1px solid rgba(183,154,216,.1)", paddingTop: 14 }}>
           <p className="eyebrow" style={{ marginBottom: 8 }}>Don&apos;t know their details?</p>
-          {userId ? <AskBirthData personId={person.id} personName={person.display_name} userId={userId} /> : null}
-          {userId ? (
-            <div style={{ marginTop: 10 }}>
-              <ConnectInviteButton person={person} />
-            </div>
-          ) : null}
+          <AskBirthData personId={person.id} personName={person.display_name} userId={userId} />
+          <div style={{ marginTop: 10 }}>
+            <ConnectInviteButton person={person} />
+          </div>
         </div>
+        ) : null}
       </section>
 
       {showHonorBox ? (
@@ -1064,7 +1065,7 @@ export default function PersonProfilePage() {
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
-        {userId ? <ConnectInviteButton person={person} compact /> : null}
+        {userId && !usesAncientLight(person) ? <ConnectInviteButton person={person} compact /> : null}
         {/* Remembrance keeps a single Ask Vela entry inside RemembranceSpace — no header duplicate. */}
         {!showRemembrance ? (
           <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Ask Vela</Link>

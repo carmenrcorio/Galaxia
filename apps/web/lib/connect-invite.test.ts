@@ -69,9 +69,30 @@ describe("canOfferConnectInvite is the universal UI gate", () => {
     })).toBe(false);
   });
 
+  it("hides for memorial passed_at and the ancestor ancient-light tag", () => {
+    expect(canOfferConnectInvite({
+      ...adultFriend,
+      passed_at: "2024-11-02T00:00:00.000Z",
+    })).toBe(false);
+    expect(canOfferConnectInvite({
+      ...adultFriend,
+      relation: "ancestor",
+      passed_at: null,
+    })).toBe(false);
+    expect(canOfferConnectInvite({
+      ...adultFriend,
+      passed_at: null,
+    })).toBe(true);
+  });
+
   it("only treats birth_precision none as a merge target", () => {
     expect(isConnectMergeTarget({ ...adultFriend, birth_precision: "none" })).toBe(true);
     expect(isConnectMergeTarget(adultFriend)).toBe(false);
+    expect(isConnectMergeTarget({
+      ...adultFriend,
+      birth_precision: "none",
+      passed_at: "2024-11-02T00:00:00.000Z",
+    })).toBe(false);
   });
 });
 

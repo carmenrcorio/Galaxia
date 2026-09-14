@@ -2,6 +2,7 @@ import {
   GALAXY_RELATION_PICKER_OPTIONS,
   isMinorForSafety,
   resolveGalaxyRelation,
+  usesAncientLight,
   type GalaxyPickerRelation,
 } from "@galaxia/core";
 import { signupWithNextHref } from "./nav-links";
@@ -45,11 +46,20 @@ export type ConnectPersonGate = {
   birth_date?: string | null;
   birth_precision?: "none" | "exact" | "date" | "year" | null;
   linked_user_id?: string | null;
+  /** Remembrance marker on people.passed_at. Set means memorial/remembered. */
+  passed_at?: string | null;
 };
 
 export function canOfferConnectInvite(person: ConnectPersonGate): boolean {
   if (person.is_self) return false;
   if (person.linked_user_id) return false;
+  if (usesAncientLight({
+    is_self: person.is_self ?? false,
+    relation: person.relation,
+    passed_at: person.passed_at,
+  })) {
+    return false;
+  }
   if (isMinorForSafety({
     isMinor: person.is_minor ?? false,
     birthDate: person.birth_date,

@@ -71,7 +71,8 @@ describe("Settings subscription panel does not trust the client billing SDK", ()
     const retiredDomain = ["galaxia", "app"].join(".");
     expect(emails).toContain("GALAXIA_HELP_EMAIL");
     expect(lib).toContain("GALAXIA_HELP_EMAIL");
-    expect(deleteRoute).toContain("ACCOUNT_DELETE_COPY.errorAuthCloseFailed");
+    expect(deleteRoute).toContain("ACCOUNT_DELETE_COPY.errorGeneric");
+    expect(deleteRoute).not.toContain("errorAuthCloseFailed");
     for (const src of [lib, panel, tests, unit, fragment, emails, deleteRoute]) {
       expect(src).not.toContain(retiredDomain);
     }

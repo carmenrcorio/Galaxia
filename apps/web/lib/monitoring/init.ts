@@ -7,7 +7,7 @@
  * `instrumentation-client.ts` plus `app/global-error.tsx`.
  */
 import * as Sentry from "@sentry/nextjs";
-import { scrubSentryEvent, type ScrubbableEvent } from "./scrub";
+import { scrubBreadcrumb, scrubSentryEvent, type ScrubbableEvent } from "./scrub";
 
 export function getSentryDsn(): string {
   return process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN || "";
@@ -43,6 +43,9 @@ export function initMonitoring(): boolean {
     },
     beforeSendTransaction(event) {
       return scrubSentryEvent(event as unknown as ScrubbableEvent) as unknown as typeof event;
+    },
+    beforeBreadcrumb(breadcrumb) {
+      return scrubBreadcrumb(breadcrumb as unknown as Record<string, unknown>) as typeof breadcrumb;
     }
   });
   return true;

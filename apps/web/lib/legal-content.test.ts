@@ -38,4 +38,13 @@ describe("readLegalMarkdown", () => {
       expect(markdown).not.toContain("{{GALAXIA_HELP_EMAIL}}");
     }
   });
+
+  it("Terms section 15 names South Carolina and Greenville County, with no leftover fill-in tokens", () => {
+    const markdown = readLegalMarkdown("terms-of-service.md");
+    expect(markdown).toContain("the laws of the State of South Carolina");
+    expect(markdown).toContain("Greenville County, South Carolina");
+    expect(markdown).not.toMatch(/\[GOVERNING STATE/);
+    expect(markdown).not.toMatch(/\[COUNTY\/STATE\]/);
+    expect(markdown).not.toMatch(/\[CONFIRM /);
+  });
 });

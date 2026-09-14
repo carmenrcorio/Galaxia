@@ -47,6 +47,14 @@ export const GALAXY_RING_NORMS: Readonly<Record<number, number>> = {
 /** Semantic rings that draw soft concentric guides (sketch Rings 1–4). */
 export const GALAXY_GUIDE_RINGS = [2, 3, 4, 5] as const;
 
+/** Soft nebula-band colours for the four guide rings. Keys match `GALAXY_GUIDE_RINGS`. */
+export const RING_BAND_COLORS = {
+  2: { core: "#d4a855", glow: "#f0d9a6", width: 1.8, opacity: 0.50 },
+  3: { core: "#a87cdb", glow: "#c4a8ea", width: 1.6, opacity: 0.42 },
+  4: { core: "#e87cad", glow: "#f5b8d4", width: 1.5, opacity: 0.38 },
+  5: { core: "#94909c", glow: "#c0bcc8", width: 1.3, opacity: 0.32 },
+} as const;
+
 /**
  * Nominal radial jitter amplitude as a fraction of band radius (±).
  * Kept tiny so seats read as ON the guide stroke, not in the gap; still

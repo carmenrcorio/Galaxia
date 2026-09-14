@@ -1039,6 +1039,29 @@ select.field--rect {
   transition: opacity 250ms ease;
 }
 .constellation-live.is-in { opacity: 1; }
+
+/* Guide-ring drift — two layers under the motion canvas. Bands are radial so
+   only stardust reads as motion. pointer-events none: never intercepts taps. */
+.ring-drift-inner,
+.ring-drift-outer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform-origin: center center;
+}
+@keyframes ringDriftCW {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes ringDriftCCW {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+.ring-drift-inner { animation: ringDriftCW 90s linear infinite; }
+.ring-drift-outer { animation: ringDriftCCW 70s linear infinite; }
 .constellation-outcome {
   position: absolute;
   inset: 0;
@@ -1074,6 +1097,8 @@ select.field--rect {
   .typing-dot { animation: none; opacity: 1; }
   .skeleton   { animation: none; }
   .constellation-skeleton-point { animation: none; opacity: 0.28; }
+  .ring-drift-inner,
+  .ring-drift-outer { animation: none; }
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */

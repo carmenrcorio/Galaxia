@@ -1,9 +1,13 @@
-/** The Why — the shift. Unchanged content from the current landing (still accurate, already on-message). */
+/** The Why — the shift. Night-sky line moved here from the homepage hero. */
 export function WhySection() {
   return (
     <section className="shift container" id="shift">
       <span className="eyebrow reveal">The shift</span>
       <h2 className="reveal">Astrology forgot the people you love.</h2>
+      <p className="body reveal">
+        {/* FOUNDER-REVIEW: moved from the homepage hero kicker so the line is not lost. */}
+        The night sky belongs to everyone. <em>Yours</em> doesn't.
+      </p>
       <p className="body reveal">
         {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
         Every other app is built for you alone (your horoscope, your transits) or for swiping on

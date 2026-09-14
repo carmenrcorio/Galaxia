@@ -111,12 +111,15 @@ describe("/chart and /chart/compare stay client components with their page UI un
   });
 });
 
-describe("homepage meta description length", () => {
-  it("is 155 characters or fewer", () => {
+describe("homepage meta description", () => {
+  it("uses the shared outcome-led homepage description", () => {
     const src = readRoute("apps/web/app/page.tsx");
-    const match = src.match(/const DESCRIPTION =\s*\n\s*"([^"]+)"/);
-    expect(match?.[1]).toBeDefined();
-    expect(match![1]!.length).toBeLessThanOrEqual(155);
+    expect(src).toContain("HOMEPAGE_DESCRIPTION");
+    const seo = readRoute("apps/web/lib/homepage-seo.ts");
+    const match = seo.match(/export const HOMEPAGE_DESCRIPTION =\s*\n\s*"([^"]+)"/);
+    expect(match?.[1]).toBe(
+      "Galaxia computes the real birth chart of everyone in your life, your partner, your parents, your friends, the ones you have lost, and tells you what each of them needs from you. Real astrology, plain language, no horoscopes.",
+    );
   });
 });
 

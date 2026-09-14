@@ -1,16 +1,14 @@
 import Link from "next/link";
-import { HERO_HOW_IT_WORKS, MARKETING_NAV_LOGIN, MARKETING_NAV_SIGNUP } from "../../lib/nav-links";
+import { HERO_HOW_IT_WORKS, HERO_PRIMARY_CTA, MARKETING_NAV_LOGIN } from "../../lib/nav-links";
 import { HeroGraph } from "./hero-graph";
 import { QuickChartEntry } from "./quick-chart-entry";
 
 /**
- * Hero — restructured per spec: the poetic line is shrunk to a kicker
- * (was the full clamp(3rem,8.4vw,6.6rem) headline; a line that size filled
- * the mobile viewport before a visitor reached anything that says what the
- * product actually is) and a plain-language subheadline now carries the H1.
- * Existing CTAs stay (signup + see how it works). Quick Chart mini-form sits
- * under the grid as the primary try-it entry (no signup); submit reveals
- * Sun/Moon inline via NatalSignReveal — no navigation off the marketing page.
+ * Hero — outcome-led copy. The poetic kicker ("The night sky belongs to
+ * everyone. Yours doesn't.") moved to WhySection on /why-galaxia so it is
+ * not lost. Primary CTA is the public free chart; Log in and See how it
+ * works keep their existing destinations. Quick Chart mini-form still sits
+ * under the grid as the no-signup try-it entry.
  *
  * Uses .fade-in (a CSS-only keyframe that plays on mount), not the
  * scroll-triggered .reveal + IntersectionObserver pattern used further down
@@ -28,19 +26,30 @@ export function Hero() {
       <div className="hero-grid">
         <div className="hero-text">
           <span className="eyebrow fade-in">Galaxia · your inner circle</span>
-          <p className="hero-kicker fade-in fade-in-delay-1">
-            The night sky belongs to everyone. <em>Yours</em> doesn't.
-          </p>
+          {/* FOUNDER-REVIEW: "The night sky belongs to everyone. Yours doesn't." moved to WhySection (/why-galaxia). */}
           <h1 className="hero-h1 fade-in fade-in-delay-1">
-            Understand <em>the people you love</em>. Then show up for them.
+            {/* FOUNDER-REVIEW: outcome-led homepage headline. Two lines, no third. */}
+            Every app like this is about you.
+            <br />
+            This one is about <em>them</em>.
           </h1>
           <p className="lede fade-in fade-in-delay-2" style={{ marginTop: 18 }}>
-            {/* FOUNDER-REVIEW: layer-one ATF. Outcome first; astrology is not the first word. */}
-            Galaxia is relationship intelligence for the small circle that actually shapes your days:
-            partner, kids, parents, siblings, friends. Not a horoscope. Not for swiping on strangers.
+            {/* FOUNDER-REVIEW: outcome-led homepage subhead. */}
+            Galaxia builds a real chart for every person in your life, your partner,
+            your mother, your difficult colleague, the ones you have lost, and tells you
+            in plain language what each of them needs from you.
           </p>
           <div className="hero-actions fade-in fade-in-delay-3">
-            <Link href={MARKETING_NAV_SIGNUP.href as never} className="btn-primary">{MARKETING_NAV_SIGNUP.label}</Link>
+            <div
+              className="hero-cta-primary"
+              style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}
+            >
+              <Link href={HERO_PRIMARY_CTA.href as never} className="btn-primary">{HERO_PRIMARY_CTA.label}</Link>
+              <p className="hero-cta-note" style={{ margin: 0, color: "var(--mist2)", fontSize: ".84rem", fontWeight: 400 }}>
+                {/* FOUNDER-REVIEW: line under the free-chart CTA. */}
+                No card. Works with just a birth date.
+              </p>
+            </div>
             <Link href={MARKETING_NAV_LOGIN.href as never} className="pill-link hero-login-btn">{MARKETING_NAV_LOGIN.label}</Link>
             <Link href={HERO_HOW_IT_WORKS.href as never} className="hero-scroll-cue">
               <span>{HERO_HOW_IT_WORKS.label}</span>
@@ -53,6 +62,12 @@ export function Hero() {
         </div>
       </div>
       <QuickChartEntry />
+      <p className="lede fade-in fade-in-delay-3" style={{ marginTop: "clamp(28px, 4vw, 44px)", maxWidth: "36ch" }}>
+        {/* FOUNDER-REVIEW: standalone line after the free chart, before the teaser cards. */}
+        The sky has been used to explain ourselves for three thousand years.
+        <br />
+        We pointed it at the people we love instead.
+      </p>
     </header>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { CloseSection } from "../../components/marketing/close-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
@@ -13,7 +14,7 @@ import { RELATED_LINKS } from "../../lib/nav-links";
 // FOUNDER-REVIEW: layer-two metadata. Visible press copy is layer one.
 const TITLE = "Press: Galaxia, Relationship Intelligence from Computed Astrology";
 const DESCRIPTION =
-  "Press materials for Galaxia. Relationship intelligence powered by computed natal charts and synastry. Guidance, not fortune telling. Contact press@galaxiamea.com.";
+  `Press materials for Galaxia. Relationship intelligence powered by computed natal charts and synastry. Guidance, not fortune telling. Contact ${GALAXIA_HELP_EMAIL}.`;
 const LEDE =
   "Galaxia helps people understand the ones they already love, and show up for each bond with more intention.";
 

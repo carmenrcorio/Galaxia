@@ -11,6 +11,7 @@ import {
   type TrialEmailData
 } from "./emails";
 import { SOFTWARE_APPLICATION_JSON_LD } from "./homepage-software-application-json-ld";
+import { HOMEPAGE_DESCRIPTION } from "./homepage-seo";
 import { TITLE as CHART_TITLE, DESCRIPTION as CHART_DESCRIPTION } from "../app/chart/chart-seo";
 import { buildCategoryMetadata, SITE_OG_IMAGE } from "./blog-metadata";
 
@@ -64,7 +65,8 @@ describe("layer one: lead with outcome, never an astrology app", () => {
     expect(h1?.[1]).toBeDefined();
     const text = h1![1]!.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
     expect(text.toLowerCase().startsWith("astrology")).toBe(false);
-    expect(text.toLowerCase()).toContain("people you love");
+    expect(src).toContain("Every app like this is about you.");
+    expect(text.toLowerCase()).toContain("them");
   });
 
   it("store listing visible fields are outcome-first; keywords may keep astrology", () => {
@@ -87,7 +89,7 @@ describe("layer one: lead with outcome, never an astrology app", () => {
       threadsCount: 1,
       groupsCount: 1,
       trialEndDate: "24 July",
-      siteUrl: "https://galaxia.app"
+      siteUrl: "https://galaxiamea.com"
     };
     const subjects = [
       day1Email(base).subject,
@@ -106,11 +108,11 @@ describe("layer one: lead with outcome, never an astrology app", () => {
 
 describe("layer two: astrology language stays where search and in-product intent live", () => {
   it("does not strip astrology from homepage metadata or JSON-LD", () => {
-    const home = readRepo("apps/web/app/page.tsx");
-    expect(home).toMatch(/const TITLE = "Galaxia: Astrology for the People You Love"/);
-    expect(home).toMatch(/birth charts/i);
-    expect(SOFTWARE_APPLICATION_JSON_LD.description as string).toMatch(/astrology/i);
+    expect(HOMEPAGE_DESCRIPTION).toMatch(/astrology/i);
+    expect(HOMEPAGE_DESCRIPTION).toMatch(/birth chart/i);
+    expect(SOFTWARE_APPLICATION_JSON_LD.description as string).toBe(HOMEPAGE_DESCRIPTION);
     expect(SITE_OG_IMAGE.alt).toMatch(/astrology/i);
+    expect(readRepo("apps/web/app/page.tsx")).toMatch(/HOMEPAGE_TITLE/);
   });
 
   it("keeps natal / synastry vocabulary on /chart and /chart/compare", () => {

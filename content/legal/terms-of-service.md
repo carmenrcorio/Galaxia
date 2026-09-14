@@ -25,7 +25,7 @@ The Service includes features for adding other people, who may include minors, s
 
 ## 3\. Your account
 
-You are responsible for the information you provide, for maintaining the confidentiality of your login credentials, and for all activity that occurs under your account. Notify us promptly at [help@galaxiamea.com](mailto:help@galaxiamea.com) if you believe your account has been accessed without authorization. We are not liable for any loss arising from unauthorized use of your account that results from your failure to safeguard your credentials.
+You are responsible for the information you provide, for maintaining the confidentiality of your login credentials, and for all activity that occurs under your account. Notify us promptly at [{{GALAXIA_HELP_EMAIL}}](mailto:{{GALAXIA_HELP_EMAIL}}) if you believe your account has been accessed without authorization. We are not liable for any loss arising from unauthorized use of your account that results from your failure to safeguard your credentials.
 
 ---
 
@@ -162,9 +162,9 @@ You may stop using the Service and delete your account at any time. We may suspe
 
 ## 15\. Governing law and disputes
 
-These Terms are governed by the laws of the State of \[GOVERNING STATE — recommended: the state where your entity is organized or where you operate, e.g., South Carolina\], without regard to its conflict-of-laws rules. \[CONFIRM the governing state and whether you want to include an arbitration clause and/or a class-action waiver. These meaningfully affect how disputes are resolved and should be decided with counsel; if included, they typically require specific formatting and notice to be enforceable.\]
+These Terms are governed by the laws of the State of South Carolina, without regard to its conflict-of-laws rules.
 
-Subject to the above, you agree that the state and federal courts located in \[COUNTY/STATE\] will have exclusive jurisdiction over any dispute not subject to arbitration, and you consent to personal jurisdiction there.
+Subject to the above, you agree that the state and federal courts located in Greenville County, South Carolina will have exclusive jurisdiction over any dispute not subject to arbitration, and you consent to personal jurisdiction there.
 
 ---
 
@@ -184,4 +184,7 @@ Subject to the above, you agree that the state and federal courts located in \[C
 
 ## 17\. Contact
 
-**GalaxiaMea** Email: [help@galaxiamea.com](mailto:help@galaxiamea.com) 
+<!-- FOUNDER-REVIEW: rewritten. Contact block matches the one Galaxia legal entity and help address. -->
+**GALAXIA MEA LLC**  
+Email: [{{GALAXIA_HELP_EMAIL}}](mailto:{{GALAXIA_HELP_EMAIL}})  
+Mailing address: 1 Shadowrock Ct, Simpsonville, SC 29680 

@@ -15,10 +15,13 @@ export const runtime = "nodejs";
  *
  * 1) Require typed confirmation ("delete").
  * 2) Call purge_own_account_data() (SECURITY DEFINER, one transaction).
- * 3) Only on success: auth.admin.deleteUser.
+ *    That function deletes the owned graph AND the auth.users row. If it
+ *    fails, nothing is deleted.
+ * 3) Best-effort GoTrue deleteUser: the SQL row is already gone, so a 404
+ *    is success. This only sweeps GoTrue-side leftovers (sessions already
+ *    CASCADE from auth.users).
  *
  * No RevenueCat / Stripe calls. Billing warning is UI-only.
- * If the purge fails, nothing is deleted.
  */
 export async function POST(req: Request) {
   if (!publicEnv.supabaseUrl) {
@@ -58,17 +61,8 @@ export async function POST(req: Request) {
   const admin = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, {
     auth: { persistSession: false }
   });
-  const { error: authError } = await admin.auth.admin.deleteUser(user.id);
-  if (authError) {
-    // Graph is already gone; auth row remains. Surface a clear error so support can finish.
-    return NextResponse.json(
-      {
-        error:
-          "Your data was removed, but closing the login failed. Contact support@galaxia.app with this account email."
-      },
-      { status: 500 }
-    );
-  }
+  // Login row is already gone in Postgres. GoTrue 404 is the happy path.
+  await admin.auth.admin.deleteUser(user.id);
 
   await supabase.auth.signOut();
   return NextResponse.json({ ok: true });

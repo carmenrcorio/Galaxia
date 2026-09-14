@@ -13,37 +13,40 @@ const TEASERS: Teaser[] = [
   {
     eyebrow: "The shift",
     title: "Why Galaxia",
-    // FOUNDER-REVIEW: rewritten (no U+2014).
-    body: "Astrology forgot the people you love. Galaxia reads the real charts of your partner, kids, parents, siblings, and friends (not just yours) so you can show up for each bond with more intention.",
+    // FOUNDER-REVIEW: outcome first, feature second.
+    body: "You find out what they need from you. Why Galaxia reads their real charts, not a horoscope about you.",
     href: FEATURE_TEASER_LINKS[0].href,
     cta: FEATURE_TEASER_LINKS[0].label
   },
   {
     eyebrow: "The edge",
     title: "Generations",
-    body: "The slow planets shape a whole generation, not just one person. See the sky your whole family or friend group shares, and where you quietly diverge, from just a birth year.",
+    // FOUNDER-REVIEW: outcome first, feature second.
+    body: "You see the sky a whole family or friend group shares, and where one person quietly diverges. Generations does that from a birth year.",
     href: FEATURE_TEASER_LINKS[1].href,
     cta: FEATURE_TEASER_LINKS[1].label
   },
   {
     eyebrow: "Your guide",
     title: "Meet Vela",
-    // FOUNDER-REVIEW: rewritten. Shared spaces are unshipped; this describes private Vela only.
-    body: "Vela is your AI astrologer and relationship coach, grounded in both real charts and plain good sense. It never invents a placement, and never breaches your privacy.",
+    // FOUNDER-REVIEW: outcome first, feature second. Shared spaces are unshipped; this describes private Vela only.
+    body: "You get something to actually do, grounded in both charts. Vela is the guide that never invents a placement and never breaches your privacy.",
     href: FEATURE_TEASER_LINKS[2].href,
     cta: FEATURE_TEASER_LINKS[2].label
   },
   {
     eyebrow: "Built on trust",
     title: "Private by design",
-    body: "Your notes about someone are yours alone, always. No two-way AI chat with children, and every chart comes from real astronomical data: never an AI guess.",
+    // FOUNDER-REVIEW: outcome first, feature second.
+    body: "What you write about someone stays yours, and a child never sits in a two-way chat. Private by design is real astronomical data, never an AI guess.",
     href: FEATURE_TEASER_LINKS[3].href,
     cta: FEATURE_TEASER_LINKS[3].label
   },
   {
     eyebrow: "Pricing",
     title: "One honest plan",
-    body: "No feature tiers, no per-person fees, no upsells: the same everything, for everyone you add. Start with 14 days free.",
+    // FOUNDER-REVIEW: outcome first, feature second.
+    body: "You add everyone without paying per person. One honest plan is the same everything, 14 days free, no feature tiers.",
     href: FEATURE_TEASER_LINKS[4].href,
     cta: FEATURE_TEASER_LINKS[4].label
   }
@@ -52,9 +55,9 @@ const TEASERS: Teaser[] = [
 /**
  * Condensed homepage previews of the five sections that used to live inline
  * on `/` in full — #shift, #generations, #vela, #trust, #pricing (see the
- * removal notes in app/page.tsx). Each card is 2-3 sentences, not the full
- * section, and links out to the standalone page that now carries the whole
- * story.
+ * removal notes in app/page.tsx). Each card is two sentences (outcome, then
+ * feature) and links out to the standalone page that now carries the whole
+ * story. Destinations are unchanged.
  */
 export function FeatureTeasers() {
   return (

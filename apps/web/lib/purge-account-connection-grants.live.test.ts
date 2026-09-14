@@ -297,12 +297,11 @@ describe("VERIFY (live DB): purge_own_account_data ends connect grants in both d
     expect(invite?.accepted_by).toBeNull();
     expect(invite?.accepted_at).not.toBeNull();
 
-    // ── The real proof that nothing blocks ───────────────────────────────
-    // people_linked_user_id_fkey is NO ACTION, so this only succeeds if the
-    // purge cleared every reference, and only if no CHECK trips on the
-    // resulting set-null paths (accepted_by is ON DELETE SET NULL).
+    // ── Login row is already gone (purge deletes auth.users) ────────────
     const { error: deleteErr } = await admin.auth.admin.deleteUser(departingId);
-    expect(deleteErr).toBeNull();
+    expect(
+      deleteErr === null || /not found/i.test(deleteErr.message ?? "")
+    ).toBe(true);
     departingId = "";
 
     const { data: inviteAfter, error: inviteAfterErr } = await admin

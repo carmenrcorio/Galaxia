@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ACCOUNT_DELETE_COPY,
   DELETE_CONFIRMATION_WORD,
   EXPORT_PROFILE_FIELDS,
   isDeleteConfirmation,
@@ -33,5 +34,10 @@ describe("account-data helpers", () => {
     expect(EXPORT_PROFILE_FIELDS).not.toContain("stripe_customer_id");
     expect(EXPORT_PROFILE_FIELDS).not.toContain("stripe_subscription_id");
     expect(EXPORT_PROFILE_FIELDS).not.toContain("subscription_tier");
+  });
+
+  it("delete failure copy does not claim a partial delete succeeded", () => {
+    expect(ACCOUNT_DELETE_COPY.errorGeneric).toMatch(/Nothing was removed/);
+    expect(ACCOUNT_DELETE_COPY).not.toHaveProperty("errorAuthCloseFailed");
   });
 });

@@ -1,3 +1,5 @@
+import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
+
 /**
  * Layer one press kit. Lead with outcome. Astrology is not the first word
  * in the boilerplate. Metadata on /press keeps the astrology keywords.
@@ -27,7 +29,7 @@ export function PressKitSection() {
       <ul className="why-not-list">
         <li className="reveal">
           <strong>Founded.</strong>{" "}
-          <span>Galaxia Mea LLC. Simpsonville, South Carolina. Press: press@galaxiamea.com.</span>
+          <span>Galaxia Mea LLC. Simpsonville, South Carolina. Press: {GALAXIA_HELP_EMAIL}.</span>
         </li>
         <li className="reveal">
           <strong>What it is not.</strong>{" "}

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import {
   day1Email,
   day4MultiEmail,
@@ -27,8 +28,8 @@ describe("skyTodayEmail", () => {
     ownerFirstName: "Carmen",
     subjectPersonName: "Alex",
     copyResolved: "Venus trine your Moon today: a softer, more receptive stretch.",
-    siteUrl: "https://galaxia.app",
-    unsubscribeUrl: "https://galaxia.app/api/nudge-email/unsubscribe?token=abc-123"
+    siteUrl: "https://galaxiamea.com",
+    unsubscribeUrl: "https://galaxiamea.com/api/nudge-email/unsubscribe?token=abc-123"
   };
 
   it("subject matches nudgeEmailSubject and never contains copy_resolved text", () => {
@@ -112,8 +113,8 @@ describe("skyTodayEmail", () => {
 
 describe("nudgeEmailHeaders — RFC 8058 one-click List-Unsubscribe pair", () => {
   it("sets both List-Unsubscribe and List-Unsubscribe-Post", () => {
-    const headers = nudgeEmailHeaders("https://galaxia.app/api/nudge-email/unsubscribe?token=abc");
-    expect(headers["List-Unsubscribe"]).toBe("<https://galaxia.app/api/nudge-email/unsubscribe?token=abc>");
+    const headers = nudgeEmailHeaders("https://galaxiamea.com/api/nudge-email/unsubscribe?token=abc");
+    expect(headers["List-Unsubscribe"]).toBe("<https://galaxiamea.com/api/nudge-email/unsubscribe?token=abc>");
     expect(headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
   });
 });
@@ -129,7 +130,7 @@ describe("sendEmail — passes custom headers through to the Resend request body
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
-    const headers = nudgeEmailHeaders("https://galaxia.app/api/nudge-email/unsubscribe?token=abc");
+    const headers = nudgeEmailHeaders("https://galaxiamea.com/api/nudge-email/unsubscribe?token=abc");
     await sendEmail("to@example.com", { subject: "Your sky today, for Alex", html: "<p>hi</p>", text: "hi" }, headers);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -169,8 +170,7 @@ describe("sendEmail — From address defaults to the verified galaxiamea.com sen
 
       const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
       const body = JSON.parse(init.body as string);
-      expect(body.from).toContain("@galaxiamea.com");
-      expect(body.from).not.toContain("@galaxia.app");
+      expect(body.from).toBe(`Galaxia <${GALAXIA_HELP_EMAIL}>`);
     } finally {
       if (priorResendFrom === undefined) delete process.env.RESEND_FROM;
       else process.env.RESEND_FROM = priorResendFrom;
@@ -179,7 +179,7 @@ describe("sendEmail — From address defaults to the verified galaxiamea.com sen
 
   it("still honors RESEND_FROM when set (the documented override pattern)", async () => {
     vi.stubEnv("RESEND_API_KEY", "test-key");
-    vi.stubEnv("RESEND_FROM", "Galaxia <custom@galaxiamea.com>");
+    vi.stubEnv("RESEND_FROM", "Galaxia <custom@example.com>");
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -187,7 +187,7 @@ describe("sendEmail — From address defaults to the verified galaxiamea.com sen
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const body = JSON.parse(init.body as string);
-    expect(body.from).toBe("Galaxia <custom@galaxiamea.com>");
+    expect(body.from).toBe("Galaxia <custom@example.com>");
   });
 });
 
@@ -200,7 +200,7 @@ describe("Trial emails — CAN-SPAM footer (legal entity, mailing address, worki
     threadsCount: 1,
     groupsCount: 1,
     trialEndDate: "24 July",
-    siteUrl: "https://galaxia.app"
+    siteUrl: "https://galaxiamea.com"
   };
   const renderers: [string, (d: TrialEmailData) => { html: string; text: string }][] = [
     ["day1Email", day1Email],
@@ -233,4 +233,12 @@ describe("Trial emails — CAN-SPAM footer (legal entity, mailing address, worki
       expect(rendered.text.slice(rendered.text.indexOf("Galaxia Mea LLC"))).not.toContain("\u2014");
     });
   }
+
+  it("day14 feedback mailto uses the one Galaxia contact address", () => {
+    const rendered = day14Email(base);
+    expect(rendered.html).toContain(`mailto:${GALAXIA_HELP_EMAIL}`);
+    expect(rendered.text).toContain(GALAXIA_HELP_EMAIL);
+    expect(rendered.html).not.toContain(["galaxia", "app"].join("."));
+    expect(rendered.text).not.toContain(["galaxia", "app"].join("."));
+  });
 });

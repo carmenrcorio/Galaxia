@@ -21,6 +21,7 @@ import { Spinner } from "../../../components/spinner";
 import { fetchGroupsCurrentReading, upsertGroupsCurrentReading } from "../../../lib/groups-cohort";
 import {
   GROUPS_EMPTY_DEFAULT_NAME,
+  GROUPS_EMPTY_PREFILL_MAX,
   GROUPS_EXAMPLE_CANNOT_SAVE,
   groupSignatureLine,
   type CohortOverlayLike,
@@ -275,7 +276,7 @@ function GroupsPageInner() {
 
   /** One-tap: prefills the user's real people and builds the reading. Never example ids. */
   function buildFromExistingPeople(personIds: string[]) {
-    const ids = personIds.filter((id) => !isExampleId(id));
+    const ids = personIds.filter((id) => !isExampleId(id)).slice(0, GROUPS_EMPTY_PREFILL_MAX);
     if (ids.length < 3) return;
     setLoadedGroup(null);
     setGroupName(GROUPS_EMPTY_DEFAULT_NAME);

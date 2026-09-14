@@ -67,8 +67,8 @@ describe("layer one: lead with outcome, never an astrology app", () => {
     expect(h1?.[1]).toBeDefined();
     const text = h1![1]!.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
     expect(text.toLowerCase().startsWith("astrology")).toBe(false);
-    expect(src).toContain("Every app like this is about you.");
-    expect(text.toLowerCase()).toContain("them");
+    expect(src).toContain("Better understand the people in your life.");
+    expect(text.toLowerCase()).toContain("people in your life");
   });
 
   it("store listing visible fields are outcome-first; keywords may keep astrology", () => {

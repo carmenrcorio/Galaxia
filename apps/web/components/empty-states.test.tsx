@@ -31,6 +31,10 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: () => undefined }),
+}));
+
 let transitPref: "all" | "major_only" | "off" = "all";
 let hangFeed = false;
 

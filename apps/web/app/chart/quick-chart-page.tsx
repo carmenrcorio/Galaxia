@@ -5,8 +5,10 @@
  *
  * Top-of-funnel acquisition + in-product utility: a real computed natal chart
  * from @galaxia/astro, computed server-side via POST /api/quick-chart. Nothing
- * is stored unless the visitor explicitly clicks "Save to your galaxy". The
- * name field is local-only — never sent into the shareable URL.
+ * is stored unless the visitor explicitly saves. Logged-out viewers click
+ * "Save to your galaxy" (signup + welcome prefill). Signed-in viewers add the
+ * person to their constellation and open that profile. The name field is
+ * local-only — never sent into the shareable URL.
  */
 
 import {

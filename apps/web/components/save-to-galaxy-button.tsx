@@ -8,8 +8,10 @@ import {
 } from "@galaxia/astro";
 import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getPreferredHouseSystem } from "../lib/house-system";
+import { personProfileHref, signupWithNextHref } from "../lib/nav-links";
 import { buildWelcomePrefillPath } from "../lib/quick-chart";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";
@@ -20,12 +22,34 @@ const RELATIONS = GALAXY_RELATION_PICKER_OPTIONS;
 // FOUNDER-REVIEW: quiet line while auth is still resolving on /chart.
 export const SAVE_TO_GALAXY_CHECKING = "Checking whether you are signed in.";
 
+/** Logged-out primary CTA. Do not change: this is the top-of-funnel save. */
+export function saveToGalaxyLoggedOutLabel(name?: string): string {
+  return name ? `Save ${name} to your galaxy` : "Save to your galaxy";
+}
+
+// FOUNDER-REVIEW: signed-in chart CTA. Adds the already-entered person to the constellation.
+export function addToConstellationLabel(name?: string): string {
+  return name ? `Add ${name} to your constellation` : "Add this person to your constellation";
+}
+
+// FOUNDER-REVIEW: signed-in confirm on the inline name/relation form.
+export const CONFIRM_ADD_TO_CONSTELLATION = "Add to constellation";
+
+export function addedToConstellationLine(name: string): string {
+  // FOUNDER-REVIEW: signed-in save success. Viewer is about to open this person's profile.
+  return `✦ ${name} is in your constellation.`;
+}
+
+export const VIEW_THEIR_PROFILE = "View their profile";
+
 /**
- * The Quick Chart "Save to your galaxy" CTA.
+ * The Quick Chart save CTA.
  *
  * Logged in: saves the person now (name/relation confirmed inline), using the
  * SAME buildBirthInput + computeNatalChart pipeline every other add-person
- * flow uses, respecting the owner's house-system preference.
+ * flow uses, respecting the owner's house-system preference. On /chart the
+ * default is to open that person's profile after save so the viewer is not
+ * dumped back on an empty form.
  *
  * Logged out: links to /signup?next=/welcome?prefill=...&name=... — the birth
  * data (and, only for this one-time redirect, the typed name) travels through
@@ -33,8 +57,16 @@ export const SAVE_TO_GALAXY_CHECKING = "Checking whether you are signed in.";
  * written to the database until the user reviews and saves it there.
  */
 export function SaveToGalaxyButton({
-  birthInput, defaultName
-}: { birthInput: BirthFormInput; defaultName?: string }) {
+  birthInput,
+  defaultName,
+  navigateToProfileOnSave = true,
+}: {
+  birthInput: BirthFormInput;
+  defaultName?: string;
+  /** When false (Quick Compare), stay on the result with a profile link. */
+  navigateToProfileOnSave?: boolean;
+}) {
+  const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -82,6 +114,9 @@ export function SaveToGalaxyButton({
       if (cErr) throw new Error(cErr.message);
 
       setSavedPersonId(person.id);
+      if (navigateToProfileOnSave) {
+        router.push(personProfileHref(person.id));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save.");
     } finally {
@@ -100,16 +135,16 @@ export function SaveToGalaxyButton({
   if (savedPersonId) {
     return (
       <div style={{ textAlign: "center" }}>
-        <p style={{ color: "var(--teal)", fontSize: ".88rem", marginBottom: 8 }}>✦ {name} is in your galaxy.</p>
-        <Link href={`/app/person/${savedPersonId}`} className="pill-link">View their profile</Link>
+        <p style={{ color: "var(--teal)", fontSize: ".88rem", marginBottom: 8 }}>{addedToConstellationLine(name)}</p>
+        <Link href={personProfileHref(savedPersonId) as never} className="pill-link">{VIEW_THEIR_PROFILE}</Link>
       </div>
     );
   }
 
   if (!userId) {
-    const label = defaultName ? `Save ${defaultName} to your galaxy` : "Save to your galaxy";
+    const label = saveToGalaxyLoggedOutLabel(defaultName);
     return (
-      <Link href={`/signup?next=${encodeURIComponent(buildWelcomePrefillPath(birthInput, defaultName))}`} className="btn-primary">
+      <Link href={signupWithNextHref(buildWelcomePrefillPath(birthInput, defaultName)) as never} className="btn-primary">
         {label}
       </Link>
     );
@@ -118,7 +153,7 @@ export function SaveToGalaxyButton({
   if (!open) {
     return (
       <button type="button" className="btn-primary" onClick={() => setOpen(true)}>
-        {defaultName ? `Save ${defaultName} to your galaxy` : "Save to your galaxy"}
+        {addToConstellationLabel(defaultName)}
       </button>
     );
   }
@@ -137,7 +172,7 @@ export function SaveToGalaxyButton({
       </div>
       <button className="btn-primary" onClick={save} disabled={saving || !name.trim()} style={{ gap: 8 }}>
         {saving && <Spinner size={13} color="#1a1206" />}
-        {saving ? "Saving…" : "Confirm save"}
+        {saving ? "Saving…" : CONFIRM_ADD_TO_CONSTELLATION}
       </button>
       {error ? <p className="error" style={{ fontSize: ".8rem" }}>{error}</p> : null}
     </div>

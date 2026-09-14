@@ -20,13 +20,14 @@ describe("homepage outcome-led copy", () => {
     expect(HOMEPAGE_DESCRIPTION.includes("\u2014")).toBe(false);
   });
 
-  it("renders the headline, subheading, body, and free-chart CTA, with no sky thesis block", () => {
+  it("renders the headline, subheading, supporting line, and free-chart CTA", () => {
     const src = read("components/marketing/hero.tsx");
-    expect(src).toContain("Better understand the people in your life.");
-    expect(src).toContain("Yes, it uses astrology. No, it will not tell you to avoid Geminis.");
-    expect(src).toContain("Galaxia builds a real chart for every person in your life, your partner,");
-    expect(src).toContain("what each of them needs from you (breaks down their nature");
-    expect(src).toContain("so you can see what few ever will try to).");
+    expect(src).toContain("Better understand the people in your life");
+    expect(src).not.toContain("Better understand the people in your life.");
+    expect(src).toContain("Build a real chart for your partner, your mother, your difficult colleague, even the ones you have lost, and learn who they are at their core.");
+    expect(src).toContain("Yes, it uses astrology. We won't tell you to avoid Geminis, we'll tell you how to talk to one.");
+    expect(src).not.toContain("Yes, it uses astrology. No, it will not tell you to avoid Geminis.");
+    expect(src).not.toContain("Galaxia builds a real chart for every person in your life, your partner,");
     expect(src).toContain("No card. Works with just a birth date.");
     expect(src).not.toContain("The sky has been used to explain ourselves for three thousand years.");
     expect(src).not.toContain("We pointed it at the people we love instead.");

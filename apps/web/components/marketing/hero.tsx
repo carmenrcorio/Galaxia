@@ -29,18 +29,11 @@ export function Hero() {
           {/* FOUNDER-REVIEW: "The night sky belongs to everyone. Yours doesn't." moved to WhySection (/why-galaxia). */}
           <h1 className="hero-h1 fade-in fade-in-delay-1">
             {/* FOUNDER-REVIEW: homepage hero headline. */}
-            Better understand the people in your life.
+            Better understand the people in your life
           </h1>
           <p className="lede fade-in fade-in-delay-2" style={{ marginTop: 18 }}>
             {/* FOUNDER-REVIEW: homepage hero subheading. */}
-            Yes, it uses astrology. No, it will not tell you to avoid Geminis.
-          </p>
-          <p className="lede fade-in fade-in-delay-2" style={{ marginTop: 14 }}>
-            {/* FOUNDER-REVIEW: homepage hero body. */}
-            Galaxia builds a real chart for every person in your life, your partner,
-            your mother, your difficult colleague, the ones you have lost, and tells you
-            in plain language what each of them needs from you (breaks down their nature
-            so you can see what few ever will try to).
+            Build a real chart for your partner, your mother, your difficult colleague, even the ones you have lost, and learn who they are at their core.
           </p>
           <div className="hero-actions fade-in fade-in-delay-3">
             <div
@@ -48,6 +41,10 @@ export function Hero() {
               style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}
             >
               <Link href={HERO_PRIMARY_CTA.href as never} className="btn-primary">{HERO_PRIMARY_CTA.label}</Link>
+              <p className="hero-cta-note" style={{ margin: 0, color: "var(--mist2)", fontSize: ".84rem", fontWeight: 400 }}>
+                {/* FOUNDER-REVIEW: homepage hero supporting line. */}
+                Yes, it uses astrology. We won't tell you to avoid Geminis, we'll tell you how to talk to one.
+              </p>
               <p className="hero-cta-note" style={{ margin: 0, color: "var(--mist2)", fontSize: ".84rem", fontWeight: 400 }}>
                 {/* FOUNDER-REVIEW: line under the free-chart CTA. */}
                 No card. Works with just a birth date.

@@ -22,7 +22,8 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   }
 
   if (invite.kind === "constellation_connect") {
-    permanentRedirect(connectPath(token));
+    // Type-only: connectPath returns string; typedRoutes wants RouteImpl.
+    permanentRedirect(connectPath(token) as never);
   }
 
   // ── Birth-data request (E3): the invited person fills in their own details ──

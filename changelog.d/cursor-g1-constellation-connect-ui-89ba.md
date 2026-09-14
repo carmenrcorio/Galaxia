@@ -13,3 +13,5 @@
 `[ADDED]` **Rate limit on `create_connect_invite`.** New migration `20260914260000_create_connect_invite_rate_limit.sql` (does not edit the applied RPC file). Caps pending non-expired invites created by `auth.uid()` in the last 24 hours at 10. The generate UI surfaces "Too many open invitations. Revoke some before sending more." with a link to the pending list. Timestamp bumped so it runs after `20260914240000_comparison_history.sql` and `20260914250000_weekly_constellation_letter.sql`.
 
 `[UNCHANGED]` **`hasAccess` is not involved.** Auth is required to accept; a paid plan is not. `kind = birth_data` is untouched. No second invitations table. No per-person caps.
+
+`[FIXED]` **`next build` typedRoutes.** `permanentRedirect(connectPath(token))` and the inverse `/invite/${token}` redirect are type-only `as never` casts. Same pattern as `save-to-galaxy-button.tsx` (#270). No route change.

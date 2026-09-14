@@ -54,4 +54,19 @@ describe("Settings subscription panel does not trust the client billing SDK", ()
     const panel = read("apps/web/components/settings-subscription-panel.tsx");
     expect(panel).not.toContain("\u2014");
   });
+
+  it("the contact address is help@galaxiamea.com, the same CAN-SPAM footer address", () => {
+    const lib = read("apps/web/lib/settings-subscription.ts");
+    const panel = read("apps/web/components/settings-subscription-panel.tsx");
+    const tests = read("apps/web/components/settings-subscription-panel.test.tsx");
+    const unit = read("apps/web/lib/settings-subscription.test.ts");
+    const fragment = read("changelog.d/cursor-fix-settings-subscription-hang-05f1.md");
+    const emails = read("apps/web/lib/emails.ts");
+    const retiredDomain = ["galaxia", "app"].join(".");
+    expect(emails).toContain("help@galaxiamea.com");
+    for (const src of [lib, panel, tests, unit, fragment]) {
+      expect(src).not.toContain(retiredDomain);
+    }
+    expect(lib).toContain('export const BILLING_SUPPORT_EMAIL = "help@galaxiamea.com"');
+  });
 });

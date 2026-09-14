@@ -11,7 +11,7 @@ import { hasAccess, trialDaysRemaining } from "@galaxia/core";
 
 export const SUBSCRIPTION_FETCH_TIMEOUT_MS = 2000;
 
-export const BILLING_SUPPORT_EMAIL = "support@galaxia.app";
+export const BILLING_SUPPORT_EMAIL = "help@galaxiamea.com";
 
 // FOUNDER-REVIEW: Settings subscription panel copy.
 export const SETTINGS_SUBSCRIPTION_COPY = {
@@ -22,11 +22,11 @@ export const SETTINGS_SUBSCRIPTION_COPY = {
   subscribeLabel: "Subscribe",
   checking: "Checking your subscription…",
   timeout:
-    "We could not load your subscription details in time. What we know: this page did not receive your account record. Email support@galaxia.app and we will look it up.",
-  error:
-    "We could not load your subscription details. What we know: the request failed. Email support@galaxia.app and we will look it up.",
-  unknown:
-    "We do not have a subscription record for this account yet. Email support@galaxia.app if this looks wrong.",
+    "We could not load your subscription details in time. What we know: this page did not receive your account record. Email help@galaxiamea.com and we will look it up.",
+    error:
+    "We could not load your subscription details. What we know: the request failed. Email help@galaxiamea.com and we will look it up.",
+    unknown:
+    "We do not have a subscription record for this account yet. Email help@galaxiamea.com if this looks wrong.",
   planFallback: "Your plan",
   planTrial: "Trial",
   planMonthly: "Monthly",

@@ -57,7 +57,7 @@ describe("SettingsSubscriptionPanel", () => {
     });
     expect(screen.getByText(/days remaining/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Manage billing" }).getAttribute("href")).toContain(
-      "support@galaxia.app"
+      "help@galaxiamea.com"
     );
     expect(screen.queryByText(/loading subscription/i)).toBeNull();
   });
@@ -103,6 +103,6 @@ describe("SettingsSubscriptionPanel", () => {
     await waitFor(() => {
       expect(screen.getByText(SETTINGS_SUBSCRIPTION_COPY.timeout)).toBeTruthy();
     });
-    expect(screen.getByText(/support@galaxia.app/)).toBeTruthy();
+    expect(screen.getByText(/help@galaxiamea.com/)).toBeTruthy();
   });
 });

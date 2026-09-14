@@ -55,6 +55,8 @@ import {
   shouldShowMemorialTimeline,
   type PersonGroupKey,
   type PersonNavSectionId,
+  type RecordTagId,
+  type RecordViewFilters,
 } from "@galaxia/core";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -69,12 +71,12 @@ import { HousesUnavailableCard } from "../../../../components/houses-unavailable
 import { MemorialTimeline } from "../../../../components/memorial-timeline";
 import { HonorDeclarationBox, HONOR_LIGHT_ANCHOR_ID } from "../../../../components/honor-declaration";
 import { RemembranceSpace } from "../../../../components/remembrance-space";
+import { PersonRecordTimeline } from "../../../../components/person-record-timeline";
 import { Spinner } from "../../../../components/spinner";
 import { ASPECT_GLYPH, BODY_GLYPH, SIGN_GLYPH, signElement } from "../../../../lib/design";
 import { getPreferredHouseSystem } from "../../../../lib/house-system";
 import { EMPTY_STATE_WELCOME_HREF } from "../../../../lib/nav-links";
-import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, type RecordEntry } from "../../../../lib/record";
-import { ThreadMenu } from "../../../../components/thread-menu";
+import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, updateNoteTags, type RecordEntry } from "../../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 
 interface PersonRow {
@@ -305,60 +307,6 @@ function ExpandRow({
             </div>
           ) : null}
         </div>
-      ) : null}
-    </div>
-  );
-}
-
-/* ─── RecordItem — one entry in the person's Record timeline ─────────────── */
-const RECORD_META: Record<string, { label: string; color: string }> = {
-  note:            { label: "You noted",       color: "rgba(230,174,108,.4)" },
-  tending:         { label: "Tending note",    color: "rgba(111,177,184,.5)" },
-  vela_pin:        { label: "Pinned from Vela", color: "rgba(183,154,216,.5)" },
-  compare_reading: { label: "Saved comparison", color: "rgba(230,174,108,.5)" },
-  cohort_reading:  { label: "Saved group reading", color: "rgba(111,177,184,.4)" },
-  remembrance:     { label: "Remembrance",     color: "rgba(111,177,184,.55)" },
-  // FOUNDER-REVIEW: authored — Record label for longitude-changing chart rewrite.
-  chart_correction:{ label: "Chart corrected", color: "rgba(230,174,108,.55)" },
-  conversation:    { label: "Vela conversation", color: "rgba(183,154,216,.4)" },
-};
-
-function RecordItem({ entry, onArchive }: { entry: RecordEntry; personName: string; onArchive?: (entryId: string) => void }) {
-  const meta = RECORD_META[entry.kind] ?? RECORD_META.note;
-  const when = new Date(entry.createdAt);
-  const withdrawn = Boolean(entry.withdrawnReason);
-  return (
-    <div style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: `2px solid ${withdrawn ? "rgba(183,154,216,.2)" : meta.color}`, opacity: withdrawn ? .7 : 1 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 4, alignItems: "center" }}>
-        <span style={{ fontSize: ".62rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--mist2)" }}>{meta.label}</span>
-        <span style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-          <small className="muted" style={{ fontSize: ".68rem" }}>{when.toLocaleDateString()}</small>
-          {entry.kind === "conversation" && onArchive ? (
-            <ThreadMenu threadId={entry.id.replace(/^thread-/, "")} onArchive={() => onArchive(entry.id)} />
-          ) : null}
-        </span>
-      </div>
-      {withdrawn ? (
-        <p className="muted" style={{ margin: 0, lineHeight: 1.55, fontSize: ".82rem", fontStyle: "italic" }}>{entry.body}</p>
-      ) : (
-        <p style={{ margin: 0, color: "var(--cream)", lineHeight: 1.55, fontSize: ".86rem" }}>{entry.body}</p>
-      )}
-      {entry.kind === "conversation" && entry.href ? (
-        <Link href={entry.href as never} style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}>Reopen conversation →</Link>
-      ) : null}
-      {entry.kind === "vela_pin" && entry.sourceThreadId ? (
-        <Link href={`/app/vela?threadId=${entry.sourceThreadId}`} style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}>Reopen conversation →</Link>
-      ) : null}
-      {entry.kind === "compare_reading" ? (
-        <Link href="/app/compare" style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}>Open Compare →</Link>
-      ) : null}
-      {entry.kind === "cohort_reading" ? (
-        <Link
-          href={entry.groupId ? `/app/groups?groupId=${entry.groupId}` : "/app/groups"}
-          style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}
-        >
-          Open Groups →
-        </Link>
       ) : null}
     </div>
   );
@@ -704,11 +652,34 @@ export default function PersonProfilePage() {
   /** Load the person's Record (all note kinds + active conversations), Vela pins, and archived threads. */
   async function loadRecord(uid: string, actualId: string) {
     const [rec, pins, archived] = await Promise.all([
-      fetchRecord(supabase, uid, { personId: actualId }, 40).catch(() => [] as RecordEntry[]),
+      fetchRecord(supabase, uid, { personId: actualId }, 200).catch(() => [] as RecordEntry[]),
       fetchVelaPins(supabase, uid, actualId, 2).catch(() => [] as RecordEntry[]),
       fetchArchivedThreads(supabase, uid, actualId, 40).catch(() => [] as RecordEntry[])
     ]);
     setRecord(rec); setVelaPins(pins); setArchivedThreads(archived);
+  }
+
+  async function widenRecordSearch(filters: RecordViewFilters) {
+    if (!userId || !person?.id || !filters.q?.trim()) return;
+    const extra = await fetchRecord(supabase, userId, { personId: person.id }, 200, filters).catch(() => [] as RecordEntry[]);
+    if (extra.length === 0) return;
+    setRecord((prev) => {
+      const seen = new Set(prev.map((entry) => entry.id));
+      const merged = [...prev];
+      for (const entry of extra) {
+        if (seen.has(entry.id)) continue;
+        seen.add(entry.id);
+        merged.push(entry);
+      }
+      return merged.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    });
+  }
+
+  async function saveNoteTags(noteId: string, tags: RecordTagId[]) {
+    setRecord((prev) => prev.map((entry) => (entry.id === noteId ? { ...entry, tags } : entry)));
+    if (!userId) return;
+    const { error } = await updateNoteTags(supabase, userId, noteId, tags);
+    if (error) setStatus(error);
   }
 
   const threadIdFromEntry = (entryId: string) => entryId.replace(/^thread-/, "");
@@ -1585,9 +1556,14 @@ export default function PersonProfilePage() {
           {noteSaving ? "Saving…" : "Add to the record"}
         </button>
         {record.length > 0 ? (
-          <div style={{ marginTop: 14, display: "grid", gap: 8 }}>
-            {record.map(entry => <RecordItem key={entry.id} entry={entry} personName={person.display_name} onArchive={archiveThread} /> )}
-          </div>
+          <PersonRecordTimeline
+            entries={record}
+            onArchive={archiveThread}
+            onTagsChange={saveNoteTags}
+            onFiltersChange={(filters) => {
+              void widenRecordSearch(filters);
+            }}
+          />
         ) : (
           <p className="muted" style={{ fontSize: ".8rem", marginTop: 12 }}>
             Nothing recorded yet: notes, saved readings, and Vela conversations about {person.display_name} will gather here.

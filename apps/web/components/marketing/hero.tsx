@@ -32,13 +32,12 @@ export function Hero() {
             The night sky belongs to everyone. <em>Yours</em> doesn't.
           </p>
           <h1 className="hero-h1 fade-in fade-in-delay-1">
-            Understand <em>the people you love</em>, through their real charts.
+            Understand <em>the people you love</em>. Then show up for them.
           </h1>
           <p className="lede fade-in fade-in-delay-2" style={{ marginTop: 18 }}>
-            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-            Galaxia reads the real birth charts of the small, close circle you actually steer your life
-            by (partner, kids, parents, siblings, friends), then helps you show up for each bond with
-            more intention. Not your horoscope. Not for swiping on strangers.
+            {/* FOUNDER-REVIEW: layer-one ATF. Outcome first; astrology is not the first word. */}
+            Galaxia is relationship intelligence for the small circle that actually shapes your days:
+            partner, kids, parents, siblings, friends. Not a horoscope. Not for swiping on strangers.
           </p>
           <div className="hero-actions fade-in fade-in-delay-3">
             <Link href={MARKETING_NAV_SIGNUP.href as never} className="btn-primary">{MARKETING_NAV_SIGNUP.label}</Link>

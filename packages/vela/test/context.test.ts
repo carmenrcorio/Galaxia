@@ -75,6 +75,11 @@ describe("Remembrance Phase 2 — Vela never fabricates memories", () => {
     expect(VELA_SYSTEM_PROMPT).toContain("at most five");
     expect(VELA_SYSTEM_PROMPT).toContain("not full recall");
   });
+
+  it("system prompt requires naming the aspect it is reading and forbids prediction", () => {
+    expect(VELA_SYSTEM_PROMPT).toContain("When you are reading an aspect, name it in the answer");
+    expect(VELA_SYSTEM_PROMPT).toContain("The sky describes how a person is built, not what will happen to them");
+  });
 });
 
 describe("crisis language detection", () => {

@@ -44,11 +44,13 @@ export const SITE_FOOTER_LINKS: NavLink[] = [
   { href: "/why-galaxia", label: "Why Galaxia" },
   { href: "/generations", label: "Generations" },
   { href: "/meet-vela", label: "Meet Vela" },
+  { href: "/for-work", label: "For work" },
   { href: "/security", label: "Security" },
   { href: "/pricing", label: "Pricing" },
   { href: "/chart", label: "Quick Chart" },
   { href: "/download", label: "Download" },
   { href: "/blog", label: "Blog" },
+  { href: "/press", label: "Press" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
 ];
@@ -99,6 +101,16 @@ export const RELATED_LINKS = {
     { href: SYNASTRY_CHART_MEANING_HREF, label: "What a synastry chart actually tells you" },
     { href: "/generations", label: "See the generational layer behind your compatibility" },
   ],
+  forWork: [
+    { href: "/why-galaxia", label: "See how Galaxia works" },
+    { href: "/security", label: "How we protect the people you add" },
+    { href: "/pricing", label: "One honest plan" },
+  ],
+  press: [
+    { href: "/why-galaxia", label: "Why Galaxia exists" },
+    { href: "/for-work", label: "Galaxia for work" },
+    { href: "/security", label: "Privacy and data" },
+  ],
 } as const satisfies Record<string, readonly NavLink[]>;
 
 export const FEATURE_TEASER_LINKS: NavLink[] = [
@@ -109,7 +121,7 @@ export const FEATURE_TEASER_LINKS: NavLink[] = [
   { href: "/pricing", label: "View pricing" },
 ];
 
-export const HERO_HOW_IT_WORKS: NavLink = { href: "/why-galaxia#how", label: "See how it works" };
+export const HERO_HOW_IT_WORKS: NavLink = { href: "/#how", label: "See how it works" };
 
 export const NOT_FOUND_LINKS: NavLink[] = [
   { href: "/", label: "Back to home" },

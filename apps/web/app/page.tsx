@@ -4,6 +4,7 @@ import { CosmicBackground } from "../components/cosmic-background";
 import { CloseSection } from "../components/marketing/close-section";
 import { FaqSection } from "../components/marketing/faq-section";
 import { FeatureTeasers } from "../components/marketing/feature-teasers";
+import { FeaturesSection } from "../components/marketing/features-section";
 import { HashRedirect } from "../components/marketing/hash-redirect";
 import { Hero } from "../components/marketing/hero";
 import { MarketingNav } from "../components/marketing/marketing-nav";
@@ -60,12 +61,13 @@ export const metadata: Metadata = {
  * wherever that content now lives, since a hash fragment never reaches the
  * server for a normal route-based redirect to catch.
  *
- * Kept in full here: Hero (headline + primary signup CTA), the teaser grid,
- * FAQ (already short-form, not a duplicate of a standalone page), the final
- * CTA, and the footer. The SoftwareApplication schema
- * (`SOFTWARE_APPLICATION_JSON_LD`) stays homepage-only, describing the
- * product once rather than per page — each standalone page has its own
- * WebPage schema instead (see components/marketing/webpage-json-ld.tsx).
+ * Kept in full here: Hero (layer-one ATF: outcome first), How it works
+ * (`#how` / FeaturesSection: layer two, real astrology vocabulary), the
+ * teaser grid, FAQ, the final CTA, and the footer. Title/description/JSON-LD
+ * stay layer two (astrology keywords stay). See design/galaxia-voice-layers.md.
+ * The SoftwareApplication schema (`SOFTWARE_APPLICATION_JSON_LD`) stays
+ * homepage-only — each standalone page has its own WebPage schema instead
+ * (see components/marketing/webpage-json-ld.tsx).
  */
 export default function HomePage() {
   return (
@@ -77,6 +79,7 @@ export default function HomePage() {
       <MarketingNav />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <Hero />
+        <FeaturesSection />
         <FeatureTeasers />
         <FaqSection />
         <CloseSection />

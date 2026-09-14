@@ -229,3 +229,15 @@ This check **does not apply migrations.** A red run means a human looks at the d
 
 Do not "fix" a red run by deleting a production ledger row or by editing an already-applied SQL file (§2).
 
+---
+
+## 17. Two voice layers. Do not flatten them.
+
+**Cite `design/galaxia-voice-layers.md`.** Outer copy leads with outcome. Inner copy keeps the real astrology vocabulary. Metadata is inner on every route.
+
+- **Layer one** (homepage above the fold, store listings, first ninety seconds of onboarding, email subjects, press, `/for-work`, paid social / cold traffic): lead with the outcome. Astrology is not the first word. Do not describe Galaxia as an astrology app.
+- **Layer two** (`/chart`, `/chart/compare`, the blog and both categories, Wheel / Placements / Aspects / Houses, page metadata and JSON-LD everywhere, homepage `#how`, Vela's answers): natal, synastry, placements, aspects, houses. Unapologetic. Vela names the aspect it is reading.
+- **Never:** strip an astrology keyword from metadata to make copy cleaner; apologise for astrology (scare quotes, "if you believe", winking); promise prediction. The sky describes how a person is built, not what will happen to them.
+
+`apps/web/lib/voice-layers.test.ts` is the gate. Do not "fix" a red run by deleting astrology from a title tag.
+

@@ -219,11 +219,13 @@ describe("footer hrefs resolve to App Router pages", () => {
       "/why-galaxia",
       "/generations",
       "/meet-vela",
+      "/for-work",
       "/security",
       "/pricing",
       "/chart",
       "/download",
       "/blog",
+      "/press",
       "/privacy",
       "/terms",
     ]);
@@ -256,6 +258,8 @@ describe("CTA hrefs resolve to App Router pages", () => {
     assertRendersFromConfig(readWeb("app/meet-vela/page.tsx"), ["RELATED_LINKS.meetVela"], "meet-vela leftover literal");
     assertRendersFromConfig(readWeb("app/security/page.tsx"), ["RELATED_LINKS.security"], "security leftover literal");
     assertRendersFromConfig(readWeb("app/pricing/page.tsx"), ["RELATED_LINKS.pricing"], "pricing leftover literal");
+    assertRendersFromConfig(readWeb("app/for-work/page.tsx"), ["RELATED_LINKS.forWork"], "for-work leftover literal");
+    assertRendersFromConfig(readWeb("app/press/page.tsx"), ["RELATED_LINKS.press"], "press leftover literal");
     assertRendersFromConfig(readWeb("app/chart/quick-chart-page.tsx"), ["RELATED_LINKS.chart", "CHART_MODE_COMPARE"], "quick-chart leftover literal");
     assertRendersFromConfig(readWeb("app/chart/compare/page.tsx"), ["RELATED_LINKS.chartCompare", "CHART_MODE_SINGLE"], "quick-compare leftover literal");
   });

@@ -1,0 +1,13 @@
+## RLS deny-all confirmed; pin search_path and revoke trigger EXECUTE (branch `cursor/rls-deny-all-security-definer-bac4`) — 2026-09-14
+
+**Trigger**: production advisors flagged six RLS-enabled tables with no policies, two SECURITY DEFINER trigger functions executable by `anon`, thirteen intentional RPCs executable by `authenticated`, and one trigger function with a mutable `search_path`.
+
+`[DECISION]` **The six tables stay deny-all.** Phase 0 traced every reader and writer. None of `admin_audit_log`, `admin_users`, `daily_nudge_emails`, `galaxy_relations`, `quick_share_snapshots`, or `trial_emails` is read from a client session today. Cron routes and admin pages use the service role; constellation connect validates relations inside SECURITY DEFINER functions; the relation picker reads TypeScript, not `galaxy_relations`. Adding a policy would only widen the surface. The `rls_enabled_no_policy` advisor is the intended posture, matching `20260821191500` (`admin_users` / `admin_audit_log`) and `20260722140000` (`quick_share_snapshots`).
+
+`[FIXED]` **`set_memorial_milestones_updated_at()` `search_path` pinned to `''`.** Advisor 0011. The body is `new.updated_at = now(); return new;` (`now()` is `pg_catalog`). SECURITY INVOKER trigger, not DEFINER. Same pin as `validate_profile_timezone`.
+
+`[FIXED]` **EXECUTE revoked from `public` / `anon` / `authenticated` on three trigger functions**, one at a time: `set_memorial_milestones_updated_at()`, `sync_linked_chart_mirrors()`, `sync_linked_person_mirrors()`. Same justification as `20260822130000` for `enforce_support_request_rate_limit`: Postgres fires the trigger without the inserting role holding EXECUTE; `/rest/v1/rpc/<name>` is what we close. The two `sync_linked_*` functions were the only SECURITY DEFINER functions still granted to `anon`.
+
+`[UNCHANGED]` **Authenticated EXECUTE stays on the thirteen product RPCs** (`create_connect_invite`, `accept_connect_invite`, `connect_invite_preview`, `revoke_connect_invite`, `add_sender_to_constellation`, `set_connection_share_level`, `revoke_connection`, `approve_reverse_grant`, `acknowledge_connect_accept`, `delete_own_group`, `delete_own_person`, `purge_own_account_data`, `check_and_increment_vela_rate`). Each already revokes `public`/`anon` and grants `authenticated`. Advisor 0029 will keep listing them; revoking those grants would break constellation connect, account delete, group/person delete, and vela-chat rate limiting.
+
+`[UNCHANGED]` **No table, column, or policy changes.** One migration: `20260914140000_pin_search_path_and_revoke_trigger_execute.sql`. Transactional; safe for `supabase db push` (does not need autocommit).

@@ -130,7 +130,7 @@ textarea:focus-visible {
   z-index: 25;
   margin: 0 0 4px;
   padding: 8px 0 6px;
-  background: linear-gradient(180deg, rgba(10,7,23,.92), rgba(10,7,23,.72));
+  background: rgba(10, 7, 23, 0.96);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255,255,255,.05);
@@ -166,7 +166,9 @@ textarea:focus-visible {
 .person-group-panel [id="remembrance"],
 .person-group-panel [id="memorial-timeline"],
 .person-group-panel [id="honor-light"] {
-  scroll-margin-top: 156px;
+  /* Beat leftover inline 92px on older section styles; wrapped jump chips
+     make the sticky chrome taller than the old single chip rail. */
+  scroll-margin-top: 168px !important;
 }
 .chart-section-nav {
   min-width: 0;
@@ -216,6 +218,12 @@ textarea:focus-visible {
     top: 60px;
     margin-left: -2px;
     margin-right: -2px;
+  }
+  .person-group-panel section,
+  .person-group-panel [id="remembrance"],
+  .person-group-panel [id="memorial-timeline"],
+  .person-group-panel [id="honor-light"] {
+    scroll-margin-top: 228px !important;
   }
   .chart-section-nav__chip {
     padding: 7px 10px;

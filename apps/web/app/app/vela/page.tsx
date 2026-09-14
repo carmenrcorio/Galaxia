@@ -1,13 +1,15 @@
 "use client";
 
-import { isMinorForSafety, orderPair, sunSignFromChart } from "@galaxia/core";
+import { isMinorForSafety, orderPair, suggestPinTheme, sunSignFromChart, type PinThemeId } from "@galaxia/core";
 import { detectCrisisLanguage, splitVelaReply } from "@galaxia/vela";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
+import { PinThemePicker } from "../../../components/pin-theme-picker";
 import { Spinner } from "../../../components/spinner";
 import { publicEnv } from "../../../lib/env";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
+import { updateNoteTheme } from "../../../lib/record";
 
 type VelaMode = "ask" | "shared";
 type Scope     = "person" | "pair" | "group";
@@ -68,6 +70,7 @@ export default function VelaPage() {
   // needs to name the signed-in user reads @galaxia/core resolveAccountName,
   // which never derives a name from an email address.
   const [pinnedKeys, setPinnedKeys] = useState<Set<number>>(new Set());
+  const [pinnedByIdx, setPinnedByIdx] = useState<Record<number, { id: string; theme: PinThemeId | null }>>({});
   // Bootstrap params captured once from the entry URL. Navigation into this
   // page is always cross-route (home "Resume a thread", Compare "Ask Vela",
   // Groups "Ask Vela"), so the page remounts and a one-time read is reliable.
@@ -358,15 +361,28 @@ export default function VelaPage() {
    */
   async function pinInsight(idx: number, text: string) {
     if (!userId || !text.trim() || pinnedKeys.has(idx)) return;
+    const theme = suggestPinTheme(text);
     const row: Record<string, unknown> = {
-      owner_id: userId, kind: "vela_pin", body: text.trim(), source_thread_id: threadId ?? null
+      owner_id: userId, kind: "vela_pin", body: text.trim(), source_thread_id: threadId ?? null,
+      theme
     };
     if (scope === "group" && groupId) row.group_id = groupId;
     else if (scope === "pair" && subjectId && pairId) { const { pairLow, pairHigh } = orderPair(subjectId, pairId); row.pair_low = pairLow; row.pair_high = pairHigh; }
     else if (subjectId) row.about_person = subjectId;
-    const { error } = await supabase.from("notes").insert(row);
-    if (!error) setPinnedKeys(prev => new Set(prev).add(idx));
-    else setStatus(error.message);
+    const { data, error } = await supabase.from("notes").insert(row).select("id").single();
+    if (!error && data?.id) {
+      setPinnedKeys(prev => new Set(prev).add(idx));
+      setPinnedByIdx(prev => ({ ...prev, [idx]: { id: data.id as string, theme } }));
+    }
+    else setStatus(error?.message ?? "Pin failed");
+  }
+
+  async function changePinnedTheme(idx: number, theme: PinThemeId | null) {
+    const pin = pinnedByIdx[idx];
+    if (!userId || !pin) return;
+    setPinnedByIdx(prev => ({ ...prev, [idx]: { ...pin, theme } }));
+    const { error } = await updateNoteTheme(supabase, userId, pin.id, theme);
+    if (error) setStatus(error);
   }
 
   // Person/pair header only — never fall through to people[0] for group focus.
@@ -594,6 +610,13 @@ export default function VelaPage() {
                       >
                         {pinnedKeys.has(idx) ? "✓ Pinned to their record" : "＋ Pin to record"}
                       </button>
+                    ) : null}
+                    {pinnedByIdx[idx] ? (
+                      <PinThemePicker
+                        value={pinnedByIdx[idx]!.theme}
+                        showHint
+                        onChange={(theme) => void changePinnedTheme(idx, theme)}
+                      />
                     ) : null}
                     {chips.length > 0 ? (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>

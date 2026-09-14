@@ -55,6 +55,7 @@ import {
   shouldShowMemorialTimeline,
   type PersonGroupKey,
   type PersonNavSectionId,
+  type PinThemeId,
   type RecordTagId,
   type RecordViewFilters,
 } from "@galaxia/core";
@@ -72,11 +73,12 @@ import { MemorialTimeline } from "../../../../components/memorial-timeline";
 import { HonorDeclarationBox, HONOR_LIGHT_ANCHOR_ID } from "../../../../components/honor-declaration";
 import { RemembranceSpace } from "../../../../components/remembrance-space";
 import { PersonRecordTimeline } from "../../../../components/person-record-timeline";
+import { VelaPinsPanel } from "../../../../components/vela-pins-panel";
 import { Spinner } from "../../../../components/spinner";
 import { ASPECT_GLYPH, BODY_GLYPH, SIGN_GLYPH, signElement } from "../../../../lib/design";
 import { getPreferredHouseSystem } from "../../../../lib/house-system";
 import { EMPTY_STATE_WELCOME_HREF } from "../../../../lib/nav-links";
-import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, updateNoteTags, type RecordEntry } from "../../../../lib/record";
+import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, updateNoteTags, updateNoteTheme, type RecordEntry } from "../../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 
 interface PersonRow {
@@ -653,7 +655,7 @@ export default function PersonProfilePage() {
   async function loadRecord(uid: string, actualId: string) {
     const [rec, pins, archived] = await Promise.all([
       fetchRecord(supabase, uid, { personId: actualId }, 200).catch(() => [] as RecordEntry[]),
-      fetchVelaPins(supabase, uid, actualId, 2).catch(() => [] as RecordEntry[]),
+      fetchVelaPins(supabase, uid, actualId, 200).catch(() => [] as RecordEntry[]),
       fetchArchivedThreads(supabase, uid, actualId, 40).catch(() => [] as RecordEntry[])
     ]);
     setRecord(rec); setVelaPins(pins); setArchivedThreads(archived);
@@ -679,6 +681,30 @@ export default function PersonProfilePage() {
     setRecord((prev) => prev.map((entry) => (entry.id === noteId ? { ...entry, tags } : entry)));
     if (!userId) return;
     const { error } = await updateNoteTags(supabase, userId, noteId, tags);
+    if (error) setStatus(error);
+  }
+
+  async function widenVelaPinSearch(q: string) {
+    if (!userId || !person?.id || !q.trim()) return;
+    const extra = await fetchVelaPins(supabase, userId, person.id, 200, { q }).catch(() => [] as RecordEntry[]);
+    if (extra.length === 0) return;
+    setVelaPins((prev) => {
+      const seen = new Set(prev.map((entry) => entry.id));
+      const merged = [...prev];
+      for (const entry of extra) {
+        if (seen.has(entry.id)) continue;
+        seen.add(entry.id);
+        merged.push(entry);
+      }
+      return merged.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    });
+  }
+
+  async function savePinTheme(noteId: string, theme: PinThemeId | null) {
+    setVelaPins((prev) => prev.map((entry) => (entry.id === noteId ? { ...entry, theme } : entry)));
+    setRecord((prev) => prev.map((entry) => (entry.id === noteId ? { ...entry, theme } : entry)));
+    if (!userId) return;
+    const { error } = await updateNoteTheme(supabase, userId, noteId, theme);
     if (error) setStatus(error);
   }
 
@@ -1037,17 +1063,7 @@ export default function PersonProfilePage() {
           {sectionHead("vela-on-them")}
           {velaPins.length > 0 ? (
             <div style={{ display: "grid", gap: 8 }}>
-              {velaPins.map(pin => (
-                <div key={pin.id} style={{ borderLeft: `2px solid ${pin.withdrawnReason ? "rgba(183,154,216,.15)" : "rgba(183,154,216,.35)"}`, paddingLeft: 12, opacity: pin.withdrawnReason ? .7 : 1 }}>
-                  <p style={{ margin: "0 0 4px", color: pin.withdrawnReason ? "var(--mist2)" : "var(--mist)", fontStyle: pin.withdrawnReason ? "italic" : "normal", fontSize: ".86rem", lineHeight: 1.55 }}>{pin.body}</p>
-                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <small className="muted" style={{ fontSize: ".68rem" }}>{new Date(pin.createdAt).toLocaleDateString()}</small>
-                    {pin.sourceThreadId ? (
-                      <Link href={`/app/vela?threadId=${pin.sourceThreadId}`} style={{ fontSize: ".7rem", color: "var(--gold-soft)" }}>Reopen conversation →</Link>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
+              <VelaPinsPanel pins={velaPins} onThemeChange={savePinTheme} onSearchChange={widenVelaPinSearch} />
               {!showRemembrance ? (
                 <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".78rem", width: "fit-content", marginTop: 2 }}>Ask Vela more</Link>
               ) : null}

@@ -173,3 +173,156 @@ export function groupRecordEntriesByMonth<T extends RecordViewEntry>(
   groups.sort((a, b) => (a.monthKey < b.monthKey ? 1 : a.monthKey > b.monthKey ? -1 : 0));
   return groups;
 }
+
+/**
+ * Curated themes for pinned Vela insights. What the insight is about, not a
+ * journal tag. Runtime code never invents an id outside this list.
+ */
+export const PIN_THEME_IDS = [
+  "how_theyre_built",
+  "how_you_two_work",
+  "this_season",
+  "talking",
+  "tension",
+  "care",
+  "family",
+  "work"
+] as const;
+
+export type PinThemeId = (typeof PIN_THEME_IDS)[number];
+
+export type PinSort = "newest" | "oldest";
+
+export const VELA_PIN_COLLAPSE_LIMIT = 5;
+
+export function isPinTheme(value: unknown): value is PinThemeId {
+  return typeof value === "string" && (PIN_THEME_IDS as readonly string[]).includes(value);
+}
+
+export function sanitizePinTheme(value: unknown): PinThemeId | null {
+  return isPinTheme(value) ? value : null;
+}
+
+const PIN_THEME_KEYWORDS: Record<PinThemeId, readonly string[]> = {
+  how_theyre_built: [
+    "natal", "placement", "placements", "sun", "moon", "rising", "ascendant",
+    "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto",
+    "house", "wired", "chart", "big three"
+  ],
+  how_you_two_work: [
+    "synastry", "the two of you", "between you", "both of you", "together you", "composite"
+  ],
+  this_season: [
+    "transit", "transits", "this week", "this month", "this season", "right now", "saturn return"
+  ],
+  talking: [
+    "conversation", "listen", "listening", "what to say", "tell them", "words", "speak", "speaking"
+  ],
+  tension: [
+    "friction", "clash", "conflict", "fight", "square", "opposition", "hard aspect"
+  ],
+  care: [
+    "what they need", "feel seen", "support them", "take care", "needs from you"
+  ],
+  family: [
+    "parent", "child", "mother", "father", "family", "sibling", "daughter", "son", "parenting"
+  ],
+  work: [
+    "career", "colleague", "boss", "at work", "workplace", "job"
+  ]
+};
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function keywordHits(hay: string, keywords: readonly string[]): number {
+  let n = 0;
+  for (const kw of keywords) {
+    if (kw.includes(" ")) {
+      if (hay.includes(kw)) n += 1;
+    } else {
+      const re = new RegExp(`\\b${escapeRegExp(kw)}\\b`, "i");
+      if (re.test(hay)) n += 1;
+    }
+  }
+  return n;
+}
+
+/**
+ * Suggest a theme from the curated list using keyword hits on the insight body.
+ * Returns null when nothing in the list matches. Never invents an id.
+ */
+export function suggestPinTheme(body: string): PinThemeId | null {
+  const hay = body.toLowerCase();
+  let best: PinThemeId | null = null;
+  let bestScore = 0;
+  for (const id of PIN_THEME_IDS) {
+    const score = keywordHits(hay, PIN_THEME_KEYWORDS[id]);
+    if (score > bestScore) {
+      best = id;
+      bestScore = score;
+    }
+  }
+  return bestScore > 0 ? best : null;
+}
+
+export interface PinViewEntry extends RecordViewEntry {
+  theme?: PinThemeId | null;
+}
+
+export function sortPinnedInsights<T extends { createdAt: string }>(
+  entries: readonly T[],
+  sort: PinSort
+): T[] {
+  const copy = [...entries];
+  copy.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+  if (sort === "oldest") copy.reverse();
+  return copy;
+}
+
+export function collapsePinnedInsights<T>(
+  entries: readonly T[],
+  expanded: boolean,
+  limit = VELA_PIN_COLLAPSE_LIMIT
+): T[] {
+  if (expanded) return [...entries];
+  return entries.slice(0, limit);
+}
+
+export function visiblePinnedInsights<T extends PinViewEntry>(
+  entries: readonly T[],
+  options: { q?: string; sort: PinSort; expanded: boolean }
+): T[] {
+  const searched = filterRecordEntries(entries, { q: options.q });
+  const sorted = sortPinnedInsights(searched, options.sort);
+  const expand = options.expanded || Boolean(options.q?.trim());
+  return collapsePinnedInsights(sorted, expand);
+}
+
+export interface PinThemeGroup<T extends PinViewEntry> {
+  theme: PinThemeId | null;
+  entries: T[];
+}
+
+/** Group in curated list order, unthemed last. Empty groups are omitted. */
+export function groupPinnedInsightsByTheme<T extends PinViewEntry>(
+  entries: readonly T[]
+): PinThemeGroup<T>[] {
+  const byTheme = new Map<PinThemeId | "none", T[]>();
+  for (const id of PIN_THEME_IDS) byTheme.set(id, []);
+  byTheme.set("none", []);
+  for (const entry of entries) {
+    const theme = sanitizePinTheme(entry.theme);
+    const key = theme ?? "none";
+    byTheme.get(key)!.push(entry);
+  }
+  const groups: PinThemeGroup<T>[] = [];
+  for (const id of PIN_THEME_IDS) {
+    const grouped = byTheme.get(id)!;
+    if (grouped.length > 0) groups.push({ theme: id, entries: grouped });
+  }
+  const unthemed = byTheme.get("none")!;
+  if (unthemed.length > 0) groups.push({ theme: null, entries: unthemed });
+  return groups;
+}

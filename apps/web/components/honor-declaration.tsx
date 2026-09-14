@@ -15,7 +15,7 @@ import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import {
   HONOR_RELATION_TYPE,
   buildHonorRelationshipInsert,
-  honorConnectionDiff,
+  connectionDiff,
   livingHonorCandidates,
   livingIdsFromHonorRows,
   shouldShowRemembranceSpace,
@@ -66,8 +66,7 @@ export function HonorDeclarationBox({
         supabase
           .from("relationships")
           .select("id, person_a, person_b, relation_type")
-          .eq("owner_id", userId)
-          .eq("relation_type", HONOR_RELATION_TYPE),
+          .eq("owner_id", userId),
       ]);
     if (peopleErr || relErr) {
       setHonorStatus(peopleErr?.message ?? relErr?.message ?? "Unable to load connections.");
@@ -106,7 +105,7 @@ export function HonorDeclarationBox({
     if (!userId || !person.id || honorSaving || !honorDirty) return;
     setHonorSaving(true);
     setHonorStatus(null);
-    const { toAdd, toRemove } = honorConnectionDiff(savedIds, selectedIds);
+    const { toAdd, toRemove } = connectionDiff(savedIds, selectedIds);
 
     for (const livingId of toRemove) {
       const { error } = await supabase

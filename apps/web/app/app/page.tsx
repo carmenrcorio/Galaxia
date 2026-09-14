@@ -45,6 +45,7 @@ import {
   HONOR_LINE_STYLE,
   RING_BAND_COLORS,
   HONOR_RELATION_TYPE,
+  RELATION_LINE_STYLE,
   clampSeatRn,
   elementFromRelation,
   formFromRelation,
@@ -314,7 +315,7 @@ export default function AppHomePage() {
   const [offerFirstRun, setOfferFirstRun] = useState(false);
   const [people, setPeople]           = useState<PersonRow[]>([]);
   const [links, setLinks]             = useState<LinkRow[]>([]);
-  /* Honor-constellation edges — declared relationships rows only (Phase 3).
+  /* Declared relationship edges — relationships rows only.
      Never derived from synastry scores or people.relation. Empty = no layer. */
   const [honorEdges, setHonorEdges]   = useState<HonorEdge[]>([]);
   /* personId → Pluto sign: the generational cohort key. Derived from each
@@ -1069,11 +1070,12 @@ export default function AppHomePage() {
       }
     }
 
-    /* ── Honor-constellation stroke — VISUALLY DISTINCT from synastry drawLink:
-       dashed water→ancient stroke + soft wash, slower ethereal pulse.
+    /* ── Declared relationship stroke — VISUALLY DISTINCT from synastry drawLink:
+       dashed type-coloured stroke + soft wash, slower ethereal pulse.
+       Remembrance uses HONOR_LINE_STYLE via Object.is (pixel-identical).
        Attachment is the node / memorial-glyph seat centroid (same nodePos).
-       Declaration data unchanged. Synastry uses solid element gradients + cream.
-       Honor never uses synastry scores; source is declared relationships only. */
+       Synastry uses solid element gradients + cream. Source is declared
+       relationships rows only — never synastry scores. */
     function drawHonorLink(
       edge: HonorEdge,
       posA: { x: number; y: number },
@@ -1081,20 +1083,20 @@ export default function AppHomePage() {
       progress: number,
       edgeIndex: number
     ) {
-      /* Defensive: honor layer only draws remembrance continuity edges. */
-      if (edge.relationType !== HONOR_RELATION_TYPE) return;
+      const style = RELATION_LINE_STYLE[edge.relationType];
+      if (!style) return;
       const { cpx, cpy } = bezierCP(posA.x, posA.y, posB.x, posB.y);
-      const water = HONOR_LINE_STYLE.water;
-      const ancient = HONOR_LINE_STYLE.ancient;
+      const water = style.water;
+      const ancient = style.ancient;
 
-      /* soft wash under the dash — ancient-light halo, not an element gradient */
+      /* soft wash under the dash — type-coloured halo, not an element gradient */
       const wash = cx.createLinearGradient(posA.x, posA.y, posB.x, posB.y);
       wash.addColorStop(0,   hexA(water, 0));
-      wash.addColorStop(0.5, hexA(water, HONOR_LINE_STYLE.washAlpha * progress));
+      wash.addColorStop(0.5, hexA(water, style.washAlpha * progress));
       wash.addColorStop(1,   hexA(ancient, 0));
       cx.save();
       cx.strokeStyle = wash;
-      cx.lineWidth = HONOR_LINE_STYLE.lineWidth + 2.2;
+      cx.lineWidth = style.lineWidth + 2.2;
       cx.setLineDash([]);
       cx.beginPath();
       cx.moveTo(posA.x, posA.y);
@@ -1103,12 +1105,12 @@ export default function AppHomePage() {
 
       /* dashed continuity stroke — the tell vs solid synastry edges */
       const stroke = cx.createLinearGradient(posA.x, posA.y, posB.x, posB.y);
-      stroke.addColorStop(0,   hexA(water, HONOR_LINE_STYLE.strokeAlpha * 0.4 * progress));
-      stroke.addColorStop(0.5, hexA(water, HONOR_LINE_STYLE.strokeAlpha * progress));
-      stroke.addColorStop(1,   hexA(ancient, HONOR_LINE_STYLE.strokeAlpha * 0.85 * progress));
+      stroke.addColorStop(0,   hexA(water, style.strokeAlpha * 0.4 * progress));
+      stroke.addColorStop(0.5, hexA(water, style.strokeAlpha * progress));
+      stroke.addColorStop(1,   hexA(ancient, style.strokeAlpha * 0.85 * progress));
       cx.strokeStyle = stroke;
-      cx.lineWidth = HONOR_LINE_STYLE.lineWidth;
-      cx.setLineDash(progress >= 0.999 ? [...HONOR_LINE_STYLE.dash] : []);
+      cx.lineWidth = style.lineWidth;
+      cx.setLineDash(progress >= 0.999 ? [...style.dash] : []);
       cx.lineDashOffset = reduced ? 0 : -t * 0.012;
       cx.beginPath();
       if (progress >= 0.999) {
@@ -1127,12 +1129,12 @@ export default function AppHomePage() {
       cx.stroke();
       cx.setLineDash([]);
 
-      /* slower water-tinted pulse — never the cream synastry bead */
+      /* slower type-tinted pulse — never the cream synastry bead */
       if (!reduced && !forExport && progress >= 0.999) {
         const tt = ((t * 0.00011 + edgeIndex * 0.37) % 1);
         const px = (1 - tt) * (1 - tt) * posA.x + 2 * (1 - tt) * tt * cpx + tt * tt * posB.x;
         const py = (1 - tt) * (1 - tt) * posA.y + 2 * (1 - tt) * tt * cpy + tt * tt * posB.y;
-        const pr = HONOR_LINE_STYLE.pulseRadius * (0.7 + 0.3 * Math.sin(tt * Math.PI));
+        const pr = style.pulseRadius * (0.7 + 0.3 * Math.sin(tt * Math.PI));
         const pg = cx.createRadialGradient(px, py, 0, px, py, pr * 3);
         pg.addColorStop(0, hexA(water, 0.55 * Math.sin(tt * Math.PI)));
         pg.addColorStop(0.5, hexA(ancient, 0.22 * Math.sin(tt * Math.PI)));
@@ -1411,8 +1413,8 @@ export default function AppHomePage() {
         drawLink(link, posA, posB, progress);
       }
 
-      /* honor-constellation layer — declared remembrance edges only.
-         Dashed water/ancient strokes; never synastry-substituted. Empty = skip. */
+      /* declared relationship layer — remembrance + other approved types.
+         Dashed type-coloured strokes; never synastry-substituted. Empty = skip. */
       honorEdges.forEach((edge, edgeIndex) => {
         const posA = byId.get(edge.fromId);
         const posB = byId.get(edge.toId);
@@ -1655,7 +1657,7 @@ export default function AppHomePage() {
         supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale, linked_user_id").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode, subject_person, pair_low, pair_high").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6),
-        supabase.from("relationships").select("person_a, person_b, relation_type").eq("owner_id", uid).eq("relation_type", HONOR_RELATION_TYPE),
+        supabase.from("relationships").select("person_a, person_b, relation_type").eq("owner_id", uid),
         personIds.length
           ? supabase.from("person_daily_nudges").select("*").eq("owner_id", uid).eq("date", localDate).in("person_id", personIds)
           : Promise.resolve({ data: [] as any[] }),
@@ -1734,7 +1736,7 @@ export default function AppHomePage() {
       }
       setLinks(calcLinks.sort((a, b) => b.scoreA - a.scoreA).slice(0, 14));
 
-      /* Honor layer — declared relationships rows ONLY. Empty declaration =
+      /* Relationship layer — declared relationships rows ONLY. Empty =
          empty constellation (no default, no synastry substitution). */
       setHonorEdges(
         honorEdgesFromDeclaredRows(
@@ -2014,7 +2016,7 @@ export default function AppHomePage() {
               { label: "Ring 3 · friends & relatives", color: EL_COLOR.fire },
               { label: "Ring 4 · colleagues", color: EL_COLOR.earth },
               { label: "Remembered / ancient light", color: "#DA8C8C" },
-              ...(honorEdges.length > 0
+              ...(honorEdges.some((e) => e.relationType === HONOR_RELATION_TYPE)
                 ? [{ label: "Honor / remembrance light", color: HONOR_LINE_STYLE.water }]
                 : []),
             ].map(({ label, color }) => (

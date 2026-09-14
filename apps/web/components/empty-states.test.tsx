@@ -13,9 +13,11 @@ import { GenerationalMap, GENERATIONAL_MAP_EMPTY } from "./groups/generational-m
 import { PairDynamicsSection, PAIR_DYNAMICS_EMPTY } from "./groups/pair-dynamics-section";
 import {
   RELATIONAL_TRANSIT_FEED_EMPTY,
+  RELATIONAL_TRANSIT_FEED_EMPTY_TODAY,
   RELATIONAL_TRANSIT_FEED_LOADING,
   RELATIONAL_TRANSIT_FEED_OFF,
   RelationalTransitFeed,
+  relationalTransitFeedEmptyMessage,
 } from "./relational-transit-feed";
 import { SAVE_TO_GALAXY_CHECKING, SaveToGalaxyButton } from "./save-to-galaxy-button";
 
@@ -39,6 +41,8 @@ vi.mock("../lib/supabase/client", () => ({
       eq() { return chain; },
       gte() { return chain; },
       lte() { return chain; },
+      gt() { return chain; },
+      in() { return chain; },
       order() { return chain; },
       limit() { return chain; },
       maybeSingle: () => hangFeed
@@ -76,6 +80,13 @@ describe("RelationalTransitFeed formerly-null states", () => {
   it("renders the empty reason when there are no shared transits", async () => {
     render(<RelationalTransitFeed ownerId="owner-1" />);
     expect(await screen.findByText(RELATIONAL_TRANSIT_FEED_EMPTY)).toBeTruthy();
+    expect(screen.getByRole("link", { name: RELATIONAL_TRANSIT_FEED_EMPTY_TODAY })).toBeTruthy();
+  });
+
+  it("never fabricates an event in the empty copy, and names a next date only when one is given", () => {
+    expect(relationalTransitFeedEmptyMessage(null)).toBe(RELATIONAL_TRANSIT_FEED_EMPTY);
+    expect(relationalTransitFeedEmptyMessage("2026-09-21T12:00:00.000Z")).toContain("21 September 2026");
+    expect(relationalTransitFeedEmptyMessage("2026-09-21T12:00:00.000Z")).not.toMatch(/Saturn|Jupiter|Uranus|Neptune|Pluto/);
   });
 
   it("renders the off reason and a Settings next action", async () => {

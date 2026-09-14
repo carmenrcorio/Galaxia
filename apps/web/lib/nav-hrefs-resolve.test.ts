@@ -9,6 +9,8 @@ import {
   EMAIL_PATHS,
   EMPTY_STATE_SETTINGS_HREF,
   EMPTY_STATE_WELCOME_HREF,
+  THIS_WEEK_HREF,
+  TODAY_SKY_HREF,
   FEATURE_TEASER_LINKS,
   MARKETING_NAV_ACTIONS,
   MARKETING_NAV_BRAND_HREF,
@@ -292,6 +294,8 @@ describe("empty-state hrefs resolve to App Router pages", () => {
   it("welcome and settings empty-state destinations stay on real routes", () => {
     expect(EMPTY_STATE_WELCOME_HREF).toBe("/welcome");
     expect(EMPTY_STATE_SETTINGS_HREF).toBe("/app/settings");
+    expect(THIS_WEEK_HREF).toBe("/app/this-week");
+    expect(TODAY_SKY_HREF).toBe("/app#today-in-your-sky");
   });
 
   it("empty-state surfaces render from the exported hrefs", () => {
@@ -302,7 +306,7 @@ describe("empty-state hrefs resolve to App Router pages", () => {
     );
     assertRendersFromConfig(
       readWeb("components/relational-transit-feed.tsx"),
-      ["EMPTY_STATE_SETTINGS_HREF"],
+      ["EMPTY_STATE_SETTINGS_HREF", "THIS_WEEK_HREF", "TODAY_SKY_HREF"],
       "transit-feed leftover literal",
     );
     assertRendersFromConfig(

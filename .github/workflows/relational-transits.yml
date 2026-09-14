@@ -1,7 +1,15 @@
-# Schedules the two relational-transit cron routes (Generations Feature 3).
-# There is deliberately no root vercel.json (ENGINEERING.md §2), so there is
-# no Vercel-native cron config to point at these routes — this workflow is
-# the out-of-band scheduler. See ENGINEERING.md's "Cron scheduling" section.
+# Schedules the relational-transit cron routes (Generations Feature 3)
+# and the weekly constellation letter. There is deliberately no root
+# vercel.json (ENGINEERING.md §2), so there is no Vercel-native cron config
+# to point at these routes — this workflow is the out-of-band scheduler. See
+# ENGINEERING.md's "Cron scheduling" section.
+#
+# `letter` runs after `scan` (same as `push`) and no-ops inside the route
+# unless the owner's local weekday is Sunday. One daily UTC trigger still
+# covers every IANA Sunday: the UTC Sunday morning run is already Sunday
+# locally from UTC through the east; the Monday UTC morning run is still
+# Sunday evening in the Americas. The ledger is keyed on owner-local
+# Sunday (`week_of`), so an owner is never emailed twice.
 name: Relational Transits Cron
 
 on:
@@ -73,6 +81,37 @@ jobs:
           HTTP_STATUS=$(curl --fail-with-body --silent --show-error --max-time 120 \
             -o response.json -w "%{http_code}" \
             -X POST "${{ secrets.GALAXIA_APP_URL }}/api/cron/relational-transit-push" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          CURL_EXIT=$?
+          echo "HTTP status: ${HTTP_STATUS}"
+          echo "Response body:"
+          cat response.json 2>/dev/null || echo "(no response body)"
+          exit "${CURL_EXIT}"
+
+  letter:
+    name: letter
+    needs: scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require GALAXIA_APP_URL and CRON_SECRET
+        run: |
+          if [ -z "${{ secrets.GALAXIA_APP_URL }}" ]; then
+            echo "::error::GALAXIA_APP_URL repo secret is not set (the deployed apps/web origin, e.g. https://galaxiamea.com). Add it under repo Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "::error::CRON_SECRET repo secret is not set. It must equal the CRON_SECRET env var configured on the deployed apps/web (Vercel) project, or the route 401s."
+            exit 1
+          fi
+
+      - name: POST /api/cron/constellation-letter
+        run: |
+          set -o pipefail
+          HTTP_STATUS=$(curl --fail-with-body --silent --show-error --max-time 180 \
+            -o response.json -w "%{http_code}" \
+            -X POST "${{ secrets.GALAXIA_APP_URL }}/api/cron/constellation-letter" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
           CURL_EXIT=$?
           echo "HTTP status: ${HTTP_STATUS}"

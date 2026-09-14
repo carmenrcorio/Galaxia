@@ -88,6 +88,13 @@ describe("trial-emails route — returns a JSON summary with real numeric counts
     expect(src).toContain("trialAlreadyEnded");
   });
 
+  it("greets via resolveAccountName, never an email local-part", () => {
+    expect(src).toContain('import { resolveAccountName } from "@galaxia/core"');
+    expect(src).toContain("resolveAccountName(");
+    expect(src).not.toMatch(/to\s*\.\s*split\s*\(\s*["'`]@/);
+    expect(src).not.toMatch(/split\("@"\)\[0\]/);
+  });
+
   it("skips trialAlreadyEnded before the kind picker", () => {
     const endedIdx = src.indexOf("trialAlreadyEnded(");
     const pickIdx = src.indexOf("pickTrialEmailKind(");

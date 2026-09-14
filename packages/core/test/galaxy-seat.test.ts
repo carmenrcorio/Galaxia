@@ -15,6 +15,7 @@ import {
   galaxySeatNorm,
   galaxySeatXY,
   galaxySeatsResolved,
+  constellationSkeletonSeats,
   hash01,
   ringBandHalfGap,
   ringBandRadius,
@@ -329,5 +330,32 @@ describe("galaxySeatXY", () => {
     expect(Math.abs(mR - dR)).toBeLessThan(3); /* co-ring: nearly equal px radius */
     expect(Math.abs(mR - ring2)).toBeLessThan(Math.abs(mR - ring4));
     expect(Math.abs(dR - ring2)).toBeLessThan(Math.abs(dR - ring4));
+  });
+});
+
+describe("constellationSkeletonSeats", () => {
+  it("is deterministic and prefixes ids so they cannot be people rows", () => {
+    const a = constellationSkeletonSeats();
+    const b = constellationSkeletonSeats();
+    expect(a.length).toBeGreaterThan(8);
+    expect(a.map((s) => s.id)).toEqual(b.map((s) => s.id));
+    expect(a.map((s) => s.nx)).toEqual(b.map((s) => s.nx));
+    expect(a.every((s) => s.id.startsWith("skel:"))).toBe(true);
+  });
+
+  it("sits a core point at the origin and the rest on live ring bands", () => {
+    const seats = constellationSkeletonSeats();
+    const core = seats.find((s) => s.id === "skel:0:0");
+    expect(core).toBeDefined();
+    expect(core!.nx).toBe(0);
+    expect(core!.ny).toBe(0);
+
+    const outer = seats.filter((s) => s.id !== "skel:0:0");
+    expect(outer.length).toBeGreaterThan(0);
+    for (const seat of outer) {
+      const r = Math.hypot(seat.nx, seat.ny);
+      expect(r).toBeGreaterThan(GALAXY_RING_MIN * 0.9);
+      expect(r).toBeLessThanOrEqual(1 + GALAXY_RING_JITTER);
+    }
   });
 });

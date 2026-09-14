@@ -65,6 +65,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChartImageExportButton, ChartImageExportFrame, chartExportFilename } from "../../components/chart-image-export";
+import {
+  CONSTELLATION_STAGE_STYLE,
+  ConstellationEmptyState,
+  ConstellationLoadError,
+  ConstellationStarFieldSkeleton,
+} from "../../components/constellation-starfield-skeleton";
 import { composeGalaxySharePng, SHARE_IMAGE_FAIL } from "../../lib/share-image";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { RelationalTransitFeed } from "../../components/relational-transit-feed";
@@ -186,8 +192,9 @@ export default function AppHomePage() {
   const [cohortByPerson, setCohortByPerson] = useState<Record<string, string>>({});
   const [personSkies, setPersonSkies]           = useState<PersonSky[]>([]);
   const [threadChips, setThreadChips]           = useState<ThreadChip[]>([]);
-  const [homeStatus, setHomeStatus]             = useState<string | null>(null);
   const [loading, setLoading]                   = useState(true);
+  const [loadError, setLoadError]               = useState(false);
+  const [liveIn, setLiveIn]                    = useState(false);
   const [hoverPerson, setHoverPerson]           = useState<PersonRow | null>(null);
   const [ownerId, setOwnerId]                   = useState<string | null>(null);
 
@@ -199,12 +206,41 @@ export default function AppHomePage() {
   );
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      setOwnerId(user.id);
-      loadHome(user.id);
-    });
+    let cancelled = false;
+    supabase.auth.getUser()
+      .then(({ data: { user } }) => {
+        if (cancelled) return;
+        if (!user) {
+          setLoadError(true);
+          setLoading(false);
+          return;
+        }
+        setOwnerId(user.id);
+        void loadHome(user.id);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setLoadError(true);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [supabase]);
+
+  const liveReady = !loading && !loadError && people.length > 0;
+  useEffect(() => {
+    if (!liveReady) {
+      setLiveIn(false);
+      return;
+    }
+    let inner = 0;
+    const outer = window.requestAnimationFrame(() => {
+      inner = window.requestAnimationFrame(() => setLiveIn(true));
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  }, [liveReady]);
 
   /* ─── canvas constellation ─────────────────────────────────────────── */
   useEffect(() => {
@@ -1244,16 +1280,18 @@ export default function AppHomePage() {
   /* ─── data loading ────────────────────────────────────────────── */
   async function loadHome(uid: string) {
     setLoading(true);
+    setLoadError(false);
     try {
-      const { data: idRows } = await supabase.from("people").select("id").eq("owner_id", uid);
-      const personIds = (idRows ?? []).map(r => r.id as string);
+      const idQuery = await supabase.from("people").select("id").eq("owner_id", uid);
+      if (idQuery.error) throw idQuery.error;
+      const personIds = (idQuery.data ?? []).map(r => r.id as string);
 
       /* FOUND HOLE CLOSED (same class as Phase 2 person-page hole):
          loadHome previously selected is_minor but NOT birth_date / birth_precision,
          so isMinorForSafety could not run. Galaxy safety now loads those fields
          and gates via isMinorForSafety — never raw is_minor alone. */
       const localDate = ownerLocalDate();
-      const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }, { data: relRows }, { data: nudgeRows }, { data: recentNudgeRows }] = await Promise.all([
+      const [profileRes, peopleRes, chartRes, threadRes, relRes, nudgeRes, recentRes] = await Promise.all([
         supabase.from("profiles").select("display_name, pinned_sky_person_id").eq("id", uid).single(),
         supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
@@ -1266,6 +1304,14 @@ export default function AppHomePage() {
           ? supabase.from("person_daily_nudges").select("person_id, pass_id").eq("owner_id", uid).in("person_id", personIds).not("pass_id", "is", null).gte("date", new Date(Date.now() - 45 * 86400000).toISOString().slice(0, 10)).neq("date", localDate)
           : Promise.resolve({ data: [] as any[] }),
       ]);
+      if (peopleRes.error) throw peopleRes.error;
+      const profile = profileRes.data;
+      const peopleRows = peopleRes.data;
+      const chartRows = chartRes.data;
+      const threadRows = threadRes.data;
+      const relRows = relRes.data;
+      const nudgeRows = nudgeRes.data;
+      const recentNudgeRows = recentRes.data;
 
       const castPeople = (peopleRows ?? []) as PersonRow[];
       /* Same resolver as /account and mobile home. Previously this line fell
@@ -1386,8 +1432,31 @@ export default function AppHomePage() {
         for (const r of messages ?? []) { const tid = r.thread_id as string; if (!prev.has(tid)) prev.set(tid, (r.body as string).slice(0, 68)); }
         setThreadChips(threads.map(t => ({ id: t.id, mode: t.mode, preview: prev.get(t.id) ?? "Resume" })));
       }
-    } catch (err) { setHomeStatus(err instanceof Error ? err.message : "Unable to load."); }
-    finally { setLoading(false); }
+    } catch {
+      setLoadError(true);
+      setPeople([]);
+      setLinks([]);
+      setHonorEdges([]);
+      setPersonSkies([]);
+      setThreadChips([]);
+      setCohortByPerson({});
+    } finally { setLoading(false); }
+  }
+
+  function retryHome() {
+    if (ownerId) {
+      void loadHome(ownerId);
+      return;
+    }
+    void supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        setLoadError(true);
+        setLoading(false);
+        return;
+      }
+      setOwnerId(user.id);
+      void loadHome(user.id);
+    });
   }
 
   async function archiveThread(threadId: string) {
@@ -1411,24 +1480,22 @@ export default function AppHomePage() {
         <p className="muted">{welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."}</p>
       </div>
 
-      {homeStatus ? <p className="error">{homeStatus}</p> : null}
-
       {/* ── Living constellation — full-width, real vertical presence ── */}
-      <section className="glass-card fade-in" style={{ padding: 0, overflow: "hidden" }}>
+      <section className="glass-card fade-in" style={{ padding: 0, overflow: "hidden" }} aria-busy={loading}>
         <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <p className="eyebrow" style={{ margin: 0 }}>Your constellation</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            {!loading && people.length >= 3 ? (
+            {!loading && !loadError && people.length >= 3 ? (
               <Link href="/app/groups" className="pill-link" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
                 Compare as a group
               </Link>
             ) : null}
-            {!loading && people.length > 0 ? (
+            {!loading && !loadError && people.length > 0 ? (
               <Link href="/app/add-person" className="pill-link pill-link--gold" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
                 + Add person
               </Link>
             ) : null}
-            {!loading && people.length > 0 ? (
+            {!loading && !loadError && people.length > 0 ? (
               // FOUNDER-REVIEW: authored - "Share sky image" export label
               <ChartImageExportButton
                 frameRef={galaxyFrameRef}
@@ -1447,29 +1514,16 @@ export default function AppHomePage() {
           </div>
         </div>
 
-        {loading ? (
-          <div style={{ padding: 24 }}>
-            <div className="skeleton" style={{ width: "100%", height: 400, borderRadius: 12 }} />
-          </div>
-        ) : people.length === 0 ? (
-          <div style={{ padding: 48, textAlign: "center" }}>
-            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-            <p className="muted" style={{ marginBottom: 16 }}>Your constellation is empty: start by adding yourself.</p>
-            <Link href="/welcome" className="btn-primary">Add yourself &amp; your people</Link>
-          </div>
-        ) : (
-          /* Near-square card: phone gets mild vertical room without a tall
-             skinny ellipse; desktop grows with width but caps at 680 so a
-             full-bleed row does not eat the viewport (see changelog). */
-          <ChartImageExportFrame
-            frameRef={galaxyFrameRef}
-            style={{
-              width: "100%",
-              aspectRatio: "1 / 1.12",
-              minHeight: 380,
-              maxHeight: "min(72vh, 680px)",
-            }}
-          >
+        <ChartImageExportFrame
+          frameRef={galaxyFrameRef}
+          className="constellation-stage"
+          style={CONSTELLATION_STAGE_STYLE}
+        >
+          <ConstellationStarFieldSkeleton visible={loading} />
+          {loadError ? <ConstellationLoadError onRetry={retryHome} /> : null}
+          {!loading && !loadError && people.length === 0 ? <ConstellationEmptyState /> : null}
+          {liveReady ? (
+            <div className={liveIn ? "constellation-live is-in" : "constellation-live"}>
             <canvas
               ref={atmCanvasRef}
               aria-hidden
@@ -1510,11 +1564,12 @@ export default function AppHomePage() {
                 <p style={{ fontSize: ".72rem", color: "var(--teal)", display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 100, background: "rgba(111,177,184,.1)", border: "1px solid rgba(111,177,184,.24)" }}>Click to open profile</p>
               </div>
             ) : null}
-          </ChartImageExportFrame>
-        )}
+            </div>
+          ) : null}
+        </ChartImageExportFrame>
 
         {/* Legend strip */}
-        {people.length > 0 ? (
+        {liveReady ? (
           <div style={{ padding: "12px 24px 18px", borderTop: "1px solid rgba(255,255,255,.05)", display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
             {[
               { label: "Partner / binary at core", color: EL_COLOR.air },

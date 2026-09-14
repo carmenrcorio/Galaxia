@@ -395,3 +395,55 @@ export function galaxyLabelOffsets(
   }
   return offsets;
 }
+
+/**
+ * Placeholder seats for the constellation loading field. Same ring-band
+ * geometry as the live view (`ringBandRadius` / `galaxySeatsResolved`).
+ * These are not people: ids are the `skel:` prefix so they can never be
+ * confused with a row from `people`.
+ */
+export interface ConstellationSkeletonSeat extends GalaxySeatNorm {
+  id: string;
+  /** 0–1 stagger for the CSS opacity pulse. */
+  pulse: number;
+  /** 0–1 point-size variation. */
+  size: number;
+  accent: "gold" | "violet";
+}
+
+/** One core + partner band + the four guide rings. */
+const SKELETON_RING_COUNTS: ReadonlyArray<readonly [ring: number, count: number]> = [
+  [0, 1],
+  [1, 2],
+  [2, 5],
+  [3, 6],
+  [4, 7],
+  [5, 6],
+];
+
+export function constellationSkeletonSeats(): ConstellationSkeletonSeat[] {
+  const inputs: GalaxySeatInput[] = [];
+  for (const [ring, count] of SKELETON_RING_COUNTS) {
+    for (let i = 0; i < count; i++) {
+      inputs.push({
+        id: `skel:${ring}:${i}`,
+        isSelf: ring === 0,
+        ring,
+      });
+    }
+  }
+  const resolved = galaxySeatsResolved(inputs);
+  return inputs.map((input) => {
+    const seat = resolved.get(input.id) ?? galaxySeatNorm(input);
+    return {
+      id: input.id,
+      nx: seat.nx,
+      ny: seat.ny,
+      angle: seat.angle,
+      rn: seat.rn,
+      pulse: hash01(`${input.id}\0p`),
+      size: hash01(`${input.id}\0s`),
+      accent: hash01(`${input.id}\0c`) < 0.55 ? "gold" : "violet",
+    };
+  });
+}

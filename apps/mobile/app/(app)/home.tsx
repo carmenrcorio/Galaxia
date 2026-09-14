@@ -16,6 +16,7 @@ import {
 import {
   galaxySeatXY,
   galaxySeatsResolved,
+  constellationSkeletonSeats,
   isMinorForSafety,
   peopleForTodaySky,
   resolveAccountName,
@@ -83,6 +84,20 @@ interface RelationalTransitRow {
   }>;
 }
 
+const CONSTELLATION_BOX_HEIGHT = 340;
+const CONSTELLATION_GEOM = { cx: 170, cy: 170, radX: 120, radY: 120 };
+const SKELETON_SEATS = constellationSkeletonSeats();
+const CONSTELLATION_CROSSFADE_MS = 250;
+
+// FOUNDER-REVIEW: empty constellation, zero people.
+const CONSTELLATION_EMPTY = "Your constellation is empty. Add the first person to begin.";
+// FOUNDER-REVIEW: empty constellation primary action.
+const CONSTELLATION_EMPTY_ACTION = "Add the first person";
+// FOUNDER-REVIEW: load failure, short line.
+const CONSTELLATION_LOAD_ERROR = "The constellation could not load.";
+// FOUNDER-REVIEW: retry after load failure.
+const CONSTELLATION_RETRY = "Try again";
+
 export default function HomeScreen() {
   const { session, signOut } = useAuth();
   const { tier } = useEntitlement();
@@ -97,7 +112,10 @@ export default function HomeScreen() {
   const [threadChips, setThreadChips] = useState<ThreadChip[]>([]);
   const [homeStatus, setHomeStatus] = useState<string | null>(null);
   const [homeLoading, setHomeLoading] = useState(true);
+  const [constellationFailed, setConstellationFailed] = useState(false);
   const shimmer = useRef(new Animated.Value(0.45)).current;
+  const skeletonFade = useRef(new Animated.Value(1)).current;
+  const liveFade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -119,11 +137,44 @@ export default function HomeScreen() {
     return () => loop.stop();
   }, [reduceMotion, shimmer]);
 
+  useEffect(() => {
+    if (homeLoading) {
+      liveFade.setValue(0);
+      if (reduceMotion) {
+        skeletonFade.setValue(0.28);
+        return;
+      }
+      skeletonFade.setValue(0.28);
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(skeletonFade, { toValue: 0.42, duration: 1900, useNativeDriver: false }),
+          Animated.timing(skeletonFade, { toValue: 0.16, duration: 1900, useNativeDriver: false })
+        ])
+      );
+      loop.start();
+      return () => loop.stop();
+    }
+    if (constellationFailed || people.length === 0) {
+      skeletonFade.setValue(0);
+      liveFade.setValue(0);
+      return;
+    }
+    if (reduceMotion) {
+      skeletonFade.setValue(0);
+      liveFade.setValue(1);
+      return;
+    }
+    Animated.parallel([
+      Animated.timing(skeletonFade, { toValue: 0, duration: CONSTELLATION_CROSSFADE_MS, useNativeDriver: false }),
+      Animated.timing(liveFade, { toValue: 1, duration: CONSTELLATION_CROSSFADE_MS, useNativeDriver: false })
+    ]).start();
+  }, [homeLoading, constellationFailed, people.length, reduceMotion, skeletonFade, liveFade]);
+
   /* Same learnable seats as web `/app`: f(id, own ring) via galaxySeatsResolved
      (near-collision nudge on the ring by stable id order). Fixed ellipse geom
      for the home glance card — not the full canvas, but the same norms. */
   const constellationPositions = useMemo(() => {
-    const geom = { cx: 170, cy: 170, radX: 120, radY: 120 };
+    const geom = CONSTELLATION_GEOM;
     const seats = galaxySeatsResolved(
       people.map((person) => ({
         id: person.id,
@@ -156,6 +207,7 @@ export default function HomeScreen() {
     if (!session?.user.id) return;
     setHomeLoading(true);
     setHomeStatus(null);
+    setConstellationFailed(false);
     try {
       const cacheKey = `home_state:${session.user.id}`;
       /* FOUND HOLE CLOSED (web home parity): loadHome previously selected
@@ -170,7 +222,7 @@ export default function HomeScreen() {
       ).map((row) => row.id as string);
       const localDate = ownerLocalDate();
       const nowISO = new Date().toISOString();
-      const [{ data: profile }, { data: peopleRows }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: transitRows }] = await Promise.all([
+      const [{ data: profile }, { data: peopleRows, error: peopleError }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: transitRows }] = await Promise.all([
       supabase.from("profiles").select("display_name, pinned_sky_person_id, timezone, relational_transit_alerts").eq("id", session.user.id).single(),
       supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
       personIds.length
@@ -192,6 +244,7 @@ export default function HomeScreen() {
         .order("active_from", { ascending: true })
         .limit(20),
       ]);
+      if (peopleError) throw peopleError;
 
       const castPeople = (peopleRows ?? []) as PersonRow[];
       // Same resolver as the web account screen and web home. This line used to
@@ -337,7 +390,7 @@ export default function HomeScreen() {
         personSkies: skies,
         threadChips: computedThreadChips
       });
-    } catch (error) {
+    } catch {
       const cached = await cacheGet<{
         welcomeName?: string | null;
         people: PersonRow[];
@@ -352,8 +405,13 @@ export default function HomeScreen() {
         setPersonSkies(cached.personSkies ?? []);
         setThreadChips(cached.threadChips);
         setHomeStatus("Offline mode: showing cached home.");
+        setConstellationFailed(false);
       } else {
-        setHomeStatus(error instanceof Error ? error.message : "Unable to load home.");
+        setPeople([]);
+        setLinks([]);
+        setPersonSkies([]);
+        setThreadChips([]);
+        setConstellationFailed(true);
       }
     } finally {
       setHomeLoading(false);
@@ -369,22 +427,54 @@ export default function HomeScreen() {
       </Text>
       <Text style={{ color: tokens.colors.goldSoft }}>Plan: {tier === "plus" ? "Galaxia+" : "Free"}</Text>
 
-      {homeLoading ? (
-        <View style={cardStyle}>
-          <Text style={cardBody}>Loading constellation…</Text>
-        </View>
-      ) : null}
-      {!homeLoading && people.length === 0 ? (
-        <View style={cardStyle}>
-          <Text style={cardTitle}>No constellation yet</Text>
-          <Text style={cardBody}>Add yourself and your people in onboarding to activate charts, links, and transit shimmer.</Text>
-        </View>
-      ) : null}
       {homeStatus ? <Text style={{ color: tokens.colors.gold }}>{homeStatus}</Text> : null}
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Constellation</Text>
-        <View style={{ height: 340, borderRadius: 16, borderWidth: 1, borderColor: tokens.colors.line, backgroundColor: tokens.colors.ink2, overflow: "hidden" }}>
+        <View style={{ height: CONSTELLATION_BOX_HEIGHT, borderRadius: 16, borderWidth: 1, borderColor: tokens.colors.line, backgroundColor: tokens.colors.ink, overflow: "hidden" }}>
+          {constellationFailed ? (
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 12 }}>
+              {/* FOUNDER-REVIEW: CONSTELLATION_LOAD_ERROR */}
+              <Text style={[cardBody, { textAlign: "center" }]}>{CONSTELLATION_LOAD_ERROR}</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel={CONSTELLATION_RETRY} onPress={() => void loadHome()} style={pillButton}>
+                <Text style={pillText}>{CONSTELLATION_RETRY}</Text>
+              </Pressable>
+            </View>
+          ) : null}
+          {!homeLoading && !constellationFailed && people.length === 0 ? (
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 12 }}>
+              {/* FOUNDER-REVIEW: CONSTELLATION_EMPTY */}
+              <Text style={[cardBody, { textAlign: "center" }]}>{CONSTELLATION_EMPTY}</Text>
+              <Link href="/onboarding" asChild>
+                <Pressable accessibilityRole="button" accessibilityLabel={CONSTELLATION_EMPTY_ACTION} style={pillButton}>
+                  <Text style={pillText}>{CONSTELLATION_EMPTY_ACTION}</Text>
+                </Pressable>
+              </Link>
+            </View>
+          ) : null}
+          {homeLoading || (!constellationFailed && people.length > 0) ? (
+            <>
+              <Animated.View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: skeletonFade }}>
+                {SKELETON_SEATS.map((seat) => {
+                  const { x, y } = galaxySeatXY(seat, CONSTELLATION_GEOM);
+                  const size = 3 + seat.size * 3;
+                  return (
+                    <View
+                      key={seat.id}
+                      style={{
+                        position: "absolute",
+                        left: x - size / 2,
+                        top: y - size / 2,
+                        width: size,
+                        height: size,
+                        borderRadius: 999,
+                        backgroundColor: seat.accent === "gold" ? tokens.colors.goldSoft : tokens.colors.air
+                      }}
+                    />
+                  );
+                })}
+              </Animated.View>
+              <Animated.View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: liveFade }}>
           {links.map((link) => {
             const from = positionMap.get(link.fromId);
             const to = positionMap.get(link.toId);
@@ -433,6 +523,9 @@ export default function HomeScreen() {
               </View>
             );
           })}
+              </Animated.View>
+            </>
+          ) : null}
         </View>
         <Text style={cardBody}>Links are weighted by composite compatibility score (gold flow / rose tension).</Text>
       </View>

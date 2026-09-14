@@ -51,6 +51,7 @@ import {
   galaxyGeometry,
   galaxyLabelHalfWidthPx,
   galaxyLabelOffsets,
+  clampGalaxyLabelPosition,
   galaxySeatsResolved,
   glyphRadiusPx,
   hash01,
@@ -840,6 +841,23 @@ export default function AppHomePage() {
       }
     }
 
+    /* Name labels: measure then clamp so the full glyph stays in the canvas.
+       Star seats are untouched. CSS px after setTransform(DPR). */
+    function fillClampedName(name: string, rawX: number, rawY: number) {
+      const metrics = cx.measureText(name);
+      const textWidth = metrics.width;
+      const ascent = metrics.actualBoundingBoxAscent;
+      const descent = metrics.actualBoundingBoxDescent;
+      const textHeight =
+        typeof ascent === "number" && typeof descent === "number" && ascent + descent > 0
+          ? ascent + descent
+          : 11;
+      const { x, y } = clampGalaxyLabelPosition(
+        rawX, rawY, textWidth, textHeight, W(), H(),
+      );
+      cx.fillText(name, x, y);
+    }
+
     /* ── draw a single celestial body (from prototype drawBody) ── */
     function drawBody(
       i: number,
@@ -895,9 +913,7 @@ export default function AppHomePage() {
           ? `rgba(168,160,198,${litM})`
           : `rgba(185,174,222,${litM})`;
         cx.textAlign = "center";
-        const lxM = Math.min(W() - 8, Math.max(8, labelPos.x));
-        const lyM = Math.min(H() - 6, Math.max(12, labelPos.y));
-        cx.fillText(p.display_name, lxM, lyM);
+        fillClampedName(p.display_name, labelPos.x, labelPos.y);
         if (!forExport && unackedPersonIds.has(p.id)) {
           cx.beginPath();
           cx.arc(q.x + R0 * 0.95, q.y - R0 * 0.95, 3.4, 0, Math.PI * 2);
@@ -994,9 +1010,7 @@ export default function AppHomePage() {
           ? `rgba(168,160,198,${lit})`
           : `rgba(185,174,222,${lit})`;
       cx.textAlign = "center";
-      const lx = Math.min(W() - 8, Math.max(8, labelPos.x));
-      const ly = Math.min(H() - 6, Math.max(12, labelPos.y));
-      cx.fillText(p.display_name, lx, ly);
+      fillClampedName(p.display_name, labelPos.x, labelPos.y);
 
       if (!forExport && unackedPersonIds.has(p.id)) {
         cx.beginPath();

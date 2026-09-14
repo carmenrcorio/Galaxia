@@ -72,7 +72,9 @@ describe("galaxy interaction — no floating hover card", () => {
   });
 
   it("keeps canvas name labels and uses the legend strip for hover identity", () => {
-    expect(home).toContain("cx.fillText(p.display_name");
+    expect(home).toContain("fillClampedName(p.display_name");
+    expect(home).toContain("clampGalaxyLabelPosition");
+    expect(home).not.toMatch(/Math\.min\(W\(\) - 8, Math\.max\(8, labelPos\.x\)\)/);
     expect(home).toContain("hoverPerson.display_name");
     expect(home).toContain("hoverPerson.relation");
     expect(home).toContain("Click a star to open");

@@ -123,6 +123,30 @@ export function galaxyLabelHalfWidthPx(displayName: string): number {
   return Math.max(GALAXY_LABEL_JOIN_PX / 2, (displayName.length * GALAXY_LABEL_CHAR_PX) / 2);
 }
 
+/** CSS-px inset that keeps a measured name fully inside the constellation canvas. */
+export const GALAXY_LABEL_EDGE_MARGIN_PX = 8;
+
+/**
+ * Clamp a centred constellation name so the full measured glyph stays inside
+ * the canvas. Does not move the star; the label may detach at the edge.
+ * `rawX`/`rawY` and the result are CSS pixels (the motion canvas is drawn
+ * after `setTransform(DPR, …)`).
+ */
+export function clampGalaxyLabelPosition(
+  rawX: number,
+  rawY: number,
+  textWidth: number,
+  textHeight: number,
+  canvasW: number,
+  canvasH: number,
+  margin: number = GALAXY_LABEL_EDGE_MARGIN_PX,
+): { x: number; y: number } {
+  return {
+    x: Math.max(textWidth / 2 + margin, Math.min(canvasW - textWidth / 2 - margin, rawX)),
+    y: Math.max(textHeight / 2 + margin, Math.min(canvasH - textHeight / 2 - margin, rawY)),
+  };
+}
+
 /** Stable value in [0, 1) from a string — full 32-bit FNV-1a. */
 export function hash01(s: string): number {
   let h = 2166136261;

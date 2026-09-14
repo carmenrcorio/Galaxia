@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import {
   APP_NAV_ACTIONS,
   APP_NAV_BRAND_HREF,
@@ -8,6 +9,8 @@ import {
   EMAIL_PATHS,
   EMPTY_STATE_SETTINGS_HREF,
   EMPTY_STATE_WELCOME_HREF,
+  THIS_WEEK_HREF,
+  TODAY_SKY_HREF,
   FEATURE_TEASER_LINKS,
   MARKETING_NAV_ACTIONS,
   MARKETING_NAV_BRAND_HREF,
@@ -106,8 +109,8 @@ describe("marketing nav hrefs resolve to App Router pages", () => {
   });
 
   it("Quick Chart in the marketing nav points at the live /chart route", () => {
-    const quickChart = MARKETING_NAV_LINKS.find((l) => l.label === "Quick Chart");
-    expect(quickChart?.href).toBe("/chart");
+    const freeChart = MARKETING_NAV_LINKS.find((l) => l.label === "Free chart");
+    expect(freeChart?.href).toBe("/chart");
     expect(existsSync(join(WEB_APP_DIR, "chart/page.tsx"))).toBe(true);
     expect(existsSync(join(WEB_APP_DIR, "app/chart/page.tsx"))).toBe(false);
     expect(existsSync(join(WEB_APP_DIR, "quick-chart/page.tsx"))).toBe(false);
@@ -133,9 +136,9 @@ describe("app nav hrefs resolve to App Router pages", () => {
     assertEveryHrefResolves(appNavInternalHrefs(), "app nav");
   });
 
-  it("Quick Chart in the app nav points at /chart because /app/chart does not exist", () => {
-    const quickChart = APP_NAV_LINKS.find((l) => l.label === "Quick Chart");
-    expect(quickChart?.href).toBe("/chart");
+  it("Free chart in the app nav points at /chart because /app/chart does not exist", () => {
+    const freeChart = APP_NAV_LINKS.find((l) => l.label === "Free chart");
+    expect(freeChart?.href).toBe("/chart");
     expect(existsSync(join(WEB_APP_DIR, "app/chart/page.tsx"))).toBe(false);
   });
 
@@ -185,6 +188,14 @@ describe("nav config still includes the non-Quick-Chart entries", () => {
       "/pricing",
     ]);
     expect(MARKETING_NAV_ACTIONS.map((l) => l.href)).toEqual(["/login", "/signup"]);
+    expect(MARKETING_NAV_LINKS.map((l) => l.label)).toEqual([
+      "How it works",
+      "Your people",
+      "Ask Vela",
+      "Free chart",
+      "Blog",
+      "Pricing",
+    ]);
   });
 
   it("keeps app labels and the Account action", () => {
@@ -226,9 +237,41 @@ describe("footer hrefs resolve to App Router pages", () => {
       "/chart",
       "/download",
       "/blog",
+      "/press",
       "/privacy",
       "/terms",
     ]);
+    expect(SITE_FOOTER_LINKS.map((l) => l.label)).toEqual([
+      "How it works",
+      "Your people",
+      "Ask Vela",
+      "For work",
+      "Security",
+      "Pricing",
+      "Free chart",
+      "Download",
+      "Blog",
+      "Press",
+      "Privacy",
+      "Terms",
+    ]);
+  });
+
+  it("does not change marketing H1s or metadata titles", () => {
+    const why = readWeb("app/why-galaxia/page.tsx");
+    expect(why).toContain('title="Why Galaxia"');
+    expect(why).toContain("Why Galaxia: Relationship Intelligence, Not Horoscopes");
+    const generations = readWeb("app/generations/page.tsx");
+    expect(generations).toContain('title="Generations"');
+    expect(generations).toContain("Generations: Your Family's Astrology, Together | Galaxia");
+    const vela = readWeb("app/meet-vela/page.tsx");
+    expect(vela).toContain('title="Meet Vela"');
+    expect(vela).toContain("Meet Vela, Your AI Astrology Guide | Galaxia");
+    const pricing = readWeb("app/pricing/page.tsx");
+    expect(pricing).toContain("Galaxia Pricing");
+    expect(pricing).toContain('title="One Honest Plan"');
+    const chartSeo = readWeb("app/chart/chart-seo.ts");
+    expect(chartSeo).toContain("Free Birth Chart Calculator from Galaxia");
   });
 });
 
@@ -273,6 +316,7 @@ describe("CTA hrefs resolve to App Router pages", () => {
     assertRendersFromConfig(readWeb("app/security/page.tsx"), ["RELATED_LINKS.security"], "security leftover literal");
     assertRendersFromConfig(readWeb("app/pricing/page.tsx"), ["RELATED_LINKS.pricing"], "pricing leftover literal");
     assertRendersFromConfig(readWeb("app/for-work/page.tsx"), ["RELATED_LINKS.forWork"], "for-work leftover literal");
+    assertRendersFromConfig(readWeb("app/press/page.tsx"), ["RELATED_LINKS.press"], "press leftover literal");
     assertRendersFromConfig(readWeb("app/chart/quick-chart-page.tsx"), ["RELATED_LINKS.chart", "CHART_MODE_COMPARE"], "quick-chart leftover literal");
     assertRendersFromConfig(readWeb("app/chart/compare/page.tsx"), ["RELATED_LINKS.chartCompare", "CHART_MODE_SINGLE"], "quick-compare leftover literal");
   });
@@ -280,7 +324,7 @@ describe("CTA hrefs resolve to App Router pages", () => {
   it("hero, close, pricing, teasers, and 404 CTAs render from the exported config", () => {
     assertRendersFromConfig(
       readWeb("components/marketing/hero.tsx"),
-      ["MARKETING_NAV_SIGNUP", "MARKETING_NAV_LOGIN", "HERO_HOW_IT_WORKS"],
+      ["HERO_PRIMARY_CTA", "MARKETING_NAV_LOGIN", "HERO_HOW_IT_WORKS"],
       "hero leftover literal",
     );
     assertRendersFromConfig(readWeb("components/marketing/close-section.tsx"), ["MARKETING_NAV_SIGNUP"], "close-section leftover literal");
@@ -313,6 +357,8 @@ describe("empty-state hrefs resolve to App Router pages", () => {
   it("welcome and settings empty-state destinations stay on real routes", () => {
     expect(EMPTY_STATE_WELCOME_HREF).toBe("/welcome");
     expect(EMPTY_STATE_SETTINGS_HREF).toBe("/app/settings");
+    expect(THIS_WEEK_HREF).toBe("/app/this-week");
+    expect(TODAY_SKY_HREF).toBe("/app#today-in-your-sky");
   });
 
   it("empty-state surfaces render from the exported hrefs", () => {
@@ -323,7 +369,7 @@ describe("empty-state hrefs resolve to App Router pages", () => {
     );
     assertRendersFromConfig(
       readWeb("components/relational-transit-feed.tsx"),
-      ["EMPTY_STATE_SETTINGS_HREF"],
+      ["EMPTY_STATE_SETTINGS_HREF", "THIS_WEEK_HREF", "TODAY_SKY_HREF"],
       "transit-feed leftover literal",
     );
     assertRendersFromConfig(
@@ -370,6 +416,96 @@ describe("email hrefs resolve to App Router pages", () => {
       app: "/app",
       notifications: "/account/notifications",
     });
+  });
+});
+
+describe("Galaxia contact and domain literals", () => {
+  const CONTACT_FILE = "packages/core/src/contact.ts";
+  const SCAN_ROOTS = ["apps", "packages", "content", "supabase/functions"];
+  const EXTENSIONS = new Set([".ts", ".tsx", ".js", ".mjs", ".jsx", ".md", ".json"]);
+  const SKIP_DIR_NAMES = new Set(["node_modules", ".next", "dist", "coverage"]);
+  const GALAXIA_EMAIL = /[A-Za-z0-9._%+\-]+@galaxia[A-Za-z0-9.\-]*\.(?:com|app|io|net|org|dev|me)\b/g;
+  const OTHER_GALAXIA_HOST = /\bgalaxia(?!mea\.com)[a-z0-9-]*\.(?:com|app|io|net|org|dev|me)\b/gi;
+
+  function walk(relRoot: string): string[] {
+    const absRoot = join(REPO_ROOT, relRoot);
+    if (!existsSync(absRoot)) return [];
+    const files: string[] = [];
+    const stack = [absRoot];
+    while (stack.length) {
+      const dir = stack.pop()!;
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const abs = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (SKIP_DIR_NAMES.has(entry.name)) continue;
+          stack.push(abs);
+          continue;
+        }
+        if (!EXTENSIONS.has(entry.name.slice(entry.name.lastIndexOf(".")))) continue;
+        files.push(abs);
+      }
+    }
+    return files;
+  }
+
+  function isBundleId(src: string, index: number): boolean {
+    return src.slice(Math.max(0, index - 4), index) === "com.";
+  }
+
+  it("the one exported contact address is the help inbox", () => {
+    expect(GALAXIA_HELP_EMAIL).toBe(["help@", "galaxiamea.com"].join(""));
+    const src = readFileSync(join(REPO_ROOT, CONTACT_FILE), "utf8");
+    expect(src).toContain(`export const GALAXIA_HELP_EMAIL = "${GALAXIA_HELP_EMAIL}"`);
+  });
+
+  it("no Galaxia email literal appears outside packages/core/src/contact.ts", () => {
+    const hits: string[] = [];
+    for (const root of SCAN_ROOTS) {
+      for (const abs of walk(root)) {
+        const rel = abs.slice(REPO_ROOT.length + 1);
+        if (rel === CONTACT_FILE) continue;
+        const src = readFileSync(abs, "utf8");
+        for (const match of src.matchAll(GALAXIA_EMAIL)) {
+          hits.push(`${rel}: ${match[0]}`);
+        }
+      }
+    }
+    expect(hits, hits.join("\n")).toEqual([]);
+  });
+
+  it("no galaxia host other than galaxiamea.com appears except reverse-DNS bundle ids", () => {
+    const hits: string[] = [];
+    for (const root of SCAN_ROOTS) {
+      for (const abs of walk(root)) {
+        const rel = abs.slice(REPO_ROOT.length + 1);
+        const src = readFileSync(abs, "utf8");
+        for (const match of src.matchAll(OTHER_GALAXIA_HOST)) {
+          if (isBundleId(src, match.index ?? 0)) continue;
+          hits.push(`${rel}: ${match[0]}`);
+        }
+      }
+    }
+    expect(hits, hits.join("\n")).toEqual([]);
+  });
+});
+
+describe("public sitemap routes are unchanged by this relabel", () => {
+  it("still lists the public paths, including /for-work and /press from main", () => {
+    const src = readWeb("app/sitemap.ts");
+    const routesBlock = src.match(/const routes = \[([\s\S]*?)\];/)?.[1] ?? "";
+    expect(routesBlock).toContain('"/why-galaxia"');
+    expect(routesBlock).toContain('"/generations"');
+    expect(routesBlock).toContain('"/meet-vela"');
+    expect(routesBlock).toContain('"/for-work"');
+    expect(routesBlock).toContain('"/press"');
+    expect(routesBlock).toContain('"/security"');
+    expect(routesBlock).toContain('"/pricing"');
+    expect(routesBlock).toContain('"/blog"');
+    expect(routesBlock).toContain('"/privacy"');
+    expect(routesBlock).toContain('"/terms"');
+    expect(routesBlock).toContain('"/download"');
+    expect(routesBlock).toContain('"/chart"');
+    expect(routesBlock).toContain('"/chart/compare"');
   });
 });
 

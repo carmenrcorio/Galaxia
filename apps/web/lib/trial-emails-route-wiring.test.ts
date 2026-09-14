@@ -22,8 +22,11 @@ describe("trial-emails route — fails closed like every other cron route", () =
   it("503s when CRON_SECRET is unset, 401s on a wrong/missing bearer header", () => {
     expect(src).toContain("const secret = process.env.CRON_SECRET;");
     expect(src).toMatch(/if\s*\(\s*!secret\s*\)\s*\{[\s\S]{0,200}status:\s*503/);
+    expect(src).toContain("cronBearerMatches");
     expect(src).toContain('req.headers.get("authorization")');
-    expect(src).toMatch(/auth !== `Bearer \$\{secret\}`[\s\S]{0,200}status:\s*401/);
+    expect(src).toMatch(/!cronBearerMatches\(req\.headers\.get\("authorization"\),\s*secret\)[\s\S]{0,200}status:\s*401/);
+    expect(src).toMatch(/new NextResponse\(null,\s*\{\s*status:\s*401\s*\}\)/);
+    expect(src).not.toMatch(/auth\s*!==\s*`Bearer \$\{secret\}`/);
   });
 
   it("uses a service-role client with persistSession: false", () => {
@@ -83,6 +86,13 @@ describe("trial-emails route — returns a JSON summary with real numeric counts
     expect(src).toContain("pickTrialEmailKind");
     expect(src).toContain("trialEmailAlreadyKeys");
     expect(src).toContain("trialAlreadyEnded");
+  });
+
+  it("greets via resolveAccountName, never an email local-part", () => {
+    expect(src).toContain('import { resolveAccountName } from "@galaxia/core"');
+    expect(src).toContain("resolveAccountName(");
+    expect(src).not.toMatch(/to\s*\.\s*split\s*\(\s*["'`]@/);
+    expect(src).not.toMatch(/split\("@"\)\[0\]/);
   });
 
   it("skips trialAlreadyEnded before the kind picker", () => {

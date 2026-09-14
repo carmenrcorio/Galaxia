@@ -1,7 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { resolveAccountName } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
+import { cronBearerMatches } from "../../../../lib/cron-auth";
 import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary";
 import { renderTrialEmail, sendEmail, type TrialEmailData } from "../../../../lib/emails";
 import {
@@ -44,9 +46,8 @@ async function handle(req: Request) {
   if (!secret) {
     return NextResponse.json({ error: "CRON_SECRET is not configured; refusing to run." }, { status: 503 });
   }
-  const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!cronBearerMatches(req.headers.get("authorization"), secret)) {
+    return new NextResponse(null, { status: 401 });
   }
   if (!publicEnv.supabaseUrl || !privateEnv.serviceRole) {
     return NextResponse.json({ error: "Server not configured." }, { status: 500 });
@@ -112,10 +113,18 @@ async function handle(req: Request) {
 
       if (!process.env.RESEND_API_KEY) { skipped.noResendKey += 1; return; }
 
-      const { data: recentPerson } = await supabase
-        .from("people").select("display_name").eq("owner_id", profile.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const [{ data: recentPerson }, { data: selfPerson }] = await Promise.all([
+        supabase
+          .from("people").select("display_name").eq("owner_id", profile.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase
+          .from("people").select("display_name").eq("owner_id", profile.id).eq("is_self", true).maybeSingle()
+      ]);
 
-      const firstName = ((profile.display_name as string | null) ?? to.split("@")[0] ?? "there").split(" ")[0];
+      const { firstName } = resolveAccountName({
+        profileDisplayName: profile.display_name,
+        selfPersonName: (selfPerson?.display_name as string | null) ?? null,
+        email: to
+      });
       const data: TrialEmailData = {
         firstName,
         personName: (recentPerson?.display_name as string | null) ?? undefined,

@@ -45,9 +45,11 @@ import {
   formFromRelation,
   galaxyLabelHalfWidthPx,
   galaxyLabelOffsets,
-  galaxySeatXY,
   galaxySeatsResolved,
   hash01,
+  effectiveSeat,
+  pointerToCustomPosition,
+  type CustomGalaxyPosition,
   getMemorialConstellation,
   hasPassed,
   honorEdgesFromDeclaredRows,
@@ -77,6 +79,7 @@ import { RelationalTransitFeed } from "../../components/relational-transit-feed"
 import { ThreadMenu } from "../../components/thread-menu";
 import { setThreadStatus } from "../../lib/record";
 import { createSupabaseBrowserClient } from "../../lib/supabase/client";
+import { readUiSetting, SETTING_SHOW_RINGS, writeUiSetting } from "../../lib/ui-settings";
 
 interface PersonRow {
   id: string;
@@ -92,6 +95,8 @@ interface PersonRow {
   star_color?: string | null;
   /** Assigned memorial pattern id; null = ancient light when passed. */
   memorial_constellation?: string | null;
+  /** Owner-chosen polar seat. NULL = derived default from galaxySeatsResolved. */
+  custom_position?: CustomGalaxyPosition | null;
 }
 interface LinkRow { fromId: string; toId: string; scoreA: number; elA: string; elB: string; }
 interface ThreadChip { id: string; mode: "ask" | "shared"; preview: string; }
@@ -176,6 +181,24 @@ export default function AppHomePage() {
   /* Bound inside the canvas effect: redraws THIS account's settled sky onto
      offscreen canvases and returns a PNG Blob. Never a fixture constellation. */
   const galaxyCaptureRef = useRef<null | (() => Promise<Blob>)>(null);
+  /* Rings toggle + drag live in refs so the canvas effect (which depends on
+     hoverPerson) can read them without tearing down the hold timer / rAF. */
+  const [showRings, setShowRings] = useState(() => readUiSetting(SETTING_SHOW_RINGS) !== "false");
+  const showRingsRef = useRef(showRings);
+  const ownerIdRef = useRef<string | null>(null);
+  const dragRef = useRef<{
+    personId: string;
+    holdTimer: ReturnType<typeof setTimeout> | null;
+    active: boolean;
+    moved: boolean;
+    startX: number;
+    startY: number;
+    currentAngle: number;
+    currentRadiusPct: number;
+    previousCustom: CustomGalaxyPosition | null;
+  } | null>(null);
+  const pendingPositionRef = useRef<{ personId: string; angle: number; radiusPct: number } | null>(null);
+  const suppressClickRef = useRef(false);
 
   /* First name only, from the shared resolver. Null when no name has been
      captured, which the greeting handles by simply not naming anyone. It is
@@ -197,6 +220,9 @@ export default function AppHomePage() {
   const [liveIn, setLiveIn]                    = useState(false);
   const [hoverPerson, setHoverPerson]           = useState<PersonRow | null>(null);
   const [ownerId, setOwnerId]                   = useState<string | null>(null);
+
+  useEffect(() => { showRingsRef.current = showRings; }, [showRings]);
+  useEffect(() => { ownerIdRef.current = ownerId; }, [ownerId]);
 
   /* Nodes shimmer when that person has a real eligible nudge today — derived
      from the durable daily record, never a shared flag. */
@@ -248,6 +274,11 @@ export default function AppHomePage() {
     const canvas = canvasRef.current;
     const atmCanvas = atmCanvasRef.current;
     if (!canvas || !atmCanvas) return;
+    const pendingCaughtUp = pendingPositionRef.current;
+    if (pendingCaughtUp) {
+      const row = people.find((p) => p.id === pendingCaughtUp.personId);
+      if (row?.custom_position) pendingPositionRef.current = null;
+    }
     let cx = canvas.getContext("2d");
     let atmCtx = atmCanvas.getContext("2d");
     if (!cx || !atmCtx) return;
@@ -450,14 +481,31 @@ export default function AppHomePage() {
     const LABEL_PAD_TOP = 22;
     const LABEL_PAD_BOTTOM = 26;
 
-    /* stable base (pre-drift) seat — band radius + same-ring collision
-       separation. Edge clamp preserves angle (scales along the ray) so a
-       person stays on their ring instead of being squashed into a gap. */
-    function basePos(i: number): { x: number; y: number } {
+    /* stable base (pre-drift) seat — custom_position overlay, else band radius
+       + same-ring collision separation. Edge clamp preserves angle (scales
+       along the ray) so a person stays on their ring instead of being squashed
+       into a gap. Self is always the core. */
+    function overlayPerson(p: PersonRow): PersonRow {
+      const pending = pendingPositionRef.current;
+      if (pending && pending.personId === p.id && !p.is_self) {
+        return {
+          ...p,
+          custom_position: { angle: pending.angle, radius_pct: pending.radiusPct },
+        };
+      }
+      return p;
+    }
+
+    function effectiveFor(i: number): { x: number; y: number; angle: number; rn: number } {
       const p = people[i];
       const geom = ringGeom();
       const seat = seatsById.get(p.id) ?? { nx: 0, ny: 0, angle: 0, rn: 0 };
-      let { x, y } = galaxySeatXY(seat, geom);
+      return effectiveSeat(overlayPerson(p), seat.angle, seat.rn, geom.cx, geom.cy, geom.radX);
+    }
+
+    function basePos(i: number): { x: number; y: number } {
+      const geom = ringGeom();
+      let { x, y } = effectiveFor(i);
       const minX = LABEL_PAD_X, maxX = W() - LABEL_PAD_X;
       const minY = LABEL_PAD_TOP, maxY = H() - LABEL_PAD_BOTTOM;
       if (x < minX || x > maxX || y < minY || y > maxY) {
@@ -503,8 +551,7 @@ export default function AppHomePage() {
           continue;
         }
         if (form === "binary" || (semanticRing.get(p.id) ?? 4) === 1) {
-          const seat = seatsById.get(p.id);
-          const ang = seat?.angle ?? 0;
+          const ang = effectiveFor(i).angle;
           /* Partner name always ABOVE its node (+ slight outward), opposite self. */
           map.set(p.id, {
             x: q.x + Math.cos(ang) * 10,
@@ -514,7 +561,7 @@ export default function AppHomePage() {
           });
           continue;
         }
-        const ang = seatsById.get(p.id)?.angle ?? 0;
+        const ang = effectiveFor(i).angle;
         const ox = Math.cos(ang) * outward;
         const oy = Math.sin(ang) * outward;
         map.set(p.id, {
@@ -532,10 +579,11 @@ export default function AppHomePage() {
     function nodePos(i: number): { x: number; y: number } {
       const p = people[i];
       const base = basePos(i);
-      if (reduced || p.is_self) return base;
+      const overlay = overlayPerson(p);
+      if (reduced || p.is_self || overlay.custom_position) return base;
       const { ph, sp } = phases[i];
       const settle = clamp01(ignition(p.id).raw);
-      const ang = seatsById.get(p.id)?.angle ?? 0;
+      const ang = effectiveFor(i).angle;
       const amp = Math.sin(t * 0.00045 * sp + ph) * 6 * settle;
       return {
         x: base.x + Math.cos(ang + Math.PI / 2) * amp,
@@ -655,7 +703,8 @@ export default function AppHomePage() {
         : null;
       const ign   = ignition(p.id);
       if (ign.alpha <= 0.001) return; /* not yet kindled */
-      const scale = reduced ? 1 : Math.max(0.001, ign.scale);
+      const dragging = !forExport && pendingPositionRef.current?.personId === p.id && Boolean(dragRef.current?.active);
+      const scale = (reduced ? 1 : Math.max(0.001, ign.scale)) * (dragging ? 1.3 : 1);
       const R     = R0 * scale;
       /* gentle organic twinkle (two slow summed sines — NOT a flicker).
          Periods stretched again so living light reads as calm shimmer, not
@@ -714,8 +763,7 @@ export default function AppHomePage() {
       if (form === "binary") {
         /* Primary body + thin orbit + one smaller companion on the OUTWARD side
            of the seat (never toward self) so the core stays two distinct stars. */
-        const seat = seatsById.get(p.id);
-        const baseAng = seat?.angle ?? 0;
+        const baseAng = effectiveFor(i).angle;
         const a = reduced ? baseAng : baseAng + t * 0.000286;
         const sep = 10;
         const cx2 = q.x + Math.cos(a) * sep;
@@ -1021,15 +1069,22 @@ export default function AppHomePage() {
       }
     }
 
-    /* ── hit detection ── */
+    /* ── hit detection — nearest star within radius so overlapping custom
+       seats still resolve (created_at order used to win, which hid the top). */
     function hitTest(mx: number, my: number): PersonRow | null {
       const positions = people.map((_, i) => nodePos(i));
+      let best: PersonRow | null = null;
+      let bestD = Infinity;
       for (let i = 0; i < people.length; i++) {
         const q = positions[i];
         const hitR = usesMemorialGlyph(people[i]) ? 28 : 22;
-        if (Math.hypot(mx - q.x, my - q.y) < hitR) return people[i];
+        const d = Math.hypot(mx - q.x, my - q.y);
+        if (d < hitR && d < bestD) {
+          bestD = d;
+          best = people[i];
+        }
       }
-      return null;
+      return best;
     }
 
     /* ── render loop ── */
@@ -1107,7 +1162,8 @@ export default function AppHomePage() {
           const a = labelPosById.get(selfId);
           const b = labelPosById.get(partnerId);
           if (a && b && Math.hypot(a.x - b.x, a.y - b.y) < 40) {
-            const ang = seatsById.get(partnerId)?.angle ?? 0;
+            const partnerIdx = people.findIndex((p) => p.id === partnerId);
+            const ang = partnerIdx >= 0 ? effectiveFor(partnerIdx).angle : 0;
             b.x += Math.cos(ang) * 20;
             b.y += Math.sin(ang) * 20;
             a.y += 10;
@@ -1134,11 +1190,12 @@ export default function AppHomePage() {
       }
 
       /* soft concentric guides — sketch Rings 1–4 at ringBandRadius (same
-         function as person seats). Always drawn so the legend's four bands
-         stay readable even when a band is empty. Alpha kept high enough on
-         lowPerf (375px phones) that Ring 2 is actually countable — 0.10 was
-         invisible against the wash, so parents looked "outer" by landmarks. */
-      {
+         function as person seats). Hidden when the rings toggle is off.
+         Alpha kept high enough on lowPerf (375px phones) that Ring 2 is
+         actually countable — 0.10 was invisible against the wash, so parents
+         looked "outer" by landmarks. Share-image export reads showRingsRef
+         so hidden rings stay hidden in the snapshot. */
+      if (showRingsRef.current) {
         const { cx: rcx, cy: rcy, radX, radY } = ringGeom();
         const breath = (!reduced && !lowPerf && !forExport)
           ? 0.012 * Math.sin(t * 0.00035)
@@ -1153,6 +1210,19 @@ export default function AppHomePage() {
           cx.lineWidth = lowPerf ? 1 : 1.15;
           cx.stroke();
         }
+        cx.restore();
+      }
+
+      const pending = pendingPositionRef.current;
+      if (!forExport && pending && dragRef.current?.active) {
+        const { cx: rcx, cy: rcy, radX } = ringGeom();
+        cx.save();
+        cx.setLineDash([4, 6]);
+        cx.strokeStyle = "rgba(255,255,255,0.25)";
+        cx.lineWidth = 1;
+        cx.beginPath();
+        cx.arc(rcx, rcy, pending.radiusPct * radX, 0, Math.PI * 2);
+        cx.stroke();
         cx.restore();
       }
 
@@ -1251,29 +1321,126 @@ export default function AppHomePage() {
 
     draw();
 
-    /* hover */
-    /* hover */
+    /* pointer: hover, hold-to-drag, tap-to-open. CSS pixels — not DPR.
+       Click is only suppressed when a real drag happened (active && moved). */
+    const onPointerDown = (e: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
+      if (!hit || hit.is_self) return;
+      dragRef.current = {
+        personId: hit.id,
+        holdTimer: setTimeout(() => {
+          if (dragRef.current && dragRef.current.personId === hit.id) {
+            dragRef.current.active = true;
+          }
+        }, 180),
+        active: false,
+        moved: false,
+        startX: e.clientX,
+        startY: e.clientY,
+        currentAngle: 0,
+        currentRadiusPct: 0,
+        previousCustom: hit.custom_position ?? null,
+      };
+      canvas.setPointerCapture(e.pointerId);
+    };
+
     const onMove = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const hit  = hitTest(e.clientX - rect.left, e.clientY - rect.top);
-      setHoverPerson(hit);
-      canvas.style.cursor = hit ? "pointer" : "default";
+      if (!dragRef.current) {
+        const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
+        setHoverPerson(hit);
+        canvas.style.cursor = hit ? "pointer" : "default";
+        return;
+      }
+      const dx = e.clientX - dragRef.current.startX;
+      const dy = e.clientY - dragRef.current.startY;
+      const dist = Math.hypot(dx, dy);
+      if (!dragRef.current.active && dist >= 8) {
+        dragRef.current.active = true;
+        if (dragRef.current.holdTimer) {
+          clearTimeout(dragRef.current.holdTimer);
+          dragRef.current.holdTimer = null;
+        }
+      }
+      if (!dragRef.current.active) return;
+      dragRef.current.moved = true;
+      canvas.style.cursor = "grabbing";
+      const geom = ringGeom();
+      const polar = pointerToCustomPosition(e.clientX - rect.left, e.clientY - rect.top, geom);
+      dragRef.current.currentAngle = polar.angle;
+      dragRef.current.currentRadiusPct = polar.radius_pct;
+      pendingPositionRef.current = {
+        personId: dragRef.current.personId,
+        angle: polar.angle,
+        radiusPct: polar.radius_pct,
+      };
     };
+
+    const onPointerEnd = async () => {
+      if (!dragRef.current) return;
+      const { personId, holdTimer, active, moved, currentAngle, currentRadiusPct, previousCustom } = dragRef.current;
+      if (holdTimer) clearTimeout(holdTimer);
+      dragRef.current = null;
+      canvas.style.cursor = "";
+
+      if (!active || !moved) {
+        pendingPositionRef.current = null;
+        return;
+      }
+
+      suppressClickRef.current = true;
+      const custom_position = { angle: currentAngle, radius_pct: currentRadiusPct };
+      const owner = ownerIdRef.current;
+      setPeople((prev) => prev.map((p) => (p.id === personId ? { ...p, custom_position } : p)));
+      if (!owner) {
+        pendingPositionRef.current = null;
+        return;
+      }
+      const { error } = await supabase
+        .from("people")
+        .update({ custom_position })
+        .eq("id", personId)
+        .eq("owner_id", owner);
+      if (error) {
+        pendingPositionRef.current = null;
+        setPeople((prev) => prev.map((p) => (
+          p.id === personId ? { ...p, custom_position: previousCustom } : p
+        )));
+      }
+    };
+
     const onClick = (e: MouseEvent) => {
+      if (suppressClickRef.current) {
+        suppressClickRef.current = false;
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       const rect = canvas.getBoundingClientRect();
-      const hit  = hitTest(e.clientX - rect.left, e.clientY - rect.top);
+      const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
       if (hit) router.push(`/app/person/${hit.id}`);
     };
 
+    const onContextMenu = (e: Event) => { e.preventDefault(); };
+
+    canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointerup", onPointerEnd);
+    canvas.addEventListener("pointercancel", onPointerEnd);
     canvas.addEventListener("click", onClick);
+    canvas.addEventListener("contextmenu", onContextMenu);
 
     return () => {
       galaxyCaptureRef.current = null;
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
+      canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerup", onPointerEnd);
+      canvas.removeEventListener("pointercancel", onPointerEnd);
       canvas.removeEventListener("click", onClick);
+      canvas.removeEventListener("contextmenu", onContextMenu);
     };
   }, [loading, people, links, honorEdges, activeTransitIds, hoverPerson, router, cohortByPerson]);
 
@@ -1293,7 +1460,7 @@ export default function AppHomePage() {
       const localDate = ownerLocalDate();
       const [profileRes, peopleRes, chartRes, threadRes, relRes, nudgeRes, recentRes] = await Promise.all([
         supabase.from("profiles").select("display_name, pinned_sky_person_id").eq("id", uid).single(),
-        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation").eq("owner_id", uid).order("created_at", { ascending: true }),
+        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6),
         supabase.from("relationships").select("person_a, person_b, relation_type").eq("owner_id", uid).eq("relation_type", HONOR_RELATION_TYPE),
@@ -1480,6 +1647,12 @@ export default function AppHomePage() {
         <p className="muted">{welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."}</p>
       </div>
 
+      {/* ── This Week (Generations Feature 3: relational transit alerts) ──
+         Compact card first: names-led entries, cap of three, link to the
+         full feed. Reads relational_transits rows the daily cron already
+         computed. Empty state never disappears and never fabricates a card. */}
+      {ownerId ? <RelationalTransitFeed ownerId={ownerId} variant="compact" /> : null}
+
       {/* ── Living constellation — full-width, real vertical presence ── */}
       <section className="glass-card fade-in" style={{ padding: 0, overflow: "hidden" }} aria-busy={loading}>
         <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -1531,7 +1704,7 @@ export default function AppHomePage() {
             />
             <canvas
               ref={canvasRef}
-              style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%" }}
+              style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", touchAction: "none" }}
             />
 
             {/* fine film grain over the focal plane — texture, not static.
@@ -1564,6 +1737,40 @@ export default function AppHomePage() {
                 <p style={{ fontSize: ".72rem", color: "var(--teal)", display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 100, background: "rgba(111,177,184,.1)", border: "1px solid rgba(111,177,184,.24)" }}>Click to open profile</p>
               </div>
             ) : null}
+
+            <button
+              type="button"
+              aria-pressed={showRings}
+              aria-label={showRings ? "Hide orbital rings" : "Show orbital rings"}
+              onClick={() => {
+                setShowRings((r) => {
+                  const next = !r;
+                  writeUiSetting(SETTING_SHOW_RINGS, next ? "true" : "false");
+                  return next;
+                });
+              }}
+              style={{
+                position: "absolute",
+                bottom: 12,
+                left: 12,
+                zIndex: 10,
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: 8,
+                padding: "6px 10px",
+                cursor: "pointer",
+                color: showRings ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.30)",
+                fontSize: 12,
+                letterSpacing: "0.08em",
+                fontFamily: "inherit",
+                backdropFilter: "blur(4px)",
+                transition: "color 0.2s, background 0.2s",
+                userSelect: "none",
+              }}
+            >
+              {/* FOUNDER-REVIEW: rings toggle label */}
+              RINGS
+            </button>
             </div>
           ) : null}
         </ChartImageExportFrame>
@@ -1604,7 +1811,7 @@ export default function AppHomePage() {
          One durable nudge row per person per owner-local day. copy_resolved is
          frozen at write; notation proof only when precision_mode is exact. */}
       {!loading && personSkies.length > 0 ? (
-        <section className="glass-card fade-in fade-in-delay-1">
+        <section id="today-in-your-sky" className="glass-card fade-in fade-in-delay-1">
           <p className="eyebrow">Today in your sky</p>
           <p className="muted" style={{ fontSize: ".78rem", marginBottom: 10 }}>
             {activeTransitIds.length > 0
@@ -1654,12 +1861,6 @@ export default function AppHomePage() {
           </div>
         </section>
       ) : null}
-
-      {/* ── This Week (Generations Feature 3: relational transit alerts) ──
-         Reads relational_transits rows the daily cron job already computed;
-         this component does its own load/filter/render, home just mounts it
-         once an owner is known. */}
-      {!loading && ownerId ? <RelationalTransitFeed ownerId={ownerId} /> : null}
 
       {/* ── Recent Vela threads ── */}
       {!loading && threadChips.length > 0 ? (

@@ -9,7 +9,7 @@ import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { BLOG_CATEGORIES, getPublishedPosts } from "../../lib/blog";
 
 // FOUNDER-REVIEW: rewritten (no U+2014).
-const TITLE = "Galaxia Blog";
+const TITLE = "Galaxia Blog: Birth Charts, Synastry, and Astrology Guides";
 const DESCRIPTION = "Guides for reading real birth charts: synastry, generations, and what astrology can and can't actually tell you.";
 
 export const metadata: Metadata = {
@@ -51,9 +51,9 @@ export default async function BlogIndexPage() {
         <BlogZodiacTrail />
         <div className="blog-index-glow" aria-hidden="true" />
         <span className="eyebrow">Galaxia blog</span>
-        <h1 className="page-title">Guides for the people you love.</h1>
+        <h1 className="page-title">How to actually read a birth chart.</h1>
         <p className="lede">
-          How to actually read a chart: starting with the ones for the people already in your life.
+          Natal charts, synastry, generations, and what astrology can and cannot claim. Starting with the people already in your life.
         </p>
 
         <nav aria-label="Categories" className="blog-tabs">

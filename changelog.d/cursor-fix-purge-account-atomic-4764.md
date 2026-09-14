@@ -1,0 +1,9 @@
+## Atomic account purge (branch `cursor/fix-purge-account-atomic-4764`) — 2026-09-14
+
+**Trigger**: self-serve account deletion could return success on the graph RPC and then fail to drop `auth.users`, leaving a login after the user thought they were gone. A leftover `thread_participants.user_id` (NO ACTION) is the failure that first showed this: after the profile row was gone, `DELETE FROM auth.users` raised `thread_participants_user_id_fkey`. A partial delete is worse than a failed one.
+
+`[FIXED]` **`purge_own_account_data()` is complete and ordered** (`20260914120000_purge_own_account_data_atomic.sql`). Dependents go before the rows they reference, `thread_participants` included. Previously missed explicit deletes are restored or added (`quick_share_snapshots`, `vela_rate_limits`, `admin_users`, owned `messages`, matching `early_access` email). `admin_audit_log` rows stay, with `actor_id` / `target_user_id` nulled. No foreign keys were changed to CASCADE.
+
+`[FIXED]` **The login row is deleted in the same function**, so the RPC is the transaction. Postgres already runs a function body as one transaction with the calling statement (BEGIN/COMMIT are not legal inside a FUNCTION). A mid-purge error now rolls back the graph *and* the login. `POST /api/account/delete` still calls GoTrue `deleteUser` as a best-effort sweep; 404 is the happy path, and the route no longer reports "data removed, login remains."
+
+`[ADDED]` **Replay test** (`apps/web/lib/purge-own-account-data.test.ts`): every `create table` in `supabase/migrations` must be classified as purged, retained, or anonymized. The behavioral half seeds a caller in every purged table on ephemeral local Postgres, runs the function, and asserts zero leftover rows including `auth.users`. Adding a table without updating the list fails the suite.

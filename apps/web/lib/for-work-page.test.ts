@@ -17,9 +17,11 @@ describe("/for-work metadata", () => {
   const src = read(PAGE);
 
   it("exports the unique title, description, and canonical from the spec", () => {
-    expect(src).toContain('const TITLE = "Understand the people you work with | Galaxia"');
     expect(src).toContain(
-      "Before the one to one, the negotiation, or the hard feedback, know how this person is wired and what shaped them. Built on real birth data, written in plain language.",
+      'const TITLE = "Galaxia for Work: Relationship Intelligence from Computed Astrology"',
+    );
+    expect(src).toContain(
+      "Before the one to one, the negotiation, or the hard feedback, know how this person is wired and what shaped them. Computed astrology from real birth data, written in plain language.",
     );
     expect(src).toMatch(/alternates:\s*\{\s*canonical:\s*"\/for-work"/);
     expect(src).toContain('url: "/for-work"');

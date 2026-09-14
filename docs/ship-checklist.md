@@ -82,6 +82,8 @@
 
 ## Store listing assets
 
+Copy lives in `content/store/app-store.md` and `content/store/play-store.md` (layer one: outcome first, never "an astrology app"). Hidden App Store keywords may include astrology. See `design/galaxia-voice-layers.md`.
+
 - App subtitle/tagline
 - 5 screenshots per platform
 - Privacy policy URL

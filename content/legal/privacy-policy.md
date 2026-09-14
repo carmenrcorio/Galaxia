@@ -33,7 +33,7 @@ Galaxia is unusual in two ways that shape this entire Policy, and we want to be 
 
 **Payment information.** When you subscribe, payment is processed by our third-party billing providers (Section 7 and Section 9). We do not receive or store your full payment card number. We receive limited billing metadata such as subscription status, plan, renewal dates, and the result of a transaction.
 
-**Communications.** If you contact us (for example at [help@galaxiamea.com](mailto:help@galaxiamea.com)), we receive the contents of your message and our correspondence with you.
+**Communications.** If you contact us (for example at [{{GALAXIA_HELP_EMAIL}}](mailto:{{GALAXIA_HELP_EMAIL}})), we receive the contents of your message and our correspondence with you.
 
 ### 2.2 Information collected automatically
 
@@ -92,7 +92,7 @@ This section is central to Galaxia and to your responsibilities.
 **Retention.** An invitation link expires 14 days after it is created if not accepted. An expired, unaccepted invitation carries no personal information forward, since the invited person never submitted anything through it. Once an invitation is accepted, the information the invited person submitted is retained as part of their profile subject to the retention and deletion terms described elsewhere in this Privacy Policy.
 
 <!-- FOUNDER-REVIEW: added. Invitation-flow addendum. changelog.d/cursor-invitation-legal-addendum-5920.md -->
-**Rights of the invited person.** A person who submitted their own information through an invitation may request access to, correction of, or deletion of that information by contacting [help@galaxiamea.com](mailto:help@galaxiamea.com), in the same manner as any other person whose information appears in another user's galaxy.
+**Rights of the invited person.** A person who submitted their own information through an invitation may request access to, correction of, or deletion of that information by contacting [{{GALAXIA_HELP_EMAIL}}](mailto:{{GALAXIA_HELP_EMAIL}}), in the same manner as any other person whose information appears in another user's galaxy.
 
 ---
 
@@ -158,7 +158,7 @@ If we become aware of a security breach affecting your personal information, we 
 
 ## 11\. Children's privacy
 
-The Service is not directed to children, and you must meet the minimum age in our Terms of Service to hold an account. We do not knowingly collect personal information directly from a child under 13 (or the equivalent minimum age in your jurisdiction) as an account holder. If you believe a child has created an account or provided information to us as an account holder, contact us at [help@galaxiamea.com](mailto:help@galaxiamea.com) and we will take appropriate steps to delete it.
+The Service is not directed to children, and you must meet the minimum age in our Terms of Service to hold an account. We do not knowingly collect personal information directly from a child under 13 (or the equivalent minimum age in your jurisdiction) as an account holder. If you believe a child has created an account or provided information to us as an account holder, contact us at [{{GALAXIA_HELP_EMAIL}}](mailto:{{GALAXIA_HELP_EMAIL}}) and we will take appropriate steps to delete it.
 
 This is distinct from information about a minor that an adult user provides when adding that minor as a person in their galaxy, which is governed by Section 5\. \[This area — the distinction between a minor account holder and a minor added as a subject, and the requirements of COPPA and equivalent laws — should be reviewed by counsel, as it depends on product decisions about who may hold an account and who may be added.\]
 
@@ -176,7 +176,7 @@ Depending on where you live, you may have some or all of the following rights re
 - to withdraw consent where processing is based on consent; and  
 - to appeal a decision or lodge a complaint with a supervisory authority.
 
-You can access and update much of your information directly in the Service, and you can delete your account within the Service, which removes your associated personal information as described in Section 8\. To exercise any right, you may also contact us at [help@galaxiamea.com](mailto:help@galaxiamea.com). We will respond within the time required by applicable law and will not discriminate against you for exercising your rights.
+You can access and update much of your information directly in the Service, and you can delete your account within the Service, which removes your associated personal information as described in Section 8\. To exercise any right, you may also contact us at [{{GALAXIA_HELP_EMAIL}}](mailto:{{GALAXIA_HELP_EMAIL}}). We will respond within the time required by applicable law and will not discriminate against you for exercising your rights.
 
 **For residents of California:** we do not sell or share your personal information as those terms are defined under California law, and we do not use or disclose sensitive personal information for purposes that would require offering a right to limit. You may exercise the access, deletion, correction, and non-discrimination rights described above.
 
@@ -201,5 +201,5 @@ We may update this Policy from time to time. When we make material changes, we w
 If you have questions about this Policy or our privacy practices, contact us at:
 
 **GALAXIA MEA LLC**  
-Email: [help@galaxiamea.com](mailto:help@galaxiamea.com)  
+Email: [{{GALAXIA_HELP_EMAIL}}](mailto:{{GALAXIA_HELP_EMAIL}})  
 Mailing address: 1 Shadowrock Ct, Simpsonville, SC 29680  

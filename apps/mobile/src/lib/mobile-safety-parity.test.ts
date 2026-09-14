@@ -238,3 +238,18 @@ describe("mobile Compare does not duplicate generational.theme", () => {
     expect(src).not.toContain("This connection spans different eras. The generational layer is the headline.");
   });
 });
+
+describe("mobile person profile groups into Them | Yours", () => {
+  it("wiring: profile uses shared group labels, skips Now, defaults to Them", () => {
+    const src = readFileSync(resolve(__dirname, "../../app/(app)/profile/[personId].tsx"), "utf8");
+    expect(src).toContain("PERSON_GROUP_LABEL");
+    expect(src).toContain('useState<PersonGroupKey>("them")');
+    expect(src).toContain('isMemorial ? "remembrance" : "yours"');
+    expect(src).toContain('groupKeys: PersonGroupKey[] = ["them", secondGroup]');
+    expect(src).not.toContain("PERSON_GROUP_LABEL.now");
+    expect(src).not.toContain('"now"');
+    // Leave the existing mobile push-notification gap untouched.
+    expect(src).not.toContain("addNotificationResponseReceivedListener");
+    expect(src).not.toContain("Notifications.");
+  });
+});

@@ -58,4 +58,71 @@ describe("Sentry capture + scrubber", () => {
     expect(dumped).not.toContain("What does her Moon mean?");
     expect(dumped).toContain(REDACTED);
   });
+
+  it("redacts a person id from a handled error on /app/person/[id]", async () => {
+    const envelopes: unknown[] = [];
+    const sentEvents: ScrubbableEvent[] = [];
+    const personId = "550e8400-e29b-41d4-a716-446655440000";
+
+    Sentry.init({
+      dsn: "https://publickey@o0.ingest.sentry.io/1",
+      sendDefaultPii: false,
+      tracesSampleRate: 0,
+      beforeSend(event) {
+        const scrubbed = scrubSentryEvent(event as unknown as ScrubbableEvent);
+        sentEvents.push(scrubbed);
+        return scrubbed as unknown as typeof event;
+      },
+      transport: () => ({
+        send(envelope) {
+          envelopes.push(envelope);
+          return Promise.resolve({});
+        },
+        flush: async () => true
+      })
+    });
+
+    Sentry.withScope((scope) => {
+      scope.setTag("url", `/app/person/${personId}`);
+      scope.setExtra("href", `https://galaxiamea.com/app/person/${personId}`);
+      scope.setContext("nextjs", { route: `/app/person/${personId}` });
+      scope.addEventProcessor((event) => {
+        event.transaction = `GET /app/person/${personId}`;
+        event.request = {
+          url: `https://galaxiamea.com/app/person/${personId}?threadId=${personId}`,
+          query_string: `threadId=${personId}`,
+          data: { personId },
+          headers: { Referer: `https://galaxiamea.com/app/person/${personId}` }
+        };
+        event.breadcrumbs = [
+          {
+            category: "navigation",
+            data: { from: "/app", to: `/app/person/${personId}` }
+          }
+        ];
+        return event;
+      });
+      Sentry.captureException(new Error("handled person-detail error"));
+    });
+
+    await Sentry.flush(2000);
+
+    expect(envelopes.length).toBeGreaterThan(0);
+    expect(sentEvents.length).toBeGreaterThan(0);
+    const payload = sentEvents[0];
+    const dumped = JSON.stringify({ event: payload, envelope: envelopes });
+    expect(dumped).toContain("handled person-detail error");
+    expect(dumped).not.toContain(personId);
+    expect(payload.request?.url).toBe(`https://galaxiamea.com/app/person/${REDACTED}`);
+    expect(payload.request?.query_string).toBeUndefined();
+    expect(payload.request?.data).toBe(REDACTED);
+    expect(payload.transaction).toBe(`GET /app/person/${REDACTED}`);
+    expect(payload.tags?.url).toBe(`/app/person/${REDACTED}`);
+    expect(payload.extra?.href).toBe(`https://galaxiamea.com/app/person/${REDACTED}`);
+    expect((payload.contexts?.nextjs as { route: string }).route).toBe(`/app/person/${REDACTED}`);
+    expect(payload.breadcrumbs?.[0]?.data).toEqual({
+      from: "/app",
+      to: `/app/person/${REDACTED}`
+    });
+  });
 });

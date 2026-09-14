@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { computeNatalChart } from "../src/index";
-import { isRelationalTransitActive, relationalTransitDedupKey, scanRelationalTransits } from "../src/relational-transits";
-import { interpretRelationalTransit, interpretRelationalTransitHeadline } from "../src/relational-transit-interpretations";
+import { findNextRelationalTransitDate, isRelationalTransitActive, relationalTransitDedupKey, scanRelationalTransits } from "../src/relational-transits";
+import { interpretRelationalTransit, interpretRelationalTransitHeadline, interpretRelationalTransitPlanetNote, namedPeoplePhrase } from "../src/relational-transit-interpretations";
 
 // Ground truth verified via a scratch script sweeping real dates against
 // these exact three charts — not hand-picked "nice" numbers. On this date
@@ -133,14 +133,19 @@ describe("relationalTransitDedupKey", () => {
 });
 
 describe("relational transit interpretation copy", () => {
-  it("headline names the real transit body, aspect, and both affected people's names + natal bodies", () => {
+  it("headline leads with the people's names, then the dynamic; planet is not the headline", () => {
     const events = scanRelationalTransits(PEOPLE, KNOWN_HIT_DATE);
     const saturnTrine = events.find((e) => e.transitBody === "saturn" && e.aspectType === "trine")!;
     const headline = interpretRelationalTransitHeadline(saturnTrine);
-    expect(headline).toContain("Saturn");
-    expect(headline).toContain("flowing with");
+    const names = namedPeoplePhrase(saturnTrine.affected);
+    expect(headline.startsWith(names)).toBe(true);
+    expect(headline).not.toMatch(/^Saturn/);
+    const note = interpretRelationalTransitPlanetNote(saturnTrine);
+    expect(note).toContain("Saturn");
+    expect(note).toContain("flowing with");
     for (const hit of saturnTrine.affected) {
       expect(headline).toContain(hit.personName);
+      expect(note).toContain(hit.personName);
     }
   });
 
@@ -164,6 +169,25 @@ describe("relational transit interpretation copy", () => {
       ],
     };
     const headline = interpretRelationalTransitHeadline(threeWay);
-    expect(headline).toContain("Ada's Moon, Mom's Venus, and Sam's Sun");
+    expect(headline.startsWith("Ada, Mom, and Sam")).toBe(true);
+    expect(interpretRelationalTransitPlanetNote(threeWay)).toContain("Ada's Moon, Mom's Venus, and Sam's Sun");
+  });
+});
+
+describe("findNextRelationalTransitDate", () => {
+  it("returns a real future date when a known hit sits inside the horizon, never a fabricated card payload", () => {
+    const next = findNextRelationalTransitDate(PEOPLE, "2022-06-01T12:00:00.000Z", { horizonDays: 56, stepDays: 7 });
+    expect(next).toBeTruthy();
+    expect(Number.isNaN(new Date(next!).getTime())).toBe(false);
+    expect(new Date(next!).getTime()).toBeGreaterThan(new Date("2022-06-01T12:00:00.000Z").getTime());
+  });
+
+  it("returns null when the horizon is empty, rather than inventing a date", () => {
+    const next = findNextRelationalTransitDate(
+      [{ id: "a", name: "Ada", chart: CHART_A }],
+      KNOWN_HIT_DATE,
+      { horizonDays: 28, stepDays: 7 }
+    );
+    expect(next).toBeNull();
   });
 });

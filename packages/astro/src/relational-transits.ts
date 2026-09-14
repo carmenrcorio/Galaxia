@@ -178,6 +178,43 @@ export function isRelationalTransitActive(event: Pick<RelationalTransitEvent, "a
 }
 
 /**
+ * Next calendar instant (ISO) when a real relational transit is in orb,
+ * looking forward from `fromUTC`. Returns null when none is found inside
+ * the horizon. Never invents an event: it only returns a date if
+ * `scanRelationalTransits` actually finds 2+ people in orb at a sampled
+ * instant. The caller must not turn this date into a fake feed card.
+ */
+export function findNextRelationalTransitDate(
+  people: RelationalTransitPersonInput[],
+  fromUTC: string,
+  options?: {
+    horizonDays?: number;
+    stepDays?: number;
+    bodies?: readonly RelationalTransitBody[];
+  }
+): string | null {
+  if (people.length < 2) return null;
+  const horizonDays = options?.horizonDays ?? 56;
+  const stepDays = options?.stepDays ?? 7;
+  const fromMs = new Date(fromUTC).getTime();
+  if (Number.isNaN(fromMs) || stepDays < 1 || horizonDays < stepDays) return null;
+
+  for (let day = stepDays; day <= horizonDays; day += stepDays) {
+    const when = new Date(fromMs + day * MS_PER_DAY).toISOString();
+    const events = scanRelationalTransits(people, when).filter((event) =>
+      options?.bodies ? options.bodies.includes(event.transitBody) : true
+    );
+    if (events.length === 0) continue;
+    const futureStarts = events
+      .map((event) => event.activeFromUTC)
+      .filter((iso) => new Date(iso).getTime() > fromMs)
+      .sort();
+    return futureStarts[0] ?? when;
+  }
+  return null;
+}
+
+/**
  * Stable dedup/upsert key for storing a scanned event: the same real pass,
  * re-scanned on consecutive days as it stays inside its window, always maps
  * to the same key (bucketed by the UTC week containing the earliest exact

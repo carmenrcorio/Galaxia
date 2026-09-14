@@ -26,7 +26,7 @@ const NATAL_BODY_LABEL: Record<string, string> = {
   jupiter: "Jupiter", saturn: "Saturn", uranus: "Uranus", neptune: "Neptune", pluto: "Pluto",
 };
 
-/** "meeting" / "supporting" / "squaring" / "flowing with" / "opposing" — the headline verb. */
+/** "meeting" / "supporting" / "squaring" / "flowing with" / "opposing" — the planet-note verb. */
 const ASPECT_VERB: Record<AspectType, string> = {
   conjunction: "meeting",
   sextile: "gently supporting",
@@ -35,20 +35,55 @@ const ASPECT_VERB: Record<AspectType, string> = {
   opposition: "pulling against",
 };
 
+// FOUNDER-REVIEW: names-first dynamic lead (fusion / friction / flow). Planet is not the headline.
+const DYNAMIC_LEAD: Record<"flow" | "friction" | "fusion", string> = {
+  fusion: "the same intensity is landing on you at the same time",
+  friction: "the same pressure is showing up between you, in different ways",
+  flow: "something is moving more easily between you right now",
+};
+
 function possessive(name: string): string {
   return /s$/i.test(name) ? `${name}'` : `${name}'s`;
 }
 
-/** "your Moon and Mom's Venus", or "Alex's Moon, Mom's Venus, and Sam's Sun" for 3+. */
-function namedTargetsPhrase(affected: AffectedProfileHit[]): string {
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
+/** Unique display names in affected order, e.g. "Ada and Cy" or "Ada, Mom, and Sam". */
+export function namedPeoplePhrase(affected: AffectedProfileHit[]): string {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const hit of affected) {
+    if (seen.has(hit.personId)) continue;
+    seen.add(hit.personId);
+    names.push(hit.personName);
+  }
+  return joinNames(names);
+}
+
+/** "Ada's Moon and Mom's Venus", or "Ada's Moon, Mom's Venus, and Sam's Sun" for 3+. */
+export function namedTargetsPhrase(affected: AffectedProfileHit[]): string {
   const parts = affected.map((a) => `${possessive(a.personName)} ${NATAL_BODY_LABEL[a.natalBody] ?? a.natalBody}`);
   if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
   return `${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}`;
 }
 
-/** e.g. "Saturn is squaring Alex's Moon and Mom's Venus this week." */
+/** What the transit is doing between the people. Planet stays out of this line. */
+export function interpretRelationalTransitDynamicLead(event: Pick<RelationalTransitEvent, "aspectType">): string {
+  return DYNAMIC_LEAD[ASPECT_CLASS[event.aspectType]];
+}
+
+/** e.g. "Ada and Cy: something is moving more easily between you right now" */
 export function interpretRelationalTransitHeadline(event: Pick<RelationalTransitEvent, "transitBody" | "aspectType" | "affected">): string {
-  return `${PLANET_LABEL[event.transitBody]} is ${ASPECT_VERB[event.aspectType]} ${namedTargetsPhrase(event.affected)} this week`;
+  return `${namedPeoplePhrase(event.affected)}: ${interpretRelationalTransitDynamicLead(event)}`;
+}
+
+/** Secondary line: planet, aspect, natal targets. Never the headline. */
+export function interpretRelationalTransitPlanetNote(event: Pick<RelationalTransitEvent, "transitBody" | "aspectType" | "affected">): string {
+  return `${PLANET_LABEL[event.transitBody]} is ${ASPECT_VERB[event.aspectType]} ${namedTargetsPhrase(event.affected)}`;
 }
 
 // 5 planets x 3 aspect classes (flow/friction/fusion) = 15 body templates,

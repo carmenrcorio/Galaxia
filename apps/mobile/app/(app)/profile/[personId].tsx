@@ -3,7 +3,12 @@ import {
   OWNED_DELETE_COPY,
   describeGenerationalArchetype,
   formatPersonDeleteConfirmation,
-  groupsCollapsedByMemberRemoval
+  groupsCollapsedByMemberRemoval,
+  hasPassed,
+  PERSON_GROUP_LABEL,
+  PERSON_TAB_LABEL,
+  PERSON_TAB_VOCAB,
+  type PersonGroupKey
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
@@ -18,6 +23,7 @@ interface PersonRow {
   relation: string;
   birth_precision: "exact" | "date" | "year" | "none";
   is_self?: boolean;
+  passed_at?: string | null;
 }
 
 interface NoteRow {
@@ -44,6 +50,8 @@ export default function PersonProfileScreen() {
   const [notes, setNotes] = useState<NoteRow[]>([]);
   const [noteDraft, setNoteDraft] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  /** Mobile has no daily-nudge / Vela Now group. Default Them. */
+  const [activeGroup, setActiveGroup] = useState<PersonGroupKey>("them");
 
   const resolvedPersonId = useMemo(() => (Array.isArray(personId) ? personId[0] : personId), [personId]);
 
@@ -75,7 +83,7 @@ export default function PersonProfileScreen() {
     }
 
     const [{ data: personData, error: personError }, { data: chartData, error: chartError }, { data: noteData, error: noteError }] = await Promise.all([
-      supabase.from("people").select("id, display_name, relation, birth_precision, is_self").eq("id", actualPersonId).single(),
+      supabase.from("people").select("id, display_name, relation, birth_precision, is_self, passed_at").eq("id", actualPersonId).single(),
       supabase.from("charts").select("data").eq("person_id", actualPersonId).maybeSingle(),
       supabase.from("notes").select("id, body, created_at").eq("about_person", actualPersonId).order("created_at", { ascending: false }).limit(20)
     ]);
@@ -216,6 +224,9 @@ export default function PersonProfileScreen() {
   const sun = chart?.placements.find((placement) => placement.body === "sun");
   const moon = chart?.placements.find((placement) => placement.body === "moon");
   const rising = chart?.asc;
+  const isMemorial = hasPassed(person) && !person.is_self;
+  const secondGroup: PersonGroupKey = isMemorial ? "remembrance" : "yours";
+  const groupKeys: PersonGroupKey[] = ["them", secondGroup];
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink2 }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 90 }}>
@@ -229,127 +240,179 @@ export default function PersonProfileScreen() {
         </Pressable>
       </Link>
 
-      {chart ? (
-        <>
-          <View style={cardStyle}>
-            <Text style={cardTitle}>Big Three</Text>
-            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-            <Text style={cardBody}>Sun: {sun?.sign ?? "·"}</Text>
-            <Text style={cardBody}>Moon: {moon?.sign ?? "·"}</Text>
-            <Text style={cardBody}>Rising: {rising ?? "Unavailable without exact time/location"}</Text>
-          </View>
-
-          <View style={cardStyle}>
-            <Text style={cardTitle}>{chart.precision === "exact" ? "Natal wheel" : "Sign strip"}</Text>
-            {chart.precision === "exact" ? (
-              <View style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.gold, width: 220, height: 220, alignSelf: "center", alignItems: "center", justifyContent: "center" }}>
-                <Text style={{ color: tokens.colors.gold }}>Wheel placeholder</Text>
-                <Text style={{ color: tokens.colors.mist, fontSize: 12, marginTop: 4 }}>SVG wheel component next slice</Text>
-              </View>
-            ) : (
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {chart.placements.map((placement) => (
-                  <View key={placement.body} style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 6, paddingHorizontal: 10 }}>
-                    <Text style={{ color: tokens.colors.cream, textTransform: "capitalize" }}>
-                      {placement.body}: {placement.sign}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-
-          <View style={cardStyle}>
-            <Text style={cardTitle}>Elemental balance</Text>
-            {elementBalance ? (
-              <Text style={cardBody}>
-                Fire {elementBalance.fire} · Earth {elementBalance.earth} · Air {elementBalance.air} · Water {elementBalance.water}
+      <View accessibilityRole="tablist" style={{ flexDirection: "row", gap: 6 }}>
+        {groupKeys.map((key) => {
+          const selected = activeGroup === key;
+          return (
+            <Pressable
+              key={key}
+              accessibilityRole="tab"
+              accessibilityState={{ selected }}
+              onPress={() => setActiveGroup(key)}
+              style={{
+                flex: 1,
+                minHeight: 36,
+                borderRadius: 999,
+                alignItems: "center",
+                justifyContent: "center",
+                paddingVertical: 8,
+                backgroundColor: selected ? tokens.colors.gold : "rgba(255,255,255,0.04)",
+                borderWidth: 1,
+                borderColor: selected ? tokens.colors.gold : tokens.colors.line
+              }}
+            >
+              {/* FOUNDER-REVIEW: PERSON_GROUP_LABEL */}
+              <Text
+                style={{
+                  color: selected ? tokens.colors.ink : tokens.colors.mist,
+                  fontWeight: "700",
+                  fontSize: 13,
+                  letterSpacing: 0.8,
+                  textTransform: "uppercase"
+                }}
+              >
+                {PERSON_GROUP_LABEL[key]}
               </Text>
-            ) : null}
-          </View>
-
-          <View style={cardStyle}>
-            <Text style={cardTitle}>Placements</Text>
-            {chart.placements.map((placement) => (
-              <Text key={placement.body} style={cardBody}>
-                {placement.body.toUpperCase()} {placement.sign} {placement.degree.toFixed(1)}°{placement.house ? ` · House ${placement.house}` : ""}
-              </Text>
-            ))}
-          </View>
-
-          <View style={cardStyle}>
-            <Text style={cardTitle}>Generational layer</Text>
-            <Text style={badgeStyle}>Reads from your birth year</Text>
-            <Text style={cardBody}>{chart.generational.cohortLabel}</Text>
-            <Text style={cardBody}>
-              Uranus in {chart.generational.uranus.sign}: {describeGenerationalArchetype("Uranus", chart.generational.uranus.sign)}
-            </Text>
-            <Text style={cardBody}>
-              Neptune in {chart.generational.neptune.sign}: {describeGenerationalArchetype("Neptune", chart.generational.neptune.sign)}
-            </Text>
-            <Text style={cardBody}>
-              Pluto in {chart.generational.pluto.sign}: {describeGenerationalArchetype("Pluto", chart.generational.pluto.sign)}
-            </Text>
-            {chart.precision === "exact" ? (
-              <Text style={[cardBody, { color: tokens.colors.goldSoft }]}>
-                Houses: Uranus {chart.generational.uranusHouse ?? "·"} · Neptune {chart.generational.neptuneHouse ?? "·"} · Pluto {chart.generational.plutoHouse ?? "·"}
-              </Text>
-            ) : null}
-          </View>
-        </>
-      ) : chartLoadError ? (
-        <View style={cardStyle}>
-          {/* FOUNDER-REVIEW: a failed chart read says so. It is never shown as
-              an empty chart or as missing birth data (ENGINEERING §12). */}
-          <Text style={cardTitle}>Chart could not be loaded</Text>
-          <Text style={cardBody}>{chartLoadError}</Text>
-        </View>
-      ) : (
-        <View style={cardStyle}>
-          {/* FOUNDER-REVIEW: new copy for a person saved without birth data.
-              Mobile has no birth-data editor yet, so this states the situation
-              without promising a control that is not here. */}
-          <Text style={cardTitle}>No birth data yet</Text>
-          <Text style={cardBody}>
-            There is no chart to show until {person.display_name}&apos;s birth data is added. A birth year on its own is
-            enough for the generational layer.
-          </Text>
-        </View>
-      )}
-
-      <View style={cardStyle}>
-        <Text style={cardTitle}>Private notes</Text>
-        <TextInput
-          value={noteDraft}
-          onChangeText={setNoteDraft}
-          placeholder="Log a private moment..."
-          placeholderTextColor={tokens.colors.mist2}
-          multiline
-          style={{
-            backgroundColor: tokens.colors.ink3,
-            borderColor: tokens.colors.line,
-            borderWidth: 1,
-            borderRadius: 10,
-            color: tokens.colors.cream,
-            minHeight: 80,
-            textAlignVertical: "top",
-            padding: 10
-          }}
-        />
-        <Pressable onPress={saveNote} style={{ backgroundColor: tokens.colors.gold, borderRadius: 999, paddingVertical: 10 }}>
-          <Text style={{ color: tokens.colors.ink, fontWeight: "700", textAlign: "center" }}>Save private note</Text>
-        </Pressable>
-        {notes.length === 0 ? (
-          <Text style={cardBody}>No notes yet. Notes are owner-only and never shared.</Text>
-        ) : (
-          notes.map((note) => (
-            <View key={note.id} style={{ borderWidth: 1, borderColor: tokens.colors.line, borderRadius: 10, padding: 10 }}>
-              <Text style={{ color: tokens.colors.cream }}>{note.body}</Text>
-              <Text style={{ color: tokens.colors.mist2, fontSize: 12, marginTop: 4 }}>{new Date(note.created_at).toLocaleString()}</Text>
-            </View>
-          ))
-        )}
+            </Pressable>
+          );
+        })}
       </View>
+
+      {activeGroup === "them" ? (
+        chart ? (
+          <>
+            <View style={cardStyle}>
+              {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
+              <Text style={cardTitle}>{PERSON_TAB_LABEL["big-three"]}</Text>
+              <Text style={vocabSubhead}>{PERSON_TAB_VOCAB["big-three"] ?? "Big three"}</Text>
+              {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
+              <Text style={cardBody}>Sun: {sun?.sign ?? "·"}</Text>
+              <Text style={cardBody}>Moon: {moon?.sign ?? "·"}</Text>
+              <Text style={cardBody}>Rising: {rising ?? "Unavailable without exact time/location"}</Text>
+            </View>
+
+            <View style={cardStyle}>
+              {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
+              <Text style={cardTitle}>{PERSON_TAB_LABEL.placements}</Text>
+              <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.placements ?? "Placements"}</Text>
+              {chart.placements.map((placement) => (
+                <Text key={placement.body} style={cardBody}>
+                  {placement.body.toUpperCase()} {placement.sign} {placement.degree.toFixed(1)}°{placement.house ? ` · House ${placement.house}` : ""}
+                </Text>
+              ))}
+            </View>
+
+            <View style={cardStyle}>
+              <Text style={cardTitle}>Elemental balance</Text>
+              {elementBalance ? (
+                <Text style={cardBody}>
+                  Fire {elementBalance.fire} · Earth {elementBalance.earth} · Air {elementBalance.air} · Water {elementBalance.water}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={cardStyle}>
+              {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
+              <Text style={cardTitle}>{PERSON_TAB_LABEL.generational}</Text>
+              <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.generational ?? "Generational"}</Text>
+              <Text style={badgeStyle}>Reads from your birth year</Text>
+              <Text style={cardBody}>{chart.generational.cohortLabel}</Text>
+              <Text style={cardBody}>
+                Uranus in {chart.generational.uranus.sign}: {describeGenerationalArchetype("Uranus", chart.generational.uranus.sign)}
+              </Text>
+              <Text style={cardBody}>
+                Neptune in {chart.generational.neptune.sign}: {describeGenerationalArchetype("Neptune", chart.generational.neptune.sign)}
+              </Text>
+              <Text style={cardBody}>
+                Pluto in {chart.generational.pluto.sign}: {describeGenerationalArchetype("Pluto", chart.generational.pluto.sign)}
+              </Text>
+              {chart.precision === "exact" ? (
+                <Text style={[cardBody, { color: tokens.colors.goldSoft }]}>
+                  Houses: Uranus {chart.generational.uranusHouse ?? "·"} · Neptune {chart.generational.neptuneHouse ?? "·"} · Pluto {chart.generational.plutoHouse ?? "·"}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={cardStyle}>
+              {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
+              <Text style={cardTitle}>{PERSON_TAB_LABEL["chart-wheel"]}</Text>
+              <Text style={vocabSubhead}>
+                {chart.precision === "exact" ? PERSON_TAB_VOCAB["chart-wheel"] : "Sign strip"}
+              </Text>
+              {chart.precision === "exact" ? (
+                <View style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.gold, width: 220, height: 220, alignSelf: "center", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ color: tokens.colors.gold }}>Wheel placeholder</Text>
+                  <Text style={{ color: tokens.colors.mist, fontSize: 12, marginTop: 4 }}>SVG wheel component next slice</Text>
+                </View>
+              ) : (
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {chart.placements.map((placement) => (
+                    <View key={placement.body} style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 6, paddingHorizontal: 10 }}>
+                      <Text style={{ color: tokens.colors.cream, textTransform: "capitalize" }}>
+                        {placement.body}: {placement.sign}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </>
+        ) : chartLoadError ? (
+          <View style={cardStyle}>
+            {/* FOUNDER-REVIEW: a failed chart read says so. It is never shown as
+                an empty chart or as missing birth data (ENGINEERING §12). */}
+            <Text style={cardTitle}>Chart could not be loaded</Text>
+            <Text style={cardBody}>{chartLoadError}</Text>
+          </View>
+        ) : (
+          <View style={cardStyle}>
+            {/* FOUNDER-REVIEW: new copy for a person saved without birth data.
+                Mobile has no birth-data editor yet, so this states the situation
+                without promising a control that is not here. */}
+            <Text style={cardTitle}>No birth data yet</Text>
+            <Text style={cardBody}>
+              There is no chart to show until {person.display_name}&apos;s birth data is added. A birth year on its own is
+              enough for the generational layer.
+            </Text>
+          </View>
+        )
+      ) : null}
+
+      {activeGroup === secondGroup ? (
+        <View style={cardStyle}>
+          <Text style={cardTitle}>Private notes</Text>
+          <TextInput
+            value={noteDraft}
+            onChangeText={setNoteDraft}
+            placeholder="Log a private moment..."
+            placeholderTextColor={tokens.colors.mist2}
+            multiline
+            style={{
+              backgroundColor: tokens.colors.ink3,
+              borderColor: tokens.colors.line,
+              borderWidth: 1,
+              borderRadius: 10,
+              color: tokens.colors.cream,
+              minHeight: 80,
+              textAlignVertical: "top",
+              padding: 10
+            }}
+          />
+          <Pressable onPress={saveNote} style={{ backgroundColor: tokens.colors.gold, borderRadius: 999, paddingVertical: 10 }}>
+            <Text style={{ color: tokens.colors.ink, fontWeight: "700", textAlign: "center" }}>Save private note</Text>
+          </Pressable>
+          {notes.length === 0 ? (
+            <Text style={cardBody}>No notes yet. Notes are owner-only and never shared.</Text>
+          ) : (
+            notes.map((note) => (
+              <View key={note.id} style={{ borderWidth: 1, borderColor: tokens.colors.line, borderRadius: 10, padding: 10 }}>
+                <Text style={{ color: tokens.colors.cream }}>{note.body}</Text>
+                <Text style={{ color: tokens.colors.mist2, fontSize: 12, marginTop: 4 }}>{new Date(note.created_at).toLocaleString()}</Text>
+              </View>
+            ))
+          )}
+        </View>
+      ) : null}
 
       {!person.is_self ? (
         <Pressable
@@ -391,6 +454,14 @@ const cardTitle = {
 const cardBody = {
   color: tokens.colors.mist,
   lineHeight: 20
+} as const;
+
+const vocabSubhead = {
+  color: tokens.colors.mist2,
+  fontSize: 11,
+  fontWeight: "700",
+  letterSpacing: 1.4,
+  textTransform: "uppercase"
 } as const;
 
 const badgeStyle = {

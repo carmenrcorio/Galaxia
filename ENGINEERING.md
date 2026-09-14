@@ -31,6 +31,8 @@ Deploys broke repeatedly because an agent rewrote infrastructure config it did n
 
 There is deliberately **no root `vercel.json`.** Vercel's native Next.js detection with Root Directory `apps/web` is the working configuration. Do not add one back.
 
+**GitHub's Vercel status is last-writer-wins.** Opening a PR in the same minute as the branch push can start two preview deploys of the same commit. On a one-concurrent-build plan the second often Errors (empty `previewUrl`) and overwrites the Ready status even though the first deploy completed. Do not add `vercel.json` or change project settings to "fix" this. Push a follow-up commit after the PR exists so a single deploy runs.
+
 ---
 
 ## 3. Work is not done until it is on `main` and deployed
@@ -228,4 +230,16 @@ The same class of gap already had a detector for edge functions. These two check
 This check **does not apply migrations.** A red run means a human looks at the diff and either applies the committed file, documents an already-applied ad-hoc change as a new comment-only file, or (if the file is not idempotent and the schema already landed) asks before touching `supabase_migrations.schema_migrations` directly — that table is not a scratch pad.
 
 Do not "fix" a red run by deleting a production ledger row or by editing an already-applied SQL file (§2).
+
+---
+
+## 17. Two voice layers. Do not flatten them.
+
+**Cite `design/galaxia-voice-layers.md`.** Outer copy leads with outcome. Inner copy keeps the real astrology vocabulary. Metadata is inner on every route.
+
+- **Layer one** (homepage above the fold, store listings, first ninety seconds of onboarding, email subjects, press, `/for-work`, paid social / cold traffic): lead with the outcome. Astrology is not the first word. Do not describe Galaxia as an astrology app.
+- **Layer two** (`/chart`, `/chart/compare`, the blog and both categories, Wheel / Placements / Aspects / Houses, page metadata and JSON-LD everywhere, homepage `#how`, Vela's answers): natal, synastry, placements, aspects, houses. Unapologetic. Vela names the aspect it is reading.
+- **Never:** strip an astrology keyword from metadata to make copy cleaner; apologise for astrology (scare quotes, "if you believe", winking); promise prediction. The sky describes how a person is built, not what will happen to them.
+
+`apps/web/lib/voice-layers.test.ts` is the gate. Do not "fix" a red run by deleting astrology from a title tag.
 

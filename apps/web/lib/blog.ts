@@ -16,8 +16,8 @@ import { publicEnv } from "./env";
  *
  * `BLOG_CATEGORIES` stays a small static array on purpose: the category
  * picker in the admin editor and the tabs on /blog both need a *fixed*,
- * known-in-advance vocabulary ("Guides" / "Astrology, debunked") — the
- * same reasoning `posts.category`'s CHECK constraint encodes in the
+ * known-in-advance vocabulary ("Astrology guides" / "Astrology, debunked") —
+ * the same reasoning `posts.category`'s CHECK constraint encodes in the
  * database. This is not "content"; it does not belong in a database table
  * an admin edits freely.
  *
@@ -60,8 +60,8 @@ export interface BlogPost {
 export const BLOG_CATEGORIES: BlogCategory[] = [
   {
     slug: "guides",
-    label: "Guides",
-    emptyNote: "More guides are on the way."
+    label: "Astrology guides",
+    emptyNote: "More astrology guides are on the way."
   },
   {
     slug: "debunked",

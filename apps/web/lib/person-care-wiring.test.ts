@@ -19,9 +19,21 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     expect(src).toContain("RemembranceSpace");
     expect(src).toContain("ChartWheel");
     expect(src).toContain("aspects={natalAspects}");
-    expect(src).toContain("The big three");
-    expect(src).toContain("Placements");
-    expect(src).toContain("ChartSectionNav");
+    expect(src).toContain("PersonProfileNav");
+    expect(src).toContain("buildPersonPageGroups");
+    expect(src).toContain("resolvePersonPageEntry");
+    expect(src).toContain('get("transit")');
+    expect(src).toContain("person-group-panel-now");
+    expect(src).toContain("person-group-panel-them");
+    expect(src).toContain('person-group-panel-remembrance" : "person-group-panel-yours"');
+    expect(src.indexOf('id="generational"')).toBeLessThan(src.indexOf('id="chart-wheel"'));
+    expect(src).toContain("ChartVocabSubhead");
+    expect(src).toContain("PERSON_TAB_LABEL");
+    expect(src).toContain("PERSON_TAB_VOCAB");
+    expect(src).toContain('sectionHead("big-three")');
+    expect(src).toContain('sectionHead("placements")');
+    expect(src).toContain('sectionHead("aspects")');
+    expect(src).toContain('sectionHead("houses")');
   });
 
   it("home Today in your sky filters with peopleForTodaySky before durable nudge plan", () => {

@@ -1,10 +1,11 @@
+import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import { createClient } from "@supabase/supabase-js";
 import { missingEnvMessage, publicEnv } from "../../../lib/env";
 import { privateEnv } from "../../../lib/env.server";
 import { listAdminSupportRequests, type AdminSupportRequestRow } from "../../../lib/admin/support-requests";
 import { SupportRequestActionButton } from "../../../components/admin/support-request-actions";
 
-const HELP_INBOX_MAILTO = "mailto:help@galaxia.app";
+const HELP_INBOX_MAILTO = `mailto:${GALAXIA_HELP_EMAIL}`;
 
 /**
  * Read-only-render admin support view. Renders behind admin/layout.tsx's

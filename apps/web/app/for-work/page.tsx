@@ -15,16 +15,19 @@ import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { RELATED_LINKS } from "../../lib/nav-links";
 
-// FOUNDER-REVIEW: authored. Title and description for /for-work.
-const TITLE = "Understand the people you work with | Galaxia";
+// FOUNDER-REVIEW: layer-two metadata. Visible copy on this page is layer one.
+// Title keeps the astrology keyword from main (ENGINEERING.md §17: never strip
+// astrology from metadata). Visible H1 stays the outcome-only line.
+const TITLE = "Galaxia for Work: Relationship Intelligence from Computed Astrology";
 const DESCRIPTION =
-  "Before the one to one, the negotiation, or the hard feedback, know how this person is wired and what shaped them. Built on real birth data, written in plain language.";
+  "Before the one to one, the negotiation, or the hard feedback, know how this person is wired and what shaped them. Computed astrology from real birth data, written in plain language.";
 
 /**
- * Standalone marketing page for the professional use case. Not a former
- * homepage anchor. The app already stores colleague, boss, mentor, and
- * professor as relationship types; this page is the public narrative for
- * that use, with the generational layer as the centrepiece.
+ * Standalone marketing page for the professional use case. Visible copy is
+ * layer one (outcome first). Metadata and JSON-LD are layer two. The app
+ * already stores colleague, boss, mentor, and professor as relationship
+ * types; this page is the public narrative for that use, with the
+ * generational layer as the centrepiece.
  *
  * Canonical in production is https://galaxiamea.com/for-work (relative
  * `/for-work` resolved through `metadataBase`, same pattern as the other

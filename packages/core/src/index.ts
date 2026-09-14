@@ -8,6 +8,8 @@ export {
   type SubscriptionStatus
 } from "./has-access";
 
+export { RC_ENTITLEMENT_ID } from "./rc-entitlement";
+
 export { isAdmin, type AdminRow } from "./is-admin";
 
 export type RelationshipType =
@@ -78,6 +80,8 @@ export * from "./owned-delete";
 export * from "./cohort-reading";
 
 export * from "./account-name";
+
+export * from "./contact";
 
 export * from "./timezone";
 export * from "./memorial-timeline";

@@ -3,11 +3,11 @@ import { SITE_FOOTER_LINKS } from "../../lib/nav-links";
 
 /**
  * Site-wide footer, shared by the homepage, the standalone marketing pages
- * (/why-galaxia, /generations, /meet-vela, /for-work, /security, /pricing),
- * and the blog. All real routes now — no in-page anchors — so every link
- * resolves the same way no matter which page the footer is rendered on.
- * Quick Chart and Download are named here because both are public,
- * logged-out surfaces.
+ * (/why-galaxia, /generations, /meet-vela, /for-work, /press, /security,
+ * /pricing), and the blog. All real routes now — no in-page anchors — so
+ * every link resolves the same way no matter which page the footer is
+ * rendered on. Quick Chart and Download are named here because both are
+ * public, logged-out surfaces.
  */
 export function SiteFooter() {
   return (

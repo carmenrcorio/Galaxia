@@ -10,11 +10,12 @@ export type NavLink = { href: string; label: string };
 
 export const MARKETING_NAV_BRAND_HREF = "/";
 
+// FOUNDER-REVIEW: marketing nav labels only. Hrefs, H1s, and metadata titles stay.
 export const MARKETING_NAV_LINKS: NavLink[] = [
-  { href: "/why-galaxia", label: "Why Galaxia" },
-  { href: "/generations", label: "Generations" },
-  { href: "/meet-vela", label: "Meet Vela" },
-  { href: "/chart", label: "Quick Chart" },
+  { href: "/why-galaxia", label: "How it works" },
+  { href: "/generations", label: "Your people" },
+  { href: "/meet-vela", label: "Ask Vela" },
+  { href: "/chart", label: "Free chart" },
   { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
 ];
@@ -31,25 +32,28 @@ export const APP_NAV_LINKS: NavLink[] = [
   { href: "/app/groups", label: "Groups" },
   { href: "/app/vela", label: "Vela" },
   { href: "/app/settings", label: "Settings" },
-  // Public route. There is no /app/chart page, so Quick Chart stays on the
-  // live free chart at /chart rather than a dead in-app path.
-  { href: "/chart", label: "Quick Chart" },
+  // Public route. There is no /app/chart page, so the free chart stays on the
+  // live public route at /chart rather than a dead in-app path.
+  // FOUNDER-REVIEW: app-nav label only. Href stays /chart.
+  { href: "/chart", label: "Free chart" },
   { href: "/blog", label: "Blog" },
 ];
 
 export const APP_NAV_ACCOUNT: NavLink = { href: "/account", label: "Account" };
 export const APP_NAV_ACTIONS: NavLink[] = [APP_NAV_ACCOUNT];
 
+// FOUNDER-REVIEW: footer labels for the same destinations as the marketing nav.
 export const SITE_FOOTER_LINKS: NavLink[] = [
-  { href: "/why-galaxia", label: "Why Galaxia" },
-  { href: "/generations", label: "Generations" },
-  { href: "/meet-vela", label: "Meet Vela" },
+  { href: "/why-galaxia", label: "How it works" },
+  { href: "/generations", label: "Your people" },
+  { href: "/meet-vela", label: "Ask Vela" },
   { href: "/for-work", label: "For work" },
   { href: "/security", label: "Security" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/chart", label: "Quick Chart" },
+  { href: "/chart", label: "Free chart" },
   { href: "/download", label: "Download" },
   { href: "/blog", label: "Blog" },
+  { href: "/press", label: "Press" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
 ];
@@ -113,17 +117,26 @@ export const RELATED_LINKS = {
     { href: "/pricing", label: "See what's included" },
     { href: SUN_SIGN_NOT_PERSONALITY_HREF, label: "Your sun sign is not your personality" },
   ],
+  press: [
+    { href: "/why-galaxia", label: "Why Galaxia exists" },
+    { href: "/for-work", label: "Galaxia for work" },
+    { href: "/security", label: "Privacy and data" },
+  ],
 } as const satisfies Record<string, readonly NavLink[]>;
 
+// FOUNDER-REVIEW: teaser CTAs only. Card H3 titles stay on the page names.
 export const FEATURE_TEASER_LINKS: NavLink[] = [
-  { href: "/why-galaxia", label: "Why Galaxia" },
-  { href: "/generations", label: "Explore Generations" },
-  { href: "/meet-vela", label: "Meet Vela" },
+  { href: "/why-galaxia", label: "How it works" },
+  { href: "/generations", label: "Your people" },
+  { href: "/meet-vela", label: "Ask Vela" },
   { href: "/security", label: "See how we protect you" },
   { href: "/pricing", label: "View pricing" },
 ];
 
-export const HERO_HOW_IT_WORKS: NavLink = { href: "/why-galaxia#how", label: "See how it works" };
+// FOUNDER-REVIEW: outcome-led homepage primary CTA. Destination is the public free chart.
+export const HERO_PRIMARY_CTA: NavLink = { href: "/chart", label: "See someone's chart free" };
+
+export const HERO_HOW_IT_WORKS: NavLink = { href: "/#how", label: "See how it works" };
 
 export const NOT_FOUND_LINKS: NavLink[] = [
   { href: "/", label: "Back to home" },
@@ -137,6 +150,8 @@ export const CHART_MODE_COMPARE: NavLink = { href: "/chart/compare", label: "Che
 
 export const EMPTY_STATE_WELCOME_HREF = "/welcome";
 export const EMPTY_STATE_SETTINGS_HREF = "/app/settings";
+export const THIS_WEEK_HREF = "/app/this-week";
+export const TODAY_SKY_HREF = "/app#today-in-your-sky";
 
 export const SETTINGS_CANCEL_HREF = "/account/cancel?from=settings";
 
@@ -174,6 +189,7 @@ export function ctaInternalHrefs(): string[] {
     ...FEATURE_TEASER_LINKS.map((l) => l.href),
     MARKETING_NAV_SIGNUP.href,
     MARKETING_NAV_LOGIN.href,
+    HERO_PRIMARY_CTA.href,
     HERO_HOW_IT_WORKS.href,
     FOR_WORK_CHART_CTA.href,
     ...NOT_FOUND_LINKS.map((l) => l.href),
@@ -186,7 +202,7 @@ export function ctaInternalHrefs(): string[] {
 }
 
 export function emptyStateInternalHrefs(): string[] {
-  return uniqueHrefs([EMPTY_STATE_WELCOME_HREF, EMPTY_STATE_SETTINGS_HREF]);
+  return uniqueHrefs([EMPTY_STATE_WELCOME_HREF, EMPTY_STATE_SETTINGS_HREF, THIS_WEEK_HREF, TODAY_SKY_HREF]);
 }
 
 export function emailInternalHrefs(): string[] {

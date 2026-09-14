@@ -21,7 +21,7 @@ import { createSupabaseServerClient } from "../../lib/supabase/server";
  * The five-step orientation flow leads with the other person and has steps that
  * leave no trace in `people` at all (choosing a relationship, reading the first
  * statement), so the old two-fact signal can no longer tell "finished" from
- * "stopped halfway". See supabase/migrations/20260914180000_profiles_onboarding_state.sql
+ * "stopped halfway". See supabase/migrations/20260914210000_profiles_onboarding_state.sql
  * for the full reasoning, including why the drift risk the old note named is
  * contained.
  *

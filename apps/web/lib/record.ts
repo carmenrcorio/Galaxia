@@ -1,4 +1,11 @@
-import type { RecordKind } from "@galaxia/core";
+import {
+  recordEntryMatches,
+  sanitizeFtsQuery,
+  sanitizeRecordTags,
+  type RecordKind,
+  type RecordTagId,
+  type RecordViewFilters
+} from "@galaxia/core";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -31,6 +38,8 @@ export interface RecordEntry {
    * remediation) — the Record preview shows this note in place of the body,
    * never the withdrawn content, and never silently drops the entry. */
   withdrawnReason?: string | null;
+  /** Curated optional tags. Conversations have none. */
+  tags?: RecordTagId[];
 }
 
 export type RecordScope =
@@ -38,11 +47,14 @@ export type RecordScope =
   | { pairLow: string; pairHigh: string }
   | { groupId: string };
 
+export type { RecordViewFilters };
+
 interface NoteRow {
   id: string; body: string; created_at: string;
   kind: RecordKind | null; payload: Record<string, unknown> | null; source_thread_id: string | null;
   group_id?: string | null;
   withdrawn_at?: string | null; withdrawn_reason?: string | null;
+  tags?: unknown;
 }
 
 function noteToEntry(row: NoteRow): RecordEntry {
@@ -58,8 +70,33 @@ function noteToEntry(row: NoteRow): RecordEntry {
     payload: row.payload ?? null,
     sourceThreadId: row.source_thread_id ?? null,
     groupId: row.group_id ?? null,
-    withdrawnReason: withdrawnDisplay
+    withdrawnReason: withdrawnDisplay,
+    tags: sanitizeRecordTags(row.tags)
   };
+}
+
+function utcRangeStart(ymd: string): string {
+  return `${ymd}T00:00:00.000Z`;
+}
+
+function utcRangeEnd(ymd: string): string {
+  return `${ymd}T23:59:59.999Z`;
+}
+
+function applyNotesRecordFilters<T extends {
+  eq: (column: string, value: unknown) => T;
+  gte: (column: string, value: string) => T;
+  lte: (column: string, value: string) => T;
+  contains: (column: string, value: string[]) => T;
+  textSearch: (column: string, query: string, options: { type: "plain"; config: string }) => T;
+}>(query: T, filters?: RecordViewFilters): T {
+  let next = query;
+  if (filters?.from) next = next.gte("created_at", utcRangeStart(filters.from));
+  if (filters?.to) next = next.lte("created_at", utcRangeEnd(filters.to));
+  if (filters?.tag) next = next.contains("tags", [filters.tag]);
+  const fts = sanitizeFtsQuery(filters?.q ?? "");
+  if (fts) next = next.textSearch("body", fts, { type: "plain", config: "english" });
+  return next;
 }
 
 // ─── Withdrawn preview voice (read-time only; DB reason untouched) ───────────
@@ -140,18 +177,33 @@ export function formatWithdrawnReasonForDisplay(
  * Fetch the Record for a scope: notes of all kinds ∪ scoped conversations,
  * newest first. Resilient to the pre-migration state (falls back to select *).
  */
-export async function fetchRecord(
+function scopedNotesQuery(
   supabase: SupabaseClient,
   ownerId: string,
   scope: RecordScope,
-  limit = 40
-): Promise<RecordEntry[]> {
+  limit: number
+) {
   let query = supabase.from("notes").select("*").eq("owner_id", ownerId).order("created_at", { ascending: false }).limit(limit);
   if ("personId" in scope) query = query.eq("about_person", scope.personId);
   else if ("groupId" in scope) query = query.eq("group_id", scope.groupId);
   else query = query.eq("pair_low", scope.pairLow).eq("pair_high", scope.pairHigh);
+  return query;
+}
 
-  const { data: notes } = await query;
+export async function fetchRecord(
+  supabase: SupabaseClient,
+  ownerId: string,
+  scope: RecordScope,
+  limit = 40,
+  filters?: RecordViewFilters
+): Promise<RecordEntry[]> {
+  let query = applyNotesRecordFilters(scopedNotesQuery(supabase, ownerId, scope, limit), filters);
+  let { data: notes, error: notesError } = await query;
+  if (notesError && filters?.q) {
+    query = applyNotesRecordFilters(scopedNotesQuery(supabase, ownerId, scope, limit), { ...filters, q: undefined });
+    const retried = await query;
+    notes = retried.data;
+  }
   const noteEntries: RecordEntry[] = (notes ?? []).map((r) => noteToEntry(r as NoteRow));
 
   // Person Record: also surface group cohort readings for groups this person is in,
@@ -163,7 +215,7 @@ export async function fetchRecord(
       .eq("person_id", scope.personId);
     const groupIds = [...new Set((memberships ?? []).map((m) => m.group_id as string).filter(Boolean))];
     if (groupIds.length > 0) {
-      const { data: cohortNotes } = await supabase
+      let cohortQuery = supabase
         .from("notes")
         .select("*")
         .eq("owner_id", ownerId)
@@ -171,6 +223,8 @@ export async function fetchRecord(
         .in("group_id", groupIds)
         .order("created_at", { ascending: false })
         .limit(limit);
+      cohortQuery = applyNotesRecordFilters(cohortQuery, filters);
+      const { data: cohortNotes } = await cohortQuery;
       const seen = new Set(noteEntries.map((e) => e.id));
       for (const row of cohortNotes ?? []) {
         const entry = noteToEntry(row as NoteRow);
@@ -181,16 +235,24 @@ export async function fetchRecord(
     }
   }
 
-  // Scoped conversations — active only (archived live under "Past conversations")
-  let tQuery = supabase.from("threads").select("id, mode, created_at, status").eq("owner_id", ownerId).eq("status", "active").order("created_at", { ascending: false }).limit(limit);
-  if ("personId" in scope) tQuery = tQuery.eq("subject_person", scope.personId);
-  else if ("groupId" in scope) tQuery = tQuery.eq("group_id", scope.groupId);
-  else tQuery = tQuery.eq("pair_low", scope.pairLow).eq("pair_high", scope.pairHigh);
+  // Scoped conversations — active only (archived live under "Past conversations").
+  // Tag filter is notes-only; conversations have no tags.
+  let convEntries: RecordEntry[] = [];
+  if (!filters?.tag) {
+    let tQuery = supabase.from("threads").select("id, mode, created_at, status").eq("owner_id", ownerId).eq("status", "active").order("created_at", { ascending: false }).limit(limit);
+    if ("personId" in scope) tQuery = tQuery.eq("subject_person", scope.personId);
+    else if ("groupId" in scope) tQuery = tQuery.eq("group_id", scope.groupId);
+    else tQuery = tQuery.eq("pair_low", scope.pairLow).eq("pair_high", scope.pairHigh);
+    if (filters?.from) tQuery = tQuery.gte("created_at", utcRangeStart(filters.from));
+    if (filters?.to) tQuery = tQuery.lte("created_at", utcRangeEnd(filters.to));
 
-  const { data: threads } = await tQuery;
-  const convEntries: RecordEntry[] = await Promise.all((threads ?? []).map((t) => fetchThreadPreview(supabase, t.id, t.created_at as string, t.mode as "ask" | "shared")));
+    const { data: threads } = await tQuery;
+    convEntries = await Promise.all((threads ?? []).map((t) => fetchThreadPreview(supabase, t.id, t.created_at as string, t.mode as "ask" | "shared")));
+  }
 
-  return [...noteEntries, ...convEntries].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return [...noteEntries, ...convEntries]
+    .filter((entry) => !filters || recordEntryMatches(entry, filters))
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
 /**
@@ -275,7 +337,26 @@ export async function fetchVelaPins(
       id: row.id, kind: "vela_pin" as const,
       body: withdrawn ? (withdrawnDisplay as string) : row.body,
       createdAt: row.created_at, sourceThreadId: row.source_thread_id ?? null,
-      withdrawnReason: withdrawnDisplay
+      withdrawnReason: withdrawnDisplay,
+      tags: sanitizeRecordTags(row.tags)
     };
   });
+}
+
+/**
+ * Set curated tags on a note. Always scopes by owner_id so a stolen note id
+ * cannot write another person's Record. Conversations are threads, not notes.
+ */
+export async function updateNoteTags(
+  supabase: SupabaseClient,
+  ownerId: string,
+  noteId: string,
+  tags: RecordTagId[]
+): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from("notes")
+    .update({ tags: sanitizeRecordTags(tags) })
+    .eq("id", noteId)
+    .eq("owner_id", ownerId);
+  return { error: error?.message ?? null };
 }

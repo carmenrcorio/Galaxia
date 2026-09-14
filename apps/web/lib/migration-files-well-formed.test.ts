@@ -60,6 +60,19 @@ describe("supabase/migrations file hygiene", () => {
       expect(readFileSync(join(MIGRATIONS, file), "utf8").trim().length, file).toBeGreaterThan(0);
     }
   });
+
+  it("no two files share a version timestamp (schema_migrations_pkey)", () => {
+    const byVersion = new Map<string, string[]>();
+    for (const file of files) {
+      const match = /^(\d{14})_/.exec(file);
+      if (!match) continue;
+      const list = byVersion.get(match[1]!) ?? [];
+      list.push(file);
+      byVersion.set(match[1]!, list);
+    }
+    const dupes = [...byVersion.entries()].filter(([, names]) => names.length > 1);
+    expect(dupes).toEqual([]);
+  });
 });
 
 describe("20260909040000_push_tokens.sql reads as the text production was given", () => {

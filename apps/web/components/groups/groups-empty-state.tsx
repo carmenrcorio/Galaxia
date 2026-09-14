@@ -3,10 +3,10 @@
 /**
  * Groups landing when the user has no saved groups.
  *
- * Fewer than three people: a labelled example reading (computed charts,
- * fictional names) above the create requirement and an add-person link.
- * Three or more people: skip the example and offer one tap to build a
- * group from the people they already have, named.
+ * Fewer than three people: a labelled example reading (precomputed
+ * charts, fictional names) above the create requirement and an add-person
+ * link. Three or more people: skip the example and offer one tap to build
+ * a group from the people they already have, named (capped at eight).
  */
 
 import { sunSignFromChart } from "@galaxia/core";
@@ -21,6 +21,7 @@ import {
   GROUPS_EXAMPLE_TITLE,
   groupsEmptyBuildWith,
   groupsEmptyPeopleStatus,
+  groupsEmptyPrefillPeople,
 } from "../../lib/groups-copy";
 import { exampleGroupReading } from "../../lib/groups-example";
 import { EMPTY_STATE_WELCOME_HREF } from "../../lib/nav-links";
@@ -39,18 +40,27 @@ interface GroupsEmptyStateProps {
 }
 
 export function GroupsEmptyState({ people, onBuildWithPeople }: GroupsEmptyStateProps) {
-  const names = people.map((p) => p.display_name);
   if (people.length >= 3) {
+    const prefill = groupsEmptyPrefillPeople(people);
+    const names = prefill.map((p) => p.display_name);
     return (
       <section className="glass-card fade-in" aria-label="Build a group from your people">
         <p className="card-title" style={{ marginBottom: 8 }}>{groupsEmptyBuildWith(names)}</p>
         <div className="avatar-cluster" style={{ marginBottom: 14 }}>
-          {people.map((p) => <InitialAvatar key={p.id} name={p.display_name} personId={p.id} sunSign={p.sunSign} memorial={Boolean(p.passed_at)} />)}
+          {prefill.map((p) => (
+            <InitialAvatar
+              key={p.id}
+              name={p.display_name}
+              personId={p.id}
+              sunSign={p.sunSign}
+              memorial={Boolean(p.passed_at)}
+            />
+          ))}
         </div>
         <button
           className="btn-primary"
           type="button"
-          onClick={() => onBuildWithPeople(people.map((p) => p.id))}
+          onClick={() => onBuildWithPeople(prefill.map((p) => p.id))}
           style={{ width: "100%", justifyContent: "center" }}
         >
           {GROUPS_EMPTY_BUILD_THIS_GROUP}

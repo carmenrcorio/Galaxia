@@ -3,7 +3,10 @@
  *
  * Fictional names, real birth datetimes at real places. Charts come from
  * `@galaxia/astro` `computeNatalChart` (the same engine a saved group uses).
- * Example ids are prefixed and must never be written to user tables.
+ * The empty-state UI reads a precomputed snapshot so first paint does not
+ * run four natal computes. Tests recompute live and assert the snapshot
+ * still matches. Example ids are prefixed and must never be written to
+ * user tables.
  */
 
 import {
@@ -16,6 +19,7 @@ import {
   type NatalChart,
 } from "@galaxia/astro";
 import { GROUPS_EXAMPLE_TITLE } from "./groups-copy";
+import snapshot from "./groups-example-reading.json";
 
 export const EXAMPLE_ID_PREFIX = "example:";
 
@@ -26,30 +30,47 @@ export interface ExamplePersonDef {
 }
 
 /**
- * Four fictional friends spanning a real generational split:
- * Lila, Owen, and Priya share Uranus Capricorn / Neptune Capricorn / Pluto Scorpio.
- * Nate (1997) carries Uranus Aquarius and Pluto Sagittarius, with the same Neptune.
+ * Four fictional people spanning a real generational spread, shaped like
+ * the founder's own saved group reading: no whole-group shared sky, fault
+ * lines on Uranus, Neptune, and Pluto, and one same-generation pair.
+ *
+ * Noor (2001) and Theo (2003) share Uranus Aquarius / Neptune Aquarius /
+ * Pluto Sagittarius. Jonah (1976) and Mira (1954) sit in earlier signs.
  *
  * Dates are civil birth times converted to UTC with that place's offset
  * (including DST where it applied). Houses use Placidus.
+ *
+ * Member order is load-bearing: live Groups keeps the first three pair
+ * highlights, so Noor and Theo are first so that pair is visible.
  */
 export const EXAMPLE_PEOPLE: readonly ExamplePersonDef[] = [
   {
-    id: `${EXAMPLE_ID_PREFIX}lila`,
-    name: "Lila",
+    id: `${EXAMPLE_ID_PREFIX}noor`,
+    name: "Noor",
     birth: {
-      dateUTC: "1991-04-12T13:30:00.000Z",
+      dateUTC: "2001-03-14T21:10:00.000Z",
       precision: "exact",
-      lat: 40.7128,
-      lng: -74.006,
-      tzOffsetMin: -240,
+      lat: 30.2672,
+      lng: -97.7431,
+      tzOffsetMin: -360,
     },
   },
   {
-    id: `${EXAMPLE_ID_PREFIX}owen`,
-    name: "Owen",
+    id: `${EXAMPLE_ID_PREFIX}theo`,
+    name: "Theo",
     birth: {
-      dateUTC: "1993-09-08T21:45:00.000Z",
+      dateUTC: "2003-09-30T10:20:00.000Z",
+      precision: "exact",
+      lat: 51.5074,
+      lng: -0.1278,
+      tzOffsetMin: 60,
+    },
+  },
+  {
+    id: `${EXAMPLE_ID_PREFIX}jonah`,
+    name: "Jonah",
+    birth: {
+      dateUTC: "1976-05-18T14:40:00.000Z",
       precision: "exact",
       lat: 41.8781,
       lng: -87.6298,
@@ -57,25 +78,14 @@ export const EXAMPLE_PEOPLE: readonly ExamplePersonDef[] = [
     },
   },
   {
-    id: `${EXAMPLE_ID_PREFIX}priya`,
-    name: "Priya",
+    id: `${EXAMPLE_ID_PREFIX}mira`,
+    name: "Mira",
     birth: {
-      dateUTC: "1994-12-03T15:10:00.000Z",
+      dateUTC: "1954-08-22T18:30:00.000Z",
       precision: "exact",
-      lat: 34.0522,
-      lng: -118.2437,
-      tzOffsetMin: -480,
-    },
-  },
-  {
-    id: `${EXAMPLE_ID_PREFIX}nate`,
-    name: "Nate",
-    birth: {
-      dateUTC: "1997-07-21T10:20:00.000Z",
-      precision: "exact",
-      lat: 51.5074,
-      lng: -0.1278,
-      tzOffsetMin: 60,
+      lat: 42.3601,
+      lng: -71.0589,
+      tzOffsetMin: -240,
     },
   },
 ];
@@ -104,7 +114,11 @@ function pairSummary(a: { name: string; gen: GenSignature }, b: { name: string; 
   };
 }
 
-function buildExampleGroupReading(): ExampleGroupReading {
+/**
+ * Live engine path. Used to generate and verify the snapshot. The empty
+ * Groups page must not call this; it reads `exampleGroupReading()`.
+ */
+export function buildExampleGroupReading(): ExampleGroupReading {
   const computed = EXAMPLE_PEOPLE.map((person) => {
     const chart: NatalChart = computeNatalChart(person.birth);
     return {
@@ -137,12 +151,9 @@ function buildExampleGroupReading(): ExampleGroupReading {
   };
 }
 
-let cachedReading: ExampleGroupReading | null = null;
-
-/** Computed once on first use: four natal charts, then the same overlay a live group uses. */
+/** Precomputed once from `buildExampleGroupReading`. Not user data. */
 export function exampleGroupReading(): ExampleGroupReading {
-  if (!cachedReading) cachedReading = buildExampleGroupReading();
-  return cachedReading;
+  return snapshot as ExampleGroupReading;
 }
 
 export function isExampleId(id: string): boolean {

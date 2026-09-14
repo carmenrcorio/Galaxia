@@ -156,7 +156,7 @@ export const GROUPS_INTRO_GOT_IT = "Got it";
 export const GROUPS_EXAMPLE_BADGE = "Example";
 
 // FOUNDER-REVIEW: authored. Title of the curated empty-state example group.
-export const GROUPS_EXAMPLE_TITLE = "A friend group";
+export const GROUPS_EXAMPLE_TITLE = "A sample group";
 
 // FOUNDER-REVIEW: authored. Makes clear the example is not the user's data.
 export const GROUPS_EXAMPLE_NOTICE =
@@ -174,6 +174,13 @@ export const GROUPS_EMPTY_BUILD_THIS_GROUP = "Build this group";
 // FOUNDER-REVIEW: authored. Default name for a one-tap group built from existing people.
 export const GROUPS_EMPTY_DEFAULT_NAME = "My circle";
 
+/**
+ * One-tap prefill ceiling. Matches the chart-grid max so a user with a large
+ * roster (the founder's account has 16 people) is not offered a 16-person
+ * overlay that the rest of Groups then truncates.
+ */
+export const GROUPS_EMPTY_PREFILL_MAX = 8;
+
 // FOUNDER-REVIEW: authored. Fail-closed if example ids ever reach save.
 export const GROUPS_EXAMPLE_CANNOT_SAVE = "Example people cannot be saved as a group.";
 
@@ -190,6 +197,11 @@ export function groupsEmptyPeopleStatus(peopleCount: number): string {
   if (have === 0) return "You have no people yet. Add 3 to read a group.";
   if (have === 1) return "You have 1 person. Add 2 more to read a group.";
   return `You have ${have} people. Add ${more} more to read a group.`;
+}
+
+/** People named and prefilled for the one-tap empty-state offer. */
+export function groupsEmptyPrefillPeople<T>(people: readonly T[]): T[] {
+  return people.slice(0, GROUPS_EMPTY_PREFILL_MAX);
 }
 
 /** FOUNDER-REVIEW: authored. One-tap offer listing the user's actual people. */

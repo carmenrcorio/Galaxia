@@ -71,7 +71,7 @@ describe("Settings page — the consent toggle is a plain owner-row write, same 
     // select (e.g. Generations Feature 3's relational_transit_alerts) don't
     // fail this guard as long as daily_nudge_emails_enabled still rides
     // along on the one query this test exists to protect.
-    expect(src).toMatch(/\.select\("[^"]*house_system[^"]*subscription_status[^"]*trial_ends_at[^"]*current_period_end[^"]*cancel_at_period_end[^"]*comped[^"]*daily_nudge_emails_enabled[^"]*"\)/);
+    expect(src).toMatch(/\.select\("[^"]*house_system[^"]*daily_nudge_emails_enabled[^"]*"\)/);
   });
 
   it("writes via a direct .update on profiles, own row only (id = userId), no API route", () => {

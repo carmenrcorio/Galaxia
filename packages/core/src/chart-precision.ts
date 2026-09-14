@@ -341,6 +341,15 @@ export const DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP =
 export const MEMORIAL_TIMELINE_NEEDS_BIRTH_YEAR =
   "Lifespan transits need a birth year. You can still add the moments that mattered.";
 
+// FOUNDER-REVIEW: authored — no-chart profile when precision is still none.
+export const CHART_PRECISION_NONE_WAITING =
+  "No birth data yet: their chart is waiting.";
+
+// FOUNDER-REVIEW: authored — no-chart profile when birth details are already stored.
+export const CHART_SAVED_DETAILS_NO_CHART_TITLE = "Chart is not on file yet";
+export const CHART_SAVED_DETAILS_NO_CHART_BODY =
+  "Birth details are already saved. The natal chart has not been built from them yet.";
+
 // FOUNDER-REVIEW: authored — explanation dialog headings.
 export const CHART_PRECISION_SUPPORTS_HEADING = "What this supports";
 export const CHART_PRECISION_DOES_NOT_HEADING = "What this does not";

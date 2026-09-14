@@ -9,3 +9,5 @@
 `[ADDED]` **One upgrade action, prefilled with what is already known.** Year → add a date (never January 1 from the year-only working date). Date → add a time (and city). Exact without city → add a city. Shown once on the profile and once in the relevant empty state. Never a repeated prompt. Mobile has no editor, so it states the fact without promising a control.
 
 `[FIXED]` **Features unavailable because of precision now say so in place.** Year-only aspects, daily sky notes, and houses already had a houses card; aspects and Right now no longer render as blank gaps. Memorial timeline mounts for a passed person with no chart yet, and names that lifespan transits need a birth year. Compare offers a single "Add a birth date" link to the year-only profile.
+
+`[FIXED]` **A missing charts row is not shown as missing birth data.** If a person already has a year, date, or time stored and the natal chart has not been built yet, the profile says the details are saved and the chart is not on file. "No birth data yet" stays reserved for precision `none`.

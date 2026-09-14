@@ -53,6 +53,8 @@ import {
   isMinorForSafety,
   shouldShowLiveTransits,
   shouldShowMemorialTimeline,
+  CHART_PRECISION_NONE_WAITING,
+  CHART_SAVED_DETAILS_NO_CHART_BODY,
   DAILY_SKY_UNAVAILABLE_YEAR_BODY,
   DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP,
   type ChartPrecision,
@@ -846,7 +848,10 @@ export default function PersonProfilePage() {
               Remembered: their light is still arriving. {person.birth_precision === "none" ? "You can still add birth data when you have it." : ""}
             </p>
           ) : (
-            <p className="muted" style={{ fontSize: ".88rem", margin: "8px 0 0" }}>No birth data yet: their chart is waiting.</p>
+            <p className="muted" style={{ fontSize: ".88rem", margin: "8px 0 0" }}>
+              {/* FOUNDER-REVIEW: CHART_PRECISION_NONE_WAITING / CHART_SAVED_DETAILS_NO_CHART_BODY */}
+              {person.birth_precision === "none" ? CHART_PRECISION_NONE_WAITING : CHART_SAVED_DETAILS_NO_CHART_BODY}
+            </p>
           )}
         </div>
       </div>

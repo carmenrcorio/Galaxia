@@ -11,6 +11,8 @@ import {
   CHART_PRECISION_LADDER_INTRO,
   CHART_PRECISION_NONE_FACT,
   CHART_PRECISION_NONE_UNLOCKS,
+  CHART_PRECISION_NONE_WAITING,
+  CHART_SAVED_DETAILS_NO_CHART_BODY,
   CHART_PRECISION_TIERS,
   CHART_PRECISION_YEAR_UNLOCKS,
   CHART_PRECISIONS,
@@ -175,5 +177,11 @@ describe("in-place unavailable copy", () => {
   it("names a birth date for year-only aspects and does not call the chart incomplete", () => {
     expect(ASPECTS_UNAVAILABLE_YEAR_BODY).toMatch(/birth date/);
     expect(ASPECTS_UNAVAILABLE_YEAR_BODY).toMatch(/Nothing is missing from the reading/);
+  });
+
+  it("does not call a missing charts row missing birth data", () => {
+    expect(CHART_SAVED_DETAILS_NO_CHART_BODY).toMatch(/already saved/);
+    expect(CHART_SAVED_DETAILS_NO_CHART_BODY).not.toMatch(/No birth data/);
+    expect(CHART_PRECISION_NONE_WAITING).toMatch(/No birth data yet/);
   });
 });

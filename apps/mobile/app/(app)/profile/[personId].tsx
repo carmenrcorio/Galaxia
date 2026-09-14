@@ -4,8 +4,11 @@ import {
   ASPECTS_UNAVAILABLE_YEAR_BODY,
   ASPECTS_UNAVAILABLE_YEAR_FOLLOW_UP,
   CHART_PRECISION_DOES_NOT_HEADING,
+  CHART_PRECISION_NONE_FACT,
   CHART_PRECISION_SUPPORTS_HEADING,
   CHART_PRECISION_WHY_HEADING,
+  CHART_SAVED_DETAILS_NO_CHART_BODY,
+  CHART_SAVED_DETAILS_NO_CHART_TITLE,
   chartPrecisionExplanation,
   chartPrecisionFact,
   describeGenerationalArchetype,
@@ -413,16 +416,23 @@ export default function PersonProfileScreen() {
             <Text style={cardTitle}>Chart could not be loaded</Text>
             <Text style={cardBody}>{chartLoadError}</Text>
           </View>
-        ) : (
+        ) : person.birth_precision === "none" ? (
           <View style={cardStyle}>
             {/* FOUNDER-REVIEW: new copy for a person saved without birth data.
                 Mobile has no birth-data editor yet, so this states the situation
                 without promising a control that is not here. */}
-            <Text style={cardTitle}>No birth data yet</Text>
+            <Text style={cardTitle}>{CHART_PRECISION_NONE_FACT}</Text>
             <Text style={cardBody}>
               There is no chart to show until {person.display_name}&apos;s birth data is added. A birth year on its own is
               enough for the generational layer.
             </Text>
+          </View>
+        ) : (
+          <View style={cardStyle}>
+            {/* FOUNDER-REVIEW: CHART_SAVED_DETAILS_NO_CHART_TITLE */}
+            <Text style={cardTitle}>{CHART_SAVED_DETAILS_NO_CHART_TITLE}</Text>
+            {/* FOUNDER-REVIEW: CHART_SAVED_DETAILS_NO_CHART_BODY */}
+            <Text style={cardBody}>{CHART_SAVED_DETAILS_NO_CHART_BODY}</Text>
           </View>
         )
       ) : null}

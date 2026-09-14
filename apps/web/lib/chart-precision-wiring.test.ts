@@ -35,6 +35,14 @@ describe("chart precision surfaces — no silent gaps", () => {
     expect(src).toContain("chart={null}");
   });
 
+  it("the no-chart profile does not call saved birth details missing data", () => {
+    const src = read("../app/app/person/[id]/page.tsx");
+    expect(src).toContain("CHART_PRECISION_NONE_WAITING");
+    expect(src).toContain("CHART_SAVED_DETAILS_NO_CHART_BODY");
+    expect(src).toContain('person.birth_precision === "none" ? CHART_PRECISION_NONE_WAITING : CHART_SAVED_DETAILS_NO_CHART_BODY');
+    expect(src).not.toContain("No birth data yet: their chart is waiting.");
+  });
+
   it("compare offers a single add-date action when synastry is blocked by year-only data", () => {
     const src = read("../app/app/compare/page.tsx");
     expect(src).toContain("CHART_PRECISION_ADD_DATE");

@@ -27,4 +27,17 @@ describe("source wiring — mobile constellation loading / empty / error", () =>
     expect(home).toContain("skeletonFade.setValue(0.28)");
     expect(home).not.toMatch(/framer-motion|lottie|react-native-reanimated/i);
   });
+
+  it("puts the compact This Week card after the greeting and before the constellation", () => {
+    const greeting = home.indexOf("Welcome back");
+    const thisWeek = home.indexOf("<ThisWeekCard");
+    const canvas = home.indexOf(">Constellation</Text>");
+    const today = home.indexOf(">Today in your sky</Text>");
+    expect(greeting).toBeGreaterThan(0);
+    expect(thisWeek).toBeGreaterThan(greeting);
+    expect(canvas).toBeGreaterThan(thisWeek);
+    expect(today).toBeGreaterThan(canvas);
+    expect(home).toContain("compact");
+    expect(home).not.toMatch(/relationalTransits\.length > 0 \?/);
+  });
 });

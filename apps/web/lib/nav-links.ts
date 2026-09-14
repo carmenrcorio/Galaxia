@@ -138,6 +138,8 @@ export const CHART_MODE_COMPARE: NavLink = { href: "/chart/compare", label: "Che
 
 export const EMPTY_STATE_WELCOME_HREF = "/welcome";
 export const EMPTY_STATE_SETTINGS_HREF = "/app/settings";
+export const THIS_WEEK_HREF = "/app/this-week";
+export const TODAY_SKY_HREF = "/app#today-in-your-sky";
 
 export const SETTINGS_CANCEL_HREF = "/account/cancel?from=settings";
 
@@ -187,7 +189,7 @@ export function ctaInternalHrefs(): string[] {
 }
 
 export function emptyStateInternalHrefs(): string[] {
-  return uniqueHrefs([EMPTY_STATE_WELCOME_HREF, EMPTY_STATE_SETTINGS_HREF]);
+  return uniqueHrefs([EMPTY_STATE_WELCOME_HREF, EMPTY_STATE_SETTINGS_HREF, THIS_WEEK_HREF, TODAY_SKY_HREF]);
 }
 
 export function emailInternalHrefs(): string[] {

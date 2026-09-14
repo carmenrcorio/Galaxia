@@ -1480,6 +1480,12 @@ export default function AppHomePage() {
         <p className="muted">{welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."}</p>
       </div>
 
+      {/* ── This Week (Generations Feature 3: relational transit alerts) ──
+         Compact card first: names-led entries, cap of three, link to the
+         full feed. Reads relational_transits rows the daily cron already
+         computed. Empty state never disappears and never fabricates a card. */}
+      {ownerId ? <RelationalTransitFeed ownerId={ownerId} variant="compact" /> : null}
+
       {/* ── Living constellation — full-width, real vertical presence ── */}
       <section className="glass-card fade-in" style={{ padding: 0, overflow: "hidden" }} aria-busy={loading}>
         <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -1604,7 +1610,7 @@ export default function AppHomePage() {
          One durable nudge row per person per owner-local day. copy_resolved is
          frozen at write; notation proof only when precision_mode is exact. */}
       {!loading && personSkies.length > 0 ? (
-        <section className="glass-card fade-in fade-in-delay-1">
+        <section id="today-in-your-sky" className="glass-card fade-in fade-in-delay-1">
           <p className="eyebrow">Today in your sky</p>
           <p className="muted" style={{ fontSize: ".78rem", marginBottom: 10 }}>
             {activeTransitIds.length > 0
@@ -1654,12 +1660,6 @@ export default function AppHomePage() {
           </div>
         </section>
       ) : null}
-
-      {/* ── This Week (Generations Feature 3: relational transit alerts) ──
-         Reads relational_transits rows the daily cron job already computed;
-         this component does its own load/filter/render, home just mounts it
-         once an owner is known. */}
-      {!loading && ownerId ? <RelationalTransitFeed ownerId={ownerId} /> : null}
 
       {/* ── Recent Vela threads ── */}
       {!loading && threadChips.length > 0 ? (

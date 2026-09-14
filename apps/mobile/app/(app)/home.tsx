@@ -1,17 +1,16 @@
 import {
   coerceDailyNudgeRow,
   computeSynastry,
-  interpretRelationalTransit,
+  findNextRelationalTransitDate,
   MAJOR_RELATIONAL_TRANSIT_BODIES,
   ownerLocalDate,
   orderSkyRowsForHome,
   planDailyNudgeWrites,
   whenUTCForOwnerLocalDate,
-  type AffectedProfileHit,
-  type AspectType,
   type NatalChart,
   type PersonDailyNudgeRecord,
-  type RelationalTransitBody
+  type Precision,
+  type RelationalTransitPersonInput
 } from "@galaxia/astro";
 import {
   galaxySeatXY,
@@ -26,6 +25,7 @@ import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, Text, View } from "react-native";
+import { ThisWeekCard, type ThisWeekRow } from "../../src/components/this-week-card";
 import { cacheGet, cacheSet } from "../../src/lib/cache";
 import { supabase } from "../../src/lib/supabase";
 import { backfillProfileTimezoneIfMissing } from "../../src/lib/timezone";
@@ -70,19 +70,7 @@ interface PersonSky {
 
 /* Generations Feature 3 — mirrors relational_transits columns (web parity,
    apps/web/components/relational-transit-feed.tsx). Read-only here. */
-interface RelationalTransitRow {
-  id: string;
-  transit_body: RelationalTransitBody;
-  aspect_type: AspectType;
-  affected_profiles: Array<{
-    profile_id: string;
-    profile_name: string;
-    natal_body: string;
-    natal_sign: string;
-    orb_deg: number;
-    exact_at: string;
-  }>;
-}
+type RelationalTransitRow = ThisWeekRow;
 
 const CONSTELLATION_BOX_HEIGHT = 340;
 const CONSTELLATION_GEOM = { cx: 170, cy: 170, radX: 120, radY: 120 };
@@ -109,6 +97,8 @@ export default function HomeScreen() {
   const [links, setLinks] = useState<LinkRow[]>([]);
   const [personSkies, setPersonSkies] = useState<PersonSky[]>([]);
   const [relationalTransits, setRelationalTransits] = useState<RelationalTransitRow[]>([]);
+  const [relationalPref, setRelationalPref] = useState<"all" | "major_only" | "off">("all");
+  const [nextRelationalDateISO, setNextRelationalDateISO] = useState<string | null>(null);
   const [threadChips, setThreadChips] = useState<ThreadChip[]>([]);
   const [homeStatus, setHomeStatus] = useState<string | null>(null);
   const [homeLoading, setHomeLoading] = useState(true);
@@ -116,6 +106,8 @@ export default function HomeScreen() {
   const shimmer = useRef(new Animated.Value(0.45)).current;
   const skeletonFade = useRef(new Animated.Value(1)).current;
   const liveFade = useRef(new Animated.Value(0)).current;
+  const scrollRef = useRef<ScrollView>(null);
+  const todayY = useRef(0);
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -222,7 +214,7 @@ export default function HomeScreen() {
       ).map((row) => row.id as string);
       const localDate = ownerLocalDate();
       const nowISO = new Date().toISOString();
-      const [{ data: profile }, { data: peopleRows, error: peopleError }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: transitRows }] = await Promise.all([
+      const [{ data: profile }, { data: peopleRows, error: peopleError }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: transitRows }, { data: upcomingRows }] = await Promise.all([
       supabase.from("profiles").select("display_name, pinned_sky_person_id, timezone, relational_transit_alerts").eq("id", session.user.id).single(),
       supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
       personIds.length
@@ -243,6 +235,13 @@ export default function HomeScreen() {
         .gte("active_to", nowISO)
         .order("active_from", { ascending: true })
         .limit(20),
+      supabase
+        .from("relational_transits")
+        .select("active_from, transit_body")
+        .eq("owner_id", session.user.id)
+        .gt("active_from", nowISO)
+        .order("active_from", { ascending: true })
+        .limit(8),
       ]);
       if (peopleError) throw peopleError;
 
@@ -256,15 +255,45 @@ export default function HomeScreen() {
       }).firstName;
       setWelcomeName(resolvedFirstName);
       setPeople(castPeople);
-      const relationalPref = (profile as { relational_transit_alerts?: string | null } | null)?.relational_transit_alerts ?? "all";
+      const relationalPrefValue = (profile as { relational_transit_alerts?: string | null } | null)?.relational_transit_alerts ?? "all";
+      const pref = relationalPrefValue === "major_only" || relationalPrefValue === "off" ? relationalPrefValue : "all";
+      setRelationalPref(pref);
       const allTransits = (transitRows ?? []) as RelationalTransitRow[];
-      setRelationalTransits(
-        relationalPref === "off"
+      const visibleTransits =
+        pref === "off"
           ? []
-          : relationalPref === "major_only"
+          : pref === "major_only"
             ? allTransits.filter((row) => MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body))
-            : allTransits
+            : allTransits;
+      setRelationalTransits(visibleTransits);
+
+      const upcoming = ((upcomingRows ?? []) as Array<{ active_from: string; transit_body: RelationalTransitRow["transit_body"] }>).filter((row) =>
+        pref === "off" ? false : pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body) : true
       );
+      let nextISO: string | null = upcoming[0]?.active_from ?? null;
+      if (!nextISO && visibleTransits.length === 0 && pref !== "off") {
+        const chartByIdForNext = new Map<string, NatalChart>((chartRows ?? []).map((row) => [row.person_id as string, row.data as NatalChart]));
+        const inputs: RelationalTransitPersonInput[] = [];
+        for (const person of castPeople) {
+          const chart = chartByIdForNext.get(person.id);
+          if (!chart) continue;
+          inputs.push({
+            id: person.id,
+            name: person.display_name,
+            chart,
+            birthDate: person.birth_date,
+            birthPrecision: person.birth_precision as Precision | "none",
+          });
+        }
+        if (inputs.length >= 2) {
+          nextISO = findNextRelationalTransitDate(inputs, nowISO, {
+            horizonDays: 56,
+            stepDays: 7,
+            bodies: pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES : undefined,
+          });
+        }
+      }
+      setNextRelationalDateISO(nextISO);
       const pinnedSkyPersonId = (profile as { pinned_sky_person_id?: string | null } | null)?.pinned_sky_person_id ?? null;
 
       // Nudge-delivery Phase A backfill (mobile parity with web's
@@ -419,7 +448,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
+    <ScrollView ref={scrollRef} style={{ flex: 1, backgroundColor: tokens.colors.ink }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
       <Text style={{ color: tokens.colors.cream, fontSize: 33, fontWeight: "700" }}>Galaxia Mea</Text>
       {/* FOUNDER-REVIEW: authored greeting, including the no-name variant. */}
       <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
@@ -428,6 +457,15 @@ export default function HomeScreen() {
       <Text style={{ color: tokens.colors.goldSoft }}>Plan: {tier === "plus" ? "Galaxia+" : "Free"}</Text>
 
       {homeStatus ? <Text style={{ color: tokens.colors.gold }}>{homeStatus}</Text> : null}
+
+      <ThisWeekCard
+        loading={homeLoading}
+        preference={relationalPref}
+        rows={relationalTransits}
+        nextDateISO={nextRelationalDateISO}
+        compact
+        onSeeToday={() => scrollRef.current?.scrollTo({ y: todayY.current, animated: true })}
+      />
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Constellation</Text>
@@ -530,7 +568,12 @@ export default function HomeScreen() {
         <Text style={cardBody}>Links are weighted by composite compatibility score (gold flow / rose tension).</Text>
       </View>
 
-      <View style={cardStyle}>
+      <View
+        style={cardStyle}
+        onLayout={(event) => {
+          todayY.current = event.nativeEvent.layout.y;
+        }}
+      >
         <Text style={cardTitle}>Today in your sky</Text>
         <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
           {activeTransitIds.length > 0
@@ -580,50 +623,6 @@ export default function HomeScreen() {
           Nodes shimmer when a person has an eligible daily sky note near an exact pass.
         </Text>
       </View>
-
-      {relationalTransits.length > 0 ? (
-        <View style={cardStyle}>
-          <Text style={cardTitle}>This week</Text>
-          <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
-            Transits moving across more than one person in your constellation at once.
-          </Text>
-          {relationalTransits.map((row) => {
-            const affected: AffectedProfileHit[] = row.affected_profiles.map((a) => ({
-              personId: a.profile_id,
-              personName: a.profile_name,
-              natalBody: a.natal_body as AffectedProfileHit["natalBody"],
-              natalSign: a.natal_sign as AffectedProfileHit["natalSign"],
-              aspectType: row.aspect_type,
-              orbDeg: a.orb_deg,
-              exactAtUTC: a.exact_at
-            }));
-            const { headline } = interpretRelationalTransit({ transitBody: row.transit_body, aspectType: row.aspect_type, affected });
-            const firstPersonId = affected[0]?.personId;
-            const card = (
-              <View
-                style={{
-                  paddingVertical: 8,
-                  paddingHorizontal: 10,
-                  borderRadius: 10,
-                  borderLeftWidth: 2,
-                  borderLeftColor: tokens.colors.goldSoft,
-                  backgroundColor: "rgba(230,174,108,0.06)",
-                  gap: 2
-                }}
-              >
-                <Text style={{ color: tokens.colors.cream, fontSize: 13, lineHeight: 18 }}>{headline}</Text>
-              </View>
-            );
-            return firstPersonId ? (
-              <Link key={row.id} href={{ pathname: "/profile/[personId]", params: { personId: firstPersonId } }} asChild>
-                <Pressable>{card}</Pressable>
-              </Link>
-            ) : (
-              <View key={row.id}>{card}</View>
-            );
-          })}
-        </View>
-      ) : null}
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Jump back in</Text>

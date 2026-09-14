@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
-const ROUTE_PATH = "apps/web/app/api/family-pattern-card/route.ts";
+const ROUTE_PATH = "apps/web/app/api/family-pattern-card/route.tsx";
 const VIEW_PATH = "apps/web/lib/family-pattern-card-view.tsx";
 const GRID_PATH = "apps/web/components/groups/chart-grid-section.tsx";
 const SHARE_PATH = "apps/web/components/groups/family-pattern-share.tsx";

@@ -152,6 +152,51 @@ export const GROUPS_INTRO_LINES = [
 // FOUNDER-REVIEW: authored. Dismisses the Groups first-visit intro.
 export const GROUPS_INTRO_GOT_IT = "Got it";
 
+// FOUNDER-REVIEW: authored. Badge on the Groups empty-state example reading.
+export const GROUPS_EXAMPLE_BADGE = "Example";
+
+// FOUNDER-REVIEW: authored. Title of the curated empty-state example group.
+export const GROUPS_EXAMPLE_TITLE = "A friend group";
+
+// FOUNDER-REVIEW: authored. Makes clear the example is not the user's data.
+export const GROUPS_EXAMPLE_NOTICE =
+  "This is an example reading, not your group. The names are fictional. The charts are real.";
+
+// FOUNDER-REVIEW: authored. Requirement under the example, before create.
+export const GROUPS_CREATE_REQUIREMENT = "A group needs three or more people.";
+
+// FOUNDER-REVIEW: authored. Link to add a person from the Groups empty state.
+export const GROUPS_EMPTY_ADD_SOMEONE = "Add someone";
+
+// FOUNDER-REVIEW: authored. One-tap CTA when the user already has three or more people and no group.
+export const GROUPS_EMPTY_BUILD_THIS_GROUP = "Build this group";
+
+// FOUNDER-REVIEW: authored. Default name for a one-tap group built from existing people.
+export const GROUPS_EMPTY_DEFAULT_NAME = "My circle";
+
+// FOUNDER-REVIEW: authored. Fail-closed if example ids ever reach save.
+export const GROUPS_EXAMPLE_CANNOT_SAVE = "Example people cannot be saved as a group.";
+
+/** How many more people a roster needs to reach the group minimum of three. */
+export function groupsEmptyPeopleNeeded(peopleCount: number): number {
+  return Math.max(0, 3 - Math.max(0, peopleCount));
+}
+
+/** FOUNDER-REVIEW: authored. Names how many people the user has, and how many more a group needs. */
+export function groupsEmptyPeopleStatus(peopleCount: number): string {
+  const have = Math.max(0, peopleCount);
+  const more = groupsEmptyPeopleNeeded(have);
+  if (more === 0) return "";
+  if (have === 0) return "You have no people yet. Add 3 to read a group.";
+  if (have === 1) return "You have 1 person. Add 2 more to read a group.";
+  return `You have ${have} people. Add ${more} more to read a group.`;
+}
+
+/** FOUNDER-REVIEW: authored. One-tap offer listing the user's actual people. */
+export function groupsEmptyBuildWith(names: readonly string[]): string {
+  return `Build a group with ${joinNames(names)}.`;
+}
+
 export function capitalizeWord(word: string): string {
   if (!word) return word;
   return word.charAt(0).toUpperCase() + word.slice(1);

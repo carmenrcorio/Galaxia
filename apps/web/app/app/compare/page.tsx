@@ -40,7 +40,7 @@ import {
   whatTheyNeed,
   type RelationType,
 } from "@galaxia/astro";
-import { isMinorForSafety, orderPair, shouldShowLiveTransits, sunSignFromChart } from "@galaxia/core";
+import { CHART_PRECISION_ADD_DATE, isMinorForSafety, orderPair, shouldShowLiveTransits, sunSignFromChart } from "@galaxia/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -156,6 +156,7 @@ function ComparePageInner() {
   const [running, setRunning]     = useState(false);
   const [saving, setSaving]       = useState(false);
   const [status, setStatus]       = useState<string | null>(null);
+  const [precisionGapPerson, setPrecisionGapPerson] = useState<{ id: string; name: string } | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [showRaw, setShowRaw]     = useState(false);
   const [savedReadings, setSavedReadings] = useState<SavedReading[]>([]);
@@ -329,15 +330,18 @@ function ComparePageInner() {
     // generational layer is the honest comparison for year-only data.
     if (natalA.precision === "year" || natalB.precision === "year") {
       const generationalOnly = compareGenerational(natalA.generational as GenSignature, natalB.generational as GenSignature, estimateYearGap(selectedA, selectedB));
+      const blocked = natalA.precision === "year" ? selectedA : selectedB;
       setResult(null);
+      setPrecisionGapPerson({ id: blocked.id, name: blocked.display_name });
       setTransitDelta(prior ? { newlyActive: [], movedOn: [], honest: false } : null);
       setStatus(
-        `${natalA.precision === "year" ? selectedA.display_name : selectedB.display_name} has year-only birth data, so a full synastry read isn't possible. The planet-to-planet aspects would be guesses. ` +
-        `What the generational layer shows: ${generationalOnly.theme} Add a birth date to unlock the full comparison.`
+        `${blocked.display_name} has year-only birth data, so a full synastry read isn't possible. The planet-to-planet aspects would be guesses. ` +
+        `What the generational layer shows: ${generationalOnly.theme}`
       );
       if (userId) await rememberPair(userId, pairLow, pairHigh, people);
       return;
     }
+    setPrecisionGapPerson(null);
     const synastry     = computeSynastry(natalA, natalB);
     const generational = compareGenerational(natalA.generational as GenSignature, natalB.generational as GenSignature, estimateYearGap(selectedA, selectedB));
 
@@ -899,6 +903,12 @@ function ComparePageInner() {
       ) : null}
 
       {status ? <p className={status.includes("error") || status.includes("Missing") ? "error" : "success"}>{status}</p> : null}
+      {precisionGapPerson ? (
+        <Link href={`/app/person/${precisionGapPerson.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>
+          {/* FOUNDER-REVIEW: CHART_PRECISION_ADD_DATE */}
+          {CHART_PRECISION_ADD_DATE}
+        </Link>
+      ) : null}
     </main>
   );
 }

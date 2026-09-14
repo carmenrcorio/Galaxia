@@ -1,3 +1,4 @@
+import { RC_ENTITLEMENT_ID as CORE_ENTITLEMENT_ID } from "@galaxia/core";
 import { describe, expect, it } from "vitest";
 import {
   RC_BACKEND_CODE,
@@ -135,10 +136,11 @@ describe("comped survives billing expiration (resolution contract)", () => {
 });
 
 describe("RC_ENTITLEMENT_ID", () => {
-  it("is the dashboard entitlement id, exactly", () => {
+  it("re-exports the @galaxia/core dashboard entitlement id", () => {
     // Case- and space-sensitive: the post-purchase entitlements.active[...]
-    // lookup in the paywall only matches on an exact string.
-    expect(RC_ENTITLEMENT_ID).toBe("GalaxiaMea App Unlimited");
+    // lookup in the paywall only matches on an exact string. The literal lives
+    // in @galaxia/core; this module must not define its own copy.
+    expect(RC_ENTITLEMENT_ID).toBe(CORE_ENTITLEMENT_ID);
   });
 });
 

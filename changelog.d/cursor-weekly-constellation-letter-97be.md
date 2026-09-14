@@ -15,3 +15,5 @@
 `[ADDED]` **`constellation_letters` ledger** (service-role only): one row per `(owner_id, week_of)` with `resend_id`, `sent_at`, first-touch `opened_at`/`clicked_at`, and `open_count`/`click_count`. First-party pixel (`/api/constellation-letter/open`) and click wrapper (`/api/constellation-letter/go`) record engagement without requiring Resend webhooks. `POST /api/webhooks/resend` is the optional native path (fails closed on unset `RESEND_WEBHOOK_SECRET`).
 
 `[OPEN]` **Apply `20260914240000_weekly_constellation_letter.sql` to production after merge.** This branch does not apply it (ENGINEERING.md §16). Until it lands, Settings cannot persist the new column and the cron will error on the missing table/column. Point Resend at `/api/webhooks/resend` for `email.opened` and `email.clicked` if native open/click events should supplement the pixel.
+
+`[NOTE]` The `letter` job uses `--max-time 180` because the week-ahead scan samples seven owner-local noons per constellation. The known 2022-07-10 Ada/Bo/Cy week is locked in `@galaxia/astro`: Bo is in the circle with no in-orb hit, so the letter is Cy and Ada only.

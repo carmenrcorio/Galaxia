@@ -121,6 +121,26 @@ describe("composeConstellationLetter", () => {
     }
   });
 
+  it("locks the known 2022-07-10 Ada/Bo/Cy week: Bo is in the circle but has no hit, so the letter is Cy and Ada only", () => {
+    const week = scanRelationalTransitsForWeek(PEOPLE, "2022-07-10", "UTC");
+    const draft = composeConstellationLetter(week, LETTER_PEOPLE);
+    expect(draft).not.toBeNull();
+    expect(draft!.portraits.map((p) => p.personName)).toEqual(["Cy", "Ada"]);
+    expect(draft!.opening).toBe("This week something real is moving for Cy and Ada.");
+    expect(draft!.portraits[0]!.dynamicSentence).toBe(
+      "Cy's Mercury is flowing with Saturn this week, in the same window as Ada."
+    );
+    expect(draft!.portraits[1]!.dynamicSentence).toBe(
+      "Ada's Sun is flowing with Saturn this week, in the same window as Cy."
+    );
+    expect(draft!.portraits.every((p) => p.transitBody === "saturn" && p.aspectType === "trine")).toBe(true);
+    expect(draft!.opening).not.toContain("Bo");
+    for (const portrait of draft!.portraits) {
+      expect(portrait.dynamicSentence).not.toContain("\u2014");
+      expect(portrait.intentionSentence).not.toContain("\u2014");
+    }
+  });
+
   it("every sentence traces to the portrait's real natal body and transiting body", () => {
     const draft = composeConstellationLetter(events, LETTER_PEOPLE);
     expect(draft).not.toBeNull();

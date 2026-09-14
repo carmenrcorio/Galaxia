@@ -44,17 +44,19 @@ export function ConstellationStarFieldSkeleton({ visible }: { visible: boolean }
       }}
     >
       {seats.map((seat) => {
-        const px = 3 + seat.size * 3;
+        const px = (3 + seat.size * 3).toFixed(2);
         const rad = "min(50cqw - 44px, 50cqh - 48px)";
+        const nx = seat.nx.toFixed(4);
+        const ny = seat.ny.toFixed(4);
         return (
           <span
             key={seat.id}
             className={`constellation-skeleton-point constellation-skeleton-point--${seat.accent}`}
             style={{
-              width: px,
-              height: px,
-              left: `calc(50% + ${seat.nx} * ${rad})`,
-              top: `calc(50% + ${seat.ny} * ${rad})`,
+              width: `${px}px`,
+              height: `${px}px`,
+              left: `calc(50% + (${nx}) * ${rad})`,
+              top: `calc(50% + (${ny}) * ${rad})`,
               animationDelay: `${(seat.pulse * 2.4).toFixed(2)}s`,
             }}
           />

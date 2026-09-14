@@ -17,6 +17,11 @@ import {
   type BirthFormInput,
   type GeoCandidate,
 } from "@galaxia/astro";
+import {
+  CHART_PRECISION_LADDER_INTRO,
+  CHART_PRECISION_NONE_TIER,
+  CHART_PRECISION_TIERS,
+} from "@galaxia/core";
 import { useMemo, useState } from "react";
 import { Spinner } from "./spinner";
 
@@ -25,12 +30,7 @@ export const MONTHS = [
   "July", "August", "September", "October", "November", "December"
 ];
 
-export const PRECISION_TIERS: { key: Precision; label: string; unlocks: string }[] = [
-  { key: "exact", label: "Exact time", unlocks: "Full chart: Ascendant, houses, precise Moon, and all 10 planets." },
-  { key: "date", label: "Date only", unlocks: "Sun, Moon, all planetary signs, and the generational layer. No Ascendant." },
-  // FOUNDER-REVIEW: rewritten (no U+2014).
-  { key: "year", label: "Year only", unlocks: "Generational layer only: good for ancestors and anyone whose date you don't know." }
-];
+export const PRECISION_TIERS: { key: Precision; label: string; unlocks: string }[] = CHART_PRECISION_TIERS;
 
 export const BASE_BIRTH_INPUT: BirthFormInput = {
   precision: "date",
@@ -139,11 +139,11 @@ export function BirthFields({
 
       {/* Precision selector */}
       <p style={{ fontSize: ".76rem", color: "var(--mist2)", lineHeight: 1.5, margin: 0 }}>
-        Birth time and city are optional. Pick whatever you actually know: every tier below produces a real chart; more detail just unlocks more of it.
+        {CHART_PRECISION_LADDER_INTRO}
       </p>
       <div style={{ display: "grid", gap: 6 }}>
         {(allowNone
-          ? [...PRECISION_TIERS, { key: "none" as const, label: "Add birth data later", unlocks: "Just save their name and relationship now: you can add a year, date, or exact time whenever you have it (or ask them to)." }]
+          ? [...PRECISION_TIERS, CHART_PRECISION_NONE_TIER]
           : PRECISION_TIERS
         ).map((tier) => (
           <button

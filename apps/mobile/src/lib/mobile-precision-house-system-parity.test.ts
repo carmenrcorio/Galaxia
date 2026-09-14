@@ -137,4 +137,12 @@ describe("mobile can save a person with no birth data (web precision parity)", (
     expect(profileSrc).toContain("chartLoadError");
     expect(profileSrc).toContain("Chart could not be loaded");
   });
+
+  it("wiring: the profile states chart precision as a fact and names missing houses/aspects", () => {
+    expect(profileSrc).toContain("ChartPrecisionFacts");
+    expect(profileSrc).toContain("chartPrecisionFact");
+    expect(profileSrc).toContain("housesUnavailableCopy");
+    expect(profileSrc).toContain("ASPECTS_UNAVAILABLE_YEAR_BODY");
+    expect(profileSrc).not.toContain("{person.relation} · {person.birth_precision}");
+  });
 });

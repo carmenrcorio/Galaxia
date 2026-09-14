@@ -1,10 +1,18 @@
 import type { NatalChart } from "@galaxia/astro";
 import {
   OWNED_DELETE_COPY,
+  ASPECTS_UNAVAILABLE_YEAR_BODY,
+  ASPECTS_UNAVAILABLE_YEAR_FOLLOW_UP,
+  CHART_PRECISION_DOES_NOT_HEADING,
+  CHART_PRECISION_SUPPORTS_HEADING,
+  CHART_PRECISION_WHY_HEADING,
+  chartPrecisionExplanation,
+  chartPrecisionFact,
   describeGenerationalArchetype,
   formatPersonDeleteConfirmation,
   groupsCollapsedByMemberRemoval,
   hasPassed,
+  housesUnavailableCopy,
   PERSON_GROUP_LABEL,
   PERSON_TAB_LABEL,
   PERSON_TAB_VOCAB,
@@ -238,8 +246,12 @@ export default function PersonProfileScreen() {
         <View style={{ flex: 1 }}>
           <Text style={{ color: tokens.colors.cream, fontSize: 31, fontWeight: "700" }}>{person.display_name}</Text>
           <Text style={{ color: tokens.colors.mist }}>
-            {person.relation} · {person.birth_precision}{isMemorial ? " · remembered" : ""}
+            {person.relation}{isMemorial ? " · remembered" : ""}
           </Text>
+          <ChartPrecisionFacts
+            precision={person.birth_precision}
+            hasBirthPlace={Boolean(chart?.asc)}
+          />
         </View>
       </View>
       <Link href="/compare" asChild>
@@ -294,9 +306,11 @@ export default function PersonProfileScreen() {
               <Text style={cardTitle}>{PERSON_TAB_LABEL["big-three"]}</Text>
               <Text style={vocabSubhead}>{PERSON_TAB_VOCAB["big-three"] ?? "Big three"}</Text>
               {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-              <Text style={cardBody}>Sun: {sun?.sign ?? "·"}</Text>
-              <Text style={cardBody}>Moon: {moon?.sign ?? "·"}</Text>
-              <Text style={cardBody}>Rising: {rising ?? "Unavailable without exact time/location"}</Text>
+              <Text style={cardBody}>Sun: {sun?.confident === false ? "Uncertain (year-only birth data)" : sun?.sign ?? "·"}</Text>
+              <Text style={cardBody}>Moon: {moon?.confident === false ? "Uncertain (year-only birth data)" : moon?.sign ?? "·"}</Text>
+              <Text style={cardBody}>
+                Rising: {rising ?? "Exact time and city needed"}
+              </Text>
             </View>
 
             <View style={cardStyle}>
@@ -309,6 +323,33 @@ export default function PersonProfileScreen() {
                 </Text>
               ))}
             </View>
+
+            {chart.precision === "year" ? (
+              <View style={cardStyle}>
+                <Text style={cardTitle}>{PERSON_TAB_LABEL.aspects}</Text>
+                <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.aspects ?? "Aspects"}</Text>
+                {/* FOUNDER-REVIEW: ASPECTS_UNAVAILABLE_YEAR_BODY */}
+                <Text style={cardBody}>{ASPECTS_UNAVAILABLE_YEAR_BODY}</Text>
+                {/* FOUNDER-REVIEW: ASPECTS_UNAVAILABLE_YEAR_FOLLOW_UP */}
+                <Text style={cardBody}>{ASPECTS_UNAVAILABLE_YEAR_FOLLOW_UP}</Text>
+              </View>
+            ) : null}
+
+            {!(chart.cusps && chart.cusps.length >= 12) ? (
+              <View style={cardStyle}>
+                <Text style={cardTitle}>{PERSON_TAB_LABEL.houses}</Text>
+                <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.houses ?? "Houses"}</Text>
+                {(() => {
+                  const copy = housesUnavailableCopy(chart.precision);
+                  return (
+                    <>
+                      <Text style={cardBody}>{copy.body}</Text>
+                      <Text style={cardBody}>{copy.followUp}</Text>
+                    </>
+                  );
+                })()}
+              </View>
+            ) : null}
 
             <View style={cardStyle}>
               <Text style={cardTitle}>Elemental balance</Text>
@@ -441,6 +482,47 @@ export default function PersonProfileScreen() {
 
       {status ? <Text style={{ color: tokens.colors.gold }}>{status}</Text> : null}
     </ScrollView>
+  );
+}
+
+function ChartPrecisionFacts({
+  precision,
+  hasBirthPlace
+}: {
+  precision: PersonRow["birth_precision"];
+  hasBirthPlace: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const explanation = chartPrecisionExplanation(precision, { hasBirthPlace });
+  const label = chartPrecisionFact(precision);
+
+  return (
+    <View style={{ marginTop: 6, gap: 8 }}>
+      <Pressable onPress={() => setOpen((prev) => !prev)} accessibilityRole="button">
+        <Text style={{ color: tokens.colors.mist2, fontSize: 14, textDecorationLine: "underline" }}>
+          {label}
+        </Text>
+      </Pressable>
+      {open ? (
+        <View style={{ gap: 8 }}>
+          {/* FOUNDER-REVIEW: CHART_PRECISION_SUPPORTS_HEADING */}
+          <Text style={{ color: tokens.colors.mist2, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" }}>
+            {CHART_PRECISION_SUPPORTS_HEADING}
+          </Text>
+          <Text style={{ color: tokens.colors.mist, lineHeight: 20 }}>{explanation.supports}</Text>
+          {/* FOUNDER-REVIEW: CHART_PRECISION_DOES_NOT_HEADING */}
+          <Text style={{ color: tokens.colors.mist2, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" }}>
+            {CHART_PRECISION_DOES_NOT_HEADING}
+          </Text>
+          <Text style={{ color: tokens.colors.mist, lineHeight: 20 }}>{explanation.doesNot}</Text>
+          {/* FOUNDER-REVIEW: CHART_PRECISION_WHY_HEADING */}
+          <Text style={{ color: tokens.colors.mist2, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" }}>
+            {CHART_PRECISION_WHY_HEADING}
+          </Text>
+          <Text style={{ color: tokens.colors.mist, lineHeight: 20 }}>{explanation.why}</Text>
+        </View>
+      ) : null}
+    </View>
   );
 }
 

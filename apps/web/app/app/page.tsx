@@ -71,12 +71,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChartImageExportButton, ChartImageExportFrame, chartExportFilename } from "../../components/chart-image-export";
+import { ConnectInviteButton } from "../../components/connect-invite-button";
 import {
   CONSTELLATION_STAGE_STYLE,
   ConstellationEmptyState,
   ConstellationLoadError,
   ConstellationStarFieldSkeleton,
 } from "../../components/constellation-starfield-skeleton";
+import { CONNECT_RESUME_KEY, isConnectToken } from "../../lib/connect-invite";
 import { composeGalaxySharePng, SHARE_IMAGE_FAIL } from "../../lib/share-image";
 import { FIRST_RUN_RESTART_HREF } from "../../lib/nav-links";
 import { InitialAvatar } from "../../components/initial-avatar";
@@ -102,6 +104,7 @@ interface PersonRow {
   memorial_constellation?: string | null;
   /** Owner-chosen polar seat. NULL = derived default from galaxySeatsResolved. */
   custom_position?: CustomGalaxyPosition | null;
+  linked_user_id?: string | null;
   sunSign?: string | null;
 }
 interface LinkRow { fromId: string; toId: string; scoreA: number; elA: string; elB: string; }
@@ -326,6 +329,8 @@ export default function AppHomePage() {
   const [liveIn, setLiveIn]                    = useState(false);
   const [hoverPerson, setHoverPerson]           = useState<PersonRow | null>(null);
   const [ownerId, setOwnerId]                   = useState<string | null>(null);
+  const [unackedPersonIds, setUnackedPersonIds] = useState<Set<string>>(() => new Set());
+  const hoverClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     showRingsRef.current = showRings;
@@ -350,6 +355,19 @@ export default function AppHomePage() {
           setLoading(false);
           return;
         }
+        try {
+          const resume = sessionStorage.getItem(CONNECT_RESUME_KEY);
+          if (resume && resume.startsWith("/connect/")) {
+            const token = resume.slice("/connect/".length);
+            if (isConnectToken(token)) {
+              sessionStorage.removeItem(CONNECT_RESUME_KEY);
+              router.replace(resume as never);
+              return;
+            }
+          }
+        } catch {
+          /* private mode */
+        }
         setOwnerId(user.id);
         void loadHome(user.id);
       })
@@ -359,7 +377,7 @@ export default function AppHomePage() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [supabase]);
+  }, [supabase, router]);
 
   const liveReady = !loading && !loadError && people.length > 0;
   useEffect(() => {
@@ -888,6 +906,12 @@ export default function AppHomePage() {
         const lxM = Math.min(W() - 8, Math.max(8, labelPos.x));
         const lyM = Math.min(H() - 6, Math.max(12, labelPos.y));
         cx.fillText(p.display_name, lxM, lyM);
+        if (!forExport && unackedPersonIds.has(p.id)) {
+          cx.beginPath();
+          cx.arc(q.x + R0 * 0.95, q.y - R0 * 0.95, 3.4, 0, Math.PI * 2);
+          cx.fillStyle = "rgba(230,174,108,0.95)";
+          cx.fill();
+        }
         cx.restore();
         return;
       }
@@ -981,6 +1005,13 @@ export default function AppHomePage() {
       const lx = Math.min(W() - 8, Math.max(8, labelPos.x));
       const ly = Math.min(H() - 6, Math.max(12, labelPos.y));
       cx.fillText(p.display_name, lx, ly);
+
+      if (!forExport && unackedPersonIds.has(p.id)) {
+        cx.beginPath();
+        cx.arc(q.x + R0 * 0.95, q.y - R0 * 0.95, 3.4, 0, Math.PI * 2);
+        cx.fillStyle = "rgba(230,174,108,0.95)";
+        cx.fill();
+      }
 
       cx.restore();
     }
@@ -1496,8 +1527,22 @@ export default function AppHomePage() {
       const rect = canvas.getBoundingClientRect();
       if (!dragRef.current) {
         const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
-        setHoverPerson(hit);
-        canvas.style.cursor = hit ? "pointer" : "default";
+        if (hit) {
+          if (hoverClearTimerRef.current) {
+            clearTimeout(hoverClearTimerRef.current);
+            hoverClearTimerRef.current = null;
+          }
+          setHoverPerson(hit);
+          canvas.style.cursor = "pointer";
+          return;
+        }
+        canvas.style.cursor = "default";
+        if (!hoverClearTimerRef.current) {
+          hoverClearTimerRef.current = setTimeout(() => {
+            hoverClearTimerRef.current = null;
+            setHoverPerson(null);
+          }, 220);
+        }
         return;
       }
       const dx = e.clientX - dragRef.current.startX;
@@ -1590,7 +1635,7 @@ export default function AppHomePage() {
       canvas.removeEventListener("click", onClick);
       canvas.removeEventListener("contextmenu", onContextMenu);
     };
-  }, [loading, people, links, honorEdges, activeTransitIds, hoverPerson, router, cohortByPerson]);
+  }, [loading, people, links, honorEdges, activeTransitIds, hoverPerson, router, cohortByPerson, unackedPersonIds]);
 
   /* ─── data loading ────────────────────────────────────────────── */
   async function loadHome(uid: string) {
@@ -1608,7 +1653,7 @@ export default function AppHomePage() {
       const localDate = ownerLocalDate();
       const [profileRes, peopleRes, chartRes, threadRes, relRes, nudgeRes, recentRes] = await Promise.all([
         supabase.from("profiles").select("display_name, pinned_sky_person_id, onboarding_step, onboarding_completed_at").eq("id", uid).single(),
-        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position").eq("owner_id", uid).order("created_at", { ascending: true }),
+        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, linked_user_id").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode, subject_person, pair_low, pair_high").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6),
         supabase.from("relationships").select("person_a, person_b, relation_type").eq("owner_id", uid).eq("relation_type", HONOR_RELATION_TYPE),
@@ -1648,6 +1693,21 @@ export default function AppHomePage() {
         }).firstName
       );
       setPeople(castPeople);
+
+      const { data: unackedInvites } = await supabase
+        .from("invites")
+        .select("id, person_id, accepted_by")
+        .eq("from_user", uid)
+        .eq("kind", "constellation_connect")
+        .eq("status", "accepted")
+        .is("sender_ack_at", null);
+      const unread = new Set<string>();
+      for (const invite of unackedInvites ?? []) {
+        if (invite.person_id) unread.add(invite.person_id as string);
+        const linked = castPeople.find((p) => p.linked_user_id && p.linked_user_id === invite.accepted_by);
+        if (linked) unread.add(linked.id);
+      }
+      setUnackedPersonIds(unread);
       const pinnedSkyPersonId = (profile as { pinned_sky_person_id?: string | null } | null)?.pinned_sky_person_id ?? null;
 
       /* cohort per person = their Pluto sign, straight from the computed chart.
@@ -1777,6 +1837,7 @@ export default function AppHomePage() {
       setPersonSkies([]);
       setThreadChips([]);
       setCohortByPerson({});
+      setUnackedPersonIds(new Set());
     } finally { setLoading(false); }
   }
 
@@ -1916,14 +1977,22 @@ export default function AppHomePage() {
 
             {/* hover inspector — glass card floating over canvas */}
             {hoverPerson ? (
-              <div style={{
+              <div
+                onPointerEnter={() => {
+                  if (hoverClearTimerRef.current) {
+                    clearTimeout(hoverClearTimerRef.current);
+                    hoverClearTimerRef.current = null;
+                  }
+                }}
+                onPointerLeave={() => setHoverPerson(null)}
+                style={{
                 position: "absolute", top: 16, right: 16, zIndex: 2,
                 width: 220, padding: "16px 18px", borderRadius: 16,
                 background: "linear-gradient(165deg, rgba(255,255,255,.065), rgba(255,255,255,.018))",
                 backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",
                 border: "1px solid rgba(230,174,108,.18)",
                 boxShadow: "0 20px 50px -20px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.07)",
-                pointerEvents: "none",
+                pointerEvents: "auto",
               }}>
                 <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 6 }}>
                   {formFromRelation(hoverPerson.is_self, hoverPerson.relation, hoverPerson.passed_at).replace(/-/g, " ")}
@@ -1932,6 +2001,9 @@ export default function AppHomePage() {
                 <p style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)", marginBottom: 2 }}>{hoverPerson.display_name}</p>
                 <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 10 }}>{hoverPerson.relation} · {hoverPerson.birth_precision}</p>
                 <p style={{ fontSize: ".72rem", color: "var(--teal)", display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 100, background: "rgba(111,177,184,.1)", border: "1px solid rgba(111,177,184,.24)" }}>Click to open profile</p>
+                <div style={{ marginTop: 12 }}>
+                  <ConnectInviteButton person={hoverPerson} compact />
+                </div>
               </div>
             ) : null}
 

@@ -21,6 +21,7 @@ import { useState } from "react";
 import { getPreferredHouseSystem } from "../lib/house-system";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { AskBirthData } from "./ask-birth-data";
+import { ConnectInviteButton } from "./connect-invite-button";
 import { CustomCheck } from "./custom-check";
 import { Spinner } from "./spinner";
 
@@ -40,6 +41,7 @@ interface PersonRow {
   /** Curated palette hex; null = element-derived node color on the constellation. */
   star_color?: string|null;
   is_self?: boolean;
+  linked_user_id?: string | null;
   custom_position?: { angle: number; radius_pct: number } | null;
 }
 interface Props { person: PersonRow; userId: string; onSaved: () => void; onDeleted: () => void; }
@@ -475,6 +477,9 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(183,154,216,.1)" }}>
           <p className="muted" style={{ fontSize: ".76rem", marginBottom: 8 }}>Don't have their exact details? Let them fill it in:</p>
           <AskBirthData personId={person.id} personName={person.display_name} userId={userId} />
+          <div style={{ marginTop: 10 }}>
+            <ConnectInviteButton person={person} />
+          </div>
         </div>
       ) : null}
 

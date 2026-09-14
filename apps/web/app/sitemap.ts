@@ -12,7 +12,7 @@ const SITE_URL = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
  *   - /admin/** (internal only)
  *   - /account/**, /app/**, /welcome, /start, /subscribe (auth-gated —
  *     middleware.ts redirects a signed-out visitor to /login for all of these)
- *   - /invite/[token], /s/[token], /r/[slug] (per-invite/per-share/
+ *   - /invite/[token], /connect/[token], /s/[token], /r/[slug] (per-invite/per-share/
  *     per-referral pages, not general content — see route comments)
  *   - /auth/callback (an OAuth redirect target, not a page)
  *   - /login, /signup (thin auth-only forms — no unique content to rank on,

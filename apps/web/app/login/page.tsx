@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LoginForm } from "../../components/login-form";
+import { authReturnPath } from "../../lib/safe-next-path";
 
 // FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Log in to Galaxia";
@@ -25,11 +26,12 @@ export const metadata: Metadata = {
   }
 };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; redirect?: string }> }) {
   const resolved = await searchParams;
   // Default to the /start resolver (smart routing: returning users → /app,
-  // new users → /welcome). An explicit deep-link `next` is respected as-is.
-  const nextPath = resolved.next ?? "/start";
+  // new users → /welcome). An explicit deep-link `next` (or `redirect`, the
+  // connect-landing alias) is respected once it has passed authReturnPath.
+  const nextPath = authReturnPath(resolved);
   return (
     <main className="container" style={{ paddingTop: 72, paddingBottom: 72, maxWidth: 820 }}>
       <h1 className="auth-title">Sign in to Galaxia</h1>

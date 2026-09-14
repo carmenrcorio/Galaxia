@@ -209,6 +209,12 @@ describe("retired Quick Chart paths redirect in next.config", () => {
     expect(src).not.toContain("vercel.json");
     expect(existsSync(join(WEB_APP_DIR, "account/subscription/page.tsx"))).toBe(false);
   });
+
+  it("strips a trailing slash on /connect/:token so a pasted token still lands", () => {
+    const src = readFileSync(join(WEB_ROOT, "next.config.mjs"), "utf8");
+    expect(src).toMatch(/source:\s*["']\/connect\/:token\/["']/);
+    expect(src).toMatch(/destination:\s*["']\/connect\/:token["']/);
+  });
 });
 
 describe("nav config still includes the non-Quick-Chart entries", () => {

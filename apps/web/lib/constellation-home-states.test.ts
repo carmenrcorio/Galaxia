@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { EMPTY_STATE_WELCOME_HREF } from "./nav-links";
 import { describe, expect, it } from "vitest";
 
 const home = readFileSync(join(__dirname, "../app/app/page.tsx"), "utf8");
@@ -30,7 +31,8 @@ describe("source wiring — constellation home loading / empty / error", () => {
 
   it("renders the empty constellation with one add-person action", () => {
     expect(home).toContain("ConstellationEmptyState");
-    expect(skeleton).toContain('href="/welcome"');
+    expect(skeleton).toContain("EMPTY_STATE_WELCOME_HREF");
+    expect(EMPTY_STATE_WELCOME_HREF).toBe("/welcome");
     expect(skeleton).toContain("CONSTELLATION_EMPTY_ACTION");
   });
 

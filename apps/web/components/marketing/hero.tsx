@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HERO_HOW_IT_WORKS, MARKETING_NAV_LOGIN, MARKETING_NAV_SIGNUP } from "../../lib/nav-links";
 import { HeroGraph } from "./hero-graph";
 import { QuickChartEntry } from "./quick-chart-entry";
 
@@ -40,10 +41,10 @@ export function Hero() {
             more intention. Not your horoscope. Not for swiping on strangers.
           </p>
           <div className="hero-actions fade-in fade-in-delay-3">
-            <Link href="/signup" className="btn-primary">Start 14 days free</Link>
-            <Link href="/login" className="pill-link hero-login-btn">Log in</Link>
-            <Link href="/why-galaxia#how" className="hero-scroll-cue">
-              <span>See how it works</span>
+            <Link href={MARKETING_NAV_SIGNUP.href as never} className="btn-primary">{MARKETING_NAV_SIGNUP.label}</Link>
+            <Link href={MARKETING_NAV_LOGIN.href as never} className="pill-link hero-login-btn">{MARKETING_NAV_LOGIN.label}</Link>
+            <Link href={HERO_HOW_IT_WORKS.href as never} className="hero-scroll-cue">
+              <span>{HERO_HOW_IT_WORKS.label}</span>
               <ArrowDown />
             </Link>
           </div>

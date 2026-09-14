@@ -28,6 +28,7 @@ import { useEffect, useMemo, useState } from "react";
 import { InitialAvatar } from "./initial-avatar";
 import { MemorialConstellationGlyph } from "./memorial-constellation-glyph";
 import { BODY_GLYPH } from "../lib/design";
+import { EMPTY_STATE_SETTINGS_HREF } from "../lib/nav-links";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 
 /** Weather-forecast palette per the spec — informative, never alarming. */
@@ -94,7 +95,7 @@ function QuietFeedStatus({ message, off }: { message: string; off?: boolean }) {
         {off ? (
           <>
             This week alerts are off. Turn them on in{" "}
-            <Link href="/app/settings" style={{ color: "var(--gold-soft)" }}>
+            <Link href={EMPTY_STATE_SETTINGS_HREF as never} style={{ color: "var(--gold-soft)" }}>
               Settings
             </Link>{" "}
             to see shared transits.

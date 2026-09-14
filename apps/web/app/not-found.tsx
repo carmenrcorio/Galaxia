@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CosmicBackground } from "../components/cosmic-background";
+import { NOT_FOUND_LINKS } from "../lib/nav-links";
 
 export default function NotFound() {
   return (
@@ -15,11 +16,11 @@ export default function NotFound() {
           still safe.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-          <Link href="/" className="pill-link">
-            Back to home
+          <Link href={NOT_FOUND_LINKS[0].href as never} className="pill-link">
+            {NOT_FOUND_LINKS[0].label}
           </Link>
-          <Link href="/chart" className="pill-link pill-link--gold">
-            Try a free chart
+          <Link href={NOT_FOUND_LINKS[1].href as never} className="pill-link pill-link--gold">
+            {NOT_FOUND_LINKS[1].label}
           </Link>
         </div>
       </main>

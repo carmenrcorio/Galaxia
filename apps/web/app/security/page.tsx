@@ -8,6 +8,7 @@ import { SectionPageIntro } from "../../components/marketing/section-page-intro"
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { TrustSection } from "../../components/marketing/trust-section";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
+import { RELATED_LINKS } from "../../lib/nav-links";
 
 // FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Your Data and Privacy on Galaxia";
@@ -52,13 +53,7 @@ export default function SecurityPage() {
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Your Data Is Yours" lede={DESCRIPTION} />
         <TrustSection />
-        <RelatedLinks
-          heading="Keep exploring"
-          links={[
-            { href: "/privacy", label: "Read our full privacy policy" },
-            { href: "/pricing", label: "See pricing" },
-          ]}
-        />
+        <RelatedLinks heading="Keep exploring" links={RELATED_LINKS.security} />
         <CloseSection />
       </main>
       <SiteFooter />

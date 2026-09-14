@@ -66,6 +66,7 @@ import { RemembranceSpace } from "../../../../components/remembrance-space";
 import { Spinner } from "../../../../components/spinner";
 import { ASPECT_GLYPH, BODY_GLYPH, SIGN_GLYPH, signElement } from "../../../../lib/design";
 import { getPreferredHouseSystem } from "../../../../lib/house-system";
+import { EMPTY_STATE_WELCOME_HREF } from "../../../../lib/nav-links";
 import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, type RecordEntry } from "../../../../lib/record";
 import { ThreadMenu } from "../../../../components/thread-menu";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
@@ -737,7 +738,7 @@ export default function PersonProfilePage() {
   if (!person) return (
     <main className="app-content">
       <p className="muted">{status ?? "Profile not found."}</p>
-      <Link href="/welcome" className="btn-primary">Add birth data in onboarding</Link>
+      <Link href={EMPTY_STATE_WELCOME_HREF as never} className="btn-primary">Add birth data in onboarding</Link>
     </main>
   );
 

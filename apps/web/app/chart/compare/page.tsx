@@ -37,6 +37,7 @@ import { QuickChartShell } from "../../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
+import { RELATED_LINKS, CHART_MODE_SINGLE } from "../../../lib/nav-links";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
 import {
   QUICK_COMPARE_HELD_READING,
@@ -219,8 +220,8 @@ export default function QuickComparePage() {
           <section className="glass-card fade-in" style={{ marginBottom: 16 }}>
             <p className="eyebrow" style={{ marginBottom: 8 }}>What do you want to see?</p>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              <Link href="/chart" className="pill-link" style={{ fontSize: ".82rem", padding: "8px 16px", textDecoration: "none" }}>
-                Single chart
+              <Link href={CHART_MODE_SINGLE.href as never} className="pill-link" style={{ fontSize: ".82rem", padding: "8px 16px", textDecoration: "none" }}>
+                {CHART_MODE_SINGLE.label}
               </Link>
               <button type="button" className="pill-link" aria-pressed style={{ fontSize: ".82rem", padding: "8px 16px", borderColor: "rgba(230,174,108,.5)", color: "var(--gold)" }}>
                 Check compatibility
@@ -391,10 +392,7 @@ export default function QuickComparePage() {
       <RelatedLinks
         bare
         heading="Keep reading"
-        links={[
-          { href: "/synastry-chart-meaning", label: "What a synastry chart actually tells you" },
-          { href: "/generations", label: "See the generational layer behind your compatibility" },
-        ]}
+        links={RELATED_LINKS.chartCompare}
       />
     </QuickChartShell>
   );

@@ -11,6 +11,7 @@ import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { WhyNotSection } from "../../components/marketing/why-not-section";
 import { WhySection } from "../../components/marketing/why-section";
+import { RELATED_LINKS } from "../../lib/nav-links";
 
 // FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Why Galaxia: Relationship Intelligence, Not Horoscopes";
@@ -65,20 +66,8 @@ export default function WhyGalaxiaPage() {
         <RemembranceSection />
         <WhyNotSection />
         <FeaturesSection />
-        <RelatedLinks
-          heading="Keep exploring"
-          links={[
-            { href: "/chart", label: "Try a free chart" },
-            { href: "/chart/compare", label: "Check your compatibility with someone" },
-            { href: "/generations", label: "See how it works across a whole family" },
-          ]}
-        />
-        <RelatedLinks
-          heading="From the blog"
-          links={[
-            { href: "/synastry-chart-meaning", label: "What synastry actually measures" },
-          ]}
-        />
+        <RelatedLinks heading="Keep exploring" links={RELATED_LINKS.whyGalaxia} />
+        <RelatedLinks heading="From the blog" links={RELATED_LINKS.whyGalaxiaBlog} />
         <CloseSection />
       </main>
       <SiteFooter />

@@ -9,6 +9,7 @@
 import { constellationSkeletonSeats } from "@galaxia/core";
 import Link from "next/link";
 import type { CSSProperties } from "react";
+import { EMPTY_STATE_WELCOME_HREF } from "../lib/nav-links";
 
 /** Matches the loaded constellation frame so the page below does not jump. */
 export const CONSTELLATION_STAGE_STYLE: CSSProperties = {
@@ -71,7 +72,7 @@ export function ConstellationEmptyState() {
     <div className="constellation-outcome">
       {/* FOUNDER-REVIEW: CONSTELLATION_EMPTY */}
       <p className="muted" style={{ margin: 0, maxWidth: "36ch" }}>{CONSTELLATION_EMPTY}</p>
-      <Link href="/welcome" className="btn-primary">
+      <Link href={EMPTY_STATE_WELCOME_HREF as never} className="btn-primary">
         {/* FOUNDER-REVIEW: CONSTELLATION_EMPTY_ACTION */}
         {CONSTELLATION_EMPTY_ACTION}
       </Link>

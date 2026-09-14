@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Spinner } from "./spinner";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
+import { EMAIL_PATHS, SETTINGS_CANCEL_HREF } from "../lib/nav-links";
 import {
   SETTINGS_SUBSCRIPTION_COPY,
   deriveSettingsSubscriptionView,
@@ -89,12 +90,12 @@ export function SettingsSubscriptionPanel() {
       ))}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14 }}>
         {view.canCancel ? (
-          <Link className="btn-primary" href="/account/cancel?from=settings">
+          <Link className="btn-primary" href={SETTINGS_CANCEL_HREF as never}>
             {SETTINGS_SUBSCRIPTION_COPY.cancelLabel}
           </Link>
         ) : null}
         {view.showSubscribe ? (
-          <Link className="pill-link" href="/subscribe">{SETTINGS_SUBSCRIPTION_COPY.subscribeLabel}</Link>
+          <Link className="pill-link" href={EMAIL_PATHS.subscribe as never}>{SETTINGS_SUBSCRIPTION_COPY.subscribeLabel}</Link>
         ) : null}
         {view.showManageBilling ? (
           <a className="pill-link" href={view.manageBillingHref}>

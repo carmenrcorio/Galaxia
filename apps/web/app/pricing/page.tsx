@@ -8,6 +8,7 @@ import { RevealObserver } from "../../components/marketing/reveal-observer";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
+import { RELATED_LINKS } from "../../lib/nav-links";
 
 // FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Galaxia Pricing";
@@ -50,13 +51,7 @@ export default function PricingPage() {
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="One Honest Plan" lede={DESCRIPTION} />
         <PricingSection />
-        <RelatedLinks
-          heading="Keep exploring"
-          links={[
-            { href: "/why-galaxia", label: "See what you're getting" },
-            { href: "/meet-vela", label: "Meet Vela, your AI guide" },
-          ]}
-        />
+        <RelatedLinks heading="Keep exploring" links={RELATED_LINKS.pricing} />
         <CloseSection />
       </main>
       <SiteFooter />

@@ -6,16 +6,19 @@ import {
   FORBIDDEN_HONOR_RELATION_TYPES,
   HONOR_LINE_STYLE,
   HONOR_RELATION_TYPE,
+  RELATION_LINE_STYLE,
   RELATIONSHIPS_OWNER_RLS_POLICY,
   RELATIONSHIP_EDGE_TYPES,
   buildHonorRelationshipInsert,
   canonicalRelationshipPair,
+  connectionDiff,
   honorConnectionDiff,
   honorEdgeFraming,
   honorEdgeTouchesMinor,
   honorEdgesFromDeclaredRows,
   isForbiddenHonorRelationType,
   isHonorRelationType,
+  isRelationshipEdgeType,
   livingHonorCandidates,
   livingIdsFromHonorRows,
   synastryCannotSubstituteHonor,
@@ -167,13 +170,24 @@ describe("Honor constellation — declared relationships only (zero inference)",
     ];
     expect(synastryCannotSubstituteHonor(synastryPairs, edges)).toBe(true);
     expect(
+      synastryCannotSubstituteHonor(synastryPairs, [
+        ...edges,
+        {
+          fromId: owner.id,
+          toId: livingFriend.id,
+          relationType: "partner",
+          touchesMinor: false,
+        },
+      ])
+    ).toBe(true);
+    expect(
       honorEdgesFromDeclaredRows([], people, NOW).some(
         (e) => e.toId === livingFriend.id || e.fromId === livingFriend.id
       )
     ).toBe(false);
   });
 
-  it("ignores non-remembrance relation_type rows (no romantic / partner edges)", () => {
+  it("draws partner edges alongside remembrance, including living-to-living", () => {
     const people = [owner, passedParent, livingFriend];
     const rows = [
       {
@@ -188,9 +202,51 @@ describe("Honor constellation — declared relationships only (zero inference)",
       },
     ];
     const edges = honorEdgesFromDeclaredRows(rows, people, NOW);
+    expect(edges).toHaveLength(2);
+    expect(edges.map((e) => e.relationType).sort()).toEqual(["partner", "remembrance"]);
+    const honor = edges.find((e) => e.relationType === HONOR_RELATION_TYPE);
+    expect(honor?.fromId).toBe(passedParent.id);
+    expect(honor?.toId).toBe(owner.id);
+    const partner = edges.find((e) => e.relationType === "partner");
+    expect(partner?.fromId).toBe(passedParent.id);
+    expect(partner?.toId).toBe(livingFriend.id);
+  });
+
+  it("keeps remembrance passed-to-living while drawing a second type on the same pair", () => {
+    const people = [owner, passedParent, livingFriend];
+    const pair = canonicalRelationshipPair(passedParent.id, livingFriend.id);
+    const edges = honorEdgesFromDeclaredRows(
+      [
+        { ...pair, relation_type: HONOR_RELATION_TYPE },
+        { ...pair, relation_type: "friend" },
+      ],
+      people,
+      NOW
+    );
+    expect(edges).toHaveLength(2);
+    const honor = edges.find((e) => e.relationType === HONOR_RELATION_TYPE);
+    expect(honor?.fromId).toBe(passedParent.id);
+    expect(honor?.toId).toBe(livingFriend.id);
+    const friend = edges.find((e) => e.relationType === "friend");
+    expect(friend?.fromId).toBe(pair.person_a);
+    expect(friend?.toId).toBe(pair.person_b);
+  });
+
+  it("draws living-to-living partner and skips living-to-living remembrance", () => {
+    const people = [owner, livingFriend];
+    const pair = canonicalRelationshipPair(owner.id, livingFriend.id);
+    const edges = honorEdgesFromDeclaredRows(
+      [
+        { ...pair, relation_type: "partner" },
+        { ...pair, relation_type: HONOR_RELATION_TYPE },
+      ],
+      people,
+      NOW
+    );
     expect(edges).toHaveLength(1);
-    expect(edges[0].toId).toBe(owner.id);
-    expect(edges.every((e) => !isForbiddenHonorRelationType(e.relationType))).toBe(true);
+    expect(edges[0].relationType).toBe("partner");
+    expect(edges[0].fromId).toBe(pair.person_a);
+    expect(edges[0].toId).toBe(pair.person_b);
   });
 
   it("does not infer spouse/lineage from shared owner-relations", () => {
@@ -230,6 +286,12 @@ describe("No romantic framing on any honor edge", () => {
     expect(HONOR_LINE_STYLE.water).toBe("#6FB1B8");
     expect(HONOR_LINE_STYLE.ancient).toBe("#DA8C8C");
     expect(HONOR_LINE_STYLE.dash.length).toBeGreaterThan(0);
+    expect(Object.is(RELATION_LINE_STYLE.remembrance, HONOR_LINE_STYLE)).toBe(true);
+    expect(isRelationshipEdgeType("partner")).toBe(true);
+    expect(isRelationshipEdgeType("parent-child")).toBe(false);
+    expect(RELATION_LINE_STYLE.partner.dash).toBe(HONOR_LINE_STYLE.dash);
+    expect(RELATION_LINE_STYLE.partner.strokeAlpha).toBe(HONOR_LINE_STYLE.strokeAlpha);
+    expect(RELATION_LINE_STYLE.partner.water).not.toBe(HONOR_LINE_STYLE.water);
   });
 });
 
@@ -272,7 +334,7 @@ describe("MINOR SAFETY: honor edges use isMinorForSafety (both endpoints)", () =
 
 describe("Declare-then-remove round-trips (reversible)", () => {
   it("diff adds and removes exactly the user selection — no orphans implied", () => {
-    expect(honorConnectionDiff([], [livingChild.id, owner.id])).toEqual({
+    expect(connectionDiff([], [livingChild.id, owner.id])).toEqual({
       toAdd: [livingChild.id, owner.id],
       toRemove: [],
     });
@@ -304,6 +366,18 @@ describe("Declare-then-remove round-trips (reversible)", () => {
     );
     // After removals (empty rows) — empty constellation
     expect(livingIdsFromHonorRows([], passedParent.id)).toEqual([]);
+    expect(
+      livingIdsFromHonorRows(
+        [
+          {
+            person_a: passedParent.id,
+            person_b: livingFriend.id,
+            relation_type: "partner",
+          },
+        ],
+        passedParent.id
+      )
+    ).toEqual([]);
   });
 });
 

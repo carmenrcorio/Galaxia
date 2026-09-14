@@ -1,18 +1,18 @@
 /**
- * Remembrance Phase 3 — honor-constellation.
- *
- * Declared continuity edges between a passed person and living people who
- * "carry their light." Data lives in the dormant `relationships` table
+ * Declared person-to-person edges on `relationships`
  * (person_a / person_b / relation_type). ZERO inference: edges exist only
- * when the owner explicitly multi-selects living people. Empty selection =
- * no constellation.
+ * when the owner writes a row. Empty selection = no constellation.
  *
- * relation_type is always HONOR_RELATION_TYPE ("remembrance") — a continuity
- * bond, never romantic, never guessed from people.relation (owner-relative).
+ * Honor / remembrance is one approved type: a continuity bond, never romantic,
+ * never guessed from people.relation (owner-relative). Other approved types
+ * (partner, family, friend, colleague, chosen, other) draw on the same
+ * galaxy layer with distinct colours and the same dash / alpha / width.
  */
 
 import { isMinorForSafety, type MinorSafetyInput } from "./minor-safety";
 import { hasPassed } from "./galaxy-orbit";
+import { ELEMENT_NODE_COLORS } from "./star-color";
+import { CHIP_INITIAL_LIGHT } from "./person-chip-color";
 
 /** Fixed continuity type written for every honor edge. Not inferred. */
 export const HONOR_RELATION_TYPE = "remembrance" as const;
@@ -85,6 +85,43 @@ export const HONOR_LINE_STYLE = {
   pulseRadius: 1.8,
 } as const;
 
+export type RelationshipLineStyle = {
+  water: string;
+  ancient: string;
+  strokeAlpha: number;
+  washAlpha: number;
+  lineWidth: number;
+  dash: readonly [number, number];
+  pulseRadius: number;
+};
+
+/** Same dash / alpha / width as honor; colours only differ by type. */
+function relationLine(water: string, ancient: string): RelationshipLineStyle {
+  return {
+    water,
+    ancient,
+    strokeAlpha: HONOR_LINE_STYLE.strokeAlpha,
+    washAlpha: HONOR_LINE_STYLE.washAlpha,
+    lineWidth: HONOR_LINE_STYLE.lineWidth,
+    dash: HONOR_LINE_STYLE.dash,
+    pulseRadius: HONOR_LINE_STYLE.pulseRadius,
+  };
+}
+
+/**
+ * Galaxy stroke tokens keyed by relation_type.
+ * remembrance is the same object as HONOR_LINE_STYLE so honor pixels do not change.
+ */
+export const RELATION_LINE_STYLE: Record<RelationshipEdgeType, RelationshipLineStyle> = {
+  remembrance: HONOR_LINE_STYLE,
+  partner: relationLine(ELEMENT_NODE_COLORS.gold, "#f0c089"),
+  family: relationLine(ELEMENT_NODE_COLORS.earth, "#9a8a50"),
+  friend: relationLine(ELEMENT_NODE_COLORS.fire, ELEMENT_NODE_COLORS.gold),
+  colleague: relationLine("#b9aede", ELEMENT_NODE_COLORS.air),
+  chosen: relationLine(ELEMENT_NODE_COLORS.air, "#8076a6"),
+  other: relationLine(CHIP_INITIAL_LIGHT, "#caa06f"),
+};
+
 export type HonorPerson = {
   id: string;
   display_name: string;
@@ -106,10 +143,18 @@ export type HonorRelationshipRow = {
 export type HonorEdge = {
   fromId: string;
   toId: string;
-  relationType: typeof HONOR_RELATION_TYPE;
+  relationType: RelationshipEdgeType;
   /** True when either endpoint is a minor via isMinorForSafety — never raw is_minor. */
   touchesMinor: boolean;
 };
+
+/** True for an approved `relationships.relation_type` value. */
+export function isRelationshipEdgeType(
+  type: string | null | undefined
+): type is RelationshipEdgeType {
+  if (!type) return false;
+  return (RELATIONSHIP_EDGE_TYPES as readonly string[]).includes(type);
+}
 
 /** True only for the fixed remembrance continuity type. */
 export function isHonorRelationType(type: string | null | undefined): boolean {
@@ -154,19 +199,30 @@ export function buildHonorRelationshipInsert(input: {
 }
 
 /**
- * Diff current declared living ids vs next selection.
+ * Diff current declared person ids vs next selection for any relation type.
  * Additions insert rows; removals delete rows (reversible, like passed_at).
+ */
+export function connectionDiff(
+  currentIds: readonly string[],
+  nextIds: readonly string[]
+): { toAdd: string[]; toRemove: string[] } {
+  const cur = new Set(currentIds);
+  const next = new Set(nextIds);
+  return {
+    toAdd: [...next].filter((id) => !cur.has(id)),
+    toRemove: [...cur].filter((id) => !next.has(id)),
+  };
+}
+
+/**
+ * Honor-declaration wrapper around connectionDiff.
+ * Still remembrance-only at the call site (delete stays honor-scoped).
  */
 export function honorConnectionDiff(
   currentLivingIds: readonly string[],
   nextLivingIds: readonly string[]
 ): { toAdd: string[]; toRemove: string[] } {
-  const cur = new Set(currentLivingIds);
-  const next = new Set(nextLivingIds);
-  return {
-    toAdd: [...next].filter((id) => !cur.has(id)),
-    toRemove: [...cur].filter((id) => !next.has(id)),
-  };
+  return connectionDiff(currentLivingIds, nextLivingIds);
 }
 
 /** Living person ids currently declared for a passed person (from DB rows). */
@@ -185,8 +241,11 @@ export function livingIdsFromHonorRows(
 }
 
 /**
- * Galaxy honor edges from declared rows only.
- * Draws only when one endpoint is still passed and the other is present.
+ * Galaxy relationship edges from declared rows only.
+ * Remembrance still draws only when one endpoint is passed and the other living,
+ * stroke passed → living so bezierCP stays pixel-identical.
+ * Other approved types draw for any two distinct people in the map, including
+ * living-to-living, using canonical person_a → person_b.
  * Never invents edges from synastry scores or owner-relative people.relation.
  */
 export function honorEdgesFromDeclaredRows(
@@ -199,8 +258,9 @@ export function honorEdgesFromDeclaredRows(
   const seen = new Set<string>();
 
   for (const row of rows) {
-    if (!isHonorRelationType(row.relation_type)) continue;
-    if (isForbiddenHonorRelationType(row.relation_type)) continue;
+    if (!isRelationshipEdgeType(row.relation_type)) continue;
+    const isHonor = isHonorRelationType(row.relation_type);
+    if (isHonor && isForbiddenHonorRelationType(row.relation_type)) continue;
 
     const a = byId.get(row.person_a);
     const b = byId.get(row.person_b);
@@ -208,23 +268,31 @@ export function honorEdgesFromDeclaredRows(
 
     const aPassed = hasPassed(a);
     const bPassed = hasPassed(b);
-    // Exactly one side remembered as passed, the other living — thesis scope.
-    if (aPassed === bPassed) continue;
+    // Remembrance thesis: exactly one side passed, the other living.
+    if (isHonor && aPassed === bPassed) continue;
 
-    const key = [row.person_a, row.person_b].sort().join(":");
+    const key = `${row.person_a}:${row.person_b}:${row.relation_type}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
-    // Stroke from passed → living regardless of canonical column order, so
+    // Honor: passed → living regardless of canonical column order, so
     // bezierCP (which is not symmetric) stays pixel-identical after the
-    // person_a < person_b data migration.
-    const fromId = aPassed ? row.person_a : row.person_b;
-    const toId = aPassed ? row.person_b : row.person_a;
+    // person_a < person_b data migration. Other types keep canonical order.
+    const fromId = isHonor
+      ? aPassed
+        ? row.person_a
+        : row.person_b
+      : row.person_a;
+    const toId = isHonor
+      ? aPassed
+        ? row.person_b
+        : row.person_a
+      : row.person_b;
 
     edges.push({
       fromId,
       toId,
-      relationType: HONOR_RELATION_TYPE,
+      relationType: row.relation_type,
       touchesMinor: honorEdgeTouchesMinor(a, b, now),
     });
   }
@@ -281,15 +349,17 @@ export function honorEdgeFraming(touchesMinor: boolean): {
 
 /**
  * Synastry links must never be treated as honor edges.
- * Honor layer draws ONLY from relationships rows with HONOR_RELATION_TYPE.
+ * Honor / remembrance draws ONLY from relationships rows with HONOR_RELATION_TYPE.
+ * Partner / family / friend rows on the same layer do not count as honor.
  */
 export function synastryCannotSubstituteHonor(
   synastryPairIds: Array<{ fromId: string; toId: string }>,
   honorEdges: HonorEdge[]
 ): boolean {
-  if (honorEdges.length === 0) return true; // empty declaration = empty constellation
+  const remembrance = honorEdges.filter((e) => e.relationType === HONOR_RELATION_TYPE);
+  if (remembrance.length === 0) return true; // empty honor declaration = empty honor constellation
   const honorKeys = new Set(
-    honorEdges.map((e) => [e.fromId, e.toId].sort().join(":"))
+    remembrance.map((e) => [e.fromId, e.toId].sort().join(":"))
   );
   // Presence of synastry pairs alone must not imply honor — caller must not
   // draw honor strokes from synastry. This helper documents the contract:
@@ -301,5 +371,5 @@ export function synastryCannotSubstituteHonor(
       continue;
     }
   }
-  return honorEdges.every((e) => e.relationType === HONOR_RELATION_TYPE);
+  return remembrance.every((e) => e.relationType === HONOR_RELATION_TYPE);
 }

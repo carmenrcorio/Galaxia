@@ -27,7 +27,16 @@ describe("romantic relationship-type classification", () => {
   it("flags partners and romantic as romantic, everything else as non-romantic", () => {
     expect(isRomanticRelation("partners")).toBe(true);
     expect(isRomanticRelation("romantic")).toBe(true);
-    for (const t of ["siblings", "friends", "parent-child", "ancestor", "platonic"] as RelationType[]) {
+    for (const t of [
+      "siblings",
+      "friends",
+      "parent-child",
+      "ancestor",
+      "platonic",
+      "colleagues",
+      "manager-report",
+      "mentor-mentee",
+    ] as RelationType[]) {
       expect(isRomanticRelation(t)).toBe(false);
     }
   });
@@ -39,8 +48,19 @@ describe("MINOR SAFETY: /app/compare cannot select romantic framing for a minor"
     for (const romantic of ROMANTIC_RELATION_TYPES) {
       expect(available).not.toContain(romantic);
     }
-    // Non-romantic caregiving/peer types stay selectable.
-    expect(available).toEqual(["siblings", "friends", "parent-child", "ancestor"]);
+    // Non-romantic caregiving/peer types stay selectable, and so do the
+    // working frames: a professor or a mentor relationship can involve a
+    // minor, so those readings must stay REACHABLE while staying
+    // non-romantic (that is what the gate filters on).
+    expect(available).toEqual([
+      "siblings",
+      "friends",
+      "parent-child",
+      "ancestor",
+      "colleagues",
+      "manager-report",
+      "mentor-mentee",
+    ]);
     expect(available.every((t) => !isRomanticRelation(t))).toBe(true);
   });
 
@@ -52,7 +72,12 @@ describe("MINOR SAFETY: /app/compare cannot select romantic framing for a minor"
       "friends",
       "parent-child",
       "ancestor",
+      "colleagues",
+      "manager-report",
+      "mentor-mentee",
     ]);
+    // The picker offers exactly COMPARE_RELATION_TYPES for an adult pairing.
+    expect(availableCompareRelationTypes(false)).toEqual([...COMPARE_RELATION_TYPES]);
   });
 
   it("never defaults to a romantic type, and defaults minor pairings to a non-romantic caregiving type", () => {
@@ -212,7 +237,15 @@ describe("PHASE 1: actionable per-aspect guidance", () => {
 
 describe("MINOR SAFETY: actionable guidance is never romantic/attraction-framed for non-romantic types", () => {
   const ROMANTIC_WORDS = /\b(attraction|desire|romance|romantic|lover|sexual|seduc)/i;
-  const NON_ROMANTIC: RelationType[] = ["parent-child", "siblings", "friends", "ancestor"];
+  const NON_ROMANTIC: RelationType[] = [
+    "parent-child",
+    "siblings",
+    "friends",
+    "ancestor",
+    "colleagues",
+    "manager-report",
+    "mentor-mentee",
+  ];
 
   it("no non-romantic-type action line or need prose contains romantic framing", () => {
     for (const t of NON_ROMANTIC) {
@@ -299,7 +332,7 @@ describe("1B: relationship-framed Compare headline (relType-keyed, score-band fa
     expect(RELATION_HEADLINE.platonic).toBe(platonic);
   });
 
-  it("the score-band fallback itself is unreachable from any real RelationType (all seven now have an authored headline)", () => {
+  it("the score-band fallback itself is unreachable from any real RelationType (every one has an authored headline)", () => {
     const ALL_RELATION_TYPES = [...COMPARE_RELATION_TYPES, "romantic", "platonic"] as RelationType[];
     for (const t of ALL_RELATION_TYPES) {
       // A score-band line would change between these three overalls; an

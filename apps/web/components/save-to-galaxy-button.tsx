@@ -86,11 +86,26 @@ export function SaveToGalaxyButton({
   const [savedPersonId, setSavedPersonId] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const supabase = createSupabaseBrowserClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUserId(user?.id ?? null);
-      setCheckingAuth(false);
+    // Gift shares are public. If auth lookup fails or hangs, show the
+    // logged-out CTA rather than leaving "Checking whether you are signed in."
+    const timeout = new Promise<{ data: { user: { id: string } | null } }>((resolve) => {
+      setTimeout(() => resolve({ data: { user: null } }), 4000);
     });
+    void Promise.race([supabase.auth.getUser(), timeout])
+      .then((result) => {
+        if (!cancelled) setUserId(result.data.user?.id ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setUserId(null);
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingAuth(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => { if (defaultName) setName(defaultName); }, [defaultName]);

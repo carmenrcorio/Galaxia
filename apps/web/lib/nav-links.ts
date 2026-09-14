@@ -109,6 +109,9 @@ export const FEATURE_TEASER_LINKS: NavLink[] = [
   { href: "/pricing", label: "View pricing" },
 ];
 
+// FOUNDER-REVIEW: outcome-led homepage primary CTA. Destination is the public free chart.
+export const HERO_PRIMARY_CTA: NavLink = { href: "/chart", label: "See someone's chart free" };
+
 export const HERO_HOW_IT_WORKS: NavLink = { href: "/why-galaxia#how", label: "See how it works" };
 
 export const NOT_FOUND_LINKS: NavLink[] = [
@@ -160,6 +163,7 @@ export function ctaInternalHrefs(): string[] {
     ...FEATURE_TEASER_LINKS.map((l) => l.href),
     MARKETING_NAV_SIGNUP.href,
     MARKETING_NAV_LOGIN.href,
+    HERO_PRIMARY_CTA.href,
     HERO_HOW_IT_WORKS.href,
     ...NOT_FOUND_LINKS.map((l) => l.href),
     SHARE_NOT_FOUND_CTA.href,

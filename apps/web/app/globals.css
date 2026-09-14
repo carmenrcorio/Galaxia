@@ -1174,7 +1174,8 @@ section { padding-block: clamp(76px, 12vh, 140px); }
   line-height: 1.12;
   margin: 14px 0 0;
   letter-spacing: -.014em;
-  max-width: 22ch;
+  /* Two specified headline lines; 22ch wrapped the first sentence into a third line. */
+  max-width: 36ch;
 }
 /* Lean into the italic cut for the emotional core of the line. */
 .marketing .hero-h1 em { font-style: italic; font-weight: 400; color: var(--cream); }

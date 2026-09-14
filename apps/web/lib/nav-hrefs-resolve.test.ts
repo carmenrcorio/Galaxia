@@ -264,7 +264,7 @@ describe("CTA hrefs resolve to App Router pages", () => {
   it("hero, close, pricing, teasers, and 404 CTAs render from the exported config", () => {
     assertRendersFromConfig(
       readWeb("components/marketing/hero.tsx"),
-      ["MARKETING_NAV_SIGNUP", "MARKETING_NAV_LOGIN", "HERO_HOW_IT_WORKS"],
+      ["HERO_PRIMARY_CTA", "MARKETING_NAV_LOGIN", "HERO_HOW_IT_WORKS"],
       "hero leftover literal",
     );
     assertRendersFromConfig(readWeb("components/marketing/close-section.tsx"), ["MARKETING_NAV_SIGNUP"], "close-section leftover literal");

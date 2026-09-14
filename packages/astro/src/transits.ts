@@ -34,6 +34,9 @@ export function todayTransitsForChart(
  * ("transiting Mars square their natal Venus"). `possessive` lets the home
  * dashboard say "your" for the signed-in person and "their" for everyone else.
  */
-export function describeTransit(hit: TransitHit, possessive: "your" | "their" = "their"): string {
+export function describeTransit(
+  hit: Pick<TransitHit, "transitBody" | "type" | "natalBody">,
+  possessive: "your" | "their" = "their"
+): string {
   return `transiting ${hit.transitBody} ${hit.type} ${possessive} natal ${hit.natalBody}`;
 }

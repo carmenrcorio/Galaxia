@@ -11,6 +11,8 @@ import {
   MARKETING_NAV_SIGNUP,
   PERSON_PROFILE_HREF_PREFIX,
   personProfileHref,
+  CAPTURE_MOMENT_HREF,
+  captureMomentHref,
   signupWithNextHref,
   loginWithNextHref,
   EMPTY_STATE_SETTINGS_HREF,
@@ -168,6 +170,13 @@ describe("signed-in chart save hrefs", () => {
     expect(personProfileHref("abc")).toBe("/app/person/abc");
     expect(existsSync(join(WEB_APP_DIR, "app/person/[id]/page.tsx"))).toBe(true);
     expect(existsSync(join(WEB_APP_DIR, "app/chart/page.tsx"))).toBe(false);
+  });
+
+  it("captureMomentHref points at the Moment page", () => {
+    expect(CAPTURE_MOMENT_HREF).toBe("/app/moment");
+    expect(captureMomentHref()).toBe("/app/moment");
+    expect(captureMomentHref("abc")).toBe("/app/moment?personId=abc");
+    expect(existsSync(join(WEB_APP_DIR, "app/moment/page.tsx"))).toBe(true);
   });
 
   it("signupWithNextHref stays on the marketing signup route", () => {

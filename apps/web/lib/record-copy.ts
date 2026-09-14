@@ -11,7 +11,8 @@ export const RECORD_TAG_LABELS: Record<RecordTagId, string> = {
   conflict: "Conflict",
   celebration: "Celebration",
   pattern_noticed: "Pattern noticed",
-  something_they_said: "Something they said"
+  something_they_said: "Something they said",
+  silence_needed_filling: "Silence that needed filling"
 };
 
 // FOUNDER-REVIEW: authored. Search field for the current person's Record.

@@ -10,7 +10,8 @@ export type RecordKind =
   | "compare_reading"
   | "cohort_reading"
   | "remembrance"
-  | "chart_correction";
+  | "chart_correction"
+  | "moment";
 
 /** Order a pair id tuple deterministically (matches the edge function). */
 export function orderPair(a: string, b: string): { pairLow: string; pairHigh: string } {
@@ -27,7 +28,8 @@ export const RECORD_TAG_IDS = [
   "conflict",
   "celebration",
   "pattern_noticed",
-  "something_they_said"
+  "something_they_said",
+  "silence_needed_filling"
 ] as const;
 
 export type RecordTagId = (typeof RECORD_TAG_IDS)[number];
@@ -49,6 +51,48 @@ export function sanitizeRecordTags(values: unknown): RecordTagId[] {
 export function toggleRecordTag(tags: readonly RecordTagId[], id: RecordTagId): RecordTagId[] {
   const next = tags.includes(id) ? tags.filter((t) => t !== id) : [...tags, id];
   return sanitizeRecordTags(next);
+}
+
+/**
+ * Moment types offered in The Moment loop. These are Record tags, not a
+ * parallel taxonomy. `pattern_noticed` stays a journal tag only: it is not
+ * a sixty-second event.
+ */
+export const MOMENT_TYPE_IDS = [
+  "hard_conversation",
+  "breakthrough",
+  "conflict",
+  "celebration",
+  "silence_needed_filling",
+  "something_they_said"
+] as const;
+
+export type MomentTypeId = (typeof MOMENT_TYPE_IDS)[number];
+
+export function isMomentType(value: unknown): value is MomentTypeId {
+  return typeof value === "string" && (MOMENT_TYPE_IDS as readonly string[]).includes(value);
+}
+
+export function sanitizeMomentType(value: unknown): MomentTypeId | null {
+  return isMomentType(value) ? value : null;
+}
+
+// FOUNDER-REVIEW: authored. Moment type chips and Record fallback body.
+export const MOMENT_TYPE_LABELS: Record<MomentTypeId, string> = {
+  hard_conversation: "Hard conversation",
+  breakthrough: "Breakthrough",
+  conflict: "Conflict",
+  celebration: "Celebration",
+  silence_needed_filling: "Silence that needed filling",
+  something_they_said: "Something they said"
+};
+
+/** Optional two sentences. Long enough for that, not a journal essay. */
+export const MOMENT_NOTE_MAX = 280;
+
+export function momentRecordBody(type: MomentTypeId, userText: string): string {
+  const trimmed = userText.trim();
+  return trimmed ? trimmed.slice(0, MOMENT_NOTE_MAX) : MOMENT_TYPE_LABELS[type];
 }
 
 export interface RecordViewFilters {

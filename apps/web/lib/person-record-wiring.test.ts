@@ -21,6 +21,8 @@ describe("source wiring: person Record search stays owner-only and keeps the com
     expect(src).toContain("fetchRecord(supabase, userId, { personId: person.id }, 200, filters)");
     expect(src).toContain("fetchVelaPins(supabase, uid, actualId, 200)");
     expect(src).toContain("VelaPinsPanel");
+    expect(src).toContain("captureMomentHref(person.id)");
+    expect(src).toContain("CAPTURE_MOMENT");
   });
 
   it("fetchRecord always filters notes by owner_id and uses FTS on plaintext body", () => {

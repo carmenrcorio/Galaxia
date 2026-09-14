@@ -5,13 +5,18 @@ import {
   formatRecordMonthHeading,
   groupPinnedInsightsByTheme,
   groupRecordEntriesByMonth,
+  isMomentType,
   isPinTheme,
   isRecordTag,
+  momentRecordBody,
+  MOMENT_TYPE_IDS,
+  MOMENT_TYPE_LABELS,
   PIN_THEME_IDS,
   RECORD_TAG_IDS,
   recordEntryMatches,
   recordMonthKey,
   sanitizeFtsQuery,
+  sanitizeMomentType,
   sanitizePinTheme,
   sanitizeRecordTags,
   suggestPinTheme,
@@ -31,9 +36,11 @@ describe("RECORD_TAG_IDS", () => {
       "conflict",
       "celebration",
       "pattern_noticed",
-      "something_they_said"
+      "something_they_said",
+      "silence_needed_filling"
     ]);
     expect(isRecordTag("hard_conversation")).toBe(true);
+    expect(isRecordTag("silence_needed_filling")).toBe(true);
     expect(isRecordTag("freeform")).toBe(false);
     expect(sanitizeRecordTags(["conflict", "nope", "conflict", "celebration"])).toEqual([
       "conflict",
@@ -45,6 +52,28 @@ describe("RECORD_TAG_IDS", () => {
     expect(toggleRecordTag([], "breakthrough")).toEqual(["breakthrough"]);
     expect(toggleRecordTag(["breakthrough"], "breakthrough")).toEqual([]);
     expect(toggleRecordTag(["conflict"], "celebration")).toEqual(["conflict", "celebration"]);
+  });
+});
+
+describe("MOMENT_TYPE_IDS", () => {
+  it("is a Record-tag subset and never includes pattern_noticed", () => {
+    expect([...MOMENT_TYPE_IDS]).toEqual([
+      "hard_conversation",
+      "breakthrough",
+      "conflict",
+      "celebration",
+      "silence_needed_filling",
+      "something_they_said"
+    ]);
+    for (const id of MOMENT_TYPE_IDS) {
+      expect(RECORD_TAG_IDS).toContain(id);
+    }
+    expect(isMomentType("pattern_noticed")).toBe(false);
+    expect(isMomentType("silence_needed_filling")).toBe(true);
+    expect(sanitizeMomentType("conflict")).toBe("conflict");
+    expect(sanitizeMomentType("invented")).toBeNull();
+    expect(momentRecordBody("celebration", "")).toBe(MOMENT_TYPE_LABELS.celebration);
+    expect(momentRecordBody("celebration", "  We danced in the kitchen.  ")).toBe("We danced in the kitchen.");
   });
 });
 

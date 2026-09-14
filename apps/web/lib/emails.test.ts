@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import {
+  constellationLetterEmail,
+  constellationLetterHeaders,
+  constellationLetterPreview,
+  constellationLetterSubject,
   day1Email,
   day4MultiEmail,
   day4OneEmail,
   day11Email,
   day14Email,
+  dispatchEmail,
   nudgeEmailHeaders,
   nudgeEmailPreview,
   nudgeEmailSubject,
@@ -185,7 +190,7 @@ describe("sendEmail — passes custom headers through to the Resend request body
 
   it("includes the headers object when provided", async () => {
     vi.stubEnv("RESEND_API_KEY", "test-key");
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "re_test" }) });
     vi.stubGlobal("fetch", fetchMock);
 
     const headers = nudgeEmailHeaders("https://galaxiamea.com/api/nudge-email/unsubscribe?token=abc");
@@ -199,7 +204,7 @@ describe("sendEmail — passes custom headers through to the Resend request body
 
   it("omits the headers key entirely when none is passed (trial emails unaffected)", async () => {
     vi.stubEnv("RESEND_API_KEY", "test-key");
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "re_test" }) });
     vi.stubGlobal("fetch", fetchMock);
 
     await sendEmail("to@example.com", { subject: "s", preview: "p", html: "<p>hi</p>", text: "hi" });
@@ -221,7 +226,7 @@ describe("sendEmail — From address defaults to the verified galaxiamea.com sen
     delete process.env.RESEND_FROM;
     try {
       vi.stubEnv("RESEND_API_KEY", "test-key");
-      const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "re_test" }) });
       vi.stubGlobal("fetch", fetchMock);
 
       await sendEmail("to@example.com", { subject: "s", preview: "p", html: "<p>hi</p>", text: "hi" });
@@ -238,7 +243,7 @@ describe("sendEmail — From address defaults to the verified galaxiamea.com sen
   it("still honors RESEND_FROM when set (the documented override pattern)", async () => {
     vi.stubEnv("RESEND_API_KEY", "test-key");
     vi.stubEnv("RESEND_FROM", "Galaxia <custom@example.com>");
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "re_test" }) });
     vi.stubGlobal("fetch", fetchMock);
 
     await sendEmail("to@example.com", { subject: "s", preview: "p", html: "<p>hi</p>", text: "hi" });
@@ -349,5 +354,101 @@ describe("Trial emails — rewritten voice, preview, greeting, CAN-SPAM footer",
     const rendered = day1Email(base);
     expect(rendered.html).toContain(FOOTER_ENTITY);
     expect(rendered.html).toContain(`To unsubscribe, <a href="${base.siteUrl}/account/notifications"`);
+  });
+});
+
+describe("constellationLetterEmail — a letter, not a report", () => {
+  const base = {
+    ownerFirstName: "Carmen",
+    opening: "This week's letter is about Ada. The rest of the circle is quiet.",
+    portraits: [
+      {
+        dynamicSentence: "Ada's Moon is meeting Saturn this week, in the same window as Mom.",
+        intentionSentence: "One thing to try with Ada: name the weight out loud with them rather than trying to solve it."
+      }
+    ],
+    personNames: ["Ada"],
+    siteUrl: "https://galaxiamea.com",
+    unsubscribeUrl: "https://galaxiamea.com/api/constellation-letter/unsubscribe?token=abc-123",
+    openPixelUrl: "https://galaxiamea.com/api/constellation-letter/open?id=11111111-aaaa-4aaa-8aaa-000000000001",
+    clickUrl: "https://galaxiamea.com/api/constellation-letter/go?id=11111111-aaaa-4aaa-8aaa-000000000001"
+  };
+
+  it("subject is layer one: names the person, no astrology-first vocab", () => {
+    expect(constellationLetterSubject(["Ada"])).toBe("Ada, this week");
+    expect(constellationLetterSubject(["Ada", "Mom"])).toBe("Ada and Mom, this week");
+    expect(constellationLetterSubject(["Ada", "Mom", "Sam"])).toBe("This week in your circle");
+    const rendered = constellationLetterEmail(base);
+    expect(rendered.subject).toBe("Ada, this week");
+    expect(rendered.subject).not.toMatch(LAYER_ONE_SUBJECT_START);
+    expect(rendered.subject.length).toBeLessThanOrEqual(45);
+  });
+
+  it("preview continues the subject and does not repeat it", () => {
+    const rendered = constellationLetterEmail(base);
+    expect(rendered.preview).toBe(constellationLetterPreview());
+    expect(rendered.preview).not.toBe(rendered.subject);
+    expect(rendered.html).toContain(rendered.preview);
+  });
+
+  it("is prose: no headers, no bullet lists, no dashboard button", () => {
+    const rendered = constellationLetterEmail(base);
+    expect(rendered.html).not.toMatch(/<h[1-6]\b/i);
+    expect(rendered.html).not.toMatch(/<ul\b/i);
+    expect(rendered.html).not.toMatch(/<ol\b/i);
+    expect(rendered.html).not.toContain("border-radius:100px");
+    expect(rendered.html).toContain(base.opening);
+    expect(rendered.html).toContain(base.portraits[0]!.dynamicSentence);
+    expect(rendered.html).toContain(base.portraits[0]!.intentionSentence);
+    expect(rendered.html).toContain(base.clickUrl);
+    expect(rendered.html).toContain(base.openPixelUrl);
+  });
+
+  it("reuses the CAN-SPAM footer and RFC 8058 headers on its own unsubscribe URL", () => {
+    const rendered = constellationLetterEmail(base);
+    expect(rendered.html).toContain(FOOTER_ENTITY);
+    expect(rendered.html).toContain(base.unsubscribeUrl);
+    expect(rendered.text).toContain(base.unsubscribeUrl);
+    expect(rendered.html).not.toContain("/api/nudge-email/unsubscribe");
+    expect(rendered.html).not.toContain("\u2014");
+    expect(rendered.text).not.toContain("\u2014");
+    const headers = constellationLetterHeaders(base.unsubscribeUrl);
+    expect(headers["List-Unsubscribe"]).toBe(`<${base.unsubscribeUrl}>`);
+    expect(headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
+  });
+
+  it("greets by first name at most once", () => {
+    const rendered = constellationLetterEmail(base);
+    expect(rendered.html).toContain("Hi Carmen,");
+    expect(ownerNameMentionsInBody(rendered.text, "Carmen")).toBe(1);
+  });
+});
+
+describe("dispatchEmail — tags, idempotency, and Resend id", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("returns the Resend id and passes tags plus Idempotency-Key", async () => {
+    vi.stubEnv("RESEND_API_KEY", "test-key");
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "re_abc" }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await dispatchEmail(
+      "to@example.com",
+      { subject: "Ada, this week", preview: "Who.", html: "<p>hi</p>", text: "hi" },
+      {
+        tags: [{ name: "kind", value: "constellation-letter" }],
+        idempotencyKey: "constellation-letter/owner/2026-09-13"
+      }
+    );
+
+    expect(result).toEqual({ sent: true, id: "re_abc" });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.resend.com/emails");
+    const body = JSON.parse(init.body as string);
+    expect(body.tags).toEqual([{ name: "kind", value: "constellation-letter" }]);
+    expect((init.headers as Record<string, string>)["Idempotency-Key"]).toBe("constellation-letter/owner/2026-09-13");
   });
 });

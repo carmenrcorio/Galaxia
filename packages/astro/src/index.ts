@@ -677,3 +677,4 @@ export * from "./family-compare";
 export * from "./family-compare-interpretations";
 export * from "./relational-transits";
 export * from "./relational-transit-interpretations";
+export * from "./constellation-letter";

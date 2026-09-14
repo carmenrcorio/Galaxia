@@ -12,7 +12,7 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
 const SKIP_DIR_NAMES = new Set(["node_modules", ".next", "dist", "coverage", ".git"]);
 const EXTENSIONS = new Set([".ts", ".tsx", ".js", ".mjs", ".jsx"]);
 const WEBHOOK_ROUTE = "apps/web/app/api/webhooks/revenuecat/route.ts";
-const LATEST_PROFILES_GRANT = "supabase/migrations/20260909030000_relational_transits.sql";
+const LATEST_PROFILES_GRANT = "supabase/migrations/20260914240000_weekly_constellation_letter.sql";
 
 function isTestPath(rel: string): boolean {
   const base = rel.split("/").pop() ?? rel;

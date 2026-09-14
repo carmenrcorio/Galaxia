@@ -162,7 +162,7 @@ export function ForWorkGenerational() {
             {/* FOUNDER-REVIEW: authored frame around package copy. */}
             <b style={{ color: "var(--teal)" }}>This is from the product, word for word.</b>{" "}
             <span style={{ color: "var(--mist)", fontWeight: 300 }}>
-              The three notes beside this are entries Galaxia already keeps for the era a
+              The three notes here are entries Galaxia already keeps for the era a
               person came up in. They are not sketches, and they are not rewritten here.
             </span>
           </div>

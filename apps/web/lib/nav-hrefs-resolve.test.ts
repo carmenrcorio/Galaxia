@@ -18,6 +18,7 @@ import {
   SHARE_NOT_FOUND_CTA,
   SITE_FOOTER_LINKS,
   SYNASTRY_CHART_MEANING_HREF,
+  SUN_SIGN_NOT_PERSONALITY_HREF,
   appNavInternalHrefs,
   ctaInternalHrefs,
   emailInternalHrefs,
@@ -219,6 +220,7 @@ describe("footer hrefs resolve to App Router pages", () => {
       "/why-galaxia",
       "/generations",
       "/meet-vela",
+      "/for-work",
       "/security",
       "/pricing",
       "/chart",
@@ -245,6 +247,20 @@ describe("CTA hrefs resolve to App Router pages", () => {
     expect(RELATED_LINKS.chart.map((l) => l.href)).toContain(SYNASTRY_CHART_MEANING_HREF);
   });
 
+  it("related-link CTAs to /sun-sign-not-personality use the published-post allowlist", () => {
+    expect(SUN_SIGN_NOT_PERSONALITY_HREF).toBe("/sun-sign-not-personality");
+    expect(PUBLISHED_BLOG_POST_HREFS).toContain(SUN_SIGN_NOT_PERSONALITY_HREF);
+    expect(isPublishedBlogPostHref(SUN_SIGN_NOT_PERSONALITY_HREF)).toBe(true);
+    expect(existsSync(join(WEB_APP_DIR, "sun-sign-not-personality/page.tsx"))).toBe(false);
+    expect(RELATED_LINKS.forWork.map((l) => l.href)).toEqual([
+      "/chart",
+      "/generations",
+      "/meet-vela",
+      "/pricing",
+      SUN_SIGN_NOT_PERSONALITY_HREF,
+    ]);
+  });
+
   it("a non-allowlisted slug is not treated as a page just because [slug] exists", () => {
     expect(isPublishedBlogPostHref("/this-slug-is-not-a-route")).toBe(false);
     expect(existsSync(pageFileForHref("/this-slug-is-not-a-route"))).toBe(false);
@@ -256,6 +272,7 @@ describe("CTA hrefs resolve to App Router pages", () => {
     assertRendersFromConfig(readWeb("app/meet-vela/page.tsx"), ["RELATED_LINKS.meetVela"], "meet-vela leftover literal");
     assertRendersFromConfig(readWeb("app/security/page.tsx"), ["RELATED_LINKS.security"], "security leftover literal");
     assertRendersFromConfig(readWeb("app/pricing/page.tsx"), ["RELATED_LINKS.pricing"], "pricing leftover literal");
+    assertRendersFromConfig(readWeb("app/for-work/page.tsx"), ["RELATED_LINKS.forWork"], "for-work leftover literal");
     assertRendersFromConfig(readWeb("app/chart/quick-chart-page.tsx"), ["RELATED_LINKS.chart", "CHART_MODE_COMPARE"], "quick-chart leftover literal");
     assertRendersFromConfig(readWeb("app/chart/compare/page.tsx"), ["RELATED_LINKS.chartCompare", "CHART_MODE_SINGLE"], "quick-compare leftover literal");
   });
@@ -267,6 +284,11 @@ describe("CTA hrefs resolve to App Router pages", () => {
       "hero leftover literal",
     );
     assertRendersFromConfig(readWeb("components/marketing/close-section.tsx"), ["MARKETING_NAV_SIGNUP"], "close-section leftover literal");
+    assertRendersFromConfig(
+      readWeb("components/marketing/for-work-sections.tsx"),
+      ["FOR_WORK_CHART_CTA", "MARKETING_NAV_SIGNUP", "MARKETING_NAV_BRAND_HREF"],
+      "for-work sections leftover literal",
+    );
     assertRendersFromConfig(readWeb("components/marketing/pricing-section.tsx"), ["MARKETING_NAV_SIGNUP"], "pricing-section leftover literal");
     assertRendersFromConfig(readWeb("components/marketing/feature-teasers.tsx"), ["FEATURE_TEASER_LINKS"], "feature-teasers leftover literal");
     assertRendersFromConfig(readWeb("app/not-found.tsx"), ["NOT_FOUND_LINKS"], "not-found leftover literal");

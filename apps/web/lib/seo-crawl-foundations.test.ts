@@ -48,6 +48,10 @@ describe("app/sitemap.ts — /login and /signup excluded", () => {
     }
   });
 
+  it("lists the /for-work professional landing page", () => {
+    expect(src).toContain('"/for-work"');
+  });
+
   it("still spreads BLOG_CATEGORIES and published posts into the output", () => {
     expect(src).toContain("BLOG_CATEGORIES.map((c) => `/blog/${c.slug}`)");
     expect(src).toContain("getPublishedPosts()");
@@ -136,5 +140,10 @@ describe("WebPage JSON-LD on legal, blog, and chart", () => {
     expect(readRoute("apps/web/app/terms/page.tsx")).toContain('WebPageJsonLd path="/terms"');
     expect(readRoute("apps/web/app/blog/page.tsx")).toContain('WebPageJsonLd path="/blog"');
     expect(readRoute("apps/web/app/chart/page.tsx")).toContain('WebPageJsonLd path="/chart"');
+  });
+
+  it("/for-work renders WebPageJsonLd matching its canonical path", () => {
+    expect(readRoute("apps/web/app/for-work/page.tsx")).toContain('WebPageJsonLd path="/for-work"');
+    expect(readRoute("apps/web/app/for-work/page.tsx")).toContain('canonical: "/for-work"');
   });
 });

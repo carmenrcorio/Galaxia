@@ -410,7 +410,7 @@ export default function CompareScreen() {
             </Pressable>
           ))}
         </View>
-        <Pressable onPress={runCompare} style={primaryButtonStyle}>
+        <Pressable onPress={() => void runCompare()} style={primaryButtonStyle}>
           <Text style={primaryLabelStyle}>Run comparison</Text>
         </Pressable>
       </View>

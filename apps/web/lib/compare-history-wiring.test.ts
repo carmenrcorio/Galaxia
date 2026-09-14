@@ -21,8 +21,9 @@ describe("Compare history wiring", () => {
 
   it("does not change computeSynastry; delta uses computeTransits via activePairTransits", () => {
     const delta = read("packages/astro/src/compare-transit-delta.ts");
-    expect(delta).toContain("computeTransits");
-    expect(delta).not.toContain("computeSynastry");
+    expect(delta).toContain("computeTransits(");
+    expect(delta).not.toMatch(/import[\s\S]*computeSynastry/);
+    expect(delta).not.toMatch(/computeSynastry\s*\(/);
     expect(delta).toContain("PAIR_TRANSIT_ACTIVE_ORB_DEG");
   });
 

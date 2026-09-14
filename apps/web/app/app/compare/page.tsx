@@ -615,7 +615,7 @@ function ComparePageInner() {
               </div>
             </div>
           ))}
-          <button className="btn-primary" onClick={runCompare} disabled={running} style={{ width: "fit-content", gap: 8 }}>
+          <button className="btn-primary" onClick={() => void runCompare()} disabled={running} style={{ width: "fit-content", gap: 8 }}>
             {running && <Spinner size={13} color="#1a1206" />}
             {running ? "Running…" : "Run comparison"}
           </button>

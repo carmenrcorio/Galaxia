@@ -57,7 +57,7 @@ describe("20260914221000_f12_internal_links.sql", () => {
       "If the contact between you was [Moon square Saturn](/moon-square-saturn-parent-child), that architecture"
     );
     expect(sql).toContain(
-      "look at the [synastry](/synastry-chart-meaning) between your chart and a deceased person's"
+      "look at the [synastry](/synastry-chart-meaning) between your chart and a deceased person''s"
     );
   });
 

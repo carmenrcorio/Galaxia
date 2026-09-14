@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { nodeDrawnExtent } from "../src/galaxy-visual";
 import {
   GALAXY_COLLISION_JOIN,
   GALAXY_COLLISION_SEP,
@@ -25,7 +26,15 @@ import {
   customPositionToSeat,
   effectiveSeat,
   CUSTOM_RADIUS_MIN,
-  CUSTOM_RADIUS_MAX,
+  CUSTOM_RADIUS_SANITY_MAX,
+  galaxyGeometry,
+  GALAXY_GUTTER_X,
+  GALAXY_GUTTER_Y,
+  GALAXY_MAX_ECC,
+  GALAXY_MIN_R,
+  GALAXY_SEAT_MARGIN,
+  maxSeatRadius,
+  clampSeatRn,
   ringBandHalfGap,
   ringBandRadius,
   ringNormAbsolute,
@@ -400,10 +409,11 @@ describe("custom_position / effectiveSeat", () => {
     });
   });
 
-  it("clampCustomPosition keeps radius_pct in [0.05, 1]", () => {
+  it("clampCustomPosition floors at 0.05 and does not cap at 1", () => {
     expect(clampCustomPosition({ angle: 1, radius_pct: 0 }).radius_pct).toBe(CUSTOM_RADIUS_MIN);
-    expect(clampCustomPosition({ angle: 1, radius_pct: 2 }).radius_pct).toBe(CUSTOM_RADIUS_MAX);
+    expect(clampCustomPosition({ angle: 1, radius_pct: 1.4 }).radius_pct).toBeCloseTo(1.4);
     expect(clampCustomPosition({ angle: 1, radius_pct: 0.4 }).radius_pct).toBeCloseTo(0.4);
+    expect(CUSTOM_RADIUS_SANITY_MAX).toBe(2.5);
   });
 
   it("pointerToCustomPosition at centre+x maps angle ~0 and radius from distance/radX", () => {
@@ -425,9 +435,7 @@ describe("custom_position / effectiveSeat", () => {
       { custom_position: { angle: 0, radius_pct: 0.5 } },
       Math.PI,
       1,
-      geom.cx,
-      geom.cy,
-      geom.radX,
+      geom,
     );
     expect(got.x).toBeCloseTo(geom.cx + 0.5 * geom.radX, 5);
     expect(got.y).toBeCloseTo(geom.cy, 5);
@@ -437,7 +445,7 @@ describe("custom_position / effectiveSeat", () => {
   it("effectiveSeat default path matches galaxySeatXY on a true circle", () => {
     const def = galaxySeatNorm({ id: "luna", isSelf: false, ring: 2 });
     const xy = galaxySeatXY(def, geom);
-    const got = effectiveSeat({ custom_position: null }, def.angle, def.rn, geom.cx, geom.cy, geom.radX);
+    const got = effectiveSeat({ custom_position: null }, def.angle, def.rn, geom);
     expect(got.x).toBeCloseTo(xy.x, 5);
     expect(got.y).toBeCloseTo(xy.y, 5);
     expect(got.angle).toBeCloseTo(def.angle, 5);
@@ -449,10 +457,129 @@ describe("custom_position / effectiveSeat", () => {
       { is_self: true, custom_position: { angle: 1, radius_pct: 0.9 } },
       1,
       0.9,
-      geom.cx,
-      geom.cy,
-      geom.radX,
+      geom,
     );
     expect(got).toEqual({ x: geom.cx, y: geom.cy, angle: 0, rn: 0 });
+  });
+
+  it("effectiveSeat places on the ellipse with separate radX and radY", () => {
+    const oval = { cx: 200, cy: 100, radX: 180, radY: 80 };
+    const got = effectiveSeat(
+      { custom_position: { angle: Math.PI / 2, radius_pct: 0.5 } },
+      0,
+      1,
+      oval,
+    );
+    expect(got.x).toBeCloseTo(oval.cx, 5);
+    expect(got.y).toBeCloseTo(oval.cy + 0.5 * oval.radY, 5);
+  });
+});
+
+describe("galaxyGeometry", () => {
+  it("uses independent axes then caps eccentricity at 1.30", () => {
+    const g = galaxyGeometry(648, 498);
+    expect(g.cx).toBeCloseTo(324);
+    expect(g.cy).toBeCloseTo(249);
+    const uncappedX = 648 / 2 - GALAXY_GUTTER_X;
+    const uncappedY = 498 / 2 - GALAXY_GUTTER_Y;
+    expect(uncappedX / uncappedY).toBeGreaterThan(GALAXY_MAX_ECC);
+    expect(g.radY).toBeCloseTo(Math.max(GALAXY_MIN_R, uncappedY));
+    expect(g.radX / g.radY).toBeCloseTo(GALAXY_MAX_ECC);
+    expect(g.radX / g.radY).toBeLessThanOrEqual(GALAXY_MAX_ECC + 1e-9);
+  });
+
+  it("fills at least 85% of stage width when the ellipse is under the ecc cap", () => {
+    /* 648×580: radX stays at width/2 − gutter (ratio < 1.30). */
+    const g = galaxyGeometry(648, 580);
+    expect(g.radX / g.radY).toBeLessThanOrEqual(GALAXY_MAX_ECC);
+    expect((2 * g.radX) / 648).toBeGreaterThanOrEqual(0.85);
+  });
+
+  it("never drops a radius below MIN_R", () => {
+    const g = galaxyGeometry(80, 80);
+    expect(g.radX).toBe(GALAXY_MIN_R);
+    expect(g.radY).toBe(GALAXY_MIN_R);
+  });
+});
+
+describe("pointerToCustomPosition inverse ellipse", () => {
+  it.each([375, 768, 1280])("round-trips a pointer to the same pixel at width %i", (width) => {
+    const height = Math.min(680, Math.max(380, width / 1.12));
+    const geom = galaxyGeometry(width, height);
+    const px = geom.cx + geom.radX * 0.4;
+    const py = geom.cy + geom.radY * 0.25;
+    const polar = pointerToCustomPosition(px, py, geom);
+    const landed = effectiveSeat(
+      { custom_position: polar },
+      0,
+      0,
+      geom,
+    );
+    expect(landed.x).toBeCloseTo(px, 5);
+    expect(landed.y).toBeCloseTo(py, 5);
+  });
+
+  it("does not invert with radX alone on a wide ellipse", () => {
+    const geom = { cx: 400, cy: 200, radX: 300, radY: 120 };
+    const px = geom.cx + 150;
+    const py = geom.cy + 60;
+    const polar = pointerToCustomPosition(px, py, geom);
+    const wrongRn = Math.hypot(px - geom.cx, py - geom.cy) / geom.radX;
+    expect(polar.radius_pct).not.toBeCloseTo(wrongRn, 2);
+    const landed = effectiveSeat({ custom_position: polar }, 0, 0, geom);
+    expect(landed.x).toBeCloseTo(px, 5);
+    expect(landed.y).toBeCloseTo(py, 5);
+  });
+});
+
+describe("maxSeatRadius", () => {
+  const geom = galaxyGeometry(648, 498);
+
+  it("stops a node at the canvas edge, not at rn = 1", () => {
+    const extent = 20;
+    const east = maxSeatRadius(0, geom, extent, GALAXY_SEAT_MARGIN);
+    expect(east).toBeGreaterThan(1);
+    const x = geom.cx + Math.cos(0) * east * geom.radX;
+    expect(x + extent + GALAXY_SEAT_MARGIN).toBeLessThanOrEqual(geom.cx * 2 + 1e-6);
+  });
+
+  it("clamps all four edges and four corners inside the box", () => {
+    const extent = 24;
+    const angles = [0, Math.PI / 2, Math.PI, -Math.PI / 2, Math.PI / 4, -Math.PI / 4, (3 * Math.PI) / 4, (-3 * Math.PI) / 4];
+    for (const angle of angles) {
+      const rn = maxSeatRadius(angle, geom, extent, GALAXY_SEAT_MARGIN);
+      const x = geom.cx + Math.cos(angle) * rn * geom.radX;
+      const y = geom.cy + Math.sin(angle) * rn * geom.radY;
+      expect(x).toBeGreaterThanOrEqual(extent + GALAXY_SEAT_MARGIN - 1e-6);
+      expect(x).toBeLessThanOrEqual(geom.cx * 2 - extent - GALAXY_SEAT_MARGIN + 1e-6);
+      expect(y).toBeGreaterThanOrEqual(extent + GALAXY_SEAT_MARGIN - 1e-6);
+      expect(y).toBeLessThanOrEqual(geom.cy * 2 - extent - GALAXY_SEAT_MARGIN + 1e-6);
+    }
+  });
+
+  it("gives a larger memorial (star_scale 2) a smaller max rn than a plain star", () => {
+    const plain = nodeDrawnExtent({ form: "star", precision: "exact", starScale: 1 });
+    const memorial = nodeDrawnExtent({
+      form: "ancient",
+      memorial: true,
+      lite: false,
+      starScale: 2,
+    });
+    const angle = 0;
+    expect(maxSeatRadius(angle, geom, memorial)).toBeLessThan(maxSeatRadius(angle, geom, plain));
+  });
+
+  it("replays a desktop-edge seat inside a 375px canvas without clipping", () => {
+    const desktop = galaxyGeometry(1280, 680);
+    const phone = galaxyGeometry(375, 420);
+    const extent = 40;
+    const stored = maxSeatRadius(0.3, desktop, extent);
+    const replayed = clampSeatRn(0.3, stored, phone, extent);
+    const x = phone.cx + Math.cos(0.3) * replayed * phone.radX;
+    const y = phone.cy + Math.sin(0.3) * replayed * phone.radY;
+    expect(x - extent).toBeGreaterThanOrEqual(GALAXY_SEAT_MARGIN - 1e-6);
+    expect(x + extent).toBeLessThanOrEqual(375 - GALAXY_SEAT_MARGIN + 1e-6);
+    expect(y - extent).toBeGreaterThanOrEqual(GALAXY_SEAT_MARGIN - 1e-6);
+    expect(y + extent).toBeLessThanOrEqual(420 - GALAXY_SEAT_MARGIN + 1e-6);
   });
 });

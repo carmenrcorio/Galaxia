@@ -1,13 +1,22 @@
 import {
+  momentRecordBody,
+  orderPair,
   recordEntryMatches,
   sanitizeFtsQuery,
+  sanitizeMomentType,
   sanitizePinTheme,
   sanitizeRecordTags,
+  suggestPinTheme,
+  type MomentTypeId,
   type PinThemeId,
   type RecordKind,
   type RecordTagId,
   type RecordViewFilters
 } from "@galaxia/core";
+import {
+  parseMomentTransitSnapshot,
+  type MomentTransitSnapshot
+} from "@galaxia/astro";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -44,6 +53,8 @@ export interface RecordEntry {
   tags?: RecordTagId[];
   /** Curated optional theme on a vela_pin. Other kinds stay null. */
   theme?: PinThemeId | null;
+  /** Stored sky for kind=moment. Never recomputed at read time. */
+  transitSnapshot?: MomentTransitSnapshot | null;
 }
 
 export type RecordScope =
@@ -60,6 +71,7 @@ interface NoteRow {
   withdrawn_at?: string | null; withdrawn_reason?: string | null;
   tags?: unknown;
   theme?: unknown;
+  transit_snapshot?: unknown;
 }
 
 function noteToEntry(row: NoteRow): RecordEntry {
@@ -77,7 +89,8 @@ function noteToEntry(row: NoteRow): RecordEntry {
     groupId: row.group_id ?? null,
     withdrawnReason: withdrawnDisplay,
     tags: sanitizeRecordTags(row.tags),
-    theme: sanitizePinTheme(row.theme)
+    theme: sanitizePinTheme(row.theme),
+    transitSnapshot: parseMomentTransitSnapshot(row.transit_snapshot)
   };
 }
 
@@ -388,4 +401,78 @@ export async function updateNoteTheme(
     .eq("owner_id", ownerId)
     .eq("kind", "vela_pin");
   return { error: error?.message ?? null };
+}
+
+export interface SaveMomentInput {
+  ownerId: string;
+  personId: string;
+  selfId: string | null;
+  momentType: MomentTypeId;
+  userText: string;
+  snapshot: MomentTransitSnapshot;
+  reflection: string;
+}
+
+/**
+ * Write a Moment row. Owner-scoped. The sky is the stored snapshot, never
+ * typed by the user. Kind is `moment`; the type is the existing tags column.
+ */
+export async function saveMoment(
+  supabase: SupabaseClient,
+  input: SaveMomentInput
+): Promise<{ id: string | null; error: string | null }> {
+  const type = sanitizeMomentType(input.momentType);
+  if (!type) return { id: null, error: "Unknown moment type." };
+  const row: Record<string, unknown> = {
+    owner_id: input.ownerId,
+    about_person: input.personId,
+    kind: "moment",
+    body: momentRecordBody(type, input.userText),
+    tags: [type],
+    transit_snapshot: input.snapshot,
+    payload: { reflection: input.reflection, momentType: type }
+  };
+  if (input.selfId && input.selfId !== input.personId) {
+    const { pairLow, pairHigh } = orderPair(input.selfId, input.personId);
+    row.pair_low = pairLow;
+    row.pair_high = pairHigh;
+  }
+  const { data, error } = await supabase.from("notes").insert(row).select("id").single();
+  return { id: (data?.id as string | undefined) ?? null, error: error?.message ?? null };
+}
+
+/**
+ * Pin the Moment reflection through the existing vela_pin path, including
+ * the curated theme field. Always owner-scoped.
+ */
+export async function pinMomentReflection(
+  supabase: SupabaseClient,
+  input: {
+    ownerId: string;
+    personId: string;
+    selfId: string | null;
+    sourceMomentId: string;
+    reflection: string;
+  }
+): Promise<{ id: string | null; theme: PinThemeId | null; error: string | null }> {
+  const theme = suggestPinTheme(input.reflection);
+  const row: Record<string, unknown> = {
+    owner_id: input.ownerId,
+    about_person: input.personId,
+    kind: "vela_pin",
+    body: input.reflection.trim(),
+    theme,
+    payload: { sourceMomentId: input.sourceMomentId }
+  };
+  if (input.selfId && input.selfId !== input.personId) {
+    const { pairLow, pairHigh } = orderPair(input.selfId, input.personId);
+    row.pair_low = pairLow;
+    row.pair_high = pairHigh;
+  }
+  const { data, error } = await supabase.from("notes").insert(row).select("id").single();
+  return {
+    id: (data?.id as string | undefined) ?? null,
+    theme,
+    error: error?.message ?? null
+  };
 }

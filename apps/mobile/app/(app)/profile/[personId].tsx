@@ -1,13 +1,16 @@
-import type { NatalChart, SignKey } from "@galaxia/astro";
 import {
   ERA_READING_HEADING,
   ERA_READING_LABELS,
   WORK_VIEW_HEADING,
   WORK_VIEW_LABELS,
+  formatMomentSkyContext,
   getPlutoEraReading,
   getPlutoWorkView,
   isProfessionalPersonRelation,
-  plutoSourceLine
+  parseMomentTransitSnapshot,
+  plutoSourceLine,
+  type NatalChart,
+  type SignKey
 } from "@galaxia/astro";
 import {
   OWNED_DELETE_COPY,
@@ -53,6 +56,9 @@ interface NoteRow {
   id: string;
   body: string;
   created_at: string;
+  kind?: string | null;
+  tags?: string[] | null;
+  transit_snapshot?: unknown;
 }
 
 function elementForSign(sign: string): "fire" | "earth" | "air" | "water" {
@@ -108,7 +114,7 @@ export default function PersonProfileScreen() {
     const [{ data: personData, error: personError }, { data: chartData, error: chartError }, { data: noteData, error: noteError }] = await Promise.all([
       supabase.from("people").select("id, display_name, relation, birth_precision, is_self, passed_at").eq("id", actualPersonId).single(),
       supabase.from("charts").select("data").eq("person_id", actualPersonId).maybeSingle(),
-      supabase.from("notes").select("id, body, created_at").eq("about_person", actualPersonId).order("created_at", { ascending: false }).limit(20)
+      supabase.from("notes").select("id, body, created_at, kind, tags, transit_snapshot").eq("about_person", actualPersonId).order("created_at", { ascending: false }).limit(20)
     ]);
 
     if (personError || !personData) {
@@ -483,6 +489,13 @@ export default function PersonProfileScreen() {
       {activeGroup === secondGroup ? (
         <View style={cardStyle}>
           <Text style={cardTitle}>Private notes</Text>
+          <Pressable
+            onPress={() => router.push({ pathname: "/moment", params: { personId: person.id } })}
+            style={{ borderWidth: 1, borderColor: tokens.colors.gold, borderRadius: 999, paddingVertical: 10 }}
+          >
+            {/* FOUNDER-REVIEW: authored. Person-profile entry into The Moment. */}
+            <Text style={{ color: tokens.colors.gold, fontWeight: "700", textAlign: "center" }}>Capture a moment</Text>
+          </Pressable>
           <TextInput
             value={noteDraft}
             onChangeText={setNoteDraft}
@@ -506,12 +519,25 @@ export default function PersonProfileScreen() {
           {notes.length === 0 ? (
             <Text style={cardBody}>No notes yet. Notes are owner-only and never shared.</Text>
           ) : (
-            notes.map((note) => (
+            notes.map((note) => {
+              const snapshot = note.kind === "moment" ? parseMomentTransitSnapshot(note.transit_snapshot) : null;
+              const sky = snapshot
+                ? formatMomentSkyContext(snapshot, {
+                    personName: person.display_name,
+                    isSelf: Boolean(person.is_self)
+                  })
+                : null;
+              return (
               <View key={note.id} style={{ borderWidth: 1, borderColor: tokens.colors.line, borderRadius: 10, padding: 10 }}>
+                {note.kind === "moment" ? (
+                  <Text style={{ color: tokens.colors.goldSoft, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>Moment</Text>
+                ) : null}
                 <Text style={{ color: tokens.colors.cream }}>{note.body}</Text>
+                {sky ? <Text style={{ color: tokens.colors.mist2, fontSize: 12, marginTop: 4 }}>{sky}</Text> : null}
                 <Text style={{ color: tokens.colors.mist2, fontSize: 12, marginTop: 4 }}>{new Date(note.created_at).toLocaleString()}</Text>
               </View>
-            ))
+              );
+            })
           )}
         </View>
       ) : null}

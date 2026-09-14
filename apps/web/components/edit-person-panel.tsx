@@ -16,6 +16,9 @@ import {
   groupsCollapsedByMemberRemoval,
   isMinorForSafety,
   normalizeStarColorForWrite,
+  normalizeStarScale,
+  STAR_SCALE_MAX,
+  STAR_SCALE_MIN,
   type ChartPrecision,
 } from "@galaxia/core";
 import { useEffect, useState } from "react";
@@ -23,6 +26,7 @@ import { applyBirthFormUpgrade, birthFormFromPerson } from "../lib/birth-form-up
 import { getPreferredHouseSystem } from "../lib/house-system";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { AskBirthData } from "./ask-birth-data";
+import { ConnectInviteButton } from "./connect-invite-button";
 import { CustomCheck } from "./custom-check";
 import { Spinner } from "./spinner";
 
@@ -42,7 +46,9 @@ interface PersonRow {
   /** Curated palette hex; null = element-derived node color on the constellation. */
   star_color?: string|null;
   is_self?: boolean;
+  linked_user_id?: string | null;
   custom_position?: { angle: number; radius_pct: number } | null;
+  star_scale?: number | null;
 }
 interface Props {
   person: PersonRow;
@@ -80,6 +86,7 @@ export function EditPersonPanel({
     normalizeStarColorForWrite(person.star_color)
   );
   const [customPosition, setCustomPosition] = useState(person.custom_position ?? null);
+  const [starScale, setStarScale] = useState(() => normalizeStarScale(person.star_scale));
   const [resettingPosition, setResettingPosition] = useState(false);
 
   const [input, setInput] = useState<BirthFormInput>(() => birthFormFromPerson(person));
@@ -100,6 +107,7 @@ export function EditPersonPanel({
     setPassedAt(person.passed_at ?? null);
     setStarColor(normalizeStarColorForWrite(person.star_color));
     setCustomPosition(person.custom_position ?? null);
+    setStarScale(normalizeStarScale(person.star_scale));
     setCityQuery(person.birth_place ?? "");
     setCandidates([]);
     setSearchError(null);
@@ -159,6 +167,7 @@ export function EditPersonPanel({
         birth_lat: built.birth.lat ?? null, birth_lng: built.birth.lng ?? null,
         tz_offset_min: built.tzOffsetMin ?? null,
         star_color: normalizeStarColorForWrite(starColor),
+        star_scale: normalizeStarScale(starScale),
       }).eq("id", person.id).eq("owner_id", userId);
       if (pErr) throw new Error(pErr.message);
       const { error: cErr } = await supabase.from("charts").upsert({ person_id: person.id, house_system: natal.houseSystem ?? null, data: natal, engine_version: CHART_ENGINE_VERSION });
@@ -368,11 +377,38 @@ export function EditPersonPanel({
           )}
         </div>
 
+        <div>
+          {/* FOUNDER-REVIEW: slider label */}
+          <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginBottom: 6 }}>Star size</p>
+          {/* FOUNDER-REVIEW: slider helper */}
+          <p className="muted" style={{ fontSize: ".72rem", lineHeight: 1.5, marginBottom: 8 }}>
+            How large this star appears on your constellation. Does not move their seat.
+          </p>
+          <input
+            type="range"
+            min={STAR_SCALE_MIN}
+            max={STAR_SCALE_MAX}
+            step={0.1}
+            value={starScale}
+            aria-label="Star size"
+            aria-valuemin={STAR_SCALE_MIN}
+            aria-valuemax={STAR_SCALE_MAX}
+            aria-valuenow={starScale}
+            onChange={(e) => setStarScale(normalizeStarScale(parseFloat(e.target.value)))}
+            style={{ width: "100%", accentColor: "var(--gold)" }}
+          />
+          <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginTop: 4 }}>
+            {starScale.toFixed(1)}×
+          </p>
+        </div>
+
         {customPosition && !person.is_self ? (
           <div>
+            {/* FOUNDER-REVIEW: placement section label */}
             <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginBottom: 6 }}>Constellation seat</p>
+            {/* FOUNDER-REVIEW: placement helper */}
             <p className="muted" style={{ fontSize: ".72rem", lineHeight: 1.5, marginBottom: 8 }}>
-              You moved this star off its ring. Reset puts them back on the derived seat.
+              You placed this star by hand. Reset returns them to their ring.
             </p>
             <button
               type="button"
@@ -487,6 +523,9 @@ export function EditPersonPanel({
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(183,154,216,.1)" }}>
           <p className="muted" style={{ fontSize: ".76rem", marginBottom: 8 }}>Don't have their exact details? Let them fill it in:</p>
           <AskBirthData personId={person.id} personName={person.display_name} userId={userId} />
+          <div style={{ marginTop: 10 }}>
+            <ConnectInviteButton person={person} />
+          </div>
         </div>
       ) : null}
 

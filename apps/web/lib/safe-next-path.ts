@@ -32,3 +32,15 @@ export function safeNextPath(next: string | null | undefined, fallback = "/start
   if (next.includes("://")) return fallback;
   return next;
 }
+
+/**
+ * Login and signup accept both `next` (the existing param) and `redirect`
+ * (the connect-landing CTA). One function so a second inline check cannot
+ * reintroduce the open-redirect this file exists to close.
+ */
+export function authReturnPath(
+  search: { next?: string; redirect?: string },
+  fallback = "/start",
+): string {
+  return safeNextPath(search.next ?? search.redirect, fallback);
+}

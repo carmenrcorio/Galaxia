@@ -9,12 +9,12 @@
  *
  * Key reference decisions:
  * - Node forms derived from bond type (self / binary-partner / moon-child / fixed-parent / star-sibling / ancient-ancestor)
- * - P1 concentric rings: soft nebula bands at sketch Rings 1–4, painted once
- *   onto two CSS-rotating canvases (inner 2+3 clockwise 90s, outer 4+5
- *   counter-clockwise 70s). Partner is a tight binary at the core (not a guide).
+ * - P1 concentric rings: soft nebula bands at sketch Rings 1–4, baked once
+ *   onto an offscreen bitmap and blit to the motion canvas each frame.
+ *   Partner is a tight binary at the core (not a guide).
  *   Seat radius = guide radius = ringBandRadius(own ring) (+ small within-band
- *   jitter). Angle = f(id). Geometry is a true circle (radX === radY) so
- *   co-ring parents share one Euclidean pixel radius.
+ *   jitter). Angle = f(id). Geometry is galaxyGeometry() — independent radX/radY
+ *   with an eccentricity cap — so co-ring people sit on the same elliptical band.
  * - Radial glow halo: createRadialGradient, 5-11×R depending on data precision (sharp=crisp, year=diffuse)
  * - Links: quadratic bezier + gradient between node element colours + travelling light pulse
  * - Gentle tangential drift (stays on band), disabled under prefers-reduced-motion
@@ -40,14 +40,18 @@ import {
 import {
   ELEMENT_NODE_COLORS,
   GALAXY_GUIDE_RINGS,
+  GLOW_OUTER_SCALE,
   HONOR_LINE_STYLE,
   RING_BAND_COLORS,
   HONOR_RELATION_TYPE,
+  clampSeatRn,
   elementFromRelation,
   formFromRelation,
+  galaxyGeometry,
   galaxyLabelHalfWidthPx,
   galaxyLabelOffsets,
   galaxySeatsResolved,
+  glyphRadiusPx,
   hash01,
   effectiveSeat,
   pointerToCustomPosition,
@@ -56,12 +60,15 @@ import {
   hasPassed,
   honorEdgesFromDeclaredRows,
   isMinorForSafety,
+  nodeDrawnExtent,
+  normalizeStarScale,
   peopleForTodaySky,
   resolveAccountName,
   resolveNodeColor,
   ringBandRadius,
   ringIndex,
   shouldOfferFirstRunRestart,
+  starCoreRadius,
   sunSignFromChart,
   usesMemorialGlyph,
   type HonorEdge,
@@ -71,14 +78,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChartImageExportButton, ChartImageExportFrame, chartExportFilename } from "../../components/chart-image-export";
+import { ConnectInviteButton } from "../../components/connect-invite-button";
 import {
   CONSTELLATION_STAGE_STYLE,
   ConstellationEmptyState,
   ConstellationLoadError,
   ConstellationStarFieldSkeleton,
 } from "../../components/constellation-starfield-skeleton";
+import { CONNECT_RESUME_KEY, isConnectToken } from "../../lib/connect-invite";
 import { composeGalaxySharePng, SHARE_IMAGE_FAIL } from "../../lib/share-image";
-import { FIRST_RUN_RESTART_HREF } from "../../lib/nav-links";
+import { FIRST_RUN_RESTART_HREF, CAPTURE_MOMENT_HREF } from "../../lib/nav-links";
+import { CAPTURE_MOMENT } from "../../lib/moment-copy";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { RelationalTransitFeed } from "../../components/relational-transit-feed";
 import { ThreadMenu } from "../../components/thread-menu";
@@ -102,6 +112,9 @@ interface PersonRow {
   memorial_constellation?: string | null;
   /** Owner-chosen polar seat. NULL = derived default from galaxySeatsResolved. */
   custom_position?: CustomGalaxyPosition | null;
+  /** Visual size multiplier. NULL = 1.0. Does not affect seat position. */
+  star_scale?: number | null;
+  linked_user_id?: string | null;
   sunSign?: string | null;
 }
 interface LinkRow { fromId: string; toId: string; scoreA: number; elA: string; elB: string; }
@@ -143,11 +156,6 @@ function hexA(hex: string, a: number): string {
 }
 
 type RingBand = (typeof RING_BAND_COLORS)[keyof typeof RING_BAND_COLORS];
-
-/** Same padding as `ringGeom()`. Seats and guide bands share one radius. */
-function constellationRad(cssW: number, cssH: number): number {
-  return Math.max(70, Math.min(cssW / 2 - 44, cssH / 2 - 48));
-}
 
 function paintNebulaBand(
   ctx: CanvasRenderingContext2D,
@@ -217,24 +225,20 @@ function paintGuideRingsOnto(
   dpr: number,
   rings: readonly number[],
 ) {
-  const cx = (cssW / 2) * dpr;
-  const cy = (cssH / 2) * dpr;
-  const rad = constellationRad(cssW, cssH) * dpr;
+  const geom = galaxyGeometry(cssW, cssH);
+  const cx = geom.cx * dpr;
+  const cy = geom.cy * dpr;
   for (const ring of rings) {
     if (ring !== 2 && ring !== 3 && ring !== 4 && ring !== 5) continue;
     const band = RING_BAND_COLORS[ring];
     const rn = ringBandRadius(ring);
-    const rx = rad * rn;
-    const ry = rad * rn;
+    const rx = geom.radX * rn * dpr;
+    const ry = geom.radY * rn * dpr;
     paintNebulaBand(ctx, cx, cy, rx, ry, band, dpr);
     const count = Math.min(80, Math.max(20, Math.round((2 * Math.PI * rx) / dpr / 8)));
     drawRingStardust(ctx, cx, cy, rx, ry, band.core, count, ring * 31, dpr);
   }
 }
-
-/* Outer node halo loudness — radius + alphas together (−30%). Single tunable;
-   inner bloom / lowPerf shed untouched. */
-const GLOW_OUTER_SCALE = 0.7;
 
 /* ── generational cohort colour, DERIVED from the outer-planet signature ──
    A cohort is anchored by its Pluto sign (the slowest visible planet, ~12–30
@@ -266,10 +270,8 @@ export default function AppHomePage() {
   /* Atmosphere (wash + nebulae) lives on its own DPR-1 canvas, refreshed ~4×/s,
      so the motion canvas never pays a per-frame atmosphere blit. */
   const atmCanvasRef = useRef<HTMLCanvasElement>(null);
-  /* Guide rings live on two CSS-rotating canvases under the motion canvas.
-     pointer-events: none; never intercepts hit testing. */
-  const innerDriftCanvasRef = useRef<HTMLCanvasElement>(null);
-  const outerDriftCanvasRef = useRef<HTMLCanvasElement>(null);
+  /* Guide rings bake onto an offscreen bitmap (paintRingLayersRef) and blit
+     into the motion canvas. No DOM ring canvases. */
   const paintRingLayersRef = useRef<null | (() => void)>(null);
   /* entrance ignition timeline — persists across effect re-runs (e.g. hover)
      so the arrival sequence plays once on data load, not on every state change */
@@ -326,6 +328,8 @@ export default function AppHomePage() {
   const [liveIn, setLiveIn]                    = useState(false);
   const [hoverPerson, setHoverPerson]           = useState<PersonRow | null>(null);
   const [ownerId, setOwnerId]                   = useState<string | null>(null);
+  const [unackedPersonIds, setUnackedPersonIds] = useState<Set<string>>(() => new Set());
+  const hoverClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     showRingsRef.current = showRings;
@@ -350,6 +354,19 @@ export default function AppHomePage() {
           setLoading(false);
           return;
         }
+        try {
+          const resume = sessionStorage.getItem(CONNECT_RESUME_KEY);
+          if (resume && resume.startsWith("/connect/")) {
+            const token = resume.slice("/connect/".length);
+            if (isConnectToken(token)) {
+              sessionStorage.removeItem(CONNECT_RESUME_KEY);
+              router.replace(resume as never);
+              return;
+            }
+          }
+        } catch {
+          /* private mode */
+        }
         setOwnerId(user.id);
         void loadHome(user.id);
       })
@@ -359,7 +376,7 @@ export default function AppHomePage() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [supabase]);
+  }, [supabase, router]);
 
   const liveReady = !loading && !loadError && people.length > 0;
   useEffect(() => {
@@ -382,9 +399,7 @@ export default function AppHomePage() {
     if (loading || people.length === 0) return;
     const canvas = canvasRef.current;
     const atmCanvas = atmCanvasRef.current;
-    const innerDrift = innerDriftCanvasRef.current;
-    const outerDrift = outerDriftCanvasRef.current;
-    if (!canvas || !atmCanvas || !innerDrift || !outerDrift) return;
+    if (!canvas || !atmCanvas) return;
     const pendingCaughtUp = pendingPositionRef.current;
     if (pendingCaughtUp) {
       const row = people.find((p) => p.id === pendingCaughtUp.personId);
@@ -441,34 +456,23 @@ export default function AppHomePage() {
 
     let ringBakeKey = "";
     let ringsLowPerf = false;
-    const sizeRingCanvas = (el: HTMLCanvasElement) => {
-      const bw = Math.max(1, canvas.width);
-      const bh = Math.max(1, canvas.height);
-      if (el.width !== bw) el.width = bw;
-      if (el.height !== bh) el.height = bh;
-      el.style.width = (canvas.width / DPR) + "px";
-      el.style.height = (canvas.height / DPR) + "px";
-    };
+    const ringCache = document.createElement("canvas");
     const paintRingLayers = () => {
       const cssW = canvas.width / DPR;
       const cssH = canvas.height / DPR;
       const key = `${cssW}x${cssH}@${DPR}:${showRingsRef.current}:${ringsLowPerf}`;
-      sizeRingCanvas(innerDrift);
-      sizeRingCanvas(outerDrift);
-      const innerCtx = innerDrift.getContext("2d");
-      const outerCtx = outerDrift.getContext("2d");
-      if (!innerCtx || !outerCtx) return;
+      const bw = Math.max(1, canvas.width);
+      const bh = Math.max(1, canvas.height);
+      if (ringCache.width !== bw) ringCache.width = bw;
+      if (ringCache.height !== bh) ringCache.height = bh;
+      const ringCtx = ringCache.getContext("2d");
+      if (!ringCtx) return;
       if (key === ringBakeKey) return;
       ringBakeKey = key;
-      innerCtx.setTransform(1, 0, 0, 1, 0, 0);
-      outerCtx.setTransform(1, 0, 0, 1, 0, 0);
-      innerCtx.clearRect(0, 0, innerDrift.width, innerDrift.height);
-      outerCtx.clearRect(0, 0, outerDrift.width, outerDrift.height);
+      ringCtx.setTransform(1, 0, 0, 1, 0, 0);
+      ringCtx.clearRect(0, 0, ringCache.width, ringCache.height);
       if (!showRingsRef.current) return;
-      const innerRings = GALAXY_GUIDE_RINGS.filter((r) => r <= 3);
-      const outerRings = GALAXY_GUIDE_RINGS.filter((r) => r >= 4);
-      paintGuideRingsOnto(innerCtx, cssW, cssH, DPR, innerRings);
-      paintGuideRingsOnto(outerCtx, cssW, cssH, DPR, outerRings);
+      paintGuideRingsOnto(ringCtx, cssW, cssH, DPR, GALAXY_GUIDE_RINGS);
     };
     paintRingLayersRef.current = paintRingLayers;
 
@@ -612,14 +616,19 @@ export default function AppHomePage() {
       };
     }
 
-    /* TRUE CIRCLES — radX === radY. An ellipse makes the same seat `rn` land
-       at different Euclidean distances by angle, so co-ring parents (Mommy at
-       ~−25° / Daddy at ~104°) read as different bands: one near the guide,
-       one "dropped" toward the rim. Same rn must mean the same pixel radius. */
+    /* Independent radX / radY from galaxyGeometry — seats and guides share it. */
     function ringGeom() {
-      const cssW = W(), cssH = H();
-      const rad = constellationRad(cssW, cssH);
-      return { cx: cssW / 2, cy: cssH / 2, radX: rad, radY: rad };
+      return galaxyGeometry(W(), H());
+    }
+
+    function nodeExtent(p: PersonRow): number {
+      return nodeDrawnExtent({
+        form: formFromRelation(p.is_self, p.relation, p.passed_at),
+        memorial: usesMemorialGlyph(p),
+        lite: lowPerf,
+        precision: p.birth_precision,
+        starScale: p.star_scale,
+      });
     }
 
     /* Label clearance used when clamping seats into the frame (CSS px). */
@@ -646,7 +655,9 @@ export default function AppHomePage() {
       const p = people[i];
       const geom = ringGeom();
       const seat = seatsById.get(p.id) ?? { nx: 0, ny: 0, angle: 0, rn: 0 };
-      return effectiveSeat(overlayPerson(p), seat.angle, seat.rn, geom.cx, geom.cy, geom.radX);
+      return effectiveSeat(overlayPerson(p), seat.angle, seat.rn, geom, {
+        extent: nodeExtent(p),
+      });
     }
 
     function basePos(i: number): { x: number; y: number } {
@@ -738,10 +749,10 @@ export default function AppHomePage() {
     }
 
     function coreR(p: PersonRow): number {
-      if (usesMemorialGlyph(p)) return 17; /* glyph half-extent for labels / flare (≥+50%) */
+      const scale = normalizeStarScale(p.star_scale);
+      if (usesMemorialGlyph(p)) return glyphRadiusPx(lowPerf, scale);
       const form = formFromRelation(p.is_self, p.relation, p.passed_at);
-      const base = form === "self" ? 7 : form === "ancient" ? 3.4 : form === "moon" ? 4.2 : 5;
-      return base;
+      return starCoreRadius(form) * scale;
     }
 
     /**
@@ -758,8 +769,9 @@ export default function AppHomePage() {
       scale: number,
       twinkle: number,
       isHovered: boolean,
+      starScale: unknown,
     ) {
-      const radius = (lowPerf ? 18 : 21) * scale * (isHovered ? 1.08 : 1);
+      const radius = glyphRadiusPx(lowPerf, starScale) * scale * (isHovered ? 1.08 : 1);
       /* stroke-light on purpose — larger seat, not thicker ink */
       const lineW = lowPerf ? 0.85 : 1.05;
       const starR = (lowPerf ? 1.25 : 1.45) * scale;
@@ -872,7 +884,7 @@ export default function AppHomePage() {
           fg.addColorStop(1, hexA(col, 0));
           cx.beginPath(); cx.arc(q.x, q.y, fr, 0, Math.PI * 2); cx.fillStyle = fg; cx.fill();
         }
-        drawMemorialGlyph(q, col, memorialPattern, scale, tw, isHovered);
+        drawMemorialGlyph(q, col, memorialPattern, scale, tw, isHovered, p.star_scale);
         if (isActive && !reduced) {
           cx.beginPath();
           cx.arc(q.x, q.y, R0 * (1.55 + 0.25 * Math.sin(t * 0.025 + phases[i].ph)), 0, Math.PI * 2);
@@ -888,6 +900,12 @@ export default function AppHomePage() {
         const lxM = Math.min(W() - 8, Math.max(8, labelPos.x));
         const lyM = Math.min(H() - 6, Math.max(12, labelPos.y));
         cx.fillText(p.display_name, lxM, lyM);
+        if (!forExport && unackedPersonIds.has(p.id)) {
+          cx.beginPath();
+          cx.arc(q.x + R0 * 0.95, q.y - R0 * 0.95, 3.4, 0, Math.PI * 2);
+          cx.fillStyle = "rgba(230,174,108,0.95)";
+          cx.fill();
+        }
         cx.restore();
         return;
       }
@@ -981,6 +999,13 @@ export default function AppHomePage() {
       const lx = Math.min(W() - 8, Math.max(8, labelPos.x));
       const ly = Math.min(H() - 6, Math.max(12, labelPos.y));
       cx.fillText(p.display_name, lx, ly);
+
+      if (!forExport && unackedPersonIds.has(p.id)) {
+        cx.beginPath();
+        cx.arc(q.x + R0 * 0.95, q.y - R0 * 0.95, 3.4, 0, Math.PI * 2);
+        cx.fillStyle = "rgba(230,174,108,0.95)";
+        cx.fill();
+      }
 
       cx.restore();
     }
@@ -1223,7 +1248,10 @@ export default function AppHomePage() {
       let bestD = Infinity;
       for (let i = 0; i < people.length; i++) {
         const q = positions[i];
-        const hitR = usesMemorialGlyph(people[i]) ? 28 : 22;
+        const hitR = Math.max(
+          usesMemorialGlyph(people[i]) ? 28 : 22,
+          nodeExtent(people[i]) * 0.55,
+        );
         const d = Math.hypot(mx - q.x, my - q.y);
         if (d < hitR && d < bestD) {
           bestD = d;
@@ -1338,17 +1366,24 @@ export default function AppHomePage() {
         atmDirty = false;
       }
 
-      /* Guide rings live on the CSS-rotating drift canvases, not here. */
+      /* Cached nebula rings: blit the offscreen bitmap. Paint is not per-frame. */
+      if (showRingsRef.current) {
+        paintRingLayers();
+        cx.save();
+        cx.setTransform(1, 0, 0, 1, 0, 0);
+        cx.drawImage(ringCache, 0, 0);
+        cx.restore();
+      }
 
       const pending = pendingPositionRef.current;
       if (!forExport && pending && dragRef.current?.active) {
-        const { cx: rcx, cy: rcy, radX } = ringGeom();
+        const { cx: rcx, cy: rcy, radX, radY } = ringGeom();
         cx.save();
         cx.setLineDash([4, 6]);
         cx.strokeStyle = "rgba(255,255,255,0.25)";
         cx.lineWidth = 1;
         cx.beginPath();
-        cx.arc(rcx, rcy, pending.radiusPct * radX, 0, Math.PI * 2);
+        cx.ellipse(rcx, rcy, pending.radiusPct * radX, pending.radiusPct * radY, 0, 0, Math.PI * 2);
         cx.stroke();
         cx.restore();
       }
@@ -1432,27 +1467,7 @@ export default function AppHomePage() {
       atmDirty = true;
       try {
         paintFrame({ scheduleRaf: false, exportSettled: true });
-        const motionWithRings = document.createElement("canvas");
-        motionWithRings.width = motionOff.width;
-        motionWithRings.height = motionOff.height;
-        const mix = motionWithRings.getContext("2d", { willReadFrequently: true, alpha: true });
-        if (!mix) throw new Error(SHARE_IMAGE_FAIL);
-        if (showRingsRef.current) {
-          const ringOff = document.createElement("canvas");
-          ringOff.width = motionOff.width;
-          ringOff.height = motionOff.height;
-          const rctx = ringOff.getContext("2d", { willReadFrequently: true, alpha: true });
-          if (!rctx) throw new Error(SHARE_IMAGE_FAIL);
-          const cssW = W();
-          const cssH = H();
-          const innerRings = GALAXY_GUIDE_RINGS.filter((r) => r <= 3);
-          const outerRings = GALAXY_GUIDE_RINGS.filter((r) => r >= 4);
-          paintGuideRingsOnto(rctx, cssW, cssH, DPR, innerRings);
-          paintGuideRingsOnto(rctx, cssW, cssH, DPR, outerRings);
-          mix.drawImage(ringOff, 0, 0);
-        }
-        mix.drawImage(motionOff, 0, 0);
-        return await composeGalaxySharePng(atmOff, motionWithRings, { cssWidth: W() });
+        return await composeGalaxySharePng(atmOff, motionOff, { cssWidth: W() });
       } finally {
         cx = prevCx;
         atmCtx = prevAtm;
@@ -1496,8 +1511,22 @@ export default function AppHomePage() {
       const rect = canvas.getBoundingClientRect();
       if (!dragRef.current) {
         const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
-        setHoverPerson(hit);
-        canvas.style.cursor = hit ? "pointer" : "default";
+        if (hit) {
+          if (hoverClearTimerRef.current) {
+            clearTimeout(hoverClearTimerRef.current);
+            hoverClearTimerRef.current = null;
+          }
+          setHoverPerson(hit);
+          canvas.style.cursor = hit.is_self ? "pointer" : "grab";
+          return;
+        }
+        canvas.style.cursor = "default";
+        if (!hoverClearTimerRef.current) {
+          hoverClearTimerRef.current = setTimeout(() => {
+            hoverClearTimerRef.current = null;
+            setHoverPerson(null);
+          }, 220);
+        }
         return;
       }
       const dx = e.clientX - dragRef.current.startX;
@@ -1515,12 +1544,16 @@ export default function AppHomePage() {
       canvas.style.cursor = "grabbing";
       const geom = ringGeom();
       const polar = pointerToCustomPosition(e.clientX - rect.left, e.clientY - rect.top, geom);
+      const dragged = people.find((p) => p.id === dragRef.current!.personId);
+      const rn = dragged
+        ? clampSeatRn(polar.angle, polar.radius_pct, geom, nodeExtent(dragged))
+        : polar.radius_pct;
       dragRef.current.currentAngle = polar.angle;
-      dragRef.current.currentRadiusPct = polar.radius_pct;
+      dragRef.current.currentRadiusPct = rn;
       pendingPositionRef.current = {
         personId: dragRef.current.personId,
         angle: polar.angle,
-        radiusPct: polar.radius_pct,
+        radiusPct: rn,
       };
     };
 
@@ -1537,7 +1570,12 @@ export default function AppHomePage() {
       }
 
       suppressClickRef.current = true;
-      const custom_position = { angle: currentAngle, radius_pct: currentRadiusPct };
+      const geom = ringGeom();
+      const dragged = people.find((p) => p.id === personId);
+      const radius_pct = dragged
+        ? clampSeatRn(currentAngle, currentRadiusPct, geom, nodeExtent(dragged))
+        : currentRadiusPct;
+      const custom_position = { angle: currentAngle, radius_pct };
       const owner = ownerIdRef.current;
       setPeople((prev) => prev.map((p) => (p.id === personId ? { ...p, custom_position } : p)));
       if (!owner) {
@@ -1590,7 +1628,7 @@ export default function AppHomePage() {
       canvas.removeEventListener("click", onClick);
       canvas.removeEventListener("contextmenu", onContextMenu);
     };
-  }, [loading, people, links, honorEdges, activeTransitIds, hoverPerson, router, cohortByPerson]);
+  }, [loading, people, links, honorEdges, activeTransitIds, hoverPerson, router, cohortByPerson, unackedPersonIds]);
 
   /* ─── data loading ────────────────────────────────────────────── */
   async function loadHome(uid: string) {
@@ -1608,7 +1646,7 @@ export default function AppHomePage() {
       const localDate = ownerLocalDate();
       const [profileRes, peopleRes, chartRes, threadRes, relRes, nudgeRes, recentRes] = await Promise.all([
         supabase.from("profiles").select("display_name, pinned_sky_person_id, onboarding_step, onboarding_completed_at").eq("id", uid).single(),
-        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position").eq("owner_id", uid).order("created_at", { ascending: true }),
+        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale, linked_user_id").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode, subject_person, pair_low, pair_high").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6),
         supabase.from("relationships").select("person_a, person_b, relation_type").eq("owner_id", uid).eq("relation_type", HONOR_RELATION_TYPE),
@@ -1648,6 +1686,21 @@ export default function AppHomePage() {
         }).firstName
       );
       setPeople(castPeople);
+
+      const { data: unackedInvites } = await supabase
+        .from("invites")
+        .select("id, person_id, accepted_by")
+        .eq("from_user", uid)
+        .eq("kind", "constellation_connect")
+        .eq("status", "accepted")
+        .is("sender_ack_at", null);
+      const unread = new Set<string>();
+      for (const invite of unackedInvites ?? []) {
+        if (invite.person_id) unread.add(invite.person_id as string);
+        const linked = castPeople.find((p) => p.linked_user_id && p.linked_user_id === invite.accepted_by);
+        if (linked) unread.add(linked.id);
+      }
+      setUnackedPersonIds(unread);
       const pinnedSkyPersonId = (profile as { pinned_sky_person_id?: string | null } | null)?.pinned_sky_person_id ?? null;
 
       /* cohort per person = their Pluto sign, straight from the computed chart.
@@ -1777,6 +1830,7 @@ export default function AppHomePage() {
       setPersonSkies([]);
       setThreadChips([]);
       setCohortByPerson({});
+      setUnackedPersonIds(new Set());
     } finally { setLoading(false); }
   }
 
@@ -1849,6 +1903,11 @@ export default function AppHomePage() {
               </Link>
             ) : null}
             {!loading && !loadError && people.length > 0 ? (
+              <Link href={CAPTURE_MOMENT_HREF as never} className="pill-link" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
+                {CAPTURE_MOMENT}
+              </Link>
+            ) : null}
+            {!loading && !loadError && people.length > 0 ? (
               <Link href="/app/add-person" className="pill-link pill-link--gold" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
                 + Add person
               </Link>
@@ -1888,18 +1947,6 @@ export default function AppHomePage() {
               style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%" }}
             />
             <canvas
-              ref={innerDriftCanvasRef}
-              aria-hidden
-              className="ring-drift-inner"
-              style={{ visibility: showRings ? "visible" : "hidden" }}
-            />
-            <canvas
-              ref={outerDriftCanvasRef}
-              aria-hidden
-              className="ring-drift-outer"
-              style={{ visibility: showRings ? "visible" : "hidden" }}
-            />
-            <canvas
               ref={canvasRef}
               style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", touchAction: "none" }}
             />
@@ -1916,14 +1963,22 @@ export default function AppHomePage() {
 
             {/* hover inspector — glass card floating over canvas */}
             {hoverPerson ? (
-              <div style={{
+              <div
+                onPointerEnter={() => {
+                  if (hoverClearTimerRef.current) {
+                    clearTimeout(hoverClearTimerRef.current);
+                    hoverClearTimerRef.current = null;
+                  }
+                }}
+                onPointerLeave={() => setHoverPerson(null)}
+                style={{
                 position: "absolute", top: 16, right: 16, zIndex: 2,
                 width: 220, padding: "16px 18px", borderRadius: 16,
                 background: "linear-gradient(165deg, rgba(255,255,255,.065), rgba(255,255,255,.018))",
                 backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",
                 border: "1px solid rgba(230,174,108,.18)",
                 boxShadow: "0 20px 50px -20px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.07)",
-                pointerEvents: "none",
+                pointerEvents: "auto",
               }}>
                 <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 6 }}>
                   {formFromRelation(hoverPerson.is_self, hoverPerson.relation, hoverPerson.passed_at).replace(/-/g, " ")}
@@ -1932,6 +1987,9 @@ export default function AppHomePage() {
                 <p style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)", marginBottom: 2 }}>{hoverPerson.display_name}</p>
                 <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 10 }}>{hoverPerson.relation} · {hoverPerson.birth_precision}</p>
                 <p style={{ fontSize: ".72rem", color: "var(--teal)", display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 100, background: "rgba(111,177,184,.1)", border: "1px solid rgba(111,177,184,.24)" }}>Click to open profile</p>
+                <div style={{ marginTop: 12 }}>
+                  <ConnectInviteButton person={hoverPerson} compact />
+                </div>
               </div>
             ) : null}
 
@@ -2094,6 +2152,7 @@ export default function AppHomePage() {
         <div className="fade-in fade-in-delay-2">
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Link href={`/app/person/${selfPerson.id}`} className="pill-link">My chart</Link>
+            <Link href={CAPTURE_MOMENT_HREF as never} className="pill-link">{CAPTURE_MOMENT}</Link>
           </div>
         </div>
       ) : null}

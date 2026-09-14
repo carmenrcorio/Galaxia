@@ -7,10 +7,14 @@ import {
   APP_NAV_BRAND_HREF,
   APP_NAV_LINKS,
   EMAIL_PATHS,
+  MARKETING_NAV_LOGIN,
   MARKETING_NAV_SIGNUP,
   PERSON_PROFILE_HREF_PREFIX,
   personProfileHref,
+  CAPTURE_MOMENT_HREF,
+  captureMomentHref,
   signupWithNextHref,
+  loginWithNextHref,
   EMPTY_STATE_SETTINGS_HREF,
   EMPTY_STATE_WELCOME_HREF,
   THIS_WEEK_HREF,
@@ -168,9 +172,22 @@ describe("signed-in chart save hrefs", () => {
     expect(existsSync(join(WEB_APP_DIR, "app/chart/page.tsx"))).toBe(false);
   });
 
+  it("captureMomentHref points at the Moment page", () => {
+    expect(CAPTURE_MOMENT_HREF).toBe("/app/moment");
+    expect(captureMomentHref()).toBe("/app/moment");
+    expect(captureMomentHref("abc")).toBe("/app/moment?personId=abc");
+    expect(existsSync(join(WEB_APP_DIR, "app/moment/page.tsx"))).toBe(true);
+  });
+
   it("signupWithNextHref stays on the marketing signup route", () => {
     expect(signupWithNextHref("/welcome?prefill=1")).toBe(
       `${MARKETING_NAV_SIGNUP.href}?next=${encodeURIComponent("/welcome?prefill=1")}`,
+    );
+  });
+
+  it("loginWithNextHref keeps next on the marketing login route", () => {
+    expect(loginWithNextHref("/connect/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).toBe(
+      `${MARKETING_NAV_LOGIN.href}?next=${encodeURIComponent("/connect/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")}`,
     );
   });
 
@@ -208,6 +225,12 @@ describe("retired Quick Chart paths redirect in next.config", () => {
     expect(src).toMatch(/permanent:\s*true/);
     expect(src).not.toContain("vercel.json");
     expect(existsSync(join(WEB_APP_DIR, "account/subscription/page.tsx"))).toBe(false);
+  });
+
+  it("strips a trailing slash on /connect/:token so a pasted token still lands", () => {
+    const src = readFileSync(join(WEB_ROOT, "next.config.mjs"), "utf8");
+    expect(src).toMatch(/source:\s*["']\/connect\/:token\/["']/);
+    expect(src).toMatch(/destination:\s*["']\/connect\/:token["']/);
   });
 });
 
@@ -368,7 +391,11 @@ describe("CTA hrefs resolve to App Router pages", () => {
       ["FOR_WORK_CHART_CTA", "MARKETING_NAV_SIGNUP", "MARKETING_NAV_BRAND_HREF"],
       "for-work sections leftover literal",
     );
-    assertRendersFromConfig(readWeb("components/marketing/pricing-section.tsx"), ["MARKETING_NAV_SIGNUP"], "pricing-section leftover literal");
+    assertRendersFromConfig(
+      readWeb("components/marketing/pricing-section.tsx"),
+      ["MARKETING_NAV_SIGNUP", "PRICING_FREE_CHART_CTA"],
+      "pricing-section leftover literal",
+    );
     assertRendersFromConfig(readWeb("components/marketing/feature-teasers.tsx"), ["FEATURE_TEASER_LINKS"], "feature-teasers leftover literal");
     assertRendersFromConfig(readWeb("app/not-found.tsx"), ["NOT_FOUND_LINKS"], "not-found leftover literal");
     assertRendersFromConfig(readWeb("app/s/[token]/not-found.tsx"), ["SHARE_NOT_FOUND_CTA"], "share not-found leftover literal");

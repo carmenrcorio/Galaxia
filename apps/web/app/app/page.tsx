@@ -59,6 +59,7 @@ import {
   resolveNodeColor,
   ringBandRadius,
   ringIndex,
+  shouldOfferFirstRunRestart,
   usesMemorialGlyph,
   type HonorEdge,
   type MemorialConstellation,
@@ -74,6 +75,7 @@ import {
   ConstellationStarFieldSkeleton,
 } from "../../components/constellation-starfield-skeleton";
 import { composeGalaxySharePng, SHARE_IMAGE_FAIL } from "../../lib/share-image";
+import { FIRST_RUN_RESTART_HREF } from "../../lib/nav-links";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { RelationalTransitFeed } from "../../components/relational-transit-feed";
 import { ThreadMenu } from "../../components/thread-menu";
@@ -204,6 +206,9 @@ export default function AppHomePage() {
      captured, which the greeting handles by simply not naming anyone. It is
      never the local part of an email address. */
   const [welcomeName, setWelcomeName] = useState<string | null>(null);
+  /* True while first-run orientation has not been completed, so the way back
+     into it stays visible instead of being lost after a skip. */
+  const [offerFirstRun, setOfferFirstRun] = useState(false);
   const [people, setPeople]           = useState<PersonRow[]>([]);
   const [links, setLinks]             = useState<LinkRow[]>([]);
   /* Honor-constellation edges — declared relationships rows only (Phase 3).
@@ -1459,7 +1464,7 @@ export default function AppHomePage() {
          and gates via isMinorForSafety — never raw is_minor alone. */
       const localDate = ownerLocalDate();
       const [profileRes, peopleRes, chartRes, threadRes, relRes, nudgeRes, recentRes] = await Promise.all([
-        supabase.from("profiles").select("display_name, pinned_sky_person_id").eq("id", uid).single(),
+        supabase.from("profiles").select("display_name, pinned_sky_person_id, onboarding_step, onboarding_completed_at").eq("id", uid).single(),
         supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6),
@@ -1479,6 +1484,11 @@ export default function AppHomePage() {
       const relRows = relRes.data;
       const nudgeRows = nudgeRes.data;
       const recentNudgeRows = recentRes.data;
+
+      // Someone who skipped first-run orientation, or never finished it, keeps
+      // a visible way back in. Withdrawn once they actually completed it, so a
+      // finished account is not nagged by a door it already walked through.
+      setOfferFirstRun(shouldOfferFirstRunRestart(profile ?? null));
 
       const castPeople = (peopleRows ?? []) as PersonRow[];
       /* Same resolver as /account and mobile home. Previously this line fell
@@ -1645,6 +1655,21 @@ export default function AppHomePage() {
         <h1 className="page-title">Galaxia Mea</h1>
         {/* FOUNDER-REVIEW: authored greeting, including the no-name variant. */}
         <p className="muted">{welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."}</p>
+
+        {/* First-run orientation was skipped or never finished. The door stays
+            open and visible here rather than only in the zero-people empty
+            state, which a skipper who added someone would never see. */}
+        {!loading && offerFirstRun ? (
+          <Link
+            href={FIRST_RUN_RESTART_HREF as never}
+            className="pill-link"
+            data-first-run-restart
+            style={{ display: "inline-block", marginTop: 10, fontSize: ".82rem" }}
+          >
+            {/* FOUNDER-REVIEW: first-run re-entry from the constellation. */}
+            Walk me through my first person
+          </Link>
+        ) : null}
       </div>
 
       {/* ── This Week (Generations Feature 3: relational transit alerts) ──

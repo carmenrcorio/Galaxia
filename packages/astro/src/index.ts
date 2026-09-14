@@ -667,6 +667,7 @@ export * from "./generational-interpretations";
 export * from "./generational-layer";
 
 export * from "./compare-guidance";
+export * from "./single-chart-guidance";
 
 export * from "./transit-nudge";
 

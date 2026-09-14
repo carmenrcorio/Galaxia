@@ -16,6 +16,7 @@
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { GALAXY_RELATION_PICKER_OPTIONS } from "@galaxia/core";
 import { describe, expect, it } from "vitest";
 import { withReplayedMigrations } from "./test-utils/replay-migrations-pg";
 
@@ -436,7 +437,12 @@ select jsonb_build_object(
         expect(audit.third_user).toBe(1);
         expect(audit.founder_admin).toBe(1);
         expect(audit.posts).toBe(1);
-        expect(audit.galaxy_relations).toBe(21);
+        // The point of this row is that a retained lookup table survives the
+        // purge untouched, not that the canonical relation list is any
+        // particular length. Deriving the count from the TypeScript source
+        // keeps it from going stale every time a relation is added, and
+        // galaxy-relations-parity.test.ts is what guards the list itself.
+        expect(audit.galaxy_relations).toBe(GALAXY_RELATION_PICKER_OPTIONS.length);
         expect(audit.other_thread).toBe(1);
         expect(audit.bare_star).toBe(1);
         expect(audit.mirror_chart).toBe(0);

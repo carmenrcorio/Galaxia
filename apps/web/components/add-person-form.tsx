@@ -1,6 +1,6 @@
 "use client";
 
-import { type BirthFormInput } from "@galaxia/astro";
+import { type BirthFormInput, type NatalChart } from "@galaxia/astro";
 import { GALAXY_RELATION_PICKER_OPTIONS, type GalaxyPickerRelation } from "@galaxia/core";
 import { useEffect, useMemo, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
@@ -27,6 +27,14 @@ export type AddPersonSavedInfo = {
   displayName: string;
   deferred: boolean;
   personId: string;
+  /** The chart that was just computed, or null at `none` precision. */
+  natal: NatalChart | null;
+  /** What isMinorForSafety decided, after the birth-date backstop. */
+  isMinor: boolean;
+  /** The relation actually stored. */
+  relation: GalaxyPickerRelation;
+  /** Non-null when a romantic relation was refused for a minor. Must be shown. */
+  refusedRelation: GalaxyPickerRelation | null;
 };
 
 export type AddPersonFormProps = {
@@ -39,6 +47,22 @@ export type AddPersonFormProps = {
   savingLabel?: string;
   /** When false, parent owns status messaging via onSaved / onError. Default true. */
   showStatus?: boolean;
+  /**
+   * Hide the relation pills and keep `initialRelation`. For a wrapper that
+   * already asked the question in its own words, so the user is not asked to
+   * answer the same thing twice in two different vocabularies.
+   */
+  relationLocked?: boolean;
+  /**
+   * Offer the "Add birth data later" tier. Default true. A caller that must
+   * have a chart to do its next step turns this off, rather than accepting a
+   * person with no chart and then having nothing true to say about them.
+   */
+  allowDeferred?: boolean;
+  /** ISO timestamp when this person is being added in remembrance. */
+  passedAt?: string | null;
+  /** Reset the fields after a successful save. Default true. */
+  resetOnSave?: boolean;
   onSaved?: (info: AddPersonSavedInfo) => void;
   onError?: (message: string) => void;
 };
@@ -57,6 +81,10 @@ export function AddPersonForm({
   submitLabel = "Add to constellation",
   savingLabel = "Adding…",
   showStatus = true,
+  relationLocked = false,
+  allowDeferred = true,
+  passedAt = null,
+  resetOnSave = true,
   onSaved,
   onError
 }: AddPersonFormProps) {
@@ -87,25 +115,43 @@ export function AddPersonForm({
     setStatus(null);
     try {
       const deferred = birth.precision === "none";
-      const { personId } = await persistPerson(supabase, {
+      const saved = await persistPerson(supabase, {
         userId,
         displayName: name,
         relation,
         isSelf: false,
         isMinor: minor,
-        input: birth
+        input: birth,
+        passedAt
       });
       const savedName = name.trim();
-      setName("");
-      setMinor(false);
-      setRelation("friend");
-      setBirth(BASE_BIRTH_INPUT);
-      const info: AddPersonSavedInfo = { displayName: savedName, deferred, personId };
+      if (resetOnSave) {
+        setName("");
+        setMinor(false);
+        setRelation(initialRelation);
+        setBirth(BASE_BIRTH_INPUT);
+      }
+      const info: AddPersonSavedInfo = {
+        displayName: savedName,
+        deferred,
+        personId: saved.personId,
+        natal: saved.natal,
+        isMinor: saved.isMinor,
+        relation: saved.relation as GalaxyPickerRelation,
+        refusedRelation: saved.refusedRelation
+      };
       if (showStatus) {
+        const base = deferred
+          ? `${savedName} is in your sky: open their profile to add a date, or ask them, whenever you're ready.`
+          : `${savedName} is in your constellation.`;
+        // A relation we refused is always said out loud. Storing something
+        // other than what was chosen and staying quiet about it would be a
+        // change made behind the user's back.
         setStatus({
-          text: deferred
-            ? `${savedName} is in your sky: open their profile to add a date, or ask them, whenever you're ready.`
-            : `${savedName} is in your constellation.`,
+          text: saved.refusedRelation
+            // FOUNDER-REVIEW: minor-safety relation refusal notice.
+            ? `${base} ${savedName} is a minor, so this is saved as an unspecified relationship. Galaxia never holds a romantic or partner framing against a child.`
+            : base,
           ok: true
         });
       }
@@ -128,7 +174,10 @@ export function AddPersonForm({
         placeholder="Their name"
         style={{ marginBottom: 10, borderRadius: 14 }}
       />
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+      <div
+        style={{ display: relationLocked ? "none" : "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}
+        hidden={relationLocked}
+      >
         {relationOptions.map(({ value, label }) => (
           <button
             key={value}
@@ -158,7 +207,7 @@ export function AddPersonForm({
         </p>
       </div>
 
-      <BirthFields input={birth} onChange={setBirth} allowNone idPrefix="add-person" />
+      <BirthFields input={birth} onChange={setBirth} allowNone={allowDeferred} idPrefix="add-person" />
       <button
         className="btn-primary"
         style={{ marginTop: 14, gap: 8 }}

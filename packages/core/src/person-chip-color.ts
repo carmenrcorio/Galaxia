@@ -185,9 +185,18 @@ export interface PersonChipColor {
   source: "sun-sign" | "id-hash";
 }
 
+/**
+ * 12-way index from person id. FNV-1a (`hash01`) is stable and matches the
+ * galaxy seat hasher, then an extra mix so similar ids (person-0, person-1)
+ * do not collapse into four buckets.
+ */
 function signFromId(id: string): ZodiacSign {
-  const idx = Math.floor(hash01(id) * ZODIAC_SIGNS.length);
-  return ZODIAC_SIGNS[Math.min(idx, ZODIAC_SIGNS.length - 1)]!;
+  const unit = hash01(`person-chip:${id}`);
+  let n = Math.floor(unit * 4294967296);
+  n = Math.imul(n ^ (n >>> 16), 2246822519);
+  n = Math.imul(n ^ (n >>> 13), 3266489917);
+  n ^= n >>> 16;
+  return ZODIAC_SIGNS[(n >>> 0) % ZODIAC_SIGNS.length]!;
 }
 
 /**

@@ -65,11 +65,18 @@ describe("personChipColor — id hash fallback", () => {
   });
 
   it("spreads different ids across the 12-sign palette", () => {
-    const fills = new Set<string>();
+    const sequential = new Set<string>();
+    const uuidLike = new Set<string>();
     for (let i = 0; i < 80; i++) {
-      fills.add(personChipColor({ id: `person-${i}` }).fill);
+      sequential.add(personChipColor({ id: `person-${i}` }).fill);
+      uuidLike.add(
+        personChipColor({
+          id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+        }).fill
+      );
     }
-    expect(fills.size).toBeGreaterThanOrEqual(8);
+    expect(sequential.size).toBeGreaterThanOrEqual(8);
+    expect(uuidLike.size).toBeGreaterThanOrEqual(8);
   });
 });
 

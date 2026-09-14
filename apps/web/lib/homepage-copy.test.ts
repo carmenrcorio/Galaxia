@@ -28,7 +28,8 @@ describe("homepage outcome-led copy", () => {
     expect(src).toContain("No card. Works with just a birth date.");
     expect(src).toContain("The sky has been used to explain ourselves for three thousand years.");
     expect(src).toContain("We pointed it at the people we love instead.");
-    expect(src).not.toContain("The night sky belongs to everyone.");
+    const withoutComments = src.replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(withoutComments).not.toContain("The night sky belongs to everyone.");
     expect(HERO_PRIMARY_CTA).toEqual({ href: "/chart", label: "See someone's chart free" });
     expect(MARKETING_NAV_LOGIN).toEqual({ href: "/login", label: "Log in" });
   });

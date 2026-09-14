@@ -61,9 +61,20 @@ export function buildPostMetadata(post: PostMetadataInput): Metadata {
  * `twitter` so Next does not replace the root default with an imageless object.
  */
 export function buildCategoryMetadata(category: CategoryMetadataInput): Metadata {
-  // FOUNDER-REVIEW: rewritten (no U+2014). Title kept from the category page.
-  const title = `${category.label} on the Galaxia blog`;
-  const description = `${category.label} posts from the Galaxia blog.`;
+  // FOUNDER-REVIEW: layer-two blog category metadata. Astrology keywords stay.
+  const copy =
+    category.slug === "debunked"
+      ? {
+          title: "Astrology, Debunked | Galaxia Blog",
+          description:
+            "What astrology can and cannot claim. Natal charts, synastry, placements, aspects, and the limits of a real reading."
+        }
+      : {
+          title: "Astrology Guides for Real Birth Charts | Galaxia Blog",
+          description:
+            "Guides for reading natal charts, synastry, placements, aspects, and houses. What astrology can actually tell you about the people you love."
+        };
+  const { title, description } = copy;
 
   return {
     title,

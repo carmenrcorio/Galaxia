@@ -74,7 +74,8 @@ export default function PublicIndexScreen() {
     >
       <Text style={{ color: tokens.colors.cream, fontSize: 34, fontWeight: "700" }}>Galaxia</Text>
       <Text style={{ color: tokens.colors.mist, lineHeight: 22 }}>
-        Sign in to begin your private constellation. Start with yourself, then add loved ones at any birth-data precision.
+        {/* FOUNDER-REVIEW: layer-one first ninety seconds. Outcome first. */}
+        Understand the people you love. Sign in to map your inner circle, then show up for each bond with more intention.
       </Text>
       <TextInput
         placeholder="Email"

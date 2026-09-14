@@ -65,4 +65,13 @@ describe("buildCategoryMetadata", () => {
     const meta = buildCategoryMetadata({ slug: "debunked", label: "Astrology, debunked" });
     expect(meta.alternates?.canonical).toBe("/blog/debunked");
   });
+
+  it("keeps astrology keywords in category titles and descriptions", () => {
+    const guides = buildCategoryMetadata({ slug: "guides", label: "Astrology guides" });
+    expect(guides.title).toMatch(/Astrology Guides for Real Birth Charts/);
+    expect(String(guides.description)).toMatch(/natal charts/i);
+    const debunked = buildCategoryMetadata({ slug: "debunked", label: "Astrology, debunked" });
+    expect(debunked.title).toMatch(/Astrology, Debunked/);
+    expect(String(debunked.description)).toMatch(/astrology/i);
+  });
 });

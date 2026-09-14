@@ -154,6 +154,28 @@ describe("buildPersonPageNavSections — nav syncs with rendered sections", () =
     }
     expect(nav).toHaveLength(13);
   });
+
+  it("keeps Wheel, Placements, Aspects, and Houses as the chart tab labels", () => {
+    const nav = buildPersonPageNavSections({
+      hasRemembrance: false,
+      hasTimeline: false,
+      hasActiveToday: false,
+      hasVelaOnThem: false,
+      hasWheel: true,
+      hasBigThree: true,
+      hasPlacements: true,
+      hasAspects: true,
+      hasHouses: true,
+      hasGenerational: false,
+      hasRecord: false,
+      hasPastConversations: false,
+      hasHonorBox: false,
+    });
+    expect(nav.find((s) => s.id === "chart-wheel")?.label).toBe("Wheel");
+    expect(nav.find((s) => s.id === "placements")?.label).toBe("Placements");
+    expect(nav.find((s) => s.id === "aspects")?.label).toBe("Aspects");
+    expect(nav.find((s) => s.id === "houses")?.label).toBe("Houses");
+  });
 });
 
 describe("passed minor still minor (care does not strip safety)", () => {

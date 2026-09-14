@@ -307,7 +307,8 @@ export default function OnboardingScreen() {
       ) : (
         <>
           <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>
-            Add your own birth data at any precision. Year-only and date-only stay first-class. Timezone is only required for an exact birth time.
+            {/* FOUNDER-REVIEW: layer-one onboarding. Outcome first. */}
+            Galaxia helps you show up for the people already in your life. We start with you, then add the rest of your circle. A birth date is enough. A time sharpens the picture.
           </Text>
           <Text style={{ color: tokens.colors.goldSoft }}>
             Plan: {tier === "plus" ? "Galaxia+" : "Free"} · {tier === "plus" ? "unlimited people" : `${peopleLimit} people max`}

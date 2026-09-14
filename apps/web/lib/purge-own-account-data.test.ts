@@ -56,6 +56,7 @@ export const PURGED_USER_TABLES = [
   "connection_grants",
   "admin_users",
   "early_access",
+  "comparison_history",
   "constellation_letters"
 ] as const;
 
@@ -151,6 +152,9 @@ values ('${DEPARTING}', '11111111-aaaa-4aaa-8aaa-000000000002', '11111111-aaaa-4
 
 insert into synastry (owner_id, person_low, person_high, relation_type, data, engine_version)
 values ('${DEPARTING}', '11111111-aaaa-4aaa-8aaa-000000000001', '11111111-aaaa-4aaa-8aaa-000000000002', 'friend', '{}'::jsonb, 1);
+
+insert into comparison_history (owner_id, person_low, person_high, last_viewed_at)
+values ('${DEPARTING}', '11111111-aaaa-4aaa-8aaa-000000000001', '11111111-aaaa-4aaa-8aaa-000000000002', now());
 
 insert into groups (id, owner_id, name, kind)
 values ('22222222-aaaa-4aaa-8aaa-000000000001', '${DEPARTING}', 'Friends', 'friends');
@@ -296,6 +300,7 @@ describe("purge table inventory (update these lists when adding a table)", () =>
     expect(body).toContain("delete from admin_users where owner_id = uid;");
     expect(body).toContain("delete from messages");
     expect(body).toContain("delete from early_access");
+    expect(body).toContain("delete from comparison_history where owner_id = uid;");
     expect(body).toContain("delete from constellation_letters where owner_id = uid;");
     expect(body).not.toMatch(/delete from admin_audit_log/i);
     expect(body).not.toMatch(/\bcommit\b/i);
@@ -327,6 +332,7 @@ select jsonb_build_object(
        or person_id in (select id from people where owner_id = '${DEPARTING}')
   ),
   'synastry', (select count(*) from synastry where owner_id = '${DEPARTING}'),
+  'comparison_history', (select count(*) from comparison_history where owner_id = '${DEPARTING}'),
   'notes', (select count(*) from notes where owner_id = '${DEPARTING}'),
   'threads', (select count(*) from threads where owner_id = '${DEPARTING}'),
   'thread_participants', (select count(*) from thread_participants where user_id = '${DEPARTING}'),
@@ -373,6 +379,7 @@ select jsonb_build_object(
           groups: "groups",
           group_members: "group_members",
           synastry: "synastry",
+          comparison_history: "comparison_history",
           notes: "notes",
           threads: "threads",
           thread_participants: "thread_participants",

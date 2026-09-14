@@ -53,6 +53,11 @@ import {
   isMinorForSafety,
   shouldShowLiveTransits,
   shouldShowMemorialTimeline,
+  CHART_PRECISION_NONE_WAITING,
+  CHART_SAVED_DETAILS_NO_CHART_BODY,
+  DAILY_SKY_UNAVAILABLE_YEAR_BODY,
+  DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP,
+  type ChartPrecision,
   type PersonGroupKey,
   type PersonNavSectionId,
   type PinThemeId,
@@ -63,12 +68,14 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AskBirthData } from "../../../../components/ask-birth-data";
+import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../../components/chart-precision-indicator";
 import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { InitialAvatar } from "../../../../components/initial-avatar";
 import { PersonProfileNav, ChartVocabSubhead } from "../../../../components/chart-section-nav";
 import { HousesUnavailableCard } from "../../../../components/houses-unavailable-card";
+import { AspectsUnavailableCard } from "../../../../components/aspects-unavailable-card";
 import { MemorialTimeline } from "../../../../components/memorial-timeline";
 import { HonorDeclarationBox, HONOR_LIGHT_ANCHOR_ID } from "../../../../components/honor-declaration";
 import { RemembranceSpace } from "../../../../components/remembrance-space";
@@ -362,10 +369,22 @@ export default function PersonProfilePage() {
   const [aspectsAllOpen, setAspectsAllOpen]       = useState(false);
   const [housesAllOpen, setHousesAllOpen]         = useState(false);
   const [activeGroup, setActiveGroup] = useState<PersonGroupKey>("them");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editUpgradeTo, setEditUpgradeTo] = useState<Exclude<ChartPrecision, "none"> | null>(null);
   const entryAppliedFor = useRef<string | null>(null);
 
   const toggleRow = useCallback((key: string) => {
     setOpenRows(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
+  }, []);
+
+  const openPrecisionUpgrade = useCallback((target: Exclude<ChartPrecision, "none">) => {
+    setEditUpgradeTo(target);
+    setEditOpen(true);
+  }, []);
+
+  const handleEditOpenChange = useCallback((next: boolean) => {
+    setEditOpen(next);
+    if (!next) setEditUpgradeTo(null);
   }, []);
 
   const toggleAllPlacements = useCallback((open: boolean) => {
@@ -738,7 +757,8 @@ export default function PersonProfilePage() {
     const memorial = hasPassed(person) && !person.is_self && Boolean(userId);
     const hasActiveToday =
       shouldShowLiveTransits(person) &&
-      Boolean(dailyNudge && dailyNudge.copy_tier !== "empty_hedge" && dailyNudge.transit_body);
+      (Boolean(dailyNudge && dailyNudge.copy_tier !== "empty_hedge" && dailyNudge.transit_body) ||
+        person.birth_precision === "year");
     const groups = buildPersonPageGroups({
       hasRemembrance: memorial,
       hasTimeline: shouldShowMemorialTimeline(person, chart),
@@ -747,7 +767,7 @@ export default function PersonProfilePage() {
       hasWheel: true,
       hasBigThree: true,
       hasPlacements: true,
-      hasAspects: natalAspectReadings.length > 0,
+      hasAspects: natalAspectReadings.length > 0 || chart.precision === "year",
       hasHouses: true,
       hasGenerational: true,
       hasRecord: true,
@@ -813,14 +833,25 @@ export default function PersonProfilePage() {
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }} className="fade-in">
         <InitialAvatar name={person.display_name} size="lg" personId={person.id} memorial={personPassed} />
         <div>
-          <p className="eyebrow">{person.relation}</p>
+          <p className="eyebrow">{person.relation}{personPassed ? " · remembered" : ""}</p>
           <h1 className="page-title">{person.display_name}</h1>
+          <div style={{ marginTop: 6 }}>
+            <ChartPrecisionIndicator
+              precision={person.birth_precision}
+              hasBirthPlace={Boolean(person.birth_place && person.birth_lat != null && person.birth_lng != null)}
+              onUpgrade={openPrecisionUpgrade}
+              showUpgrade
+            />
+          </div>
           {personPassed ? (
-            <p className="muted" style={{ fontSize: ".88rem", margin: "4px 0 0", lineHeight: 1.5, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+            <p className="muted" style={{ fontSize: ".88rem", margin: "8px 0 0", lineHeight: 1.5, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
               Remembered: their light is still arriving. {person.birth_precision === "none" ? "You can still add birth data when you have it." : ""}
             </p>
           ) : (
-            <p className="muted" style={{ fontSize: ".88rem", margin: 0 }}>No birth data yet: their chart is waiting.</p>
+            <p className="muted" style={{ fontSize: ".88rem", margin: "8px 0 0" }}>
+              {/* FOUNDER-REVIEW: CHART_PRECISION_NONE_WAITING / CHART_SAVED_DETAILS_NO_CHART_BODY */}
+              {person.birth_precision === "none" ? CHART_PRECISION_NONE_WAITING : CHART_SAVED_DETAILS_NO_CHART_BODY}
+            </p>
           )}
         </div>
       </div>
@@ -843,6 +874,15 @@ export default function PersonProfilePage() {
         />
       ) : null}
 
+      {shouldShowMemorialTimeline(person, null) && userId ? (
+        <MemorialTimeline
+          person={person}
+          userId={userId}
+          chart={null}
+          onDiedOnSaved={() => loadProfile(userId)}
+        />
+      ) : null}
+
       <section className="glass-card fade-in fade-in-delay-1" style={{ display: "grid", gap: 14 }}>
         <div>
           <p className="eyebrow" style={{ marginBottom: 6 }}>Add {person.display_name}&apos;s birth data</p>
@@ -851,7 +891,15 @@ export default function PersonProfilePage() {
             unlock houses, the Ascendant, and the precise Moon. Add whatever you have: you can always refine it later.
           </p>
         </div>
-        <EditPersonPanel person={person} userId={userId ?? ""} onSaved={() => loadProfile(userId ?? "")} onDeleted={() => router.push("/app")} />
+        <EditPersonPanel
+          person={person}
+          userId={userId ?? ""}
+          onSaved={() => loadProfile(userId ?? "")}
+          onDeleted={() => router.push("/app")}
+          open={editOpen}
+          onOpenChange={handleEditOpenChange}
+          upgradeTo={editUpgradeTo}
+        />
         <div style={{ borderTop: "1px solid rgba(183,154,216,.1)", paddingTop: 14 }}>
           <p className="eyebrow" style={{ marginBottom: 8 }}>Don&apos;t know their details?</p>
           {userId ? <AskBirthData personId={person.id} personName={person.display_name} userId={userId} /> : null}
@@ -873,9 +921,13 @@ export default function PersonProfilePage() {
 
   const sun  = chart.placements.find(p => p.body === "sun");
   const moon = chart.placements.find(p => p.body === "moon");
-  const showActiveToday =
+  const hasBirthPlace = Boolean(person.birth_place && person.birth_lat != null && person.birth_lng != null);
+  const showActiveTodayNote =
     shouldShowLiveTransits(person) &&
     Boolean(dailyNudge && dailyNudge.copy_tier !== "empty_hedge" && dailyNudge.transit_body);
+  const showActiveTodayPrecisionEmpty =
+    shouldShowLiveTransits(person) && person.birth_precision === "year" && !showActiveTodayNote;
+  const showActiveToday = showActiveTodayNote || showActiveTodayPrecisionEmpty;
   // Always on: occupancy list when cusps exist, otherwise HousesUnavailableCard
   // (year, date, and exact-without-place). Year-only used to skip the section
   // and leave a blank gap.
@@ -894,7 +946,7 @@ export default function PersonProfilePage() {
     hasWheel: true,
     hasBigThree: true,
     hasPlacements: true,
-    hasAspects: natalAspectReadings.length > 0,
+    hasAspects: natalAspectReadings.length > 0 || chart.precision === "year",
     hasHouses: showHousesSection,
     hasGenerational: true,
     hasRecord: true,
@@ -947,8 +999,16 @@ export default function PersonProfilePage() {
           memorial={personPassed}
         />
         <div>
-          <p className="eyebrow">{person.relation} · {person.birth_precision} precision{personPassed ? " · remembered" : ""}</p>
+          <p className="eyebrow">{person.relation}{personPassed ? " · remembered" : ""}</p>
           <h1 className="page-title">{person.display_name}</h1>
+          <div style={{ marginTop: 6 }}>
+            <ChartPrecisionIndicator
+              precision={person.birth_precision}
+              hasBirthPlace={hasBirthPlace}
+              onUpgrade={openPrecisionUpgrade}
+              showUpgrade
+            />
+          </div>
           {personPassed ? (
             <p className="muted" style={{ fontSize: ".84rem", margin: "4px 0 6px", lineHeight: 1.5, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
               Remembered: their chart stays with you. Their light softens into ancient light on your galaxy.
@@ -983,7 +1043,15 @@ export default function PersonProfilePage() {
             Who carries their light ↓
           </a>
         ) : null}
-        <EditPersonPanel person={person} userId={userId ?? ""} onSaved={() => loadProfile(userId ?? "")} onDeleted={() => router.push("/app")} />
+        <EditPersonPanel
+          person={person}
+          userId={userId ?? ""}
+          onSaved={() => loadProfile(userId ?? "")}
+          onDeleted={() => router.push("/app")}
+          open={editOpen}
+          onOpenChange={handleEditOpenChange}
+          upgradeTo={editUpgradeTo}
+        />
       </div>
 
       {chartCorrectionNotice ? (
@@ -1020,7 +1088,7 @@ export default function PersonProfilePage() {
         className="person-group-panel"
         hidden={activeGroup !== "now"}
       >
-      {showActiveToday && dailyNudge ? (
+      {showActiveTodayNote && dailyNudge ? (
         <section id="active-today" className="glass-card fade-in" style={{ borderColor: "rgba(230,174,108,.28)", background: "rgba(230,174,108,.05)" }}>
           {sectionHead("active-today")}
           <div style={{ display: "grid", gap: 3 }}>
@@ -1051,6 +1119,29 @@ export default function PersonProfilePage() {
           >
             Ask Vela how this is showing up
           </Link>
+        </section>
+      ) : showActiveTodayPrecisionEmpty ? (
+        <section
+          id="active-today"
+          className="glass-card fade-in"
+          style={{ borderStyle: "dashed", opacity: 0.7, scrollMarginTop: 92 }}
+        >
+          {sectionHead("active-today")}
+          {/* FOUNDER-REVIEW: DAILY_SKY_UNAVAILABLE_YEAR_BODY */}
+          <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>
+            {DAILY_SKY_UNAVAILABLE_YEAR_BODY}
+          </p>
+          {/* FOUNDER-REVIEW: DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP */}
+          <p className="muted" style={{ fontSize: ".78rem", marginTop: 8 }}>
+            {DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP}
+          </p>
+          <div style={{ marginTop: 10 }}>
+            <ChartPrecisionUpgradeButton
+              precision={person.birth_precision}
+              hasBirthPlace={hasBirthPlace}
+              onUpgrade={openPrecisionUpgrade}
+            />
+          </div>
         </section>
       ) : null}
 
@@ -1340,7 +1431,20 @@ export default function PersonProfilePage() {
             );
           })}
         </section>
-      ) : null}
+      ) : (
+        <AspectsUnavailableCard
+          precision={chart.precision}
+          title={enduringEyebrow(PERSON_TAB_LABEL.aspects)}
+          eyebrow={PERSON_TAB_VOCAB.aspects ?? "Aspects"}
+          action={
+            <ChartPrecisionUpgradeButton
+              precision={person.birth_precision}
+              hasBirthPlace={hasBirthPlace}
+              onUpgrade={openPrecisionUpgrade}
+            />
+          }
+        />
+      )}
 
       {/* ── Twelve Houses: occupancy list, or the shared unavailable card ── */}
       {hasHouses ? (
@@ -1415,6 +1519,13 @@ export default function PersonProfilePage() {
         precision={chart.precision}
         title={enduringEyebrow(PERSON_TAB_LABEL.houses)}
         eyebrow={PERSON_TAB_VOCAB.houses ?? "Houses"}
+        action={
+          <ChartPrecisionUpgradeButton
+            precision={person.birth_precision}
+            hasBirthPlace={hasBirthPlace}
+            onUpgrade={openPrecisionUpgrade}
+          />
+        }
       />
 
       {/* ── Generational layer ── */}

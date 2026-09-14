@@ -9,7 +9,7 @@ function read(relativePath: string): string {
 }
 
 describe("weekly constellation letter consent + unsubscribe", () => {
-  const migration = read("supabase/migrations/20260914240000_weekly_constellation_letter.sql");
+  const migration = read("supabase/migrations/20260914250000_weekly_constellation_letter.sql");
   const settings = read("apps/web/app/app/settings/page.tsx");
   const unsub = read("apps/web/app/api/constellation-letter/unsubscribe/route.ts");
   const nudgeUnsub = read("apps/web/app/api/nudge-email/unsubscribe/route.ts");
@@ -52,7 +52,7 @@ describe("weekly constellation letter consent + unsubscribe", () => {
 });
 
 describe("constellation letter measurement", () => {
-  const migration = read("supabase/migrations/20260914240000_weekly_constellation_letter.sql");
+  const migration = read("supabase/migrations/20260914250000_weekly_constellation_letter.sql");
   const open = read("apps/web/app/api/constellation-letter/open/route.ts");
   const go = read("apps/web/app/api/constellation-letter/go/route.ts");
   const webhook = read("apps/web/app/api/webhooks/resend/route.ts");

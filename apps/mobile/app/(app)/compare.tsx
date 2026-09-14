@@ -1,19 +1,36 @@
 import {
+  activePairTransits,
   availableCompareRelationTypes,
+  COMPARE_HISTORY_HEADING,
+  COMPARE_MOVED_ON,
+  COMPARE_NEWLY_ACTIVE,
   COMPARE_RELATION_SUGGESTION_HINT,
+  COMPARE_SINCE_HEADING,
+  COMPARE_TRANSITS_UNAVAILABLE,
   compareGenerational,
   compareHeadline,
+  compareHistoryLastViewed,
+  compareNatalAspectsConstant,
+  compareNoTransitShift,
   compareRelationLabel,
   computeSynastry,
   defaultCompareRelationType,
+  describePairTransitLine,
+  diffPairTransits,
+  formatCompareLastViewed,
+  hydrateComparisonHistory,
   initialComparePairIds,
   isRomanticRelation,
+  pairTransitsAreHonest,
   suggestCompareRelationType,
   type GenSignature,
+  type ComparisonHistoryItem,
+  type ComparisonHistoryRow,
   type NatalChart,
+  type PairTransitHit,
   type RelationType
 } from "@galaxia/astro";
-import { isMinorForSafety, sunSignFromChart } from "@galaxia/core";
+import { isMinorForSafety, orderPair, shouldShowLiveTransits, sunSignFromChart } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -66,6 +83,13 @@ export default function CompareScreen() {
   } | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
+  const [history, setHistory] = useState<ComparisonHistoryItem[]>([]);
+  const [previousViewedAt, setPreviousViewedAt] = useState<string | null>(null);
+  const [transitDelta, setTransitDelta] = useState<{
+    newlyActive: PairTransitHit[];
+    movedOn: PairTransitHit[];
+    honest: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -95,6 +119,7 @@ export default function CompareScreen() {
       for (const row of rows) row.sunSign = sunById.get(row.id) ?? null;
     }
     setPeople(rows);
+    await refreshHistory(session.user.id, rows);
     // Prefer the user's own `self` record as Person A (matches web) so the
     // tag suggestion below can fire on first render, with the most-
     // recently-created other person as Person B — only the initial slots;
@@ -149,7 +174,24 @@ export default function CompareScreen() {
   const showSuggestionHint =
     suggestedRelationType !== null && relationType === suggestedRelationType;
 
-  const runCompare = async () => {
+  const refreshHistory = async (ownerId: string, rows: PersonLite[]) => {
+    const { data } = await supabase
+      .from("comparison_history")
+      .select("person_low, person_high, last_viewed_at")
+      .eq("owner_id", ownerId)
+      .order("last_viewed_at", { ascending: false })
+      .limit(12);
+    setHistory(
+      hydrateComparisonHistory(
+        (data ?? []) as ComparisonHistoryRow[],
+        rows.map((p) => ({ ...p, sun: p.sunSign ?? undefined }))
+      )
+    );
+  };
+
+  const runCompare = async (aId: string | null = personAId, bId: string | null = personBId) => {
+    const selectedA = people.find((person) => person.id === aId) ?? null;
+    const selectedB = people.find((person) => person.id === bId) ?? null;
     if (!selectedA || !selectedB) {
       setStatus("Pick two people first.");
       return;
@@ -158,6 +200,10 @@ export default function CompareScreen() {
       setStatus("Choose two different people.");
       return;
     }
+    setPersonAId(selectedA.id);
+    setPersonBId(selectedB.id);
+    setPreviousViewedAt(null);
+    setTransitDelta(null);
 
     const [{ data: chartA }, { data: chartB }] = await Promise.all([
       supabase.from("charts").select("data").eq("person_id", selectedA.id).single(),
@@ -177,9 +223,51 @@ export default function CompareScreen() {
       natalB.generational as GenSignature,
       estimateYearGap(selectedA, selectedB)
     );
+    const ownerId = session?.user.id;
+    const { pairLow, pairHigh } = orderPair(selectedA.id, selectedB.id);
+    let prior: string | null = null;
+    if (ownerId) {
+      const { data: priorRow } = await supabase
+        .from("comparison_history")
+        .select("last_viewed_at")
+        .eq("owner_id", ownerId)
+        .eq("person_low", pairLow)
+        .eq("person_high", pairHigh)
+        .maybeSingle();
+      prior = (priorRow?.last_viewed_at as string | undefined) ?? null;
+    }
+    setPreviousViewedAt(prior);
+    if (prior) {
+      const pairCharts = [
+        { personId: selectedA.id, chart: natalA, include: shouldShowLiveTransits(selectedA) },
+        { personId: selectedB.id, chart: natalB, include: shouldShowLiveTransits(selectedB) }
+      ];
+      const honest = pairTransitsAreHonest([natalA, natalB]);
+      if (!honest) {
+        setTransitDelta({ newlyActive: [], movedOn: [], honest: false });
+      } else {
+        const diff = diffPairTransits(
+          activePairTransits(pairCharts, prior),
+          activePairTransits(pairCharts, new Date().toISOString())
+        );
+        setTransitDelta({ ...diff, honest: true });
+      }
+    }
 
     setResult({ personA: selectedA, personB: selectedB, synastry, generational });
     setStatus(null);
+    if (ownerId) {
+      await supabase.from("comparison_history").upsert(
+        {
+          owner_id: ownerId,
+          person_low: pairLow,
+          person_high: pairHigh,
+          last_viewed_at: new Date().toISOString()
+        },
+        { onConflict: "owner_id,person_low,person_high" }
+      );
+      await refreshHistory(ownerId, people);
+    }
   };
 
   const saveMoment = async () => {
@@ -217,6 +305,27 @@ export default function CompareScreen() {
       <Text style={{ color: tokens.colors.goldSoft }}>
         {tier === "plus" ? "Galaxia+ unlocked: full directional reads." : "Free plan: directional reads are abbreviated."}
       </Text>
+
+      {history.length > 0 ? (
+        <View style={cardStyle}>
+          {/* FOUNDER-REVIEW: COMPARE_HISTORY_HEADING */}
+          <Text style={cardTitle}>{COMPARE_HISTORY_HEADING}</Text>
+          {history.map((item) => (
+            <Pressable
+              key={`${item.personAId}:${item.personBId}`}
+              onPress={() => void runCompare(item.personAId, item.personBId)}
+              accessibilityLabel={`${item.nameA} and ${item.nameB}`}
+              style={{ gap: 4, paddingVertical: 6 }}
+            >
+              <Text style={{ color: tokens.colors.cream }}>{item.nameA} × {item.nameB}</Text>
+              {/* FOUNDER-REVIEW: compareHistoryLastViewed */}
+              <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
+                {compareHistoryLastViewed(formatCompareLastViewed(item.lastViewedAt))}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Relationship type</Text>
@@ -301,10 +410,55 @@ export default function CompareScreen() {
             </Pressable>
           ))}
         </View>
-        <Pressable onPress={runCompare} style={primaryButtonStyle}>
+        <Pressable onPress={() => void runCompare()} style={primaryButtonStyle}>
           <Text style={primaryLabelStyle}>Run comparison</Text>
         </Pressable>
       </View>
+
+      {previousViewedAt && transitDelta && selectedA && selectedB ? (
+        <View style={cardStyle}>
+          {/* FOUNDER-REVIEW: COMPARE_SINCE_HEADING */}
+          <Text style={cardTitle}>{COMPARE_SINCE_HEADING}</Text>
+          <Text style={cardBody}>
+            {/* FOUNDER-REVIEW: compareNatalAspectsConstant */}
+            {compareNatalAspectsConstant(selectedA.display_name, selectedB.display_name)}
+          </Text>
+          {!transitDelta.honest ? (
+            <Text style={cardBody}>{COMPARE_TRANSITS_UNAVAILABLE}</Text>
+          ) : transitDelta.newlyActive.length === 0 && transitDelta.movedOn.length === 0 ? (
+            <Text style={cardBody}>{compareNoTransitShift(formatCompareLastViewed(previousViewedAt))}</Text>
+          ) : (
+            <>
+              {transitDelta.newlyActive.length > 0 ? (
+                <>
+                  <Text style={labelStyle}>{COMPARE_NEWLY_ACTIVE}</Text>
+                  {transitDelta.newlyActive.map((hit) => (
+                    <Text key={`new-${hit.personId}-${hit.transitBody}-${hit.type}-${hit.natalBody}`} style={cardBody}>
+                      {describePairTransitLine(
+                        people.find((p) => p.id === hit.personId)?.display_name ?? selectedA.display_name,
+                        hit
+                      )}
+                    </Text>
+                  ))}
+                </>
+              ) : null}
+              {transitDelta.movedOn.length > 0 ? (
+                <>
+                  <Text style={labelStyle}>{COMPARE_MOVED_ON}</Text>
+                  {transitDelta.movedOn.map((hit) => (
+                    <Text key={`gone-${hit.personId}-${hit.transitBody}-${hit.type}-${hit.natalBody}`} style={cardBody}>
+                      {describePairTransitLine(
+                        people.find((p) => p.id === hit.personId)?.display_name ?? selectedA.display_name,
+                        hit
+                      )}
+                    </Text>
+                  ))}
+                </>
+              ) : null}
+            </>
+          )}
+        </View>
+      ) : null}
 
       {result && blockRomanticMinorRender ? (
         <View style={cardStyle}>

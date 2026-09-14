@@ -658,6 +658,8 @@ export * from "./house-system";
 export * from "./chart-fingerprint";
 
 export * from "./transits";
+export * from "./compare-transit-delta";
+export * from "./compare-history-copy";
 
 export * from "./interpretations";
 export * from "./synastry-interpretations";

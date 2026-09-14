@@ -43,6 +43,23 @@ const entries: RecordEntry[] = [
     body: "What should I say to them tomorrow",
     createdAt: "2026-03-01T09:00:00.000Z",
     href: "/app/vela?threadId=abc"
+  },
+  {
+    id: "m1",
+    kind: "moment",
+    body: "Hard conversation",
+    createdAt: "2026-03-20T12:00:00.000Z",
+    tags: ["hard_conversation"],
+    transitSnapshot: {
+      whenUTC: "2026-03-20T12:00:00.000Z",
+      quiet: true,
+      honesty: "ok",
+      includedYou: true,
+      includedThem: true,
+      youHonesty: "ok",
+      themHonesty: "ok",
+      hits: []
+    }
   }
 ];
 
@@ -54,6 +71,14 @@ describe("PersonRecordTimeline", () => {
     expect(screen.getByText("Mar 15, 2026")).toBeTruthy();
     expect(screen.getByText("Mar 1, 2026")).toBeTruthy();
     expect(screen.getByText("Feb 2, 2026")).toBeTruthy();
+  });
+
+  it("renders stored transit context on a Moment and does not invent an aspect when the sky is quiet", () => {
+    render(<PersonRecordTimeline entries={entries} personName="Ada" />);
+    expect(screen.getByText("Moment")).toBeTruthy();
+    expect(screen.getByText(/Nothing significant was active between you and Ada then/)).toBeTruthy();
+    expect(screen.getByText(/This moment stands on its own/)).toBeTruthy();
+    expect(screen.queryByText(/saturn/i)).toBeNull();
   });
 
   it("filters the loaded set by search, date range, and curated tag", () => {

@@ -7,9 +7,10 @@ const home = readFileSync(resolve(__dirname, "../../app/(app)/home.tsx"), "utf8"
 describe("source wiring — mobile constellation loading / empty / error", () => {
   it("uses the shared skeleton seats on the same glance geometry as live nodes", () => {
     expect(home).toContain("constellationSkeletonSeats");
-    expect(home).toContain("CONSTELLATION_GEOM");
+    expect(home).toContain("galaxyGeometry");
     expect(home).toContain("SKELETON_SEATS");
     expect(home).toContain("CONSTELLATION_BOX_HEIGHT");
+    expect(home).not.toContain("CONSTELLATION_GEOM");
   });
 
   it("does not leave the skeleton running on empty or error", () => {

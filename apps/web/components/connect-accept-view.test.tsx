@@ -5,11 +5,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ConnectAcceptView } from "./connect-accept-view";
 import {
   CONNECT_ALREADY_ACTIVE,
-  CONNECT_CTA_ACCEPT,
   CONNECT_CTA_SIGNUP,
-  CONNECT_EXPIRED,
+  CONNECT_EXPIRED_BODY,
+  CONNECT_EXPIRED_TITLE,
   CONNECT_SHARING,
   CONNECT_WHAT_GALAXIA_IS,
+  connectAcceptLabel,
 } from "../lib/connect-invite";
 
 vi.mock("next/link", () => ({
@@ -54,7 +55,7 @@ describe("ConnectAcceptView logged-out pending landing", () => {
     expect(cta.getAttribute("href")).toContain("/signup?next=");
     expect(cta.getAttribute("href")).toContain("connect");
     expect(screen.queryByText(/astrology app/i)).toBeNull();
-    expect(screen.queryByRole("button", { name: /Accept/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: connectAcceptLabel("Alex") })).toBeNull();
   });
 
   it("shows the already-active copy for an accepted token, with no accept button", () => {
@@ -70,11 +71,11 @@ describe("ConnectAcceptView logged-out pending landing", () => {
       />,
     );
     expect(screen.getByText(CONNECT_ALREADY_ACTIVE)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: CONNECT_CTA_ACCEPT })).toBeNull();
+    expect(screen.queryByRole("button", { name: connectAcceptLabel("Alex") })).toBeNull();
     expect(screen.queryByRole("link", { name: CONNECT_CTA_SIGNUP })).toBeNull();
   });
 
-  it("shows the expired copy for expired and revoked tokens", () => {
+  it("shows the expired heading and body for expired and revoked tokens", () => {
     const { unmount } = render(
       <ConnectAcceptView
         token={"ab".repeat(16)}
@@ -86,8 +87,9 @@ describe("ConnectAcceptView logged-out pending landing", () => {
         }}
       />,
     );
-    expect(screen.getByText(CONNECT_EXPIRED)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: CONNECT_CTA_ACCEPT })).toBeNull();
+    expect(screen.getByRole("heading", { name: CONNECT_EXPIRED_TITLE })).toBeTruthy();
+    expect(screen.getByText(CONNECT_EXPIRED_BODY)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: connectAcceptLabel("Alex") })).toBeNull();
     unmount();
     render(
       <ConnectAcceptView
@@ -100,6 +102,7 @@ describe("ConnectAcceptView logged-out pending landing", () => {
         }}
       />,
     );
-    expect(screen.getByText(CONNECT_EXPIRED)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: CONNECT_EXPIRED_TITLE })).toBeTruthy();
+    expect(screen.getByText(CONNECT_EXPIRED_BODY)).toBeTruthy();
   });
 });

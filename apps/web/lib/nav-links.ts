@@ -74,6 +74,8 @@ export const PUBLISHED_BLOG_POST_HREFS: readonly string[] = [
 ];
 
 export const FOR_WORK_CHART_CTA: NavLink = { href: "/chart", label: "Try a free chart" };
+// FOUNDER-REVIEW: pricing-page CTA. Public chart, not a free membership.
+export const PRICING_FREE_CHART_CTA: NavLink = { href: "/chart", label: "Run a real chart" };
 
 export const RELATED_LINKS = {
   whyGalaxia: [
@@ -100,6 +102,7 @@ export const RELATED_LINKS = {
     { href: "/pricing", label: "See pricing" },
   ],
   pricing: [
+    PRICING_FREE_CHART_CTA,
     { href: "/why-galaxia", label: "See what you're getting" },
     { href: "/meet-vela", label: "Meet Vela, your AI guide" },
   ],
@@ -157,6 +160,14 @@ export const PERSON_PROFILE_HREF_PREFIX = "/app/person/";
 
 export function personProfileHref(personId: string): string {
   return `${PERSON_PROFILE_HREF_PREFIX}${personId}`;
+}
+
+/** The Moment loop. Optional personId skips the first tap. */
+export const CAPTURE_MOMENT_HREF = "/app/moment";
+
+export function captureMomentHref(personId?: string | null): string {
+  if (!personId) return CAPTURE_MOMENT_HREF;
+  return `${CAPTURE_MOMENT_HREF}?personId=${encodeURIComponent(personId)}`;
 }
 
 /** Logged-out Quick Chart save: carry birth data through signup into /welcome. */
@@ -219,6 +230,7 @@ export function ctaInternalHrefs(): string[] {
     HERO_PRIMARY_CTA.href,
     HERO_HOW_IT_WORKS.href,
     FOR_WORK_CHART_CTA.href,
+    PRICING_FREE_CHART_CTA.href,
     ...NOT_FOUND_LINKS.map((l) => l.href),
     SHARE_NOT_FOUND_CTA.href,
     CHART_MODE_SINGLE.href,

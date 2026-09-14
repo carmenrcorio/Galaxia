@@ -27,7 +27,8 @@ describe("record-copy", () => {
       conflict: "Conflict",
       celebration: "Celebration",
       pattern_noticed: "Pattern noticed",
-      something_they_said: "Something they said"
+      something_they_said: "Something they said",
+      silence_needed_filling: "Silence that needed filling"
     });
     expect(RECORD_SEARCH_PLACEHOLDER).toBe("Search this record");
     expect(RECORD_SEARCH_LABEL).toBe("Search this record");

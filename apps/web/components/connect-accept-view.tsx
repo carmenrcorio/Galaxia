@@ -5,16 +5,23 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   CONNECT_ALREADY_ACTIVE,
-  CONNECT_CTA_ACCEPT,
+  CONNECT_CONNECTED_BODY,
   CONNECT_CTA_SIGNUP,
-  CONNECT_EXPIRED,
+  CONNECT_EXPIRED_BODY,
+  CONNECT_EXPIRED_TITLE,
+  CONNECT_GENERIC_ERROR,
   CONNECT_GO_CONSTELLATION,
-  CONNECT_NEEDS_SELF,
+  CONNECT_NEEDS_SELF_BODY,
+  CONNECT_NEEDS_SELF_TITLE,
+  CONNECT_OPEN_FAILED,
   CONNECT_RESUME_KEY,
   CONNECT_SEE_COMPARISON,
-  CONNECT_SELF_INVITE,
+  CONNECT_SELF_INVITE_BODY,
+  CONNECT_SELF_INVITE_TITLE,
   CONNECT_SHARING,
+  CONNECT_UNKNOWN_SENDER,
   CONNECT_WHAT_GALAXIA_IS,
+  connectAcceptLabel,
   connectCompareHref,
   connectConnectedHeading,
   connectLandingHeadline,
@@ -64,7 +71,7 @@ export function ConnectAcceptView({
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [phase, setPhase] = useState<Phase>("loading");
-  const [inviterName, setInviterName] = useState(landing?.inviterName ?? "Someone you know");
+  const [inviterName, setInviterName] = useState(landing?.inviterName ?? CONNECT_UNKNOWN_SENDER);
   const [relation, setRelation] = useState(landing?.relation ?? "");
   const [error, setError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState<AcceptResult | null>(null);
@@ -99,7 +106,8 @@ export function ConnectAcceptView({
       });
       if (cancelled) return;
       if (previewError) {
-        setError(previewError.message);
+        console.error(previewError.message);
+        setError(CONNECT_GENERIC_ERROR);
         setPhase("error");
         return;
       }
@@ -152,7 +160,8 @@ export function ConnectAcceptView({
       p_share_level: "chart",
     });
     if (acceptError) {
-      setError(acceptError.message);
+      console.error(acceptError.message);
+      setError(CONNECT_GENERIC_ERROR);
       setPhase("error");
       return;
     }
@@ -185,7 +194,8 @@ export function ConnectAcceptView({
       p_relation: reverseConnectRelation(relation),
     });
     if (addError && !/already added/i.test(addError.message)) {
-      setError(addError.message);
+      console.error(addError.message);
+      setError(CONNECT_GENERIC_ERROR);
       setComparing(false);
       return;
     }
@@ -257,7 +267,8 @@ export function ConnectAcceptView({
             style={{ gap: 8 }}
           >
             {phase === "accepting" ? <Spinner size={13} /> : null}
-            {phase === "accepting" ? "Connecting…" : CONNECT_CTA_ACCEPT}
+            {/* FOUNDER-REVIEW: Connecting… */}
+            {phase === "accepting" ? "Connecting…" : connectAcceptLabel(inviterName)}
           </button>
         </div>
       ) : null}
@@ -265,9 +276,9 @@ export function ConnectAcceptView({
       {phase === "needs_self" ? (
         <>
           <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 38, marginTop: 4 }}>
-            {headline}
+            {CONNECT_NEEDS_SELF_TITLE}
           </h1>
-          <p style={{ color: "var(--mist)", lineHeight: 1.7 }}>{CONNECT_NEEDS_SELF}</p>
+          <p style={{ color: "var(--mist)", lineHeight: 1.7 }}>{CONNECT_NEEDS_SELF_BODY}</p>
           <Link href={FIRST_RUN_RESTART_HREF as never} className="pill-link pill-link--gold" style={{ marginTop: 16 }}>
             Add your birth details
           </Link>
@@ -279,6 +290,7 @@ export function ConnectAcceptView({
           <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 38, marginTop: 4 }}>
             {connectConnectedHeading(accepted.senderName)}
           </h1>
+          <p className="muted" style={{ lineHeight: 1.7 }}>{CONNECT_CONNECTED_BODY}</p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 24 }}>
             <button
               type="button"
@@ -311,16 +323,18 @@ export function ConnectAcceptView({
       {phase === "expired" ? (
         <>
           <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 38, marginTop: 4 }}>
-            {CONNECT_EXPIRED}
+            {CONNECT_EXPIRED_TITLE}
           </h1>
+          <p className="muted">{CONNECT_EXPIRED_BODY}</p>
         </>
       ) : null}
 
       {phase === "self_invite" ? (
         <>
           <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 38, marginTop: 4 }}>
-            {CONNECT_SELF_INVITE}
+            {CONNECT_SELF_INVITE_TITLE}
           </h1>
+          <p className="muted">{CONNECT_SELF_INVITE_BODY}</p>
           <Link href="/app" className="pill-link" style={{ marginTop: 16 }}>
             {CONNECT_GO_CONSTELLATION}
           </Link>
@@ -330,7 +344,7 @@ export function ConnectAcceptView({
       {phase === "error" ? (
         <>
           <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 38, marginTop: 4 }}>
-            This invitation could not be opened
+            {CONNECT_OPEN_FAILED}
           </h1>
           {error ? <p className="error">{error}</p> : null}
         </>

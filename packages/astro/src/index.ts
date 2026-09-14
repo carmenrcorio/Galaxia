@@ -660,6 +660,8 @@ export * from "./chart-fingerprint";
 export * from "./transits";
 export * from "./compare-transit-delta";
 export * from "./compare-history-copy";
+export * from "./moment-snapshot";
+export * from "./moment-reflection";
 
 export * from "./interpretations";
 export * from "./synastry-interpretations";

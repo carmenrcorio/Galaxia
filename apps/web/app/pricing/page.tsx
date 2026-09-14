@@ -12,8 +12,9 @@ import { RELATED_LINKS } from "../../lib/nav-links";
 
 // FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Galaxia Pricing";
+// FOUNDER-REVIEW: rewritten. One monthly price. Vela included. Public chart is free without an account.
 const DESCRIPTION =
-  "One honest plan. See what Galaxia costs, what's included, and what you can do free. No hidden fees, no per-question charges, no subscription traps.";
+  "One plan. $9.99 per month. Vela, the AI guide, is included and never charged per message. Without an account, anyone can run a real chart.";
 
 /**
  * Standalone page for the former homepage `#pricing` anchor section (see
@@ -49,6 +50,7 @@ export default function PricingPage() {
       <RevealObserver />
       <MarketingNav />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
+        {/* FOUNDER-REVIEW: rewritten. One honest tier. */}
         <SectionPageIntro title="One Honest Plan" lede={DESCRIPTION} />
         <PricingSection />
         <RelatedLinks heading="Keep exploring" links={RELATED_LINKS.pricing} />

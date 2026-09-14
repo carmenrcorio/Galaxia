@@ -19,7 +19,8 @@ export default async function ConnectPage({
 
   const landing = await getConnectInviteLanding(token);
   if (landing === "wrong_kind") {
-    permanentRedirect(`/invite/${token}`);
+    // Type-only: dynamic /invite/[token]; typedRoutes wants RouteImpl.
+    permanentRedirect(`/invite/${token}` as never);
   }
   if (landing === "not_found") notFound();
 

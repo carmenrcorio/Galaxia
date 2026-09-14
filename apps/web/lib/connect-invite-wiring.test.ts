@@ -48,7 +48,9 @@ describe("constellation connect UI wiring", () => {
     expect(login).toContain("authReturnPath(resolved)");
     expect(signup).toContain('authReturnPath(resolved, "/welcome")');
     const form = read("apps/web/components/login-form.tsx");
+    const signupForm = read("apps/web/components/signup-form.tsx");
     expect(form).toContain("signupWithNextHref");
+    expect(signupForm).toContain("loginWithNextHref");
   });
 
   it("adds /connect/* to AASA next to /invite/* and /r/*", () => {

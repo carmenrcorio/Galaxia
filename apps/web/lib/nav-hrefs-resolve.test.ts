@@ -7,10 +7,12 @@ import {
   APP_NAV_BRAND_HREF,
   APP_NAV_LINKS,
   EMAIL_PATHS,
+  MARKETING_NAV_LOGIN,
   MARKETING_NAV_SIGNUP,
   PERSON_PROFILE_HREF_PREFIX,
   personProfileHref,
   signupWithNextHref,
+  loginWithNextHref,
   EMPTY_STATE_SETTINGS_HREF,
   EMPTY_STATE_WELCOME_HREF,
   THIS_WEEK_HREF,
@@ -171,6 +173,12 @@ describe("signed-in chart save hrefs", () => {
   it("signupWithNextHref stays on the marketing signup route", () => {
     expect(signupWithNextHref("/welcome?prefill=1")).toBe(
       `${MARKETING_NAV_SIGNUP.href}?next=${encodeURIComponent("/welcome?prefill=1")}`,
+    );
+  });
+
+  it("loginWithNextHref keeps next on the marketing login route", () => {
+    expect(loginWithNextHref("/connect/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).toBe(
+      `${MARKETING_NAV_LOGIN.href}?next=${encodeURIComponent("/connect/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")}`,
     );
   });
 

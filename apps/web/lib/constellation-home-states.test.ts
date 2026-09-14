@@ -45,6 +45,9 @@ describe("source wiring — constellation home loading / empty / error", () => {
   it("pulses skeleton points with CSS and holds them static under reduced motion", () => {
     expect(css).toContain("@keyframes constellation-skeleton-pulse");
     expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*constellation-skeleton-point \{ animation: none/);
+    expect(css).toContain("@keyframes ringDriftCW");
+    expect(css).toContain("@keyframes ringDriftCCW");
+    expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*ring-drift-inner/);
     expect(skeleton).not.toMatch(/framer-motion|gsap|lottie|react-spring/i);
   });
 });

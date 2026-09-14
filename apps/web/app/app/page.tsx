@@ -9,11 +9,12 @@
  *
  * Key reference decisions:
  * - Node forms derived from bond type (self / binary-partner / moon-child / fixed-parent / star-sibling / ancient-ancestor)
- * - P1 concentric rings: soft circular guides at sketch Rings 1–4; partner is a
- *   tight binary at the core (not a guide). Seat radius = guide radius =
- *   ringBandRadius(own ring) (+ small within-band jitter). Angle = f(id).
- *   Geometry is a true circle (radX === radY) so co-ring parents share one
- *   Euclidean pixel radius — an ellipse made Mommy/Daddy read as different bands.
+ * - P1 concentric rings: soft nebula bands at sketch Rings 1–4, painted once
+ *   onto two CSS-rotating canvases (inner 2+3 clockwise 90s, outer 4+5
+ *   counter-clockwise 70s). Partner is a tight binary at the core (not a guide).
+ *   Seat radius = guide radius = ringBandRadius(own ring) (+ small within-band
+ *   jitter). Angle = f(id). Geometry is a true circle (radX === radY) so
+ *   co-ring parents share one Euclidean pixel radius.
  * - Radial glow halo: createRadialGradient, 5-11×R depending on data precision (sharp=crisp, year=diffuse)
  * - Links: quadratic bezier + gradient between node element colours + travelling light pulse
  * - Gentle tangential drift (stays on band), disabled under prefers-reduced-motion
@@ -40,6 +41,7 @@ import {
   ELEMENT_NODE_COLORS,
   GALAXY_GUIDE_RINGS,
   HONOR_LINE_STYLE,
+  RING_BAND_COLORS,
   HONOR_RELATION_TYPE,
   elementFromRelation,
   formFromRelation,
@@ -140,6 +142,96 @@ function hexA(hex: string, a: number): string {
   return `rgba(${r},${g},${b},${a})`;
 }
 
+type RingBand = (typeof RING_BAND_COLORS)[keyof typeof RING_BAND_COLORS];
+
+/** Same padding as `ringGeom()`. Seats and guide bands share one radius. */
+function constellationRad(cssW: number, cssH: number): number {
+  return Math.max(70, Math.min(cssW / 2 - 44, cssH / 2 - 48));
+}
+
+function paintNebulaBand(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radX: number,
+  radY: number,
+  band: RingBand,
+  dpr: number,
+) {
+  ctx.save();
+  ctx.globalAlpha = band.opacity * 0.5;
+  ctx.shadowBlur = band.width * 5 * dpr;
+  ctx.shadowColor = band.glow;
+  ctx.strokeStyle = band.core;
+  ctx.lineWidth = band.width * 1.8 * dpr;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, radX, radY, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = band.opacity;
+  ctx.shadowBlur = band.width * 2 * dpr;
+  ctx.shadowColor = band.core;
+  ctx.strokeStyle = band.core;
+  ctx.lineWidth = band.width * 0.7 * dpr;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, radX, radY, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawRingStardust(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radX: number,
+  radY: number,
+  color: string,
+  count: number,
+  seed: number,
+  dpr: number,
+) {
+  const prng = (n: number) =>
+    ((Math.sin(n * 127.1 + seed * 311.7) * 43758.5453) % 1 + 1) % 1;
+  ctx.save();
+  ctx.fillStyle = color;
+  for (let i = 0; i < count; i++) {
+    const angle = prng(i) * Math.PI * 2;
+    const spread = (prng(i + count) - 0.5) * 12 * dpr;
+    const px = cx + Math.cos(angle) * (radX + spread);
+    const py = cy + Math.sin(angle) * (radY + spread);
+    const size = (prng(i + count * 2) * 1.2 + 0.3) * dpr;
+    ctx.globalAlpha = prng(i + count * 3) * 0.35 + 0.05;
+    ctx.beginPath();
+    ctx.arc(px, py, size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function paintGuideRingsOnto(
+  ctx: CanvasRenderingContext2D,
+  cssW: number,
+  cssH: number,
+  dpr: number,
+  rings: readonly number[],
+) {
+  const cx = (cssW / 2) * dpr;
+  const cy = (cssH / 2) * dpr;
+  const rad = constellationRad(cssW, cssH) * dpr;
+  for (const ring of rings) {
+    if (ring !== 2 && ring !== 3 && ring !== 4 && ring !== 5) continue;
+    const band = RING_BAND_COLORS[ring];
+    const rn = ringBandRadius(ring);
+    const rx = rad * rn;
+    const ry = rad * rn;
+    paintNebulaBand(ctx, cx, cy, rx, ry, band, dpr);
+    const count = Math.min(80, Math.max(20, Math.round((2 * Math.PI * rx) / dpr / 8)));
+    drawRingStardust(ctx, cx, cy, rx, ry, band.core, count, ring * 31, dpr);
+  }
+}
+
 /* Outer node halo loudness — radius + alphas together (−30%). Single tunable;
    inner bloom / lowPerf shed untouched. */
 const GLOW_OUTER_SCALE = 0.7;
@@ -174,6 +266,11 @@ export default function AppHomePage() {
   /* Atmosphere (wash + nebulae) lives on its own DPR-1 canvas, refreshed ~4×/s,
      so the motion canvas never pays a per-frame atmosphere blit. */
   const atmCanvasRef = useRef<HTMLCanvasElement>(null);
+  /* Guide rings live on two CSS-rotating canvases under the motion canvas.
+     pointer-events: none; never intercepts hit testing. */
+  const innerDriftCanvasRef = useRef<HTMLCanvasElement>(null);
+  const outerDriftCanvasRef = useRef<HTMLCanvasElement>(null);
+  const paintRingLayersRef = useRef<null | (() => void)>(null);
   /* entrance ignition timeline — persists across effect re-runs (e.g. hover)
      so the arrival sequence plays once on data load, not on every state change */
   const entranceStartRef = useRef<number | null>(null);
@@ -230,7 +327,10 @@ export default function AppHomePage() {
   const [hoverPerson, setHoverPerson]           = useState<PersonRow | null>(null);
   const [ownerId, setOwnerId]                   = useState<string | null>(null);
 
-  useEffect(() => { showRingsRef.current = showRings; }, [showRings]);
+  useEffect(() => {
+    showRingsRef.current = showRings;
+    paintRingLayersRef.current?.();
+  }, [showRings]);
   useEffect(() => { ownerIdRef.current = ownerId; }, [ownerId]);
 
   /* Nodes shimmer when that person has a real eligible nudge today — derived
@@ -282,7 +382,9 @@ export default function AppHomePage() {
     if (loading || people.length === 0) return;
     const canvas = canvasRef.current;
     const atmCanvas = atmCanvasRef.current;
-    if (!canvas || !atmCanvas) return;
+    const innerDrift = innerDriftCanvasRef.current;
+    const outerDrift = outerDriftCanvasRef.current;
+    if (!canvas || !atmCanvas || !innerDrift || !outerDrift) return;
     const pendingCaughtUp = pendingPositionRef.current;
     if (pendingCaughtUp) {
       const row = people.find((p) => p.id === pendingCaughtUp.personId);
@@ -337,6 +439,39 @@ export default function AppHomePage() {
       lastAtmBake = -1e9;
     };
 
+    let ringBakeKey = "";
+    let ringsLowPerf = false;
+    const sizeRingCanvas = (el: HTMLCanvasElement) => {
+      const bw = Math.max(1, canvas.width);
+      const bh = Math.max(1, canvas.height);
+      if (el.width !== bw) el.width = bw;
+      if (el.height !== bh) el.height = bh;
+      el.style.width = (canvas.width / DPR) + "px";
+      el.style.height = (canvas.height / DPR) + "px";
+    };
+    const paintRingLayers = () => {
+      const cssW = canvas.width / DPR;
+      const cssH = canvas.height / DPR;
+      const key = `${cssW}x${cssH}@${DPR}:${showRingsRef.current}:${ringsLowPerf}`;
+      sizeRingCanvas(innerDrift);
+      sizeRingCanvas(outerDrift);
+      const innerCtx = innerDrift.getContext("2d");
+      const outerCtx = outerDrift.getContext("2d");
+      if (!innerCtx || !outerCtx) return;
+      if (key === ringBakeKey) return;
+      ringBakeKey = key;
+      innerCtx.setTransform(1, 0, 0, 1, 0, 0);
+      outerCtx.setTransform(1, 0, 0, 1, 0, 0);
+      innerCtx.clearRect(0, 0, innerDrift.width, innerDrift.height);
+      outerCtx.clearRect(0, 0, outerDrift.width, outerDrift.height);
+      if (!showRingsRef.current) return;
+      const innerRings = GALAXY_GUIDE_RINGS.filter((r) => r <= 3);
+      const outerRings = GALAXY_GUIDE_RINGS.filter((r) => r >= 4);
+      paintGuideRingsOnto(innerCtx, cssW, cssH, DPR, innerRings);
+      paintGuideRingsOnto(outerCtx, cssW, cssH, DPR, outerRings);
+    };
+    paintRingLayersRef.current = paintRingLayers;
+
     const resize = () => {
       const rect = canvas.parentElement!.getBoundingClientRect();
       canvas.width  = rect.width  * DPR;
@@ -345,6 +480,8 @@ export default function AppHomePage() {
       canvas.style.height = rect.height + "px";
       cx.setTransform(DPR, 0, 0, DPR, 0, 0);
       resizeAtm(rect.width, rect.height);
+      ringBakeKey = "";
+      paintRingLayers();
     };
     resize();
     window.addEventListener("resize", resize);
@@ -480,9 +617,9 @@ export default function AppHomePage() {
        ~−25° / Daddy at ~104°) read as different bands: one near the guide,
        one "dropped" toward the rim. Same rn must mean the same pixel radius. */
     function ringGeom() {
-      const cx = W() / 2, cy = H() / 2;
-      const rad = Math.max(70, Math.min(W() / 2 - 44, H() / 2 - 48));
-      return { cx, cy, radX: rad, radY: rad };
+      const cssW = W(), cssH = H();
+      const rad = constellationRad(cssW, cssH);
+      return { cx: cssW / 2, cy: cssH / 2, radX: rad, radY: rad };
     }
 
     /* Label clearance used when clamping seats into the frame (CSS px). */
@@ -1136,6 +1273,9 @@ export default function AppHomePage() {
         if (lowPerf !== lastLowPerf) {
           lastLowPerf = lowPerf;
           atmDirty = true; /* puff count / breath quality changes with lowPerf */
+          ringsLowPerf = lowPerf;
+          ringBakeKey = "";
+          paintRingLayers();
         }
 
         if (budgetArmed && !entranceSettledRef.current) {
@@ -1198,29 +1338,7 @@ export default function AppHomePage() {
         atmDirty = false;
       }
 
-      /* soft concentric guides — sketch Rings 1–4 at ringBandRadius (same
-         function as person seats). Hidden when the rings toggle is off.
-         Alpha kept high enough on lowPerf (375px phones) that Ring 2 is
-         actually countable — 0.10 was invisible against the wash, so parents
-         looked "outer" by landmarks. Share-image export reads showRingsRef
-         so hidden rings stay hidden in the snapshot. */
-      if (showRingsRef.current) {
-        const { cx: rcx, cy: rcy, radX, radY } = ringGeom();
-        const breath = (!reduced && !lowPerf && !forExport)
-          ? 0.012 * Math.sin(t * 0.00035)
-          : 0;
-        const baseAlpha = lowPerf ? 0.22 : 0.20;
-        cx.save();
-        for (const ring of GALAXY_GUIDE_RINGS) {
-          const rn = ringBandRadius(ring) * (1 + breath);
-          cx.beginPath();
-          cx.ellipse(rcx, rcy, radX * rn, radY * rn, 0, 0, Math.PI * 2);
-          cx.strokeStyle = `rgba(183,154,216,${baseAlpha})`;
-          cx.lineWidth = lowPerf ? 1 : 1.15;
-          cx.stroke();
-        }
-        cx.restore();
-      }
+      /* Guide rings live on the CSS-rotating drift canvases, not here. */
 
       const pending = pendingPositionRef.current;
       if (!forExport && pending && dragRef.current?.active) {
@@ -1314,7 +1432,27 @@ export default function AppHomePage() {
       atmDirty = true;
       try {
         paintFrame({ scheduleRaf: false, exportSettled: true });
-        return await composeGalaxySharePng(atmOff, motionOff, { cssWidth: W() });
+        const motionWithRings = document.createElement("canvas");
+        motionWithRings.width = motionOff.width;
+        motionWithRings.height = motionOff.height;
+        const mix = motionWithRings.getContext("2d", { willReadFrequently: true, alpha: true });
+        if (!mix) throw new Error(SHARE_IMAGE_FAIL);
+        if (showRingsRef.current) {
+          const ringOff = document.createElement("canvas");
+          ringOff.width = motionOff.width;
+          ringOff.height = motionOff.height;
+          const rctx = ringOff.getContext("2d", { willReadFrequently: true, alpha: true });
+          if (!rctx) throw new Error(SHARE_IMAGE_FAIL);
+          const cssW = W();
+          const cssH = H();
+          const innerRings = GALAXY_GUIDE_RINGS.filter((r) => r <= 3);
+          const outerRings = GALAXY_GUIDE_RINGS.filter((r) => r >= 4);
+          paintGuideRingsOnto(rctx, cssW, cssH, DPR, innerRings);
+          paintGuideRingsOnto(rctx, cssW, cssH, DPR, outerRings);
+          mix.drawImage(ringOff, 0, 0);
+        }
+        mix.drawImage(motionOff, 0, 0);
+        return await composeGalaxySharePng(atmOff, motionWithRings, { cssWidth: W() });
       } finally {
         cx = prevCx;
         atmCtx = prevAtm;
@@ -1442,6 +1580,7 @@ export default function AppHomePage() {
 
     return () => {
       galaxyCaptureRef.current = null;
+      paintRingLayersRef.current = null;
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       canvas.removeEventListener("pointerdown", onPointerDown);
@@ -1747,6 +1886,18 @@ export default function AppHomePage() {
               ref={atmCanvasRef}
               aria-hidden
               style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%" }}
+            />
+            <canvas
+              ref={innerDriftCanvasRef}
+              aria-hidden
+              className="ring-drift-inner"
+              style={{ visibility: showRings ? "visible" : "hidden" }}
+            />
+            <canvas
+              ref={outerDriftCanvasRef}
+              aria-hidden
+              className="ring-drift-outer"
+              style={{ visibility: showRings ? "visible" : "hidden" }}
             />
             <canvas
               ref={canvasRef}

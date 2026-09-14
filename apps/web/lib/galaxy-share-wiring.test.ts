@@ -18,7 +18,7 @@ describe("source wiring — galaxy share captures this account's settled sky", (
     expect(home).toContain("exportSettled: true");
     expect(home).toContain("lowPerf = false");
     expect(home).toContain("willReadFrequently");
-    expect(home).toContain("composeGalaxySharePng(atmOff, motionOff");
+    expect(home).toContain("composeGalaxySharePng(atmOff, motionWithRings");
     expect(home).not.toContain("paintConstellationFixture");
     expect(home).not.toContain("composeGalaxySharePng(atmCanvas");
     expect(home).not.toContain("composeGalaxySharePng(atmCanvasRef");

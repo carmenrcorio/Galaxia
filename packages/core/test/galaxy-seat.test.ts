@@ -7,7 +7,9 @@ import {
   GALAXY_MAX_RING,
   GALAXY_RING_JITTER,
   GALAXY_RING_MIN,
+  GALAXY_GUIDE_RINGS,
   GALAXY_RING_NORMS,
+  RING_BAND_COLORS,
   angularDiff,
   galaxyLabelHalfWidthPx,
   galaxyLabelOffsets,
@@ -73,6 +75,22 @@ describe("ringBandRadius — one function for seats and guides", () => {
 
   it("keeps partner clear of the first guide band", () => {
     expect(GALAXY_RING_MIN).toBeLessThan(ringBandRadius(2) - 0.06);
+  });
+});
+
+describe("RING_BAND_COLORS — one entry per guide ring", () => {
+  it("keys match GALAXY_GUIDE_RINGS and keep a core/glow pair", () => {
+    expect(Object.keys(RING_BAND_COLORS).map(Number).sort()).toEqual(
+      [...GALAXY_GUIDE_RINGS],
+    );
+    for (const ring of GALAXY_GUIDE_RINGS) {
+      const band = RING_BAND_COLORS[ring];
+      expect(band.core).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(band.glow).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(band.width).toBeGreaterThan(0);
+      expect(band.opacity).toBeGreaterThan(0);
+      expect(band.opacity).toBeLessThanOrEqual(1);
+    }
   });
 });
 

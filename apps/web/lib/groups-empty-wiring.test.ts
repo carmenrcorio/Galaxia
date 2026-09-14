@@ -12,20 +12,24 @@ describe("source wiring — Groups empty example", () => {
     expect(page).toContain("buildFromExistingPeople");
     expect(page).toContain("isExampleId");
     expect(page).toContain("GROUPS_EXAMPLE_CANNOT_SAVE");
+    expect(page).toContain("GROUPS_EMPTY_PREFILL_MAX");
     expect(page).toContain("showEmptyLanding");
     expect(page).not.toContain("exampleGroupReading");
     expect(page).not.toContain("Build your first group");
     expect(page).not.toContain("autoOpenEmptyRef");
 
     expect(empty).toContain("exampleGroupReading");
+    expect(empty).not.toContain("buildExampleGroupReading");
     expect(empty).toContain("GROUPS_EXAMPLE_NOTICE");
     expect(empty).toContain("EMPTY_STATE_WELCOME_HREF");
     expect(empty).toContain("allowShare={false}");
     expect(empty).toContain("resolvePairPersonId={() => null}");
+    expect(empty).toContain("groupsEmptyPrefillPeople");
 
     expect(example).toContain("computeNatalChart");
     expect(example).toContain("cohortOverlay");
     expect(example).toContain("EXAMPLE_ID_PREFIX");
+    expect(example).toContain("groups-example-reading.json");
     expect(example).not.toMatch(/from\("people"\)|from\("groups"\)|from\("charts"\)/);
   });
 });

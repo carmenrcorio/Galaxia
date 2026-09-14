@@ -29,7 +29,7 @@ describe("GroupsEmptyState", () => {
     render(<GroupsEmptyState people={[{ id: "p1", display_name: "Maya" }]} onBuildWithPeople={() => undefined} />);
     expect(screen.getByText(GROUPS_EXAMPLE_BADGE)).toBeTruthy();
     expect(screen.getByText(GROUPS_EXAMPLE_NOTICE)).toBeTruthy();
-    expect(screen.getByText("Lila, Owen, Priya, Nate")).toBeTruthy();
+    expect(screen.getByText("Noor, Theo, Jonah, Mira")).toBeTruthy();
     expect(screen.getByText(GROUPS_CREATE_REQUIREMENT)).toBeTruthy();
     expect(screen.getByText(groupsEmptyPeopleStatus(1))).toBeTruthy();
     const add = screen.getByRole("link", { name: GROUPS_EMPTY_ADD_SOMEONE });
@@ -46,9 +46,22 @@ describe("GroupsEmptyState", () => {
     ];
     render(<GroupsEmptyState people={people} onBuildWithPeople={onBuild} />);
     expect(screen.queryByText(GROUPS_EXAMPLE_BADGE)).toBeNull();
-    expect(screen.queryByText("Lila")).toBeNull();
+    expect(screen.queryByText("Noor")).toBeNull();
     expect(screen.getByText(groupsEmptyBuildWith(["Maya", "Jordan", "Sam"]))).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: GROUPS_EMPTY_BUILD_THIS_GROUP }));
     expect(onBuild).toHaveBeenCalledWith(["a", "b", "c"]);
+  });
+
+  it("prefills at most eight named people when the roster is larger", () => {
+    const onBuild = vi.fn();
+    const people = Array.from({ length: 9 }, (_, i) => ({
+      id: `p${i}`,
+      display_name: `Person ${i + 1}`,
+    }));
+    render(<GroupsEmptyState people={people} onBuildWithPeople={onBuild} />);
+    expect(screen.getByText(groupsEmptyBuildWith(people.slice(0, 8).map((p) => p.display_name)))).toBeTruthy();
+    expect(screen.queryByText("Person 9")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: GROUPS_EMPTY_BUILD_THIS_GROUP }));
+    expect(onBuild).toHaveBeenCalledWith(people.slice(0, 8).map((p) => p.id));
   });
 });

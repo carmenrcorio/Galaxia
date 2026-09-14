@@ -25,6 +25,7 @@ import {
   groupsEmptyBuildWith,
   groupsEmptyPeopleNeeded,
   groupsEmptyPeopleStatus,
+  groupsEmptyPrefillPeople,
   joinNames,
   parsePairNames,
   parsePairSummary,
@@ -68,6 +69,11 @@ describe("groups empty-state copy", () => {
     expect(groupsEmptyBuildWith(["Maya", "Jordan", "Sam"])).toBe(
       "Build a group with Maya, Jordan, and Sam."
     );
+  });
+
+  it("caps the one-tap prefill at eight people", () => {
+    const nine = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
+    expect(groupsEmptyPrefillPeople(nine)).toEqual(nine.slice(0, 8));
   });
 });
 

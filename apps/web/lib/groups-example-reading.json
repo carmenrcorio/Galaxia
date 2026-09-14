@@ -1,0 +1,649 @@
+{
+  "groupLabel": "A sample group",
+  "memberNames": [
+    "Noor",
+    "Theo",
+    "Jonah",
+    "Mira"
+  ],
+  "memberIds": [
+    "example:noor",
+    "example:theo",
+    "example:jonah",
+    "example:mira"
+  ],
+  "overlay": {
+    "sharedSky": [],
+    "faultLines": [
+      {
+        "planet": "uranus",
+        "groups": [
+          {
+            "sign": "Aquarius",
+            "names": [
+              "Noor",
+              "Theo"
+            ]
+          },
+          {
+            "sign": "Scorpio",
+            "names": [
+              "Jonah"
+            ]
+          },
+          {
+            "sign": "Cancer",
+            "names": [
+              "Mira"
+            ]
+          }
+        ]
+      },
+      {
+        "planet": "neptune",
+        "groups": [
+          {
+            "sign": "Aquarius",
+            "names": [
+              "Noor",
+              "Theo"
+            ]
+          },
+          {
+            "sign": "Sagittarius",
+            "names": [
+              "Jonah"
+            ]
+          },
+          {
+            "sign": "Libra",
+            "names": [
+              "Mira"
+            ]
+          }
+        ]
+      },
+      {
+        "planet": "pluto",
+        "groups": [
+          {
+            "sign": "Sagittarius",
+            "names": [
+              "Noor",
+              "Theo"
+            ]
+          },
+          {
+            "sign": "Libra",
+            "names": [
+              "Jonah"
+            ]
+          },
+          {
+            "sign": "Leo",
+            "names": [
+              "Mira"
+            ]
+          }
+        ]
+      }
+    ],
+    "label": "No single generation runs through this whole group. Instincts about change, trust, and power were set by different eras here."
+  },
+  "pairHighlights": [
+    {
+      "pair": "Noor × Theo",
+      "summary": "Same generation (uranus Aquarius, neptune Aquarius, pluto Sagittarius)."
+    },
+    {
+      "pair": "Noor × Jonah",
+      "summary": "Fault line: uranus Aquarius/Scorpio · neptune Aquarius/Sagittarius · pluto Sagittarius/Libra."
+    },
+    {
+      "pair": "Noor × Mira",
+      "summary": "Fault line: uranus Aquarius/Cancer · neptune Aquarius/Libra · pluto Sagittarius/Leo."
+    }
+  ],
+  "chartGridMembers": [
+    {
+      "id": "example:noor",
+      "name": "Noor",
+      "chart": {
+        "placements": [
+          {
+            "body": "sun",
+            "lon": 354.3470408079638,
+            "sign": "Pisces",
+            "degree": 24.347040807963822,
+            "house": 8,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "moon",
+            "lon": 241.5535136037857,
+            "sign": "Sagittarius",
+            "degree": 1.5535136037856887,
+            "house": 4,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "mercury",
+            "lon": 327.1811873716005,
+            "sign": "Aquarius",
+            "degree": 27.181187371600515,
+            "house": 7,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "venus",
+            "lon": 17.02229524562338,
+            "sign": "Aries",
+            "degree": 17.02229524562338,
+            "house": 9,
+            "retro": true,
+            "confident": true
+          },
+          {
+            "body": "mars",
+            "lon": 253.69795315926126,
+            "sign": "Sagittarius",
+            "degree": 13.69795315926126,
+            "house": 5,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "jupiter",
+            "lon": 64.88806778257728,
+            "sign": "Gemini",
+            "degree": 4.888067782577281,
+            "house": 10,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "saturn",
+            "lon": 56.19473459466132,
+            "sign": "Taurus",
+            "degree": 26.19473459466132,
+            "house": 10,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "uranus",
+            "lon": 322.67616313092924,
+            "sign": "Aquarius",
+            "degree": 22.67616313092924,
+            "house": 7,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "neptune",
+            "lon": 307.9212817016595,
+            "sign": "Aquarius",
+            "degree": 7.921281701659495,
+            "house": 6,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "pluto",
+            "lon": 255.27634537216596,
+            "sign": "Sagittarius",
+            "degree": 15.276345372165963,
+            "house": 5,
+            "retro": false,
+            "confident": true
+          }
+        ],
+        "asc": "Leo",
+        "mc": "Taurus",
+        "cusps": [
+          130.52129374065106,
+          154.334730862483,
+          182.31501913291666,
+          214.57141845748276,
+          248.51970971579016,
+          280.90652887528546,
+          310.52129374065106,
+          334.334730862483,
+          2.315019132916632,
+          34.57141845748278,
+          68.51970971579017,
+          100.90652887528545
+        ],
+        "precision": "exact",
+        "houseSystem": "placidus",
+        "houseSystemRequested": "placidus",
+        "generational": {
+          "uranus": {
+            "sign": "Aquarius",
+            "confident": true
+          },
+          "neptune": {
+            "sign": "Aquarius",
+            "confident": true
+          },
+          "pluto": {
+            "sign": "Sagittarius",
+            "confident": true
+          },
+          "cohortLabel": "Pluto in Sagittarius · Neptune in Aquarius · Uranus in Aquarius",
+          "uranusHouse": 7,
+          "neptuneHouse": 6,
+          "plutoHouse": 5
+        }
+      }
+    },
+    {
+      "id": "example:theo",
+      "name": "Theo",
+      "chart": {
+        "placements": [
+          {
+            "body": "sun",
+            "lon": 186.8479520971021,
+            "sign": "Libra",
+            "degree": 6.847952097102109,
+            "house": 10,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "moon",
+            "lon": 245.66170049450483,
+            "sign": "Sagittarius",
+            "degree": 5.661700494504828,
+            "house": 1,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "mercury",
+            "lon": 169.70076158041041,
+            "sign": "Virgo",
+            "degree": 19.700761580410415,
+            "house": 10,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "venus",
+            "lon": 198.35880345067827,
+            "sign": "Libra",
+            "degree": 18.358803450678266,
+            "house": 11,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "mars",
+            "lon": 330.1847809099618,
+            "sign": "Pisces",
+            "degree": 0.18478090996177343,
+            "house": 3,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "jupiter",
+            "lon": 157.22739076366835,
+            "sign": "Virgo",
+            "degree": 7.227390763668353,
+            "house": 9,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "saturn",
+            "lon": 102.63931572999768,
+            "sign": "Cancer",
+            "degree": 12.639315729997676,
+            "house": 8,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "uranus",
+            "lon": 329.49726747089926,
+            "sign": "Aquarius",
+            "degree": 29.49726747089926,
+            "house": 3,
+            "retro": true,
+            "confident": true
+          },
+          {
+            "body": "neptune",
+            "lon": 310.54218403578193,
+            "sign": "Aquarius",
+            "degree": 10.54218403578193,
+            "house": 3,
+            "retro": true,
+            "confident": true
+          },
+          {
+            "body": "pluto",
+            "lon": 257.5176605184316,
+            "sign": "Sagittarius",
+            "degree": 17.517660518431626,
+            "house": 1,
+            "retro": false,
+            "confident": true
+          }
+        ],
+        "asc": "Scorpio",
+        "mc": "Virgo",
+        "cusps": [
+          231.65906743363738,
+          262.5162099294014,
+          302.4822174239843,
+          342.24281065916887,
+          12.54556690805947,
+          34.59538311356897,
+          51.65906743363735,
+          82.51620992940138,
+          122.48221742398431,
+          162.24281065916884,
+          192.54556690805947,
+          214.59538311356897
+        ],
+        "precision": "exact",
+        "houseSystem": "placidus",
+        "houseSystemRequested": "placidus",
+        "generational": {
+          "uranus": {
+            "sign": "Aquarius",
+            "confident": true
+          },
+          "neptune": {
+            "sign": "Aquarius",
+            "confident": true
+          },
+          "pluto": {
+            "sign": "Sagittarius",
+            "confident": true
+          },
+          "cohortLabel": "Pluto in Sagittarius · Neptune in Aquarius · Uranus in Aquarius",
+          "uranusHouse": 3,
+          "neptuneHouse": 3,
+          "plutoHouse": 1
+        }
+      }
+    },
+    {
+      "id": "example:jonah",
+      "name": "Jonah",
+      "chart": {
+        "placements": [
+          {
+            "body": "sun",
+            "lon": 57.767610926183934,
+            "sign": "Taurus",
+            "degree": 27.767610926183934,
+            "house": 11,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "moon",
+            "lon": 300.8958966689912,
+            "sign": "Aquarius",
+            "degree": 0.8958966689912131,
+            "house": 7,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "mercury",
+            "lon": 60.67455516074469,
+            "sign": "Gemini",
+            "degree": 0.6745551607446885,
+            "house": 11,
+            "retro": true,
+            "confident": true
+          },
+          {
+            "body": "venus",
+            "lon": 49.50430355658247,
+            "sign": "Taurus",
+            "degree": 19.50430355658247,
+            "house": 11,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "mars",
+            "lon": 121.19969554426245,
+            "sign": "Leo",
+            "degree": 1.199695544262454,
+            "house": 1,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "jupiter",
+            "lon": 42.59567861777009,
+            "sign": "Taurus",
+            "degree": 12.59567861777009,
+            "house": 10,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "saturn",
+            "lon": 118.33994597382653,
+            "sign": "Cancer",
+            "degree": 28.33994597382653,
+            "house": 1,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "uranus",
+            "lon": 214.1598681162559,
+            "sign": "Scorpio",
+            "degree": 4.159868116255893,
+            "house": 4,
+            "retro": true,
+            "confident": true
+          },
+          {
+            "body": "neptune",
+            "lon": 253.00658849019408,
+            "sign": "Sagittarius",
+            "degree": 13.006588490194076,
+            "house": 5,
+            "retro": true,
+            "confident": true
+          },
+          {
+            "body": "pluto",
+            "lon": 189.18636276423337,
+            "sign": "Libra",
+            "degree": 9.186362764233365,
+            "house": 3,
+            "retro": true,
+            "confident": true
+          }
+        ],
+        "asc": "Cancer",
+        "mc": "Aries",
+        "cusps": [
+          116.6825263969131,
+          136.23307792954728,
+          159.6202562101928,
+          189.55335303254674,
+          226.4672697007765,
+          264.43626921334425,
+          296.6825263969131,
+          316.2330779295473,
+          339.6202562101928,
+          9.553353032546738,
+          46.4672697007765,
+          84.43626921334425
+        ],
+        "precision": "exact",
+        "houseSystem": "placidus",
+        "houseSystemRequested": "placidus",
+        "generational": {
+          "uranus": {
+            "sign": "Scorpio",
+            "confident": true
+          },
+          "neptune": {
+            "sign": "Sagittarius",
+            "confident": true
+          },
+          "pluto": {
+            "sign": "Libra",
+            "confident": true
+          },
+          "cohortLabel": "Pluto in Libra · Neptune in Sagittarius · Uranus in Scorpio",
+          "uranusHouse": 4,
+          "neptuneHouse": 5,
+          "plutoHouse": 3
+        }
+      }
+    },
+    {
+      "id": "example:mira",
+      "name": "Mira",
+      "chart": {
+        "placements": [
+          {
+            "body": "sun",
+            "lon": 149.11232187844521,
+            "sign": "Leo",
+            "degree": 29.112321878445215,
+            "house": 9,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "moon",
+            "lon": 79.50788208212317,
+            "sign": "Gemini",
+            "degree": 19.507882082123174,
+            "house": 7,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "mercury",
+            "lon": 150.0662748238092,
+            "sign": "Virgo",
+            "degree": 0.06627482380920924,
+            "house": 9,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "venus",
+            "lon": 194.70458087970377,
+            "sign": "Libra",
+            "degree": 14.70458087970377,
+            "house": 10,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "mars",
+            "lon": 269.44563336563755,
+            "sign": "Sagittarius",
+            "degree": 29.445633365637548,
+            "house": 1,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "jupiter",
+            "lon": 109.9041663626495,
+            "sign": "Cancer",
+            "degree": 19.904166362649505,
+            "house": 8,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "saturn",
+            "lon": 214.39308226680407,
+            "sign": "Scorpio",
+            "degree": 4.393082266804072,
+            "house": 11,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "uranus",
+            "lon": 115.53993911309506,
+            "sign": "Cancer",
+            "degree": 25.53993911309506,
+            "house": 8,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "neptune",
+            "lon": 203.89420673138343,
+            "sign": "Libra",
+            "degree": 23.894206731383434,
+            "house": 10,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "pluto",
+            "lon": 144.82931373143438,
+            "sign": "Leo",
+            "degree": 24.829313731434382,
+            "house": 9,
+            "retro": false,
+            "confident": true
+          }
+        ],
+        "asc": "Sagittarius",
+        "mc": "Virgo",
+        "cusps": [
+          247.6128863690708,
+          280.8355572968022,
+          319.8912546374031,
+          356.6954173429875,
+          25.776252420001867,
+          48.41853668057365,
+          67.6128863690708,
+          100.83555729680222,
+          139.8912546374031,
+          176.69541734298755,
+          205.77625242000187,
+          228.41853668057362
+        ],
+        "precision": "exact",
+        "houseSystem": "placidus",
+        "houseSystemRequested": "placidus",
+        "generational": {
+          "uranus": {
+            "sign": "Cancer",
+            "confident": true
+          },
+          "neptune": {
+            "sign": "Libra",
+            "confident": true
+          },
+          "pluto": {
+            "sign": "Leo",
+            "confident": true
+          },
+          "cohortLabel": "Pluto in Leo · Neptune in Libra · Uranus in Cancer",
+          "uranusHouse": 8,
+          "neptuneHouse": 10,
+          "plutoHouse": 9
+        }
+      }
+    }
+  ]
+}

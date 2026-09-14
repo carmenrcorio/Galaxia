@@ -141,10 +141,17 @@ export function AddPersonForm({
         refusedRelation: saved.refusedRelation
       };
       if (showStatus) {
+        const base = deferred
+          ? `${savedName} is in your sky: open their profile to add a date, or ask them, whenever you're ready.`
+          : `${savedName} is in your constellation.`;
+        // A relation we refused is always said out loud. Storing something
+        // other than what was chosen and staying quiet about it would be a
+        // change made behind the user's back.
         setStatus({
-          text: deferred
-            ? `${savedName} is in your sky: open their profile to add a date, or ask them, whenever you're ready.`
-            : `${savedName} is in your constellation.`,
+          text: saved.refusedRelation
+            // FOUNDER-REVIEW: minor-safety relation refusal notice.
+            ? `${base} ${savedName} is a minor, so this is saved as an unspecified relationship. Galaxia never holds a romantic or partner framing against a child.`
+            : base,
           ok: true
         });
       }

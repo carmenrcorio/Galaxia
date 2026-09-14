@@ -13,11 +13,15 @@
  */
 
 import {
+  activePairTransits,
   compareGenerational,
   compareHeadline,
   computeSynastry,
+  diffPairTransits,
+  pairTransitsAreHonest,
   type GenSignature,
   type NatalChart,
+  type PairTransitHit,
   availableCompareRelationTypes,
   COMPARE_RELATION_SUGGESTION_HINT,
   compareRelationLabel,
@@ -36,7 +40,7 @@ import {
   whatTheyNeed,
   type RelationType,
 } from "@galaxia/astro";
-import { CHART_PRECISION_ADD_DATE, isMinorForSafety, orderPair, sunSignFromChart } from "@galaxia/core";
+import { CHART_PRECISION_ADD_DATE, isMinorForSafety, orderPair, shouldShowLiveTransits, sunSignFromChart } from "@galaxia/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -49,6 +53,13 @@ import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
 import { COMPAT_LABELS, compatWord } from "../../../lib/design";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
+import {
+  CompareHistoryList,
+  CompareSinceLastViewed,
+  hydrateComparisonHistory,
+  type ComparisonHistoryItem,
+  type ComparisonHistoryRow,
+} from "../../../components/compare-history";
 
 interface PersonLite {
   id: string; display_name: string; relation: string;
@@ -150,6 +161,13 @@ function ComparePageInner() {
   const [showRaw, setShowRaw]     = useState(false);
   const [savedReadings, setSavedReadings] = useState<SavedReading[]>([]);
   const [savingReading, setSavingReading] = useState(false);
+  const [history, setHistory] = useState<ComparisonHistoryItem[]>([]);
+  const [previousViewedAt, setPreviousViewedAt] = useState<string | null>(null);
+  const [transitDelta, setTransitDelta] = useState<{
+    newlyActive: PairTransitHit[];
+    movedOn: PairTransitHit[];
+    honest: boolean;
+  } | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -170,6 +188,7 @@ function ComparePageInner() {
         for (const row of rows) row.sun = sunById.get(row.id);
       }
       setPeople(rows);
+      await refreshHistory(user.id, rows);
       // BUG B: pre-fill Person A from ?a=<personId> when navigating in from a
       // profile — an explicit deep link always wins over the self preference
       // below. Otherwise, prefer the user's own `self` record as Person A (so
@@ -254,9 +273,45 @@ function ComparePageInner() {
   const showSuggestionHint =
     suggestedRelationType !== null && relationType === suggestedRelationType;
 
-  async function runCompare() {
+  async function refreshHistory(ownerId: string, rows: PersonLite[]) {
+    const { data } = await supabase
+      .from("comparison_history")
+      .select("person_low, person_high, last_viewed_at")
+      .eq("owner_id", ownerId)
+      .order("last_viewed_at", { ascending: false })
+      .limit(12);
+    setHistory(hydrateComparisonHistory((data ?? []) as ComparisonHistoryRow[], rows));
+  }
+
+  async function rememberPair(ownerId: string, pairLow: string, pairHigh: string, rows: PersonLite[]) {
+    const viewedAt = new Date().toISOString();
+    await supabase.from("comparison_history").upsert(
+      { owner_id: ownerId, person_low: pairLow, person_high: pairHigh, last_viewed_at: viewedAt },
+      { onConflict: "owner_id,person_low,person_high" }
+    );
+    await refreshHistory(ownerId, rows);
+  }
+
+  async function priorViewedAt(ownerId: string, pairLow: string, pairHigh: string): Promise<string | null> {
+    const { data } = await supabase
+      .from("comparison_history")
+      .select("last_viewed_at")
+      .eq("owner_id", ownerId)
+      .eq("person_low", pairLow)
+      .eq("person_high", pairHigh)
+      .maybeSingle();
+    return (data?.last_viewed_at as string | undefined) ?? null;
+  }
+
+  async function runCompare(aId: string | null = personAId, bId: string | null = personBId) {
+    const selectedA = people.find(p => p.id === aId) ?? null;
+    const selectedB = people.find(p => p.id === bId) ?? null;
     if (!selectedA || !selectedB || selectedA.id === selectedB.id) { setStatus("Choose two different people."); return; }
+    setPersonAId(selectedA.id);
+    setPersonBId(selectedB.id);
     setRunning(true); setStatus(null);
+    setPreviousViewedAt(null);
+    setTransitDelta(null);
     const [{ data: chartA }, { data: chartB }] = await Promise.all([
       supabase.from("charts").select("data, engine_version").eq("person_id", selectedA.id).single(),
       supabase.from("charts").select("data, engine_version").eq("person_id", selectedB.id).single()
@@ -267,6 +322,9 @@ function ComparePageInner() {
     const natalB = chartB.data as NatalChart;
     const engineVersionA = (chartA.engine_version as number | null) ?? 1;
     const engineVersionB = (chartB.engine_version as number | null) ?? 1;
+    const { pairLow, pairHigh } = orderPair(selectedA.id, selectedB.id);
+    const prior = userId ? await priorViewedAt(userId, pairLow, pairHigh) : null;
+    setPreviousViewedAt(prior);
     // Year-only charts have sampled (mid-year) planet positions, so aspect
     // orbs and synastry scores computed from them would be fabricated. The
     // generational layer is the honest comparison for year-only data.
@@ -275,15 +333,37 @@ function ComparePageInner() {
       const blocked = natalA.precision === "year" ? selectedA : selectedB;
       setResult(null);
       setPrecisionGapPerson({ id: blocked.id, name: blocked.display_name });
+      setTransitDelta(prior ? { newlyActive: [], movedOn: [], honest: false } : null);
       setStatus(
         `${blocked.display_name} has year-only birth data, so a full synastry read isn't possible. The planet-to-planet aspects would be guesses. ` +
         `What the generational layer shows: ${generationalOnly.theme}`
       );
+      if (userId) await rememberPair(userId, pairLow, pairHigh, people);
       return;
     }
     setPrecisionGapPerson(null);
     const synastry     = computeSynastry(natalA, natalB);
     const generational = compareGenerational(natalA.generational as GenSignature, natalB.generational as GenSignature, estimateYearGap(selectedA, selectedB));
+
+    if (prior) {
+      const pairCharts = [
+        { personId: selectedA.id, chart: natalA, include: shouldShowLiveTransits(selectedA) },
+        { personId: selectedB.id, chart: natalB, include: shouldShowLiveTransits(selectedB) }
+      ];
+      const honest = pairTransitsAreHonest([natalA, natalB]);
+      if (!honest) {
+        setTransitDelta({ newlyActive: [], movedOn: [], honest: false });
+      } else {
+        const nowUtc = new Date().toISOString();
+        const diff = diffPairTransits(
+          activePairTransits(pairCharts, prior),
+          activePairTransits(pairCharts, nowUtc)
+        );
+        setTransitDelta({ ...diff, honest: true });
+      }
+    } else {
+      setTransitDelta(null);
+    }
 
     // Enrich PersonLite with chart placements for chart-specific guidance.
     // A sign the engine flagged as uncertain is not used for guidance copy.
@@ -306,7 +386,6 @@ function ComparePageInner() {
 
     // Provenance for saved readings: stamp the charts actually scored.
     // Chart fingerprint order follows orderPair (pairLow // pairHigh), not UI A/B.
-    const { pairLow, pairHigh } = orderPair(selectedA.id, selectedB.id);
     const personLow = selectedA.id === pairLow ? selectedA : selectedB;
     const personHigh = selectedA.id === pairLow ? selectedB : selectedA;
     const chartLow = selectedA.id === pairLow ? natalA : natalB;
@@ -329,6 +408,8 @@ function ComparePageInner() {
       synastry,
       generational,
     });
+
+    if (userId) await rememberPair(userId, pairLow, pairHigh, people);
 
     // Load prior saved readings for this pair (immutable, dated snapshots).
     const { data: priorRows } = await supabase.from("notes")
@@ -480,6 +561,8 @@ function ComparePageInner() {
         See where two people flow, where they catch, and what each one needs.
       </p>
 
+      <CompareHistoryList items={history} onOpen={(a, b) => { void runCompare(a, b); }} />
+
       {/* Pickers */}
       <section className="glass-card fade-in">
         <p className="eyebrow" style={{ marginBottom: 12 }}>Relationship type</p>
@@ -536,12 +619,30 @@ function ComparePageInner() {
               </div>
             </div>
           ))}
-          <button className="btn-primary" onClick={runCompare} disabled={running} style={{ width: "fit-content", gap: 8 }}>
+          <button className="btn-primary" onClick={() => void runCompare()} disabled={running} style={{ width: "fit-content", gap: 8 }}>
             {running && <Spinner size={13} color="#1a1206" />}
             {running ? "Running…" : "Run comparison"}
           </button>
         </div>
       </section>
+
+      {previousViewedAt && transitDelta && selectedA && selectedB ? (
+        <CompareSinceLastViewed
+          nameA={(result?.personA.display_name as string | undefined) ?? selectedA.display_name}
+          nameB={(result?.personB.display_name as string | undefined) ?? selectedB.display_name}
+          lastViewedAt={previousViewedAt}
+          honest={transitDelta.honest}
+          newlyActive={transitDelta.newlyActive}
+          movedOn={transitDelta.movedOn}
+          nameById={(id) =>
+            result?.personA.id === id
+              ? result.personA.display_name
+              : result?.personB.id === id
+                ? result.personB.display_name
+                : people.find(p => p.id === id)?.display_name ?? selectedA.display_name
+          }
+        />
+      ) : null}
 
       {result && blockRomanticMinorRender ? (
         <section className="glass-card fade-in">

@@ -32,8 +32,9 @@ export const APP_NAV_LINKS: NavLink[] = [
   { href: "/app/groups", label: "Groups" },
   { href: "/app/vela", label: "Vela" },
   { href: "/app/settings", label: "Settings" },
-  // Public route. There is no /app/chart page, so the free chart stays on the
-  // live public route at /chart rather than a dead in-app path.
+  // Public route. There is no /app/chart page. The free chart stays on /chart
+  // so the SEO URL is not split; that page renders the app nav when a session
+  // is present so a signed-in viewer never leaves the product.
   // FOUNDER-REVIEW: app-nav label only. Href stays /chart.
   { href: "/chart", label: "Free chart" },
   { href: "/blog", label: "Blog" },
@@ -147,6 +148,21 @@ export const SHARE_NOT_FOUND_CTA: NavLink = { href: "/chart", label: "Try a free
 
 export const CHART_MODE_SINGLE: NavLink = { href: "/chart", label: "Single chart" };
 export const CHART_MODE_COMPARE: NavLink = { href: "/chart/compare", label: "Check compatibility" };
+
+/**
+ * Profile of one saved person. Dynamic `[id]` segment, so this is a builder
+ * rather than a static NavLink. Used by the signed-in Quick Chart save CTA.
+ */
+export const PERSON_PROFILE_HREF_PREFIX = "/app/person/";
+
+export function personProfileHref(personId: string): string {
+  return `${PERSON_PROFILE_HREF_PREFIX}${personId}`;
+}
+
+/** Logged-out Quick Chart save: carry birth data through signup into /welcome. */
+export function signupWithNextHref(nextPath: string): string {
+  return `${MARKETING_NAV_SIGNUP.href}?next=${encodeURIComponent(nextPath)}`;
+}
 
 export const EMPTY_STATE_WELCOME_HREF = "/welcome";
 /**

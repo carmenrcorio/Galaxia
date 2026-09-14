@@ -13,8 +13,9 @@ import { createSupabaseBrowserClient } from "../lib/supabase/client";
  * the first session.
  *
  * Placed everywhere `<TrialBanner />` sits — `app/app/layout.tsx` (every
- * `/app/*` page) and `app/account/page.tsx` (its own chrome, outside that
- * layout) — so every authenticated page load is covered.
+ * `/app/*` page), `app/account/page.tsx` (its own chrome, outside that
+ * layout), and the signed-in branch of `QuickChartShell` (`/chart`,
+ * `/chart/compare`, `/s`) — so every authenticated page load is covered.
  *
  * Write-amplification guard: this reads `profiles.timezone` once per mount
  * (a single lightweight column select) and writes only when it is

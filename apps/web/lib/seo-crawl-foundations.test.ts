@@ -113,6 +113,25 @@ describe("/chart and /chart/compare stay client components with their page UI un
       expect(src).toMatch(/return children;/);
     }
   });
+
+  it("/chart page stays a server component and never reads cookies or session", () => {
+    const src = readRoute("apps/web/app/chart/page.tsx");
+    expect(src.startsWith('"use client"')).toBe(false);
+    expect(src).toContain('WebPageJsonLd path="/chart"');
+    expect(src).not.toMatch(/cookies\(/);
+    expect(src).not.toMatch(/getUser\(/);
+    expect(src).not.toMatch(/createSupabaseServerClient/);
+  });
+
+  it("/chart metadata, canonical, and SEO copy stay on the public funnel values", () => {
+    const layout = readRoute("apps/web/app/chart/layout.tsx");
+    expect(layout).toContain('canonical: "/chart"');
+    expect(layout).toContain("title: TITLE");
+    expect(layout).toContain("description: DESCRIPTION");
+    const seo = readRoute("apps/web/app/chart/chart-seo.ts");
+    expect(seo).toContain('export const TITLE = "Free Birth Chart Calculator from Galaxia"');
+    expect(seo).toContain("See anyone's real natal chart, free.");
+  });
 });
 
 describe("homepage meta description", () => {

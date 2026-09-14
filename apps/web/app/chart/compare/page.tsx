@@ -379,8 +379,8 @@ export default function QuickComparePage() {
           ) : null}
 
           <section className="glass-card fade-in fade-in-delay-2" style={{ textAlign: "center", display: "grid", gap: 12 }}>
-            {!usingMyChart ? <SaveToGalaxyButton birthInput={inputA} defaultName={nameA || undefined} /> : null}
-            <SaveToGalaxyButton birthInput={inputB} defaultName={nameB || undefined} />
+            {!usingMyChart ? <SaveToGalaxyButton birthInput={inputA} defaultName={nameA || undefined} navigateToProfileOnSave={false} /> : null}
+            <SaveToGalaxyButton birthInput={inputB} defaultName={nameB || undefined} navigateToProfileOnSave={false} />
             <ShareLinkButton createShareUrl={createShareUrl} />
             <button type="button" className="pill-link" onClick={() => { setResult(null); setFromShareLink(false); setRomanticHeldNotice(false); }}>
               Try another comparison

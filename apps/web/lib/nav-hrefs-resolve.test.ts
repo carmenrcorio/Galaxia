@@ -7,6 +7,10 @@ import {
   APP_NAV_BRAND_HREF,
   APP_NAV_LINKS,
   EMAIL_PATHS,
+  MARKETING_NAV_SIGNUP,
+  PERSON_PROFILE_HREF_PREFIX,
+  personProfileHref,
+  signupWithNextHref,
   EMPTY_STATE_SETTINGS_HREF,
   EMPTY_STATE_WELCOME_HREF,
   THIS_WEEK_HREF,
@@ -153,6 +157,37 @@ describe("app nav hrefs resolve to App Router pages", () => {
 
     const leftover = extractLiteralHrefs(src);
     assertEveryHrefResolves(leftover, "app nav leftover literal", { allowEmpty: true });
+  });
+});
+
+describe("signed-in chart save hrefs", () => {
+  it("personProfileHref points at the dynamic person page", () => {
+    expect(PERSON_PROFILE_HREF_PREFIX).toBe("/app/person/");
+    expect(personProfileHref("abc")).toBe("/app/person/abc");
+    expect(existsSync(join(WEB_APP_DIR, "app/person/[id]/page.tsx"))).toBe(true);
+    expect(existsSync(join(WEB_APP_DIR, "app/chart/page.tsx"))).toBe(false);
+  });
+
+  it("signupWithNextHref stays on the marketing signup route", () => {
+    expect(signupWithNextHref("/welcome?prefill=1")).toBe(
+      `${MARKETING_NAV_SIGNUP.href}?next=${encodeURIComponent("/welcome?prefill=1")}`,
+    );
+  });
+
+  it("SaveToGalaxyButton reads those builders instead of hardcoded paths", () => {
+    const src = readWeb("components/save-to-galaxy-button.tsx");
+    expect(src).toContain("personProfileHref");
+    expect(src).toContain("signupWithNextHref");
+    expect(src).not.toMatch(/href=\{`\/app\/person/);
+    expect(src).not.toMatch(/href=\{`\/signup\?next/);
+  });
+
+  it("QuickChartShell logged-out chrome reads marketing nav links", () => {
+    assertRendersFromConfig(
+      readWeb("components/quick-chart-shell.tsx"),
+      ["MARKETING_NAV_BRAND_HREF", "MARKETING_NAV_LOGIN", "MARKETING_NAV_SIGNUP"],
+      "quick-chart-shell leftover literal",
+    );
   });
 });
 

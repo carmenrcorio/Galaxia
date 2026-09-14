@@ -111,10 +111,11 @@ describe("constellation connect UI wiring", () => {
     expect(person).not.toContain("notifications");
   });
 
-  it("settings lists pending constellation_connect invites", () => {
+  it("settings lists pending constellation_connect invites and live share links", () => {
     const settings = read("apps/web/app/app/settings/page.tsx");
     const pending = read("apps/web/components/pending-connect-invites.tsx");
     expect(settings).toContain("PendingConnectInvites");
+    expect(settings).toContain("PendingShareLinks");
     expect(pending).toContain('id="pending-connections"');
     expect(pending).toContain('kind", "constellation_connect"');
     expect(pending).toContain('status", "pending"');

@@ -42,6 +42,10 @@ import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-c
 import {
   QUICK_COMPARE_HELD_READING,
   QUICK_COMPARE_MINOR_NOTICE,
+  SHARE_GIFT_COMPARE_B_LOCKED,
+  SHARE_GIFT_COMPARE_MISSING,
+  SHARE_GIFT_COMPARE_NOT_SINGLE,
+  SHARE_NEED_SUBJECT,
 } from "../../../lib/quick-share";
 import { useViewer } from "../../../lib/use-viewer";
 
@@ -84,13 +88,45 @@ export default function QuickComparePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromShareLink, setFromShareLink] = useState(false);
+  const [giftToken, setGiftToken] = useState<string | null>(null);
+  const [giftLoading, setGiftLoading] = useState(false);
   // True when the visitor asked for Romantic and the API reported a minor —
   // keeps the held-reading copy visible after we force the lens to Platonic.
   const [romanticHeldNotice, setRomanticHeldNotice] = useState(false);
 
+  // Gift token from /s: Person B is the gifted chart. Viewer only enters A.
   // Shared link: a_*/b_* birth params in the URL, no names.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const gift = params.get("gift")?.trim();
+    if (gift) {
+      setGiftLoading(true);
+      void (async () => {
+        try {
+          const res = await fetch(`/api/quick-share/${encodeURIComponent(gift)}`);
+          const body = await res.json() as {
+            kind?: string;
+            payload?: { giftBirth?: BirthFormInput };
+          };
+          if (!res.ok) {
+            setError(SHARE_GIFT_COMPARE_MISSING);
+            return;
+          }
+          if (body.kind !== "single" || !body.payload?.giftBirth) {
+            setError(body.kind === "compare" ? SHARE_GIFT_COMPARE_NOT_SINGLE : SHARE_GIFT_COMPARE_MISSING);
+            return;
+          }
+          setGiftToken(gift);
+          setInputB(body.payload.giftBirth);
+          setNameB(SHARE_NEED_SUBJECT);
+        } catch {
+          setError(SHARE_GIFT_COMPARE_MISSING);
+        } finally {
+          setGiftLoading(false);
+        }
+      })();
+      return;
+    }
     const a = decodeBirthQuery(params, "a_");
     const b = decodeBirthQuery(params, "b_");
     if (a && b) {
@@ -145,11 +181,15 @@ export default function QuickComparePage() {
         pairHasMinor: minor,
       });
       if (opts.updateUrl) {
-        const qs = new URLSearchParams([
-          ...birthQueryToSearchParams(a, "a_"),
-          ...birthQueryToSearchParams(b, "b_")
-        ]).toString();
-        window.history.replaceState(null, "", `/chart/compare?${qs}`);
+        if (giftToken) {
+          window.history.replaceState(null, "", `/chart/compare?gift=${encodeURIComponent(giftToken)}`);
+        } else {
+          const qs = new URLSearchParams([
+            ...birthQueryToSearchParams(a, "a_"),
+            ...birthQueryToSearchParams(b, "b_")
+          ]).toString();
+          window.history.replaceState(null, "", `/chart/compare?${qs}`);
+        }
       }
     } catch {
       setError("Network error. Check your connection and try again.");
@@ -158,7 +198,7 @@ export default function QuickComparePage() {
     }
   }
 
-  async function createShareUrl(): Promise<string> {
+  async function createShareUrl({ expiresInDays }: { expiresInDays: number | null }): Promise<string> {
     if (!result) throw new Error("Compare two charts before sharing.");
     // Persist the post-block safe framing. Never send romantic when pairHasMinor.
     const safeRelationType =
@@ -168,6 +208,7 @@ export default function QuickComparePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         kind: "compare",
+        expiresInDays,
         payload: {
           nameA: nameA.trim() || undefined,
           nameB: nameB.trim() || undefined,
@@ -259,13 +300,22 @@ export default function QuickComparePage() {
 
             <div>
               <p className="eyebrow" style={{ marginBottom: 8 }}>Person B</p>
-              <input className="field" value={nameB} onChange={(e) => setNameB(e.target.value)} placeholder="Name (optional)" style={{ marginBottom: 10, borderRadius: 14 }} />
-              <BirthFields input={inputB} onChange={setInputB} idPrefix="person-b" />
+              {giftToken ? (
+                <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.55, margin: 0 }}>
+                  {/* FOUNDER-REVIEW: SHARE_GIFT_COMPARE_B_LOCKED */}
+                  {SHARE_GIFT_COMPARE_B_LOCKED}
+                </p>
+              ) : (
+                <>
+                  <input className="field" value={nameB} onChange={(e) => setNameB(e.target.value)} placeholder="Name (optional)" style={{ marginBottom: 10, borderRadius: 14 }} />
+                  <BirthFields input={inputB} onChange={setInputB} idPrefix="person-b" />
+                </>
+              )}
             </div>
 
-            <button className="btn-primary" onClick={() => runCompare(inputA, inputB)} disabled={loading} style={{ gap: 8, justifySelf: "start" }}>
+            <button className="btn-primary" onClick={() => runCompare(inputA, inputB)} disabled={loading || giftLoading} style={{ gap: 8, justifySelf: "start" }}>
               {loading && <Spinner size={13} color="#1a1206" />}
-              {loading ? "Comparing…" : "See our compatibility"}
+              {loading ? "Comparing…" : giftLoading ? "Loading gifted chart…" : "See our compatibility"}
             </button>
             {error ? <p className="error" style={{ fontSize: ".84rem" }}>{error}</p> : null}
           </section>

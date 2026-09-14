@@ -11,7 +11,7 @@ export default function ShareNotFound() {
         <p className="eyebrow">Shared reading</p>
         <h1 className="page-title" style={{ marginBottom: 12 }}>This link isn&apos;t available</h1>
         <p className="muted" style={{ lineHeight: 1.65, marginBottom: 24 }}>
-          The share link may be mistyped or no longer exists. It never opens someone else&apos;s reading.
+          The share link may be mistyped, expired, or no longer available. It never opens someone else&apos;s reading.
         </p>
         <Link href={SHARE_NOT_FOUND_CTA.href as never} className="pill-link">
           {SHARE_NOT_FOUND_CTA.label}

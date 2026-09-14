@@ -4,6 +4,7 @@ import type { HouseSystem } from "@galaxia/astro";
 import { useEffect, useMemo, useState } from "react";
 import { SettingsSubscriptionPanel } from "../../../components/settings-subscription-panel";
 import { PendingConnectInvites } from "../../../components/pending-connect-invites";
+import { PendingShareLinks } from "../../../components/pending-share-links";
 import { Spinner } from "../../../components/spinner";
 import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "@galaxia/astro";
 import { EMPTY_STATE_WELCOME_HREF } from "../../../lib/nav-links";
@@ -181,6 +182,7 @@ export default function SettingsPage() {
       <SettingsSubscriptionPanel />
 
       <PendingConnectInvites />
+      <PendingShareLinks />
 
       <section className="glass-card">
         <h2 className="card-title">House system</h2>

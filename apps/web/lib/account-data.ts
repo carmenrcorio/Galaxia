@@ -55,7 +55,7 @@ export const ACCOUNT_DELETE_COPY = {
   typePrompt: 'Type the word "delete" to confirm.',
   confirmButton: "Delete my account forever",
   shareHonesty:
-    "Share links you create while signed in after this update will stop working when your account is deleted. Older anonymous share links cannot be tied to your account and may keep working.",
+    "Share links you create while signed in stop working when your account is deleted, when you revoke them, or when they expire. Anonymous share links cannot be tied to your account and expire on their own.",
   billingWarning:
     "Deleting your account does not cancel billing. If you have an active subscription (or lifetime access billed through our payment provider), cancel it first so you are not charged after your account is gone.",
   billingLinkLabel: "Cancel subscription",

@@ -9,9 +9,10 @@
  *
  * Minor safety: when `birthDate` is provided, calls isMinorForSafety and passes
  * the result into interpretPlacement's required minorSafe flag. Natal Sun/Moon
- * copy is not adults-only — minor and adult render identically today. /s single
- * shares pass no birthDate (PII stripped by design) and therefore pass
- * minorSafe: true (fail-safe). Do not persist a minor flag on single shares.
+ * copy is not adults-only — minor and adult render identically today. Gift
+ * shares pass birthDate from the allowlisted giftBirth envelope when present;
+ * older snapshots omit it and therefore pass minorSafe: true (fail-safe).
+ * Do not persist a minor flag on single shares.
  */
 
 import {
@@ -35,7 +36,7 @@ export type NatalSignRevealProps = {
   name?: string;
   /**
    * When set, run isMinorForSafety (same call shape as Quick Compare / save).
-   * Omit on /s — single snapshots strip birth PII and must not reintroduce it.
+   * Gift shares pass this from giftBirth; older /s rows omit it.
    */
   birthDate?: string | null;
   birthPrecision?: "none" | "exact" | "date" | "year" | null;
@@ -65,7 +66,8 @@ export function NatalSignReveal({
   className,
   style,
 }: NatalSignRevealProps) {
-  // Fail-safe when birthDate is omitted (/s strips birth PII): treat as minor
+  // Fail-safe when birthDate is omitted (older /s rows, or landing without
+  // a date): treat as minor for the required PlacementSafetyOpts flag.
   // for the required PlacementSafetyOpts flag. Sun/Moon copy is identical either
   // way today; Venus never renders here.
   const minorSafe = birthDate

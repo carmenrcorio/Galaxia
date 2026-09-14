@@ -12,21 +12,40 @@ import {
   interpretPlacement,
   isProfessionalRelation,
   relationshipWatchLine,
+  singleChartNeed,
   whatTheyNeed,
   type BodyKey,
   type NatalChart,
   type SignKey,
 } from "@galaxia/astro";
+import { isMinorForSafety } from "@galaxia/core";
+import Link from "next/link";
 import { useState } from "react";
 import {
   effectiveCompareFraming,
+  giftBirthIsoDate,
+  giftComparePath,
   QUICK_COMPARE_HELD_READING,
   QUICK_COMPARE_MINOR_NOTICE,
+  SHARE_ADD_CTA,
+  SHARE_COMPARE_CTA,
+  SHARE_COMPARE_HINT,
+  SHARE_COMPARE_LEDE,
+  SHARE_GALAXIA_FRAME,
+  SHARE_NEED_EMPTY,
+  SHARE_NEED_GENERATIONAL,
+  SHARE_NEED_HEADING,
+  SHARE_NEED_PROVENANCE,
+  SHARE_NEED_SUBJECT,
+  SHARE_NO_GIFT_BIRTH,
+  SHARE_SINGLE_LEDE,
+  sharePath,
   type CompareSharePayload,
   type QuickShareKind,
   type QuickSharePayload,
   type SingleSharePayload,
 } from "../lib/quick-share";
+import { signupWithNextHref } from "../lib/nav-links";
 import { BODY_GLYPH, signElement } from "../lib/design";
 import { useViewer } from "../lib/use-viewer";
 import { ChartImageExport, chartExportFilename } from "./chart-image-export";
@@ -38,29 +57,41 @@ import { GenerationalSection } from "./generational-section";
 import { NatalSignReveal } from "./natal-sign-reveal";
 import { HousesUnavailableCard } from "./houses-unavailable-card";
 import { QuickChartShell } from "./quick-chart-shell";
+import { SaveToGalaxyButton } from "./save-to-galaxy-button";
 
 function getSign(chart: NatalChart, body: string) {
   const p = chart.placements.find((pl) => pl.body === body);
   return p && p.confident !== false ? p.sign : undefined;
 }
 
-function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
+function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token: string }) {
   const viewer = useViewer();
   const [expanded, setExpanded] = useState(false);
-  // /s cannot prove adult (birth PII stripped). Always curated Venus — fail
-  // safe, not fail closed. No compute, no persist, no branch on age.
-  const minorSafe = true;
+  const giftBirth = payload.giftBirth;
+  const birthDate = giftBirth ? giftBirthIsoDate(giftBirth) : null;
+  const minorSafe = birthDate
+    ? isMinorForSafety({
+        isMinor: false,
+        birthDate,
+        birthPrecision: giftBirth?.precision ?? "date",
+      })
+    : true;
+  const need = singleChartNeed(payload.chart, {
+    name: SHARE_NEED_SUBJECT,
+    minorSafe,
+  });
 
   return (
     <>
       {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
       <ChartImageExport filename={chartExportFilename(payload.name, "natal-chart.png")} label="Share chart image">
-        {/* No birthDate: single shares strip birth PII; NatalSignReveal fail-safes. */}
         <NatalSignReveal
           chart={payload.chart}
           displayDate={payload.displayDate}
           birthPlace={payload.birthPlace}
           name={payload.name}
+          birthDate={birthDate}
+          birthPrecision={giftBirth?.precision ?? null}
         />
 
         {payload.chart.cusps ? (
@@ -75,6 +106,40 @@ function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
           style={{ marginTop: 16 }}
         />
       </ChartImageExport>
+
+      <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
+        <p className="eyebrow" style={{ marginBottom: 8 }}>
+          {/* FOUNDER-REVIEW: SHARE_NEED_HEADING */}
+          {SHARE_NEED_HEADING}
+        </p>
+        {need ? (
+          <>
+            <div className="teal-callout">
+              <p className="eyebrow" style={{ marginBottom: 8 }}>
+                {need.domain} · {need.lead}
+              </p>
+              <p style={{ color: "var(--cream)", fontSize: "1.02rem", lineHeight: 1.65, margin: 0 }}>
+                {need.statement}
+              </p>
+            </div>
+            <p className="muted" style={{ fontSize: ".76rem", marginTop: 10 }}>
+              {/* FOUNDER-REVIEW: SHARE_NEED_PROVENANCE */}
+              {SHARE_NEED_PROVENANCE}
+            </p>
+            {need.generational ? (
+              <p className="muted" style={{ fontSize: ".76rem", marginTop: 6 }}>
+                {/* FOUNDER-REVIEW: SHARE_NEED_GENERATIONAL */}
+                {SHARE_NEED_GENERATIONAL}
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <p className="muted" style={{ fontSize: ".88rem", lineHeight: 1.6, margin: 0 }}>
+            {/* FOUNDER-REVIEW: SHARE_NEED_EMPTY */}
+            {SHARE_NEED_EMPTY}
+          </p>
+        )}
+      </section>
 
       <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
         <button
@@ -147,7 +212,28 @@ function SingleSnapshot({ payload }: { payload: SingleSharePayload }) {
       </section>
 
       <section className="glass-card fade-in fade-in-delay-2" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>
-        {/* PDF stays a paid perk — same gate as /chart. /s always passes true. */}
+        {giftBirth ? (
+          <>
+            <SaveToGalaxyButton
+              birthInput={giftBirth}
+              ctaLabel={SHARE_ADD_CTA}
+              loggedOutHref={signupWithNextHref(sharePath(token))}
+            />
+            <Link href={giftComparePath(token) as never} className="pill-link">
+              {/* FOUNDER-REVIEW: SHARE_COMPARE_CTA */}
+              {SHARE_COMPARE_CTA}
+            </Link>
+            <p className="muted" style={{ fontSize: ".76rem", margin: 0 }}>
+              {/* FOUNDER-REVIEW: SHARE_COMPARE_HINT */}
+              {SHARE_COMPARE_HINT}
+            </p>
+          </>
+        ) : (
+          <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.55, margin: 0 }}>
+            {/* FOUNDER-REVIEW: SHARE_NO_GIFT_BIRTH */}
+            {SHARE_NO_GIFT_BIRTH}
+          </p>
+        )}
         {viewer.isSubscriber ? (
           <ChartPdfExport
             chart={payload.chart}
@@ -306,9 +392,11 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
 export function ShareSnapshotView({
   kind,
   payload,
+  token,
 }: {
   kind: QuickShareKind;
   payload: QuickSharePayload;
+  token: string;
 }) {
   const viewer = useViewer();
   const isCompare = kind === "compare";
@@ -318,14 +406,20 @@ export function ShareSnapshotView({
 
   return (
     <QuickChartShell eyebrow={eyebrow} title={title} authed={!!viewer.userId}>
-      <p className="lede" style={{ marginBottom: 20 }}>
-        {/* FOUNDER-REVIEW: authored — read-only share lede. */}
-        A read-only snapshot of a Galaxia reading. Nothing here can be edited, and birth details are not in the link.
+      <p className="lede" style={{ marginBottom: isCompare ? 20 : 8 }}>
+        {/* FOUNDER-REVIEW: SHARE_SINGLE_LEDE / SHARE_COMPARE_LEDE */}
+        {isCompare ? SHARE_COMPARE_LEDE : SHARE_SINGLE_LEDE}
       </p>
+      {isCompare ? null : (
+        <p className="muted" style={{ marginBottom: 20, fontSize: ".9rem" }}>
+          {/* FOUNDER-REVIEW: SHARE_GALAXIA_FRAME */}
+          {SHARE_GALAXIA_FRAME}
+        </p>
+      )}
       {isCompare ? (
         <CompareSnapshot payload={payload as CompareSharePayload} />
       ) : (
-        <SingleSnapshot payload={payload as SingleSharePayload} />
+        <SingleSnapshot payload={payload as SingleSharePayload} token={token} />
       )}
     </QuickChartShell>
   );

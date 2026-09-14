@@ -2,9 +2,15 @@ import type { NatalChart } from "@galaxia/astro";
 import { describe, expect, it } from "vitest";
 import {
   effectiveCompareFraming,
+  giftBirthIsoDate,
+  giftComparePath,
+  isShareActive,
+  parseExpiresInDays,
+  sharePath,
   stripBirthPii,
   validateQuickSharePersistBody,
   type CompareSharePayload,
+  type SingleSharePayload,
 } from "./quick-share";
 
 const minimalChart = {
@@ -151,7 +157,56 @@ describe("validateQuickSharePersistBody — romantic-minor structural guarantee"
         chart: expect.objectContaining({ precision: "date" }),
       });
       expect(result.payload).not.toHaveProperty("name");
+      expect(result.payload).not.toHaveProperty("giftBirth");
       expect(JSON.stringify(result.payload)).not.toMatch(/Ada|birthDate|tzOffsetMin|"lat"|"lng"/);
+    }
+  });
+
+  it("single payload allowlists giftBirth and still drops a smuggled name", () => {
+    const result = validateQuickSharePersistBody({
+      kind: "single",
+      payload: {
+        name: "Ada",
+        displayDate: "April 3, 2017",
+        birthPlace: "Austin",
+        chart: minimalChart,
+        giftBirth: {
+          precision: "date",
+          month: 4,
+          day: 3,
+          year: 2017,
+          lat: "30.2672",
+          lng: "-97.7431",
+          birthPlace: "Austin",
+          name: "Ada",
+        },
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok && result.kind === "single") {
+      const payload = result.payload as SingleSharePayload;
+      expect(payload).not.toHaveProperty("name");
+      expect(payload.giftBirth).toEqual({
+        precision: "date",
+        month: 4,
+        day: 3,
+        year: 2017,
+        lat: "30.2672",
+        lng: "-97.7431",
+        birthPlace: "Austin",
+      });
+      expect(JSON.stringify(payload.giftBirth)).not.toMatch(/Ada/);
+    }
+  });
+
+  it("compare payload ignores a smuggled giftBirth envelope", () => {
+    const result = validateQuickSharePersistBody({
+      kind: "compare",
+      payload: { ...baseComparePayload, giftBirth: { precision: "date", month: 1, day: 1, year: 1990 } },
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(JSON.stringify(result.payload)).not.toMatch(/giftBirth/);
     }
   });
 });
@@ -195,5 +250,36 @@ describe("effectiveCompareFraming — render backstop", () => {
     expect(framing.relationType).toBe("platonic");
     expect(framing.blockRomanticMinorRender).toBe(false);
     expect(framing.romanticHeldNotice).toBe(false);
+  });
+});
+
+describe("gift share helpers — token URLs, expiry, giftBirth date", () => {
+  it("share and gift-compare paths never include a name", () => {
+    expect(sharePath("abc_TOKEN-1")).toBe("/s/abc_TOKEN-1");
+    expect(giftComparePath("abc_TOKEN-1")).toBe("/chart/compare?gift=abc_TOKEN-1");
+    expect(sharePath("Ada Lovelace")).toBe("/s/Ada%20Lovelace");
+    expect(giftComparePath("Ada Lovelace")).not.toContain("Ada Lovelace");
+  });
+
+  it("defaults expiry to 14 days and coerces anonymous never to 14", () => {
+    expect(parseExpiresInDays(undefined, false)).toEqual({ ok: true, days: 14 });
+    expect(parseExpiresInDays(null, false)).toEqual({ ok: true, days: 14 });
+    expect(parseExpiresInDays(null, true)).toEqual({ ok: true, days: null });
+    expect(parseExpiresInDays(7, true)).toEqual({ ok: true, days: 7 });
+    expect(parseExpiresInDays(99, true).ok).toBe(false);
+  });
+
+  it("treats revoked or past expires_at as inactive, null expiry as live", () => {
+    const now = new Date("2026-09-14T12:00:00Z");
+    expect(isShareActive({ expires_at: null, revoked_at: null }, now)).toBe(true);
+    expect(isShareActive({ expires_at: "2026-09-15T00:00:00Z", revoked_at: null }, now)).toBe(true);
+    expect(isShareActive({ expires_at: "2026-09-14T11:00:00Z", revoked_at: null }, now)).toBe(false);
+    expect(isShareActive({ expires_at: null, revoked_at: "2026-09-14T00:00:00Z" }, now)).toBe(false);
+  });
+
+  it("giftBirthIsoDate uses year-01-01 for year precision and a real Y-M-D otherwise", () => {
+    expect(giftBirthIsoDate({ precision: "year", yearOnly: 1952 })).toBe("1952-01-01");
+    expect(giftBirthIsoDate({ precision: "date", year: 2017, month: 4, day: 3 })).toBe("2017-04-03");
+    expect(giftBirthIsoDate({ precision: "date" })).toBeNull();
   });
 });

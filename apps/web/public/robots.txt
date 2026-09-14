@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /s/
+Disallow: /invite/
+Disallow: /connect/
 
 Sitemap: https://galaxiamea.com/sitemap.xml

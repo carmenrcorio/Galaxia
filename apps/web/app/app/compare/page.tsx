@@ -472,7 +472,7 @@ function ComparePageInner() {
    * (POST /api/quick-share → /s/<token>). Persists the real RelationType from
    * the picker (no binary collapse); never recomputes astrology.
    */
-  async function createShareUrl(): Promise<string> {
+  async function createShareUrl({ expiresInDays }: { expiresInDays: number | null }): Promise<string> {
     if (!result?.chartA || !result?.chartB || !result?.synastry) {
       throw new Error("Run a comparison before sharing.");
     }
@@ -492,6 +492,7 @@ function ComparePageInner() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         kind: "compare",
+        expiresInDays,
         payload: {
           nameA: result.personA.display_name,
           nameB: result.personB.display_name,

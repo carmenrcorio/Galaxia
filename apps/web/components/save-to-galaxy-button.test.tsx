@@ -19,6 +19,7 @@ const USER_ID = "user-1";
 
 let authUser: { id: string } | null = null;
 let authPending = false;
+let authReject = false;
 let pushed: string[] = [];
 let insertPayload: Record<string, unknown> | null = null;
 
@@ -61,7 +62,9 @@ vi.mock("../lib/supabase/client", () => ({
     auth: {
       getUser: () => authPending
         ? new Promise(() => {})
-        : Promise.resolve({ data: { user: authUser } }),
+        : authReject
+          ? Promise.reject(new Error("auth lookup failed"))
+          : Promise.resolve({ data: { user: authUser } }),
     },
     from: (table: string) => {
       if (table === "people") {
@@ -99,6 +102,7 @@ afterEach(() => {
 beforeEach(() => {
   authUser = null;
   authPending = false;
+  authReject = false;
   pushed = [];
   insertPayload = null;
 });
@@ -128,6 +132,32 @@ describe("SaveToGalaxyButton logged-out funnel", () => {
     );
     expect(label).toBe("Save Maya to your galaxy");
     expect(screen.queryByRole("button", { name: addToConstellationLabel("Maya") })).toBeNull();
+  });
+
+  it("shows the logged-out CTA when the auth lookup fails", async () => {
+    authReject = true;
+    render(
+      <SaveToGalaxyButton
+        birthInput={namedInput}
+        ctaLabel="Add this person to my own constellation"
+        loggedOutHref={signupWithNextHref("/s/tok")}
+      />,
+    );
+    const link = await screen.findByRole("link", { name: "Add this person to my own constellation" });
+    expect(link.getAttribute("href")).toBe(signupWithNextHref("/s/tok"));
+  });
+
+  it("gift shares return to the token page instead of putting birth data in a prefill URL", async () => {
+    render(
+      <SaveToGalaxyButton
+        birthInput={namedInput}
+        ctaLabel="Add this person to my own constellation"
+        loggedOutHref={signupWithNextHref("/s/tok")}
+      />,
+    );
+    const link = await screen.findByRole("link", { name: "Add this person to my own constellation" });
+    expect(link.getAttribute("href")).toBe(signupWithNextHref("/s/tok"));
+    expect(link.getAttribute("href")).not.toContain("lat=");
   });
 });
 

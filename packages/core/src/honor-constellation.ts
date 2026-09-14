@@ -17,6 +17,36 @@ import { hasPassed } from "./galaxy-orbit";
 /** Fixed continuity type written for every honor edge. Not inferred. */
 export const HONOR_RELATION_TYPE = "remembrance" as const;
 
+/**
+ * Person-to-person edge types stored on public.relationships.relation_type.
+ * Distinct from people.relation / galaxy_relations (owner-relative).
+ * Undirected: person_a is the lower uuid. remembrance is the honor entry.
+ */
+export const RELATIONSHIP_EDGE_TYPES = [
+  "remembrance",
+  "partner",
+  "family",
+  "friend",
+  "colleague",
+  "chosen",
+  "other",
+] as const;
+
+export type RelationshipEdgeType = (typeof RELATIONSHIP_EDGE_TYPES)[number];
+
+/** Lower uuid in person_a, higher in person_b. Refuses a self-loop. */
+export function canonicalRelationshipPair(
+  personA: string,
+  personB: string
+): { person_a: string; person_b: string } {
+  if (personA === personB) {
+    throw new Error("A relationship cannot link a person to themselves.");
+  }
+  return personA < personB
+    ? { person_a: personA, person_b: personB }
+    : { person_a: personB, person_b: personA };
+}
+
 /** Documented data-layer policy from `20260629220500_add_owner_rls_policies.sql`. */
 export const RELATIONSHIPS_OWNER_RLS_POLICY = {
   name: "relationships owner all",
@@ -105,19 +135,20 @@ export function livingHonorCandidates(
   return people.filter((p) => p.id !== passedPersonId && !hasPassed(p));
 }
 
-/** Insert payload for one declared honor edge. person_a = passed, person_b = living. */
+/**
+ * Insert payload for one declared honor edge.
+ * Columns are canonical UUID order (lower uuid in person_a), not passed/living.
+ */
 export function buildHonorRelationshipInsert(input: {
   ownerId: string;
   passedPersonId: string;
   livingPersonId: string;
 }): HonorRelationshipRow {
-  if (input.passedPersonId === input.livingPersonId) {
-    throw new Error("Honor connection cannot link a person to themselves.");
-  }
+  const pair = canonicalRelationshipPair(input.passedPersonId, input.livingPersonId);
   return {
     owner_id: input.ownerId,
-    person_a: input.passedPersonId,
-    person_b: input.livingPersonId,
+    person_a: pair.person_a,
+    person_b: pair.person_b,
     relation_type: HONOR_RELATION_TYPE,
   };
 }
@@ -184,9 +215,15 @@ export function honorEdgesFromDeclaredRows(
     if (seen.has(key)) continue;
     seen.add(key);
 
+    // Stroke from passed → living regardless of canonical column order, so
+    // bezierCP (which is not symmetric) stays pixel-identical after the
+    // person_a < person_b data migration.
+    const fromId = aPassed ? row.person_a : row.person_b;
+    const toId = aPassed ? row.person_b : row.person_a;
+
     edges.push({
-      fromId: row.person_a,
-      toId: row.person_b,
+      fromId,
+      toId,
       relationType: HONOR_RELATION_TYPE,
       touchesMinor: honorEdgeTouchesMinor(a, b, now),
     });

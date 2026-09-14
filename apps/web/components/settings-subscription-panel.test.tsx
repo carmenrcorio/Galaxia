@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import { SETTINGS_SUBSCRIPTION_COPY } from "../lib/settings-subscription";
 
 const loadSettingsSubscription = vi.fn();
@@ -57,7 +58,7 @@ describe("SettingsSubscriptionPanel", () => {
     });
     expect(screen.getByText(/days remaining/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Manage billing" }).getAttribute("href")).toContain(
-      "help@galaxiamea.com"
+      GALAXIA_HELP_EMAIL
     );
     expect(screen.queryByText(/loading subscription/i)).toBeNull();
   });
@@ -103,6 +104,6 @@ describe("SettingsSubscriptionPanel", () => {
     await waitFor(() => {
       expect(screen.getByText(SETTINGS_SUBSCRIPTION_COPY.timeout)).toBeTruthy();
     });
-    expect(screen.getByText(/help@galaxiamea.com/)).toBeTruthy();
+    expect(screen.getByText(new RegExp(GALAXIA_HELP_EMAIL.replaceAll(".", "\\.")))).toBeTruthy();
   });
 });

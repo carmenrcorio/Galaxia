@@ -50,7 +50,7 @@ describe("readAdminAuditHistory", () => {
   it("queries admin_audit_log filtered by target_user_id, ordered created_at desc", async () => {
     const { client, from, select, eq, order } = fakeServiceRoleClient({
       auditRows: [BASE_ROW],
-      actorEmails: { "admin-1": "admin@galaxia.app" }
+      actorEmails: { "admin-1": "admin@example.com" }
     });
 
     await readAdminAuditHistory(client, "user-1");
@@ -69,15 +69,15 @@ describe("readAdminAuditHistory", () => {
     ];
     const { client, getUserById } = fakeServiceRoleClient({
       auditRows: rows,
-      actorEmails: { "admin-1": "admin1@galaxia.app", "admin-2": "admin2@galaxia.app" }
+      actorEmails: { "admin-1": "admin1@example.com", "admin-2": "admin2@example.com" }
     });
 
     const result = await readAdminAuditHistory(client, "user-1");
 
     expect(getUserById).toHaveBeenCalledTimes(2); // once per distinct actor, not once per row
-    expect(result[0]!.actorEmail).toBe("admin1@galaxia.app");
-    expect(result[1]!.actorEmail).toBe("admin1@galaxia.app");
-    expect(result[2]!.actorEmail).toBe("admin2@galaxia.app");
+    expect(result[0]!.actorEmail).toBe("admin1@example.com");
+    expect(result[1]!.actorEmail).toBe("admin1@example.com");
+    expect(result[2]!.actorEmail).toBe("admin2@example.com");
   });
 
   it("renders the bare UUID (actorEmail: null) rather than dropping the row when the actor cannot be resolved", async () => {
@@ -96,7 +96,7 @@ describe("readAdminAuditHistory", () => {
   it("never infers a before/after value — null passes through as null (NEVER-FABRICATE)", async () => {
     const { client } = fakeServiceRoleClient({
       auditRows: [BASE_ROW],
-      actorEmails: { "admin-1": "admin@galaxia.app" }
+      actorEmails: { "admin-1": "admin@example.com" }
     });
 
     const result = await readAdminAuditHistory(client, "user-1");
@@ -109,7 +109,7 @@ describe("readAdminAuditHistory", () => {
     const rowWithoutMetadata = { ...BASE_ROW, metadata: null };
     const { client } = fakeServiceRoleClient({
       auditRows: [rowWithoutMetadata],
-      actorEmails: { "admin-1": "admin@galaxia.app" }
+      actorEmails: { "admin-1": "admin@example.com" }
     });
 
     const result = await readAdminAuditHistory(client, "user-1");

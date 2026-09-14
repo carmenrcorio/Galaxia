@@ -9,9 +9,9 @@
  *
  * Key reference decisions:
  * - Node forms derived from bond type (self / binary-partner / moon-child / fixed-parent / star-sibling / ancient-ancestor)
- * - P1 concentric rings: soft nebula bands at sketch Rings 1–4, painted once
- *   onto two CSS-rotating canvases (inner 2+3 clockwise 90s, outer 4+5
- *   counter-clockwise 70s). Partner is a tight binary at the core (not a guide).
+ * - P1 concentric rings: soft nebula bands at sketch Rings 1–4, baked once
+ *   onto an offscreen bitmap and blit to the motion canvas each frame.
+ *   Partner is a tight binary at the core (not a guide).
  *   Seat radius = guide radius = ringBandRadius(own ring) (+ small within-band
  *   jitter). Angle = f(id). Geometry is galaxyGeometry() — independent radX/radY
  *   with an eccentricity cap — so co-ring people sit on the same elliptical band.
@@ -269,10 +269,8 @@ export default function AppHomePage() {
   /* Atmosphere (wash + nebulae) lives on its own DPR-1 canvas, refreshed ~4×/s,
      so the motion canvas never pays a per-frame atmosphere blit. */
   const atmCanvasRef = useRef<HTMLCanvasElement>(null);
-  /* Guide rings live on two CSS-rotating canvases under the motion canvas.
-     pointer-events: none; never intercepts hit testing. */
-  const innerDriftCanvasRef = useRef<HTMLCanvasElement>(null);
-  const outerDriftCanvasRef = useRef<HTMLCanvasElement>(null);
+  /* Guide rings bake onto an offscreen bitmap (paintRingLayersRef) and blit
+     into the motion canvas. No DOM ring canvases. */
   const paintRingLayersRef = useRef<null | (() => void)>(null);
   /* entrance ignition timeline — persists across effect re-runs (e.g. hover)
      so the arrival sequence plays once on data load, not on every state change */
@@ -400,9 +398,7 @@ export default function AppHomePage() {
     if (loading || people.length === 0) return;
     const canvas = canvasRef.current;
     const atmCanvas = atmCanvasRef.current;
-    const innerDrift = innerDriftCanvasRef.current;
-    const outerDrift = outerDriftCanvasRef.current;
-    if (!canvas || !atmCanvas || !innerDrift || !outerDrift) return;
+    if (!canvas || !atmCanvas) return;
     const pendingCaughtUp = pendingPositionRef.current;
     if (pendingCaughtUp) {
       const row = people.find((p) => p.id === pendingCaughtUp.personId);
@@ -459,34 +455,23 @@ export default function AppHomePage() {
 
     let ringBakeKey = "";
     let ringsLowPerf = false;
-    const sizeRingCanvas = (el: HTMLCanvasElement) => {
-      const bw = Math.max(1, canvas.width);
-      const bh = Math.max(1, canvas.height);
-      if (el.width !== bw) el.width = bw;
-      if (el.height !== bh) el.height = bh;
-      el.style.width = (canvas.width / DPR) + "px";
-      el.style.height = (canvas.height / DPR) + "px";
-    };
+    const ringCache = document.createElement("canvas");
     const paintRingLayers = () => {
       const cssW = canvas.width / DPR;
       const cssH = canvas.height / DPR;
       const key = `${cssW}x${cssH}@${DPR}:${showRingsRef.current}:${ringsLowPerf}`;
-      sizeRingCanvas(innerDrift);
-      sizeRingCanvas(outerDrift);
-      const innerCtx = innerDrift.getContext("2d");
-      const outerCtx = outerDrift.getContext("2d");
-      if (!innerCtx || !outerCtx) return;
+      const bw = Math.max(1, canvas.width);
+      const bh = Math.max(1, canvas.height);
+      if (ringCache.width !== bw) ringCache.width = bw;
+      if (ringCache.height !== bh) ringCache.height = bh;
+      const ringCtx = ringCache.getContext("2d");
+      if (!ringCtx) return;
       if (key === ringBakeKey) return;
       ringBakeKey = key;
-      innerCtx.setTransform(1, 0, 0, 1, 0, 0);
-      outerCtx.setTransform(1, 0, 0, 1, 0, 0);
-      innerCtx.clearRect(0, 0, innerDrift.width, innerDrift.height);
-      outerCtx.clearRect(0, 0, outerDrift.width, outerDrift.height);
+      ringCtx.setTransform(1, 0, 0, 1, 0, 0);
+      ringCtx.clearRect(0, 0, ringCache.width, ringCache.height);
       if (!showRingsRef.current) return;
-      const innerRings = GALAXY_GUIDE_RINGS.filter((r) => r <= 3);
-      const outerRings = GALAXY_GUIDE_RINGS.filter((r) => r >= 4);
-      paintGuideRingsOnto(innerCtx, cssW, cssH, DPR, innerRings);
-      paintGuideRingsOnto(outerCtx, cssW, cssH, DPR, outerRings);
+      paintGuideRingsOnto(ringCtx, cssW, cssH, DPR, GALAXY_GUIDE_RINGS);
     };
     paintRingLayersRef.current = paintRingLayers;
 
@@ -1380,7 +1365,14 @@ export default function AppHomePage() {
         atmDirty = false;
       }
 
-      /* Guide rings live on the CSS-rotating drift canvases, not here. */
+      /* Cached nebula rings: blit the offscreen bitmap. Paint is not per-frame. */
+      if (showRingsRef.current) {
+        paintRingLayers();
+        cx.save();
+        cx.setTransform(1, 0, 0, 1, 0, 0);
+        cx.drawImage(ringCache, 0, 0);
+        cx.restore();
+      }
 
       const pending = pendingPositionRef.current;
       if (!forExport && pending && dragRef.current?.active) {
@@ -1474,27 +1466,7 @@ export default function AppHomePage() {
       atmDirty = true;
       try {
         paintFrame({ scheduleRaf: false, exportSettled: true });
-        const motionWithRings = document.createElement("canvas");
-        motionWithRings.width = motionOff.width;
-        motionWithRings.height = motionOff.height;
-        const mix = motionWithRings.getContext("2d", { willReadFrequently: true, alpha: true });
-        if (!mix) throw new Error(SHARE_IMAGE_FAIL);
-        if (showRingsRef.current) {
-          const ringOff = document.createElement("canvas");
-          ringOff.width = motionOff.width;
-          ringOff.height = motionOff.height;
-          const rctx = ringOff.getContext("2d", { willReadFrequently: true, alpha: true });
-          if (!rctx) throw new Error(SHARE_IMAGE_FAIL);
-          const cssW = W();
-          const cssH = H();
-          const innerRings = GALAXY_GUIDE_RINGS.filter((r) => r <= 3);
-          const outerRings = GALAXY_GUIDE_RINGS.filter((r) => r >= 4);
-          paintGuideRingsOnto(rctx, cssW, cssH, DPR, innerRings);
-          paintGuideRingsOnto(rctx, cssW, cssH, DPR, outerRings);
-          mix.drawImage(ringOff, 0, 0);
-        }
-        mix.drawImage(motionOff, 0, 0);
-        return await composeGalaxySharePng(atmOff, motionWithRings, { cssWidth: W() });
+        return await composeGalaxySharePng(atmOff, motionOff, { cssWidth: W() });
       } finally {
         cx = prevCx;
         atmCtx = prevAtm;
@@ -1967,18 +1939,6 @@ export default function AppHomePage() {
               ref={atmCanvasRef}
               aria-hidden
               style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%" }}
-            />
-            <canvas
-              ref={innerDriftCanvasRef}
-              aria-hidden
-              className="ring-drift-inner"
-              style={{ visibility: showRings ? "visible" : "hidden" }}
-            />
-            <canvas
-              ref={outerDriftCanvasRef}
-              aria-hidden
-              className="ring-drift-outer"
-              style={{ visibility: showRings ? "visible" : "hidden" }}
             />
             <canvas
               ref={canvasRef}

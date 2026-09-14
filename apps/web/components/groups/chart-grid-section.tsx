@@ -14,7 +14,6 @@
  * whose generational signature isn't available.
  */
 
-import { useRef } from "react";
 import {
   detectFamilyPatterns,
   FAMILY_COMPARE_PLANETS,
@@ -29,8 +28,7 @@ import {
 } from "@galaxia/astro";
 import { sunSignFromChart } from "@galaxia/core";
 import { InitialAvatar } from "../initial-avatar";
-import { ShareImageButton } from "../share-image-button";
-import { ShareWatermark } from "../share-watermark";
+import { FamilyPatternShare } from "./family-pattern-share";
 import { SIGN_GLYPH } from "../../lib/design";
 
 const MIN_GRID_PEOPLE = 3;
@@ -48,7 +46,6 @@ interface ChartGridSectionProps {
 }
 
 export function ChartGridSection({ members, allowShare = true }: ChartGridSectionProps) {
-  const shareRef = useRef<HTMLDivElement>(null);
   if (members.length < MIN_GRID_PEOPLE) {
     return (
       <section className="glass-card fade-in">
@@ -77,12 +74,10 @@ export function ChartGridSection({ members, allowShare = true }: ChartGridSectio
               Sun, Moon, Rising, Mercury, Venus, and Mars, side by side.
             </p>
           </div>
-          {allowShare ? (
-            <ShareImageButton targetRef={shareRef} filename="group-chart-comparison.png" label="Share comparison" />
-          ) : null}
+          {allowShare ? <FamilyPatternShare members={inputs} /> : null}
         </div>
 
-        <div ref={shareRef} style={{ position: "relative", padding: "10px 20px 26px", background: "#0a0717" }}>
+        <div style={{ position: "relative", padding: "10px 20px 26px", background: "#0a0717" }}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 120 + result.people.length * 130 }}>
               <thead>
@@ -153,7 +148,6 @@ export function ChartGridSection({ members, allowShare = true }: ChartGridSectio
               </tbody>
             </table>
           </div>
-          <ShareWatermark />
         </div>
       </section>
 

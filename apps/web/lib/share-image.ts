@@ -259,6 +259,35 @@ export function assertCanvasHasContent(canvas: HTMLCanvasElement, label = "share
   }
 }
 
+/**
+ * Hands a PNG to the OS share sheet when available, otherwise downloads it.
+ * Shared by ShareImageButton and the family/group pattern card so a cancelled
+ * sheet is not treated as an error, and so we never share a data: URL.
+ */
+export async function deliverSharePng(blob: Blob, filename: string): Promise<"shared" | "saved"> {
+  if (blob.size < 64) throw new Error(SHARE_IMAGE_FAIL);
+
+  if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
+    try {
+      const file = new File([blob], filename, { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file] });
+        return "shared";
+      }
+    } catch (shareErr) {
+      if (shareErr instanceof DOMException && shareErr.name === "AbortError") throw shareErr;
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = url;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+  return "saved";
+}
+
 export function shareButtonLabel(idleLabel: string, busy: boolean, status: string | null): string {
   if (busy) return "Creating image…";
   return status ?? idleLabel;

@@ -20,6 +20,8 @@ const COMPARE_COPY_FILES = [
   "apps/web/components/flows-and-catches-section.tsx",
   "apps/web/components/quick-check-modal.tsx",
   "apps/web/app/app/compare/page.tsx",
+  "apps/web/components/compare-history.tsx",
+  "packages/astro/src/compare-history-copy.ts",
   "apps/web/app/chart/compare/page.tsx",
   "apps/web/app/chart/compare/layout.tsx",
   "apps/mobile/app/(app)/compare.tsx",

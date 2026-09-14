@@ -3,7 +3,9 @@ import {
   OWNED_DELETE_COPY,
   describeGenerationalArchetype,
   formatPersonDeleteConfirmation,
-  groupsCollapsedByMemberRemoval
+  groupsCollapsedByMemberRemoval,
+  PERSON_TAB_LABEL,
+  PERSON_TAB_VOCAB
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
@@ -232,7 +234,9 @@ export default function PersonProfileScreen() {
       {chart ? (
         <>
           <View style={cardStyle}>
-            <Text style={cardTitle}>Big Three</Text>
+            {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
+            <Text style={cardTitle}>{PERSON_TAB_LABEL["big-three"]}</Text>
+            <Text style={vocabSubhead}>{PERSON_TAB_VOCAB["big-three"] ?? "Big three"}</Text>
             {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
             <Text style={cardBody}>Sun: {sun?.sign ?? "·"}</Text>
             <Text style={cardBody}>Moon: {moon?.sign ?? "·"}</Text>
@@ -240,7 +244,11 @@ export default function PersonProfileScreen() {
           </View>
 
           <View style={cardStyle}>
-            <Text style={cardTitle}>{chart.precision === "exact" ? "Natal wheel" : "Sign strip"}</Text>
+            {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
+            <Text style={cardTitle}>{PERSON_TAB_LABEL["chart-wheel"]}</Text>
+            <Text style={vocabSubhead}>
+              {chart.precision === "exact" ? PERSON_TAB_VOCAB["chart-wheel"] : "Sign strip"}
+            </Text>
             {chart.precision === "exact" ? (
               <View style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.gold, width: 220, height: 220, alignSelf: "center", alignItems: "center", justifyContent: "center" }}>
                 <Text style={{ color: tokens.colors.gold }}>Wheel placeholder</Text>
@@ -269,7 +277,9 @@ export default function PersonProfileScreen() {
           </View>
 
           <View style={cardStyle}>
-            <Text style={cardTitle}>Placements</Text>
+            {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
+            <Text style={cardTitle}>{PERSON_TAB_LABEL.placements}</Text>
+            <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.placements ?? "Placements"}</Text>
             {chart.placements.map((placement) => (
               <Text key={placement.body} style={cardBody}>
                 {placement.body.toUpperCase()} {placement.sign} {placement.degree.toFixed(1)}°{placement.house ? ` · House ${placement.house}` : ""}
@@ -278,7 +288,9 @@ export default function PersonProfileScreen() {
           </View>
 
           <View style={cardStyle}>
-            <Text style={cardTitle}>Generational layer</Text>
+            {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
+            <Text style={cardTitle}>{PERSON_TAB_LABEL.generational}</Text>
+            <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.generational ?? "Generational"}</Text>
             <Text style={badgeStyle}>Reads from your birth year</Text>
             <Text style={cardBody}>{chart.generational.cohortLabel}</Text>
             <Text style={cardBody}>
@@ -391,6 +403,14 @@ const cardTitle = {
 const cardBody = {
   color: tokens.colors.mist,
   lineHeight: 20
+} as const;
+
+const vocabSubhead = {
+  color: tokens.colors.mist2,
+  fontSize: 11,
+  fontWeight: "700",
+  letterSpacing: 1.4,
+  textTransform: "uppercase"
 } as const;
 
 const badgeStyle = {

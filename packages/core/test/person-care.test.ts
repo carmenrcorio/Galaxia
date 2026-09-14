@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPersonPageNavSections,
+  PERSON_TAB_LABEL,
+  PERSON_TAB_VOCAB,
   isMinorForSafety,
   peopleForTodaySky,
   shouldShowLiveTransits,
@@ -153,6 +155,41 @@ describe("buildPersonPageNavSections — nav syncs with rendered sections", () =
       expect(known.has(s.id)).toBe(true);
     }
     expect(nav).toHaveLength(13);
+  });
+
+  it("uses founder-review tab labels and keeps the old vocabulary as section ids", () => {
+    const nav = buildPersonPageNavSections({
+      hasRemembrance: false,
+      hasTimeline: false,
+      hasActiveToday: true,
+      hasVelaOnThem: true,
+      hasWheel: true,
+      hasBigThree: true,
+      hasPlacements: true,
+      hasAspects: true,
+      hasHouses: true,
+      hasGenerational: true,
+      hasRecord: true,
+      hasPastConversations: true,
+      hasHonorBox: false,
+    });
+    expect(nav).toEqual([
+      { id: "active-today", label: "Right now" },
+      { id: "vela-on-them", label: "Ask about them" },
+      { id: "chart-wheel", label: "Chart wheel" },
+      { id: "big-three", label: "What they need" },
+      { id: "placements", label: "How they are wired" },
+      { id: "aspects", label: "Where they pull" },
+      { id: "houses", label: "Where it shows up" },
+      { id: "generational", label: "Their generation" },
+      { id: "notes", label: "Your record" },
+      { id: "past-conversations", label: "Earlier answers" },
+    ]);
+    expect(PERSON_TAB_LABEL.placements).toBe("How they are wired");
+    expect(PERSON_TAB_VOCAB.placements).toBe("Placements");
+    expect(PERSON_TAB_VOCAB.aspects).toBe("Aspects");
+    expect(PERSON_TAB_VOCAB.houses).toBe("Houses");
+    expect(PERSON_TAB_VOCAB["big-three"]).toBe("Big three");
   });
 });
 

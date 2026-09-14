@@ -10,11 +10,12 @@ export type NavLink = { href: string; label: string };
 
 export const MARKETING_NAV_BRAND_HREF = "/";
 
+// FOUNDER-REVIEW: marketing nav labels only. Hrefs, H1s, and metadata titles stay.
 export const MARKETING_NAV_LINKS: NavLink[] = [
-  { href: "/why-galaxia", label: "Why Galaxia" },
-  { href: "/generations", label: "Generations" },
-  { href: "/meet-vela", label: "Meet Vela" },
-  { href: "/chart", label: "Quick Chart" },
+  { href: "/why-galaxia", label: "How it works" },
+  { href: "/generations", label: "Your people" },
+  { href: "/meet-vela", label: "Ask Vela" },
+  { href: "/chart", label: "Free chart" },
   { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
 ];
@@ -31,22 +32,24 @@ export const APP_NAV_LINKS: NavLink[] = [
   { href: "/app/groups", label: "Groups" },
   { href: "/app/vela", label: "Vela" },
   { href: "/app/settings", label: "Settings" },
-  // Public route. There is no /app/chart page, so Quick Chart stays on the
-  // live free chart at /chart rather than a dead in-app path.
-  { href: "/chart", label: "Quick Chart" },
+  // Public route. There is no /app/chart page, so the free chart stays on the
+  // live public route at /chart rather than a dead in-app path.
+  // FOUNDER-REVIEW: app-nav label only. Href stays /chart.
+  { href: "/chart", label: "Free chart" },
   { href: "/blog", label: "Blog" },
 ];
 
 export const APP_NAV_ACCOUNT: NavLink = { href: "/account", label: "Account" };
 export const APP_NAV_ACTIONS: NavLink[] = [APP_NAV_ACCOUNT];
 
+// FOUNDER-REVIEW: footer labels for the same destinations as the marketing nav.
 export const SITE_FOOTER_LINKS: NavLink[] = [
-  { href: "/why-galaxia", label: "Why Galaxia" },
-  { href: "/generations", label: "Generations" },
-  { href: "/meet-vela", label: "Meet Vela" },
+  { href: "/why-galaxia", label: "How it works" },
+  { href: "/generations", label: "Your people" },
+  { href: "/meet-vela", label: "Ask Vela" },
   { href: "/security", label: "Security" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/chart", label: "Quick Chart" },
+  { href: "/chart", label: "Free chart" },
   { href: "/download", label: "Download" },
   { href: "/blog", label: "Blog" },
   { href: "/privacy", label: "Privacy" },
@@ -101,10 +104,11 @@ export const RELATED_LINKS = {
   ],
 } as const satisfies Record<string, readonly NavLink[]>;
 
+// FOUNDER-REVIEW: teaser CTAs only. Card H3 titles stay on the page names.
 export const FEATURE_TEASER_LINKS: NavLink[] = [
-  { href: "/why-galaxia", label: "Why Galaxia" },
-  { href: "/generations", label: "Explore Generations" },
-  { href: "/meet-vela", label: "Meet Vela" },
+  { href: "/why-galaxia", label: "How it works" },
+  { href: "/generations", label: "Your people" },
+  { href: "/meet-vela", label: "Ask Vela" },
   { href: "/security", label: "See how we protect you" },
   { href: "/pricing", label: "View pricing" },
 ];

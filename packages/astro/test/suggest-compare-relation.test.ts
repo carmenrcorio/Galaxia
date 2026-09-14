@@ -21,14 +21,42 @@ describe("suggestCompareRelationType — self + other, and neither-side-self", (
     expect(suggestCompareRelationType("self", "ancestor")).toBe("ancestor");
   });
 
-  it("does not suggest for self + grandparent / colleague / unmapped", () => {
+  it("does not suggest for self + grandparent / acquaintance / unmapped", () => {
     expect(suggestCompareRelationType("self", "grandparent")).toBeNull();
-    expect(suggestCompareRelationType("self", "colleague")).toBeNull();
-    expect(suggestCompareRelationType("self", "coworker")).toBeNull();
+    expect(suggestCompareRelationType("self", "acquaintance")).toBeNull();
     expect(suggestCompareRelationType("self", "spouse")).toBeNull(); // no fuzzy match
     expect(suggestCompareRelationType("self", "Partner")).toBeNull(); // exact, case-sensitive
     expect(suggestCompareRelationType("self", "")).toBeNull();
     expect(suggestCompareRelationType("self", null)).toBeNull();
+  });
+
+  // A saved work tag used to fall through to the neutral `friends` fallback,
+  // so a colleague was read through a friendship lens by default. It now maps
+  // onto the working frames.
+  it("maps the work tags onto the working frames (self + tag)", () => {
+    expect(suggestCompareRelationType("self", "colleague")).toBe("colleagues");
+    expect(suggestCompareRelationType("self", "coworker")).toBe("colleagues");
+    expect(suggestCompareRelationType("self", "co-worker")).toBe("colleagues");
+    expect(suggestCompareRelationType("boss", "self")).toBe("manager-report");
+    expect(suggestCompareRelationType("self", "manager")).toBe("manager-report");
+    expect(suggestCompareRelationType("self", "professor")).toBe("mentor-mentee");
+    expect(suggestCompareRelationType("self", "mentor")).toBe("mentor-mentee");
+    // Still exact, never fuzzy: a tag the picker does not offer is unmapped.
+    expect(suggestCompareRelationType("self", "Colleague")).toBeNull();
+    expect(suggestCompareRelationType("self", "workmate")).toBeNull();
+  });
+
+  it("two work tags with neither side self read as the peer working frame, never the asymmetric one", () => {
+    // The shared claim ("both of these people are work to me") is enough for
+    // the peer frame. It is never enough for manager-report: nothing in the
+    // record says which of the two would be the manager.
+    expect(suggestCompareRelationType("colleague", "colleague")).toBe("colleagues");
+    expect(suggestCompareRelationType("boss", "colleague")).toBe("colleagues");
+    expect(suggestCompareRelationType("boss", "boss")).toBe("colleagues");
+    expect(suggestCompareRelationType("professor", "mentor")).toBe("colleagues");
+    // A work tag next to a non-work tag stays unmapped (falls back).
+    expect(suggestCompareRelationType("colleague", "friend")).toBeNull();
+    expect(suggestCompareRelationType("boss", "partner")).toBeNull();
   });
 
   it("neither side self: an exact, symmetric, non-romantic match is carried over", () => {
@@ -46,7 +74,6 @@ describe("suggestCompareRelationType — self + other, and neither-side-self", (
     expect(suggestCompareRelationType("parent", "parent")).toBeNull();
     expect(suggestCompareRelationType("partner", "friend")).toBeNull();
     expect(suggestCompareRelationType("grandparent", "grandparent")).toBeNull();
-    expect(suggestCompareRelationType("colleague", "colleague")).toBeNull();
     expect(suggestCompareRelationType("ancestor", "ancestor")).toBeNull();
   });
 
@@ -58,7 +85,11 @@ describe("suggestCompareRelationType — self + other, and neither-side-self", (
   });
 
   it("neither side self: no possible tag pair ever suggests a romantic type", () => {
-    const tags = ["self", "partner", "sibling", "friend", "parent", "child", "grandparent", "grandchild", "colleague", "ancestor", ""];
+    const tags = [
+      "self", "partner", "sibling", "friend", "parent", "child", "grandparent", "grandchild",
+      "colleague", "coworker", "co-worker", "boss", "manager", "professor", "mentor",
+      "acquaintance", "ancestor", "",
+    ];
     for (const t of tags) {
       const suggested = suggestCompareRelationType(t, t);
       if (suggested) expect(isRomanticRelation(suggested)).toBe(false);

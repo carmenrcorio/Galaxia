@@ -46,7 +46,17 @@ export const HOUSE_AREA = [
   "beliefs & travel", "career & reputation", "friends & community", "solitude & the unconscious"
 ];
 
-export type RelationType = "partners" | "siblings" | "friends" | "parent-child" | "ancestor" | "romantic" | "platonic";
+export type RelationType =
+  | "partners"
+  | "siblings"
+  | "friends"
+  | "parent-child"
+  | "ancestor"
+  | "romantic"
+  | "platonic"
+  | "colleagues"
+  | "manager-report"
+  | "mentor-mentee";
 
 /**
  * Relationship types that frame the reading romantically — attraction / Venus
@@ -63,14 +73,67 @@ export function isRomanticRelation(relType: RelationType): boolean {
   return ROMANTIC_RELATION_TYPES.includes(relType);
 }
 
-/** The five relationship types the saved-people /app/compare picker offers. */
+/**
+ * Working-relationship frames. These read the SAME computed aspects as every
+ * other frame; only the interpretation register changes (working style,
+ * communication, decision making, how respect is read, deadline friction).
+ * They are non-romantic by construction: no entry here may ever appear in
+ * ROMANTIC_RELATION_TYPES, so `isRomanticRelation` is false for all of them
+ * and no romantic/attraction copy path (`whatTheyNeed`'s Venus branch, the
+ * romantic register pool, the OG neutral-summary gate) is reachable from a
+ * professional frame. Asserted in
+ * `packages/astro/test/professional-frames.test.ts`.
+ */
+export const PROFESSIONAL_RELATION_TYPES: readonly RelationType[] = [
+  "colleagues",
+  "manager-report",
+  "mentor-mentee",
+];
+
+/** True when the relationship type produces working-relationship framing. */
+export function isProfessionalRelation(relType: RelationType): boolean {
+  return PROFESSIONAL_RELATION_TYPES.includes(relType);
+}
+
+/**
+ * The relationship types the saved-people /app/compare picker offers: the five
+ * personal frames, then the three working frames (see
+ * PROFESSIONAL_RELATION_TYPES). Order is picker order.
+ */
 export const COMPARE_RELATION_TYPES: readonly RelationType[] = [
   "partners",
   "siblings",
   "friends",
   "parent-child",
   "ancestor",
+  "colleagues",
+  "manager-report",
+  "mentor-mentee",
 ];
+
+/**
+ * FOUNDER-REVIEW: authored — picker labels.
+ * Human-readable label for a relationship type, so the picker (web + mobile)
+ * and the reading header stop printing the raw identifier. Exhaustive by
+ * type, so a new RelationType cannot ship without a label.
+ */
+export const COMPARE_RELATION_LABEL: Record<RelationType, string> = {
+  partners: "Partners",
+  siblings: "Siblings",
+  friends: "Friends",
+  "parent-child": "Parent and child",
+  ancestor: "Ancestor",
+  romantic: "Romantic",
+  platonic: "Platonic",
+  colleagues: "Colleagues",
+  "manager-report": "Manager and report",
+  "mentor-mentee": "Mentor and mentee",
+};
+
+/** Label for a relationship type, for any surface that shows the frame. */
+export function compareRelationLabel(relType: RelationType): string {
+  return COMPARE_RELATION_LABEL[relType];
+}
 
 /**
  * The relationship types selectable in /app/compare for this pairing. When a
@@ -110,8 +173,36 @@ const SELF_OTHER_TO_COMPARE: Readonly<Record<string, RelationType>> = {
   parent: "parent-child",
   child: "parent-child",
   ancestor: "ancestor",
-  // grandparent, colleague, self, and any other string: unmapped
+  // Working relationships. A saved work tag previously fell through to the
+  // neutral `friends` fallback, so a colleague was read through a friendship
+  // lens by default. These map onto the working frames instead: the tag the
+  // user actually recorded decides the register.
+  colleague: "colleagues",
+  coworker: "colleagues",
+  "co-worker": "colleagues",
+  boss: "manager-report",
+  manager: "manager-report",
+  professor: "mentor-mentee",
+  mentor: "mentor-mentee",
+  // grandparent, acquaintance, self, and any other string: unmapped
 };
+
+/**
+ * Saved `people.relation` tags that describe a working relationship to the
+ * user. Same tag family the transit-nudge `colleague` framing already
+ * recognizes (see src/transit-nudge/framing.ts) so the two surfaces cannot
+ * drift on what counts as work. `acquaintance` is deliberately absent: it
+ * carries no working claim.
+ */
+const PROFESSIONAL_RELATION_TAGS: readonly string[] = [
+  "colleague",
+  "coworker",
+  "co-worker",
+  "boss",
+  "manager",
+  "professor",
+  "mentor",
+];
 
 /**
  * Tags that describe an unambiguous PAIR relation when BOTH sides carry the
@@ -131,10 +222,13 @@ const SELF_OTHER_TO_COMPARE: Readonly<Record<string, RelationType>> = {
  *     current partner) are not partners of EACH OTHER. Romantic/attraction
  *     framing must never be auto-selected from a single person's tag, and
  *     that holds even when both tags agree (ENGINEERING.md §13).
- *   - `parent`, `child`, `grandparent`, `grandchild`, `colleague`,
- *     `ancestor`: a matching pair does not describe a sound relation to each
- *     other (two of the user's parents are peers, not parent-child; two
- *     colleagues/ancestors have no matching picker type).
+ *   - `colleague` (and the rest of the work tag family): handled separately
+ *     below, because two work tags do not have to MATCH to describe a working
+ *     pair (see `PROFESSIONAL_RELATION_TAGS` and `suggestCompareRelationType`).
+ *   - `parent`, `child`, `grandparent`, `grandchild`, `ancestor`: a matching
+ *     pair does not describe a sound relation to each other (two of the
+ *     user's parents are peers, not parent-child; two ancestors have no
+ *     matching picker type).
  */
 const NON_SELF_SYMMETRIC_TO_COMPARE: Readonly<Partial<Record<string, RelationType>>> = {
   sibling: "siblings",
@@ -146,10 +240,11 @@ const NON_SELF_SYMMETRIC_TO_COMPARE: Readonly<Partial<Record<string, RelationTyp
  * A tag describes that person's relation to the USER, not to the other
  * person in the pair — so it only describes the A-B pair directly when one
  * side is `self` (self + other). When neither side is `self`, a single tag
- * is never carried over; only an exact, symmetric, non-romantic match on
- * both sides is (see `NON_SELF_SYMMETRIC_TO_COMPARE`). The two strategies
- * never compete: self + other is checked first and, when it applies, is the
- * only source of a suggestion for that pair.
+ * is never carried over; the only carry-overs are two work tags (which read
+ * as `colleagues`, the peer working frame) and an exact, symmetric,
+ * non-romantic match on both sides (see `NON_SELF_SYMMETRIC_TO_COMPARE`).
+ * The strategies never compete: self + other is checked first and, when it
+ * applies, is the only source of a suggestion for that pair.
  *
  * Returns null when nothing sound applies (caller falls back to
  * `defaultCompareRelationType(false)`). Never fabricates from names, ages,
@@ -178,9 +273,22 @@ export function suggestCompareRelationType(
 
   if (aSelf && bSelf) return null; // both self — no sound pair mapping
 
-  // Neither side is self: only an exact, symmetric, non-romantic match
-  // carries over. A single tag on either side is never enough. Defense in
-  // depth: re-check isRomanticRelation here too, so a future edit to
+  // Neither side is self, and BOTH sides carry a work tag: read the pair
+  // through the peer working frame. The tags do not have to match, because
+  // the shared claim ("both of these people are work to me") is what the
+  // frame needs; the asymmetric frames are deliberately NOT inferable here
+  // (two people the user tagged `boss` are not a manager and a report of
+  // each other, and nothing in the record says which of them would be
+  // which). `colleagues` is the least-assuming frame available for two work
+  // tags, and it is a strictly better read than the neutral `friends`
+  // fallback this path used to land on.
+  const bothWork =
+    PROFESSIONAL_RELATION_TAGS.includes(a) && PROFESSIONAL_RELATION_TAGS.includes(b);
+  if (bothWork) return "colleagues";
+
+  // Otherwise only an exact, symmetric, non-romantic match carries over. A
+  // single tag on either side is never enough. Defense in depth: re-check
+  // isRomanticRelation here too, so a future edit to
   // NON_SELF_SYMMETRIC_TO_COMPARE could never leak a romantic suggestion
   // into the one path that has no self+other tag to justify it.
   if (a !== b) return null;
@@ -255,6 +363,12 @@ export const BODY_PRIORITY_BY_BAND = {
   self:           ["sun", "moon", "mercury", "venus", "mars"],
   /** Colleague / work — communication, drive, structure. */
   colleague:      ["mercury", "mars", "saturn"],
+  /** Peers at work — working style, drive, structure. Same bodies as the nudge `colleague` band. */
+  colleagues:     ["mercury", "mars", "saturn"],
+  /** Reporting line — structure and authority first, then communication and standing. */
+  "manager-report": ["saturn", "mercury", "sun"],
+  /** Teaching bond — growth, discipline, learning. */
+  "mentor-mentee": ["jupiter", "saturn", "mercury"],
   /** Untagged / equal weight — empty means no domain boost. */
   general:        [] as string[],
 } as const;
@@ -270,6 +384,9 @@ export const RELATION_BODY_PRIORITY: Record<RelationType, string[]> = {
   siblings:       [...BODY_PRIORITY_BY_BAND.siblings],
   "parent-child": [...BODY_PRIORITY_BY_BAND["parent-child"]],
   ancestor:       [...BODY_PRIORITY_BY_BAND.ancestor],
+  colleagues:     [...BODY_PRIORITY_BY_BAND.colleagues],
+  "manager-report": [...BODY_PRIORITY_BY_BAND["manager-report"]],
+  "mentor-mentee": [...BODY_PRIORITY_BY_BAND["mentor-mentee"]],
 };
 
 /** Bodies weighted for a priority band — shared Compare / nudge entry point. */
@@ -291,6 +408,11 @@ const RELATION_HOUSES: Record<RelationType, number[]> = {
   siblings:       [3],
   "parent-child": [4, 10],
   ancestor:       [],
+  // Work houses: 6 (work & health) is the daily workload, 10 (career &
+  // reputation) is standing, 9 (beliefs & travel) is the teaching house.
+  colleagues:     [6, 10],
+  "manager-report": [10, 6],
+  "mentor-mentee": [9, 6],
 };
 
 /**
@@ -530,6 +652,127 @@ const MERCURY_NEED: Partial<Record<string, string>> = {
   Pisces:      "space for the unspoken; not everything they mean arrives in words",
 };
 
+// ═════════════════════════════════════════════════════════════════════════
+// WORKING-RELATIONSHIP REGISTER (colleagues / manager-report / mentor-mentee)
+//
+// FOUNDER-REVIEW: authored — every string below is new and needs a voice pass.
+//
+// These tables are the interpretation register for the three working frames.
+// They read the SAME engine-computed signs every other frame reads (Mercury,
+// Saturn, Mars), keyed to the person's REAL sign, and are omitted entirely
+// when the sign is missing or the engine flagged it uncertain. No new
+// astrological claim is made here and no aspect computation changes: Mercury
+// is already the communication/decision body, Saturn already the
+// structure/authority body, Mars already the drive body. Only the register in
+// which those true placements are described is professional instead of
+// personal.
+//
+// HARD CONSTRAINT: no romantic, attraction, or intimacy language of any kind
+// may appear in any string below, and none of it may leak the personal
+// register (no "loved", "closeness", "affection", "the bond"). Enforced by
+// packages/astro/test/professional-frames.test.ts, which scans every rendered
+// professional reading against a forbidden-term list.
+//
+// WHY THREE MERCURY TABLES BUT ONE SATURN AND ONE MARS TABLE: a previous
+// audit (see the FRIEND_MERCURY_HOW / SIBLING_MERCURY_HOW note above) found
+// that a swapped prefix over one shared sign table is not real
+// differentiation. So the lead body register, Mercury, is authored once per
+// working frame: peer voice, reporting-line voice, teaching voice. Respect
+// (Saturn) and deadline behavior (Mars) are genuinely the same reading in all
+// three working frames, so they are ONE shared table each, used unprefixed by
+// all three, in the same way MOON_NEED is shared by every frame in the file.
+// ═════════════════════════════════════════════════════════════════════════
+
+/** Colleagues: peer-to-peer working style, keyed to the real Mercury sign. */
+const COLLEAGUE_MERCURY_HOW: Partial<Record<string, string>> = {
+  Aries:       "This colleague decides fast and says it plainly. Bring the recommendation, not the whole deck, and let them react before you fill in the detail",
+  Taurus:      "This colleague wants the plan to hold still. Flag a change early and give them a beat to absorb it, because a late pivot costs more with them than the pivot is worth",
+  Gemini:      "This colleague thinks out loud and will float three options before settling. Treat the first version as a draft, then write down what you actually agreed",
+  Cancer:      "This colleague reads the tone of a message before its content. Say why you are asking, or a short request lands as a complaint",
+  Leo:         "This colleague needs their contribution named where the team can see it. Credit the specific piece first, then edit the work",
+  Virgo:       "This colleague deals in specifics and spots the gap. Bring the numbers and the caveats, because a rounded answer buys you a second round trip",
+  Libra:       "This colleague wants both options weighed before a call is made. Show them the one you chose against, or the decision reads as a shortcut",
+  Scorpio:     "This colleague already senses what got left out of the update. Name the risk yourself, because with them a tidy status reads worse than a hard one",
+  Sagittarius: "This colleague wants the point of the work before the steps. Give them the wide frame first, then the task list",
+  Capricorn:   "This colleague wants to be briefed like someone who has done this before. Say it once, cleanly, and skip the reassurance",
+  Aquarius:    "This colleague argues with the approach, not with you. Leave room to challenge the plan and the challenge usually improves it",
+  Pisces:      "This colleague hears the pressure behind an ask. Say what is genuinely urgent and what is not, or everything arrives urgent",
+};
+
+/** Manager and report: how to talk across a reporting line, keyed to the real Mercury sign. */
+const MANAGER_MERCURY_HOW: Partial<Record<string, string>> = {
+  Aries:       "Keep it short and direct with them: the headline first, the reasoning second. Cushioning reads as hedging, and hedging reads as a problem being hidden",
+  Taurus:      "Give them a change in writing and give it time. A decision sprung in the meeting gets resisted; the same decision seen a week earlier gets carried",
+  Gemini:      "Let them talk a decision through before it is fixed, then confirm the outcome in one line. Otherwise two versions of the plan leave the room",
+  Cancer:      "Say where they stand before you say what has to change, or a routine note gets read as a warning",
+  Leo:         "Acknowledge what they own before you edit it. Credit given where others can see it buys you a private correction",
+  Virgo:       "Be exact about scope and about what finished means. A vague brief makes them perfect the wrong part and then carry the miss as their fault",
+  Libra:       "Show the reasoning behind the call. A decision handed down without the tradeoff reads as arbitrary and quietly loses them",
+  Scorpio:     "Give them the real reason. They will find the part you left out, and a half answer costs more than the hard answer would have",
+  Sagittarius: "Give them the purpose, then the constraint. They will follow a reason a long way and a rule about ten feet",
+  Capricorn:   "Talk to them about the standard rather than the supervision. They will hold a high bar; being watched over it only makes them slower",
+  Aquarius:    "Let them disagree on the record. Room to argue the approach keeps them in the work; being answered with rank does not",
+  Pisces:      "Rank the priorities out loud. Without an order, they take every signal as equally urgent and spread themselves thin",
+};
+
+/** Mentor and mentee: teaching register, keyed to the real Mercury sign. */
+const MENTOR_MERCURY_HOW: Partial<Record<string, string>> = {
+  Aries:       "They learn by trying it and getting it wrong quickly. Hand them one small thing to attempt this week instead of a long explanation",
+  Taurus:      "They learn by repetition and want one thing solid before the next. Do not stack a second lesson onto an unfinished one",
+  Gemini:      "They learn by asking around the subject. Let the questions wander, then bring it back to the one thing they will practice",
+  Cancer:      "They will not admit confusion until they trust you. Say plainly that not knowing yet is the normal part, and they will ask sooner",
+  Leo:         "They learn in front of people and want the progress noticed. Give them something to present, then correct it in private",
+  Virgo:       "They want the method and the reason it works. Give them the standard to check their own work against and they will use it",
+  Libra:       "They want to see how a good decision actually gets weighed. Walk them through a call you made and what you traded away",
+  Scorpio:     "They want the part most advice leaves out. Tell them what it cost you, or the guidance sounds polished and unusable",
+  Sagittarius: "They want the whole map before the first step, even the parts still out of reach. Sketch the arc, then name the next move",
+  Capricorn:   "They want real stakes and an honest assessment. Praise the work accurately and leave the bar where it is",
+  Aquarius:    "They will test the received way of doing it. Let them argue with the method and hold only the parts that are load bearing",
+  Pisces:      "They take in more than they can repeat back yet. Let it sit, then ask what landed before you add the next piece",
+};
+
+/**
+ * How this person reads respect at work, from their real Saturn sign. Shared
+ * by all three working frames. Each value is a NOUN PHRASE: it completes
+ * "{Name} reads respect through their {sign} Saturn: {value}." Read it aloud
+ * in that template before editing (a to-infinitive or a bare clause here
+ * produces the ungrammatical output that the VENUS_NEED note above documents).
+ */
+const WORK_SATURN_RESPECT: Partial<Record<string, string>> = {
+  Aries:       "room to move first and answer for it after. Asking them to clear every step reads as doubt",
+  Taurus:      "consistency. A deadline or a rule that keeps moving costs more trust with them than a hard one ever would",
+  Gemini:      "being told why. A decision they understand is one they will carry; one they do not, they quietly work around",
+  Cancer:      "being protected in front of the room. Correct them privately, or the correction lands as exposure",
+  Leo:         "visible responsibility. Being trusted with something that carries their name reads as respect, and being quietly reassigned reads as a verdict",
+  Virgo:       "accuracy about what good means. A vague brief followed by a critique reads as a setup, not a standard",
+  Libra:       "the same rule applied to everyone. An exception made for someone else is the fastest way to lose them",
+  Scorpio:     "being told the real stakes. Managed optimism reads as being handled, and they do not unhear it",
+  Sagittarius: "room inside the requirement. Give them the point and the boundary, then leave the route to them",
+  Capricorn:   "real weight to carry. Low expectations read to them as a judgment on what they are capable of",
+  Aquarius:    "principle over rank. Explain the standard and they will hold it; invoke position and they check out",
+  Pisces:      "firmness delivered kindly. They will meet a clear expectation, but a harsh delivery is remembered long after the point is forgotten",
+};
+
+/**
+ * Where the friction shows up under deadline, from their real Mars sign.
+ * Shared by all three working frames. Each value is a NOUN PHRASE completing
+ * "Under a deadline, {Name}'s {sign} Mars shows up as {value}."
+ */
+const WORK_MARS_DEADLINE: Partial<Record<string, string>> = {
+  Aries:       "immediate action and a short fuse. They move before the plan is agreed, so give them the first real task early",
+  Taurus:      "digging in at the pace they already set. Pushing harder slows them down, so move the checkpoint earlier instead",
+  Gemini:      "several things half started and a running commentary. Ask them to name the one that ships",
+  Cancer:      "protecting the people over the plan, and going quiet when they feel rushed. Ask them directly what should be dropped",
+  Leo:         "taking it over so it gets done properly. Give them a visible piece to own before they annex the rest",
+  Virgo:       "polishing the part nobody is waiting on. Tell them explicitly what is allowed to stay rough",
+  Libra:       "consulting one more person instead of deciding. Give them a deadline for the decision, not only for the delivery",
+  Scorpio:     "quiet, total focus and a long memory for who did not show up. Say out loud who is covering what",
+  Sagittarius: "widening the scope late. Restate what is out of scope before the last stretch, not after it",
+  Capricorn:   "absorbing the whole load without mentioning it. Ask what they have taken on before it is finished",
+  Aquarius:    "changing the method mid crunch. Ask for the improvement in writing for next time and hold this run steady",
+  Pisces:      "drifting on the timeline while the quality stays high. Give them a mid point check rather than one at the end",
+};
+
 // ─────────────────────────────────────────────────────────────────────────
 // FOUNDER-REVIEW: authored placeholder — refine voice.
 // Relationship-type LENS applied to a REAL computed cross-aspect. The bodies,
@@ -568,6 +811,21 @@ const RELATION_ASPECT_FRAME: Record<RelationType, { flows: string; catches: stri
     flows:   "carries across the generations between you. An inherited current that still runs true.",
     catches: "is where two different eras pull apart; the friction is the era gap, not the person.",
   },
+  // FOUNDER-REVIEW: authored — working-relationship register. Working style,
+  // communication, decision making, respect, and deadline pressure only. No
+  // attraction, closeness, or intimacy language is permitted in these three.
+  colleagues: {
+    flows:   "is where the work moves without translation, so a handoff between you costs less explaining than it usually would.",
+    catches: "is where two working styles grind, and it shows up first as a dropped handoff in a busy week.",
+  },
+  "manager-report": {
+    flows:   "is where direction and delivery line up, so an instruction arrives as it was meant.",
+    catches: "is where authority reads as pressure; say what the standard is before you say what is missing.",
+  },
+  "mentor-mentee": {
+    flows:   "is where teaching actually gets used, so guidance turns into practice instead of notes.",
+    catches: "is where advice arrives as judgment; ask what they have already tried before adding to it.",
+  },
 };
 
 /** One-line caption describing what the reordered aspect list is leading with, per type. */
@@ -586,15 +844,25 @@ export function relationLensCaption(relType: RelationType): string {
       return "Leading with communication and understanding aspects (Mercury, Moon, Jupiter) first.";
     case "ancestor":
       return "Leading with the slow outer-planet aspects (Pluto, Neptune, Uranus) that carry the generational layer.";
+    // FOUNDER-REVIEW: authored — working-relationship captions. Same aspects,
+    // same computation; only which of them leads changes.
+    case "colleagues":
+      return "Leading with working-style, drive, and structure aspects (Mercury, Mars, Saturn) first.";
+    case "manager-report":
+      return "Leading with structure, communication, and standing aspects (Saturn, Mercury, Sun) first.";
+    case "mentor-mentee":
+      return "Leading with growth, discipline, and learning aspects (Jupiter, Saturn, Mercury) first.";
   }
 }
 
 /**
  * FOUNDER-REVIEW: authored — relationship-framed Compare result headline, one
- * line per core picker relType (COMPARE_RELATION_TYPES). Flat per type — NOT
- * score-aware, unlike the score-band fallback below. Types the saved-people
- * picker never offers (romantic, platonic) have no line here and fall back
- * to the score-band headline instead of inventing copy for them.
+ * line per relType. Flat per type — NOT score-aware, unlike the score-band
+ * fallback below. Every RelationType now has an entry (the five personal
+ * picker frames, Quick Compare's romantic/platonic, and the three working
+ * frames), so `scoreBandHeadline` is unreachable from a real relType; a
+ * future type added without a line here would fall back to it, which
+ * `compare-guidance.test.ts` fails the build on.
  *
  * Exported so callers that must never read `synastry.scores` (e.g. the `/s`
  * OG image route) can index this map directly instead of going through
@@ -615,14 +883,19 @@ export const RELATION_HEADLINE: Partial<Record<RelationType, string>> = {
   // `synastry.scores` for its copy. Matches the two-sentence voice above.
   romantic: "This is a spark you're both curious about. Here's where it comes easily, and where it takes real care to turn into something steady.",
   platonic: "This is a connection you have chosen to read together, kept easy by staying open with each other. Here is what comes easy, and where it needs a little care.",
+  // FOUNDER-REVIEW: authored — working-relationship headlines. Two sentences,
+  // same shape as the personal frames above, work register throughout.
+  colleagues: "This is a working relationship you both have to keep functional. Here is where the work moves easily between you, and where it snags once the pressure is on.",
+  "manager-report": "This is a working relationship with a reporting line running through it. Here is where direction lands cleanly, and where authority and autonomy pull against each other.",
+  "mentor-mentee": "This is a teaching relationship, built on one of you having gone first. Here is where the guidance lands, and where it tips into pressure.",
 };
 
 /**
  * FOUNDER-REVIEW: authored (moved) — score-band-only fallback headline, the
  * ORIGINAL Compare headline text (previously inlined separately on web and,
  * with different wording, on mobile — now the single shared source for
- * both). Kept as the fallback for any relType without a RELATION_HEADLINE
- * line (romantic, platonic).
+ * both). Kept only as the fallback for a relType with no RELATION_HEADLINE
+ * line; every current RelationType has one, so nothing reaches this today.
  */
 function scoreBandHeadline(overall: number): string {
   if (overall >= 70) return "High flow. Momentum comes naturally here.";
@@ -658,9 +931,26 @@ export function whatTheyNeed(
 
   const tightestFrictionAspect = receivingAspects.find((a) => a.harmony < -0.5);
 
+  /**
+   * Clauses that must OPEN the reading, ahead of `parts`. Only the working
+   * frames use it (working style and decision making lead a work reading);
+   * it stays empty for every other relType, so their output is byte-identical
+   * to before this branch existed.
+   */
+  const leadParts: string[] = [];
   const parts: string[] = [];
 
-  const moonLine = moon ? MOON_NEED[moon] : null;
+  // The Moon (emotional need) clause is the one body every personal frame
+  // shares. The working frames deliberately skip it: MOON_NEED / MOON_HOW and
+  // the low-emotional fallback are written in the personal register ("the bond
+  // is safe", "close the distance", "reassurance"), which is the wrong
+  // register for a colleague, a report, or a mentee, and would put closeness
+  // language into a working reading. Those frames read Mercury, Saturn, and
+  // Mars instead (see the working-relationship block below). Nothing is
+  // hidden and nothing is invented: which real bodies a frame surfaces is
+  // already frame-specific throughout this file (Venus is romantic-only,
+  // Saturn was parent-child-only).
+  const moonLine = moon && !isProfessionalRelation(relType) ? MOON_NEED[moon] : null;
   if (moonLine) {
     // PHASE 2: description ("they need X") + how to actually deliver it, both
     // keyed to the same real Moon sign.
@@ -669,7 +959,7 @@ export function whatTheyNeed(
       `${name}'s ${moon} Moon means they need ${moonLine.replace("NAME", name)}.` +
       (moonHow ? ` To actually give it: ${moonHow}.` : "")
     );
-  } else if (scores.emotional < 52) {
+  } else if (scores.emotional < 52 && !isProfessionalRelation(relType)) {
     parts.push(`${name} needs reassurance that the bond holds when the conversation gets hard. Lead with the feeling, not the verdict.`);
   }
 
@@ -681,6 +971,7 @@ export function whatTheyNeed(
   const isPartnerLens = isRomanticRelation(relType);
   const mercury = person.mercury ?? "";
   const saturn = person.saturn ?? "";
+  const mars = person.mars ?? "";
   const venusLine = venus && venus !== moon ? VENUS_NEED[venus] : null;
   if (venusLine && scores.warmth < 62 && isPartnerLens) {
     // PHASE 2: how they feel loved + the concrete way to show it (same Venus sign).
@@ -733,6 +1024,46 @@ export function whatTheyNeed(
     }
   }
 
+  // FOUNDER-REVIEW: authored — working-relationship register.
+  // The three working frames lead with working style and decision making
+  // (Mercury), then how this person reads respect (Saturn), then where the
+  // friction shows under deadline (Mars). These are collected in `leadParts`
+  // and joined AHEAD of the Moon line and everything else below, so a working
+  // reading opens on the work rather than on emotional need. Every clause is
+  // keyed to a real, engine-computed sign and omitted when that sign is
+  // missing or uncertain; nothing here is generated, and no aspect
+  // computation is involved. Venus (the attraction register) is unreachable
+  // for these frames because `isRomanticRelation` is false for all of them.
+  if (isProfessionalRelation(relType)) {
+    if (mercury) {
+      const mercuryLine = MERCURY_NEED[mercury];
+      const workMercuryHow =
+        relType === "colleagues"
+          ? COLLEAGUE_MERCURY_HOW[mercury]
+          : relType === "manager-report"
+            ? MANAGER_MERCURY_HOW[mercury]
+            : MENTOR_MERCURY_HOW[mercury];
+      if (mercuryLine) {
+        leadParts.push(
+          `${name}'s ${mercury} Mercury sets how they think a problem through and what they need from a conversation: ${mercuryLine}.` +
+          (workMercuryHow ? ` In practice: ${workMercuryHow}.` : "")
+        );
+      }
+    }
+    if (saturn) {
+      const respect = WORK_SATURN_RESPECT[saturn];
+      if (respect) {
+        leadParts.push(`${name} reads respect through their ${saturn} Saturn: ${respect}.`);
+      }
+    }
+    if (mars) {
+      const deadline = WORK_MARS_DEADLINE[mars];
+      if (deadline) {
+        leadParts.push(`Under a deadline, ${name}'s ${mars} Mars shows up as ${deadline}.`);
+      }
+    }
+  }
+
   if (tightestFrictionAspect && scores.communication < 60 && relType !== "platonic") {
     const bodyA = tightestFrictionAspect.from, bodyB = tightestFrictionAspect.to;
     parts.push(`The tightest friction runs through a ${bodyA}–${bodyB} ${tightestFrictionAspect.type} (${tightestFrictionAspect.orb.toFixed(1)}°). Name the pattern before you're inside it, and it loses its grip.`);
@@ -748,18 +1079,25 @@ export function whatTheyNeed(
     parts.push(`Across the years between you, meet ${name} in the era that shaped them before you translate it into yours.`);
   } else if (isPartnerLens && scores.overall >= 70) {
     parts.push("The overall flow is strong. The real work is making sure you both say the tender thing out loud while it's easy.");
+  } else if (isProfessionalRelation(relType) && !mars) {
+    // FOUNDER-REVIEW: authored — working-frame closer. Fires only when Mars is
+    // missing or uncertain, so the deadline half of the reading still says
+    // something true without asserting a sign the engine did not compute.
+    parts.push("Pressure is where the difference between you shows. Agree who decides what before the next deadline rather than during it.");
   }
 
-  if (parts.length === 0) {
+  const all = [...leadParts, ...parts];
+
+  if (all.length === 0) {
     const vibe = moon ? SIGN_VIBE[moon] : null;
     if (vibe) {
-      parts.push(`${name}'s ${moon} Moon (${vibe}) is the register they speak first. Meet them there.`);
+      all.push(`${name}'s ${moon} Moon (${vibe}) is the register they speak first. Meet them there.`);
     } else {
-      parts.push(`${name} needs to be met in their own language before the connection can deepen.`);
+      all.push(`${name} needs to be met in their own language before the connection can deepen.`);
     }
   }
 
-  return parts.join(" ");
+  return all.join(" ");
 }
 
 /**
@@ -1021,6 +1359,82 @@ const RELATION_ACTION_REGISTER: Record<RelationType, { flows: readonly string[];
       "Bridge the decades between you before the disagreement:",
       "Read the era gap before you read it as a slight:",
       "Close the distance in years, not in affection:",
+    ],
+  },
+  // ─────────────────────────────────────────────────────────────────────────
+  // FOUNDER-REVIEW: authored — working-relationship registers.
+  // One pool per working frame, eight paraphrases of the same register per
+  // nature (the pool size `pickOpener` hashes into; a shorter pool would
+  // collapse onto its first entry, which `aspect-opener-variety.test.ts`
+  // fails on). Peer voice for colleagues, authority-aware but role-neutral
+  // for manager-report (Compare never knows which of the two people the
+  // reader is), teaching voice for mentor-mentee. No intimacy or attraction
+  // language in any of them.
+  // ─────────────────────────────────────────────────────────────────────────
+  colleagues: {
+    flows: [
+      "Put this ease to work on the actual job:",
+      "Use this open channel on the work, not just the small talk:",
+      "Lean on this when the workload spikes:",
+      "Build the working rhythm on this part:",
+      "Give this ease a real task instead of leaving it social:",
+      "Route the harder work through this opening:",
+      "Make this the part of the process you two keep:",
+      "Spend this ease on the work that actually matters:",
+    ],
+    catches: [
+      "Handle this before a deadline handles it for you:",
+      "Sort this out in a calm week, not a crunch week:",
+      "Name the working difference out loud instead of routing around it:",
+      "Fix the handoff before the next one is due:",
+      "Say what you need from each other before the clock says it:",
+      "Agree how this gets decided before it has to be decided fast:",
+      "Deal with this while it is still a process problem, not a people problem:",
+      "Get this into the open before the pressure adds interest to it:",
+    ],
+  },
+  "manager-report": {
+    flows: [
+      "Put this working ease on the record, not just in the room:",
+      "Use this open line before the next review, not during it:",
+      "Let this ease carry the harder conversations too:",
+      "Give this strength a name in writing:",
+      "Route the real decisions through this opening:",
+      "Spend this trust on scope, not only on tone:",
+      "Use this to hand over genuine ownership:",
+      "Make this the default way work gets set and reported:",
+    ],
+    catches: [
+      "Say what the standard is before you say what is missing:",
+      "Set the expectation out loud before the deadline sets it:",
+      "Separate the work from the standing before this gets raised:",
+      "Name the constraint, not just the correction:",
+      "Agree what good looks like before judging what happened:",
+      "Ask what got in the way before assigning the fix:",
+      "Put the disagreement on the work, never on the rank:",
+      "Give the context first, then the change you want:",
+    ],
+  },
+  "mentor-mentee": {
+    flows: [
+      "Turn this ease into something practiced, not just discussed:",
+      "Use this open channel while there is something to learn on it:",
+      "Let the teaching run down this line:",
+      "Spend this ease on the harder lesson:",
+      "Give this understanding a real piece of work to prove it on:",
+      "Push a little further while this is still easy:",
+      "Use this opening to hand over the reasoning, not just the answer:",
+      "Make this where the next skill gets built:",
+    ],
+    catches: [
+      "Ask what they have already tried before adding to it:",
+      "Offer the reasoning, not the verdict:",
+      "Let them get it wrong once before you step in:",
+      "Check what they actually need before handing over experience:",
+      "Slow the advice to the pace it can be used at:",
+      "Say it as one option, not as the answer:",
+      "Name the standard without standing over it:",
+      "Make room for their attempt before you improve it:",
     ],
   },
 };
@@ -1300,10 +1714,113 @@ const ASPECT_ACTION: Record<string, { flows: string; catches: string }> = {
 };
 
 /**
+ * FOUNDER-REVIEW: authored — working-register overrides for the body-pair
+ * TACTICS above, used only by the working frames (`isProfessionalRelation`).
+ *
+ * `ASPECT_ACTION` is shared by every frame, and a large part of it is written
+ * in the personal register: Venus and Moon pairs talk about affection,
+ * warmth, and comfort. That copy is correct for partners, siblings, or a
+ * parent, and wrong for a colleague, a report, or a mentee, so a working
+ * frame reading it verbatim would put attraction and intimacy language into a
+ * working reading (which is exactly what
+ * `packages/astro/test/professional-frames.test.ts` fails the build on).
+ *
+ * WHICH CELLS ARE OVERRIDDEN, and why it is not a judgment call: exactly the
+ * cells whose shared copy trips the professional register gate (the forbidden
+ * term list in that test). Everything else keeps the shared tactic, because a
+ * shared tactic that is already register-neutral (`mars-saturn`,
+ * `jupiter-mercury`, `mercury-saturn`, and 30 more) is BETTER than a
+ * paraphrase of it: same claim, one source, nothing to drift. The test scans
+ * all 55 body pairs in both harmony directions, so a future edit that puts
+ * personal-register language into a shared cell fails the build until that
+ * cell is either reworded or added here.
+ *
+ * SAME ASTROLOGY, DIFFERENT REGISTER. No cell here changes which bodies are
+ * involved, the aspect, the orb, or whether it reads as flow or friction. The
+ * shift is only in what the body means at work: Venus is what someone rates
+ * as good work and how they want it credited, and the Moon is morale and how
+ * a person needs to be handled, rather than affection and comfort.
+ * Partial by half: a pair whose `catches` is register-neutral but whose
+ * `flows` is not overrides only `flows`.
+ */
+const WORK_ASPECT_ACTION: Record<string, Partial<{ flows: string; catches: string }>> = {
+  [PAIR_KEY("moon", "sun")]: {
+    flows:   "back their standing and their footing at once; you rarely have to trade one for the other here, so say out loud that you see both",
+  },
+  [PAIR_KEY("moon", "venus")]: {
+    catches: "when they raise something and then drop it, do not press it in the moment; ask once when it is quieter, because pressure makes them take the ask back",
+    flows:   "say what you rate in their work out loud; goodwill costs you nothing here, so spend it where the room can hear it",
+  },
+  [PAIR_KEY("mars", "venus")]: {
+    catches: "when the push to get it shipped runs over what the other one counts as good work, say the tradeoff out loud instead of acting on it; the friction is pace against standards",
+    flows:   "keep making the small deliberate courtesy that keeps this running; the drive lines up easily here, so the upkeep is the actual work",
+  },
+  [PAIR_KEY("mercury", "venus")]: {
+    catches: "say what is working before you say what is not; the correction only gets heard after the credit does",
+    flows:   "let the easy way you two talk carry the awkward conversations too, not only the routine ones",
+  },
+  [PAIR_KEY("moon", "saturn")]: {
+    flows:   "lean on the steadiness here; turning up predictably is the reassurance this working relationship actually runs on",
+  },
+  [PAIR_KEY("saturn", "venus")]: {
+    catches: "they think credit has to be earned twice, so give it once when nothing has been earned; the unprompted version is the one that lands",
+    flows:   "let reliability and recognition reinforce each other; being consistent reads here as the most serious kind of respect",
+  },
+  [PAIR_KEY("mercury", "mercury")]: {
+    flows:   "keep the everyday back-and-forth going; this easy channel is the upkeep the whole working relationship depends on",
+  },
+  [PAIR_KEY("neptune", "pluto")]: {
+    flows:   "trust the deep, quiet understanding you two have; it works underground here, so keep saying out loud what is actually happening",
+  },
+  [PAIR_KEY("jupiter", "moon")]: {
+    catches: "when the big plan lands in a rough week, do not talk them past the objection; take it seriously first, then widen the frame",
+    flows:   "let the optimism and the steadier read of the room feed each other; this pair plans better out loud than either of you does alone",
+  },
+  [PAIR_KEY("venus", "venus")]: {
+    flows:   "keep naming what you each rate in the other's work; you already speak the same language about it, so do not let it go quiet",
+  },
+  [PAIR_KEY("jupiter", "venus")]: {
+    catches: "when the generosity tips into too much, check what was actually asked for before you give bigger; overdoing it buries the plainer thing they needed",
+    flows:   "be openly generous with credit and with time; it comes easily and at scale here, so spend it on the record before it gets assumed",
+  },
+  [PAIR_KEY("moon", "uranus")]: {
+    catches: "when the mood shifts without warning, give room instead of hunting for the cause; this pair needs steadiness that does not hover, so stay available and stop short of managing them",
+  },
+  [PAIR_KEY("neptune", "sun")]: {
+    catches: "when you are backing the idea of them rather than the work in front of you, look at what is actually there; this pair projects easily, so review the real thing",
+  },
+  [PAIR_KEY("neptune", "venus")]: {
+    catches: "when the praise goes vague and glowing, ask for the specific version; this pair compliments in general terms, so keep the credit attached to a real piece of work",
+    flows:   "let the appreciation be generous and keep it specific; the good will is real here, so make sure it names something they actually did",
+  },
+  [PAIR_KEY("pluto", "venus")]: {
+    catches: "when approval turns into a test, name the concern instead of quietly raising the bar; the regard runs deep here, so let it stay serious without becoming a hold",
+    flows:   "let the regard you have for each other's work carry real weight; it goes all the way down here, so put it on the record instead of keeping it private",
+  },
+  [PAIR_KEY("saturn", "saturn")]: {
+    catches: "when you both wait for the other to move first, one of you go anyway; two people who think trust has to be earned can stand there forever",
+  },
+  [PAIR_KEY("sun", "venus")]: {
+    catches: "when pride and appreciation tangle, lead with what you rate in their work before anything else; this pair needs to be valued, not just managed",
+    flows:   "say plainly what you rate in each other's work; the regard is easy here, so put it in front of other people before it gets assumed",
+  },
+  [PAIR_KEY("uranus", "venus")]: {
+    catches: "when they need room and consistency at once, ask which one this week actually needs; this pair counts things as good in an unusual key, so give the credit without requiring it look conventional",
+    flows:   "let the working style stay as unconventional as it is; the regard here is easy and a little electric, so use it instead of standardizing it",
+  },
+};
+
+/**
  * Fallback tactics when a specific pair isn't authored — keyed to a SINGLE
  * body's domain, so the line is still specific to that real planet (never
  * "communicate better"). `aspectActionLine` picks the more relationship-
  * relevant of the two bodies as the lead. FOUNDER-REVIEW: authored — refine voice.
+ *
+ * Unreachable for a real engine aspect: `ASPECT_ACTION` covers all 55 pairs of
+ * the 10 `BodyName`s (the Tier-1 coverage sprint), and
+ * `professional-frames.test.ts` asserts a non-empty pair tactic for every one
+ * of them, so the working frames never fall through to these personal-register
+ * lines (`venus` and `mercury` here would trip the gate).
  */
 const BODY_FRICTION_ACTION: Record<string, string> = {
   sun:     "acknowledge the person before you take issue with the choice. Their need to be recognized is what's really bristling",
@@ -1354,8 +1871,14 @@ export function aspectActionParts(
   relType: RelationType
 ): { flows: boolean; opener: string; tactic: string } {
   const flows = a.harmony >= 0;
-  const pair = ASPECT_ACTION[PAIR_KEY(a.from, a.to)];
-  const tactic = (pair && (flows ? pair.flows : pair.catches))
+  const half = flows ? "flows" : "catches";
+  const key = PAIR_KEY(a.from, a.to);
+  const pair = ASPECT_ACTION[key];
+  // Working frames read the same pair, in the working register, wherever the
+  // shared tactic is written in the personal one (see WORK_ASPECT_ACTION).
+  const workTactic = isProfessionalRelation(relType) ? WORK_ASPECT_ACTION[key]?.[half] : undefined;
+  const tactic = workTactic
+    ?? (pair && pair[half])
     ?? (flows ? BODY_FLOW_ACTION[leadBody(a, relType).toLowerCase()] : BODY_FRICTION_ACTION[leadBody(a, relType).toLowerCase()])
     ?? "";
   const pool = RELATION_ACTION_REGISTER[relType][flows ? "flows" : "catches"];
@@ -1630,14 +2153,102 @@ const ASPECT_SUMMARY_FRAME: Record<string, { flows: string; catches: string }> =
   },
 };
 
+/**
+ * FOUNDER-REVIEW: authored — working-register overrides for the pair-keyed
+ * SUMMARY LENS above, used only by the working frames.
+ *
+ * Exactly the counterpart of `WORK_ASPECT_ACTION`, for the other shared
+ * pair-keyed layer, chosen by the same rule: override precisely the cells
+ * whose shared lens trips the professional register gate, and keep the shared
+ * lens everywhere else. The doc comment on `ASPECT_SUMMARY_FRAME` claims the
+ * table is family-safe, and it holds for attraction and desire, but it does
+ * still describe Venus and Moon pairs as affection, warmth, and comfort, so
+ * those cells need the working register here.
+ *
+ * Grammar is the same as the table it overrides: each value is a predicate
+ * continuing "{NameA}'s {Body} {aspect} {NameB}'s {Body} (orb°) ...", ending
+ * in a period. Same bodies, same aspect, same orb, same flow/friction sign:
+ * only the register changes.
+ */
+const WORK_ASPECT_SUMMARY_FRAME: Record<string, Partial<{ flows: string; catches: string }>> = {
+  [PAIR_KEY("moon", "sun")]: {
+    flows: "is where standing and steadiness point the same way, and you rarely have to trade one against the other.",
+  },
+  [PAIR_KEY("moon", "venus")]: {
+    catches: "is where wanting the credit and needing the ground steady take turns, so the ask arrives and then gets withdrawn.",
+    flows: "is where goodwill and steady morale are cheap to give, and the working relationship runs on that.",
+  },
+  [PAIR_KEY("mars", "venus")]: {
+    catches: "is where the push to ship and the standard for good work pull opposite ways, so the pace shows up as friction.",
+    flows: "is where the drive and the standard point the same way, and one small courtesy keeps it running.",
+  },
+  [PAIR_KEY("mercury", "venus")]: {
+    catches: "is where the critique arrives before the credit, so the correction lands as a verdict instead of help.",
+    flows: "is where the easy way you talk can carry the awkward conversations too, not only the routine ones.",
+  },
+  [PAIR_KEY("moon", "saturn")]: {
+    flows: "is where reliable presence is the reassurance this working relationship actually runs on.",
+  },
+  [PAIR_KEY("mercury", "mercury")]: {
+    flows: "is where the everyday back-and-forth is the upkeep the whole working relationship depends on.",
+  },
+  [PAIR_KEY("saturn", "venus")]: {
+    catches: "is where credit feels like it has to be earned twice, so the unprompted kind is the only kind that lands.",
+    flows: "is where reliability and recognition reinforce each other, and consistency reads as respect.",
+  },
+  [PAIR_KEY("jupiter", "moon")]: {
+    catches: "is where a big plan meets a rough week, and cheering them past the objection misses it.",
+    flows: "is where optimism and a steady read of the room feed each other, and the planning goes better out loud.",
+  },
+  [PAIR_KEY("venus", "venus")]: {
+    flows: "is where you already agree about what good work looks like, and it goes quiet if you stop saying so.",
+  },
+  [PAIR_KEY("jupiter", "venus")]: {
+    catches: "is where generosity tips into too much, and overdoing it buries the plainer thing they needed.",
+    flows: "is where credit comes easily and at scale, so spend it out loud before it gets assumed.",
+  },
+  [PAIR_KEY("moon", "uranus")]: {
+    catches: "is where the mood shifts without warning, and hunting for the cause costs you the steadiness they need.",
+  },
+  [PAIR_KEY("neptune", "pluto")]: {
+    flows: "is where the real understanding runs underground; trust it, and still name what is actually happening.",
+  },
+  [PAIR_KEY("neptune", "sun")]: {
+    catches: "is where you are backing the idea of them more than the work in front of you, so look at what is actually there.",
+  },
+  [PAIR_KEY("neptune", "venus")]: {
+    catches: "is where the praise goes vague and glowing, so keep the credit attached to a real piece of work.",
+    flows: "is where the appreciation is generous and imaginative, and it holds only while it stays specific.",
+  },
+  [PAIR_KEY("pluto", "venus")]: {
+    catches: "is where approval turns into a test, so let the standard stay serious without becoming a hold.",
+    flows: "is where regard for each other's work goes all the way down, so put it on the record instead of keeping it private.",
+  },
+  [PAIR_KEY("saturn", "saturn")]: {
+    catches: "is where you both wait for the other to move first, and two people who think trust is earned can stand there forever.",
+  },
+  [PAIR_KEY("sun", "venus")]: {
+    catches: "is where pride and appreciation tangle, and they need to be valued, not just managed.",
+    flows: "is where the regard is easy and openly flattering, so say what you rate in their work before it is assumed.",
+  },
+  [PAIR_KEY("uranus", "venus")]: {
+    catches: "is where they need room and consistency at once, so ask which one this week needs instead of assuming.",
+    flows: "is where the regard is easy and a little electric, so use the unconventional working style instead of standardizing it.",
+  },
+};
+
 /** Pair-keyed summary lens, with RELATION_ASPECT_FRAME as last-resort fallback. */
 export function aspectSummaryLens(
   a: { from: string; to: string; harmony: number },
   relType: RelationType
 ): string {
   const flows = a.harmony >= 0;
-  const pair = ASPECT_SUMMARY_FRAME[PAIR_KEY(a.from, a.to)];
-  if (pair) return flows ? pair.flows : pair.catches;
+  const half = flows ? "flows" : "catches";
+  const key = PAIR_KEY(a.from, a.to);
+  const workLens = isProfessionalRelation(relType) ? WORK_ASPECT_SUMMARY_FRAME[key]?.[half] : undefined;
+  if (workLens) return workLens;
+  const pair = ASPECT_SUMMARY_FRAME[key];
+  if (pair) return pair[half];
   const frame = RELATION_ASPECT_FRAME[relType];
   return flows ? frame.flows : frame.catches;
 }
@@ -1741,6 +2352,10 @@ export function narrateHouseOverlay(line: HouseOverlayLine, relType: RelationTyp
     siblings:       "It lights up the everyday-communication sector siblings share.",
     friends:        "It grounds the friendship in shared community and growth.",
     platonic:       "It grounds the friendship in shared community and growth.",
+    // FOUNDER-REVIEW: authored — working-frame house closers.
+    colleagues:     "It puts the working day and the shared workload at the center of this one.",
+    "manager-report": "It runs the connection through standing, authority, and how the work gets judged.",
+    "mentor-mentee": "It sits on the teaching axis: what one of you has learned, and where the other practices it.",
   };
   const closer = lens[relType];
   return closer ? `${base}. ${closer}` : base;

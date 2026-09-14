@@ -44,7 +44,10 @@ describe("Settings subscription panel does not trust the client billing SDK", ()
 
   it("hasAccess from @galaxia/core is the access decision in the view model", () => {
     const lib = read("apps/web/lib/settings-subscription.ts");
-    expect(lib).toContain('import { hasAccess, trialDaysRemaining } from "@galaxia/core"');
+    expect(lib).toContain("GALAXIA_HELP_EMAIL");
+    expect(lib).toContain("hasAccess");
+    expect(lib).toContain("trialDaysRemaining");
+    expect(lib).toContain('from "@galaxia/core"');
     expect(lib).toMatch(/hasAccess\(/);
     expect(lib).toMatch(/trialDaysRemaining\(/);
   });

@@ -9,12 +9,11 @@ import { Hero } from "../components/marketing/hero";
 import { MarketingNav } from "../components/marketing/marketing-nav";
 import { RevealObserver } from "../components/marketing/reveal-observer";
 import { SiteFooter } from "../components/marketing/site-footer";
+import { HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE } from "../lib/homepage-seo";
 import { SOFTWARE_APPLICATION_JSON_LD } from "../lib/homepage-software-application-json-ld";
 
-// FOUNDER-REVIEW: rewritten (no U+2014). Trimmed to 155 characters; hook kept.
-const TITLE = "Galaxia: Astrology for the People You Love";
-const DESCRIPTION =
-  "Galaxia reads the real birth charts of your inner circle so you can show up for each bond with more intention. Not your horoscope.";
+const TITLE = HOMEPAGE_TITLE;
+const DESCRIPTION = HOMEPAGE_DESCRIPTION;
 
 /**
  * Page-specific metadata for `/` — the link every launch post (Reddit, etc.)
@@ -60,7 +59,7 @@ export const metadata: Metadata = {
  * wherever that content now lives, since a hash fragment never reaches the
  * server for a normal route-based redirect to catch.
  *
- * Kept in full here: Hero (headline + primary signup CTA), the teaser grid,
+ * Kept in full here: Hero (headline + primary free-chart CTA), the teaser grid,
  * FAQ (already short-form, not a duplicate of a standalone page), the final
  * CTA, and the footer. The SoftwareApplication schema
  * (`SOFTWARE_APPLICATION_JSON_LD`) stays homepage-only, describing the

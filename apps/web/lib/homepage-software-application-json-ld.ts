@@ -1,5 +1,6 @@
 import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import type { JsonLdObject } from "../components/seo/json-ld";
+import { HOMEPAGE_DESCRIPTION } from "./homepage-seo";
 
 /**
  * Homepage SoftwareApplication JSON-LD. Galaxia ships on the web only;
@@ -12,8 +13,8 @@ export const SOFTWARE_APPLICATION_JSON_LD: JsonLdObject = {
   applicationCategory: "LifestyleApplication",
   operatingSystem: "Web",
   url: "https://galaxiamea.com",
-  description:
-    "Relationship intelligence powered by computed astrology. Real natal charts, synastry readings, and an AI guide for you and the people in your life.",
+  // FOUNDER-REVIEW: matches HOMEPAGE_DESCRIPTION. Prior JSON-LD keywords flagged in the PR for founder review.
+  description: HOMEPAGE_DESCRIPTION,
   offers: {
     "@type": "Offer",
     price: "9.99",

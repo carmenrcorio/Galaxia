@@ -88,6 +88,11 @@ describe("canOfferConnectInvite is the universal UI gate", () => {
   it("only treats birth_precision none as a merge target", () => {
     expect(isConnectMergeTarget({ ...adultFriend, birth_precision: "none" })).toBe(true);
     expect(isConnectMergeTarget(adultFriend)).toBe(false);
+    expect(isConnectMergeTarget({
+      ...adultFriend,
+      birth_precision: "none",
+      passed_at: "2024-11-02T00:00:00.000Z",
+    })).toBe(false);
   });
 });
 

@@ -15,6 +15,7 @@ import {
 import {
   galaxySeatXY,
   galaxySeatsResolved,
+  effectiveSeat,
   constellationSkeletonSeats,
   isMinorForSafety,
   peopleForTodaySky,
@@ -43,6 +44,7 @@ interface PersonRow {
   is_minor: boolean;
   /** Remembrance marker — passed people are excluded from live "Today in your sky". */
   passed_at?: string | null;
+  custom_position?: { angle: number; radius_pct: number } | null;
 }
 
 interface LinkRow {
@@ -176,7 +178,14 @@ export default function HomeScreen() {
     );
     return people.map((person) => {
       const seat = seats.get(person.id) ?? { nx: 0, ny: 0, angle: 0, rn: 0 };
-      const { x, y } = galaxySeatXY(seat, geom);
+      const { x, y } = effectiveSeat(
+        person,
+        seat.angle,
+        seat.rn,
+        geom.cx,
+        geom.cy,
+        geom.radX,
+      );
       return { personId: person.id, x, y };
     });
   }, [people]);
@@ -216,7 +225,7 @@ export default function HomeScreen() {
       const nowISO = new Date().toISOString();
       const [{ data: profile }, { data: peopleRows, error: peopleError }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: transitRows }, { data: upcomingRows }] = await Promise.all([
       supabase.from("profiles").select("display_name, pinned_sky_person_id, timezone, relational_transit_alerts").eq("id", session.user.id).single(),
-      supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
+      supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, custom_position").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
       personIds.length
         ? supabase.from("charts").select("person_id, data").in("person_id", personIds)
         : Promise.resolve({ data: [] as { person_id: string; data: NatalChart }[] }),

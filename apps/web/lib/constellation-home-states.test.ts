@@ -36,6 +36,12 @@ describe("source wiring — constellation home loading / empty / error", () => {
     expect(skeleton).toContain("CONSTELLATION_EMPTY_ACTION");
   });
 
+  it("overlays a rings toggle that does not live in the canvas effect deps", () => {
+    expect(home).toContain("SETTING_SHOW_RINGS");
+    expect(home).toContain("showRingsRef");
+    expect(home).toContain("Hide orbital rings");
+  });
+
   it("pulses skeleton points with CSS and holds them static under reduced motion", () => {
     expect(css).toContain("@keyframes constellation-skeleton-pulse");
     expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*constellation-skeleton-point \{ animation: none/);

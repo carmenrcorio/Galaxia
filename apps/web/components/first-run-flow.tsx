@@ -44,7 +44,9 @@ import { createSupabaseBrowserClient } from "../lib/supabase/client";
 export const FIRST_RUN_COPY = {
   pageEyebrow: "First run",
   pageTitle: "Start with someone you already know",
-  stepLabels: ["Who", "Them", "What they need", "You", "Next"] as const,
+  // Five labels share a 375px row, so each one has about 65px. Anything longer
+  // than four or five characters ellipsises into nonsense ("WHAT T...").
+  stepLabels: ["Who", "Them", "Need", "You", "Next"] as const,
   skip: "Skip for now",
 
   // Step 1 — who

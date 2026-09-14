@@ -7,6 +7,7 @@ import {
   SHARE_IMAGE_FAIL,
   SHARE_SUCCESS_REVERT_MS,
   assertCanvasHasContent,
+  deliverSharePng,
   shareButtonLabel,
   shareImageOutputSize,
   shouldRevertShareStatus,
@@ -126,33 +127,16 @@ export function ShareImageButton({
         captured instanceof Blob
           ? captured
           : await (await fetch(captured)).blob();
-      if (blob.size < 64) throw new Error(SHARE_IMAGE_FAIL);
-
-      if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
-        try {
-          const file = new File([blob], filename, { type: "image/png" });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file] });
-            setStatus("Shared");
-            return;
-          }
-        } catch (shareErr) {
-          // FOUNDER-REVIEW: rewritten (no U+2014).
-          // A cancelled OS share sheet is not an error: just fall through
-          // to the direct download below without surfacing anything red.
-          if (shareErr instanceof DOMException && shareErr.name === "AbortError") return;
-        }
+      try {
+        const result = await deliverSharePng(blob, filename);
+        setStatus(result === "shared" ? "Shared" : "Image saved");
+      } catch (shareErr) {
+        // FOUNDER-REVIEW: rewritten (no U+2014).
+        // A cancelled OS share sheet is not an error: just stop without
+        // surfacing anything red.
+        if (shareErr instanceof DOMException && shareErr.name === "AbortError") return;
+        throw shareErr;
       }
-
-      // Object URL, not a data: URL — iOS Safari has saved empty files from
-      // large data: hrefs even when the in-memory PNG was fine.
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.download = filename;
-      link.href = url;
-      link.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 2000);
-      setStatus("Image saved");
     } catch (err) {
       setError(err instanceof Error ? err.message : SHARE_IMAGE_FAIL);
     } finally {

@@ -96,6 +96,20 @@ BEGIN
   RAISE NOTICE 'relationship_foreign_people=% (expect RLS deny)', rel_err;
   RAISE NOTICE 'group_members_foreign=% (expect RLS deny or SKIPPED)', gm_err;
 
+  -- custom_position: owner B must not write a seat onto owner A's person.
+  DECLARE
+    pos_updated bigint;
+  BEGIN
+    UPDATE people
+      SET custom_position = '{"angle":0,"radius_pct":0.5}'::jsonb
+      WHERE id = victim_person;
+    GET DIAGNOSTICS pos_updated = ROW_COUNT;
+    RAISE NOTICE 'custom_position_cross_user_updates=% (expect 0)', pos_updated;
+    IF pos_updated <> 0 THEN
+      RAISE EXCEPTION 'ISOLATION_FAILED custom_position_cross_user_updates=%', pos_updated;
+    END IF;
+  END;
+
   IF people_as_b <> 0
      OR tp_err = 'UNEXPECTED_SUCCESS'
      OR invite_err = 'UNEXPECTED_SUCCESS'

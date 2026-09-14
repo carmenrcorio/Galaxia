@@ -11,6 +11,9 @@ const PREFIX = "galaxia.setting.";
 
 export const SETTING_GROUPS_INTRO_DISMISSED = "groupsIntroDismissed";
 
+/** Constellation orbital guide rings. Stored "true" | "false"; missing → on. */
+export const SETTING_SHOW_RINGS = "showRings";
+
 export function readUiSetting(key: string): string | null {
   if (typeof window === "undefined") return null;
   try {

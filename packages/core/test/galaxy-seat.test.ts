@@ -17,6 +17,13 @@ import {
   galaxySeatsResolved,
   constellationSkeletonSeats,
   hash01,
+  parseCustomPosition,
+  clampCustomPosition,
+  pointerToCustomPosition,
+  customPositionToSeat,
+  effectiveSeat,
+  CUSTOM_RADIUS_MIN,
+  CUSTOM_RADIUS_MAX,
   ringBandHalfGap,
   ringBandRadius,
   ringNormAbsolute,
@@ -357,5 +364,77 @@ describe("constellationSkeletonSeats", () => {
       expect(r).toBeGreaterThan(GALAXY_RING_MIN * 0.9);
       expect(r).toBeLessThanOrEqual(1 + GALAXY_RING_JITTER);
     }
+  });
+});
+
+describe("custom_position / effectiveSeat", () => {
+  const geom = { cx: 200, cy: 100, radX: 80, radY: 80 };
+
+  it("parseCustomPosition rejects junk and missing keys", () => {
+    expect(parseCustomPosition(null)).toBeNull();
+    expect(parseCustomPosition("nope")).toBeNull();
+    expect(parseCustomPosition({ angle: 1 })).toBeNull();
+    expect(parseCustomPosition({ radius_pct: 0.5 })).toBeNull();
+    expect(parseCustomPosition({ angle: "0", radius_pct: 0.5 })).toBeNull();
+    expect(parseCustomPosition({ angle: 0.4, radius_pct: 0.6 })).toEqual({
+      angle: 0.4,
+      radius_pct: 0.6,
+    });
+  });
+
+  it("clampCustomPosition keeps radius_pct in [0.05, 1]", () => {
+    expect(clampCustomPosition({ angle: 1, radius_pct: 0 }).radius_pct).toBe(CUSTOM_RADIUS_MIN);
+    expect(clampCustomPosition({ angle: 1, radius_pct: 2 }).radius_pct).toBe(CUSTOM_RADIUS_MAX);
+    expect(clampCustomPosition({ angle: 1, radius_pct: 0.4 }).radius_pct).toBeCloseTo(0.4);
+  });
+
+  it("pointerToCustomPosition at centre+x maps angle ~0 and radius from distance/radX", () => {
+    const pos = pointerToCustomPosition(geom.cx + 40, geom.cy, geom);
+    expect(pos.angle).toBeCloseTo(0, 5);
+    expect(pos.radius_pct).toBeCloseTo(40 / geom.radX, 5);
+  });
+
+  it("customPositionToSeat round-trips through galaxySeatXY on a circle", () => {
+    const pos = { angle: Math.PI / 4, radius_pct: 0.5 };
+    const seat = customPositionToSeat(pos);
+    const xy = galaxySeatXY(seat, geom);
+    expect(xy.x).toBeCloseTo(geom.cx + Math.cos(pos.angle) * pos.radius_pct * geom.radX, 5);
+    expect(xy.y).toBeCloseTo(geom.cy + Math.sin(pos.angle) * pos.radius_pct * geom.radY, 5);
+  });
+
+  it("effectiveSeat uses custom polar coords and ignores default", () => {
+    const got = effectiveSeat(
+      { custom_position: { angle: 0, radius_pct: 0.5 } },
+      Math.PI,
+      1,
+      geom.cx,
+      geom.cy,
+      geom.radX,
+    );
+    expect(got.x).toBeCloseTo(geom.cx + 0.5 * geom.radX, 5);
+    expect(got.y).toBeCloseTo(geom.cy, 5);
+    expect(got.rn).toBeCloseTo(0.5, 5);
+  });
+
+  it("effectiveSeat default path matches galaxySeatXY on a true circle", () => {
+    const def = galaxySeatNorm({ id: "luna", isSelf: false, ring: 2 });
+    const xy = galaxySeatXY(def, geom);
+    const got = effectiveSeat({ custom_position: null }, def.angle, def.rn, geom.cx, geom.cy, geom.radX);
+    expect(got.x).toBeCloseTo(xy.x, 5);
+    expect(got.y).toBeCloseTo(xy.y, 5);
+    expect(got.angle).toBeCloseTo(def.angle, 5);
+    expect(got.rn).toBeCloseTo(def.rn, 5);
+  });
+
+  it("effectiveSeat pins self at the core even with a custom_position", () => {
+    const got = effectiveSeat(
+      { is_self: true, custom_position: { angle: 1, radius_pct: 0.9 } },
+      1,
+      0.9,
+      geom.cx,
+      geom.cy,
+      geom.radX,
+    );
+    expect(got).toEqual({ x: geom.cx, y: geom.cy, angle: 0, rn: 0 });
   });
 });

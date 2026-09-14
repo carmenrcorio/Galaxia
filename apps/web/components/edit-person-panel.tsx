@@ -40,6 +40,7 @@ interface PersonRow {
   /** Curated palette hex; null = element-derived node color on the constellation. */
   star_color?: string|null;
   is_self?: boolean;
+  custom_position?: { angle: number; radius_pct: number } | null;
 }
 interface Props { person: PersonRow; userId: string; onSaved: () => void; onDeleted: () => void; }
 
@@ -74,6 +75,8 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
   const [starColor, setStarColor]   = useState<string|null>(
     normalizeStarColorForWrite(person.star_color)
   );
+  const [customPosition, setCustomPosition] = useState(person.custom_position ?? null);
+  const [resettingPosition, setResettingPosition] = useState(false);
 
   // Populate structured fields from stored data
   const storedDate = parseDateStr(person.birth_date);
@@ -245,6 +248,22 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
     onSaved();
   }
 
+  async function resetPosition() {
+    setResettingPosition(true);
+    setStatus(null);
+    const { error } = await supabase
+      .from("people")
+      .update({ custom_position: null })
+      .eq("id", person.id)
+      .eq("owner_id", userId);
+    setResettingPosition(false);
+    if (error) { setStatus(error.message); return; }
+    setCustomPosition(null);
+    // FOUNDER-REVIEW: reset constellation seat
+    setStatus("Back on their ring.");
+    onSaved();
+  }
+
   if (!open) return <button className="pill-link" onClick={() => setOpen(true)} style={{ fontSize: 13 }}>Edit / delete</button>;
 
   const currentYear = new Date().getFullYear();
@@ -339,6 +358,25 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
             </p>
           )}
         </div>
+
+        {customPosition && !person.is_self ? (
+          <div>
+            <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginBottom: 6 }}>Constellation seat</p>
+            <p className="muted" style={{ fontSize: ".72rem", lineHeight: 1.5, marginBottom: 8 }}>
+              You moved this star off its ring. Reset puts them back on the derived seat.
+            </p>
+            <button
+              type="button"
+              className="pill-link"
+              disabled={resettingPosition}
+              onClick={() => void resetPosition()}
+              style={{ fontSize: 12 }}
+            >
+              {/* FOUNDER-REVIEW: reset constellation position */}
+              {resettingPosition ? "Resetting…" : "Reset position"}
+            </button>
+          </div>
+        ) : null}
 
         {/* Precision */}
         <div style={{ display: "flex", gap: 6 }}>

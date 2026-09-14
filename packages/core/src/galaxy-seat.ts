@@ -332,6 +332,92 @@ export function galaxySeatXY(
   };
 }
 
+/**
+ * Owner-chosen polar seat on the constellation (`people.custom_position`).
+ * `radius_pct` is the same space as `GalaxySeatNorm.rn` (0.05–1.0 of max orbit).
+ */
+export type CustomGalaxyPosition = {
+  angle: number;
+  radius_pct: number;
+};
+
+export const CUSTOM_RADIUS_MIN = 0.05;
+export const CUSTOM_RADIUS_MAX = 1.0;
+
+export function parseCustomPosition(raw: unknown): CustomGalaxyPosition | null {
+  if (raw == null || typeof raw !== "object") return null;
+  const rec = raw as Record<string, unknown>;
+  if (typeof rec.angle !== "number" || !Number.isFinite(rec.angle)) return null;
+  if (typeof rec.radius_pct !== "number" || !Number.isFinite(rec.radius_pct)) return null;
+  return { angle: rec.angle, radius_pct: rec.radius_pct };
+}
+
+export function clampCustomPosition(pos: CustomGalaxyPosition): CustomGalaxyPosition {
+  return {
+    angle: pos.angle,
+    radius_pct: Math.min(CUSTOM_RADIUS_MAX, Math.max(CUSTOM_RADIUS_MIN, pos.radius_pct)),
+  };
+}
+
+/** Polar seat from a CSS-pixel pointer relative to canvas geometry. */
+export function pointerToCustomPosition(
+  px: number,
+  py: number,
+  geom: { cx: number; cy: number; radX: number },
+): CustomGalaxyPosition {
+  const dx = px - geom.cx;
+  const dy = py - geom.cy;
+  const maxR = geom.radX || 1;
+  return clampCustomPosition({
+    angle: Math.atan2(dy, dx),
+    radius_pct: Math.hypot(dx, dy) / maxR,
+  });
+}
+
+export function customPositionToSeat(pos: CustomGalaxyPosition): GalaxySeatNorm {
+  const { angle, radius_pct } = clampCustomPosition(pos);
+  return seatFromAngleRn(angle, radius_pct);
+}
+
+export type PersonWithCustomPos = {
+  is_self?: boolean;
+  custom_position?: CustomGalaxyPosition | null;
+};
+
+/**
+ * Pixel seat for a person. Self is always the galactic core.
+ * `defaultRn` is `GalaxySeatNorm.rn` (0–1), not pixels. Returned `rn` is also
+ * normalised 0–1 so callers can feed `galaxySeatXY` / labels without a unit mixup.
+ */
+export function effectiveSeat(
+  person: PersonWithCustomPos,
+  defaultAngle: number,
+  defaultRn: number,
+  cx: number,
+  cy: number,
+  maxRadius: number,
+): { x: number; y: number; angle: number; rn: number } {
+  if (person.is_self) {
+    return { x: cx, y: cy, angle: 0, rn: 0 };
+  }
+  const custom = parseCustomPosition(person.custom_position);
+  if (custom) {
+    const { angle, radius_pct } = clampCustomPosition(custom);
+    return {
+      x: cx + Math.cos(angle) * radius_pct * maxRadius,
+      y: cy + Math.sin(angle) * radius_pct * maxRadius,
+      angle,
+      rn: radius_pct,
+    };
+  }
+  return {
+    x: cx + Math.cos(defaultAngle) * defaultRn * maxRadius,
+    y: cy + Math.sin(defaultAngle) * defaultRn * maxRadius,
+    angle: defaultAngle,
+    rn: defaultRn,
+  };
+}
+
 export interface GalaxyLabelAnchor {
   id: string;
   /** Default label centre (CSS px), before offset. */

@@ -1,12 +1,10 @@
 "use client";
 
 import type { HouseSystem } from "@galaxia/astro";
-import { Purchases } from "@revenuecat/purchases-js";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { SettingsSubscriptionPanel } from "../../../components/settings-subscription-panel";
 import { Spinner } from "../../../components/spinner";
 import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "@galaxia/astro";
-import { publicEnv } from "../../../lib/env";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 interface PersonLite {
@@ -31,26 +29,6 @@ const RELATIONAL_TRANSIT_ALERTS_OPTIONS: { value: RelationalTransitAlertsPref; l
 ];
 function isRelationalTransitAlertsPref(value: unknown): value is RelationalTransitAlertsPref {
   return value === "all" || value === "major_only" || value === "off";
-}
-
-function formatDate(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
-}
-
-async function fetchManagementUrl(userId: string): Promise<string | null> {
-  if (!publicEnv.revenueCatPublicKey) return null;
-  try {
-    if (!Purchases.isConfigured()) {
-      Purchases.configure({ apiKey: publicEnv.revenueCatPublicKey, appUserId: userId });
-    }
-    const info = await Purchases.getSharedInstance().getCustomerInfo();
-    return info.managementURL;
-  } catch {
-    return null;
-  }
 }
 
 export default function SettingsPage() {
@@ -78,14 +56,6 @@ export default function SettingsPage() {
   const [submittingSupport, setSubmittingSupport] = useState(false);
   const [supportStatus, setSupportStatus] = useState<string | null>(null);
 
-  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
-  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
-  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
-  const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false);
-  const [comped, setComped] = useState(false);
-  const [managementUrl, setManagementUrl] = useState<string | null>(null);
-  const [managementLoaded, setManagementLoaded] = useState(false);
-
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -95,7 +65,7 @@ export default function SettingsPage() {
       const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("house_system, subscription_status, trial_ends_at, current_period_end, cancel_at_period_end, comped, daily_nudge_emails_enabled, relational_transit_alerts")
+          .select("house_system, daily_nudge_emails_enabled, relational_transit_alerts")
           .eq("id", user.id)
           .maybeSingle(),
         supabase.from("people").select("id, display_name, relation").eq("owner_id", user.id).order("display_name", { ascending: true }),
@@ -108,17 +78,8 @@ export default function SettingsPage() {
       // Column default is 'all'; treat any unrecognized/missing value as
       // 'all' too rather than fabricating a different preference.
       setRelationalTransitAlerts(isRelationalTransitAlertsPref(profile?.relational_transit_alerts) ? profile.relational_transit_alerts : "all");
-      setSubscriptionStatus((profile?.subscription_status as string | null) ?? null);
-      setTrialEndsAt((profile?.trial_ends_at as string | null) ?? null);
-      setCurrentPeriodEnd((profile?.current_period_end as string | null) ?? null);
-      setCancelAtPeriodEnd(Boolean(profile?.cancel_at_period_end));
-      setComped(profile?.comped === true);
       setPeople((peopleRows ?? []) as PersonLite[]);
       setGroups((groupRows ?? []) as GroupLite[]);
-
-      const url = await fetchManagementUrl(user.id);
-      setManagementUrl(url);
-      setManagementLoaded(true);
     };
     void load();
   }, [supabase]);
@@ -194,87 +155,12 @@ export default function SettingsPage() {
     window.location.href = "/login";
   };
 
-  const trialLabel = formatDate(trialEndsAt);
-  const periodLabel = formatDate(currentPeriodEnd);
-  const canCancel =
-    !comped &&
-    (subscriptionStatus === "active" || subscriptionStatus === "past_due") &&
-    !cancelAtPeriodEnd;
-  const showBillingControls =
-    !comped &&
-    (subscriptionStatus === "active" ||
-      subscriptionStatus === "past_due" ||
-      (subscriptionStatus === "canceled" && Boolean(managementUrl)));
-
-  // FOUNDER-REVIEW: Settings subscription card copy — refine voice.
-  let subscriptionCopy: string;
-  if (comped) {
-    // FOUNDER-REVIEW: permanent comp access — not a subscription, not a trial.
-    subscriptionCopy = "Permanent access. This account is complimentary: you are not billed.";
-  } else if (subscriptionStatus === "trialing") {
-    subscriptionCopy = trialLabel
-      ? `Trial ends ${trialLabel}.`
-      : "You're on a trial.";
-  } else if (subscriptionStatus === "active" && cancelAtPeriodEnd) {
-    subscriptionCopy = periodLabel
-      ? `Canceled. Access until ${periodLabel}.`
-      : "Canceled. Access continues until the end of your current period.";
-  } else if (subscriptionStatus === "active") {
-    subscriptionCopy = periodLabel
-      ? `Active. Renews ${periodLabel}.`
-      : "Active.";
-  } else if (subscriptionStatus === "past_due") {
-    subscriptionCopy = "Past due. Update your payment method to keep access.";
-  } else if (subscriptionStatus === "canceled") {
-    subscriptionCopy = periodLabel
-      ? `Your subscription ended ${periodLabel}.`
-      : "Your subscription has ended.";
-  } else if (subscriptionStatus === "lifetime") {
-    subscriptionCopy = "Lifetime access.";
-  } else if (subscriptionStatus) {
-    subscriptionCopy = `Status: ${subscriptionStatus}.`;
-  } else {
-    subscriptionCopy = "Loading subscription…";
-  }
-
   return (
     <main className="app-content">
       <p className="eyebrow">Account</p>
       <h1 className="page-title">Settings</h1>
 
-      <section className="glass-card">
-        <h2 className="card-title">Subscription</h2>
-        <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>{subscriptionCopy}</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14 }}>
-          {canCancel ? (
-            <Link className="btn-primary" href="/account/cancel?from=settings">
-              Cancel subscription
-            </Link>
-          ) : null}
-          {!comped && (subscriptionStatus === "trialing" || subscriptionStatus === "canceled") ? (
-            <Link className="pill-link" href="/subscribe">Subscribe</Link>
-          ) : null}
-          {showBillingControls && managementLoaded ? (
-            managementUrl ? (
-              <a className="pill-link" href={managementUrl} target="_blank" rel="noopener noreferrer">
-                Manage billing
-              </a>
-            ) : (
-              <a
-                className="pill-link"
-                href="mailto:support@galaxia.app?subject=Manage%20billing"
-              >
-                Email support about billing
-              </a>
-            )
-          ) : null}
-        </div>
-        {subscriptionStatus === "active" && cancelAtPeriodEnd && managementUrl ? (
-          <p className="muted" style={{ fontSize: ".78rem", marginTop: 10, marginBottom: 0 }}>
-            Changed your mind? You can turn renewal back on in Manage billing.
-          </p>
-        ) : null}
-      </section>
+      <SettingsSubscriptionPanel />
 
       <section className="glass-card">
         <h2 className="card-title">House system</h2>

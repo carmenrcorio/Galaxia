@@ -161,6 +161,15 @@ describe("retired Quick Chart paths redirect in next.config", () => {
     expect(src).toMatch(/permanent:\s*true/);
     expect(src).not.toContain("vercel.json");
   });
+
+  it("permanently sends /account/subscription to /app/settings", () => {
+    const src = readFileSync(join(WEB_ROOT, "next.config.mjs"), "utf8");
+    expect(src).toMatch(/source:\s*["']\/account\/subscription["']/);
+    expect(src).toMatch(/destination:\s*["']\/app\/settings["']/);
+    expect(src).toMatch(/permanent:\s*true/);
+    expect(src).not.toContain("vercel.json");
+    expect(existsSync(join(WEB_APP_DIR, "account/subscription/page.tsx"))).toBe(false);
+  });
 });
 
 describe("nav config still includes the non-Quick-Chart entries", () => {

@@ -6,4 +6,6 @@
 
 `[ADDED]` **`lib/nav-hrefs-resolve.test.ts` now also asserts those hrefs.** Deleting a linked `page.tsx` fails the suite. `/synastry-chart-meaning` is an explicit published-blog allowlist entry served by `app/[slug]/page.tsx`; the catch-all is still not a match for an arbitrary path.
 
-`[DECISION]` **No new next.config redirects.** `/quick-chart` and `/app/quick-chart` already 308 to `/chart`. `/app/family-compare` already 308s in middleware. No `vercel.json`.
+`[ADDED]` **Permanent redirect in `apps/web/next.config.mjs`:** `/account/subscription` -> `/app/settings` (`permanent: true`, 308). Old email bookmarks land on the live billing/settings surface instead of the orphan page. The stub `app/account/subscription/page.tsx` is removed so the path cannot look like a feature. `/start`, `/admin`, and the token routes are unchanged. No `vercel.json`.
+
+`[DECISION]` **No other new redirects.** `/quick-chart` and `/app/quick-chart` already 308 to `/chart`. `/app/family-compare` already 308s in middleware.

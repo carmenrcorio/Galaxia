@@ -23,7 +23,8 @@
  *   shed first under lowPerf before any existing layer degrades. Atmosphere
  *   (wash + nebulae) is a separate DPR-1 canvas refreshed ~4×/s so the motion
  *   path stays under budget and meteors are not shed on a normal phone.
- * - Hover: inspector panel slides in (glass-card style) from right; click routes to /app/person/[id]
+ * - Hover: desktop cursor is pointer on a star; click/tap routes to /app/person/[id].
+ *   Name labels sit on the canvas. No floating inspector.
  * - Duplicate bottom nav row: DELETED per spec
  */
 
@@ -53,7 +54,6 @@ import {
   pointerToCustomPosition,
   type CustomGalaxyPosition,
   getMemorialConstellation,
-  hasPassed,
   honorEdgesFromDeclaredRows,
   isMinorForSafety,
   peopleForTodaySky,
@@ -71,7 +71,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChartImageExportButton, ChartImageExportFrame, chartExportFilename } from "../../components/chart-image-export";
-import { ConnectInviteButton } from "../../components/connect-invite-button";
 import {
   CONSTELLATION_STAGE_STYLE,
   ConstellationEmptyState,
@@ -330,7 +329,6 @@ export default function AppHomePage() {
   const [hoverPerson, setHoverPerson]           = useState<PersonRow | null>(null);
   const [ownerId, setOwnerId]                   = useState<string | null>(null);
   const [unackedPersonIds, setUnackedPersonIds] = useState<Set<string>>(() => new Set());
-  const hoverClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     showRingsRef.current = showRings;
@@ -1414,7 +1412,7 @@ export default function AppHomePage() {
       /* ambient streaks behind the stars — atmosphere only, never data */
       if (!forExport) drawMeteors();
 
-      /* nodes — export never bakes the hover inspector highlight */
+      /* nodes — export never bakes the hover highlight */
       for (let i = 0; i < people.length; i++) {
         const q     = positions[i];
         const isHov = forExport ? false : hoverPerson?.id === people[i].id;
@@ -1527,22 +1525,8 @@ export default function AppHomePage() {
       const rect = canvas.getBoundingClientRect();
       if (!dragRef.current) {
         const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
-        if (hit) {
-          if (hoverClearTimerRef.current) {
-            clearTimeout(hoverClearTimerRef.current);
-            hoverClearTimerRef.current = null;
-          }
-          setHoverPerson(hit);
-          canvas.style.cursor = "pointer";
-          return;
-        }
-        canvas.style.cursor = "default";
-        if (!hoverClearTimerRef.current) {
-          hoverClearTimerRef.current = setTimeout(() => {
-            hoverClearTimerRef.current = null;
-            setHoverPerson(null);
-          }, 220);
-        }
+        setHoverPerson(hit);
+        canvas.style.cursor = hit ? "pointer" : "default";
         return;
       }
       const dx = e.clientX - dragRef.current.startX;
@@ -1614,12 +1598,19 @@ export default function AppHomePage() {
       if (hit) router.push(`/app/person/${hit.id}`);
     };
 
+    const onPointerLeave = () => {
+      if (dragRef.current) return;
+      setHoverPerson(null);
+      canvas.style.cursor = "default";
+    };
+
     const onContextMenu = (e: Event) => { e.preventDefault(); };
 
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onMove);
     canvas.addEventListener("pointerup", onPointerEnd);
     canvas.addEventListener("pointercancel", onPointerEnd);
+    canvas.addEventListener("pointerleave", onPointerLeave);
     canvas.addEventListener("click", onClick);
     canvas.addEventListener("contextmenu", onContextMenu);
 
@@ -1632,6 +1623,7 @@ export default function AppHomePage() {
       canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerup", onPointerEnd);
       canvas.removeEventListener("pointercancel", onPointerEnd);
+      canvas.removeEventListener("pointerleave", onPointerLeave);
       canvas.removeEventListener("click", onClick);
       canvas.removeEventListener("contextmenu", onContextMenu);
     };
@@ -1975,38 +1967,6 @@ export default function AppHomePage() {
               backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
             }} />
 
-            {/* hover inspector — glass card floating over canvas */}
-            {hoverPerson ? (
-              <div
-                onPointerEnter={() => {
-                  if (hoverClearTimerRef.current) {
-                    clearTimeout(hoverClearTimerRef.current);
-                    hoverClearTimerRef.current = null;
-                  }
-                }}
-                onPointerLeave={() => setHoverPerson(null)}
-                style={{
-                position: "absolute", top: 16, right: 16, zIndex: 2,
-                width: 220, padding: "16px 18px", borderRadius: 16,
-                background: "linear-gradient(165deg, rgba(255,255,255,.065), rgba(255,255,255,.018))",
-                backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",
-                border: "1px solid rgba(230,174,108,.18)",
-                boxShadow: "0 20px 50px -20px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.07)",
-                pointerEvents: "auto",
-              }}>
-                <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 6 }}>
-                  {formFromRelation(hoverPerson.is_self, hoverPerson.relation, hoverPerson.passed_at).replace(/-/g, " ")}
-                  {hasPassed(hoverPerson) ? " · remembered" : ""}
-                </p>
-                <p style={{ fontFamily: "var(--serif)", fontSize: "1.1rem", color: "var(--cream)", marginBottom: 2 }}>{hoverPerson.display_name}</p>
-                <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 10 }}>{hoverPerson.relation} · {hoverPerson.birth_precision}</p>
-                <p style={{ fontSize: ".72rem", color: "var(--teal)", display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 100, background: "rgba(111,177,184,.1)", border: "1px solid rgba(111,177,184,.24)" }}>Click to open profile</p>
-                <div style={{ marginTop: 12 }}>
-                  <ConnectInviteButton person={hoverPerson} compact />
-                </div>
-              </div>
-            ) : null}
-
             <button
               type="button"
               aria-pressed={showRings}
@@ -2071,7 +2031,10 @@ export default function AppHomePage() {
                 {label}
               </span>
             ))}
-            <span style={{ marginLeft: "auto", fontSize: ".68rem", color: "var(--mist2)" }}>Hover to preview · click to open</span>
+            <span style={{ marginLeft: "auto", fontSize: ".68rem", color: "var(--mist2)" }}>
+              {/* FOUNDER-REVIEW: constellation hover status, replacing the floating inspector */}
+              {hoverPerson ? `${hoverPerson.display_name} · ${hoverPerson.relation}` : "Click a star to open"}
+            </span>
           </div>
         ) : null}
       </section>

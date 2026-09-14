@@ -74,6 +74,8 @@ export * from "./memorial-constellations";
 
 export * from "./galaxy-seat";
 
+export * from "./galaxy-visual";
+
 export * from "./person-care";
 
 export * from "./honor-constellation";

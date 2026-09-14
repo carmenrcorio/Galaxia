@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { formatMomentSkyContext } from "@galaxia/astro";
 import {
   RECORD_TAG_IDS,
   filterRecordEntries,
@@ -22,6 +23,7 @@ import {
   RECORD_TAG_FILTER_LABEL,
   RECORD_TAG_LABELS
 } from "../lib/record-copy";
+import { MOMENT_RECORD_KIND, MOMENT_SKY_UNREADABLE } from "../lib/moment-copy";
 import type { RecordEntry } from "../lib/record";
 import { ThreadMenu } from "./thread-menu";
 
@@ -34,6 +36,7 @@ const RECORD_META: Record<string, { label: string; color: string }> = {
   remembrance:     { label: "Remembrance",     color: "rgba(111,177,184,.55)" },
   // FOUNDER-REVIEW: authored. Record label for longitude-changing chart rewrite.
   chart_correction:{ label: "Chart corrected", color: "rgba(230,174,108,.55)" },
+  moment:           { label: MOMENT_RECORD_KIND, color: "rgba(230,174,108,.55)" },
   conversation:    { label: "Vela conversation", color: "rgba(183,154,216,.4)" },
 };
 
@@ -61,10 +64,14 @@ function filtersActive(filters: RecordViewFilters): boolean {
 
 function RecordItem({
   entry,
+  personName,
+  isSelf,
   onArchive,
   onTagsChange
 }: {
   entry: RecordEntry;
+  personName?: string;
+  isSelf?: boolean;
   onArchive?: (entryId: string) => void;
   onTagsChange?: (noteId: string, tags: RecordTagId[]) => void;
 }) {
@@ -88,6 +95,16 @@ function RecordItem({
       ) : (
         <p style={{ margin: 0, color: "var(--cream)", lineHeight: 1.55, fontSize: ".86rem" }}>{entry.body}</p>
       )}
+      {entry.kind === "moment" ? (
+        <p className="muted" style={{ margin: "6px 0 0", fontSize: ".74rem", lineHeight: 1.5 }}>
+          {entry.transitSnapshot
+            ? formatMomentSkyContext(entry.transitSnapshot, {
+                personName: personName ?? "them",
+                isSelf: Boolean(isSelf)
+              })
+            : MOMENT_SKY_UNREADABLE}
+        </p>
+      ) : null}
       {entry.kind === "conversation" && entry.href ? (
         <Link href={entry.href as never} style={{ fontSize: ".72rem", color: "var(--gold-soft)" }}>Reopen conversation →</Link>
       ) : null}
@@ -137,11 +154,15 @@ function RecordItem({
 
 export function PersonRecordTimeline({
   entries,
+  personName,
+  isSelf,
   onArchive,
   onTagsChange,
   onFiltersChange
 }: {
   entries: RecordEntry[];
+  personName?: string;
+  isSelf?: boolean;
   onArchive?: (entryId: string) => void;
   onTagsChange?: (noteId: string, tags: RecordTagId[]) => void;
   onFiltersChange?: (filters: RecordViewFilters) => void;
@@ -247,7 +268,14 @@ export function PersonRecordTimeline({
               </h3>
               <div style={{ display: "grid", gap: 8 }}>
                 {month.entries.map((entry) => (
-                  <RecordItem key={entry.id} entry={entry} onArchive={onArchive} onTagsChange={onTagsChange} />
+                  <RecordItem
+                    key={entry.id}
+                    entry={entry}
+                    personName={personName}
+                    isSelf={isSelf}
+                    onArchive={onArchive}
+                    onTagsChange={onTagsChange}
+                  />
                 ))}
               </div>
             </section>

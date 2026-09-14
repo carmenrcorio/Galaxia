@@ -389,6 +389,6 @@ export function interpretTransit(hit: TransitHit, opts: TransitInterpretOptions 
  * the caller appends the orb (e.g. " · 0.0°"). No "transiting/natal" prose —
  * this is the compact proof for astrology-literate readers, not the headline.
  */
-export function transitNotation(hit: TransitHit): string {
+export function transitNotation(hit: Pick<TransitHit, "transitBody" | "type" | "natalBody">): string {
   return `${cap(hit.transitBody)} ${hit.type} ${cap(hit.natalBody)}`;
 }

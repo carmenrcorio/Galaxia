@@ -80,7 +80,8 @@ import {
 } from "../../components/constellation-starfield-skeleton";
 import { CONNECT_RESUME_KEY, isConnectToken } from "../../lib/connect-invite";
 import { composeGalaxySharePng, SHARE_IMAGE_FAIL } from "../../lib/share-image";
-import { FIRST_RUN_RESTART_HREF } from "../../lib/nav-links";
+import { FIRST_RUN_RESTART_HREF, CAPTURE_MOMENT_HREF } from "../../lib/nav-links";
+import { CAPTURE_MOMENT } from "../../lib/moment-copy";
 import { InitialAvatar } from "../../components/initial-avatar";
 import { RelationalTransitFeed } from "../../components/relational-transit-feed";
 import { ThreadMenu } from "../../components/thread-menu";
@@ -1910,6 +1911,11 @@ export default function AppHomePage() {
               </Link>
             ) : null}
             {!loading && !loadError && people.length > 0 ? (
+              <Link href={CAPTURE_MOMENT_HREF as never} className="pill-link" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
+                {CAPTURE_MOMENT}
+              </Link>
+            ) : null}
+            {!loading && !loadError && people.length > 0 ? (
               <Link href="/app/add-person" className="pill-link pill-link--gold" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
                 + Add person
               </Link>
@@ -2166,6 +2172,7 @@ export default function AppHomePage() {
         <div className="fade-in fade-in-delay-2">
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Link href={`/app/person/${selfPerson.id}`} className="pill-link">My chart</Link>
+            <Link href={CAPTURE_MOMENT_HREF as never} className="pill-link">{CAPTURE_MOMENT}</Link>
           </div>
         </div>
       ) : null}

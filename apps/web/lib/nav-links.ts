@@ -159,6 +159,14 @@ export function personProfileHref(personId: string): string {
   return `${PERSON_PROFILE_HREF_PREFIX}${personId}`;
 }
 
+/** The Moment loop. Optional personId skips the first tap. */
+export const CAPTURE_MOMENT_HREF = "/app/moment";
+
+export function captureMomentHref(personId?: string | null): string {
+  if (!personId) return CAPTURE_MOMENT_HREF;
+  return `${CAPTURE_MOMENT_HREF}?personId=${encodeURIComponent(personId)}`;
+}
+
 /** Logged-out Quick Chart save: carry birth data through signup into /welcome. */
 export function signupWithNextHref(nextPath: string): string {
   return `${MARKETING_NAV_SIGNUP.href}?next=${encodeURIComponent(nextPath)}`;

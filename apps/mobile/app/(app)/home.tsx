@@ -694,6 +694,12 @@ export default function HomeScreen() {
       </View>
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        <Link href="/moment" asChild>
+          <Pressable accessibilityRole="button" accessibilityLabel="Capture a moment" style={pillButton}>
+            {/* FOUNDER-REVIEW: authored. Home entry into The Moment. */}
+            <Text style={pillText}>Capture a moment</Text>
+          </Pressable>
+        </Link>
         <Link href="/onboarding" asChild>
           <Pressable accessibilityRole="button" accessibilityLabel="Open onboarding" style={pillButton}>
             <Text style={pillText}>Onboarding</Text>

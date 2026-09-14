@@ -85,7 +85,8 @@ import { VelaPinsPanel } from "../../../../components/vela-pins-panel";
 import { Spinner } from "../../../../components/spinner";
 import { ASPECT_GLYPH, BODY_GLYPH, SIGN_GLYPH, signElement } from "../../../../lib/design";
 import { getPreferredHouseSystem } from "../../../../lib/house-system";
-import { EMPTY_STATE_WELCOME_HREF } from "../../../../lib/nav-links";
+import { CAPTURE_MOMENT } from "../../../../lib/moment-copy";
+import { EMPTY_STATE_WELCOME_HREF, captureMomentHref } from "../../../../lib/nav-links";
 import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, updateNoteTags, updateNoteTheme, type RecordEntry } from "../../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
 
@@ -1709,6 +1710,9 @@ export default function PersonProfilePage() {
         <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>
           Owner-only · never shared. The chart never changes: this is the layer that does: everything you note, pin, and discuss about {person.display_name}, in date order.
         </p>
+        <p style={{ margin: "0 0 12px" }}>
+          <Link href={captureMomentHref(person.id) as never} className="pill-link">{CAPTURE_MOMENT}</Link>
+        </p>
         <textarea className="field field--rect" value={noteDraft} onChange={e => setNoteDraft(e.target.value)} placeholder="Log a private moment, pattern, or thing to remember…" rows={3} style={{ marginBottom: 10 }} />
         <button className="btn-primary" onClick={saveNote} disabled={noteSaving || !noteDraft.trim()} style={{ gap: 8 }}>
           {noteSaving && <Spinner size={13} color="#1a1206" />}
@@ -1717,6 +1721,8 @@ export default function PersonProfilePage() {
         {record.length > 0 ? (
           <PersonRecordTimeline
             entries={record}
+            personName={person.display_name}
+            isSelf={Boolean(person.is_self)}
             onArchive={archiveThread}
             onTagsChange={saveNoteTags}
             onFiltersChange={(filters) => {

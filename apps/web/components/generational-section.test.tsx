@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { compareGenerational, genFrame, genHeadline, type GenSignature } from "@galaxia/astro";
+import { compareGenerational, genFrame, genHeadline, WORK_VIEW_HEADING, WORK_VIEW_LABELS, ERA_READING_HEADING, plutoSourceLine, type GenSignature } from "@galaxia/astro";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { GenerationalSection } from "./generational-section";
@@ -43,5 +43,20 @@ describe("GenerationalSection with compareGenerational data (the /app/compare sh
     expect(proofs.length).toBe(generational.diverged.length);
     expect(screen.queryByText(/This connection spans different eras/)).toBeNull();
     expect(screen.queryByText(/^Fault line:/)).toBeNull();
+  });
+
+  it("leads with era reading and source for Pluto, and with the work view only when professional", () => {
+    const generational = compareGenerational(parent, child);
+    const { unmount } = render(<GenerationalSection generational={generational} />);
+    expect(screen.getAllByText(ERA_READING_HEADING).length).toBe(2);
+    expect(screen.getByText(plutoSourceLine("Virgo"))).toBeTruthy();
+    expect(screen.getByText(plutoSourceLine("Scorpio"))).toBeTruthy();
+    expect(screen.queryByText(WORK_VIEW_HEADING)).toBeNull();
+    unmount();
+
+    render(<GenerationalSection generational={generational} professional />);
+    expect(screen.getAllByText(WORK_VIEW_HEADING).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(new RegExp(WORK_VIEW_LABELS.respect)).length).toBeGreaterThan(0);
+    expect(screen.getByText("How Galaxia reads this at work")).toBeTruthy();
   });
 });

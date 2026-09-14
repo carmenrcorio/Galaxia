@@ -24,6 +24,8 @@ describe("mobile generational call-out model", () => {
     expect(model.headline).toBe(genHeadline(0, 3));
     expect(model.shared).toHaveLength(0);
     expect(model.diverged).toHaveLength(3);
+    expect(model.leads.map((lead) => lead.sign)).toEqual(["Scorpio", "Sagittarius"]);
+    expect(model.leads[0]!.source).toContain("Pluto in Scorpio");
 
     const pluto = model.diverged[0]!;
     const frame = genFrame("pluto");
@@ -92,5 +94,8 @@ describe("mobile Compare wiring", () => {
     expect(sectionSrc).toContain("model.diverged");
     expect(sectionSrc).toContain("card.watchFor");
     expect(sectionSrc).toContain("card.proof");
+    expect(sectionSrc).toContain("WORK_VIEW_HEADING");
+    expect(sectionSrc).toContain("ERA_READING_HEADING");
+    expect(sectionSrc).toContain("lead.source");
   });
 });

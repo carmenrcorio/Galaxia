@@ -20,6 +20,7 @@ import {
   formatCompareLastViewed,
   hydrateComparisonHistory,
   initialComparePairIds,
+  isProfessionalRelation,
   isRomanticRelation,
   pairTransitsAreHonest,
   suggestCompareRelationType,
@@ -507,7 +508,10 @@ export default function CompareScreen() {
             <Text style={cardBody}>Top tension aspect: {formatAspect(result.synastry.aspects.filter((a) => a.harmony < 0)[0])}</Text>
           </View>
 
-          <GenerationalSection generational={result.generational} />
+          <GenerationalSection
+            generational={result.generational}
+            professional={isProfessionalRelation(relationType)}
+          />
 
           <View style={cardStyle}>
             <Text style={cardTitle}>Understand each other</Text>

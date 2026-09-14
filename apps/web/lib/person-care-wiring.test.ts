@@ -34,6 +34,9 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     expect(src).toContain('sectionHead("placements")');
     expect(src).toContain('sectionHead("aspects")');
     expect(src).toContain('sectionHead("houses")');
+    expect(src).toContain("GenerationalEraSurface");
+    expect(src).toContain("isProfessionalPersonRelation");
+    expect(src).toContain("showWorkView={isProfessionalPersonRelation(person.relation)}");
   });
 
   it("home Today in your sky filters with peopleForTodaySky before durable nudge plan", () => {

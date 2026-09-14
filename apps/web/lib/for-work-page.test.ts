@@ -84,6 +84,9 @@ describe("/for-work generational copy is from the package", () => {
       "The financial system built by their parents failed publicly while they came of age into a destroyed job market.",
     );
     expect(FAMILY_BRIDGE.Scorpio?.Virgo).toContain("You both want to fix what's broken");
+    expect(src).toContain("FOR_WORK_WORK_VIEW");
+    expect(src).toContain("FOR_WORK_ERA_READING");
+    expect(src).toContain("FOR_WORK_SOURCE_LINE");
   });
 });
 

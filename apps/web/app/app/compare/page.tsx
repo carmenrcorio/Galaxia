@@ -27,6 +27,7 @@ import {
   compareRelationLabel,
   defaultCompareRelationType,
   initialComparePairIds,
+  isProfessionalRelation,
   isRomanticRelation,
   suggestCompareRelationType,
   narrateHouseOverlay,
@@ -807,7 +808,7 @@ function ComparePageInner() {
             </section>
           ) : null}
 
-          <GenerationalSection generational={result.generational} />
+          <GenerationalSection generational={result.generational} professional={isProfessionalRelation(relationType)} />
 
           {/* Ask Vela — carry the full pair context so Vela opens on Focus=pair.
               Minor safety (ENGINEERING.md §9): Vela opens in private (ask) mode by

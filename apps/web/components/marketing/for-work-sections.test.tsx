@@ -1,11 +1,18 @@
 // @vitest-environment jsdom
 
-import { FAMILY_BRIDGE, PLUTO_SIGN_EXTENDED } from "@galaxia/astro";
+import {
+  FAMILY_BRIDGE,
+  PLUTO_SIGN_EXTENDED,
+  WORK_VIEW_HEADING,
+  WORK_VIEW_LABELS,
+} from "@galaxia/astro";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   FOR_WORK_ERA_EXAMPLES,
   FOR_WORK_FAMILY_BRIDGE,
+  FOR_WORK_SOURCE_LINE,
+  FOR_WORK_WORK_VIEW,
   ForWorkGenerational,
   ForWorkHero,
   ForWorkHowItWorks,
@@ -45,6 +52,11 @@ describe("ForWorkGenerational", () => {
     expect(screen.getByText(aids.detail)).toBeTruthy();
     expect(screen.getByText(crash.label)).toBeTruthy();
     expect(screen.getByText(crash.detail)).toBeTruthy();
+    expect(screen.getByText(WORK_VIEW_HEADING)).toBeTruthy();
+    expect(screen.getByText(WORK_VIEW_LABELS.respect)).toBeTruthy();
+    expect(screen.getByText(FOR_WORK_WORK_VIEW.respect)).toBeTruthy();
+    expect(screen.getByText(FOR_WORK_WORK_VIEW.decisions)).toBeTruthy();
+    expect(screen.getByText(FOR_WORK_WORK_VIEW.friction)).toBeTruthy();
   });
 });
 
@@ -63,6 +75,7 @@ describe("ForWorkHowItWorks", () => {
     render(<ForWorkHowItWorks />);
     expect(screen.getByRole("heading", { name: "This is astrology, named plainly." })).toBeTruthy();
     expect(screen.getByText(FAMILY_BRIDGE.Scorpio!.Virgo!)).toBeTruthy();
+    expect(screen.getByText(new RegExp(FOR_WORK_SOURCE_LINE))).toBeTruthy();
     for (const label of WORK_RELATION_LABELS) {
       expect(screen.getByText(new RegExp(label))).toBeTruthy();
     }

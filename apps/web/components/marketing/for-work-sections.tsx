@@ -2,6 +2,15 @@ import Link from "next/link";
 import {
   FAMILY_BRIDGE,
   PLUTO_SIGN_EXTENDED,
+  WORK_VIEW_HEADING,
+  WORK_VIEW_LABELS,
+  ERA_READING_HEADING,
+  ERA_READING_LABELS,
+  getPlutoEraReading,
+  getPlutoWorkView,
+  plutoSourceLine,
+  type GenerationalEraReading,
+  type GenerationalWorkView,
   type SignKey,
 } from "@galaxia/astro";
 import { GALAXY_RELATION_PICKER_OPTIONS } from "@galaxia/core";
@@ -57,6 +66,32 @@ export const FOR_WORK_ERA_EXAMPLES = [
 
 /** Real intergenerational reading about how two eras meet a broken system. */
 export const FOR_WORK_FAMILY_BRIDGE = familyBridgeFromLayer("Scorpio", "Virgo");
+
+/**
+ * Look up the work view and era reading from the package. Missing data is a
+ * load-time error, not an empty card (§12).
+ */
+export function workViewFromLayer(sign: SignKey): GenerationalWorkView {
+  const view = getPlutoWorkView(sign);
+  if (!view) {
+    throw new Error(`PLUTO_SIGN_EXTENDED.${sign} is missing workView`);
+  }
+  return view;
+}
+
+export function eraReadingFromLayer(sign: SignKey): GenerationalEraReading {
+  const reading = getPlutoEraReading(sign);
+  if (!reading) {
+    throw new Error(`PLUTO_SIGN_EXTENDED.${sign} is missing eraReading`);
+  }
+  return reading;
+}
+
+/** Virgo is the era this page already quotes (Watergate, AIDS). Same sign, no new invention. */
+export const FOR_WORK_EXAMPLE_SIGN: SignKey = "Virgo";
+export const FOR_WORK_WORK_VIEW = workViewFromLayer(FOR_WORK_EXAMPLE_SIGN);
+export const FOR_WORK_ERA_READING = eraReadingFromLayer(FOR_WORK_EXAMPLE_SIGN);
+export const FOR_WORK_SOURCE_LINE = plutoSourceLine(FOR_WORK_EXAMPLE_SIGN);
 
 export const WORK_RELATION_LABELS = workRelationLabels();
 
@@ -168,8 +203,52 @@ export function ForWorkGenerational() {
           </div>
         </div>
         <div className="cohort glass-card reveal">
-          {/* FOUNDER-REVIEW: authored card eyebrow. */}
+          {/* FOUNDER-REVIEW: authored card eyebrow. Work view leads; era events follow as evidence. */}
           <span className="mock-label">From the generational record</span>
+          <p className="eyebrow" style={{ marginTop: 8, marginBottom: 10 }}>{WORK_VIEW_HEADING}</p>
+          <div className="pl-row">
+            <div>
+              <div className="pl-body">{WORK_VIEW_LABELS.respect}</div>
+              <div className="pl-desc">{FOR_WORK_WORK_VIEW.respect}</div>
+            </div>
+          </div>
+          <div className="pl-row">
+            <div>
+              <div className="pl-body">{WORK_VIEW_LABELS.decisions}</div>
+              <div className="pl-desc">{FOR_WORK_WORK_VIEW.decisions}</div>
+            </div>
+          </div>
+          <div className="pl-row">
+            <div>
+              <div className="pl-body">{WORK_VIEW_LABELS.friction}</div>
+              <div className="pl-desc">{FOR_WORK_WORK_VIEW.friction}</div>
+            </div>
+          </div>
+          <p className="eyebrow" style={{ marginTop: 18, marginBottom: 10 }}>{ERA_READING_HEADING}</p>
+          <div className="pl-row">
+            <div>
+              <div className="pl-body">{ERA_READING_LABELS.authority}</div>
+              <div className="pl-desc">{FOR_WORK_ERA_READING.authority}</div>
+            </div>
+          </div>
+          <div className="pl-row">
+            <div>
+              <div className="pl-body">{ERA_READING_LABELS.institutions}</div>
+              <div className="pl-desc">{FOR_WORK_ERA_READING.institutions}</div>
+            </div>
+          </div>
+          <div className="pl-row">
+            <div>
+              <div className="pl-body">{ERA_READING_LABELS.change}</div>
+              <div className="pl-desc">{FOR_WORK_ERA_READING.change}</div>
+            </div>
+          </div>
+          <div className="pl-row">
+            <div>
+              <div className="pl-body">{ERA_READING_LABELS.trust}</div>
+              <div className="pl-desc">{FOR_WORK_ERA_READING.trust}</div>
+            </div>
+          </div>
           {FOR_WORK_ERA_EXAMPLES.map((event) => (
             <div key={event.label} className="pl-row">
               <div>
@@ -278,6 +357,11 @@ export function ForWorkHowItWorks() {
           </span>
           <p className="body" style={{ marginTop: 16 }}>
             {FOR_WORK_FAMILY_BRIDGE}
+          </p>
+          <p className="body" style={{ marginTop: 16 }}>
+            {/* FOUNDER-REVIEW: authored. Names the placement after the outcome, never hidden. */}
+            The work reading and the era notes on this page come from the same record.
+            {` ${FOR_WORK_SOURCE_LINE}`}
           </p>
         </div>
       </div>

@@ -60,6 +60,13 @@ describe("the picker shows a human label, never the raw relationship identifier"
     }
   });
 
+  it("both Compare surfaces pass the professional flag into the generational section", () => {
+    for (const path of [WEB_COMPARE, MOBILE_COMPARE]) {
+      const src = read(path);
+      expect(src, path).toContain("professional={isProfessionalRelation(relationType)}");
+    }
+  });
+
   it("the OG share card labels every frame, including the working ones", () => {
     const src = read(OG_ROUTE);
     expect(src).toMatch(/colleagues:\s*"COLLEAGUES"/);

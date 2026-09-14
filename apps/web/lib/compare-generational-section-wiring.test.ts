@@ -17,10 +17,10 @@ describe("/app/compare mounts the shared GenerationalSection", () => {
     const share = read("apps/web/components/share-snapshot-view.tsx");
 
     expect(appCompare).toContain('from "../../../components/generational-section"');
-    expect(appCompare).toContain("<GenerationalSection generational={result.generational} />");
+    expect(appCompare).toContain("<GenerationalSection generational={result.generational} professional={isProfessionalRelation(relationType)} />");
 
     expect(quickCompare).toContain("<GenerationalSection generational={result.generational} />");
-    expect(share).toContain("<GenerationalSection generational={payload.generational} />");
+    expect(share).toContain("professional={isProfessionalRelation(relationType)}");
   });
 
   it("does not keep the compact Fault-line call-out or ancestralHeadline duplicate", () => {
@@ -42,7 +42,8 @@ describe("mobile Compare mounts its native GenerationalSection", () => {
   it("mounts the native GenerationalSection, wired to the shared curated lookup", () => {
     const src = read("apps/mobile/app/(app)/compare.tsx");
     expect(src).toContain('from "../../src/components/generational-section"');
-    expect(src).toContain("<GenerationalSection generational={result.generational} />");
+    expect(src).toContain("<GenerationalSection");
+    expect(src).toContain("professional={isProfessionalRelation(relationType)}");
 
     const section = read("apps/mobile/src/components/generational-section.tsx");
     expect(section).toContain('from "../lib/generational-callout"');
@@ -51,6 +52,6 @@ describe("mobile Compare mounts its native GenerationalSection", () => {
     const callout = read("apps/mobile/src/lib/generational-callout.ts");
     expect(callout).toContain("genFrame");
     expect(callout).toContain("genPlacement");
-    expect(callout).toContain("genHeadline");
+    expect(callout).toContain("generationalLeadForPair");
   });
 });

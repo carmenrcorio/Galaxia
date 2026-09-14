@@ -9,19 +9,58 @@ import { tokens } from "@galaxia/ui";
 import { Text, View } from "react-native";
 import {
   buildGenerationalCallout,
+  ERA_READING_HEADING,
+  ERA_READING_LABELS,
+  WORK_VIEW_HEADING,
+  WORK_VIEW_LABELS,
   type GenerationalCalloutData
 } from "../lib/generational-callout";
 
 type Props = {
   generational: GenerationalCalloutData;
+  professional?: boolean;
 };
 
-export function GenerationalSection({ generational }: Props) {
+export function GenerationalSection({ generational, professional = false }: Props) {
   const model = buildGenerationalCallout(generational);
 
   return (
     <View style={cardStyle}>
       <Text style={cardTitle}>Generational call-out</Text>
+
+      {model.leads.map((lead) => (
+        <View key={lead.sign} style={nestedCard}>
+          {professional && lead.workView ? (
+            <>
+              <Text style={domainStyle}>{WORK_VIEW_HEADING}</Text>
+              <Text style={creamBody}>
+                {WORK_VIEW_LABELS.respect}. {lead.workView.respect}
+              </Text>
+              <Text style={creamBody}>
+                {WORK_VIEW_LABELS.decisions}. {lead.workView.decisions}
+              </Text>
+              <Text style={creamBody}>
+                {WORK_VIEW_LABELS.friction}. {lead.workView.friction}
+              </Text>
+            </>
+          ) : null}
+          <Text style={domainStyle}>{ERA_READING_HEADING}</Text>
+          <Text style={creamBody}>
+            {ERA_READING_LABELS.authority}. {lead.eraReading.authority}
+          </Text>
+          <Text style={creamBody}>
+            {ERA_READING_LABELS.institutions}. {lead.eraReading.institutions}
+          </Text>
+          <Text style={creamBody}>
+            {ERA_READING_LABELS.change}. {lead.eraReading.change}
+          </Text>
+          <Text style={creamBody}>
+            {ERA_READING_LABELS.trust}. {lead.eraReading.trust}
+          </Text>
+          <Text style={proofStyle}>{lead.source}</Text>
+        </View>
+      ))}
+
       <Text style={cardBody}>{model.headline}</Text>
 
       {model.shared.map((card) => (

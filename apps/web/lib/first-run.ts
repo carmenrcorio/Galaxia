@@ -9,7 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Reads and writes the two first-run columns on `profiles`
- * (20260914180000_profiles_onboarding_state.sql). The decision logic itself
+ * (20260914210000_profiles_onboarding_state.sql). The decision logic itself
  * lives in @galaxia/core so mobile can share it; this file is only the I/O.
  *
  * Every write here is best effort. Progress recording exists to make a resume

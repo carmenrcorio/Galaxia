@@ -3,39 +3,10 @@ import { notFound } from "next/navigation";
 import { ArticleMarkdown } from "../../components/blog/article-markdown";
 import { BlogHeader } from "../../components/blog/blog-header";
 import { SiteFooter } from "../../components/marketing/site-footer";
-import { JsonLd, type JsonLdObject } from "../../components/seo/json-ld";
+import { JsonLd } from "../../components/seo/json-ld";
+import { buildArticleJsonLd } from "../../lib/blog-article-json-ld";
 import { buildPostMetadata } from "../../lib/blog-metadata";
-import { getPublishedPost, type BlogPost } from "../../lib/blog";
-
-const SITE_URL = "https://galaxiamea.com";
-
-/**
- * Article JSON-LD for a single blog post, built from the same `BlogPost`
- * row `generateMetadata` below already reads — never hardcoded copy. Every
- * published post gets one; there is no per-post opt-out.
- */
-function buildArticleJsonLd(post: BlogPost): JsonLdObject {
-  return {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: post.title,
-    datePublished: post.publishedAt ?? post.updatedAt,
-    dateModified: post.updatedAt || post.publishedAt || undefined,
-    author: {
-      "@type": "Organization",
-      name: "Galaxia"
-    },
-    publisher: {
-      "@type": "Organization",
-      name: "Galaxia",
-      url: SITE_URL
-    },
-    mainEntityOfPage: {
-      "@type": "WebPage",
-      "@id": `${SITE_URL}/${post.slug}`
-    }
-  };
-}
+import { getPublishedPost } from "../../lib/blog";
 
 type Params = { slug: string };
 

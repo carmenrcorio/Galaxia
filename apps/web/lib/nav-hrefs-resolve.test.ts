@@ -368,7 +368,11 @@ describe("CTA hrefs resolve to App Router pages", () => {
       ["FOR_WORK_CHART_CTA", "MARKETING_NAV_SIGNUP", "MARKETING_NAV_BRAND_HREF"],
       "for-work sections leftover literal",
     );
-    assertRendersFromConfig(readWeb("components/marketing/pricing-section.tsx"), ["MARKETING_NAV_SIGNUP"], "pricing-section leftover literal");
+    assertRendersFromConfig(
+      readWeb("components/marketing/pricing-section.tsx"),
+      ["MARKETING_NAV_SIGNUP", "PRICING_FREE_CHART_CTA"],
+      "pricing-section leftover literal",
+    );
     assertRendersFromConfig(readWeb("components/marketing/feature-teasers.tsx"), ["FEATURE_TEASER_LINKS"], "feature-teasers leftover literal");
     assertRendersFromConfig(readWeb("app/not-found.tsx"), ["NOT_FOUND_LINKS"], "not-found leftover literal");
     assertRendersFromConfig(readWeb("app/s/[token]/not-found.tsx"), ["SHARE_NOT_FOUND_CTA"], "share not-found leftover literal");

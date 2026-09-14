@@ -74,6 +74,8 @@ export const PUBLISHED_BLOG_POST_HREFS: readonly string[] = [
 ];
 
 export const FOR_WORK_CHART_CTA: NavLink = { href: "/chart", label: "Try a free chart" };
+// FOUNDER-REVIEW: pricing-page CTA. Public chart, not a free membership.
+export const PRICING_FREE_CHART_CTA: NavLink = { href: "/chart", label: "Run a real chart" };
 
 export const RELATED_LINKS = {
   whyGalaxia: [
@@ -100,6 +102,7 @@ export const RELATED_LINKS = {
     { href: "/pricing", label: "See pricing" },
   ],
   pricing: [
+    PRICING_FREE_CHART_CTA,
     { href: "/why-galaxia", label: "See what you're getting" },
     { href: "/meet-vela", label: "Meet Vela, your AI guide" },
   ],
@@ -214,6 +217,7 @@ export function ctaInternalHrefs(): string[] {
     HERO_PRIMARY_CTA.href,
     HERO_HOW_IT_WORKS.href,
     FOR_WORK_CHART_CTA.href,
+    PRICING_FREE_CHART_CTA.href,
     ...NOT_FOUND_LINKS.map((l) => l.href),
     SHARE_NOT_FOUND_CTA.href,
     CHART_MODE_SINGLE.href,

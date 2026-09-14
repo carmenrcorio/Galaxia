@@ -1695,10 +1695,42 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 
 .price-no-cap { text-align: center; color: var(--gold); font-size: .9rem; margin-top: 20px; font-weight: 500; }
 .incl { margin-top: 20px; padding: 24px; display: grid; gap: 12px; }
+.incl-headline {
+  text-align: center;
+  margin-bottom: 4px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.incl-headline h2 {
+  font-size: clamp(1.35rem, 3.2vw, 1.85rem);
+  line-height: 1.2;
+  margin: 0;
+}
+.incl-headline p {
+  color: var(--mist);
+  font-size: .92rem;
+  font-weight: 300;
+  line-height: 1.6;
+  margin: 10px 0 0;
+}
 .incl-row { display: flex; gap: 11px; align-items: flex-start; }
 .incl-star { color: var(--gold); flex-shrink: 0; }
 .incl-row p { color: var(--mist); font-size: .9rem; font-weight: 300; line-height: 1.6; }
 .incl-row b { color: var(--cream); font-weight: 600; }
+.price-free {
+  text-align: center;
+  color: var(--mist);
+  font-size: .92rem;
+  font-weight: 300;
+  line-height: 1.65;
+  margin-top: 22px;
+}
+.price-free a {
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: none;
+}
+.price-free a:hover { text-decoration: underline; }
 .price-reassure { text-align: center; color: var(--mist2); font-size: .86rem; margin-top: 18px; }
 
 /* ─── homepage teaser grid ───────────────────────────────────────────────────

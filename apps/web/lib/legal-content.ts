@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 
 // The reviewed legal text lives outside apps/web (repo root `content/legal/`) so
 // it is not tied to any one app; both web and (eventually) mobile can read the
@@ -16,8 +17,9 @@ const LEGAL_CONTENT_ROOT = path.join(process.cwd(), "..", "..", "content", "lega
 // boundary, so the source markdown keeps the markers for grep/review while
 // nothing reaches the renderer.
 const HTML_COMMENT = /<!--[\s\S]*?-->/g;
+const HELP_EMAIL_TOKEN = "{{GALAXIA_HELP_EMAIL}}";
 
 export function readLegalMarkdown(filename: "privacy-policy.md" | "terms-of-service.md"): string {
   const raw = fs.readFileSync(path.join(LEGAL_CONTENT_ROOT, filename), "utf8");
-  return raw.replace(HTML_COMMENT, "");
+  return raw.replace(HTML_COMMENT, "").replaceAll(HELP_EMAIL_TOKEN, GALAXIA_HELP_EMAIL);
 }

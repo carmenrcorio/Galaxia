@@ -5,6 +5,7 @@
  * passed in by the caller; nothing is fabricated.
  */
 
+import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import { EMAIL_PATHS } from "./nav-links";
 
 export type TrialEmailKind = "day1" | "day4_one" | "day4_multi" | "day11" | "day14";
@@ -60,7 +61,7 @@ function p(text: string): string {
  * no-login token route for `skyTodayEmail`; the account notification
  * settings page for the trial emails, which have no separate consent flag).
  */
-const LEGAL_ENTITY_ADDRESS_LINE = "Galaxia Mea LLC · 1 Shadowrock Ct, Simpsonville, SC 29680 · help@galaxiamea.com";
+const LEGAL_ENTITY_ADDRESS_LINE = `Galaxia Mea LLC · 1 Shadowrock Ct, Simpsonville, SC 29680 · ${GALAXIA_HELP_EMAIL}`;
 
 function complianceFooterHtml(unsubscribeUrl: string): string {
   return `<p style="color:#8076a6;font-size:11px;margin-top:28px;line-height:1.6">
@@ -167,10 +168,11 @@ export function day14Email(d: TrialEmailData): RenderedEmail {
       p(`Everything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.`) +
       button("Pick up where you left off →", `${d.siteUrl}${EMAIL_PATHS.app}`) +
       p("And if it wasn't right for you: would you tell us why? One line is enough. It goes straight to the person who built this.") +
-      button("Tell us what was missing", "mailto:support@galaxia.app?subject=What%20was%20missing") +
+      // FOUNDER-REVIEW: rewritten. Reply-to is the one Galaxia contact address.
+      button("Tell us what was missing", `mailto:${GALAXIA_HELP_EMAIL}?subject=What%20was%20missing`) +
       complianceFooterHtml(unsubscribeUrl)
   );
-  const text = `Hi ${d.firstName},\n\nYour trial has ended and we haven't charged you.\n\nEverything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.\n\nPick up where you left off: ${d.siteUrl}${EMAIL_PATHS.app}\n\nAnd if it wasn't right for you: would you tell us why? One line is enough. It goes straight to the person who built this.\n\nTell us what was missing: support@galaxia.app\n\n${complianceFooterText(unsubscribeUrl)}`;
+  const text = `Hi ${d.firstName},\n\nYour trial has ended and we haven't charged you.\n\nEverything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted. If you come back next week or next year, it's exactly where you left it.\n\nPick up where you left off: ${d.siteUrl}${EMAIL_PATHS.app}\n\nAnd if it wasn't right for you: would you tell us why? One line is enough. It goes straight to the person who built this.\n\nTell us what was missing: ${GALAXIA_HELP_EMAIL}\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, html, text };
 }
 
@@ -204,7 +206,8 @@ export async function sendEmail(to: string, email: RenderedEmail, headers?: Emai
     console.log(`[emails] skipped ${recipientId}: RESEND_API_KEY absent, skipping "${email.subject}"`);
     return false;
   }
-  const from = process.env.RESEND_FROM ?? "Galaxia <hello@galaxiamea.com>";
+  // FOUNDER-REVIEW: send-from uses the one Galaxia contact address unless RESEND_FROM is set.
+  const from = process.env.RESEND_FROM ?? `Galaxia <${GALAXIA_HELP_EMAIL}>`;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },

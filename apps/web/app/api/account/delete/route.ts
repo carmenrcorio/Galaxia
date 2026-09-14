@@ -63,8 +63,7 @@ export async function POST(req: Request) {
     // Graph is already gone; auth row remains. Surface a clear error so support can finish.
     return NextResponse.json(
       {
-        error:
-          "Your data was removed, but closing the login failed. Contact support@galaxia.app with this account email."
+        error: ACCOUNT_DELETE_COPY.errorAuthCloseFailed
       },
       { status: 500 }
     );

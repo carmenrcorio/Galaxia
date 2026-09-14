@@ -3,6 +3,8 @@
  * API routes own auth and I/O; this module owns field allowlists and copy gates.
  */
 
+import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
+
 export const DELETE_CONFIRMATION_WORD = "delete";
 
 /** Profile columns safe to include in a user export. No Stripe / internal billing ids. */
@@ -60,6 +62,8 @@ export const ACCOUNT_DELETE_COPY = {
     "Deleting your account does not cancel billing. If you have an active subscription (or lifetime access billed through our payment provider), cancel it first so you are not charged after your account is gone.",
   billingLinkLabel: "Cancel subscription",
   errorGeneric: "We could not delete your account. Nothing was removed. Please try again.",
+  // FOUNDER-REVIEW: rewritten. Auth-close failure after a successful purge.
+  errorAuthCloseFailed: `Your data was removed, but closing the login failed. Contact ${GALAXIA_HELP_EMAIL} with this account email.`,
   successRedirectNote: "Your account has been deleted."
 } as const;
 

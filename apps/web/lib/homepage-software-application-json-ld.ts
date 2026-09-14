@@ -1,3 +1,4 @@
+import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import type { JsonLdObject } from "../components/seo/json-ld";
 
 /**
@@ -26,7 +27,7 @@ export const SOFTWARE_APPLICATION_JSON_LD: JsonLdObject = {
     url: "https://galaxiamea.com",
     contactPoint: {
       "@type": "ContactPoint",
-      email: "help@galaxiamea.com",
+      email: GALAXIA_HELP_EMAIL,
       contactType: "customer support"
     }
   }

@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import {
   APP_NAV_ACTIONS,
   APP_NAV_BRAND_HREF,
@@ -348,6 +349,76 @@ describe("email hrefs resolve to App Router pages", () => {
       app: "/app",
       notifications: "/account/notifications",
     });
+  });
+});
+
+describe("Galaxia contact and domain literals", () => {
+  const CONTACT_FILE = "packages/core/src/contact.ts";
+  const SCAN_ROOTS = ["apps", "packages", "content", "supabase/functions"];
+  const EXTENSIONS = new Set([".ts", ".tsx", ".js", ".mjs", ".jsx", ".md", ".json"]);
+  const SKIP_DIR_NAMES = new Set(["node_modules", ".next", "dist", "coverage"]);
+  const GALAXIA_EMAIL = /[A-Za-z0-9._%+\-]+@galaxia[A-Za-z0-9.\-]*\.(?:com|app|io|net|org|dev|me)\b/g;
+  const OTHER_GALAXIA_HOST = /\bgalaxia(?!mea\.com)[a-z0-9-]*\.(?:com|app|io|net|org|dev|me)\b/gi;
+
+  function walk(relRoot: string): string[] {
+    const absRoot = join(REPO_ROOT, relRoot);
+    if (!existsSync(absRoot)) return [];
+    const files: string[] = [];
+    const stack = [absRoot];
+    while (stack.length) {
+      const dir = stack.pop()!;
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const abs = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (SKIP_DIR_NAMES.has(entry.name)) continue;
+          stack.push(abs);
+          continue;
+        }
+        if (!EXTENSIONS.has(entry.name.slice(entry.name.lastIndexOf(".")))) continue;
+        files.push(abs);
+      }
+    }
+    return files;
+  }
+
+  function isBundleId(src: string, index: number): boolean {
+    return src.slice(Math.max(0, index - 4), index) === "com.";
+  }
+
+  it("the one exported contact address is the help inbox", () => {
+    expect(GALAXIA_HELP_EMAIL).toBe(["help@", "galaxiamea.com"].join(""));
+    const src = readFileSync(join(REPO_ROOT, CONTACT_FILE), "utf8");
+    expect(src).toContain(`export const GALAXIA_HELP_EMAIL = "${GALAXIA_HELP_EMAIL}"`);
+  });
+
+  it("no Galaxia email literal appears outside packages/core/src/contact.ts", () => {
+    const hits: string[] = [];
+    for (const root of SCAN_ROOTS) {
+      for (const abs of walk(root)) {
+        const rel = abs.slice(REPO_ROOT.length + 1);
+        if (rel === CONTACT_FILE) continue;
+        const src = readFileSync(abs, "utf8");
+        for (const match of src.matchAll(GALAXIA_EMAIL)) {
+          hits.push(`${rel}: ${match[0]}`);
+        }
+      }
+    }
+    expect(hits, hits.join("\n")).toEqual([]);
+  });
+
+  it("no galaxia host other than galaxiamea.com appears except reverse-DNS bundle ids", () => {
+    const hits: string[] = [];
+    for (const root of SCAN_ROOTS) {
+      for (const abs of walk(root)) {
+        const rel = abs.slice(REPO_ROOT.length + 1);
+        const src = readFileSync(abs, "utf8");
+        for (const match of src.matchAll(OTHER_GALAXIA_HOST)) {
+          if (isBundleId(src, match.index ?? 0)) continue;
+          hits.push(`${rel}: ${match[0]}`);
+        }
+      }
+    }
+    expect(hits, hits.join("\n")).toEqual([]);
   });
 });
 

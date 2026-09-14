@@ -3,6 +3,7 @@ import {
   COMPARE_RELATION_SUGGESTION_HINT,
   compareGenerational,
   compareHeadline,
+  compareRelationLabel,
   computeSynastry,
   defaultCompareRelationType,
   initialComparePairIds,
@@ -111,7 +112,10 @@ export default function CompareScreen() {
   const selectionHasMinor = minorOf(selectedA) || minorOf(selectedB);
 
   // Snap away from romantic framing when a minor enters the pairing — runs
-  // LAST and always wins over tag suggestions.
+  // LAST and always wins over tag suggestions. An untouched pairing keeps a
+  // recorded non-romantic relationship (a professor or mentor of a minor is a
+  // teaching relationship, not a parent) and otherwise takes the
+  // age-appropriate default. Parity with apps/web/app/app/compare/page.tsx.
   useEffect(() => {
     if (!selectionHasMinor) return;
     if (isRomanticRelation(relationType)) {
@@ -119,9 +123,13 @@ export default function CompareScreen() {
       return;
     }
     if (!userChoseTypeRef.current) {
-      setRelationType(defaultCompareRelationType(true));
+      setRelationType(
+        suggestedRelationType && !isRomanticRelation(suggestedRelationType)
+          ? suggestedRelationType
+          : defaultCompareRelationType(true)
+      );
     }
-  }, [selectionHasMinor, relationType]);
+  }, [selectionHasMinor, relationType, suggestedRelationType]);
 
   const availableTypes = availableCompareRelationTypes(selectionHasMinor);
   // Hint only when a real mapping is the currently selected type.
@@ -215,7 +223,8 @@ export default function CompareScreen() {
                 paddingVertical: 8
               }}
             >
-              <Text style={{ color: relationType === type ? tokens.colors.gold : tokens.colors.cream }}>{type}</Text>
+              {/* FOUNDER-REVIEW: authored — shared picker labels (web parity). */}
+              <Text style={{ color: relationType === type ? tokens.colors.gold : tokens.colors.cream }}>{compareRelationLabel(type)}</Text>
             </Pressable>
           ))}
         </View>

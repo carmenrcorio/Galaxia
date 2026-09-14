@@ -20,6 +20,7 @@ import {
   type NatalChart,
   availableCompareRelationTypes,
   COMPARE_RELATION_SUGGESTION_HINT,
+  compareRelationLabel,
   defaultCompareRelationType,
   initialComparePairIds,
   isRomanticRelation,
@@ -213,8 +214,14 @@ function ComparePageInner() {
   //    one (suggestion, or a type chosen before a minor entered the pairing),
   //    drop to the safe non-romantic default. Romantic framing about a child
   //    is catastrophic; a re-selected adult pairing is a minor annoyance (§13).
-  // 2. When a minor first enters an untouched pairing, prefer the age-
-  //    appropriate parent-child frame over the neutral adult default.
+  // 2. When a minor first enters an untouched pairing, prefer a recorded
+  //    non-romantic relationship if there is one, and otherwise the
+  //    age-appropriate parent-child frame over the neutral adult default. A
+  //    saved professor or mentor of a minor is a teaching relationship, and
+  //    reading it as parent-child would be the same silent mis-framing this
+  //    branch exists to remove. Safe by construction:
+  //    `suggestCompareRelationType` can never return a romantic type, and
+  //    step 1 above has already caught anything romantic.
   useEffect(() => {
     if (!selectionHasMinor) return;
     if (isRomanticRelation(relationType)) {
@@ -222,9 +229,13 @@ function ComparePageInner() {
       return;
     }
     if (!userChoseTypeRef.current) {
-      setRelationType(defaultCompareRelationType(true));
+      setRelationType(
+        suggestedRelationType && !isRomanticRelation(suggestedRelationType)
+          ? suggestedRelationType
+          : defaultCompareRelationType(true)
+      );
     }
-  }, [selectionHasMinor, relationType]);
+  }, [selectionHasMinor, relationType, suggestedRelationType]);
 
   const availableTypes = availableCompareRelationTypes(selectionHasMinor);
   // Hint only when a real mapping is the currently selected type (not after
@@ -462,7 +473,9 @@ function ComparePageInner() {
           {availableTypes.map(type => (
             <button key={type} onClick={() => { userChoseTypeRef.current = true; setRelationType(type); }} className="pill-link"
               style={{ fontSize: ".8rem", padding: "7px 14px", borderColor: relationType === type ? "rgba(230,174,108,.5)" : undefined, color: relationType === type ? "var(--gold)" : undefined }}>
-              {type}
+              {/* FOUNDER-REVIEW: authored — picker labels come from the shared
+                  COMPARE_RELATION_LABEL map instead of printing the raw id. */}
+              {compareRelationLabel(type)}
             </button>
           ))}
         </div>
@@ -501,7 +514,9 @@ function ComparePageInner() {
         <section className="glass-card fade-in">
           <p className="eyebrow" style={{ marginBottom: 8 }}>Reading held</p>
           <p className="muted" style={{ fontSize: ".88rem", lineHeight: 1.6 }}>
-            A minor is part of this comparison, so Galaxia won&apos;t produce a romantic or partner reading here. Choose a non-romantic relationship type (parent-child, siblings, friends, or ancestor) to see the comparison.
+            {/* FOUNDER-REVIEW: authored — no longer enumerates the safe types,
+                so adding a frame cannot leave this list stale. */}
+            A minor is part of this comparison, so Galaxia won&apos;t produce a romantic or partner reading here. Choose any of the other relationship types above to see the comparison.
           </p>
         </section>
       ) : result ? (
@@ -526,7 +541,7 @@ function ComparePageInner() {
                   <div style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", overflowWrap: "anywhere" }}>
                     {result.personA.display_name} &amp; {result.personB.display_name}
                   </div>
-                  <div style={{ fontSize: ".74rem", color: "var(--mist2)" }}>{relationType}</div>
+                  <div style={{ fontSize: ".74rem", color: "var(--mist2)" }}>{compareRelationLabel(relationType)}</div>
                 </div>
               </div>
               <p className="muted" style={{ fontStyle: "italic", borderLeft: "2px solid rgba(230,174,108,.3)", paddingLeft: 12, lineHeight: 1.5 }}>

@@ -2151,6 +2151,83 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   .article-hero { border-radius: 16px; margin-bottom: 22px; }
 }
 .article-title { margin-bottom: 18px; }
+/* Desktop-only: the shared .auth-title clamp tops out at 3.3rem (~53px)
+   with body line-height 1.65, so a two-line post title ate the fold.
+   Mobile keeps the .auth-title clamp unchanged. */
+@media (min-width: 768px) {
+  h1.article-title {
+    font-size: 2.25rem;
+    line-height: 1.18;
+    margin-bottom: 10px;
+  }
+}
+.article-byline {
+  color: var(--mist2);
+  font-family: var(--sans);
+  font-size: .78rem;
+  font-weight: 400;
+  margin: 0 0 22px;
+}
+.article-toc {
+  margin: 0 0 28px;
+  padding: 2px 0 4px;
+}
+.article-toc-label {
+  font-family: var(--sans);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--mist2);
+  margin: 0 0 10px;
+}
+.article-toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+@media (min-width: 720px) {
+  .article-toc-list { grid-template-columns: 1fr 1fr; }
+}
+.article-toc-list a {
+  color: var(--mist);
+  font-size: .86rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+.article-toc-list a:hover { color: var(--cream); }
+.article-mid-cta {
+  margin: 28px 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: none;
+}
+.article-content .article-mid-cta,
+.article-content .article-mid-cta em,
+.article-content .article-mid-cta a {
+  color: var(--mist2);
+  font-style: italic;
+  font-size: .95rem;
+}
+.article-mid-cta a:hover { color: var(--mist); }
+.article-read-next {
+  margin-top: 40px;
+}
+.article-read-next-label {
+  font-family: var(--sans);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--mist2);
+  margin: 0 0 14px;
+}
+@media (min-width: 700px) {
+  .article-read-next .blog-post-list { grid-template-columns: 1fr 1fr; }
+}
 .article-h2 {
   font-family: var(--serif);
   font-weight: 500;

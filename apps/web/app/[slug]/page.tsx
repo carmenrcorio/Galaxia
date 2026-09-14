@@ -2,11 +2,19 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArticleMarkdown } from "../../components/blog/article-markdown";
 import { BlogHeader } from "../../components/blog/blog-header";
+import { BlogPostCard } from "../../components/blog/blog-post-card";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { JsonLd } from "../../components/seo/json-ld";
+import {
+  ARTICLE_TOC_LABEL,
+  READ_NEXT_LABEL,
+  extractH2Headings,
+  midPostCtaHref,
+  pickRelatedPosts
+} from "../../lib/article-structure";
 import { buildArticleJsonLd } from "../../lib/blog-article-json-ld";
 import { buildPostMetadata } from "../../lib/blog-metadata";
-import { getPublishedPost } from "../../lib/blog";
+import { formatPostDate, getPublishedPost, getPublishedPosts } from "../../lib/blog";
 
 type Params = { slug: string };
 
@@ -45,8 +53,12 @@ export const revalidate = 60;
 
 export default async function BlogPostPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
-  const post = await getPublishedPost(slug);
+  const [post, published] = await Promise.all([getPublishedPost(slug), getPublishedPosts()]);
   if (!post) notFound();
+
+  const toc = post.readTimeMinutes >= 5 ? extractH2Headings(post.body) : [];
+  const related = pickRelatedPosts(published, post);
+  const publishedLabel = post.publishedAt ? formatPostDate(post.publishedAt) : null;
 
   return (
     <>
@@ -59,7 +71,38 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
           </figure>
         ) : null}
         <h1 className="auth-title article-title">{post.title}</h1>
-        <ArticleMarkdown>{post.body}</ArticleMarkdown>
+        {/* FOUNDER-REVIEW: post byline row (author, date, read time). */}
+        <p className="article-byline">
+          {post.byline}
+          {publishedLabel ? ` · ${publishedLabel}` : ""}
+          {` · ${post.readTimeMinutes} min read`}
+        </p>
+        {toc.length > 0 ? (
+          <nav className="article-toc" aria-label={ARTICLE_TOC_LABEL}>
+            <p className="article-toc-label">{ARTICLE_TOC_LABEL}</p>
+            <ol className="article-toc-list">
+              {toc.map((heading) => (
+                <li key={heading.id}>
+                  <a href={`#${heading.id}`}>{heading.text}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        ) : null}
+        <ArticleMarkdown midCtaHref={midPostCtaHref(post.category)}>{post.body}</ArticleMarkdown>
+
+        {related.length > 0 ? (
+          <section className="article-read-next" aria-labelledby="article-read-next-heading">
+            <h2 id="article-read-next-heading" className="article-read-next-label">
+              {READ_NEXT_LABEL}
+            </h2>
+            <div className="blog-post-list">
+              {related.map((next) => (
+                <BlogPostCard key={next.slug} post={next} variant="related" />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <div className="article-cta">
           <a className="btn-primary" href="https://galaxiamea.com">

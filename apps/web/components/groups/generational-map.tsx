@@ -39,13 +39,15 @@ const GEN_ROWS: Array<{ planet: GenPlanetKey; label: string }> = [
 interface GenerationalMapProps {
   memberNames: string[];
   overlay: CohortOverlayLike;
+  /** Chip identity — ids + sun signs. Falls back to hashing the display name. */
+  chipPeople?: Array<{ id: string; name: string; sunSign?: string | null; memorial?: boolean }>;
 }
 
 // FOUNDER-REVIEW: empty because the map needs two members to place.
 export const GENERATIONAL_MAP_EMPTY =
   "The generational map needs two people. Add another member to see where the slow planets land.";
 
-export function GenerationalMap({ memberNames, overlay }: GenerationalMapProps) {
+export function GenerationalMap({ memberNames, overlay, chipPeople }: GenerationalMapProps) {
   if (memberNames.length < 2) {
     return (
       <section className="glass-card fade-in">
@@ -58,6 +60,19 @@ export function GenerationalMap({ memberNames, overlay }: GenerationalMapProps) 
   }
   const summary = generationalMapSummary(memberNames, overlay);
   const signsByMember = memberSignsFromOverlay(memberNames, overlay);
+  const chipByName = new Map((chipPeople ?? []).map((p) => [p.name, p]));
+  const avatarFor = (name: string) => {
+    const chip = chipByName.get(name);
+    return (
+      <InitialAvatar
+        name={name}
+        size="sm"
+        personId={chip?.id}
+        sunSign={chip?.sunSign}
+        memorial={chip?.memorial}
+      />
+    );
+  };
 
   return (
     <section className="glass-card fade-in">
@@ -68,7 +83,7 @@ export function GenerationalMap({ memberNames, overlay }: GenerationalMapProps) 
       <ul className="gen-map-legend">
         {memberNames.map((name) => (
           <li key={name} className="gen-map-legend__item">
-            <InitialAvatar name={name} size="sm" />
+            {avatarFor(name)}
             <span>{name}</span>
           </li>
         ))}
@@ -102,7 +117,7 @@ export function GenerationalMap({ memberNames, overlay }: GenerationalMapProps) 
                           <div className="gen-map-slot__dots">
                             {occupants.map((name) => (
                               <div key={name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                                <InitialAvatar name={name} size="sm" />
+                                {avatarFor(name)}
                                 <span style={{ fontSize: ".58rem", color: "var(--mist2)", maxWidth: 44, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                   {name}
                                 </span>

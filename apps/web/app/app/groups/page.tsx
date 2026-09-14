@@ -1,13 +1,7 @@
 "use client";
 
 import { cohortOverlay, compareGenerational, type FamilyComparePersonInput, type GenSignature, type NatalChart } from "@galaxia/astro";
-import {
-  OWNED_DELETE_COPY,
-  formatGroupDeleteConfirmation,
-  hasPassed,
-  isBelowGroupMinimum,
-  readyMembersForCohortOverlay
-} from "@galaxia/core";
+import { hasPassed, isBelowGroupMinimum, OWNED_DELETE_COPY, formatGroupDeleteConfirmation, readyMembersForCohortOverlay, sunSignFromChart } from "@galaxia/core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ChartGridSection } from "../../../components/groups/chart-grid-section";
@@ -28,7 +22,7 @@ import {
 import { isExampleId } from "../../../lib/groups-example";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
-interface PersonLite { id: string; display_name: string; passed_at?: string | null; }
+interface PersonLite { id: string; display_name: string; passed_at?: string | null; sunSign?: string | null; }
 interface GroupRow    { id: string; name: string; kind: GroupKind; }
 
 /** Single source of truth for the currently loaded saved group (or null = new draft). */
@@ -200,7 +194,18 @@ function GroupsPageInner() {
 
   async function fetchPeople(uid: string) {
     const { data } = await supabase.from("people").select("id, display_name, passed_at").eq("owner_id", uid).order("display_name");
-    setPeople((data ?? []) as PersonLite[]);
+    const rows = (data ?? []) as PersonLite[];
+    const ids = rows.map((r) => r.id);
+    if (ids.length) {
+      const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
+      const sunById = new Map<string, string>();
+      for (const row of chartRows ?? []) {
+        const sign = sunSignFromChart(row.data as NatalChart);
+        if (sign) sunById.set(row.person_id as string, sign);
+      }
+      for (const row of rows) row.sunSign = sunById.get(row.id) ?? null;
+    }
+    setPeople(rows);
   }
 
   /**
@@ -234,19 +239,33 @@ function GroupsPageInner() {
     const personIds = [...new Set((memberRows ?? []).map((r) => r.person_id as string))];
 
     const nameById = new Map<string, string>();
+    const passedById = new Map<string, boolean>();
     const genById = new Map<string, GenSignature | undefined>();
+    const sunById = new Map<string, string>();
     if (personIds.length > 0) {
       const [{ data: peopleRows }, { data: chartRows }] = await Promise.all([
-        supabase.from("people").select("id, display_name").in("id", personIds),
+        supabase.from("people").select("id, display_name, passed_at").in("id", personIds),
         supabase.from("charts").select("person_id, data").in("person_id", personIds),
       ]);
-      for (const p of peopleRows ?? []) nameById.set(p.id as string, p.display_name as string);
-      for (const c of chartRows ?? []) genById.set(c.person_id as string, (c.data as NatalChart | undefined)?.generational);
+      for (const p of peopleRows ?? []) {
+        nameById.set(p.id as string, p.display_name as string);
+        passedById.set(p.id as string, Boolean(p.passed_at));
+      }
+      for (const c of chartRows ?? []) {
+        genById.set(c.person_id as string, (c.data as NatalChart | undefined)?.generational);
+        const sign = sunSignFromChart(c.data as NatalChart | undefined);
+        if (sign) sunById.set(c.person_id as string, sign);
+      }
     }
 
     const summaries: GroupSelectorItem[] = rows.map((g) => {
       const memberIds = membersByGroup.get(g.id) ?? [];
-      const members = memberIds.map((id) => ({ id, name: nameById.get(id) ?? "?" }));
+      const members = memberIds.map((id) => ({
+        id,
+        name: nameById.get(id) ?? "?",
+        sunSign: sunById.get(id) ?? null,
+        memorial: passedById.get(id) ?? false,
+      }));
       const gens = memberIds.map((id) => genById.get(id)).filter((x): x is GenSignature => Boolean(x));
       const overlay: CohortOverlayLike | null =
         memberIds.length >= 2 && gens.length === memberIds.length
@@ -619,7 +638,9 @@ function GroupsPageInner() {
             {selectedNames.length > 0 ? (
               <>
                 <div className="avatar-cluster" style={{ marginBottom: 10 }}>
-                  {selectedPeople.map((p) => <InitialAvatar key={p.id} name={p.display_name} />)}
+                  {selectedPeople.map((p) => (
+                    <InitialAvatar key={p.id} name={p.display_name} personId={p.id} sunSign={p.sunSign} memorial={Boolean(p.passed_at)} />
+                  ))}
                 </div>
                 <p className="muted" style={{ fontSize: ".82rem", marginBottom: 14 }}>{selectedNames.join(", ")}</p>
               </>

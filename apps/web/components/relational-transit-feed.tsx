@@ -31,7 +31,7 @@ import {
   type RelationalTransitBody,
   type RelationalTransitPersonInput,
 } from "@galaxia/astro";
-import { getMemorialConstellation, usesMemorialGlyph } from "@galaxia/core";
+import { getMemorialConstellation, sunSignFromChart, usesMemorialGlyph } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { InitialAvatar } from "./initial-avatar";
@@ -75,6 +75,7 @@ interface PersonMemorialInfo {
   is_self: boolean;
   birth_date?: string | null;
   birth_precision?: Precision | "none" | null;
+  sunSign?: string | null;
 }
 
 function toAffectedHits(row: RelationalTransitRow): AffectedProfileHit[] {
@@ -206,7 +207,16 @@ export function RelationalTransitFeed({
       const pref = (profileRow?.relational_transit_alerts as "all" | "major_only" | "off" | undefined) ?? "all";
       setPreference(pref);
       setRows((transitRows ?? []) as RelationalTransitRow[]);
-      setPeopleById(new Map((peopleRows ?? []).map((p) => [p.id as string, p as PersonMemorialInfo])));
+      const peopleIds = (peopleRows ?? []).map((p) => p.id as string);
+      const sunById = new Map<string, string>();
+      if (peopleIds.length) {
+        const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", peopleIds);
+        for (const row of chartRows ?? []) {
+          const sign = sunSignFromChart(row.data as { placements?: Array<{ body: string; sign: string; confident?: boolean }> });
+          if (sign) sunById.set(row.person_id as string, sign);
+        }
+      }
+      setPeopleById(new Map((peopleRows ?? []).map((p) => [p.id as string, { ...(p as PersonMemorialInfo), sunSign: sunById.get(p.id as string) ?? null }])));
 
       const upcoming = ((upcomingRows ?? []) as Array<{ active_from: string; transit_body: RelationalTransitBody }>)
         .filter((row) => pref === "off" ? false : pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body) : true);
@@ -334,7 +344,7 @@ export function RelationalTransitFeed({
                         const info = peopleById.get(p.personId);
                         return (
                           <span key={p.personId} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                            <InitialAvatar name={p.personName} size="sm" />
+                            <InitialAvatar name={p.personName} size="sm" personId={p.personId} sunSign={info?.sunSign} />
                             <span style={{ fontSize: ".76rem", color: "var(--mist)" }}>{p.personName}</span>
                             <MemorialMark person={info} />
                           </span>

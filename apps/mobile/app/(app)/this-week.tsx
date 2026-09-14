@@ -5,6 +5,7 @@ import {
   type Precision,
   type RelationalTransitPersonInput,
 } from "@galaxia/astro";
+import { sunSignFromChart } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useState } from "react";
@@ -19,6 +20,7 @@ export default function ThisWeekScreen() {
   const [preference, setPreference] = useState<"all" | "major_only" | "off">("all");
   const [rows, setRows] = useState<ThisWeekRow[]>([]);
   const [nextDateISO, setNextDateISO] = useState<string | null>(null);
+  const [personChip, setPersonChip] = useState<Record<string, { sunSign?: string | null; memorial?: boolean }>>({});
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -35,7 +37,7 @@ export default function ThisWeekScreen() {
           .gte("active_to", nowISO)
           .order("active_from", { ascending: true })
           .limit(20),
-        supabase.from("people").select("id, display_name, birth_date, birth_precision, is_self").eq("owner_id", ownerId),
+        supabase.from("people").select("id, display_name, birth_date, birth_precision, is_self, passed_at").eq("owner_id", ownerId),
         supabase
           .from("relational_transits")
           .select("active_from, transit_body")
@@ -55,23 +57,35 @@ export default function ThisWeekScreen() {
             : allTransits;
       setRows(visible);
 
+      const peopleList = (peopleRows ?? []) as Array<{
+        id: string;
+        display_name: string;
+        is_self: boolean;
+        birth_date: string | null;
+        birth_precision: Precision | "none" | null;
+        passed_at?: string | null;
+      }>;
+      const ids = peopleList.map((p) => p.id);
+      const chip: Record<string, { sunSign?: string | null; memorial?: boolean }> = {};
+      for (const p of peopleList) chip[p.id] = { memorial: Boolean(p.passed_at) };
+      let chartById = new Map<string, NatalChart>();
+      if (ids.length) {
+        const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
+        chartById = new Map<string, NatalChart>((chartRows ?? []).map((r) => [r.person_id as string, r.data as NatalChart]));
+        for (const [id, chart] of chartById) {
+          chip[id] = { ...chip[id], sunSign: sunSignFromChart(chart) };
+        }
+      }
+      setPersonChip(chip);
+
       const upcoming = ((upcomingRows ?? []) as Array<{ active_from: string; transit_body: ThisWeekRow["transit_body"] }>).filter((row) =>
         pref === "off" ? false : pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body) : true
       );
       let nextISO: string | null = upcoming[0]?.active_from ?? null;
       if (!nextISO && visible.length === 0 && pref !== "off") {
-        const ids = ((peopleRows ?? []) as Array<{ id: string }>).map((p) => p.id);
         if (ids.length >= 2) {
-          const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
-          const chartById = new Map<string, NatalChart>((chartRows ?? []).map((r) => [r.person_id as string, r.data as NatalChart]));
           const inputs: RelationalTransitPersonInput[] = [];
-          for (const raw of (peopleRows ?? []) as Array<{
-            id: string;
-            display_name: string;
-            is_self: boolean;
-            birth_date: string | null;
-            birth_precision: Precision | "none" | null;
-          }>) {
+          for (const raw of peopleList) {
             const chart = chartById.get(raw.id);
             if (!chart) continue;
             inputs.push({
@@ -104,7 +118,7 @@ export default function ThisWeekScreen() {
       <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
         Every slow-moving transit currently pulling on two or more people in your circle at once.
       </Text>
-      <ThisWeekCard loading={loading} preference={preference} rows={rows} nextDateISO={nextDateISO} compact={false} />
+      <ThisWeekCard loading={loading} preference={preference} rows={rows} nextDateISO={nextDateISO} compact={false} personChip={personChip} />
       <Link href="/home" asChild>
         <Pressable accessibilityRole="link" accessibilityLabel="Back to home">
           {/* FOUNDER-REVIEW: return to constellation home. */}

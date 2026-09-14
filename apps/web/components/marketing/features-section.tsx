@@ -33,7 +33,7 @@ export function FeaturesSection() {
           </div>
           <div className="mock glass-card">
             <div className="mock-top">
-              <InitialAvatar name="Rosa" />
+              <InitialAvatar name="Rosa" personId="marketing:rosa" sunSign="Cancer" />
               <div>
                 <div className="mock-name">Rosa · your mom</div>
                 <div className="mock-sub">Cancer Sun · Pisces Moon · Cancer Rising</div>
@@ -72,8 +72,8 @@ export function FeaturesSection() {
             <span className="mock-label">Reading as · Partners</span>
             <div className="mock-top" style={{ marginBottom: 10 }}>
               <div className="avatar-cluster">
-                <InitialAvatar name="You" />
-                <InitialAvatar name="Daniel" />
+                <InitialAvatar name="You" personId="marketing:you" sunSign="Leo" />
+                <InitialAvatar name="Daniel" personId="marketing:daniel" sunSign="Pisces" />
               </div>
               <div style={{ marginLeft: 6 }}>
                 <div className="mock-name" style={{ fontSize: ".98rem" }}>You &amp; Daniel</div>

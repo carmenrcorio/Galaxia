@@ -13,11 +13,12 @@ import {
   type NatalChart,
   type RelationType
 } from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
+import { isMinorForSafety, sunSignFromChart } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { GenerationalSection } from "../../src/components/generational-section";
+import { InitialAvatar } from "../../src/components/initial-avatar";
 import { supabase } from "../../src/lib/supabase";
 import { useAuth } from "../../src/providers/auth-provider";
 import { useEntitlement } from "../../src/providers/entitlement-provider";
@@ -29,6 +30,8 @@ interface PersonLite {
   birth_date: string | null;
   birth_precision: "exact" | "date" | "year" | "none";
   is_minor?: boolean;
+  passed_at?: string | null;
+  sunSign?: string | null;
 }
 
 /**
@@ -73,7 +76,7 @@ export default function CompareScreen() {
     if (!session?.user.id) return;
     const { data, error } = await supabase
       .from("people")
-      .select("id, display_name, relation, birth_date, birth_precision, is_minor")
+      .select("id, display_name, relation, birth_date, birth_precision, is_minor, passed_at")
       .eq("owner_id", session.user.id)
       .order("created_at", { ascending: false });
     if (error) {
@@ -81,6 +84,16 @@ export default function CompareScreen() {
       return;
     }
     const rows = (data ?? []) as PersonLite[];
+    const ids = rows.map((r) => r.id);
+    if (ids.length) {
+      const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
+      const sunById = new Map<string, string>();
+      for (const row of chartRows ?? []) {
+        const sign = sunSignFromChart(row.data as NatalChart);
+        if (sign) sunById.set(row.person_id as string, sign);
+      }
+      for (const row of rows) row.sunSign = sunById.get(row.id) ?? null;
+    }
     setPeople(rows);
     // Prefer the user's own `self` record as Person A (matches web) so the
     // tag suggestion below can fire on first render, with the most-
@@ -253,10 +266,14 @@ export default function CompareScreen() {
                 borderRadius: 999,
                 borderWidth: 1,
                 borderColor: personAId === person.id ? tokens.colors.gold : tokens.colors.line,
-                paddingHorizontal: 12,
-                paddingVertical: 8
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6
               }}
             >
+              <InitialAvatar name={person.display_name} size="sm" personId={person.id} sunSign={person.sunSign} memorial={Boolean(person.passed_at)} />
               <Text style={{ color: personAId === person.id ? tokens.colors.gold : tokens.colors.cream }}>{person.display_name}</Text>
             </Pressable>
           ))}
@@ -272,10 +289,14 @@ export default function CompareScreen() {
                 borderRadius: 999,
                 borderWidth: 1,
                 borderColor: personBId === person.id ? tokens.colors.gold : tokens.colors.line,
-                paddingHorizontal: 12,
-                paddingVertical: 8
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6
               }}
             >
+              <InitialAvatar name={person.display_name} size="sm" personId={person.id} sunSign={person.sunSign} memorial={Boolean(person.passed_at)} />
               <Text style={{ color: personBId === person.id ? tokens.colors.gold : tokens.colors.cream }}>{person.display_name}</Text>
             </Pressable>
           ))}
@@ -297,6 +318,21 @@ export default function CompareScreen() {
       {result && !blockRomanticMinorRender ? (
         <>
           <View style={cardStyle}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <InitialAvatar
+                name={result.personA.display_name}
+                personId={result.personA.id}
+                sunSign={result.personA.sunSign}
+                memorial={Boolean(result.personA.passed_at)}
+              />
+              <Text style={{ color: tokens.colors.mist2, fontSize: 18 }}>×</Text>
+              <InitialAvatar
+                name={result.personB.display_name}
+                personId={result.personB.id}
+                sunSign={result.personB.sunSign}
+                memorial={Boolean(result.personB.passed_at)}
+              />
+            </View>
             <Text style={cardTitle}>
               {result.personA.display_name} × {result.personB.display_name}
             </Text>

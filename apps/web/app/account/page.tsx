@@ -100,7 +100,7 @@ export default function AccountPage() {
 
       <main className="app-content">
         <div className="person-row fade-in" style={{ gap: 16 }}>
-          <InitialAvatar name={account.name ?? "?"} size="lg" />
+          <InitialAvatar name={account.name ?? "?"} size="lg" personId={userId ?? "account"} />
           <div>
             <p className="eyebrow">Account</p>
             {/* Name when there is one. Only when a name is genuinely absent does

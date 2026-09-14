@@ -1,8 +1,9 @@
-import { isMinorForSafety } from "@galaxia/core";
+import { isMinorForSafety, sunSignFromChart } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { InitialAvatar } from "../../src/components/initial-avatar";
 import { cacheGet, cacheSet } from "../../src/lib/cache";
 import { supabase } from "../../src/lib/supabase";
 import { useAuth } from "../../src/providers/auth-provider";
@@ -17,6 +18,8 @@ interface PersonLite {
   is_minor: boolean;
   birth_date: string | null;
   birth_precision: "none" | "exact" | "date" | "year" | null;
+  passed_at?: string | null;
+  sunSign?: string | null;
 }
 
 /** Single source of truth (ENGINEERING.md §9) — never read person.is_minor directly. */
@@ -93,10 +96,20 @@ export default function VelaScreen() {
 
   const fetchScopeData = async () => {
     const [{ data: peopleData }, { data: groupData }] = await Promise.all([
-      supabase.from("people").select("id, display_name, is_minor, birth_date, birth_precision").eq("owner_id", session?.user.id).order("display_name", { ascending: true }),
+      supabase.from("people").select("id, display_name, is_minor, birth_date, birth_precision, passed_at").eq("owner_id", session?.user.id).order("display_name", { ascending: true }),
       supabase.from("groups").select("id, name").eq("owner_id", session?.user.id).order("name", { ascending: true })
     ]);
     const allPeople = (peopleData ?? []) as PersonLite[];
+    const ids = allPeople.map((p) => p.id);
+    if (ids.length) {
+      const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
+      const sunById = new Map<string, string>();
+      for (const row of chartRows ?? []) {
+        const sign = sunSignFromChart(row.data as { placements?: Array<{ body: string; sign: string; confident?: boolean }> });
+        if (sign) sunById.set(row.person_id as string, sign);
+      }
+      for (const p of allPeople) p.sunSign = sunById.get(p.id) ?? null;
+    }
     setPeople(allPeople);
     setGroups((groupData ?? []) as GroupLite[]);
     if (!subjectPersonId && allPeople[0]) setSubjectPersonId(allPeople[0].id);
@@ -327,7 +340,12 @@ export default function VelaScreen() {
             <Text style={labelStyle}>Primary person</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {people.map((person) => (
-                <Pressable key={person.id} onPress={() => setSubjectPersonId(person.id)} style={chip(subjectPersonId === person.id)}>
+                <Pressable
+                  key={person.id}
+                  onPress={() => setSubjectPersonId(person.id)}
+                  style={{ ...chip(subjectPersonId === person.id), flexDirection: "row", alignItems: "center", gap: 6 }}
+                >
+                  <InitialAvatar name={person.display_name} size="sm" personId={person.id} sunSign={person.sunSign} memorial={Boolean(person.passed_at)} />
                   <Text style={{ color: subjectPersonId === person.id ? tokens.colors.gold : tokens.colors.cream }}>
                     {person.display_name}
                     {minorOf(person) ? " (minor)" : ""}
@@ -343,7 +361,12 @@ export default function VelaScreen() {
             <Text style={labelStyle}>Second person</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {people.map((person) => (
-                <Pressable key={`pair-${person.id}`} onPress={() => setPairPersonId(person.id)} style={chip(pairPersonId === person.id)}>
+                <Pressable
+                  key={`pair-${person.id}`}
+                  onPress={() => setPairPersonId(person.id)}
+                  style={{ ...chip(pairPersonId === person.id), flexDirection: "row", alignItems: "center", gap: 6 }}
+                >
+                  <InitialAvatar name={person.display_name} size="sm" personId={person.id} sunSign={person.sunSign} memorial={Boolean(person.passed_at)} />
                   <Text style={{ color: pairPersonId === person.id ? tokens.colors.gold : tokens.colors.cream }}>
                     {person.display_name}
                     {minorOf(person) ? " (minor)" : ""}
@@ -443,8 +466,8 @@ function chip(active: boolean) {
     borderWidth: 1,
     borderColor: active ? tokens.colors.gold : tokens.colors.line,
     paddingHorizontal: 12,
-    paddingVertical: 8
-  } as const;
+    paddingVertical: 8,
+  };
 }
 
 const cardStyle = {

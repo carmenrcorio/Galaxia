@@ -7,6 +7,7 @@
  */
 
 import { type FamilyComparePersonInput } from "@galaxia/astro";
+import { sunSignFromChart } from "@galaxia/core";
 import type { ReactNode } from "react";
 import { GlossaryPlanet, GlossarySign } from "../glossary-term";
 import { BODY_GLYPH, SIGN_GLYPH } from "../../lib/design";
@@ -45,6 +46,17 @@ export function GroupReadingBody({
   onOpenPair,
   allowShare = true,
 }: GroupReadingBodyProps) {
+  const chipPeople = cohort.memberNames.map((name, i) => {
+    const id = cohort.memberIds[i] ?? name;
+    const grid = chartGridMembers.find((m) => m.id === id || m.name === name);
+    return {
+      id,
+      name,
+      sunSign: grid ? sunSignFromChart(grid.chart) : undefined,
+      memorial: grid?.passed,
+    };
+  });
+
   return (
     <>
       <section className="glass-card fade-in fade-in-delay-1">
@@ -58,7 +70,7 @@ export function GroupReadingBody({
         {readingActions}
       </section>
 
-      <GenerationalMap memberNames={cohort.memberNames} overlay={cohort.overlay} />
+      <GenerationalMap memberNames={cohort.memberNames} overlay={cohort.overlay} chipPeople={chipPeople} />
 
       <SharedSkySection overlay={cohort.overlay} totalMembers={cohort.memberIds.length} />
 

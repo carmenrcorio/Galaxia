@@ -60,6 +60,7 @@ import {
   ringBandRadius,
   ringIndex,
   shouldOfferFirstRunRestart,
+  sunSignFromChart,
   usesMemorialGlyph,
   type HonorEdge,
   type MemorialConstellation,
@@ -99,9 +100,11 @@ interface PersonRow {
   memorial_constellation?: string | null;
   /** Owner-chosen polar seat. NULL = derived default from galaxySeatsResolved. */
   custom_position?: CustomGalaxyPosition | null;
+  sunSign?: string | null;
 }
 interface LinkRow { fromId: string; toId: string; scoreA: number; elA: string; elB: string; }
-interface ThreadChip { id: string; mode: "ask" | "shared"; preview: string; }
+interface ThreadChipPerson { id: string; name: string; sunSign?: string | null; memorial?: boolean; }
+interface ThreadChip { id: string; mode: "ask" | "shared"; preview: string; people: ThreadChipPerson[]; }
 /* One person's sky today — reads the durable person_daily_nudges row.
    copy_resolved is frozen at write; home never recomputes sentences on open. */
 interface PersonSky {
@@ -111,6 +114,7 @@ interface PersonSky {
   isMinor: boolean;
   precision: PersonRow["birth_precision"];
   hasChart: boolean;
+  sunSign?: string | null;
   nudge: PersonDailyNudgeRecord;
 }
 
@@ -1467,7 +1471,7 @@ export default function AppHomePage() {
         supabase.from("profiles").select("display_name, pinned_sky_person_id, onboarding_step, onboarding_completed_at").eq("id", uid).single(),
         supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
-        supabase.from("threads").select("id, mode").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6),
+        supabase.from("threads").select("id, mode, subject_person, pair_low, pair_high").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6),
         supabase.from("relationships").select("person_a, person_b, relation_type").eq("owner_id", uid).eq("relation_type", HONOR_RELATION_TYPE),
         personIds.length
           ? supabase.from("person_daily_nudges").select("*").eq("owner_id", uid).eq("date", localDate).in("person_id", personIds)
@@ -1491,6 +1495,10 @@ export default function AppHomePage() {
       setOfferFirstRun(shouldOfferFirstRunRestart(profile ?? null));
 
       const castPeople = (peopleRows ?? []) as PersonRow[];
+      const chartById = new Map<string, NatalChart>((chartRows ?? []).map(r => [r.person_id as string, r.data as NatalChart]));
+      for (const p of castPeople) {
+        p.sunSign = sunSignFromChart(chartById.get(p.id));
+      }
       /* Same resolver as /account and mobile home. Previously this line fell
          back to email.split("@")[0], which greeted people by a fragment of
          their login address and ignored the name on their own chart. */
@@ -1502,8 +1510,6 @@ export default function AppHomePage() {
       );
       setPeople(castPeople);
       const pinnedSkyPersonId = (profile as { pinned_sky_person_id?: string | null } | null)?.pinned_sky_person_id ?? null;
-
-      const chartById = new Map<string, NatalChart>((chartRows ?? []).map(r => [r.person_id as string, r.data as NatalChart]));
 
       /* cohort per person = their Pluto sign, straight from the computed chart.
          No chart → no cohort (the nebula layer simply omits them). */
@@ -1596,18 +1602,33 @@ export default function AppHomePage() {
           }),
           precision: p.birth_precision,
           hasChart: Boolean(chartById.get(p.id)),
+          sunSign: p.sunSign ?? sunSignFromChart(chartById.get(p.id)),
           nudge,
         };
       });
       setPersonSkies(skies);
 
       /* thread chips */
-      const threads = (threadRows ?? []) as Array<{ id: string; mode: "ask" | "shared" }>;
+      const threads = (threadRows ?? []) as Array<{
+        id: string; mode: "ask" | "shared";
+        subject_person: string | null; pair_low: string | null; pair_high: string | null;
+      }>;
       if (threads.length) {
         const { data: messages } = await supabase.from("messages").select("thread_id, body").in("thread_id", threads.map(t => t.id)).order("created_at", { ascending: false });
         const prev = new Map<string, string>();
         for (const r of messages ?? []) { const tid = r.thread_id as string; if (!prev.has(tid)) prev.set(tid, (r.body as string).slice(0, 68)); }
-        setThreadChips(threads.map(t => ({ id: t.id, mode: t.mode, preview: prev.get(t.id) ?? "Resume" })));
+        const byId = new Map(castPeople.map((p) => [p.id, p]));
+        const chipPeople = (ids: Array<string | null>) =>
+          [...new Set(ids.filter((id): id is string => Boolean(id)))].flatMap((id) => {
+            const p = byId.get(id);
+            return p ? [{ id: p.id, name: p.display_name, sunSign: p.sunSign, memorial: Boolean(p.passed_at) }] : [];
+          });
+        setThreadChips(threads.map(t => ({
+          id: t.id,
+          mode: t.mode,
+          preview: prev.get(t.id) ?? "Resume",
+          people: chipPeople([t.subject_person, t.pair_low, t.pair_high]),
+        })));
       }
     } catch {
       setLoadError(true);
@@ -1870,12 +1891,13 @@ export default function AppHomePage() {
                   key={sky.id}
                   href={`/app/person/${sky.id}${hasHit ? "?transit=1" : ""}`}
                   style={{
-                    display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap",
+                    display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
                     padding: "9px 10px", borderRadius: 10, textDecoration: "none",
                     borderLeft: hasHit ? "2px solid rgba(230,174,108,.4)" : "2px solid rgba(255,255,255,.06)",
                     background: hasHit ? "rgba(230,174,108,.05)" : "transparent",
                   }}
                 >
+                  <InitialAvatar name={sky.name} size="sm" personId={sky.id} sunSign={sky.sunSign} />
                   <span style={{ color: "var(--cream)", fontWeight: 600, fontSize: ".84rem", minWidth: 96 }}>
                     {sky.isSelf ? "You" : sky.name}
                   </span>
@@ -1895,6 +1917,13 @@ export default function AppHomePage() {
             {threadChips.map(tc => (
               <span key={tc.id} className="pill-link" style={{ gap: 8, display: "inline-flex", alignItems: "center" }}>
                 <Link href={`/app/vela?threadId=${tc.id}`} style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none", color: "inherit" }}>
+                  {tc.people.length > 0 ? (
+                    <span className="avatar-cluster">
+                      {tc.people.slice(0, 2).map((p) => (
+                        <InitialAvatar key={p.id} name={p.name} size="sm" personId={p.id} sunSign={p.sunSign} memorial={p.memorial} />
+                      ))}
+                    </span>
+                  ) : null}
                   <span style={{ color: "var(--gold-soft)", fontSize: ".65rem", textTransform: "uppercase", letterSpacing: ".08em" }}>{tc.mode}</span>
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200, fontSize: ".82rem" }}>{tc.preview}</span>
                 </Link>

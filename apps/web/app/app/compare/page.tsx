@@ -36,7 +36,7 @@ import {
   whatTheyNeed,
   type RelationType,
 } from "@galaxia/astro";
-import { isMinorForSafety, orderPair } from "@galaxia/core";
+import { isMinorForSafety, orderPair, sunSignFromChart } from "@galaxia/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -158,6 +158,16 @@ function ComparePageInner() {
         .select("id, display_name, relation, birth_date, birth_precision, is_minor, passed_at, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min")
         .eq("owner_id", user.id).order("created_at", { ascending: false });
       const rows = (data ?? []) as PersonLite[];
+      const ids = rows.map((r) => r.id);
+      if (ids.length) {
+        const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
+        const sunById = new Map<string, string>();
+        for (const row of chartRows ?? []) {
+          const sign = sunSignFromChart(row.data as NatalChart);
+          if (sign) sunById.set(row.person_id as string, sign);
+        }
+        for (const row of rows) row.sun = sunById.get(row.id);
+      }
       setPeople(rows);
       // BUG B: pre-fill Person A from ?a=<personId> when navigating in from a
       // profile — an explicit deep link always wins over the self preference
@@ -491,18 +501,37 @@ function ComparePageInner() {
           </p>
         ) : null}
         <div style={{ display: "grid", gap: 10 }}>
-          <div>
-            <p className="eyebrow" style={{ fontSize: ".62rem", marginBottom: 5 }}>Person A</p>
-            <select className="field field--rect" value={personAId ?? ""} onChange={e => setPersonAId(e.target.value)}>
-              {people.map(p => <option key={`a-${p.id}`} value={p.id}>{p.display_name}{p.passed_at ? " · remembered" : ""}</option>)}
-            </select>
-          </div>
-          <div>
-            <p className="eyebrow" style={{ fontSize: ".62rem", marginBottom: 5 }}>Person B</p>
-            <select className="field field--rect" value={personBId ?? ""} onChange={e => setPersonBId(e.target.value)}>
-              {people.map(p => <option key={`b-${p.id}`} value={p.id}>{p.display_name}{p.passed_at ? " · remembered" : ""}</option>)}
-            </select>
-          </div>
+          {([
+            { label: "Person A", value: personAId, onChange: setPersonAId },
+            { label: "Person B", value: personBId, onChange: setPersonBId },
+          ] as const).map((slot) => (
+            <div key={slot.label}>
+              <p className="eyebrow" style={{ fontSize: ".62rem", marginBottom: 5 }}>{slot.label}</p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {people.map((p) => {
+                  const selected = slot.value === p.id;
+                  return (
+                    <button
+                      key={`${slot.label}-${p.id}`}
+                      type="button"
+                      className={`group-member-chip${selected ? " group-member-chip--selected" : ""}`}
+                      aria-pressed={selected}
+                      onClick={() => slot.onChange(p.id)}
+                    >
+                      <InitialAvatar
+                        name={p.display_name}
+                        size="sm"
+                        personId={p.id}
+                        sunSign={p.sun}
+                        memorial={Boolean(p.passed_at)}
+                      />
+                      <span>{p.display_name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
           <button className="btn-primary" onClick={runCompare} disabled={running} style={{ width: "fit-content", gap: 8 }}>
             {running && <Spinner size={13} color="#1a1206" />}
             {running ? "Running…" : "Run comparison"}
@@ -534,9 +563,19 @@ function ComparePageInner() {
             {/* Headline */}
             <section className="glass-card fade-in">
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap", minWidth: 0 }}>
-                <InitialAvatar name={result.personA.display_name} />
+                <InitialAvatar
+                  name={result.personA.display_name}
+                  personId={result.personA.id}
+                  sunSign={result.personA.sun}
+                  memorial={Boolean(result.personA.passed_at)}
+                />
                 <span style={{ color: "var(--mist2)", fontSize: "1.1rem" }}>×</span>
-                <InitialAvatar name={result.personB.display_name} />
+                <InitialAvatar
+                  name={result.personB.display_name}
+                  personId={result.personB.id}
+                  sunSign={result.personB.sun}
+                  memorial={Boolean(result.personB.passed_at)}
+                />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", overflowWrap: "anywhere" }}>
                     {result.personA.display_name} &amp; {result.personB.display_name}

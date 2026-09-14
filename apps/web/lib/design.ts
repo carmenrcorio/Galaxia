@@ -1,21 +1,9 @@
 /**
  * Design utilities
  * Glyph maps ported from design/reference/galaxia.jsx (SIGN, PLANET, ASPGLY).
- * Avatar palette from landing .avatar gradient patterns.
+ * Person chip color lives in `@galaxia/core` `personChipColor` — do not hash
+ * a name into `.av-*` classes here.
  */
-
-/* Deterministic avatar colour class from name hash */
-export function avatarColorClass(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return `av-${Math.abs(hash) % 6}`;
-}
-
-export function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0]?.charAt(0).toUpperCase() ?? "?";
-  return ((parts[0]?.charAt(0) ?? "") + (parts[parts.length - 1]?.charAt(0) ?? "")).toUpperCase();
-}
 
 /* Sign glyphs — from galaxia.jsx SIGN object (unicode codepoints) */
 export const SIGN_GLYPH: Record<string, string> = {

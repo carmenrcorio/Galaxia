@@ -35,10 +35,10 @@ export function EdgeSection() {
         <div className="cohort glass-card reveal">
           <div className="mock-sub mock-sub--eyebrow">Your group · the cousins</div>
           <div className="avatar-cluster" style={{ margin: "6px 0 18px" }}>
-            <InitialAvatar name="Sam" size="sm" />
-            <InitialAvatar name="Mia" size="sm" />
-            <InitialAvatar name="Nia" size="sm" />
-            <InitialAvatar name="Jo" size="sm" />
+            <InitialAvatar name="Sam" size="sm" personId="marketing:sam" sunSign="Aries" />
+            <InitialAvatar name="Mia" size="sm" personId="marketing:mia" sunSign="Cancer" />
+            <InitialAvatar name="Nia" size="sm" personId="marketing:nia" sunSign="Libra" />
+            <InitialAvatar name="Jo" size="sm" personId="marketing:jo" sunSign="Capricorn" />
             <span className="avatar avatar-sm cluster-more">+2</span>
           </div>
           <span className="mock-label">Your shared sky</span>

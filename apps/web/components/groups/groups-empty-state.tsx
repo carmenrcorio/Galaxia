@@ -9,6 +9,7 @@
  * group from the people they already have, named.
  */
 
+import { sunSignFromChart } from "@galaxia/core";
 import Link from "next/link";
 import { InitialAvatar } from "../initial-avatar";
 import {
@@ -28,6 +29,8 @@ import { GroupReadingBody } from "./group-reading-body";
 export interface EmptyStatePerson {
   id: string;
   display_name: string;
+  sunSign?: string | null;
+  passed_at?: string | null;
 }
 
 interface GroupsEmptyStateProps {
@@ -42,7 +45,7 @@ export function GroupsEmptyState({ people, onBuildWithPeople }: GroupsEmptyState
       <section className="glass-card fade-in" aria-label="Build a group from your people">
         <p className="card-title" style={{ marginBottom: 8 }}>{groupsEmptyBuildWith(names)}</p>
         <div className="avatar-cluster" style={{ marginBottom: 14 }}>
-          {people.map((p) => <InitialAvatar key={p.id} name={p.display_name} />)}
+          {people.map((p) => <InitialAvatar key={p.id} name={p.display_name} personId={p.id} sunSign={p.sunSign} memorial={Boolean(p.passed_at)} />)}
         </div>
         <button
           className="btn-primary"
@@ -68,7 +71,14 @@ export function GroupsEmptyState({ people, onBuildWithPeople }: GroupsEmptyState
           {GROUPS_EXAMPLE_NOTICE}
         </p>
         <div className="avatar-cluster" style={{ marginBottom: 10 }}>
-          {example.memberNames.map((name) => <InitialAvatar key={name} name={name} />)}
+          {example.chartGridMembers.map((m) => (
+            <InitialAvatar
+              key={m.id}
+              name={m.name}
+              personId={m.id}
+              sunSign={sunSignFromChart(m.chart)}
+            />
+          ))}
         </div>
         <p className="muted" style={{ fontSize: ".82rem", marginBottom: 14 }}>{example.memberNames.join(", ")}</p>
         <p style={{ fontStyle: "italic", color: "var(--cream)", fontSize: "1rem", lineHeight: 1.5, margin: 0 }}>

@@ -28,6 +28,8 @@ DECLARE
   trial_as_b bigint;
   share_as_b bigint;
   relations_as_b bigint;
+  charts_as_b bigint;
+  milestones_as_b bigint;
   sync_chart_exec boolean;
   sync_person_exec boolean;
   memorial_exec boolean;
@@ -67,8 +69,8 @@ BEGIN
   VALUES (owner_a, 'A self', true, 'none')
   RETURNING id INTO person_a;
 
-  INSERT INTO public.people (owner_id, display_name, is_self, birth_precision, chart_source)
-  VALUES (owner_b, 'mirror of A', false, 'none', 'linked')
+  INSERT INTO public.people (owner_id, display_name, is_self, birth_precision, chart_source, linked_user_id)
+  VALUES (owner_b, 'mirror of A', false, 'none', 'linked', owner_a)
   RETURNING id INTO person_b;
 
   INSERT INTO public.charts (person_id, data, engine_version, house_system)
@@ -142,11 +144,29 @@ BEGIN
     RAISE EXCEPTION 'PRODUCT_RPC_EXECUTE_LOST create_connect_invite';
   END IF;
 
+  -- Preview branches copy table RLS but not the dashboard GRANT ALL that
+  -- production authenticated holds on people/charts/etc. Restore that
+  -- production DML grant posture inside this transaction so the probe
+  -- tests RLS, not a missing GRANT. Rolled back with the rest.
+  EXECUTE $g$
+    GRANT SELECT, INSERT, UPDATE, DELETE ON
+      public.people,
+      public.charts,
+      public.memorial_milestones,
+      public.daily_nudge_emails,
+      public.trial_emails,
+      public.quick_share_snapshots,
+      public.galaxy_relations
+      TO authenticated
+  $g$;
+
   PERFORM set_config('request.jwt.claim.sub', owner_b::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', owner_b::text, 'role', 'authenticated')::text, true);
   EXECUTE 'SET LOCAL ROLE authenticated';
 
   SELECT count(*) INTO people_as_b FROM public.people;
+  SELECT count(*) INTO charts_as_b FROM public.charts;
+  SELECT count(*) INTO milestones_as_b FROM public.memorial_milestones;
   SELECT count(*) INTO nudge_as_b FROM public.daily_nudge_emails;
   SELECT count(*) INTO trial_as_b FROM public.trial_emails;
   SELECT count(*) INTO share_as_b FROM public.quick_share_snapshots;
@@ -168,13 +188,19 @@ BEGIN
   IF people_as_b <> 1 THEN
     RAISE EXCEPTION 'PEOPLE_ISOLATION_FAILED visible=% (expect 1, B own row only)', people_as_b;
   END IF;
+  IF charts_as_b <> 1 THEN
+    RAISE EXCEPTION 'CHARTS_ISOLATION_FAILED visible=% (expect 1, B own chart only)', charts_as_b;
+  END IF;
+  IF milestones_as_b <> 0 THEN
+    RAISE EXCEPTION 'MILESTONES_ISOLATION_FAILED visible=% (expect 0, A milestone hidden)', milestones_as_b;
+  END IF;
   IF admin_users_as_b <> 0 OR admin_audit_as_b <> 0 OR nudge_as_b <> 0
      OR trial_as_b <> 0 OR share_as_b <> 0 OR relations_as_b <> 0 THEN
     RAISE EXCEPTION 'DENY_ALL_FAILED admin_users=% audit=% nudge=% trial=% share=% relations=%',
       admin_users_as_b, admin_audit_as_b, nudge_as_b, trial_as_b, share_as_b, relations_as_b;
   END IF;
 
-  RAISE EXCEPTION 'ISOLATION_OK people_visible_to_B=1 deny_all=0 memorial_trigger=live chart_mirror=live rpc_create_connect=kept';
+  RAISE EXCEPTION 'ISOLATION_OK people_visible_to_B=1 charts=1 milestones=0 deny_all=0 memorial_trigger=live chart_mirror=live rpc_create_connect=kept';
 END $$;
 
 ROLLBACK;

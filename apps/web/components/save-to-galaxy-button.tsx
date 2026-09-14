@@ -60,11 +60,20 @@ export function SaveToGalaxyButton({
   birthInput,
   defaultName,
   navigateToProfileOnSave = true,
+  ctaLabel,
+  loggedOutHref,
 }: {
   birthInput: BirthFormInput;
   defaultName?: string;
   /** When false (Quick Compare), stay on the result with a profile link. */
   navigateToProfileOnSave?: boolean;
+  /** Override the signed-in / logged-out primary label. */
+  ctaLabel?: string;
+  /**
+   * Logged-out destination. Gift shares pass /signup?next=/s/<token> so birth
+   * data stays on the token page instead of traveling through a prefill URL.
+   */
+  loggedOutHref?: string;
 }) {
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -143,9 +152,10 @@ export function SaveToGalaxyButton({
   }
 
   if (!userId) {
-    const label = saveToGalaxyLoggedOutLabel(defaultName);
+    const label = ctaLabel ?? saveToGalaxyLoggedOutLabel(defaultName);
+    const href = loggedOutHref ?? signupWithNextHref(buildWelcomePrefillPath(birthInput, defaultName));
     return (
-      <Link href={signupWithNextHref(buildWelcomePrefillPath(birthInput, defaultName)) as never} className="btn-primary">
+      <Link href={href as never} className="btn-primary">
         {label}
       </Link>
     );
@@ -154,7 +164,7 @@ export function SaveToGalaxyButton({
   if (!open) {
     return (
       <button type="button" className="btn-primary" onClick={() => setOpen(true)}>
-        {addToConstellationLabel(defaultName)}
+        {ctaLabel ?? addToConstellationLabel(defaultName)}
       </button>
     );
   }

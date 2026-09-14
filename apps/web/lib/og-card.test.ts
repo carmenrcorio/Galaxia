@@ -89,6 +89,28 @@ describe("buildOgSingleCard — structurally free of birth PII", () => {
     assertNoForbiddenKeys(card);
   });
 
+  it("ignores a giftBirth envelope so the card never carries lat/lng/time", () => {
+    const gifted: SingleSharePayload = {
+      ...payload,
+      giftBirth: {
+        precision: "exact",
+        month: 4,
+        day: 3,
+        year: 1990,
+        hour: 8,
+        minute: 15,
+        lat: "30.2",
+        lng: "-97.7",
+        tzOffsetMin: -300,
+        birthPlace: "Austin",
+      },
+    };
+    const card = buildOgSingleCard(gifted);
+    expect(card).not.toHaveProperty("giftBirth");
+    expect(JSON.stringify(card)).not.toMatch(/30\.2|-97\.7|tzOffsetMin/);
+    assertNoForbiddenKeys(card);
+  });
+
   it("never carries displayDate/birthPlace through to the card model (image never needs them)", () => {
     const card = buildOgSingleCard(payload) as Record<string, unknown>;
     expect(card).not.toHaveProperty("displayDate");

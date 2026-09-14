@@ -58,5 +58,5 @@ export default async function ShareSnapshotPage({
   const snapshot = await getQuickShareByToken(token);
   if (!snapshot) notFound();
 
-  return <ShareSnapshotView kind={snapshot.kind} payload={snapshot.payload} />;
+  return <ShareSnapshotView kind={snapshot.kind} payload={snapshot.payload} token={token} />;
 }

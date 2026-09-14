@@ -129,6 +129,19 @@ describe("SaveToGalaxyButton logged-out funnel", () => {
     expect(label).toBe("Save Maya to your galaxy");
     expect(screen.queryByRole("button", { name: addToConstellationLabel("Maya") })).toBeNull();
   });
+
+  it("gift shares return to the token page instead of putting birth data in a prefill URL", async () => {
+    render(
+      <SaveToGalaxyButton
+        birthInput={namedInput}
+        ctaLabel="Add this person to my own constellation"
+        loggedOutHref={signupWithNextHref("/s/tok")}
+      />,
+    );
+    const link = await screen.findByRole("link", { name: "Add this person to my own constellation" });
+    expect(link.getAttribute("href")).toBe(signupWithNextHref("/s/tok"));
+    expect(link.getAttribute("href")).not.toContain("lat=");
+  });
 });
 
 describe("SaveToGalaxyButton signed-in constellation save", () => {

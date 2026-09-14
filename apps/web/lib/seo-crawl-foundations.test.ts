@@ -26,10 +26,13 @@ function exists(path: string): boolean {
 }
 
 describe("public/robots.txt", () => {
-  it("exists with an Allow-all rule and points at the production sitemap", () => {
+  it("exists with an Allow-all rule, disallows token PII routes, and points at the production sitemap", () => {
     const src = readRoute("apps/web/public/robots.txt");
     expect(src).toContain("User-agent: *");
     expect(src).toContain("Allow: /");
+    expect(src).toContain("Disallow: /s/");
+    expect(src).toContain("Disallow: /invite/");
+    expect(src).toContain("Disallow: /connect/");
     expect(src).toContain("Sitemap: https://galaxiamea.com/sitemap.xml");
   });
 });

@@ -151,7 +151,8 @@ function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion,
           {hasHouses
             ? `Houses computed with the ${houseSystemLabelForChart(chart, engineVersion)} system. `
             : "Add an exact birth time and city to unlock the Ascendant, houses, and the full wheel. "}
-          Computed from precise astronomical data by Galaxia: never guessed.
+          {/* FOUNDER-REVIEW: PDF footnote brand + public URL. */}
+          Computed from precise astronomical data by Galaxia: never guessed. galaxiamea.com
         </p>
       </div>
     </div>

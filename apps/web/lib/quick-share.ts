@@ -2,14 +2,18 @@
  * Token-based Quick Chart / Quick Compare share snapshots.
  *
  * Persist stores the already-computed reading (placements, orbs, scores,
- * display labels). It never stores exact birth time, lat/lng, or tzOffsetMin.
- * Compare snapshots that pair a minor with romantic framing are refused at
- * persist time — that is the structural guarantee; /s only renders stored data.
+ * display labels). Chart rows still strip exact birth time, lat/lng, and
+ * tzOffsetMin. Gift natal shares (kind=single) may also store an allowlisted
+ * `giftBirth` envelope so a recipient can add or compare without retyping;
+ * that envelope never appears in the URL. Compare snapshots that pair a
+ * minor with romantic framing are refused at persist time — that is the
+ * structural guarantee; /s only renders stored data.
  */
 
 import {
   COMPARE_RELATION_TYPES,
   isRomanticRelation,
+  type BirthFormInput,
   type NatalChart,
   type RelationType,
 } from "@galaxia/astro";
@@ -34,12 +38,17 @@ export type GenerationalShareShape = {
  * Fields the single-chart reading visibly displays + computed engine output.
  * `name` is legacy/read-only for older rows: new single-chart snapshots are
  * nameless by design (HARD BOUNDARY — never persist a name on kind=single).
+ *
+ * `giftBirth` is the return-path envelope: allowlisted BirthFormInput so a
+ * recipient can add this person or compare without retyping. It is stored
+ * only behind the unguessable token, never in the URL, and never on compare.
  */
 export type SingleSharePayload = {
   name?: string;
   displayDate: string;
   birthPlace: string | null;
   chart: NatalChart;
+  giftBirth?: BirthFormInput;
 };
 
 /**
@@ -65,7 +74,157 @@ export type QuickShareRow = {
   kind: QuickShareKind;
   payload: QuickSharePayload;
   created_at: string;
+  expires_at: string | null;
+  revoked_at: string | null;
 };
+
+export type QuickShareListItem = {
+  token: string;
+  kind: QuickShareKind;
+  created_at: string;
+  expires_at: string | null;
+  displayDate: string | null;
+  birthPlace: string | null;
+};
+
+export const SHARE_DEFAULT_EXPIRY_DAYS = 14;
+
+export const SHARE_EXPIRY_OPTIONS: { days: number | null; label: string }[] = [
+  { days: 7, label: "7 days" },
+  { days: 14, label: "14 days" },
+  { days: 30, label: "30 days" },
+  { days: null, label: "No expiry" },
+];
+
+export function sharePath(token: string): string {
+  return `/s/${encodeURIComponent(token)}`;
+}
+
+export function giftComparePath(token: string): string {
+  return `/chart/compare?gift=${encodeURIComponent(token)}`;
+}
+
+export function isShareActive(
+  row: { expires_at: string | null; revoked_at: string | null },
+  now: Date = new Date(),
+): boolean {
+  if (row.revoked_at) return false;
+  if (row.expires_at && new Date(row.expires_at).getTime() <= now.getTime()) return false;
+  return true;
+}
+
+export type ExpiresParse =
+  | { ok: true; days: number | null }
+  | { ok: false; error: string };
+
+/**
+ * Anonymous creators cannot pick "no expiry" (they cannot revoke later), so
+ * `allowNever: false` coerces null to the 14-day default.
+ */
+export function parseExpiresInDays(value: unknown, allowNever: boolean): ExpiresParse {
+  if (value === undefined) return { ok: true, days: SHARE_DEFAULT_EXPIRY_DAYS };
+  if (value === null) {
+    return { ok: true, days: allowNever ? null : SHARE_DEFAULT_EXPIRY_DAYS };
+  }
+  if (value === 7 || value === 14 || value === 30) return { ok: true, days: value };
+  return { ok: false, error: "expiresInDays must be 7, 14, 30, or null." };
+}
+
+export function resolveShareExpiresAt(
+  expiresInDays: number | null,
+  now: Date = new Date(),
+): string | null {
+  if (expiresInDays === null) return null;
+  return new Date(now.getTime() + expiresInDays * 86_400_000).toISOString();
+}
+
+export function giftBirthIsoDate(input: BirthFormInput): string | null {
+  if (input.precision === "year" && input.yearOnly) {
+    return `${input.yearOnly}-01-01`;
+  }
+  if (input.year && input.month && input.day) {
+    const month = String(input.month).padStart(2, "0");
+    const day = String(input.day).padStart(2, "0");
+    return `${input.year}-${month}-${day}`;
+  }
+  return null;
+}
+
+export function shareInviteTimeRemaining(expiresAt: string | null, now: Date = new Date()): string {
+  if (!expiresAt) return "No expiry";
+  const ms = new Date(expiresAt).getTime() - now.getTime();
+  if (ms <= 0) return "Expired";
+  const days = Math.ceil(ms / 86_400_000);
+  if (days === 1) return "1 day left";
+  return `${days} days left`;
+}
+
+// FOUNDER-REVIEW: one-line Galaxia framing on a gifted natal chart.
+export const SHARE_GALAXIA_FRAME =
+  "Galaxia computes a real natal chart and says, in plain language, what this person needs.";
+
+// FOUNDER-REVIEW: subject for nameless gifted charts. Never a real person's name.
+export const SHARE_NEED_SUBJECT = "This person";
+
+// FOUNDER-REVIEW: disclosure on the copy-share control for a gifted natal chart.
+export const SHARE_GIFT_DISCLOSURE =
+  "Anyone with this link can see the natal chart, the birth date, and the birth place if you entered one. They can add this person to their own constellation or compare without retyping those details. They cannot see notes. The URL never includes a name.";
+
+// FOUNDER-REVIEW: disclosure on compare share controls.
+export const SHARE_COMPARE_DISCLOSURE =
+  "Anyone with this link can see this compatibility reading and both charts. They cannot see notes. The URL never includes a name.";
+
+// FOUNDER-REVIEW: anonymous creators cannot pick no-expiry because they cannot revoke later.
+export const SHARE_ANON_EXPIRY_NOTE =
+  "Signed out: this link expires, and you cannot revoke it later. Sign in to pick no expiry, or to revoke from Settings.";
+
+// FOUNDER-REVIEW: signed-in revoke pointer on the share control.
+export const SHARE_SIGNED_IN_REVOKE_NOTE = "You can revoke this link from Settings.";
+
+// FOUNDER-REVIEW: gifted-chart lede. Readable with no account.
+export const SHARE_SINGLE_LEDE =
+  "A gifted natal chart. Readable with no account. Birth details are not in the URL.";
+
+// FOUNDER-REVIEW: compare snapshot lede.
+export const SHARE_COMPARE_LEDE =
+  "A read-only snapshot of a Galaxia reading. Nothing here can be edited, and birth details are not in the link.";
+
+// FOUNDER-REVIEW: return-path CTAs on the gifted chart.
+export const SHARE_ADD_CTA = "Add this person to my own constellation";
+export const SHARE_COMPARE_CTA = "See how you and this person compare";
+export const SHARE_COMPARE_HINT = "You only need to enter your own birth details.";
+
+// FOUNDER-REVIEW: older snapshots that predate the gift envelope.
+export const SHARE_NO_GIFT_BIRTH =
+  "This older link does not carry birth details, so they cannot be added or compared from here.";
+
+// FOUNDER-REVIEW: heading above the gifted need statement.
+export const SHARE_NEED_HEADING = "What this person needs";
+export const SHARE_NEED_EMPTY =
+  "There is not enough birth data in this chart to say what this person needs yet.";
+
+// FOUNDER-REVIEW: provenance under the gifted need statement.
+export const SHARE_NEED_PROVENANCE = "Computed from their birth data. Not generated, not guessed.";
+
+// FOUNDER-REVIEW: generational (year-only) need on a gifted chart.
+export const SHARE_NEED_GENERATIONAL =
+  "A birth year settles only the slowest planets, so this describes the era that shaped them rather than them alone.";
+
+// FOUNDER-REVIEW: settings list for live share links.
+export const SHARE_PENDING_TITLE = "Share links";
+export const SHARE_PENDING_EMPTY = "No live share links right now.";
+export const SHARE_PENDING_ERROR = "Could not load share links. Try again.";
+export const SHARE_REVOKE_LABEL = "Revoke";
+export const SHARE_REVOKING_LABEL = "Revoking…";
+export const SHARE_PENDING_COMPARE_LABEL = "Compatibility reading";
+export const SHARE_PENDING_NATAL_FALLBACK = "Natal chart";
+
+// FOUNDER-REVIEW: gifted compare landing when person B is locked from the token.
+export const SHARE_GIFT_COMPARE_B_LOCKED = "Using the gifted chart. You only enter your own birth details.";
+export const SHARE_GIFT_COMPARE_MISSING =
+  "This gift link is missing, expired, or no longer available, so the other person's chart cannot be loaded.";
+export const SHARE_GIFT_COMPARE_NOT_SINGLE =
+  "This link is a compatibility reading, not a gifted natal chart, so it cannot be compared from here.";
 
 // FOUNDER-REVIEW: authored — Quick Compare held-reading (shared with /s).
 export const QUICK_COMPARE_HELD_READING =
@@ -134,6 +293,45 @@ export function stripBirthPii<T>(value: T): T {
 
 function asString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function finiteNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+/**
+ * Allowlisted BirthFormInput for the gift return path. Built field-by-field
+ * so stripBirthPii cannot empty it, and so a smuggled name never lands here.
+ */
+export function sanitizeGiftBirth(raw: unknown): BirthFormInput | undefined {
+  if (!isPlainObject(raw)) return undefined;
+  const precision = raw.precision;
+  if (precision !== "exact" && precision !== "date" && precision !== "year") return undefined;
+  const input: BirthFormInput = { precision };
+  const month = finiteNumber(raw.month);
+  const day = finiteNumber(raw.day);
+  const year = finiteNumber(raw.year);
+  const hour = finiteNumber(raw.hour);
+  const minute = finiteNumber(raw.minute);
+  const yearOnly = finiteNumber(raw.yearOnly);
+  const tzOffsetMin = finiteNumber(raw.tzOffsetMin);
+  if (month !== undefined) input.month = month;
+  if (day !== undefined) input.day = day;
+  if (year !== undefined) input.year = year;
+  if (hour !== undefined) input.hour = hour;
+  if (minute !== undefined) input.minute = minute;
+  if (yearOnly !== undefined) input.yearOnly = yearOnly;
+  if (tzOffsetMin !== undefined) input.tzOffsetMin = tzOffsetMin;
+  const birthPlace = asString(raw.birthPlace);
+  const lat = asString(raw.lat);
+  const lng = asString(raw.lng);
+  const tzId = asString(raw.tzId);
+  if (birthPlace) input.birthPlace = birthPlace;
+  if (lat) input.lat = lat;
+  if (lng) input.lng = lng;
+  if (tzId) input.tzId = tzId;
+  if (precision === "year") return input.yearOnly ? input : undefined;
+  return input.month && input.day && input.year ? input : undefined;
 }
 
 function sanitizeChart(raw: unknown): NatalChart | null {
@@ -227,6 +425,8 @@ export function validateQuickSharePersistBody(body: unknown): PersistValidation 
       birthPlace: typeof rawPayload.birthPlace === "string" ? rawPayload.birthPlace : null,
       chart,
     };
+    const giftBirth = sanitizeGiftBirth(rawPayload.giftBirth);
+    if (giftBirth) payload.giftBirth = giftBirth;
     return { ok: true, kind, payload };
   }
 

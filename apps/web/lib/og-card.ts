@@ -1,10 +1,11 @@
 /**
  * Pure, server-safe data shaping for the `/s/[token]` OG image cards.
  *
- * Everything here operates only on the already-stripped `SingleSharePayload`
- * / `CompareSharePayload` shapes (see `./quick-share` — birth time, lat, lng
- * are never present on those types), and never reads `synastry.scores` or
- * calls `whatTheyNeed`. No import here pulls in `server-only` (no DB, no
+ * Everything here operates only on the stored `SingleSharePayload` /
+ * `CompareSharePayload` shapes. Gift natal rows may carry a `giftBirth`
+ * envelope for the return path; these builders must ignore it so the OG
+ * card never shows birth time, lat, or lng. Never reads `synastry.scores`
+ * or calls `whatTheyNeed`. No import here pulls in `server-only` (no DB, no
  * node:crypto), so this module — and its safety properties — are directly
  * unit-testable without route-level plumbing.
  *

@@ -37,14 +37,14 @@ describe("inventory surfaces — Venus never rendered without minorSafe", () => 
     expect(src).not.toContain("PLANET_IN_SIGN");
   });
 
-  it("/s single always passes minorSafe: true — no compute, no persist, no age branch", () => {
+  it("/s single uses giftBirth for isMinorForSafety and fail-safes when the envelope is absent", () => {
     const src = read("../components/share-snapshot-view.tsx");
-    expect(src).toContain("const minorSafe = true");
+    expect(src).toContain("isMinorForSafety");
+    expect(src).toContain("giftBirthIsoDate");
     expect(src).toContain("interpretPlacement(p.body as BodyKey, p.sign as SignKey, { minorSafe })");
     expect(src).toContain("bodyDomain(p.body as BodyKey, { minorSafe })");
     expect(src).toContain("minorSafe={minorSafe}");
-    // Fail-safe: must not call isMinorForSafety or read birthDate on single shares.
-    expect(src).not.toMatch(/SingleSnapshot[\s\S]*?isMinorForSafety/);
+    expect(src).toContain(": true");
     expect(src).not.toContain("VENUS_IN_SIGN_MINOR");
     expect(src).not.toContain("subjectIsMinor");
   });

@@ -109,7 +109,7 @@ export default function QuickChartPage() {
     }
   }
 
-  async function createShareUrl(): Promise<string> {
+  async function createShareUrl({ expiresInDays }: { expiresInDays: number | null }): Promise<string> {
     if (!result) throw new Error("Compute a chart before sharing.");
     // HARD BOUNDARY: single-chart shares are nameless. `name` may be in local
     // state (including via ?name= from the landing mini-form) but must never
@@ -119,10 +119,12 @@ export default function QuickChartPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         kind: "single",
+        expiresInDays,
         payload: {
           displayDate: result.displayDate,
           birthPlace: result.birthPlace,
           chart: result.chart,
+          giftBirth: input,
         },
       }),
     });
@@ -260,7 +262,7 @@ export default function QuickChartPage() {
                 minorSafe={chartMinorSafe}
               />
             ) : null}
-            <ShareLinkButton createShareUrl={createShareUrl} />
+            <ShareLinkButton createShareUrl={createShareUrl} variant="gift" />
             <button type="button" className="pill-link" onClick={() => { setResult(null); setFromShareLink(false); setUsingMyChart(false); }}>
               Try another chart
             </button>

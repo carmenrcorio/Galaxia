@@ -1017,7 +1017,7 @@ export default function PersonProfilePage() {
         hidden={activeGroup !== "now"}
       >
       {showActiveToday && dailyNudge ? (
-        <section id="active-today" className="glass-card fade-in" style={{ borderColor: "rgba(230,174,108,.28)", background: "rgba(230,174,108,.05)", scrollMarginTop: 92 }}>
+        <section id="active-today" className="glass-card fade-in" style={{ borderColor: "rgba(230,174,108,.28)", background: "rgba(230,174,108,.05)" }}>
           {sectionHead("active-today")}
           <div style={{ display: "grid", gap: 3 }}>
             <p style={{ margin: 0, color: "var(--cream)", fontSize: ".92rem", lineHeight: 1.5 }}>
@@ -1055,7 +1055,7 @@ export default function PersonProfilePage() {
           Do not mount the empty "Vela on {name}" card there: it reads as a second
           entry point even without a CTA. Pins / reopen still render when present. */}
       {showVelaOnThem ? (
-        <section id="vela-on-them" className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)", scrollMarginTop: 92 }}>
+        <section id="vela-on-them" className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)" }}>
           {sectionHead("vela-on-them")}
           {velaPins.length > 0 ? (
             <div style={{ display: "grid", gap: 8 }}>
@@ -1095,7 +1095,7 @@ export default function PersonProfilePage() {
       >
 
       {/* ── Big Three ── */}
-      <section id="big-three" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
+      <section id="big-three" className="glass-card fade-in fade-in-delay-1">
         {sectionHead("big-three")}
         <div style={{ display: "grid", gap: 8 }}>
           {([
@@ -1197,7 +1197,7 @@ export default function PersonProfilePage() {
       </section>
 
       {/* ── Placements ── */}
-      <section id="placements" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
+      <section id="placements" className="glass-card fade-in fade-in-delay-1">
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8, gap: 8 }}>
           <div>{sectionHead("placements")}</div>
           <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllPlacements(!placementsAllOpen)}>
@@ -1315,7 +1315,7 @@ export default function PersonProfilePage() {
 
       {/* ── Key aspects ── */}
       {natalAspectReadings.length > 0 ? (
-        <section id="aspects" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
+        <section id="aspects" className="glass-card fade-in fade-in-delay-2">
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4, gap: 8 }}>
             <div>{sectionHead("aspects")}</div>
             <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllAspects(!aspectsAllOpen)}>{aspectsAllOpen ? "Collapse all" : "Expand all"}</button>
@@ -1350,7 +1350,7 @@ export default function PersonProfilePage() {
 
       {/* ── Twelve Houses: occupancy list, or the shared unavailable card ── */}
       {hasHouses ? (
-        <section id="houses" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
+        <section id="houses" className="glass-card fade-in fade-in-delay-2">
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8, gap: 8 }}>
             <div>{sectionHead("houses")}</div>
             <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllHouses(!housesAllOpen)}>{housesAllOpen ? "Collapse all" : "Expand all"}</button>
@@ -1424,7 +1424,7 @@ export default function PersonProfilePage() {
       />
 
       {/* ── Generational layer ── */}
-      <section id="generational" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
+      <section id="generational" className="glass-card fade-in fade-in-delay-2">
         {sectionHead("generational")}
         {generationInfo ? (
           <p style={{ fontSize: ".78rem", color: "var(--cream)", fontWeight: 600, marginBottom: 2 }}>
@@ -1489,7 +1489,7 @@ export default function PersonProfilePage() {
       {/* ── Chart Wheel ── */}
       {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
       <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
-        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
+        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1">
           {sectionHead("chart-wheel")}
           <p className="muted" style={{ fontSize: ".72rem", margin: "0 0 14px" }}>
             {chart.precision === "exact" && chart.asc
@@ -1573,7 +1573,7 @@ export default function PersonProfilePage() {
       ) : null}
 
       {/* ── The record (B1): notes, tending, Vela pins, saved readings, conversations ── */}
-      <section id="notes" className="glass-card fade-in fade-in-delay-3" style={{ scrollMarginTop: 92 }}>
+      <section id="notes" className="glass-card fade-in fade-in-delay-3">
         {sectionHead("notes")}
         <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>
           Owner-only · never shared. The chart never changes: this is the layer that does: everything you note, pin, and discuss about {person.display_name}, in date order.
@@ -1596,7 +1596,7 @@ export default function PersonProfilePage() {
 
       {/* ── Past conversations (archived threads) ── */}
       {archivedThreads.length > 0 ? (
-        <section id="past-conversations" className="glass-card fade-in fade-in-delay-3" style={{ scrollMarginTop: 92 }}>
+        <section id="past-conversations" className="glass-card fade-in fade-in-delay-3">
           {sectionHead("past-conversations")}
           <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>Archived Vela threads about {person.display_name}. Nothing is ever deleted.</p>
           {/* grid-template-columns: minmax(0,1fr) — without it the single implicit

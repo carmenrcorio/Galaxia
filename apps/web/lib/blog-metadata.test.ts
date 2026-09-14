@@ -19,7 +19,13 @@ describe("buildPostMetadata", () => {
       "nobody-has-your-grandmother",
       "sun-sign-not-personality",
       "synastry-aspects-explained",
-      "synastry-chart-meaning"
+      "synastry-chart-meaning",
+      "mothers-moon-sign-apology",
+      "colleague-you-cannot-read",
+      "moon-square-saturn-parent-child",
+      "what-a-chart-cannot-tell-you",
+      "reading-chart-of-someone-who-died",
+      "compatibility-scores-wrong-question"
     ]) {
       const meta = buildPostMetadata({
         slug,

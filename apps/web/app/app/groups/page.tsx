@@ -11,24 +11,21 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ChartGridSection } from "../../../components/groups/chart-grid-section";
-import { GenerationalMap } from "../../../components/groups/generational-map";
+import { GroupReadingBody } from "../../../components/groups/group-reading-body";
 import { GroupSelector, type GroupSelectorItem } from "../../../components/groups/group-selector";
+import { GroupsEmptyState } from "../../../components/groups/groups-empty-state";
 import { GroupsIntroCard } from "../../../components/groups/groups-intro-card";
 import { ManageGroupAccordion, type GroupKind } from "../../../components/groups/manage-group-accordion";
-import { PairDynamicsSection } from "../../../components/groups/pair-dynamics-section";
-import { SharedSkySection } from "../../../components/groups/shared-sky-section";
-import { GlossaryPlanet, GlossarySign } from "../../../components/glossary-term";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { Spinner } from "../../../components/spinner";
-import { BODY_GLYPH, SIGN_GLYPH } from "../../../lib/design";
 import { fetchGroupsCurrentReading, upsertGroupsCurrentReading } from "../../../lib/groups-cohort";
 import {
-  faultLinesInterpretation,
+  GROUPS_EMPTY_DEFAULT_NAME,
+  GROUPS_EXAMPLE_CANNOT_SAVE,
   groupSignatureLine,
-  GEN_PLANET_MEANING,
   type CohortOverlayLike,
-  type GenPlanetKey,
 } from "../../../lib/groups-copy";
+import { isExampleId } from "../../../lib/groups-example";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 interface PersonLite { id: string; display_name: string; passed_at?: string | null; }
@@ -92,9 +89,9 @@ function GroupsPageInner() {
   const initialGroupId = searchParams.get("groupId");
   const paramLoadRef = useRef<string | null>(null);
   const autoSelectRef = useRef(false);
-  const autoOpenEmptyRef = useRef(false);
 
   const [userId, setUserId]               = useState<string|null>(null);
+  const [rosterReady, setRosterReady]     = useState(false);
   const [people, setPeople]               = useState<PersonLite[]>([]);
   const [groups, setGroups]               = useState<GroupRow[]>([]);
   const [groupSummaries, setGroupSummaries] = useState<GroupSelectorItem[]>([]);
@@ -120,9 +117,13 @@ function GroupsPageInner() {
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setRosterReady(true);
+        return;
+      }
       setUserId(user.id);
       await Promise.all([fetchPeople(user.id), fetchGroupSummaries(user.id)]);
+      setRosterReady(true);
     };
     void load();
   }, [supabase]);
@@ -144,16 +145,6 @@ function GroupsPageInner() {
     autoSelectRef.current = true;
     if (!loadedGroup) void loadGroup(groupSummaries[0]!.id);
   }, [userId, groupSummaries, initialGroupId, loadedGroup]);
-
-  // Brand new account with no groups at all: open the editor so there is
-  // something to do, instead of a page that reads as empty.
-  useEffect(() => {
-    if (autoOpenEmptyRef.current) return;
-    if (!userId) return;
-    if (groupSummaries.length > 0) { autoOpenEmptyRef.current = true; return; }
-    autoOpenEmptyRef.current = true;
-    setManageOpen(true);
-  }, [userId, groupSummaries]);
 
   // Chart grid: independent of the generational cohort (which requires a
   // computed `generational` signature per member) — this only needs the
@@ -282,6 +273,22 @@ function GroupsPageInner() {
     setManageOpen(true);
   }
 
+  /** One-tap: prefills the user's real people and builds the reading. Never example ids. */
+  function buildFromExistingPeople(personIds: string[]) {
+    const ids = personIds.filter((id) => !isExampleId(id));
+    if (ids.length < 3) return;
+    setLoadedGroup(null);
+    setGroupName(GROUPS_EMPTY_DEFAULT_NAME);
+    setGroupKind("group");
+    setSelectedPersonIds(ids);
+    setReadingSaved(false);
+    setStatus(null);
+    setConfirmDelete(false);
+    setDeleteWarning(null);
+    setManageOpen(false);
+    void buildOverlay(ids, GROUPS_EMPTY_DEFAULT_NAME, null);
+  }
+
   async function beginDeleteGroup() {
     if (!loadedGroup) return;
     const { count, error } = await supabase
@@ -317,6 +324,10 @@ function GroupsPageInner() {
     if (!userId) return;
     if (groupName.trim().length < 2) { setStatus("Give the group a name."); return; }
     if (selectedPersonIds.length < 3) { setStatus("Select at least 3 people for a group."); return; }
+    if (selectedPersonIds.some(isExampleId)) {
+      setStatus(GROUPS_EXAMPLE_CANNOT_SAVE);
+      return;
+    }
     setSavingGroup(true);
     setStatus(null);
     const name = groupName.trim();
@@ -571,8 +582,12 @@ function GroupsPageInner() {
   function resolvePairPersonId(name: string): string | null {
     if (!cohort) return null;
     const idx = cohort.memberNames.indexOf(name);
-    return idx >= 0 ? cohort.memberIds[idx] ?? null : null;
+    const id = idx >= 0 ? cohort.memberIds[idx] ?? null : null;
+    if (id && isExampleId(id)) return null;
+    return id;
   }
+
+  const showEmptyLanding = rosterReady && groupSummaries.length === 0 && !showWorkspace;
 
   return (
     <main className="app-content">
@@ -582,21 +597,18 @@ function GroupsPageInner() {
 
       <GroupsIntroCard />
 
-      {groupSummaries.length > 0 ? (
+      {!rosterReady ? (
+        <div className="skeleton skeleton-title" />
+      ) : groupSummaries.length > 0 ? (
         <GroupSelector
           groups={groupSummaries}
           activeId={loadedGroup?.id ?? null}
           onSelect={(id) => void loadGroup(id)}
           onCreateNew={startNewGroup}
         />
-      ) : (
-        <section className="glass-card fade-in">
-          <p className="card-title" style={{ marginBottom: 8 }}>Build your first group</p>
-          <p className="muted" style={{ fontSize: ".86rem" }}>
-            Add three or more people below to see their shared sky and generational fault lines.
-          </p>
-        </section>
-      )}
+      ) : showEmptyLanding ? (
+        <GroupsEmptyState people={people} onBuildWithPeople={buildFromExistingPeople} />
+      ) : null}
 
       {showWorkspace ? (
         <>
@@ -632,125 +644,80 @@ function GroupsPageInner() {
             ) : null}
           </section>
 
-          {/* Group reading */}
           {cohort ? (
-            <section className="glass-card fade-in fade-in-delay-1">
-              <p className="eyebrow" style={{ marginBottom: 10 }}>Group reading</p>
-              <p style={{
-                fontFamily: "var(--serif)", fontSize: "1.12rem", lineHeight: 1.65, color: "var(--cream)",
-                fontStyle: "italic", borderLeft: "2px solid rgba(230,174,108,.3)", paddingLeft: 16, margin: "0 0 22px",
-              }}>
-                {cohort.overlay.label}
-              </p>
-              {canPersistAgainstLoaded ? (
-                <div style={{ display: "grid", gap: 10 }}>
-                  <button
-                    className="btn-primary"
-                    type="button"
-                    onClick={() => void askVelaAboutGroup()}
-                    disabled={askingVela}
-                    style={{ width: "100%", justifyContent: "center", gap: 9, fontSize: ".95rem" }}
-                  >
-                    <span aria-hidden="true">✦</span>
-                    {askingVela ? "Opening Vela…" : "Ask Vela about this group"}
-                  </button>
-                  <button
-                    className="pill-link"
-                    onClick={saveCohortReading}
-                    disabled={savingReading || readingSaved}
-                    style={{ width: "100%", justifyContent: "center", gap: 8 }}
-                  >
-                    {savingReading && <Spinner size={12} />}
-                    {readingSaved ? "✓ Reading saved" : savingReading ? "Saving…" : "Save this reading"}
-                  </button>
-                </div>
-              ) : (
-                <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>
-                  {loadedGroup
-                    ? "Save your changes in Manage group below before keeping this reading or asking Vela."
-                    : "Save this as a group in Manage group below to keep this reading and ask Vela about it."}
-                </p>
-              )}
-            </section>
-          ) : null}
-
-          {/* Generational map */}
-          {cohort ? <GenerationalMap memberNames={cohort.memberNames} overlay={cohort.overlay} /> : null}
-
-          {/* Shared sky */}
-          {cohort ? <SharedSkySection overlay={cohort.overlay} totalMembers={cohort.memberIds.length} /> : null}
-
-          {/* Fault lines */}
-          {cohort && cohort.overlay.faultLines.length > 0 ? (
-            <section className="teal-callout fade-in">
-              <p className="eyebrow" style={{ marginBottom: 10 }}>Fault lines</p>
-              <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6, marginBottom: 18 }}>
-                {faultLinesInterpretation(cohort.overlay.faultLines)}
-              </p>
-              {cohort.overlay.faultLines.map((line) => (
-                <div key={line.planet} style={{ marginBottom: 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                    <span style={{ fontSize: "1.3rem", color: "var(--gold-soft)" }} aria-hidden="true">{BODY_GLYPH[line.planet]}</span>
-                    <GlossaryPlanet planet={line.planet}>
-                      <strong style={{ color: "var(--teal)", letterSpacing: ".04em" }}>{line.planet.toUpperCase()}</strong>
-                    </GlossaryPlanet>
+            <GroupReadingBody
+              cohort={cohort}
+              chartGridMembers={chartGridMembers}
+              resolvePairPersonId={resolvePairPersonId}
+              onOpenPair={(idA, idB) => {
+                if (isExampleId(idA) || isExampleId(idB)) return;
+                router.push(`/app/compare?a=${idA}&b=${idB}`);
+              }}
+              readingActions={
+                canPersistAgainstLoaded ? (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <button
+                      className="btn-primary"
+                      type="button"
+                      onClick={() => void askVelaAboutGroup()}
+                      disabled={askingVela}
+                      style={{ width: "100%", justifyContent: "center", gap: 9, fontSize: ".95rem" }}
+                    >
+                      <span aria-hidden="true">✦</span>
+                      {askingVela ? "Opening Vela…" : "Ask Vela about this group"}
+                    </button>
+                    <button
+                      className="pill-link"
+                      onClick={saveCohortReading}
+                      disabled={savingReading || readingSaved}
+                      style={{ width: "100%", justifyContent: "center", gap: 8 }}
+                    >
+                      {savingReading && <Spinner size={12} />}
+                      {readingSaved ? "✓ Reading saved" : savingReading ? "Saving…" : "Save this reading"}
+                    </button>
                   </div>
-                  <p className="muted" style={{ fontSize: ".76rem", fontStyle: "italic", marginLeft: 34, marginBottom: 8 }}>
-                    {GEN_PLANET_MEANING[line.planet as GenPlanetKey] ?? "a distinctive generational signature"}
+                ) : (
+                  <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>
+                    {loadedGroup
+                      ? "Save your changes in Manage group below before keeping this reading or asking Vela."
+                      : "Save this as a group in Manage group below to keep this reading and ask Vela about it."}
                   </p>
-                  {line.groups.map((g) => (
-                    <div key={`${line.planet}-${g.sign}`} style={{ marginLeft: 34, marginBottom: 4 }}>
-                      <span style={{ color: "var(--cream)", fontWeight: 600 }}>
-                        <span aria-hidden="true">{SIGN_GLYPH[g.sign]} </span>
-                        <GlossarySign sign={g.sign} />
-                      </span>
-                      <span className="muted" style={{ fontSize: 13 }}>: {g.names.join(", ")}</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </section>
-          ) : null}
-
-          {/* Pair dynamics */}
-          {cohort ? (
-            <PairDynamicsSection
-              items={cohort.pairHighlights}
-              resolveId={resolvePairPersonId}
-              onOpenPair={(idA, idB) => router.push(`/app/compare?a=${idA}&b=${idB}`)}
+                )
+              }
             />
-          ) : null}
-
-          {/* Chart grid — personal planets, any group kind. */}
-          <ChartGridSection members={chartGridMembers} />
+          ) : (
+            <ChartGridSection members={chartGridMembers} />
+          )}
         </>
       ) : null}
 
-      <ManageGroupAccordion
-        open={manageOpen}
-        onToggle={setManageOpen}
-        isEditing={Boolean(loadedGroup)}
-        people={people}
-        groupName={groupName}
-        onGroupNameChange={setGroupName}
-        groupKind={groupKind}
-        onGroupKindChange={setGroupKind}
-        selectedPersonIds={selectedPersonIds}
-        onToggleMember={toggleSelection}
-        loadedBelowMinimum={loadedBelowMinimum}
-        belowMinimumNotice={OWNED_DELETE_COPY.belowMinimumNotice}
-        savingGroup={savingGroup}
-        onSave={() => void saveGroup()}
-        buildingOverlay={buildingOverlay}
-        onGenerateReading={() => void buildOverlay()}
-        canDelete={Boolean(loadedGroup)}
-        confirmDelete={confirmDelete}
-        deleteWarning={deleteWarning}
-        deletingGroup={deletingGroup}
-        onBeginDelete={() => void beginDeleteGroup()}
-        onConfirmDelete={() => void confirmDeleteGroup()}
-        onCancelDelete={() => { setConfirmDelete(false); setDeleteWarning(null); }}
-      />
+      {rosterReady && !showEmptyLanding ? (
+        <ManageGroupAccordion
+          open={manageOpen}
+          onToggle={setManageOpen}
+          isEditing={Boolean(loadedGroup)}
+          people={people}
+          groupName={groupName}
+          onGroupNameChange={setGroupName}
+          groupKind={groupKind}
+          onGroupKindChange={setGroupKind}
+          selectedPersonIds={selectedPersonIds}
+          onToggleMember={toggleSelection}
+          loadedBelowMinimum={loadedBelowMinimum}
+          belowMinimumNotice={OWNED_DELETE_COPY.belowMinimumNotice}
+          savingGroup={savingGroup}
+          onSave={() => void saveGroup()}
+          buildingOverlay={buildingOverlay}
+          onGenerateReading={() => void buildOverlay()}
+          canDelete={Boolean(loadedGroup)}
+          confirmDelete={confirmDelete}
+          deleteWarning={deleteWarning}
+          deletingGroup={deletingGroup}
+          onBeginDelete={() => void beginDeleteGroup()}
+          onConfirmDelete={() => void confirmDeleteGroup()}
+          onCancelDelete={() => { setConfirmDelete(false); setDeleteWarning(null); }}
+        />
+      ) : null}
 
       {status ? <p className={status.startsWith("Group saved") || status.startsWith("Group updated") || status.startsWith("Group deleted") ? "success" : "error"}>{status}</p> : null}
     </main>

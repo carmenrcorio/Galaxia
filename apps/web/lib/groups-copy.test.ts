@@ -12,8 +12,19 @@ import {
   faultLinesInterpretation,
   generationalMapSummary,
   GEN_PLANET_MEANING,
+  GROUPS_CREATE_REQUIREMENT,
+  GROUPS_EMPTY_ADD_SOMEONE,
+  GROUPS_EMPTY_BUILD_THIS_GROUP,
+  GROUPS_EMPTY_DEFAULT_NAME,
+  GROUPS_EXAMPLE_BADGE,
+  GROUPS_EXAMPLE_CANNOT_SAVE,
+  GROUPS_EXAMPLE_NOTICE,
+  GROUPS_EXAMPLE_TITLE,
   groupPartialOverlapsByMembers,
   groupSignatureLine,
+  groupsEmptyBuildWith,
+  groupsEmptyPeopleNeeded,
+  groupsEmptyPeopleStatus,
   joinNames,
   parsePairNames,
   parsePairSummary,
@@ -34,6 +45,29 @@ describe("joinNames", () => {
   });
   it("drops empty names", () => {
     expect(joinNames(["", "Camila", ""])).toBe("Camila");
+  });
+});
+
+describe("groups empty-state copy", () => {
+  it("counts how many more people a group still needs", () => {
+    expect(groupsEmptyPeopleNeeded(0)).toBe(3);
+    expect(groupsEmptyPeopleNeeded(1)).toBe(2);
+    expect(groupsEmptyPeopleNeeded(2)).toBe(1);
+    expect(groupsEmptyPeopleNeeded(3)).toBe(0);
+    expect(groupsEmptyPeopleNeeded(8)).toBe(0);
+  });
+
+  it("names the shortfall without claiming a group already exists", () => {
+    expect(groupsEmptyPeopleStatus(0)).toBe("You have no people yet. Add 3 to read a group.");
+    expect(groupsEmptyPeopleStatus(1)).toBe("You have 1 person. Add 2 more to read a group.");
+    expect(groupsEmptyPeopleStatus(2)).toBe("You have 2 people. Add 1 more to read a group.");
+    expect(groupsEmptyPeopleStatus(3)).toBe("");
+  });
+
+  it("names the user's actual people in the one-tap offer", () => {
+    expect(groupsEmptyBuildWith(["Maya", "Jordan", "Sam"])).toBe(
+      "Build a group with Maya, Jordan, and Sam."
+    );
   });
 });
 
@@ -710,8 +744,11 @@ describe("em dash purge in Groups user-facing copy", () => {
   it("ships zero U+2014 in user-facing strings in the three named files", () => {
     const files = [
       "lib/groups-copy.ts",
+      "lib/groups-example.ts",
       "app/app/groups/page.tsx",
       "components/groups/generational-map.tsx",
+      "components/groups/groups-empty-state.tsx",
+      "components/groups/group-reading-body.tsx",
     ];
     for (const rel of files) {
       const src = stripComments(readFileSync(resolve(__dirname, "..", rel), "utf8"));
@@ -755,6 +792,18 @@ describe("em dash purge in Groups user-facing copy", () => {
         { planet: "uranus", groups: [{ sign: "Taurus", names: ["Camila"] }, { sign: "Aquarius", names: ["Emilio"] }, { sign: "Leo", names: ["Carmen"] }] },
         { planet: "pluto", groups: [{ sign: "Capricorn", names: ["Camila", "Carmen"] }, { sign: "Scorpio", names: ["Emilio"] }] },
       ]),
+      GROUPS_EXAMPLE_BADGE,
+      GROUPS_EXAMPLE_TITLE,
+      GROUPS_EXAMPLE_NOTICE,
+      GROUPS_CREATE_REQUIREMENT,
+      GROUPS_EMPTY_ADD_SOMEONE,
+      GROUPS_EMPTY_BUILD_THIS_GROUP,
+      GROUPS_EMPTY_DEFAULT_NAME,
+      GROUPS_EXAMPLE_CANNOT_SAVE,
+      groupsEmptyPeopleStatus(0),
+      groupsEmptyPeopleStatus(1),
+      groupsEmptyPeopleStatus(2),
+      groupsEmptyBuildWith(["Maya", "Jordan", "Sam"]),
     ];
     for (const sample of samples) {
       expect(sample).not.toContain("\u2014");

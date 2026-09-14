@@ -392,6 +392,11 @@ describe("empty-state hrefs resolve to App Router pages", () => {
       ["EMPTY_STATE_WELCOME_HREF"],
       "person empty leftover literal",
     );
+    assertRendersFromConfig(
+      readWeb("components/groups/groups-empty-state.tsx"),
+      ["EMPTY_STATE_WELCOME_HREF"],
+      "groups empty leftover literal",
+    );
   });
 });
 

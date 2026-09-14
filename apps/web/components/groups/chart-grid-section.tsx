@@ -42,9 +42,11 @@ export const CHART_GRID_EMPTY =
 interface ChartGridSectionProps {
   /** Current group's members with a resolved chart — already filtered upstream to those with one. */
   members: FamilyComparePersonInput[];
+  /** Hide share on example readings so an example is not exported as the user's group. */
+  allowShare?: boolean;
 }
 
-export function ChartGridSection({ members }: ChartGridSectionProps) {
+export function ChartGridSection({ members, allowShare = true }: ChartGridSectionProps) {
   const shareRef = useRef<HTMLDivElement>(null);
   if (members.length < MIN_GRID_PEOPLE) {
     return (
@@ -74,7 +76,9 @@ export function ChartGridSection({ members }: ChartGridSectionProps) {
               Sun, Moon, Rising, Mercury, Venus, and Mars, side by side.
             </p>
           </div>
-          <ShareImageButton targetRef={shareRef} filename="group-chart-comparison.png" label="Share comparison" />
+          {allowShare ? (
+            <ShareImageButton targetRef={shareRef} filename="group-chart-comparison.png" label="Share comparison" />
+          ) : null}
         </div>
 
         <div ref={shareRef} style={{ position: "relative", padding: "10px 20px 26px", background: "#0a0717" }}>

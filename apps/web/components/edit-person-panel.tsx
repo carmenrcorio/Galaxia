@@ -16,8 +16,10 @@ import {
   groupsCollapsedByMemberRemoval,
   isMinorForSafety,
   normalizeStarColorForWrite,
+  type ChartPrecision,
 } from "@galaxia/core";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { applyBirthFormUpgrade, birthFormFromPerson } from "../lib/birth-form-upgrade";
 import { getPreferredHouseSystem } from "../lib/house-system";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { AskBirthData } from "./ask-birth-data";
@@ -44,25 +46,27 @@ interface PersonRow {
   linked_user_id?: string | null;
   custom_position?: { angle: number; radius_pct: number } | null;
 }
-interface Props { person: PersonRow; userId: string; onSaved: () => void; onDeleted: () => void; }
-
-/** Parse stored "YYYY-MM-DD" → {month,day,year} */
-function parseDateStr(s: string | null | undefined): { month?: number; day?: number; year?: number } {
-  if (!s) return {};
-  const [yr, mo, dy] = s.slice(0, 10).split("-").map(Number);
-  return { year: yr, month: mo, day: dy };
+interface Props {
+  person: PersonRow;
+  userId: string;
+  onSaved: () => void;
+  onDeleted: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** One-rung upgrade: switch the form to the missing detail, prefilled. */
+  upgradeTo?: Exclude<ChartPrecision, "none"> | null;
 }
 
-/** Parse stored "HH:MM:SS" → {hour, minute} */
-function parseTimeStr(s: string | null | undefined): { hour?: number; minute?: number } {
-  if (!s) return {};
-  const [hr, mn] = s.slice(0, 5).split(":").map(Number);
-  return { hour: hr, minute: mn };
-}
-
-export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
+export function EditPersonPanel({
+  person, userId, onSaved, onDeleted, open: openProp, onOpenChange, upgradeTo,
+}: Props) {
   const supabase = createSupabaseBrowserClient();
-  const [open, setOpen]             = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = openProp ?? uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    onOpenChange?.(next);
+    if (openProp === undefined) setUncontrolledOpen(next);
+  };
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteWarning, setDeleteWarning] = useState<string | null>(null);
   const [confirmRemembrance, setConfirmRemembrance] = useState(false);
@@ -80,26 +84,31 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
   const [customPosition, setCustomPosition] = useState(person.custom_position ?? null);
   const [resettingPosition, setResettingPosition] = useState(false);
 
-  // Populate structured fields from stored data
-  const storedDate = parseDateStr(person.birth_date);
-  const storedTime = parseTimeStr(person.birth_time);
-  const [input, setInput] = useState<BirthFormInput>({
-    // A 'none' person is adding data now — default the form to a usable precision.
-    precision: person.birth_precision === "none" ? "date" : person.birth_precision,
-    ...storedDate,
-    ...storedTime,
-    yearOnly: person.birth_precision === "year" ? (storedDate.year ?? undefined) : undefined,
-    birthPlace:  person.birth_place ?? "",
-    lat:         person.birth_lat  != null ? String(person.birth_lat)  : "",
-    lng:         person.birth_lng  != null ? String(person.birth_lng)  : "",
-    tzOffsetMin: person.tz_offset_min != null ? person.tz_offset_min : undefined,
-  });
+  const [input, setInput] = useState<BirthFormInput>(() => birthFormFromPerson(person));
 
   // City search state
   const [cityQuery,    setCityQuery]    = useState(person.birth_place ?? "");
   const [searching,    setSearching]    = useState(false);
   const [candidates,   setCandidates]   = useState<GeoCandidate[]>([]);
   const [searchError,  setSearchError]  = useState<string|null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const base = birthFormFromPerson(person);
+    setInput(upgradeTo ? applyBirthFormUpgrade(base, upgradeTo) : base);
+    setDisplayName(person.display_name);
+    setRelation(person.relation);
+    setIsMinor(person.is_minor);
+    setPassedAt(person.passed_at ?? null);
+    setStarColor(normalizeStarColorForWrite(person.star_color));
+    setCustomPosition(person.custom_position ?? null);
+    setCityQuery(person.birth_place ?? "");
+    setCandidates([]);
+    setSearchError(null);
+    setStatus(null);
+    // Snapshot on open / upgrade, not on every parent re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, upgradeTo, person.id]);
 
   const resolvedPlace = Boolean(input.birthPlace && input.lat && input.lng);
 
@@ -385,7 +394,10 @@ export function EditPersonPanel({ person, userId, onSaved, onDeleted }: Props) {
           {(["exact","date","year"] as const).map(p => (
             <button key={p} className="pill-link"
               style={{ fontSize: 12, borderColor: input.precision === p ? "rgba(230,174,108,.5)" : undefined, color: input.precision === p ? "var(--gold)" : undefined }}
-              onClick={() => setInput(prev => ({ ...prev, precision: p }))}>
+              onClick={() => setInput(prev => {
+                if (p === "date" || p === "exact") return applyBirthFormUpgrade(prev, p);
+                return { ...prev, precision: p };
+              })}>
               {p}
             </button>
           ))}

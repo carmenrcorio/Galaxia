@@ -1,6 +1,10 @@
 -- Rate limit create_connect_invite: at most 10 pending, non-expired
 -- constellation_connect invites created by auth.uid() in the last 24 hours.
 -- ENGINEERING.md §2: new file. Does not edit 20260913180000.
+-- Timestamp is 20260914260000 so this runs after
+-- 20260914240000_comparison_history.sql and
+-- 20260914250000_weekly_constellation_letter.sql (same-day collision on the
+-- original 240000 prefix).
 -- Safe to apply via `supabase db push`. Does not need autocommit.
 
 create or replace function public.create_connect_invite(

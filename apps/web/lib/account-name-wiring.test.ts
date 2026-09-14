@@ -35,6 +35,7 @@ const NAME_SURFACES = [
   "apps/web/app/app/settings/page.tsx",
   "apps/web/app/api/cron/trial-emails/route.ts",
   "apps/web/app/api/cron/nudge-send/route.ts",
+  "apps/web/app/api/cron/constellation-letter/route.ts",
   "apps/mobile/app/(app)/home.tsx",
   "apps/mobile/app/index.tsx"
 ];

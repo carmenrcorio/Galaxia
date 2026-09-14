@@ -22,6 +22,7 @@ import {
 import {
   MEMORIAL_MILESTONE_NOTE_MAX,
   MEMORIAL_MILESTONE_TITLE_MAX,
+  MEMORIAL_TIMELINE_NEEDS_BIRTH_YEAR,
   memorialTimelinePrecision,
   memorialTimelineWindow,
   shouldShowMemorialTimeline,
@@ -271,6 +272,13 @@ export function MemorialTimeline({
         <p className="muted" style={{ fontSize: ".76rem", lineHeight: 1.6, marginTop: 10, maxWidth: "50ch" }}>
           {firstName}&apos;s birth date is recorded as a year only, so these moments are placed by age rather than by
           date.
+        </p>
+      ) : null}
+
+      {person.birth_precision === "none" ? (
+        <p className="muted" style={{ fontSize: ".76rem", lineHeight: 1.6, marginTop: 10, maxWidth: "50ch" }}>
+          {/* FOUNDER-REVIEW: MEMORIAL_TIMELINE_NEEDS_BIRTH_YEAR */}
+          {MEMORIAL_TIMELINE_NEEDS_BIRTH_YEAR}
         </p>
       ) : null}
 

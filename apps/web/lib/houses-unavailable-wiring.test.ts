@@ -17,6 +17,7 @@ describe("HousesUnavailableCard wiring — no houses gap on year-only charts", (
     expect(src).toContain("HousesUnavailableCard");
     expect(src).toContain("hasHouses={hasHouses}");
     expect(src).toContain("precision={chart.precision}");
+    expect(src).toContain("ChartPrecisionUpgradeButton");
     expect(src).not.toContain('person.birth_precision !== "year"');
     expect(src).not.toContain("The house layer requires an exact birth time and location");
   });

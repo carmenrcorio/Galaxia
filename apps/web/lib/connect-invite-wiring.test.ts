@@ -125,7 +125,7 @@ describe("constellation connect UI wiring", () => {
   });
 
   it("rate-limit migration replaces create_connect_invite without a second table", () => {
-    const sql = read("supabase/migrations/20260914240000_create_connect_invite_rate_limit.sql");
+    const sql = read("supabase/migrations/20260914260000_create_connect_invite_rate_limit.sql");
     expect(sql).toContain("create or replace function public.create_connect_invite");
     expect(sql).toContain("Too many open invitations");
     expect(sql).toContain("interval '24 hours'");

@@ -13,44 +13,23 @@
  * reading. Less was known.
  */
 
+import {
+  HOUSES_UNAVAILABLE_EYEBROW,
+  housesUnavailableCopy,
+} from "@galaxia/core";
 import type { Precision } from "@galaxia/astro";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
-export const HOUSES_UNAVAILABLE_EYEBROW = "The twelve houses";
-
-// FOUNDER-REVIEW: authored — houses unavailable (year precision).
-export const HOUSES_UNAVAILABLE_YEAR_BODY =
-  "The house layer needs a birth date and a time. Right now only the sign layer that a year can settle is visible: how each planet behaves, not where it lives in this life. Nothing is missing from the reading. Less was known.";
-
-// FOUNDER-REVIEW: authored — houses unavailable (year precision), follow-up.
-export const HOUSES_UNAVAILABLE_YEAR_FOLLOW_UP =
-  "Add a birth date and a time, and the houses, Ascendant, and Midheaven will compute.";
-
-// FOUNDER-REVIEW: authored — houses unavailable (date precision).
-export const HOUSES_UNAVAILABLE_DATE_BODY =
-  "The house layer needs a birth time. Right now only the sign layer is visible: how each planet behaves, not where it lives in this life. Nothing is missing from the reading. Less was known.";
-
-// FOUNDER-REVIEW: authored — houses unavailable (date precision), follow-up.
-export const HOUSES_UNAVAILABLE_DATE_FOLLOW_UP =
-  "Add a birth time and city, and the houses, Ascendant, and Midheaven will compute.";
-
-// FOUNDER-REVIEW: authored — houses unavailable (exact time, no place).
-export const HOUSES_UNAVAILABLE_EXACT_BODY =
-  "The house layer needs a birth city. Time is known, but houses also need a place. Nothing is missing from the reading. Less was known.";
-
-// FOUNDER-REVIEW: authored — houses unavailable (exact time, no place), follow-up.
-export const HOUSES_UNAVAILABLE_EXACT_FOLLOW_UP =
-  "Add a birth city, and the houses, Ascendant, and Midheaven will compute.";
-
-export function housesUnavailableCopy(precision: Precision): { body: string; followUp: string } {
-  if (precision === "year") {
-    return { body: HOUSES_UNAVAILABLE_YEAR_BODY, followUp: HOUSES_UNAVAILABLE_YEAR_FOLLOW_UP };
-  }
-  if (precision === "exact") {
-    return { body: HOUSES_UNAVAILABLE_EXACT_BODY, followUp: HOUSES_UNAVAILABLE_EXACT_FOLLOW_UP };
-  }
-  return { body: HOUSES_UNAVAILABLE_DATE_BODY, followUp: HOUSES_UNAVAILABLE_DATE_FOLLOW_UP };
-}
+export {
+  HOUSES_UNAVAILABLE_DATE_BODY,
+  HOUSES_UNAVAILABLE_DATE_FOLLOW_UP,
+  HOUSES_UNAVAILABLE_EXACT_BODY,
+  HOUSES_UNAVAILABLE_EXACT_FOLLOW_UP,
+  HOUSES_UNAVAILABLE_EYEBROW,
+  HOUSES_UNAVAILABLE_YEAR_BODY,
+  HOUSES_UNAVAILABLE_YEAR_FOLLOW_UP,
+  housesUnavailableCopy,
+} from "@galaxia/core";
 
 export function HousesUnavailableCard({
   hasHouses,
@@ -60,6 +39,7 @@ export function HousesUnavailableCard({
   id = "houses",
   className = "glass-card fade-in fade-in-delay-2",
   style,
+  action,
 }: {
   hasHouses: boolean;
   precision: Precision;
@@ -69,6 +49,8 @@ export function HousesUnavailableCard({
   id?: string;
   className?: string;
   style?: CSSProperties;
+  /** Single upgrade action. Shown once in this empty state. */
+  action?: ReactNode;
 }) {
   if (hasHouses) return null;
 
@@ -88,6 +70,7 @@ export function HousesUnavailableCard({
       <p className="muted" style={{ fontSize: ".78rem", marginTop: 8 }}>
         {copy.followUp}
       </p>
+      {action ? <div style={{ marginTop: 10 }}>{action}</div> : null}
     </section>
   );
 }

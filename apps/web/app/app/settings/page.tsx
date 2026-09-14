@@ -48,6 +48,10 @@ export default function SettingsPage() {
   const [savingConsent, setSavingConsent] = useState(false);
   const [consentStatus, setConsentStatus] = useState<string | null>(null);
 
+  const [weeklyLetterEnabled, setWeeklyLetterEnabled] = useState(true);
+  const [savingWeeklyLetter, setSavingWeeklyLetter] = useState(false);
+  const [weeklyLetterStatus, setWeeklyLetterStatus] = useState<string | null>(null);
+
   const [relationalTransitAlerts, setRelationalTransitAlerts] = useState<RelationalTransitAlertsPref>("all");
   const [savingRelationalPref, setSavingRelationalPref] = useState(false);
   const [relationalPrefStatus, setRelationalPrefStatus] = useState<string | null>(null);
@@ -67,7 +71,7 @@ export default function SettingsPage() {
       const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("house_system, daily_nudge_emails_enabled, relational_transit_alerts")
+          .select("house_system, daily_nudge_emails_enabled, weekly_constellation_letter_enabled, relational_transit_alerts")
           .eq("id", user.id)
           .maybeSingle(),
         supabase.from("people").select("id, display_name, relation").eq("owner_id", user.id).order("display_name", { ascending: true }),
@@ -77,6 +81,7 @@ export default function SettingsPage() {
       // Column default is true (opt-out, default-on); null only precedes the
       // migration landing on a not-yet-refreshed row, so treat null as on too.
       setDailyNudgeEmailsEnabled(profile?.daily_nudge_emails_enabled !== false);
+      setWeeklyLetterEnabled(profile?.weekly_constellation_letter_enabled !== false);
       // Column default is 'all'; treat any unrecognized/missing value as
       // 'all' too rather than fabricating a different preference.
       setRelationalTransitAlerts(isRelationalTransitAlertsPref(profile?.relational_transit_alerts) ? profile.relational_transit_alerts : "all");
@@ -106,6 +111,17 @@ export default function SettingsPage() {
     setSavingConsent(false);
     if (error) { setDailyNudgeEmailsEnabled(previous); setConsentStatus(error.message); return; }
     setConsentStatus(next ? "Saved. Daily sky emails are on." : "Saved. Daily sky emails are off.");
+  };
+
+  const changeWeeklyLetter = async (next: boolean) => {
+    if (!userId || next === weeklyLetterEnabled) return;
+    setSavingWeeklyLetter(true); setWeeklyLetterStatus(null);
+    const previous = weeklyLetterEnabled;
+    setWeeklyLetterEnabled(next);
+    const { error } = await supabase.from("profiles").update({ weekly_constellation_letter_enabled: next }).eq("id", userId);
+    setSavingWeeklyLetter(false);
+    if (error) { setWeeklyLetterEnabled(previous); setWeeklyLetterStatus(error.message); return; }
+    setWeeklyLetterStatus(next ? "Saved. The weekly letter is on." : "Saved. The weekly letter is off.");
   };
 
   const changeRelationalTransitAlerts = async (next: RelationalTransitAlertsPref) => {
@@ -223,6 +239,28 @@ export default function SettingsPage() {
           {savingConsent ? <Spinner size={11} /> : null}
         </div>
         {consentStatus ? <p className={consentStatus.startsWith("Saved") ? "success" : "error"} style={{ fontSize: ".78rem", marginTop: 8 }}>{consentStatus}</p> : null}
+      </section>
+
+      <section className="glass-card">
+        <h2 className="card-title">Weekly constellation letter</h2>
+        {/* FOUNDER-REVIEW: Weekly constellation letter card copy. */}
+        <p className="muted" style={{ marginBottom: 12 }}>
+          A Sunday letter about who in your circle has something real moving this week. On by default. Independent of the daily sky email. Turn it off any time here; every letter also has a one-click unsubscribe link.
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            type="button"
+            onClick={() => void changeWeeklyLetter(!weeklyLetterEnabled)}
+            disabled={savingWeeklyLetter}
+            aria-pressed={weeklyLetterEnabled}
+            className="pill-link"
+            style={{ cursor: "pointer" }}
+          >
+            {weeklyLetterEnabled ? "On (turn off)" : "Off (turn on)"}
+          </button>
+          {savingWeeklyLetter ? <Spinner size={11} /> : null}
+        </div>
+        {weeklyLetterStatus ? <p className={weeklyLetterStatus.startsWith("Saved") ? "success" : "error"} style={{ fontSize: ".78rem", marginTop: 8 }}>{weeklyLetterStatus}</p> : null}
       </section>
 
       <section className="glass-card">

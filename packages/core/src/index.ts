@@ -92,3 +92,4 @@ export * from "./contact";
 
 export * from "./timezone";
 export * from "./memorial-timeline";
+export * from "./chart-precision";

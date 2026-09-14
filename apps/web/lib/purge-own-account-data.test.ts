@@ -55,7 +55,9 @@ export const PURGED_USER_TABLES = [
   "support_requests",
   "connection_grants",
   "admin_users",
-  "early_access"
+  "early_access",
+  "comparison_history",
+  "constellation_letters"
 ] as const;
 
 /**
@@ -151,6 +153,9 @@ values ('${DEPARTING}', '11111111-aaaa-4aaa-8aaa-000000000002', '11111111-aaaa-4
 insert into synastry (owner_id, person_low, person_high, relation_type, data, engine_version)
 values ('${DEPARTING}', '11111111-aaaa-4aaa-8aaa-000000000001', '11111111-aaaa-4aaa-8aaa-000000000002', 'friend', '{}'::jsonb, 1);
 
+insert into comparison_history (owner_id, person_low, person_high, last_viewed_at)
+values ('${DEPARTING}', '11111111-aaaa-4aaa-8aaa-000000000001', '11111111-aaaa-4aaa-8aaa-000000000002', now());
+
 insert into groups (id, owner_id, name, kind)
 values ('22222222-aaaa-4aaa-8aaa-000000000001', '${DEPARTING}', 'Friends', 'friends');
 
@@ -208,6 +213,9 @@ insert into vela_rate_limits (user_id, count) values ('${DEPARTING}', 3);
 
 insert into daily_nudge_emails (owner_id, date, person_id)
 values ('${DEPARTING}', '2026-09-14', '11111111-aaaa-4aaa-8aaa-000000000001');
+
+insert into constellation_letters (owner_id, week_of, person_ids, transit_fingerprint)
+values ('${DEPARTING}', '2026-09-13', ARRAY['11111111-aaaa-4aaa-8aaa-000000000001'::uuid], 'purge-replay-letter');
 
 insert into memorial_milestones (profile_id, user_id, date, title, note)
 values ('11111111-aaaa-4aaa-8aaa-000000000002', '${DEPARTING}', '2020-01-01', 'A milestone', 'note');
@@ -292,6 +300,8 @@ describe("purge table inventory (update these lists when adding a table)", () =>
     expect(body).toContain("delete from admin_users where owner_id = uid;");
     expect(body).toContain("delete from messages");
     expect(body).toContain("delete from early_access");
+    expect(body).toContain("delete from comparison_history where owner_id = uid;");
+    expect(body).toContain("delete from constellation_letters where owner_id = uid;");
     expect(body).not.toMatch(/delete from admin_audit_log/i);
     expect(body).not.toMatch(/\bcommit\b/i);
     expect(body).not.toMatch(/\brollback\b/i);
@@ -322,6 +332,7 @@ select jsonb_build_object(
        or person_id in (select id from people where owner_id = '${DEPARTING}')
   ),
   'synastry', (select count(*) from synastry where owner_id = '${DEPARTING}'),
+  'comparison_history', (select count(*) from comparison_history where owner_id = '${DEPARTING}'),
   'notes', (select count(*) from notes where owner_id = '${DEPARTING}'),
   'threads', (select count(*) from threads where owner_id = '${DEPARTING}'),
   'thread_participants', (select count(*) from thread_participants where user_id = '${DEPARTING}'),
@@ -339,6 +350,7 @@ select jsonb_build_object(
   'person_daily_nudges', (select count(*) from person_daily_nudges where owner_id = '${DEPARTING}'),
   'vela_rate_limits', (select count(*) from vela_rate_limits where user_id = '${DEPARTING}'),
   'daily_nudge_emails', (select count(*) from daily_nudge_emails where owner_id = '${DEPARTING}'),
+  'constellation_letters', (select count(*) from constellation_letters where owner_id = '${DEPARTING}'),
   'memorial_milestones', (select count(*) from memorial_milestones where user_id = '${DEPARTING}'),
   'relational_transits', (select count(*) from relational_transits where owner_id = '${DEPARTING}'),
   'push_tokens', (select count(*) from push_tokens where owner_id = '${DEPARTING}'),
@@ -367,6 +379,7 @@ select jsonb_build_object(
           groups: "groups",
           group_members: "group_members",
           synastry: "synastry",
+          comparison_history: "comparison_history",
           notes: "notes",
           threads: "threads",
           thread_participants: "thread_participants",
@@ -377,6 +390,7 @@ select jsonb_build_object(
           person_daily_nudges: "person_daily_nudges",
           vela_rate_limits: "vela_rate_limits",
           daily_nudge_emails: "daily_nudge_emails",
+          constellation_letters: "constellation_letters",
           memorial_milestones: "memorial_milestones",
           relational_transits: "relational_transits",
           push_tokens: "push_tokens",

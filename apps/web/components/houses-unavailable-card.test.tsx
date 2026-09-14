@@ -44,6 +44,17 @@ describe("HousesUnavailableCard", () => {
     expect(screen.queryByText(HOUSES_UNAVAILABLE_DATE_BODY)).toBeNull();
   });
 
+  it("renders a single upgrade action when given", () => {
+    render(
+      <HousesUnavailableCard
+        hasHouses={false}
+        precision="date"
+        action={<button type="button">Add a birth time</button>}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Add a birth time" })).toBeTruthy();
+  });
+
   it("renders a friendly title above the vocabulary subhead when given", () => {
     render(
       <HousesUnavailableCard

@@ -102,6 +102,9 @@ describe("isSensitiveRequestPath", () => {
     expect(isSensitiveRequestPath(`/admin/users/${USER_ID}`)).toBe(true);
     expect(isSensitiveRequestPath(`/api/admin/users/${USER_ID}/comp/grant`)).toBe(true);
     expect(isSensitiveRequestPath("/api/nudge-email/unsubscribe")).toBe(true);
+    expect(isSensitiveRequestPath("/api/constellation-letter/unsubscribe")).toBe(true);
+    expect(isSensitiveRequestPath("/api/constellation-letter/open")).toBe(true);
+    expect(isSensitiveRequestPath("/api/constellation-letter/go")).toBe(true);
   });
 
   it("does not match public marketing routes", () => {

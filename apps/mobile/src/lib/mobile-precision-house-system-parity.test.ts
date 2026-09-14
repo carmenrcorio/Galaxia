@@ -131,10 +131,20 @@ describe("mobile can save a person with no birth data (web precision parity)", (
     expect(profileSrc).toContain('supabase.from("charts").select("data").eq("person_id", actualPersonId).maybeSingle()');
     expect(profileSrc).not.toContain("Unable to load chart.");
     expect(profileSrc).not.toContain("if (!person || !chart)");
-    expect(profileSrc).toContain("No birth data yet");
+    expect(profileSrc).toContain("CHART_PRECISION_NONE_FACT");
+    expect(profileSrc).toContain('person.birth_precision === "none"');
+    expect(profileSrc).toContain("CHART_SAVED_DETAILS_NO_CHART_BODY");
     // A failed read is kept apart from an absent chart, so an outage is never
     // rendered as missing birth data (ENGINEERING §12).
     expect(profileSrc).toContain("chartLoadError");
     expect(profileSrc).toContain("Chart could not be loaded");
+  });
+
+  it("wiring: the profile states chart precision as a fact and names missing houses/aspects", () => {
+    expect(profileSrc).toContain("ChartPrecisionFacts");
+    expect(profileSrc).toContain("chartPrecisionFact");
+    expect(profileSrc).toContain("housesUnavailableCopy");
+    expect(profileSrc).toContain("ASPECTS_UNAVAILABLE_YEAR_BODY");
+    expect(profileSrc).not.toContain("{person.relation} · {person.birth_precision}");
   });
 });

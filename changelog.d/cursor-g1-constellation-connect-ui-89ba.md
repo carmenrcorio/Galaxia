@@ -10,6 +10,6 @@
 
 `[ADDED]` **Reciprocal compare after accept.** Success shows an interstitial (`See your comparison` / `Go to my constellation`) instead of bouncing to `/app`. Comparison preloads `/app/compare?a=&b=` (the authed compare that can load stored charts). `/chart/compare` is the public birth-form flow and cannot preload a linked chart that has no birth fields. Sender-side unread is a gold dot on the person star, dismissed by `acknowledge_connect_accept` when the profile opens. No notification table.
 
-`[ADDED]` **Rate limit on `create_connect_invite`.** New migration `20260914240000_create_connect_invite_rate_limit.sql` (does not edit the applied RPC file). Caps pending non-expired invites created by `auth.uid()` in the last 24 hours at 10. The generate UI surfaces "Too many open invitations. Revoke some before sending more." with a link to the pending list.
+`[ADDED]` **Rate limit on `create_connect_invite`.** New migration `20260914260000_create_connect_invite_rate_limit.sql` (does not edit the applied RPC file). Caps pending non-expired invites created by `auth.uid()` in the last 24 hours at 10. The generate UI surfaces "Too many open invitations. Revoke some before sending more." with a link to the pending list. Timestamp bumped so it runs after `20260914240000_comparison_history.sql` and `20260914250000_weekly_constellation_letter.sql`.
 
 `[UNCHANGED]` **`hasAccess` is not involved.** Auth is required to accept; a paid plan is not. `kind = birth_data` is untouched. No second invitations table. No per-person caps.

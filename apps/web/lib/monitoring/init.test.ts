@@ -30,9 +30,11 @@ describe("initMonitoring", () => {
       dsn: string;
       sendDefaultPii: boolean;
       beforeSend: (event: unknown) => unknown;
+      beforeBreadcrumb: (breadcrumb: unknown) => unknown;
     };
     expect(options.dsn).toBe("https://publickey@o0.ingest.sentry.io/1");
     expect(options.sendDefaultPii).toBe(false);
     expect(typeof options.beforeSend).toBe("function");
+    expect(typeof options.beforeBreadcrumb).toBe("function");
   });
 });

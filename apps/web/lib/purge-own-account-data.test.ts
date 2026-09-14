@@ -148,7 +148,7 @@ values
   ('11111111-aaaa-4aaa-8aaa-000000000003', 'placidus', '{"placements":[]}'::jsonb, 1);
 
 insert into relationships (owner_id, person_a, person_b, relation_type)
-values ('${DEPARTING}', '11111111-aaaa-4aaa-8aaa-000000000002', '11111111-aaaa-4aaa-8aaa-000000000001', 'remembrance');
+values ('${DEPARTING}', '11111111-aaaa-4aaa-8aaa-000000000001', '11111111-aaaa-4aaa-8aaa-000000000002', 'remembrance');
 
 insert into synastry (owner_id, person_low, person_high, relation_type, data, engine_version)
 values ('${DEPARTING}', '11111111-aaaa-4aaa-8aaa-000000000001', '11111111-aaaa-4aaa-8aaa-000000000002', 'friend', '{}'::jsonb, 1);

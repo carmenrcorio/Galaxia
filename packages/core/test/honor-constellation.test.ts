@@ -7,7 +7,9 @@ import {
   HONOR_LINE_STYLE,
   HONOR_RELATION_TYPE,
   RELATIONSHIPS_OWNER_RLS_POLICY,
+  RELATIONSHIP_EDGE_TYPES,
   buildHonorRelationshipInsert,
+  canonicalRelationshipPair,
   honorConnectionDiff,
   honorEdgeFraming,
   honorEdgeTouchesMinor,
@@ -74,14 +76,37 @@ describe("Honor constellation — declared relationships only (zero inference)",
       passedPersonId: passedParent.id,
       livingPersonId: livingChild.id,
     });
+    const pair = canonicalRelationshipPair(passedParent.id, livingChild.id);
     expect(row).toEqual({
       owner_id: "owner-aaa",
-      person_a: passedParent.id,
-      person_b: livingChild.id,
+      person_a: pair.person_a,
+      person_b: pair.person_b,
       relation_type: HONOR_RELATION_TYPE,
     });
     expect(row.relation_type).toBe("remembrance");
     expect(isForbiddenHonorRelationType(row.relation_type)).toBe(false);
+  });
+
+  it("stores the lower uuid in person_a even when the passed person is the higher uuid", () => {
+    expect(livingChild.id < passedParent.id).toBe(true);
+    const row = buildHonorRelationshipInsert({
+      ownerId: "owner-aaa",
+      passedPersonId: passedParent.id,
+      livingPersonId: livingChild.id,
+    });
+    expect(row.person_a).toBe(livingChild.id);
+    expect(row.person_b).toBe(passedParent.id);
+  });
+
+  it("refuses a self-loop", () => {
+    expect(() =>
+      buildHonorRelationshipInsert({
+        ownerId: "owner-aaa",
+        passedPersonId: passedParent.id,
+        livingPersonId: passedParent.id,
+      })
+    ).toThrow(/themselves/);
+    expect(() => canonicalRelationshipPair(owner.id, owner.id)).toThrow(/themselves/);
   });
 
   it("candidates are living people only — no auto-suggest, no passed peers", () => {
@@ -97,6 +122,25 @@ describe("Honor constellation — declared relationships only (zero inference)",
   it("empty declaration yields zero honor edges — empty is empty", () => {
     const people = [owner, passedParent, livingChild];
     expect(honorEdgesFromDeclaredRows([], people, NOW)).toEqual([]);
+  });
+
+  it("draws remembrance from passed to living even when columns are canonical UUID order", () => {
+    const people = [owner, passedParent, livingChild];
+    expect(livingChild.id < passedParent.id).toBe(true);
+    const edges = honorEdgesFromDeclaredRows(
+      [
+        {
+          person_a: livingChild.id,
+          person_b: passedParent.id,
+          relation_type: HONOR_RELATION_TYPE,
+        },
+      ],
+      people,
+      NOW
+    );
+    expect(edges).toHaveLength(1);
+    expect(edges[0].fromId).toBe(passedParent.id);
+    expect(edges[0].toId).toBe(livingChild.id);
   });
 
   it("draws ONLY declared relationships rows — never synastry-substitutes", () => {
@@ -285,5 +329,22 @@ describe("relationships RLS + unique index (schema contracts)", () => {
     );
     expect(sql).toContain("relationships_owner_pair_type_uidx");
     expect(sql).toContain("remembrance");
+  });
+
+  it("ships the canonical unique constraint and approved vocabulary", () => {
+    const sql = readFileSync(
+      resolve(
+        __dirname,
+        "../../../supabase/migrations/20260914280000_relationships_edge_constraints.sql"
+      ),
+      "utf8"
+    );
+    expect(sql).toContain("relationships_owner_canonical_pair_type_key");
+    expect(sql).toContain("person_a < person_b");
+    expect(sql).toContain("on delete cascade");
+    expect(RELATIONSHIP_EDGE_TYPES).toContain(HONOR_RELATION_TYPE);
+    for (const value of RELATIONSHIP_EDGE_TYPES) {
+      expect(sql).toContain(`'${value}'`);
+    }
   });
 });

@@ -69,7 +69,7 @@ When an agent cannot reproduce, it says so and asks. It does not guess.
 
 Two Supabase projects and two Vercel projects caused hours of confusion. Functions were deployed to the wrong backend; secrets were set on a project the code never called.
 
-- **Supabase:** `eigfvribtntbxyjutsma` (GALAXIA org). This is the only Galaxia backend. `nsmkddufubobtmhypfho` is an unrelated project and must never appear in this codebase.
+- **Supabase:** `eigfvribtntbxyjutsma` (GALAXIA org). This is the only Galaxia backend. The Cloud Agent environment must have a SUPABASE_ACCESS_TOKEN scoped to the GALAXIA org (agffssgigtqkagsxvjxg); if supabase projects list does not return this ref, the token needs to be refreshed before any migration work starts. `nsmkddufubobtmhypfho` is an unrelated project and must never appear in this codebase.
 - **Vercel:** the `galaxia` project only. Root Directory `apps/web`, Framework `Next.js`.
 
 Before deploying an edge function or setting a secret, confirm the project ref. The `sb-project-ref` response header tells you which project actually served a request.

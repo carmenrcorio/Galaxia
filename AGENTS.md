@@ -1,5 +1,20 @@
 # AGENTS.md
 
+## Supabase pre-flight (run before any migration task)
+
+Before writing or applying any migration, confirm the CLI can see
+production:
+
+    npx supabase projects list
+
+eigfvribtntbxyjutsma must appear. If it does not, STOP and tell Carmen
+the SUPABASE_ACCESS_TOKEN in the Cloud Agent environment needs to be
+refreshed (Settings → Cloud Agent → edit environment → update secret).
+Never proceed with a migration task when the project is not visible.
+
+To link the project if it is not already linked:
+    npx supabase link --project-ref eigfvribtntbxyjutsma --yes
+
 ## Cursor Cloud specific instructions
 
 Galaxia is a pnpm + Turborepo monorepo. See `README.md` for the product overview and `ENGINEERING.md` for the (load-bearing) engineering standards — read `ENGINEERING.md` §2 before touching any config, and §8/§12 before touching astrology code.

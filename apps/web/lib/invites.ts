@@ -9,7 +9,7 @@ export interface InviteRecord {
   relationship_type: string | null;
   status: string;
   expires_at: string | null;
-  kind: "shared_space" | "birth_data";
+  kind: "shared_space" | "birth_data" | "constellation_connect";
   person_id: string | null;
   /** For birth_data invites: the name of the person whose data is being collected. */
   person_name: string | null;
@@ -37,7 +37,7 @@ export async function getInviteByToken(token: string): Promise<InviteRecord | nu
     relationship_type: (data.relationship_type as string | null) ?? null,
     status: data.status as string,
     expires_at: (data.expires_at as string | null) ?? null,
-    kind: (data.kind as "shared_space" | "birth_data" | null) ?? "shared_space",
+    kind: (data.kind as InviteRecord["kind"] | null) ?? "shared_space",
     person_id: (data.person_id as string | null) ?? null,
     inviter_name: profile?.display_name ?? null,
     person_name: personName

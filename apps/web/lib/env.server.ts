@@ -26,3 +26,8 @@ export const revenueCatEnv = {
   webhookAuth: process.env.REVENUECAT_WEBHOOK_AUTH ?? "",
   projectId: process.env.REVENUECAT_PROJECT_ID ?? ""
 };
+
+/** Resend webhook signing secret (`whsec_…`). Server only, never NEXT_PUBLIC_. */
+export const resendEnv = {
+  webhookSecret: process.env.RESEND_WEBHOOK_SECRET ?? ""
+};

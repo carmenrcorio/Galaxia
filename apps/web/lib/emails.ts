@@ -1,5 +1,6 @@
 /**
- * Marketing emails: five trial lifecycle emails and the daily nudge.
+ * Marketing emails: five trial lifecycle emails, the daily nudge, and the
+ * weekly constellation letter.
  * Subjects are voice layer one (`design/galaxia-voice-layers.md`): outcome
  * or a real person, never astrology vocabulary first. Bodies may use inner
  * vocabulary once the recipient is already a member. Every number and
@@ -274,37 +275,71 @@ export function renderTrialEmail(kind: TrialEmailKind, d: TrialEmailData): Rende
  */
 export type EmailHeaders = Record<string, string>;
 
+export type SendEmailTag = { name: string; value: string };
+
+export type SendEmailDispatch = {
+  headers?: EmailHeaders;
+  tags?: SendEmailTag[];
+  idempotencyKey?: string;
+};
+
+export type SendEmailResult = { sent: boolean; id: string | null };
+
 /**
  * Send via Resend. No-ops (logs) when RESEND_API_KEY is absent, so the cron is
- * safe to run before the key is configured. Returns true if actually sent.
+ * safe to run before the key is configured. Returns whether the request was
+ * accepted and the Resend email id when Resend returns one.
  */
-export async function sendEmail(to: string, email: RenderedEmail, headers?: EmailHeaders): Promise<boolean> {
+export async function dispatchEmail(
+  to: string,
+  email: RenderedEmail,
+  options?: SendEmailDispatch
+): Promise<SendEmailResult> {
   const { createHash } = await import("node:crypto");
   const recipientId = createHash("sha256").update(to).digest("hex").slice(0, 12);
   const key = process.env.RESEND_API_KEY;
   if (!key) {
     console.log(`[emails] skipped ${recipientId}: RESEND_API_KEY absent, skipping "${email.subject}"`);
-    return false;
+    return { sent: false, id: null };
   }
   // FOUNDER-REVIEW: send-from uses the one Galaxia contact address unless RESEND_FROM is set.
   const from = process.env.RESEND_FROM ?? `Galaxia <${GALAXIA_HELP_EMAIL}>`;
+  const headers: Record<string, string> = { "Content-Type": "application/json", Authorization: `Bearer ${key}` };
+  if (options?.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    headers,
     body: JSON.stringify({
       from,
       to,
       subject: email.subject,
       html: email.html,
       text: email.text,
-      ...(headers ? { headers } : {})
+      ...(options?.headers ? { headers: options.headers } : {}),
+      ...(options?.tags ? { tags: options.tags } : {})
     })
   });
   if (!res.ok) {
     console.error(`[emails] send failed for ${recipientId} (${res.status}): "${email.subject}"`);
-    return false;
+    return { sent: false, id: null };
   }
-  return true;
+  let id: string | null = null;
+  try {
+    const json = (await res.json()) as { id?: unknown };
+    if (typeof json.id === "string" && json.id.length > 0) id = json.id;
+  } catch {
+    id = null;
+  }
+  return { sent: true, id };
+}
+
+/**
+ * Send via Resend. No-ops (logs) when RESEND_API_KEY is absent, so the cron is
+ * safe to run before the key is configured. Returns true if actually sent.
+ */
+export async function sendEmail(to: string, email: RenderedEmail, headers?: EmailHeaders): Promise<boolean> {
+  const result = await dispatchEmail(to, email, headers ? { headers } : undefined);
+  return result.sent;
 }
 
 /**
@@ -400,6 +435,87 @@ export function skyTodayEmail(d: SkyTodayEmailData): RenderedEmail {
  * confirmation page) and a human GET (confirmation page) at that one URL.
  */
 export function nudgeEmailHeaders(unsubscribeUrl: string): EmailHeaders {
+  return {
+    "List-Unsubscribe": `<${unsubscribeUrl}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+  };
+}
+
+export interface ConstellationLetterPortraitCopy {
+  dynamicSentence: string;
+  intentionSentence: string;
+}
+
+export interface ConstellationLetterEmailData {
+  ownerFirstName: string | null;
+  opening: string;
+  portraits: ConstellationLetterPortraitCopy[];
+  personNames: string[];
+  siteUrl: string;
+  unsubscribeUrl: string;
+  openPixelUrl: string;
+  clickUrl: string;
+}
+
+/** FOUNDER-REVIEW: subject. Outcome / people first, never astrology vocab. */
+export function constellationLetterSubject(personNames: string[]): string {
+  if (personNames.length === 1) {
+    const subject = `${personNames[0]}, this week`;
+    return subject.length <= 45 ? subject : "This week in your circle";
+  }
+  if (personNames.length === 2) {
+    const subject = `${personNames[0]} and ${personNames[1]}, this week`;
+    return subject.length <= 45 ? subject : "This week in your circle";
+  }
+  return "This week in your circle";
+}
+
+/** FOUNDER-REVIEW: preview. Continues the subject; does not repeat it. */
+export function constellationLetterPreview(): string {
+  return "Who in your circle has something real moving.";
+}
+
+export function constellationLetterEmail(d: ConstellationLetterEmailData): RenderedEmail {
+  const subject = constellationLetterSubject(d.personNames);
+  const preview = constellationLetterPreview();
+  const greeting = ownerGreeting(d.ownerFirstName);
+  // FOUNDER-REVIEW: CTA. A sentence with a link, not a dashboard button.
+  const ctaHtml = `If you want the same sky on the screen, <a href="${d.clickUrl}" style="color:${GOLD};text-decoration:underline">open this week in Galaxia</a>.`;
+  const ctaText = `If you want the same sky on the screen, open this week in Galaxia: ${d.clickUrl}`;
+  const portraitHtml = d.portraits
+    .map((portrait) => p(portrait.dynamicSentence) + p(portrait.intentionSentence))
+    .join("");
+  const portraitText = d.portraits
+    .flatMap((portrait) => [portrait.dynamicSentence, "", portrait.intentionSentence, ""])
+    .join("\n");
+  const pixel = `<img src="${d.openPixelUrl}" width="1" height="1" alt="" style="display:none;width:1px;height:1px;border:0" />`;
+
+  const html = shell(
+    p(greeting) +
+      p(d.opening) +
+      portraitHtml +
+      p(ctaHtml) +
+      pixel +
+      complianceFooterHtml(d.unsubscribeUrl),
+    preview
+  );
+
+  const text = [
+    greeting,
+    "",
+    d.opening,
+    "",
+    portraitText.trimEnd(),
+    "",
+    ctaText,
+    "",
+    complianceFooterText(d.unsubscribeUrl)
+  ].join("\n");
+
+  return { subject, preview, html, text };
+}
+
+export function constellationLetterHeaders(unsubscribeUrl: string): EmailHeaders {
   return {
     "List-Unsubscribe": `<${unsubscribeUrl}>`,
     "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"

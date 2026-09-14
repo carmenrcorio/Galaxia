@@ -13,7 +13,8 @@ const CRON_ROUTES = [
   "apps/web/app/api/cron/nudge-compute/route.ts",
   "apps/web/app/api/cron/nudge-send/route.ts",
   "apps/web/app/api/cron/relational-transit-scan/route.ts",
-  "apps/web/app/api/cron/relational-transit-push/route.ts"
+  "apps/web/app/api/cron/relational-transit-push/route.ts",
+  "apps/web/app/api/cron/constellation-letter/route.ts"
 ] as const;
 
 function readSrc(rel: string): string {
@@ -77,7 +78,7 @@ describe("cronBearerMatches — implementation is timingSafeEqual, no length ear
   });
 });
 
-describe("all five cron routes share cronBearerMatches and return a body-less 401", () => {
+describe("all cron routes share cronBearerMatches and return a body-less 401", () => {
   it.each([...CRON_ROUTES])("%s", (routePath) => {
     const src = readSrc(routePath);
     expect(src).toContain("cronBearerMatches");

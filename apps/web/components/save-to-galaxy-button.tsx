@@ -115,7 +115,8 @@ export function SaveToGalaxyButton({
 
       setSavedPersonId(person.id);
       if (navigateToProfileOnSave) {
-        router.push(personProfileHref(person.id));
+        // Type-only: personProfileHref returns string; typedRoutes wants RouteImpl.
+        router.push(personProfileHref(person.id) as never);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save.");

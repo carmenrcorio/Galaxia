@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { getSiteUrlFromRequestOrigin } from "../lib/env";
+import { signupWithNextHref } from "../lib/nav-links";
 import { safeNextPath } from "../lib/safe-next-path";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 
@@ -67,7 +68,16 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       {status === "reset-sent" ? <p className="success">Reset email sent. Check your inbox.</p> : null}
       {error ? <p className="error">{error}</p> : null}
       <p className="muted">
-        Need an account? <Link href="/signup">Sign up</Link>
+        Need an account?{" "}
+        <Link
+          href={
+            (nextPath && nextPath !== "/start"
+              ? signupWithNextHref(safeNextPath(nextPath))
+              : "/signup") as never
+          }
+        >
+          Sign up
+        </Link>
       </p>
     </div>
   );

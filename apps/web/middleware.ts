@@ -48,7 +48,9 @@ export async function middleware(request: NextRequest) {
     data: { user }
   } = await supabase.auth.getUser();
 
-  // Login required for the whole authed surface. /subscribe is authed too so a
+  // /connect/[token] is public on purpose (the recipient is not a user yet).
+  // Auth-required, entitlement-not-required: the page itself sends logged-out
+  // visitors to /signup?next=/connect/<token>. Do not add it to needsAuth.
   // logged-out user can't land there. /start is the post-login resolver — it
   // needs a user to read, then redirects on to /app or /welcome (both gated
   // below), so it is auth-gated but intentionally left out of the entitlement

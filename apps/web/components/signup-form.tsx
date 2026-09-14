@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { syncSignupNameToProfile } from "../lib/account-name";
 import { getSiteUrlFromRequestOrigin } from "../lib/env";
+import { loginWithNextHref } from "../lib/nav-links";
 import { PASSWORD_MIN_LENGTH, PASSWORD_RULE_HINT } from "../lib/password-rules";
 import { safeNextPath } from "../lib/safe-next-path";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
@@ -161,7 +162,16 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
       {status === "confirm" ? <p className="success">Check your email to confirm your account.</p> : null}
       {error ? <p className="error">{error}</p> : null}
       <p className="muted">
-        Already have an account? <Link href="/login">Log in</Link>
+        Already have an account?{" "}
+        <Link
+          href={
+            (destination !== "/welcome"
+              ? loginWithNextHref(destination)
+              : "/login") as never
+          }
+        >
+          Log in
+        </Link>
       </p>
       <p className="muted">
         Want mobile updates? <Link href="/download">See launch links</Link>

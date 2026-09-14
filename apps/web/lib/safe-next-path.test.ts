@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { safeNextPath } from "./safe-next-path";
+import { safeNextPath, authReturnPath } from "./safe-next-path";
 
 describe("safeNextPath", () => {
   it("rejects absolute URLs with a scheme", () => {
@@ -39,5 +39,15 @@ describe("safeNextPath", () => {
   it("honors a custom fallback", () => {
     expect(safeNextPath("https://evil.com", "/app")).toBe("/app");
     expect(safeNextPath(null, "/")).toBe("/");
+  });
+});
+
+describe("authReturnPath", () => {
+  it("prefers next over redirect and sanitizes both", () => {
+    expect(authReturnPath({ next: "/connect/abc", redirect: "/app" })).toBe("/connect/abc");
+    expect(authReturnPath({ redirect: "/connect/abc" })).toBe("/connect/abc");
+    expect(authReturnPath({ redirect: "https://evil.com" })).toBe("/start");
+    expect(authReturnPath({})).toBe("/start");
+    expect(authReturnPath({}, "/welcome")).toBe("/welcome");
   });
 });

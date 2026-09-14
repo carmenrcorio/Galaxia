@@ -56,6 +56,7 @@ export function HousesUnavailableCard({
   hasHouses,
   precision,
   eyebrow = HOUSES_UNAVAILABLE_EYEBROW,
+  title,
   id = "houses",
   className = "glass-card fade-in fade-in-delay-2",
   style,
@@ -63,6 +64,8 @@ export function HousesUnavailableCard({
   hasHouses: boolean;
   precision: Precision;
   eyebrow?: string;
+  /** FOUNDER-REVIEW: person-page friendly label. Quick Chart and share omit this. */
+  title?: string;
   id?: string;
   className?: string;
   style?: CSSProperties;
@@ -77,7 +80,8 @@ export function HousesUnavailableCard({
       className={className}
       style={{ borderStyle: "dashed", opacity: 0.7, scrollMarginTop: 92, ...style }}
     >
-      <p className="eyebrow" style={{ marginBottom: 6 }}>{eyebrow}</p>
+      {title ? <p className="eyebrow" style={{ marginBottom: 2 }}>{title}</p> : null}
+      <p className={title ? "chart-vocab-subhead" : "eyebrow"} style={title ? undefined : { marginBottom: 6 }}>{eyebrow}</p>
       <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>
         {copy.body}
       </p>

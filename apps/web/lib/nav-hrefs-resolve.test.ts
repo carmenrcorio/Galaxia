@@ -108,8 +108,8 @@ describe("marketing nav hrefs resolve to App Router pages", () => {
   });
 
   it("Quick Chart in the marketing nav points at the live /chart route", () => {
-    const quickChart = MARKETING_NAV_LINKS.find((l) => l.label === "Quick Chart");
-    expect(quickChart?.href).toBe("/chart");
+    const freeChart = MARKETING_NAV_LINKS.find((l) => l.label === "Free chart");
+    expect(freeChart?.href).toBe("/chart");
     expect(existsSync(join(WEB_APP_DIR, "chart/page.tsx"))).toBe(true);
     expect(existsSync(join(WEB_APP_DIR, "app/chart/page.tsx"))).toBe(false);
     expect(existsSync(join(WEB_APP_DIR, "quick-chart/page.tsx"))).toBe(false);
@@ -135,9 +135,9 @@ describe("app nav hrefs resolve to App Router pages", () => {
     assertEveryHrefResolves(appNavInternalHrefs(), "app nav");
   });
 
-  it("Quick Chart in the app nav points at /chart because /app/chart does not exist", () => {
-    const quickChart = APP_NAV_LINKS.find((l) => l.label === "Quick Chart");
-    expect(quickChart?.href).toBe("/chart");
+  it("Free chart in the app nav points at /chart because /app/chart does not exist", () => {
+    const freeChart = APP_NAV_LINKS.find((l) => l.label === "Free chart");
+    expect(freeChart?.href).toBe("/chart");
     expect(existsSync(join(WEB_APP_DIR, "app/chart/page.tsx"))).toBe(false);
   });
 
@@ -187,6 +187,14 @@ describe("nav config still includes the non-Quick-Chart entries", () => {
       "/pricing",
     ]);
     expect(MARKETING_NAV_ACTIONS.map((l) => l.href)).toEqual(["/login", "/signup"]);
+    expect(MARKETING_NAV_LINKS.map((l) => l.label)).toEqual([
+      "How it works",
+      "Your people",
+      "Ask Vela",
+      "Free chart",
+      "Blog",
+      "Pricing",
+    ]);
   });
 
   it("keeps app labels and the Account action", () => {
@@ -232,6 +240,37 @@ describe("footer hrefs resolve to App Router pages", () => {
       "/privacy",
       "/terms",
     ]);
+    expect(SITE_FOOTER_LINKS.map((l) => l.label)).toEqual([
+      "How it works",
+      "Your people",
+      "Ask Vela",
+      "For work",
+      "Security",
+      "Pricing",
+      "Free chart",
+      "Download",
+      "Blog",
+      "Press",
+      "Privacy",
+      "Terms",
+    ]);
+  });
+
+  it("does not change marketing H1s or metadata titles", () => {
+    const why = readWeb("app/why-galaxia/page.tsx");
+    expect(why).toContain('title="Why Galaxia"');
+    expect(why).toContain("Why Galaxia: Relationship Intelligence, Not Horoscopes");
+    const generations = readWeb("app/generations/page.tsx");
+    expect(generations).toContain('title="Generations"');
+    expect(generations).toContain("Generations: Your Family's Astrology, Together | Galaxia");
+    const vela = readWeb("app/meet-vela/page.tsx");
+    expect(vela).toContain('title="Meet Vela"');
+    expect(vela).toContain("Meet Vela, Your AI Astrology Guide | Galaxia");
+    const pricing = readWeb("app/pricing/page.tsx");
+    expect(pricing).toContain("Galaxia Pricing");
+    expect(pricing).toContain('title="One Honest Plan"');
+    const chartSeo = readWeb("app/chart/chart-seo.ts");
+    expect(chartSeo).toContain("Free Birth Chart Calculator from Galaxia");
   });
 });
 
@@ -427,6 +466,26 @@ describe("Galaxia contact and domain literals", () => {
       }
     }
     expect(hits, hits.join("\n")).toEqual([]);
+  });
+});
+
+describe("public sitemap routes are unchanged by this relabel", () => {
+  it("still lists the public paths, including /for-work and /press from main", () => {
+    const src = readWeb("app/sitemap.ts");
+    const routesBlock = src.match(/const routes = \[([\s\S]*?)\];/)?.[1] ?? "";
+    expect(routesBlock).toContain('"/why-galaxia"');
+    expect(routesBlock).toContain('"/generations"');
+    expect(routesBlock).toContain('"/meet-vela"');
+    expect(routesBlock).toContain('"/for-work"');
+    expect(routesBlock).toContain('"/press"');
+    expect(routesBlock).toContain('"/security"');
+    expect(routesBlock).toContain('"/pricing"');
+    expect(routesBlock).toContain('"/blog"');
+    expect(routesBlock).toContain('"/privacy"');
+    expect(routesBlock).toContain('"/terms"');
+    expect(routesBlock).toContain('"/download"');
+    expect(routesBlock).toContain('"/chart"');
+    expect(routesBlock).toContain('"/chart/compare"');
   });
 });
 

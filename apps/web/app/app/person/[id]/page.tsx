@@ -45,6 +45,8 @@ import {
 } from "@galaxia/astro";
 import {
   buildPersonPageNavSections,
+  PERSON_TAB_LABEL,
+  PERSON_TAB_VOCAB,
   hasPassed,
   isMinorForSafety,
   shouldShowLiveTransits,
@@ -58,8 +60,8 @@ import { ChartImageExport, chartExportFilename } from "../../../../components/ch
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { InitialAvatar } from "../../../../components/initial-avatar";
-import { ChartSectionNav } from "../../../../components/chart-section-nav";
-import { HOUSES_UNAVAILABLE_EYEBROW, HousesUnavailableCard } from "../../../../components/houses-unavailable-card";
+import { ChartSectionNav, ChartVocabSubhead } from "../../../../components/chart-section-nav";
+import { HousesUnavailableCard } from "../../../../components/houses-unavailable-card";
 import { MemorialTimeline } from "../../../../components/memorial-timeline";
 import { HonorDeclarationBox, HONOR_LIGHT_ANCHOR_ID } from "../../../../components/honor-declaration";
 import { RemembranceSpace } from "../../../../components/remembrance-space";
@@ -852,6 +854,17 @@ export default function PersonProfilePage() {
   const enduringEyebrow = (label: string) =>
     personPassed ? `${label} · who they were` : label;
 
+  const sectionHead = (id: keyof typeof PERSON_TAB_VOCAB) => {
+    const vocab = PERSON_TAB_VOCAB[id];
+    return (
+      <>
+        {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is ChartVocabSubhead. */}
+        <p className="eyebrow" style={{ marginBottom: vocab ? 2 : 8 }}>{enduringEyebrow(PERSON_TAB_LABEL[id])}</p>
+        {vocab ? <ChartVocabSubhead term={vocab} /> : null}
+      </>
+    );
+  };
+
   // Generation name header (Generational layer). Birth year comes from the
   // already-loaded birth_date (year-only precision stores it as YYYY-01-01,
   // same convention rebuildDateUTC relies on above) — no new fetch needed.
@@ -926,7 +939,7 @@ export default function PersonProfilePage() {
       {/* ── Active today — same durable daily nudge home reads; never for passed ── */}
       {showActiveToday && dailyNudge ? (
         <section id="active-today" className="glass-card fade-in" style={{ borderColor: "rgba(230,174,108,.28)", background: "rgba(230,174,108,.05)", scrollMarginTop: 92 }}>
-          <p className="eyebrow" style={{ marginBottom: 8 }}>Active today for {person.display_name}</p>
+          {sectionHead("active-today")}
           <div style={{ display: "grid", gap: 3 }}>
             <p style={{ margin: 0, color: "var(--cream)", fontSize: ".92rem", lineHeight: 1.5 }}>
               {dailyNudge.copy_resolved}
@@ -964,7 +977,7 @@ export default function PersonProfilePage() {
           entry point even without a CTA. Pins / reopen still render when present. */}
       {showVelaOnThem ? (
         <section id="vela-on-them" className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)", scrollMarginTop: 92 }}>
-          <p className="eyebrow" style={{ marginBottom: 8, color: "var(--air)" }}>Vela on {person.display_name}</p>
+          {sectionHead("vela-on-them")}
           {velaPins.length > 0 ? (
             <div style={{ display: "grid", gap: 8 }}>
               {velaPins.map(pin => (
@@ -997,7 +1010,8 @@ export default function PersonProfilePage() {
       {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
       <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
         <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
-          <p className="eyebrow" style={{ marginBottom: 14 }}>
+          {sectionHead("chart-wheel")}
+          <p className="muted" style={{ fontSize: ".72rem", margin: "0 0 14px" }}>
             {chart.precision === "exact" && chart.asc
               ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
               : enduringEyebrow("Zodiac wheel")}
@@ -1040,7 +1054,7 @@ export default function PersonProfilePage() {
 
       {/* ── Big Three ── */}
       <section id="big-three" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
-        <p className="eyebrow" style={{ marginBottom: 12 }}>{enduringEyebrow("The big three")}</p>
+        {sectionHead("big-three")}
         <div style={{ display: "grid", gap: 8 }}>
           {([
             { key: "sun",    label: "Sun",    sign: sun?.sign,  body: "sun",  house: sun?.house,  uncertain: sun?.confident === false,  possibleSigns: sun?.possibleSigns  },
@@ -1142,8 +1156,8 @@ export default function PersonProfilePage() {
 
       {/* ── Placements ── */}
       <section id="placements" className="glass-card fade-in fade-in-delay-1" style={{ scrollMarginTop: 92 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <p className="eyebrow" style={{ margin: 0 }}>{enduringEyebrow("Placements")}</p>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8, gap: 8 }}>
+          <div>{sectionHead("placements")}</div>
           <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllPlacements(!placementsAllOpen)}>
             {placementsAllOpen ? "Collapse all" : "Expand all"}
           </button>
@@ -1260,8 +1274,8 @@ export default function PersonProfilePage() {
       {/* ── Key aspects ── */}
       {natalAspectReadings.length > 0 ? (
         <section id="aspects" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-            <p className="eyebrow" style={{ margin: 0 }}>{enduringEyebrow("Key aspects")}</p>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4, gap: 8 }}>
+            <div>{sectionHead("aspects")}</div>
             <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllAspects(!aspectsAllOpen)}>{aspectsAllOpen ? "Collapse all" : "Expand all"}</button>
           </div>
           <p className="muted" style={{ fontSize: ".72rem", marginBottom: 10 }}>Gold border = tight (&lt; 2°) · tightest first</p>
@@ -1295,8 +1309,8 @@ export default function PersonProfilePage() {
       {/* ── Twelve Houses: occupancy list, or the shared unavailable card ── */}
       {hasHouses ? (
         <section id="houses" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <p className="eyebrow" style={{ margin: 0 }}>{enduringEyebrow("The twelve houses")}</p>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8, gap: 8 }}>
+            <div>{sectionHead("houses")}</div>
             <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllHouses(!housesAllOpen)}>{housesAllOpen ? "Collapse all" : "Expand all"}</button>
           </div>
           <p className="muted" style={{ fontSize: ".72rem", marginBottom: 12 }}>{houseSystemLabelForChart(chart, engineVersion)} · click a house to read it</p>
@@ -1363,12 +1377,13 @@ export default function PersonProfilePage() {
       <HousesUnavailableCard
         hasHouses={hasHouses}
         precision={chart.precision}
-        eyebrow={enduringEyebrow(HOUSES_UNAVAILABLE_EYEBROW)}
+        title={enduringEyebrow(PERSON_TAB_LABEL.houses)}
+        eyebrow={PERSON_TAB_VOCAB.houses ?? "Houses"}
       />
 
       {/* ── Generational layer ── */}
       <section id="generational" className="glass-card fade-in fade-in-delay-2" style={{ scrollMarginTop: 92 }}>
-        <p className="eyebrow" style={{ marginBottom: 6 }}>{enduringEyebrow("Generational layer")}</p>
+        {sectionHead("generational")}
         {generationInfo ? (
           <p style={{ fontSize: ".78rem", color: "var(--cream)", fontWeight: 600, marginBottom: 2 }}>
             {generationInfo.name} · {generationInfo.span}
@@ -1441,7 +1456,7 @@ export default function PersonProfilePage() {
 
       {/* ── The record (B1): notes, tending, Vela pins, saved readings, conversations ── */}
       <section id="notes" className="glass-card fade-in fade-in-delay-3" style={{ scrollMarginTop: 92 }}>
-        <p className="eyebrow" style={{ marginBottom: 4 }}>The record</p>
+        {sectionHead("notes")}
         <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>
           Owner-only · never shared. The chart never changes: this is the layer that does: everything you note, pin, and discuss about {person.display_name}, in date order.
         </p>
@@ -1464,7 +1479,7 @@ export default function PersonProfilePage() {
       {/* ── Past conversations (archived threads) ── */}
       {archivedThreads.length > 0 ? (
         <section id="past-conversations" className="glass-card fade-in fade-in-delay-3" style={{ scrollMarginTop: 92 }}>
-          <p className="eyebrow" style={{ marginBottom: 4 }}>Past conversations</p>
+          {sectionHead("past-conversations")}
           <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>Archived Vela threads about {person.display_name}. Nothing is ever deleted.</p>
           {/* grid-template-columns: minmax(0,1fr) — without it the single implicit
               grid track is `auto`, which sizes to the max-content of its rows.

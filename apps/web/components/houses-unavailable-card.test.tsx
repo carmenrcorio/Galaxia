@@ -43,4 +43,18 @@ describe("HousesUnavailableCard", () => {
     expect(screen.queryByText(HOUSES_UNAVAILABLE_YEAR_BODY)).toBeNull();
     expect(screen.queryByText(HOUSES_UNAVAILABLE_DATE_BODY)).toBeNull();
   });
+
+  it("renders a friendly title above the vocabulary subhead when given", () => {
+    render(
+      <HousesUnavailableCard
+        hasHouses={false}
+        precision="date"
+        title="Where it shows up"
+        eyebrow="Houses"
+      />
+    );
+    expect(screen.getByText("Where it shows up")).toBeTruthy();
+    expect(screen.getByText("Houses")).toBeTruthy();
+    expect(screen.queryByText(HOUSES_UNAVAILABLE_EYEBROW)).toBeNull();
+  });
 });

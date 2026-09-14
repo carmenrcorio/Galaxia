@@ -99,10 +99,15 @@ describe("layer one: lead with outcome, never an astrology app", () => {
       day14Email(base).subject,
       nudgeEmailSubject("Riley")
     ];
+    const layerOneStart = /^(astrology|sky|galaxy|natal|synastry|horoscope|transit)\b/i;
     for (const subject of subjects) {
       expect(subject).not.toMatch(/astrology/i);
-      expect(subject.toLowerCase().startsWith("astrology")).toBe(false);
+      expect(subject).not.toMatch(layerOneStart);
+      expect(subject.length).toBeLessThanOrEqual(45);
     }
+    expect(day1Email(base).subject).toBe("Riley is in your circle now");
+    expect(day4MultiEmail(base).subject).toBe("What Riley needs from you");
+    expect(nudgeEmailSubject("Riley")).toBe("Riley, today");
   });
 });
 

@@ -2,8 +2,8 @@
 
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Viewer } from "../../lib/use-viewer";
-import QuickChartPage from "./quick-chart-page";
+import QuickChartPage from "../app/chart/quick-chart-page";
+import type { Viewer } from "../lib/use-viewer";
 
 const ANON: Viewer = {
   loading: false,
@@ -30,19 +30,19 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => undefined }),
 }));
 
-vi.mock("../../lib/use-viewer", () => ({
+vi.mock("../lib/use-viewer", () => ({
   useViewer: () => viewer,
 }));
 
-vi.mock("../../components/cosmic-background", () => ({
+vi.mock("./cosmic-background", () => ({
   CosmicBackground: () => <div data-testid="cosmic-background" />,
 }));
 
-vi.mock("../../components/timezone-sync", () => ({
+vi.mock("./timezone-sync", () => ({
   TimezoneSync: () => null,
 }));
 
-vi.mock("../../components/trial-banner", () => ({
+vi.mock("./trial-banner", () => ({
   TrialBanner: () => null,
 }));
 

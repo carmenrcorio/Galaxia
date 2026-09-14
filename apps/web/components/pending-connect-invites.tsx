@@ -72,14 +72,22 @@ export function PendingConnectInvites() {
   }, [supabase]);
 
   const revoke = async (token: string) => {
+    const snapshot = rows ?? [];
+    const removed = snapshot.find((row) => row.token === token);
     setRevoking(token);
     setError(null);
-    setRows((current) => (current ?? []).filter((row) => row.token !== token));
+    setRows(snapshot.filter((row) => row.token !== token));
     const { error: rpcError } = await supabase.rpc("revoke_connect_invite", { p_token: token });
     setRevoking(null);
     if (rpcError) {
       setError(rpcError.message);
-      return;
+      if (removed) {
+        setRows((current) => {
+          const list = current ?? [];
+          if (list.some((row) => row.token === token)) return list;
+          return [...list, removed];
+        });
+      }
     }
   };
 

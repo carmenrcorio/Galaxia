@@ -4,7 +4,10 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ConnectAcceptView } from "./connect-accept-view";
 import {
+  CONNECT_ALREADY_ACTIVE,
+  CONNECT_CTA_ACCEPT,
   CONNECT_CTA_SIGNUP,
+  CONNECT_EXPIRED,
   CONNECT_SHARING,
   CONNECT_WHAT_GALAXIA_IS,
 } from "../lib/connect-invite";
@@ -52,5 +55,51 @@ describe("ConnectAcceptView logged-out pending landing", () => {
     expect(cta.getAttribute("href")).toContain("connect");
     expect(screen.queryByText(/astrology app/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /Accept/i })).toBeNull();
+  });
+
+  it("shows the already-active copy for an accepted token, with no accept button", () => {
+    render(
+      <ConnectAcceptView
+        token={"ab".repeat(16)}
+        landing={{
+          inviterName: "Alex",
+          relation: "partner",
+          status: "accepted",
+          expiresAt: "2099-01-01T00:00:00Z",
+        }}
+      />,
+    );
+    expect(screen.getByText(CONNECT_ALREADY_ACTIVE)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: CONNECT_CTA_ACCEPT })).toBeNull();
+    expect(screen.queryByRole("link", { name: CONNECT_CTA_SIGNUP })).toBeNull();
+  });
+
+  it("shows the expired copy for expired and revoked tokens", () => {
+    const { unmount } = render(
+      <ConnectAcceptView
+        token={"ab".repeat(16)}
+        landing={{
+          inviterName: "Alex",
+          relation: "partner",
+          status: "expired",
+          expiresAt: "2000-01-01T00:00:00Z",
+        }}
+      />,
+    );
+    expect(screen.getByText(CONNECT_EXPIRED)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: CONNECT_CTA_ACCEPT })).toBeNull();
+    unmount();
+    render(
+      <ConnectAcceptView
+        token={"ab".repeat(16)}
+        landing={{
+          inviterName: "Alex",
+          relation: "partner",
+          status: "revoked",
+          expiresAt: "2099-01-01T00:00:00Z",
+        }}
+      />,
+    );
+    expect(screen.getByText(CONNECT_EXPIRED)).toBeTruthy();
   });
 });

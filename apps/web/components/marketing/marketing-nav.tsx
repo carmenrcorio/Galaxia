@@ -22,15 +22,12 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-
-const LINKS: { href: string; label: string }[] = [
-  { href: "/why-galaxia", label: "Why Galaxia" },
-  { href: "/generations", label: "Generations" },
-  { href: "/meet-vela", label: "Meet Vela" },
-  { href: "/chart", label: "Quick Chart" },
-  { href: "/blog", label: "Blog" },
-  { href: "/pricing", label: "Pricing" },
-];
+import {
+  MARKETING_NAV_BRAND_HREF,
+  MARKETING_NAV_LINKS,
+  MARKETING_NAV_LOGIN,
+  MARKETING_NAV_SIGNUP,
+} from "../../lib/nav-links";
 
 export function MarketingNav() {
   const [open, setOpen] = useState(false);
@@ -52,17 +49,17 @@ export function MarketingNav() {
       borderBottom:         "1px solid rgba(255,255,255,.05)",
     }}>
       <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 68, paddingTop: 10, paddingBottom: 10 }}>
-        <Link href="/" style={{ fontFamily: "var(--serif)", fontWeight: 600, fontSize: "1.42rem", color: "var(--gold)", letterSpacing: ".01em", flexShrink: 0 }}>
+        <Link href={MARKETING_NAV_BRAND_HREF} style={{ fontFamily: "var(--serif)", fontWeight: 600, fontSize: "1.42rem", color: "var(--gold)", letterSpacing: ".01em", flexShrink: 0 }}>
           Galax<span style={{ fontStyle: "italic", fontWeight: 500 }}>ia</span>
         </Link>
 
         <div className="app-nav-links">
-          {LINKS.map((l) => <DesktopLink key={l.href} href={l.href}>{l.label}</DesktopLink>)}
-          <Link href="/login" className="pill-link" style={{ padding: "9px 18px", borderRadius: 100, fontSize: ".86rem" }}>
-            Log in
+          {MARKETING_NAV_LINKS.map((l) => <DesktopLink key={l.href} href={l.href}>{l.label}</DesktopLink>)}
+          <Link href={MARKETING_NAV_LOGIN.href as never} className="pill-link" style={{ padding: "9px 18px", borderRadius: 100, fontSize: ".86rem" }}>
+            {MARKETING_NAV_LOGIN.label}
           </Link>
-          <Link href="/signup" className="pill-link--gold" style={{ padding: "9px 18px", borderRadius: 100, fontSize: ".86rem" }}>
-            Start 14 days free
+          <Link href={MARKETING_NAV_SIGNUP.href as never} className="pill-link--gold" style={{ padding: "9px 18px", borderRadius: 100, fontSize: ".86rem" }}>
+            {MARKETING_NAV_SIGNUP.label}
           </Link>
         </div>
 
@@ -79,16 +76,16 @@ export function MarketingNav() {
 
       {open ? (
         <div className="container app-nav-drawer">
-          {LINKS.map((l) => (
+          {MARKETING_NAV_LINKS.map((l) => (
             <Link key={l.href} href={l.href as never} className="app-nav-drawer-link" onClick={() => setOpen(false)}>
               {l.label}
             </Link>
           ))}
-          <Link href="/login" className="app-nav-drawer-link" onClick={() => setOpen(false)}>
-            Log in
+          <Link href={MARKETING_NAV_LOGIN.href as never} className="app-nav-drawer-link" onClick={() => setOpen(false)}>
+            {MARKETING_NAV_LOGIN.label}
           </Link>
-          <Link href="/signup" className="app-nav-drawer-link app-nav-drawer-link--gold" onClick={() => setOpen(false)}>
-            Start 14 days free
+          <Link href={MARKETING_NAV_SIGNUP.href as never} className="app-nav-drawer-link app-nav-drawer-link--gold" onClick={() => setOpen(false)}>
+            {MARKETING_NAV_SIGNUP.label}
           </Link>
         </div>
       ) : null}

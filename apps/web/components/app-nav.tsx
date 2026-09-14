@@ -29,22 +29,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-
-const LINKS: { href: string; label: string }[] = [
-  { href: "/app", label: "Home" },
-  { href: "/app/compare", label: "Compare" },
-  { href: "/app/groups", label: "Groups" },
-  { href: "/app/vela", label: "Vela" },
-  { href: "/app/settings", label: "Settings" },
-  // Public route — no auth guard needed. Distinct from the floating
-  // "Quick check" launcher on /app (fast in-app compatibility modal); this
-  // opens the full public /chart experience.
-  { href: "/chart", label: "Quick Chart" },
-  // Also public — previously only reachable from the logged-out marketing
-  // nav, so a signed-in subscriber had no way back to it without leaving
-  // their account (e.g. via a bookmark or search result).
-  { href: "/blog", label: "Blog" },
-];
+import {
+  APP_NAV_ACCOUNT,
+  APP_NAV_BRAND_HREF,
+  APP_NAV_LINKS,
+} from "../lib/nav-links";
 
 export function AppNav() {
   const pathname = usePathname();
@@ -80,7 +69,7 @@ export function AppNav() {
           by .container's CSS, untouched by this inline style. */}
       <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 64, paddingTop: 10, paddingBottom: 10 }}>
         {/* Brand: italic "ia" from landing .brand span */}
-        <Link href="/app" style={{
+        <Link href={APP_NAV_BRAND_HREF as never} style={{
           fontFamily: "var(--serif)", fontWeight: 600, fontSize: "1.42rem",
           color: "var(--gold)", letterSpacing: ".01em", flexShrink: 0,
         }}>
@@ -89,9 +78,9 @@ export function AppNav() {
 
         {/* Desktop: unchanged inline row, hidden below the breakpoint (globals.css) */}
         <div className="app-nav-links">
-          {LINKS.map((l) => <DesktopLink key={l.href} href={l.href}>{l.label}</DesktopLink>)}
-          <Link href="/account" className="pill-link--gold" style={{ padding: "9px 18px", borderRadius: 100, background: "linear-gradient(180deg,var(--gold-bright),var(--gold))", color: "#1a1206", fontWeight: 600, fontSize: ".86rem", boxShadow: "0 6px 22px -8px rgba(230,174,108,.6)", textDecoration: "none" }}>
-            Account
+          {APP_NAV_LINKS.map((l) => <DesktopLink key={l.href} href={l.href}>{l.label}</DesktopLink>)}
+          <Link href={APP_NAV_ACCOUNT.href as never} className="pill-link--gold" style={{ padding: "9px 18px", borderRadius: 100, background: "linear-gradient(180deg,var(--gold-bright),var(--gold))", color: "#1a1206", fontWeight: 600, fontSize: ".86rem", boxShadow: "0 6px 22px -8px rgba(230,174,108,.6)", textDecoration: "none" }}>
+            {APP_NAV_ACCOUNT.label}
           </Link>
         </div>
 
@@ -113,13 +102,13 @@ export function AppNav() {
           to spill out of. */}
       {open ? (
         <div className="container app-nav-drawer">
-          {LINKS.map((l) => (
+          {APP_NAV_LINKS.map((l) => (
             <Link key={l.href} href={l.href as never} className="app-nav-drawer-link" onClick={() => setOpen(false)}>
               {l.label}
             </Link>
           ))}
-          <Link href="/account" className="app-nav-drawer-link app-nav-drawer-link--gold" onClick={() => setOpen(false)}>
-            Account
+          <Link href={APP_NAV_ACCOUNT.href as never} className="app-nav-drawer-link app-nav-drawer-link--gold" onClick={() => setOpen(false)}>
+            {APP_NAV_ACCOUNT.label}
           </Link>
         </div>
       ) : null}

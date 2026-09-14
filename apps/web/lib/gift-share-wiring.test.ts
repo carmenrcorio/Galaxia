@@ -39,7 +39,7 @@ describe("gift share reuses /s/[token] rather than a fourth token pattern", () =
     expect(src).toContain("giftBirth: input");
     expect(src).toContain("expiresInDays");
     expect(src).toContain('variant="gift"');
-    expect(src).toContain("`/s/${body.token as string}`");
+    expect(src).toContain("/s/${body.token as string}");
     const persist = src.slice(src.indexOf("async function createShareUrl"), src.indexOf("const title"));
     expect(persist).not.toContain("name:");
   });

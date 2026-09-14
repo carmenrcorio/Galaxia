@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
-const MIGRATION = join(REPO_ROOT, "supabase/migrations/20260914270000_notes_moment_kind.sql");
+const MIGRATION = join(REPO_ROOT, "supabase/migrations/20260914270200_notes_moment_kind.sql");
 const WRAP = join(REPO_ROOT, "supabase/migrations/20260913030100_wrap_auth_uid_in_rls_policies.sql");
 const RETEST = join(REPO_ROOT, "docs/notes-moment-rls-retest.sql");
 
@@ -11,7 +11,7 @@ function stripSqlComments(sql: string): string {
   return sql.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--[^\n]*/g, "");
 }
 
-describe("20260914270000_notes_moment_kind.sql", () => {
+describe("20260914270200_notes_moment_kind.sql", () => {
   const sql = readFileSync(MIGRATION, "utf8");
   const body = stripSqlComments(sql).toLowerCase();
 

@@ -10,6 +10,7 @@ import {
   stripBirthPii,
   validateQuickSharePersistBody,
   type CompareSharePayload,
+  type SingleSharePayload,
 } from "./quick-share";
 
 const minimalChart = {
@@ -183,8 +184,9 @@ describe("validateQuickSharePersistBody — romantic-minor structural guarantee"
     });
     expect(result.ok).toBe(true);
     if (result.ok && result.kind === "single") {
-      expect(result.payload).not.toHaveProperty("name");
-      expect(result.payload.giftBirth).toEqual({
+      const payload = result.payload as SingleSharePayload;
+      expect(payload).not.toHaveProperty("name");
+      expect(payload.giftBirth).toEqual({
         precision: "date",
         month: 4,
         day: 3,
@@ -193,7 +195,7 @@ describe("validateQuickSharePersistBody — romantic-minor structural guarantee"
         lng: "-97.7431",
         birthPlace: "Austin",
       });
-      expect(JSON.stringify(result.payload.giftBirth)).not.toMatch(/Ada/);
+      expect(JSON.stringify(payload.giftBirth)).not.toMatch(/Ada/);
     }
   });
 

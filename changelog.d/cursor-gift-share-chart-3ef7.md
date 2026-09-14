@@ -13,3 +13,5 @@
 `[ADDED]` **Expiry and revoke.** New shares default to 14 days (same window as invitations). Signed-in creators can pick 7 / 14 / 30 days or no expiry, and revoke from Settings. Anonymous shares always expire (they cannot revoke). Expired and revoked tokens 404 the same as unknown tokens. Migration `20260914280000_quick_share_expiry_and_revoke.sql` adds `expires_at` and `revoked_at`.
 
 `[CHANGED]` **Copy share link discloses what the recipient will see**, including birth date and place on a gifted natal chart. PDF footnote now carries `galaxiamea.com`.
+
+`[FIXED]` **`notes_moment_kind` filename matches production `20260914270200`.** Main had two files at `20260914270000` after star_scale landed on the same tick as The Moment. Production recorded the moment migration as `20260914270200`. Rename only; SQL body unchanged. Unblocks the migration timestamp uniqueness test.

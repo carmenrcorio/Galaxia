@@ -141,6 +141,7 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
         )}
       </section>
 
+      <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
         <button
           className="pill-link"
           onClick={() => setExpanded((e) => !e)}

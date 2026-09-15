@@ -1,7 +1,7 @@
 "use client";
 
 import { cohortOverlay, compareGenerational, type FamilyComparePersonInput, type GenSignature, type NatalChart } from "@galaxia/astro";
-import { hasPassed, isBelowGroupMinimum, OWNED_DELETE_COPY, formatGroupDeleteConfirmation, readyMembersForCohortOverlay, sunSignFromChart } from "@galaxia/core";
+import { hasPassed, isBelowGroupMinimum, OWNED_DELETE_COPY, formatGroupDeleteConfirmation, readyMembersForCohortOverlay, sunSignFromChart, DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ChartGridSection } from "../../../components/groups/chart-grid-section";
@@ -87,6 +87,8 @@ function GroupsPageInner() {
 
   const [userId, setUserId]               = useState<string|null>(null);
   const [rosterReady, setRosterReady]     = useState(false);
+  const [rosterError, setRosterError]    = useState(false);
+  const [rosterReload, setRosterReload]  = useState(0);
   const [people, setPeople]               = useState<PersonLite[]>([]);
   const [groups, setGroups]               = useState<GroupRow[]>([]);
   const [groupSummaries, setGroupSummaries] = useState<GroupSelectorItem[]>([]);
@@ -111,17 +113,25 @@ function GroupsPageInner() {
 
   useEffect(() => {
     const load = async () => {
+      setRosterReady(false);
+      setRosterError(false);
+      try {
+        await withTimeout((async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        setRosterReady(true);
         return;
       }
       setUserId(user.id);
       await Promise.all([fetchPeople(user.id), fetchGroupSummaries(user.id)]);
-      setRosterReady(true);
+        })(), DEFAULT_FETCH_TIMEOUT_MS);
+      } catch {
+        setRosterError(true);
+      } finally {
+        setRosterReady(true);
+      }
     };
     void load();
-  }, [supabase]);
+  }, [supabase, rosterReload]);
 
   useEffect(() => {
     if (!initialGroupId || !userId || groups.length === 0) return;
@@ -618,7 +628,19 @@ function GroupsPageInner() {
       <GroupsIntroCard />
 
       {!rosterReady ? (
-        <div className="skeleton skeleton-title" />
+        <div className="glass-card async-frame">
+          <div className="skeleton skeleton-title" />
+          <div className="skeleton skeleton-text" style={{ width: "80%" }} />
+          <div className="skeleton skeleton-text" style={{ width: "60%" }} />
+        </div>
+      ) : rosterError ? (
+        <section className="glass-card async-frame">
+          {/* FOUNDER-REVIEW: groups roster fetch failed or timed out. */}
+          <p className="muted" style={{ margin: 0 }}>Your groups could not load. Try again.</p>
+          <button type="button" className="btn-primary" style={{ marginTop: 14 }} onClick={() => { setRosterReady(false); setRosterReload((n) => n + 1); }}>
+            Try again
+          </button>
+        </section>
       ) : groupSummaries.length > 0 ? (
         <GroupSelector
           groups={groupSummaries}

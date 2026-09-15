@@ -62,6 +62,8 @@ import {
   DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP,
   type ChartPrecision,
   type PersonGroupKey,
+  DEFAULT_FETCH_TIMEOUT_MS,
+  withTimeout,
   type PersonNavSectionId,
   type PinThemeId,
   type RecordTagId,
@@ -358,6 +360,15 @@ const MODALITY_ABSENT: Record<string, string> = {
 };
 
 /* ─── Main page ─────────────────────────────────────────────────────────── */
+// FOUNDER-REVIEW: person page load failure.
+const PERSON_LOAD_ERROR = "This person could not load. Try again.";
+// FOUNDER-REVIEW: retry after a person load failure.
+const PERSON_RETRY = "Try again";
+// FOUNDER-REVIEW: missing row, not a fetch failure.
+const PERSON_NOT_FOUND = "This person is not in your constellation.";
+// FOUNDER-REVIEW: no self row yet.
+const PERSON_NO_SELF = "No self profile yet.";
+
 export default function PersonProfilePage() {
   const params   = useParams<{ id: string }>();
   const personId = params.id;
@@ -561,12 +572,26 @@ export default function PersonProfilePage() {
     const actualId = personId === "self"
       ? (await supabase.from("people").select("id").eq("owner_id", uid).eq("is_self", true).maybeSingle()).data?.id
       : personId;
-    if (!actualId) { setStatus("No self profile yet."); setLoading(false); return; }
-    const [{ data: pData, error: pErr }, { data: cData, error: cErr }] = await Promise.all([
-      supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, died_on, star_color, memorial_constellation, custom_position, star_scale, linked_user_id").eq("id", actualId).single(),
-      supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualId).single()
-    ]);
-    if (pErr || !pData) { setStatus(pErr?.message ?? "Unable to load person."); setLoading(false); return; }
+    if (!actualId) { setStatus(PERSON_NO_SELF); setLoading(false); return; }
+    let pData: { [k: string]: unknown } | null = null;
+    let pErr: { message: string } | null = null;
+    let cData: { data?: unknown; house_system?: unknown; engine_version?: unknown } | null = null;
+    let cErr: { message: string } | null = null;
+    try {
+      const fetched = await withTimeout(Promise.all([
+        supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, died_on, star_color, memorial_constellation, custom_position, star_scale, linked_user_id").eq("id", actualId).single(),
+        supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualId).single()
+      ]), DEFAULT_FETCH_TIMEOUT_MS);
+      pData = fetched[0].data as typeof pData;
+      pErr = fetched[0].error;
+      cData = fetched[1].data as typeof cData;
+      cErr = fetched[1].error;
+    } catch {
+      setStatus(PERSON_LOAD_ERROR);
+      setLoading(false);
+      return;
+    }
+    if (pErr || !pData) { setStatus(PERSON_LOAD_ERROR); setLoading(false); return; }
     const personRow = pData as PersonRow & { tz_offset_min?: number | null };
     void acknowledgeConnectIfNeeded(uid, personRow);
     // Progressive capture: a person with no chart yet (birth_precision 'none')
@@ -847,15 +872,19 @@ export default function PersonProfilePage() {
   if (loading) return (
     <main className="app-content">
       <div className="skeleton skeleton-title" />
-      <div className="glass-card">{[40,65,50,80,100,70].map((w,i) => <div key={i} className="skeleton skeleton-text" style={{ width: `${w}%` }} />)}</div>
-      <div className="glass-card">{[80,100,70,90,65,75].map((w,i) => <div key={i} className="skeleton skeleton-text" style={{ width: `${w}%` }} />)}</div>
+      <div className="glass-card async-frame">{[40,65,50,80,100,70].map((w,i) => <div key={i} className="skeleton skeleton-text" style={{ width: `${w}%` }} />)}</div>
+      <div className="glass-card async-frame">{[80,100,70,90,65,75].map((w,i) => <div key={i} className="skeleton skeleton-text" style={{ width: `${w}%` }} />)}</div>
     </main>
   );
 
   if (!person) return (
     <main className="app-content">
-      <p className="muted">{status ?? "Profile not found."}</p>
-      <Link href={EMPTY_STATE_WELCOME_HREF as never} className="btn-primary">Add birth data in onboarding</Link>
+      <p className="muted">{status === PERSON_LOAD_ERROR ? PERSON_LOAD_ERROR : status ?? PERSON_NOT_FOUND}</p>
+      {status === PERSON_LOAD_ERROR && userId ? (
+        <button type="button" className="btn-primary" onClick={() => void loadProfile(userId)}>{PERSON_RETRY}</button>
+      ) : (
+        <Link href={EMPTY_STATE_WELCOME_HREF as never} className="btn-primary">Add birth data in onboarding</Link>
+      )}
     </main>
   );
 

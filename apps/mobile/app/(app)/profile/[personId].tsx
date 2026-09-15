@@ -33,7 +33,9 @@ import {
   PERSON_TAB_LABEL,
   PERSON_TAB_VOCAB,
   sunSignFromChart,
-  type PersonGroupKey
+  type PersonGroupKey,
+  DEFAULT_FETCH_TIMEOUT_MS,
+  withTimeout
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
@@ -111,14 +113,15 @@ export default function PersonProfileScreen() {
       return;
     }
 
-    const [{ data: personData, error: personError }, { data: chartData, error: chartError }, { data: noteData, error: noteError }] = await Promise.all([
+    try {
+    const [{ data: personData, error: personError }, { data: chartData, error: chartError }, { data: noteData, error: noteError }] = await withTimeout(Promise.all([
       supabase.from("people").select("id, display_name, relation, birth_precision, is_self, passed_at").eq("id", actualPersonId).single(),
       supabase.from("charts").select("data").eq("person_id", actualPersonId).maybeSingle(),
       supabase.from("notes").select("id, body, created_at, kind, tags, transit_snapshot").eq("about_person", actualPersonId).order("created_at", { ascending: false }).limit(20)
-    ]);
+    ]), DEFAULT_FETCH_TIMEOUT_MS);
 
     if (personError || !personData) {
-      setStatus(personError?.message ?? "Unable to load person.");
+      setStatus("This person could not load. Try again.");
       return;
     }
     // Progressive capture, web parity (apps/web/app/app/person/[id]/page.tsx): a
@@ -135,6 +138,9 @@ export default function PersonProfileScreen() {
     setChart((chartData?.data as NatalChart | undefined) ?? null);
     setChartLoadError(chartError?.message ?? null);
     setNotes(noteData ?? []);
+    } catch {
+      setStatus("This person could not load. Try again.");
+    }
   };
 
   const saveNote = async () => {
@@ -240,12 +246,26 @@ export default function PersonProfileScreen() {
   if (!person) {
     return (
       <View style={{ flex: 1, backgroundColor: tokens.colors.ink, justifyContent: "center", alignItems: "center", padding: 20 }}>
-        <Text style={{ color: tokens.colors.cream, textAlign: "center" }}>{status ?? "Loading profile..."}</Text>
-        <Link href="/onboarding" asChild>
-          <Pressable style={{ marginTop: 14, backgroundColor: tokens.colors.gold, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 }}>
-            <Text style={{ color: tokens.colors.ink, fontWeight: "700" }}>Back to onboarding</Text>
+        <Text style={{ color: tokens.colors.cream, textAlign: "center" }}>
+          {/* FOUNDER-REVIEW: loading / missing person. */}
+          {status ?? "Loading this person."}
+        </Text>
+        {status === "This person could not load. Try again." ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Try again"
+            onPress={() => void loadProfile()}
+            style={{ marginTop: 14, backgroundColor: tokens.colors.gold, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 }}
+          >
+            <Text style={{ color: tokens.colors.ink, fontWeight: "700" }}>Try again</Text>
           </Pressable>
-        </Link>
+        ) : (
+          <Link href="/onboarding" asChild>
+            <Pressable style={{ marginTop: 14, backgroundColor: tokens.colors.gold, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 }}>
+              <Text style={{ color: tokens.colors.ink, fontWeight: "700" }}>Back to onboarding</Text>
+            </Pressable>
+          </Link>
+        )}
       </View>
     );
   }

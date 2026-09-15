@@ -2,6 +2,7 @@ import {
   activePairTransits,
   availableCompareRelationTypes,
   COMPARE_HISTORY_HEADING,
+  COMPARE_HISTORY_EMPTY,
   COMPARE_MOVED_ON,
   COMPARE_NEWLY_ACTIVE,
   COMPARE_RELATION_SUGGESTION_HINT,
@@ -31,7 +32,7 @@ import {
   type PairTransitHit,
   type RelationType
 } from "@galaxia/astro";
-import { isMinorForSafety, orderPair, shouldShowLiveTransits, sunSignFromChart } from "@galaxia/core";
+import { DEFAULT_FETCH_TIMEOUT_MS, isMinorForSafety, orderPair, shouldShowLiveTransits, sunSignFromChart, withTimeout } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -71,6 +72,8 @@ export default function CompareScreen() {
   const { session } = useAuth();
   const { tier } = useEntitlement();
   const [people, setPeople] = useState<PersonLite[]>([]);
+  const [rosterLoading, setRosterLoading] = useState(true);
+  const [rosterError, setRosterError] = useState(false);
   const [personAId, setPersonAId] = useState<string | null>(null);
   const [personBId, setPersonBId] = useState<string | null>(null);
   // SAFETY: never default to a romantic type — match web.
@@ -99,15 +102,16 @@ export default function CompareScreen() {
 
   const fetchPeople = async () => {
     if (!session?.user.id) return;
+    setRosterLoading(true);
+    setRosterError(false);
+    try {
+      await withTimeout((async () => {
     const { data, error } = await supabase
       .from("people")
       .select("id, display_name, relation, birth_date, birth_precision, is_minor, passed_at")
       .eq("owner_id", session.user.id)
       .order("created_at", { ascending: false });
-    if (error) {
-      setStatus(error.message);
-      return;
-    }
+    if (error) throw error;
     const rows = (data ?? []) as PersonLite[];
     const ids = rows.map((r) => r.id);
     if (ids.length) {
@@ -128,6 +132,12 @@ export default function CompareScreen() {
     const { personAId: initialA, personBId: initialB } = initialComparePairIds(rows);
     if (!personAId && initialA) setPersonAId(initialA);
     if (!personBId && initialB) setPersonBId(initialB);
+      })(), DEFAULT_FETCH_TIMEOUT_MS);
+    } catch {
+      setRosterError(true);
+    } finally {
+      setRosterLoading(false);
+    }
   };
 
   const selectedA = useMemo(() => people.find((person) => person.id === personAId) ?? null, [people, personAId]);
@@ -307,11 +317,32 @@ export default function CompareScreen() {
         {tier === "plus" ? "Galaxia+ unlocked: full directional reads." : "Free plan: directional reads are abbreviated."}
       </Text>
 
-      {history.length > 0 ? (
-        <View style={cardStyle}>
-          {/* FOUNDER-REVIEW: COMPARE_HISTORY_HEADING */}
-          <Text style={cardTitle}>{COMPARE_HISTORY_HEADING}</Text>
-          {history.map((item) => (
+      <View style={cardStyle}>
+        {/* FOUNDER-REVIEW: COMPARE_HISTORY_HEADING */}
+        <Text style={cardTitle}>{COMPARE_HISTORY_HEADING}</Text>
+        {rosterLoading ? (
+          <Text style={{ color: tokens.colors.mist, lineHeight: 20 }}>
+            {/* FOUNDER-REVIEW: Compare roster is loading. */}
+            Loading the people in your constellation.
+          </Text>
+        ) : rosterError ? (
+          <>
+            <Text style={{ color: tokens.colors.mist, lineHeight: 20 }}>
+              {/* FOUNDER-REVIEW: Compare people fetch failed or timed out. */}
+              Your people could not load for Compare. Try again.
+            </Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Try again" onPress={() => void fetchPeople()}>
+              {/* FOUNDER-REVIEW: retry after a Compare roster failure. */}
+              <Text style={{ color: tokens.colors.gold, fontWeight: "600" }}>Try again</Text>
+            </Pressable>
+          </>
+        ) : history.length === 0 ? (
+          <Text style={{ color: tokens.colors.mist, lineHeight: 20 }}>
+            {/* FOUNDER-REVIEW: COMPARE_HISTORY_EMPTY */}
+            {COMPARE_HISTORY_EMPTY}
+          </Text>
+        ) : (
+          history.map((item) => (
             <Pressable
               key={`${item.personAId}:${item.personBId}`}
               onPress={() => void runCompare(item.personAId, item.personBId)}
@@ -324,9 +355,9 @@ export default function CompareScreen() {
                 {compareHistoryLastViewed(formatCompareLastViewed(item.lastViewedAt))}
               </Text>
             </Pressable>
-          ))}
-        </View>
-      ) : null}
+          ))
+        )}
+      </View>
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Relationship type</Text>

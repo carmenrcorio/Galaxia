@@ -4,6 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   COMPARE_HISTORY_HEADING,
+  COMPARE_HISTORY_EMPTY,
   COMPARE_NEWLY_ACTIVE,
   COMPARE_SINCE_HEADING,
   compareNatalAspectsConstant,
@@ -81,6 +82,12 @@ describe("recentComparedPeople", () => {
 });
 
 describe("CompareHistoryList", () => {
+  it("renders the authored empty copy instead of a blank section", () => {
+    render(<CompareHistoryList items={[]} onOpen={() => undefined} />);
+    expect(screen.getByText(COMPARE_HISTORY_HEADING)).toBeTruthy();
+    expect(screen.getByText(COMPARE_HISTORY_EMPTY)).toBeTruthy();
+  });
+
   it("renders names and last viewed date", () => {
     render(
       <CompareHistoryList

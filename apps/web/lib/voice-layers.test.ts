@@ -148,6 +148,13 @@ describe("layer two: astrology language stays where search and in-product intent
     expect(readRepo("apps/web/app/page.tsx")).toMatch(/FeaturesSection/);
   });
 
+  it("keeps astrology in /glossary metadata (layer two)", () => {
+    const glossary = readRepo("apps/web/lib/glossary-terms.ts");
+    expect(glossary).toMatch(/Astrology terms, plainly defined/);
+    expect(glossary).toMatch(/natal charts, synastry, aspects/);
+    expect(readRepo("apps/web/app/glossary/page.tsx")).toMatch(/canonical: "\/glossary"/);
+  });
+
   it("blog categories keep astrology in labels and metadata", () => {
     const blog = readRepo("apps/web/lib/blog.ts");
     expect(blog).toMatch(/label: "Astrology guides"/);

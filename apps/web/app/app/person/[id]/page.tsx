@@ -82,6 +82,7 @@ import { HousesUnavailableCard } from "../../../../components/houses-unavailable
 import { AspectsUnavailableCard } from "../../../../components/aspects-unavailable-card";
 import { MemorialTimeline } from "../../../../components/memorial-timeline";
 import { HonorDeclarationBox, HONOR_LIGHT_ANCHOR_ID } from "../../../../components/honor-declaration";
+import { RelationshipEdgesBox } from "../../../../components/relationship-edges";
 import { RemembranceSpace } from "../../../../components/remembrance-space";
 import { PersonRecordTimeline } from "../../../../components/person-record-timeline";
 import { VelaPinsPanel } from "../../../../components/vela-pins-panel";
@@ -945,6 +946,15 @@ export default function PersonProfilePage() {
         ) : null}
       </section>
 
+      {userId ? (
+        <RelationshipEdgesBox
+          person={person}
+          userId={userId}
+          subjectIsMinor={personIsMinor}
+          showRemembranceNote={showHonorBox}
+        />
+      ) : null}
+
       {showHonorBox ? (
         <HonorDeclarationBox
           person={person}
@@ -1106,6 +1116,15 @@ export default function PersonProfilePage() {
             {chartCorrectionNotice} A note was added to their Record with the time of the correction.
           </p>
         </div>
+      ) : null}
+
+      {userId ? (
+        <RelationshipEdgesBox
+          person={person}
+          userId={userId}
+          subjectIsMinor={personIsMinor}
+          showRemembranceNote={showHonorBox}
+        />
       ) : null}
 
       <PersonProfileNav

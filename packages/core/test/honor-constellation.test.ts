@@ -10,8 +10,12 @@ import {
   RELATIONSHIPS_OWNER_RLS_POLICY,
   RELATIONSHIP_EDGE_TYPES,
   buildHonorRelationshipInsert,
+  buildRelationshipInsert,
   canonicalRelationshipPair,
   connectionDiff,
+  DECLARED_BOND_TYPES,
+  declaredBondExists,
+  declaredBondsFromRows,
   honorConnectionDiff,
   honorEdgeFraming,
   honorEdgeTouchesMinor,
@@ -21,6 +25,7 @@ import {
   isRelationshipEdgeType,
   livingHonorCandidates,
   livingIdsFromHonorRows,
+  partnerBondAllowed,
   synastryCannotSubstituteHonor,
 } from "../src/honor-constellation";
 
@@ -420,5 +425,114 @@ describe("relationships RLS + unique index (schema contracts)", () => {
     for (const value of RELATIONSHIP_EDGE_TYPES) {
       expect(sql).toContain(`'${value}'`);
     }
+  });
+});
+
+describe("Person-page declared bonds (picker, not honor)", () => {
+  it("writes canonical UUID order and never writes remembrance", () => {
+    expect(livingFriend.id < owner.id).toBe(true);
+    const built = buildRelationshipInsert({
+      ownerId: "owner-aaa",
+      personAId: owner.id,
+      personBId: livingFriend.id,
+      relationType: "friend",
+      personA: owner,
+      personB: livingFriend,
+      now: NOW,
+    });
+    expect(built).toEqual({
+      ok: true,
+      row: {
+        owner_id: "owner-aaa",
+        person_a: livingFriend.id,
+        person_b: owner.id,
+        relation_type: "friend",
+      },
+    });
+    expect(
+      buildRelationshipInsert({
+        ownerId: "owner-aaa",
+        personAId: owner.id,
+        personBId: livingFriend.id,
+        relationType: HONOR_RELATION_TYPE,
+        personA: owner,
+        personB: livingFriend,
+        now: NOW,
+      })
+    ).toEqual({ ok: false, reason: "remembrance" });
+  });
+
+  it("refuses partner when either endpoint is a minor, and does not rewrite the type", () => {
+    const childSafety = {
+      isMinor: livingChild.is_minor,
+      birthDate: livingChild.birth_date,
+      birthPrecision: livingChild.birth_precision,
+    };
+    const ownerSafety = {
+      isMinor: owner.is_minor,
+      birthDate: owner.birth_date,
+      birthPrecision: owner.birth_precision,
+    };
+    const friendSafety = {
+      isMinor: livingFriend.is_minor,
+      birthDate: livingFriend.birth_date,
+      birthPrecision: livingFriend.birth_precision,
+    };
+    expect(partnerBondAllowed(ownerSafety, childSafety, NOW)).toBe(false);
+    expect(partnerBondAllowed(ownerSafety, friendSafety, NOW)).toBe(true);
+    const refused = buildRelationshipInsert({
+      ownerId: "owner-aaa",
+      personAId: owner.id,
+      personBId: livingChild.id,
+      relationType: "partner",
+      personA: ownerSafety,
+      personB: childSafety,
+      now: NOW,
+    });
+    expect(refused).toEqual({ ok: false, reason: "partner-minor" });
+    const familyOk = buildRelationshipInsert({
+      ownerId: "owner-aaa",
+      personAId: owner.id,
+      personBId: livingChild.id,
+      relationType: "family",
+      personA: ownerSafety,
+      personB: childSafety,
+      now: NOW,
+    });
+    expect(familyOk.ok).toBe(true);
+    if (familyOk.ok) expect(familyOk.row.relation_type).toBe("family");
+  });
+
+  it("treats either direction as the same pair and lists both types on that pair", () => {
+    const pair = canonicalRelationshipPair(owner.id, livingFriend.id);
+    const bonds = declaredBondsFromRows(
+      [
+        { ...pair, relation_type: "friend" },
+        { person_a: pair.person_b, person_b: pair.person_a, relation_type: "colleague" },
+        { ...pair, relation_type: HONOR_RELATION_TYPE },
+      ],
+      owner.id
+    );
+    expect(bonds).toEqual([
+      { otherId: livingFriend.id, relationType: "friend" },
+      { otherId: livingFriend.id, relationType: "colleague" },
+    ]);
+    expect(declaredBondExists(bonds, livingFriend.id, "friend")).toBe(true);
+    expect(declaredBondExists(bonds, livingFriend.id, "partner")).toBe(false);
+    expect(DECLARED_BOND_TYPES).not.toContain(HONOR_RELATION_TYPE);
+  });
+
+  it("refuses a self-loop", () => {
+    expect(
+      buildRelationshipInsert({
+        ownerId: "owner-aaa",
+        personAId: owner.id,
+        personBId: owner.id,
+        relationType: "friend",
+        personA: owner,
+        personB: owner,
+        now: NOW,
+      })
+    ).toEqual({ ok: false, reason: "self" });
   });
 });

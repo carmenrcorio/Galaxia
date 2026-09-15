@@ -5,7 +5,7 @@
  * state. A blank return is a bug report waiting to happen.
  */
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BASE_BIRTH_INPUT } from "./birth-fields";
 import { ChartGridSection, CHART_GRID_EMPTY } from "./groups/chart-grid-section";
@@ -112,8 +112,10 @@ describe("RelationalTransitFeed formerly-null states", () => {
     try {
       render(<RelationalTransitFeed ownerId="owner-1" />);
       expect(screen.getByText(RELATIONAL_TRANSIT_FEED_LOADING)).toBeTruthy();
-      await vi.advanceTimersByTimeAsync(8000);
-      expect(await screen.findByText(RELATIONAL_TRANSIT_FEED_ERROR)).toBeTruthy();
+      await act(async () => {
+        vi.advanceTimersByTime(8000);
+      });
+      expect(screen.getByText(RELATIONAL_TRANSIT_FEED_ERROR)).toBeTruthy();
       expect(screen.getByRole("button", { name: RELATIONAL_TRANSIT_FEED_RETRY })).toBeTruthy();
     } finally {
       vi.useRealTimers();

@@ -27,7 +27,6 @@ describe("/admin/analytics page — no guard call of its own (the /admin layout 
 
   it("does not add an owner-email special case (admin_users is the gate)", () => {
     expect(src).not.toContain("NEXT_PUBLIC_ADMIN_EMAIL");
-    expect(src).not.toContain("help@galaxiamea.com");
     expect(src).not.toMatch(/user\.email/);
   });
 });

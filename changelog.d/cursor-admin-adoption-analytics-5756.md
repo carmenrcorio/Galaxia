@@ -9,3 +9,5 @@
 `[ADDED]` **Service-role-only access on the view.** Views cannot carry RLS. Same revoke-from-`public`/`anon`/`authenticated` belt as `admin_users`, then `grant select` to `service_role` only. The view stays security_definer (Postgres default) so it can read `auth.users`; `security_invoker` would fail because `service_role` has no SELECT there.
 
 `[ADDED]` **`/admin/analytics`** (`apps/web/app/admin/analytics/page.tsx`). Server component, `force-dynamic` / `revalidate = 0`, queries the view through a service-role client (`SUPABASE_SERVICE_ROLE_KEY`). Five number tables matching the metric groups, gold this-week deltas, a last-refreshed UTC timestamp, and a Refresh button (`router.refresh()`). Layout nav adds an Adoption link. Counts only: never a person name, note body, or Vela message.
+
+`[CHANGED]` **The local `auth.users` replay stub** (`apps/web/lib/test-utils/auth-schema-stub.sql`) now includes `last_sign_in_at` and `deleted_at`, which GoTrue has and which `admin_adoption_metrics` reads. Without them, from-scratch replay of `20260915021648` dies (`column "deleted_at" does not exist`).

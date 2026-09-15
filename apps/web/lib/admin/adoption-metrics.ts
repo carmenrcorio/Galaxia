@@ -141,7 +141,7 @@ export async function readAdminAdoptionMetrics(
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("admin_adoption_metrics returned no row");
-  return parseAdminAdoptionMetrics(data as Record<string, unknown>);
+  return parseAdminAdoptionMetrics(data as unknown as Record<string, unknown>);
 }
 
 export function formatCount(n: number): string {

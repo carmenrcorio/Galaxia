@@ -1,6 +1,6 @@
 "use client";
 
-import { isMinorForSafety, orderPair, suggestPinTheme, sunSignFromChart, type PinThemeId } from "@galaxia/core";
+import { isMinorForSafety, orderPair, suggestPinTheme, sunSignFromChart, type PinThemeId, DEFAULT_FETCH_TIMEOUT_MS, VELA_FETCH_TIMEOUT_MS, isFetchTimeoutError, withTimeout } from "@galaxia/core";
 import { detectCrisisLanguage, splitVelaReply } from "@galaxia/vela";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -8,8 +8,9 @@ import { InitialAvatar } from "../../../components/initial-avatar";
 import { PinThemePicker } from "../../../components/pin-theme-picker";
 import { Spinner } from "../../../components/spinner";
 import { publicEnv } from "../../../lib/env";
-import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
+import { EMPTY_STATE_WELCOME_HREF } from "../../../lib/nav-links";
 import { updateNoteTheme } from "../../../lib/record";
+import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 type VelaMode = "ask" | "shared";
 type Scope     = "person" | "pair" | "group";
@@ -26,6 +27,25 @@ const minorOf = (p: PersonLite | null | undefined) =>
 interface ChatLine   { role: "user" | "vela"; text: string; suggestions?: string[]; withdrawnReason?: string | null; }
 
 const PRIVACY_CAPTION = "Private by default · no private notes in shared mode · consent required for shared threads";
+
+// FOUNDER-REVIEW: Vela roster is loading.
+const VELA_ROSTER_LOADING = "Loading the people Vela can talk about.";
+// FOUNDER-REVIEW: Vela people fetch failed or timed out.
+const VELA_ROSTER_ERROR = "Vela could not load your people. Try again.";
+const VELA_ROSTER_RETRY = "Try again";
+// FOUNDER-REVIEW: empty constellation on Vela.
+const VELA_NO_PEOPLE = "Add someone to your constellation before you can ask Vela.";
+const VELA_NO_PEOPLE_ACTION = "Add someone";
+// FOUNDER-REVIEW: empty groups picker.
+const VELA_NO_GROUPS = "Create a group first. Then you can ask about it here.";
+// FOUNDER-REVIEW: send timed out.
+const VELA_SEND_TIMEOUT = "Vela did not answer in time. Check your connection and try again.";
+// FOUNDER-REVIEW: send failed without a timeout.
+const VELA_SEND_NETWORK = "Network error. Check your connection and try again.";
+// FOUNDER-REVIEW: consent save failed.
+const VELA_CONSENT_ERROR = "Consent could not be saved. Try again.";
+// FOUNDER-REVIEW: pin failed.
+const VELA_PIN_FAILED = "This insight could not be pinned. Try again.";
 
 const SUGGESTED_PROMPTS = [
   "What do we need most from each other?",
@@ -53,6 +73,9 @@ export default function VelaPage() {
   const [relType, setRelType]   = useState("general");
   const [people, setPeople]     = useState<PersonLite[]>([]);
   const [groups, setGroups]     = useState<GroupLite[]>([]);
+  const [rosterLoading, setRosterLoading] = useState(true);
+  const [rosterError, setRosterError] = useState(false);
+  const [rosterReload, setRosterReload] = useState(0);
   const [subjectId, setSubjectId] = useState<string | null>(null);
   const [pairId, setPairId]     = useState<string | null>(null);
   const [groupId, setGroupId]   = useState<string | null>(null);
@@ -131,6 +154,10 @@ export default function VelaPage() {
   useEffect(() => {
     if (!boot) return;
     const load = async () => {
+      setRosterLoading(true);
+      setRosterError(false);
+      try {
+        await withTimeout((async () => {
       const [{ data: ud }, { data: sd }] = await Promise.all([
         supabase.auth.getUser(), supabase.auth.getSession()
       ]);
@@ -196,9 +223,15 @@ export default function VelaPage() {
         if (gd?.[0]) setGroupId(gd[0].id as string);
       }
       restoringRef.current = false;
+        })(), DEFAULT_FETCH_TIMEOUT_MS);
+      } catch {
+        setRosterError(true);
+      } finally {
+        setRosterLoading(false);
+      }
     };
     void load();
-  }, [supabase, boot]);
+  }, [supabase, boot, rosterReload]);
 
   useEffect(() => {
     chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" });
@@ -251,7 +284,7 @@ export default function VelaPage() {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({ action: "consent", mode, threadId })
     });
-    setStatus(res.ok ? "Consent captured for this thread." : "Unable to save consent.");
+    setStatus(res.ok ? "Consent captured for this thread." : VELA_CONSENT_ERROR);
   }
 
   async function sendMessage(prefill?: string) {
@@ -292,7 +325,7 @@ export default function VelaPage() {
     setLines(prev => [...prev, { role: "user", text: userText }]);
 
     try {
-      const res = await fetch(functionUrl, {
+      const res = await withTimeout(fetch(functionUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
@@ -302,7 +335,7 @@ export default function VelaPage() {
           groupId: scope === "group" ? groupId : undefined,
           userMessage: userText
         })
-      });
+      }), VELA_FETCH_TIMEOUT_MS);
       const nextTid = res.headers.get("x-thread-id");
       if (nextTid) setThreadId(nextTid);
 
@@ -348,8 +381,8 @@ export default function VelaPage() {
         next[next.length - 1] = { role: "vela", text: finalBody || streamed.trim(), suggestions };
         return next;
       });
-    } catch {
-      setLines(prev => [...prev, { role: "vela", text: "Network error. Check your connection and try again." }]);
+    } catch (err) {
+      setLines(prev => [...prev, { role: "vela", text: isFetchTimeoutError(err) ? VELA_SEND_TIMEOUT : VELA_SEND_NETWORK }]);
     } finally { setSending(false); }
   }
 
@@ -374,7 +407,7 @@ export default function VelaPage() {
       setPinnedKeys(prev => new Set(prev).add(idx));
       setPinnedByIdx(prev => ({ ...prev, [idx]: { id: data.id as string, theme } }));
     }
-    else setStatus(error?.message ?? "Pin failed");
+    else setStatus(VELA_PIN_FAILED);
   }
 
   async function changePinnedTheme(idx: number, theme: PinThemeId | null) {
@@ -434,7 +467,19 @@ export default function VelaPage() {
             {scope !== "group"
               ? (
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                  {people.map((p) => {
+                  {rosterLoading ? (
+                    <p className="muted" style={{ margin: 0, minHeight: 40 }}>{VELA_ROSTER_LOADING}</p>
+                  ) : rosterError ? (
+                    <div>
+                      <p className="muted" style={{ margin: 0 }}>{VELA_ROSTER_ERROR}</p>
+                      <button type="button" className="pill-link" onClick={() => setRosterReload((n) => n + 1)}>{VELA_ROSTER_RETRY}</button>
+                    </div>
+                  ) : people.length === 0 ? (
+                    <div>
+                      <p className="muted" style={{ margin: 0 }}>{VELA_NO_PEOPLE}</p>
+                      <Link href={EMPTY_STATE_WELCOME_HREF as never} className="pill-link">{VELA_NO_PEOPLE_ACTION}</Link>
+                    </div>
+                  ) : people.map((p) => {
                     const selected = subjectId === p.id;
                     return (
                       <button
@@ -474,7 +519,16 @@ export default function VelaPage() {
               )
               : null}
             {scope === "group"
-              ? <select className="field" style={{ borderRadius: 14, marginBottom: 8 }}
+              ? rosterLoading ? (
+                  <p className="muted" style={{ margin: "0 0 8px" }}>{VELA_ROSTER_LOADING}</p>
+                ) : rosterError ? (
+                  <div style={{ marginBottom: 8 }}>
+                    <p className="muted" style={{ margin: 0 }}>{VELA_ROSTER_ERROR}</p>
+                    <button type="button" className="pill-link" onClick={() => setRosterReload((n) => n + 1)}>{VELA_ROSTER_RETRY}</button>
+                  </div>
+                ) : groups.length === 0
+                ? <p className="muted" style={{ margin: "0 0 8px" }}>{VELA_NO_GROUPS}</p>
+                : <select className="field" style={{ borderRadius: 14, marginBottom: 8 }}
                   value={groupId ?? ""}
                   onChange={e => setGroupId(e.target.value)}>
                   {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}

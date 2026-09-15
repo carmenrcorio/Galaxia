@@ -10,10 +10,12 @@ import {
   momentRecordBody,
   orderPair,
   suggestPinTheme,
-  type MomentTypeId
+  type MomentTypeId,
+  DEFAULT_FETCH_TIMEOUT_MS,
+  withTimeout
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, Link } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { supabase } from "../../src/lib/supabase";
@@ -43,6 +45,12 @@ const COPY = {
   pinned: "Pinned to their record",
   openRecord: "Open their record",
   noPeople: "Add someone to your constellation before you can save a moment about them.",
+  noPeopleAction: "Add someone",
+  loading: "Loading the people you can save a moment about.",
+  loadError: "The people for this moment could not load. Try again.",
+  retry: "Try again",
+  saveError: "Could not save this moment.",
+  pinFailed: "This reflection could not be pinned. Try again.",
   you: "You"
 };
 
@@ -54,6 +62,9 @@ export default function MomentScreen() {
 
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [charts, setCharts] = useState<Map<string, NatalChart>>(new Map());
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reload, setReload] = useState(0);
   const [personId, setPersonId] = useState<string | null>(presetId ?? null);
   const [momentType, setMomentType] = useState<MomentTypeId | null>(null);
   const [note, setNote] = useState("");
@@ -67,24 +78,38 @@ export default function MomentScreen() {
 
   useEffect(() => {
     if (!session?.user.id) return;
+    let cancelled = false;
     void (async () => {
-      const { data: rows } = await supabase
+      setLoading(true);
+      setLoadError(false);
+      try {
+        await withTimeout((async () => {
+      const { data: rows, error: peopleErr } = await supabase
         .from("people")
         .select("id, display_name, is_self, passed_at")
         .eq("owner_id", session.user.id)
         .order("created_at", { ascending: true });
+      if (peopleErr) throw peopleErr;
       const list = (rows ?? []) as PersonLite[];
       setPeople(list);
       const ids = list.map((p) => p.id);
       if (ids.length === 0) return;
-      const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
+      const { data: chartRows, error: chartErr } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
+      if (chartErr) throw chartErr;
       const next = new Map<string, NatalChart>();
       for (const row of chartRows ?? []) {
         if (row.person_id && row.data) next.set(row.person_id as string, row.data as NatalChart);
       }
       setCharts(next);
+        })(), DEFAULT_FETCH_TIMEOUT_MS);
+      } catch {
+        if (!cancelled) setLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-  }, [session?.user.id]);
+    return () => { cancelled = true; };
+  }, [session?.user.id, reload]);
 
   const save = async () => {
     if (!session?.user.id || !person || !momentType) return;
@@ -122,7 +147,7 @@ export default function MomentScreen() {
     }
     const { data, error } = await supabase.from("notes").insert(row).select("id").single();
     if (error || !data?.id) {
-      setStatus(error?.message ?? "Could not save this moment.");
+      setStatus(COPY.saveError);
       return;
     }
     setSavedId(data.id as string);
@@ -147,7 +172,7 @@ export default function MomentScreen() {
     }
     const { error } = await supabase.from("notes").insert(row);
     if (error) {
-      setStatus(error.message);
+      setStatus(COPY.pinFailed);
       return;
     }
     setPinned(true);
@@ -161,9 +186,33 @@ export default function MomentScreen() {
       <Text style={{ color: tokens.colors.cream, fontSize: 28, fontWeight: "700" }}>{COPY.title}</Text>
       <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>{COPY.dek}</Text>
 
-      {people.length === 0 ? <Text style={{ color: tokens.colors.mist }}>{COPY.noPeople}</Text> : null}
+      {loading ? (
+        <View style={{ minHeight: 220, justifyContent: "center" }}>
+          <Text style={{ color: tokens.colors.mist }}>{COPY.loading}</Text>
+        </View>
+      ) : null}
 
-      {!savedId && people.length > 0 ? (
+      {!loading && loadError ? (
+        <View style={{ minHeight: 220, gap: 12 }}>
+          <Text style={{ color: tokens.colors.mist }}>{COPY.loadError}</Text>
+          <Pressable onPress={() => setReload((n) => n + 1)}>
+            <Text style={{ color: tokens.colors.gold, fontWeight: "600" }}>{COPY.retry}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {!loading && !loadError && people.length === 0 ? (
+        <View style={{ minHeight: 220, gap: 12 }}>
+          <Text style={{ color: tokens.colors.mist }}>{COPY.noPeople}</Text>
+          <Link href="/onboarding" asChild>
+            <Pressable accessibilityRole="link" accessibilityLabel={COPY.noPeopleAction}>
+              <Text style={{ color: tokens.colors.gold, fontWeight: "600" }}>{COPY.noPeopleAction}</Text>
+            </Pressable>
+          </Link>
+        </View>
+      ) : null}
+
+      {!savedId && !loading && !loadError && people.length > 0 ? (
         <View style={{ gap: 14 }}>
           <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>{COPY.person}</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>

@@ -68,6 +68,18 @@ export const MOMENT_OPEN_RECORD_SELF = "Open your record";
 // FOUNDER-REVIEW: authored. Empty constellation.
 export const MOMENT_NO_PEOPLE =
   "Add someone to your constellation before you can save a moment about them.";
+// FOUNDER-REVIEW: empty constellation next action.
+export const MOMENT_NO_PEOPLE_ACTION = "Add someone";
+// FOUNDER-REVIEW: loading people for the moment form.
+export const MOMENT_LOADING = "Loading the people you can save a moment about.";
+// FOUNDER-REVIEW: people fetch failed or timed out.
+export const MOMENT_LOAD_ERROR = "The people for this moment could not load. Try again.";
+// FOUNDER-REVIEW: retry after a people fetch failure.
+export const MOMENT_RETRY = "Try again";
+// FOUNDER-REVIEW: pin write failed.
+export const MOMENT_PIN_FAILED = "This reflection could not be pinned. Try again.";
+// FOUNDER-REVIEW: moment row write failed.
+export const MOMENT_SAVE_FAILED = "Could not save this moment.";
 
 // FOUNDER-REVIEW: authored. Record kind label.
 export const MOMENT_RECORD_KIND = "Moment";

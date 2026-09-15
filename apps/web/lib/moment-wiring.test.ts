@@ -19,6 +19,9 @@ describe("source wiring: The Moment reuses notes and never fabricates a sky", ()
     expect(src).toContain("reflectMoment(");
     expect(src).toContain("saveMoment(");
     expect(src).toContain("pinMomentReflection(");
+    expect(src).toContain("withTimeout");
+    expect(src).toContain("MOMENT_LOAD_ERROR");
+    expect(src).toContain("MOMENT_NO_PEOPLE_ACTION");
     expect(src).not.toContain("vela-chat");
     expect(src).not.toContain("ANTHROPIC");
   });

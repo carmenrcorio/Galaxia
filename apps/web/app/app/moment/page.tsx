@@ -15,7 +15,9 @@ import {
   MOMENT_NOTE_MAX,
   MOMENT_TYPE_IDS,
   type MomentTypeId,
-  type PinThemeId
+  type PinThemeId,
+  DEFAULT_FETCH_TIMEOUT_MS,
+  withTimeout
 } from "@galaxia/core";
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -27,6 +29,12 @@ import {
   MOMENT_DEK,
   MOMENT_EYEBROW,
   MOMENT_NO_PEOPLE,
+  MOMENT_NO_PEOPLE_ACTION,
+  MOMENT_LOADING,
+  MOMENT_LOAD_ERROR,
+  MOMENT_RETRY,
+  MOMENT_PIN_FAILED,
+  MOMENT_SAVE_FAILED,
   MOMENT_NOTE_LABEL,
   MOMENT_NOTE_PLACEHOLDER,
   MOMENT_OPEN_RECORD,
@@ -44,7 +52,7 @@ import {
   MOMENT_TYPE_CHIP_LABELS,
   MOMENT_TYPE_LABEL
 } from "../../../lib/moment-copy";
-import { APP_NAV_BRAND_HREF, personProfileHref } from "../../../lib/nav-links";
+import { APP_NAV_BRAND_HREF, EMPTY_STATE_WELCOME_HREF, personProfileHref } from "../../../lib/nav-links";
 import { pinMomentReflection, saveMoment, updateNoteTheme } from "../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
@@ -91,6 +99,8 @@ function MomentPageInner() {
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [charts, setCharts] = useState<Map<string, NatalChart>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reload, setReload] = useState(0);
   const [personId, setPersonId] = useState<string | null>(presetId);
   const [momentType, setMomentType] = useState<MomentTypeId | null>(null);
   const [note, setNote] = useState("");
@@ -105,29 +115,42 @@ function MomentPageInner() {
   const person = people.find((p) => p.id === personId) ?? null;
 
   useEffect(() => {
+    let cancelled = false;
     void (async () => {
+      setLoading(true);
+      setLoadError(false);
+      try {
+        await withTimeout((async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+      if (!user) { throw new Error("signed-out"); }
       setUserId(user.id);
-      const { data: rows } = await supabase
+      const { data: rows, error: peopleErr } = await supabase
         .from("people")
         .select("id, display_name, is_self, passed_at, birth_precision")
         .eq("owner_id", user.id)
         .order("created_at", { ascending: true });
+      if (peopleErr) throw peopleErr;
       const list = (rows ?? []) as PersonLite[];
       setPeople(list);
       const ids = list.map((p) => p.id);
       if (ids.length > 0) {
-        const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
+        const { data: chartRows, error: chartErr } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
+        if (chartErr) throw chartErr;
         const next = new Map<string, NatalChart>();
         for (const row of chartRows ?? []) {
           if (row.person_id && row.data) next.set(row.person_id as string, row.data as NatalChart);
         }
         setCharts(next);
       }
-      setLoading(false);
+        })(), DEFAULT_FETCH_TIMEOUT_MS);
+      } catch {
+        if (!cancelled) setLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-  }, [supabase]);
+    return () => { cancelled = true; };
+  }, [supabase, reload]);
 
   async function save() {
     if (!userId || !person || !momentType) return;
@@ -161,7 +184,7 @@ function MomentPageInner() {
       reflection: text
     });
     setSaving(false);
-    if (error || !id) { setStatus(error ?? "Could not save this moment."); return; }
+    if (error || !id) { setStatus(MOMENT_SAVE_FAILED); return; }
     setSavedId(id);
     setReflection(text);
   }
@@ -175,7 +198,7 @@ function MomentPageInner() {
       sourceMomentId: savedId,
       reflection
     });
-    if (error || !id) { setStatus(error ?? "Pin failed"); return; }
+    if (error || !id) { setStatus(MOMENT_PIN_FAILED); return; }
     setPinnedId(id);
     setPinTheme(theme);
   }
@@ -184,7 +207,7 @@ function MomentPageInner() {
     if (!userId || !pinnedId) return;
     setPinTheme(theme);
     const { error } = await updateNoteTheme(supabase, userId, pinnedId, theme);
-    if (error) setStatus(error);
+    if (error) setStatus(MOMENT_PIN_FAILED);
   }
 
   const others = people.filter((p) => !p.is_self);
@@ -198,13 +221,31 @@ function MomentPageInner() {
         <p className="muted">{MOMENT_DEK}</p>
       </div>
 
-      {loading ? <p className="muted">Loading…</p> : null}
-
-      {!loading && people.length === 0 ? (
-        <p className="muted">{MOMENT_NO_PEOPLE}</p>
+      {loading ? (
+        <section className="glass-card async-frame--form" aria-busy="true" aria-live="polite">
+          <p className="muted" style={{ margin: 0 }}>{MOMENT_LOADING}</p>
+        </section>
       ) : null}
 
-      {!loading && people.length > 0 && !savedId ? (
+      {!loading && loadError ? (
+        <section className="glass-card async-frame--form" aria-live="polite">
+          <p className="muted" style={{ margin: 0 }}>{MOMENT_LOAD_ERROR}</p>
+          <button type="button" className="btn-primary" style={{ marginTop: 14 }} onClick={() => setReload((n) => n + 1)}>
+            {MOMENT_RETRY}
+          </button>
+        </section>
+      ) : null}
+
+      {!loading && !loadError && people.length === 0 ? (
+        <section className="glass-card async-frame--form">
+          <p className="muted" style={{ margin: 0 }}>{MOMENT_NO_PEOPLE}</p>
+          <Link href={EMPTY_STATE_WELCOME_HREF as never} className="btn-primary" style={{ marginTop: 14 }}>
+            {MOMENT_NO_PEOPLE_ACTION}
+          </Link>
+        </section>
+      ) : null}
+
+      {!loading && !loadError && people.length > 0 && !savedId ? (
         <section className="glass-card fade-in" style={{ display: "grid", gap: 18 }}>
           <div>
             <p className="muted" style={{ fontSize: ".62rem", letterSpacing: ".1em", textTransform: "uppercase", margin: "0 0 8px" }}>

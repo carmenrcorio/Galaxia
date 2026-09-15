@@ -136,6 +136,16 @@ describe("post template wiring", () => {
   const card = readFileSync(CARD, "utf8");
   const css = readFileSync(CSS, "utf8");
 
+  it("renders the hero below the title and before the byline, with CLS-safe 1200x630 sizing", () => {
+    expect(page.indexOf("article-title")).toBeLessThan(page.indexOf("article-hero"));
+    expect(page.indexOf("article-hero")).toBeLessThan(page.indexOf("article-byline"));
+    expect(page).toContain("width={1200}");
+    expect(page).toContain("height={630}");
+    expect(css).toMatch(
+      /\.article-hero img \{[\s\S]*max-width:\s*100%;[\s\S]*aspect-ratio:\s*1200\s*\/\s*630/
+    );
+  });
+
   it("renders byline, date, and read time on the post page itself", () => {
     expect(page).toContain("article-byline");
     expect(page).toContain("formatPostDate");

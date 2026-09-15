@@ -20,7 +20,7 @@ describe("homepage outcome-led copy", () => {
     expect(HOMEPAGE_DESCRIPTION.includes("\u2014")).toBe(false);
   });
 
-  it("renders the headline, subheading, supporting line, and free-chart CTA", () => {
+  it("renders the headline, unified value proposition, and free-chart CTA", () => {
     const src = read("components/marketing/hero.tsx");
     expect(src).toContain("Better understand the people in your life");
     expect(src).not.toContain("Better understand the people in your life.");
@@ -28,12 +28,23 @@ describe("homepage outcome-led copy", () => {
     expect(src).toContain("Yes, it uses astrology. We won't tell you to avoid Geminis, we'll tell you how to talk to one.");
     expect(src).not.toContain("Yes, it uses astrology. No, it will not tell you to avoid Geminis.");
     expect(src).not.toContain("Galaxia builds a real chart for every person in your life, your partner,");
-    expect(src).toContain("No card. Works with just a birth date.");
+    expect(src).toContain("No card required · Works with just a birth date");
+    expect(src).not.toContain("No card. Works with just a birth date.");
     expect(src).not.toContain("The sky has been used to explain ourselves for three thousand years.");
     expect(src).not.toContain("We pointed it at the people we love instead.");
     const withoutComments = src.replace(/\/\*[\s\S]*?\*\//g, "");
     expect(withoutComments).not.toContain("The night sky belongs to everyone.");
     expect(withoutComments).not.toContain("Every app like this is about you.");
+    const copyIdx = withoutComments.indexOf("Build a real chart for your partner");
+    const defenseIdx = withoutComments.indexOf("Yes, it uses astrology.");
+    const ctaIdx = withoutComments.indexOf("{HERO_PRIMARY_CTA.label}");
+    const noteIdx = withoutComments.indexOf("No card required · Works with just a birth date");
+    const loginIdx = withoutComments.indexOf("{MARKETING_NAV_LOGIN.label}");
+    expect(copyIdx).toBeGreaterThan(-1);
+    expect(defenseIdx).toBeGreaterThan(copyIdx);
+    expect(ctaIdx).toBeGreaterThan(defenseIdx);
+    expect(noteIdx).toBeGreaterThan(ctaIdx);
+    expect(loginIdx).toBeGreaterThan(noteIdx);
     expect(HERO_PRIMARY_CTA).toEqual({ href: "/chart", label: "See someone's chart free" });
     expect(MARKETING_NAV_LOGIN).toEqual({ href: "/login", label: "Log in" });
   });

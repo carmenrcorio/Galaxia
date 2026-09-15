@@ -6,9 +6,11 @@ import { QuickChartEntry } from "./quick-chart-entry";
 /**
  * Hero — outcome-led copy. The poetic kicker ("The night sky belongs to
  * everyone. Yours doesn't.") moved to WhySection on /why-galaxia so it is
- * not lost. Primary CTA is the public free chart; Log in and See how it
- * works keep their existing destinations. Quick Chart mini-form still sits
- * under the grid as the no-signup try-it entry.
+ * not lost. Premise (chart-for-each-person + anti-horoscope defense) lives
+ * in the copy block so a visitor can read it before the CTA. Only the
+ * friction reducer sits under the button. Log in and See how it works are
+ * a separate, lower-emphasis row. Destinations are unchanged. Quick Chart
+ * mini-form still sits under the grid as the no-signup try-it entry.
  *
  * Uses .fade-in (a CSS-only keyframe that plays on mount), not the
  * scroll-triggered .reveal + IntersectionObserver pattern used further down
@@ -31,30 +33,31 @@ export function Hero() {
             {/* FOUNDER-REVIEW: homepage hero headline. */}
             Better understand the people in your life
           </h1>
-          <p className="lede fade-in fade-in-delay-2" style={{ marginTop: 18 }}>
-            {/* FOUNDER-REVIEW: homepage hero subheading. */}
-            Build a real chart for your partner, your mother, your difficult colleague, even the ones you have lost, and learn who they are at their core.
-          </p>
-          <div className="hero-actions fade-in fade-in-delay-3">
-            <div
-              className="hero-cta-primary"
-              style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}
-            >
+          <div className="hero-copy fade-in fade-in-delay-2">
+            <p className="lede">
+              {/* FOUNDER-REVIEW: homepage hero subheading. */}
+              Build a real chart for your partner, your mother, your difficult colleague, even the ones you have lost, and learn who they are at their core.
+            </p>
+            <p className="lede hero-copy-defense">
+              {/* FOUNDER-REVIEW: homepage hero value proposition. */}
+              Yes, it uses astrology. We won't tell you to avoid Geminis, we'll tell you how to talk to one.
+            </p>
+          </div>
+          <div className="hero-cta-stack fade-in fade-in-delay-3">
+            <div className="hero-cta-primary">
               <Link href={HERO_PRIMARY_CTA.href as never} className="btn-primary">{HERO_PRIMARY_CTA.label}</Link>
-              <p className="hero-cta-note" style={{ margin: 0, color: "var(--mist2)", fontSize: ".84rem", fontWeight: 400 }}>
-                {/* FOUNDER-REVIEW: homepage hero supporting line. */}
-                Yes, it uses astrology. We won't tell you to avoid Geminis, we'll tell you how to talk to one.
-              </p>
-              <p className="hero-cta-note" style={{ margin: 0, color: "var(--mist2)", fontSize: ".84rem", fontWeight: 400 }}>
+              <p className="hero-cta-note">
                 {/* FOUNDER-REVIEW: line under the free-chart CTA. */}
-                No card. Works with just a birth date.
+                No card required · Works with just a birth date
               </p>
             </div>
-            <Link href={MARKETING_NAV_LOGIN.href as never} className="pill-link hero-login-btn">{MARKETING_NAV_LOGIN.label}</Link>
-            <Link href={HERO_HOW_IT_WORKS.href as never} className="hero-scroll-cue">
-              <span>{HERO_HOW_IT_WORKS.label}</span>
-              <ArrowDown />
-            </Link>
+            <div className="hero-secondary">
+              <Link href={MARKETING_NAV_LOGIN.href as never} className="pill-link">{MARKETING_NAV_LOGIN.label}</Link>
+              <Link href={HERO_HOW_IT_WORKS.href as never} className="hero-scroll-cue">
+                <span>{HERO_HOW_IT_WORKS.label}</span>
+                <ArrowDown />
+              </Link>
+            </div>
           </div>
         </div>
         <div className="constellation fade-in fade-in-delay-2">

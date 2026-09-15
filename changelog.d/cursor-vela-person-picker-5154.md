@@ -6,4 +6,4 @@
 
 `[DECISION]` `GroupPickerField` is a sibling of `PersonPickerField`, not a mode on it, because groups have no minor-safety label. The people query now selects `relation`; sun still comes from charts (`sunSign`) and is mapped to `sun` on `PersonPickerOption`. No Compare, chat, mode, composer, or starfield changes.
 
-`[TESTED]` `pnpm typecheck` and `pnpm test` from the repo root. Web tests cover `VelaFocusPickers` slot counts, disabled counterparts, group picker (not a native select), and `velaDefaultSubjectId` with a mocked `initialComparePairIds`. Twelve screenshots (six focus states at 375px and 1280px) are attached to the PR.
+`[TESTED]` `pnpm typecheck` 6/6. `pnpm test` green: web 1471 (including VelaFocusPickers, GroupPickerField, vela-roster, and vela-selector-wiring), astro 396, core 317, vela 28, mobile 83. Twelve screenshots (six focus states at 375px and 1280px) are attached to the PR. No horizontal overflow at 375px. No 100-person test profile exists in this environment, so that scale check was skipped. Temporary `__demo` seed and middleware bypass were removed before this note.

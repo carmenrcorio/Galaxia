@@ -212,14 +212,16 @@ describe("BUG 3 — exact birth refuses without timezone; low-precision still sa
     expect(built.birth.dateUTC).toBe("1955-01-01T00:00:00.000Z");
   });
 
-  it("wiring: onboarding imports shared buildBirthInput/searchPlaces; local birth.ts is gone", () => {
-    const src = readFileSync(resolve(__dirname, "../../app/(app)/onboarding.tsx"), "utf8");
-    expect(src).toContain("buildBirthInput");
-    expect(src).toContain("searchPlaces");
-    expect(src).toContain('from "@galaxia/astro"');
-    expect(src).not.toContain('from "../src/lib/birth"');
-    expect(src).toContain("tzOffsetMin");
-    expect(src).toContain("birthPlace");
+  it("wiring: persistPerson uses shared buildBirthInput; onboarding still searches places; local birth.ts is gone", () => {
+    const onboarding = readFileSync(resolve(__dirname, "../../app/(app)/onboarding.tsx"), "utf8");
+    const persist = readFileSync(resolve(__dirname, "./persist-person.ts"), "utf8");
+    expect(persist).toContain("buildBirthInput");
+    expect(persist).toContain('from "@galaxia/astro"');
+    expect(onboarding).toContain("searchPlaces");
+    expect(onboarding).toContain('from "@galaxia/astro"');
+    expect(onboarding).not.toContain('from "../src/lib/birth"');
+    expect(onboarding).toContain("tzOffsetMin");
+    expect(onboarding).toContain("birthPlace");
 
     let deleted = false;
     try {

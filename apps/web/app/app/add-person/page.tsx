@@ -2,24 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { AddPersonForm } from "../../../components/add-person-form";
+import { AddPersonForm, AskAfterAdd, type AddPersonSavedInfo } from "../../../components/add-person-form";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 /**
  * Standalone add-person entry — not onboarding.
  * Reached from "+ Add person" on /app. Shares AddPersonForm with /welcome
  * step 2, but deliberately omits StepProgress, "Onboarding" eyebrow, and
- * welcome framing.
+ * welcome framing. Submit stays on this screen so the ask can happen now.
  */
 export default function AddPersonPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lastSaved, setLastSaved] = useState<{
-    displayName: string;
-    personId: string;
-    deferred: boolean;
-  } | null>(null);
+  const [lastSaved, setLastSaved] = useState<AddPersonSavedInfo | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -69,10 +65,13 @@ export default function AddPersonPage() {
             <section className="glass-card fade-in fade-in-delay-1">
               <p className="success" style={{ marginBottom: 12 }}>
                 {lastSaved.deferred
-                  // FOUNDER-REVIEW: rewritten (no U+2014).
-                  ? `${lastSaved.displayName} is in your sky: you can add birth details whenever you're ready.`
+                  // FOUNDER-REVIEW: success copy. Ask now lives on this screen.
+                  ? `${lastSaved.displayName} is in your sky. You can send them a link from this screen, or add a date whenever you're ready.`
                   : `${lastSaved.displayName} is in your constellation.`}
               </p>
+              <div style={{ marginBottom: 14 }}>
+                <AskAfterAdd userId={userId} info={lastSaved} />
+              </div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <Link className="btn-primary" href="/app">
                   Back to constellation

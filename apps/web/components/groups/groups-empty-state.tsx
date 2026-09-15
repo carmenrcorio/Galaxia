@@ -11,7 +11,8 @@
 
 import { sunSignFromChart } from "@galaxia/core";
 import Link from "next/link";
-import { InitialAvatar } from "../initial-avatar";
+import { useState } from "react";
+import { EMPTY_STATE_WELCOME_HREF } from "../../lib/nav-links";
 import {
   GROUPS_CREATE_REQUIREMENT,
   GROUPS_EMPTY_ADD_SOMEONE,
@@ -24,7 +25,8 @@ import {
   groupsEmptyPrefillPeople,
 } from "../../lib/groups-copy";
 import { exampleGroupReading } from "../../lib/groups-example";
-import { EMPTY_STATE_WELCOME_HREF } from "../../lib/nav-links";
+import { AddPersonForm, AskAfterAdd, type AddPersonSavedInfo } from "../add-person-form";
+import { InitialAvatar } from "../initial-avatar";
 import { GroupReadingBody } from "./group-reading-body";
 
 export interface EmptyStatePerson {
@@ -37,9 +39,12 @@ export interface EmptyStatePerson {
 interface GroupsEmptyStateProps {
   people: EmptyStatePerson[];
   onBuildWithPeople: (personIds: string[]) => void;
+  userId?: string | null;
+  onPersonAdded?: (info: AddPersonSavedInfo) => void;
 }
 
-export function GroupsEmptyState({ people, onBuildWithPeople }: GroupsEmptyStateProps) {
+export function GroupsEmptyState({ people, onBuildWithPeople, userId, onPersonAdded }: GroupsEmptyStateProps) {
+  const [saved, setSaved] = useState<AddPersonSavedInfo | null>(null);
   if (people.length >= 3) {
     const prefill = groupsEmptyPrefillPeople(people);
     const names = prefill.map((p) => p.display_name);
@@ -111,6 +116,24 @@ export function GroupsEmptyState({ people, onBuildWithPeople }: GroupsEmptyState
         <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.6, margin: "0 0 14px" }}>
           {status}
         </p>
+        {userId ? (
+          <div style={{ marginBottom: 16 }}>
+            <AddPersonForm
+              userId={userId}
+              idPrefix="groups-add"
+              showStatus={false}
+              onSaved={(info) => {
+                setSaved(info);
+                onPersonAdded?.(info);
+              }}
+            />
+            {saved ? (
+              <div style={{ marginTop: 12 }}>
+                <AskAfterAdd userId={userId} info={saved} />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <Link href={EMPTY_STATE_WELCOME_HREF as never} className="btn-primary" style={{ display: "inline-flex", justifyContent: "center" }}>
           {GROUPS_EMPTY_ADD_SOMEONE}
         </Link>

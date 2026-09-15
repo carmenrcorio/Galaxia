@@ -523,7 +523,18 @@ export function EditPersonPanel({
       {input.precision !== "exact" && userId && !usesAncientLight(person) ? (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(183,154,216,.1)" }}>
           <p className="muted" style={{ fontSize: ".76rem", marginBottom: 8 }}>Don't have their exact details? Let them fill it in:</p>
-          <AskBirthData personId={person.id} personName={person.display_name} userId={userId} />
+          <AskBirthData
+            personId={person.id}
+            personName={person.display_name}
+            userId={userId}
+            isMinor={isMinorForSafety({
+              isMinor: person.is_minor,
+              birthDate: person.birth_date,
+              birthPrecision: person.birth_precision
+            })}
+            birthDate={person.birth_date}
+            birthPrecision={person.birth_precision}
+          />
           <div style={{ marginTop: 10 }}>
             <ConnectInviteButton person={person} />
           </div>

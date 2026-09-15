@@ -42,6 +42,7 @@ describe("chart precision tiers", () => {
     expect(CHART_PRECISION_LADDER_INTRO).toMatch(/real chart/);
     expect(CHART_PRECISION_LADDER_INTRO).not.toMatch(/not a real/);
     expect(CHART_PRECISION_NONE_UNLOCKS).toMatch(/year, date, or exact time/);
+    expect(CHART_PRECISION_NONE_UNLOCKS).toMatch(/send them a link from this screen/);
   });
 });
 

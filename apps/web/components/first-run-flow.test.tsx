@@ -109,11 +109,19 @@ function makeClient() {
             created_at: new Date(2026, 0, 1 + peopleRows.length).toISOString(),
           };
           peopleRows.push(row);
+          const result = { data: { id: row.id }, error: null };
           return {
-            select: () => ({ single: () => Promise.resolve({ data: { id: row.id }, error: null }) }),
+            select: () => ({ single: () => Promise.resolve(result) }),
+            then: (onFulfilled: (value: typeof result) => unknown, onRejected?: (r: unknown) => unknown) =>
+              Promise.resolve(result).then(onFulfilled, onRejected),
           };
         }
-        return { select: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) };
+        const result = { data: null, error: null };
+        return {
+          select: () => ({ single: () => Promise.resolve(result) }),
+          then: (onFulfilled: (value: typeof result) => unknown, onRejected?: (r: unknown) => unknown) =>
+            Promise.resolve(result).then(onFulfilled, onRejected),
+        };
       },
       upsert(payload: Record<string, unknown>) {
         if (table === "charts") {
@@ -222,6 +230,7 @@ describe("first-run orientation: the five steps", () => {
     // The shared form's own field copy, which lives on AddPersonForm.
     expect(screen.getByPlaceholderText("Their name")).toBeTruthy();
     expect(screen.getByText(/This person is a minor \(under 18\)/)).toBeTruthy();
+    expect(screen.getByText(/Ask them for their birth details/)).toBeTruthy();
   });
 
   it("does not offer the tier that computes no chart, because step 3 needs one", async () => {

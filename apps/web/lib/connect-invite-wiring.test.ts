@@ -144,9 +144,13 @@ describe("constellation connect UI wiring", () => {
 
   it("AskBirthData still writes birth_data and never constellation_connect", () => {
     const ask = read("apps/web/components/ask-birth-data.tsx");
-    expect(ask).toContain('kind: "birth_data"');
+    const ensure = read("apps/web/lib/ensure-birth-data-invite.ts");
+    const core = read("packages/core/src/birth-data-invite.ts");
+    expect(ensure).toContain("birthDataInviteInsertRow");
+    expect(ask).toContain("ensureBirthDataInvite");
+    expect(core).toContain("/invite/");
     expect(ask).not.toContain("constellation_connect");
-    expect(ask).toContain("/invite/");
+    expect(ensure).not.toContain("constellation_connect");
   });
 
   it("authored connect copy is tagged FOUNDER-REVIEW and has no em dash", () => {

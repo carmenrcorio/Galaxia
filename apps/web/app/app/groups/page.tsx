@@ -627,7 +627,17 @@ function GroupsPageInner() {
           onCreateNew={startNewGroup}
         />
       ) : showEmptyLanding ? (
-        <GroupsEmptyState people={people} onBuildWithPeople={buildFromExistingPeople} />
+        <GroupsEmptyState
+          people={people}
+          onBuildWithPeople={buildFromExistingPeople}
+          userId={userId}
+          onPersonAdded={(info) => {
+            setPeople((prev) => {
+              if (prev.some((p) => p.id === info.personId)) return prev;
+              return [{ id: info.personId, display_name: info.displayName }, ...prev];
+            });
+          }}
+        />
       ) : null}
 
       {showWorkspace ? (

@@ -19,23 +19,15 @@ export type PersistPersonRelation = CreatePersonRelation;
 
 export type PersistPersonResult = {
   personId: string;
-  /** Null when birth precision is `none` — no chart was computed. */
   natal: NatalChart | null;
-  /** What isMinorForSafety decided, after the birth-date backstop. */
   isMinor: boolean;
-  /** The relation actually stored, which is not always the one requested. */
   relation: PersistPersonRelation;
-  /**
-   * Set when a romantic relation was refused because this person is a minor.
-   * The caller MUST surface it: quietly storing something other than what the
-   * user chose would be a change we made without admitting to it.
-   */
   refusedRelation: GalaxyPickerRelation | null;
 };
 
 /**
- * Add a person (self or other) and, when birth data exists, their natal chart.
- * The people insert always goes through `@galaxia/core` createPerson.
+ * Same people-row write as web: createPerson in @galaxia/core, then optional
+ * natal chart. Identical input produces identical people rows.
  */
 export async function persistPerson(
   supabase: SupabaseClient,
@@ -54,12 +46,6 @@ export async function persistPerson(
     isSelf: boolean;
     isMinor: boolean;
     input: BirthFormInput;
-    /**
-     * ISO timestamp when this person is being added in remembrance. Normally
-     * null: the remembrance toggle on an existing profile is the usual path.
-     * The first-run flow sets it at creation because the reader told us there
-     * and then that the person has died.
-     */
     passedAt?: string | null;
   }
 ): Promise<PersistPersonResult> {

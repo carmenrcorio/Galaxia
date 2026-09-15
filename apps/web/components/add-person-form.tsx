@@ -1,13 +1,14 @@
 "use client";
 
 import { type BirthFormInput, type NatalChart } from "@galaxia/astro";
-import { GALAXY_RELATION_PICKER_OPTIONS, type GalaxyPickerRelation } from "@galaxia/core";
+import { ASK_BIRTH_DATA_TOGGLE, GALAXY_RELATION_PICKER_OPTIONS, type GalaxyPickerRelation } from "@galaxia/core";
 import { useEffect, useMemo, useState } from "react";
+import { persistPerson } from "../lib/persist-person";
+import { createSupabaseBrowserClient } from "../lib/supabase/client";
+import { AskBirthData } from "./ask-birth-data";
 import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
 import { CustomCheck } from "./custom-check";
 import { Spinner } from "./spinner";
-import { persistPerson } from "../lib/persist-person";
-import { createSupabaseBrowserClient } from "../lib/supabase/client";
 
 // FOUNDER-REVIEW: picker labels — refine voice before merge.
 const relationOptions = GALAXY_RELATION_PICKER_OPTIONS;
@@ -35,6 +36,8 @@ export type AddPersonSavedInfo = {
   relation: GalaxyPickerRelation;
   /** Non-null when a romantic relation was refused for a minor. Must be shown. */
   refusedRelation: GalaxyPickerRelation | null;
+  /** Whether the pre-submit ask toggle was on. Never true for a minor. */
+  askForBirthData: boolean;
 };
 
 export type AddPersonFormProps = {
@@ -63,12 +66,19 @@ export type AddPersonFormProps = {
   passedAt?: string | null;
   /** Reset the fields after a successful save. Default true. */
   resetOnSave?: boolean;
+  /**
+   * Offer the ask-them toggle on every precision tier. Default true.
+   * Self rows never ask; a caller adding the reader themselves turns this off.
+   */
+  allowAsk?: boolean;
+  /** Prefix so two forms on one page do not share field ids. */
+  idPrefix?: string;
   onSaved?: (info: AddPersonSavedInfo) => void;
   onError?: (message: string) => void;
 };
 
 /**
- * Shared add-person fields: name, relation, minor, birth details.
+ * Shared add-person fields: name, relation, minor, birth details, ask toggle.
  * Mounted by /welcome step 2 (inside onboarding chrome) and by the standalone
  * /app/add-person page (no onboarding framing). Keep field UX here so the two
  * entry points cannot drift.
@@ -85,6 +95,8 @@ export function AddPersonForm({
   allowDeferred = true,
   passedAt = null,
   resetOnSave = true,
+  allowAsk = true,
+  idPrefix = "add-person",
   onSaved,
   onError
 }: AddPersonFormProps) {
@@ -93,6 +105,7 @@ export function AddPersonForm({
   const [relation, setRelation] = useState<GalaxyPickerRelation>(initialRelation);
   const [minor, setMinor] = useState(false);
   const [birth, setBirth] = useState<BirthFormInput>(initialBirth ?? BASE_BIRTH_INPUT);
+  const [askThem, setAskThem] = useState((initialBirth ?? BASE_BIRTH_INPUT).precision === "none");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -107,6 +120,14 @@ export function AddPersonForm({
   useEffect(() => {
     setRelation(initialRelation);
   }, [initialRelation]);
+
+  useEffect(() => {
+    if (minor) {
+      setAskThem(false);
+      return;
+    }
+    if (birth.precision === "none") setAskThem(true);
+  }, [birth.precision, minor]);
 
   const canSave = name.trim().length > 1;
 
@@ -138,11 +159,13 @@ export function AddPersonForm({
         natal: saved.natal,
         isMinor: saved.isMinor,
         relation: saved.relation as GalaxyPickerRelation,
-        refusedRelation: saved.refusedRelation
+        refusedRelation: saved.refusedRelation,
+        askForBirthData: allowAsk && askThem && !saved.isMinor
       };
       if (showStatus) {
         const base = deferred
-          ? `${savedName} is in your sky: open their profile to add a date, or ask them, whenever you're ready.`
+          // FOUNDER-REVIEW: success copy. Ask now lives on this screen.
+          ? `${savedName} is in your sky. You can send them a link from this screen, or add a date whenever you're ready.`
           : `${savedName} is in your constellation.`;
         // A relation we refused is always said out loud. Storing something
         // other than what was chosen and staying quiet about it would be a
@@ -207,7 +230,17 @@ export function AddPersonForm({
         </p>
       </div>
 
-      <BirthFields input={birth} onChange={setBirth} allowNone={allowDeferred} idPrefix="add-person" />
+      <BirthFields input={birth} onChange={setBirth} allowNone={allowDeferred} idPrefix={idPrefix} />
+      {allowAsk && !minor ? (
+        <div style={{ marginTop: 12 }}>
+          <CustomCheck
+            checked={askThem}
+            onChange={setAskThem}
+            label={ASK_BIRTH_DATA_TOGGLE}
+            id={`${idPrefix}-ask-them`}
+          />
+        </div>
+      ) : null}
       <button
         className="btn-primary"
         style={{ marginTop: 14, gap: 8 }}
@@ -220,5 +253,25 @@ export function AddPersonForm({
 
       {showStatus && status ? <p className={status.ok ? "success" : "error"}>{status.text}</p> : null}
     </>
+  );
+}
+
+/** Success-state ask. Hidden for minors. Link is generated when autoCreate is on. */
+export function AskAfterAdd({
+  userId,
+  info
+}: {
+  userId: string;
+  info: Pick<AddPersonSavedInfo, "personId" | "displayName" | "isMinor" | "askForBirthData">;
+}) {
+  if (info.isMinor) return null;
+  return (
+    <AskBirthData
+      personId={info.personId}
+      personName={info.displayName}
+      userId={userId}
+      autoCreate={info.askForBirthData}
+      isMinor={info.isMinor}
+    />
   );
 }

@@ -84,6 +84,17 @@ vi.mock("../lib/supabase/client", () => ({
           upsert: () => Promise.resolve({ error: null }),
         };
       }
+      if (table === "invites") {
+        const chain: Record<string, unknown> = {
+          select() { return chain; },
+          eq() { return chain; },
+          order() { return chain; },
+          limit() { return chain; },
+          maybeSingle: () => Promise.resolve({ data: null, error: null }),
+          insert: () => Promise.resolve({ error: null }),
+        };
+        return chain;
+      }
       return {
         select: () => ({
           eq: () => ({
@@ -174,18 +185,21 @@ describe("SaveToGalaxyButton signed-in constellation save", () => {
     expect(screen.queryByText("Sign up to build your galaxy →")).toBeNull();
   });
 
-  it("saves then opens that person's profile", async () => {
+  it("saves and stays so the ask is reachable without opening edit", async () => {
     render(<SaveToGalaxyButton birthInput={namedInput} defaultName="Maya" />);
     fireEvent.click(await screen.findByRole("button", { name: addToConstellationLabel("Maya") }));
     fireEvent.click(await screen.findByRole("button", { name: CONFIRM_ADD_TO_CONSTELLATION }));
 
     await waitFor(() => {
-      expect(pushed).toEqual([personProfileHref(PERSON_ID)]);
+      expect(screen.getByText(addedToConstellationLine("Maya"))).toBeTruthy();
     });
+    expect(pushed).toEqual([]);
     expect(insertPayload?.display_name).toBe("Maya");
     expect(insertPayload?.owner_id).toBe(USER_ID);
     expect(insertPayload?.is_self).toBe(false);
-    expect(screen.getByText(addedToConstellationLine("Maya"))).toBeTruthy();
+    expect(screen.getByRole("link", { name: "View their profile" }).getAttribute("href")).toBe(
+      personProfileHref(PERSON_ID),
+    );
   });
 
   it("stays on the result when navigateToProfileOnSave is false", async () => {

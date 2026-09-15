@@ -45,6 +45,7 @@ import { CHART_PRECISION_ADD_DATE, isMinorForSafety, orderPair, shouldShowLiveTr
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { AddPersonForm, AskAfterAdd, type AddPersonSavedInfo } from "../../../components/add-person-form";
 import { ChartImageExport, chartExportFilename } from "../../../components/chart-image-export";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES, orientSynastryWheel } from "../../../components/chart-wheel";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
@@ -139,7 +140,8 @@ export default function ComparePage() {
 function ComparePageInner() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const searchParams = useSearchParams();
-  const [userId, setUserId]       = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [inlineSaved, setInlineSaved] = useState<AddPersonSavedInfo | null>(null);
   const [people, setPeople]       = useState<PersonLite[]>([]);
   const [personAId, setPersonAId] = useState<string | null>(null);
   const [personBId, setPersonBId] = useState<string | null>(null);
@@ -621,6 +623,39 @@ function ComparePageInner() {
               </div>
             </div>
           ))}
+          {userId ? (
+            <div style={{ marginTop: 8, paddingTop: 12, borderTop: "1px solid rgba(183,154,216,.1)" }}>
+              <p className="eyebrow" style={{ marginBottom: 8 }}>Add a person</p>
+              <AddPersonForm
+                userId={userId}
+                idPrefix="compare-add"
+                showStatus={false}
+                resetOnSave
+                onSaved={(info) => {
+                  setInlineSaved(info);
+                  setPeople((prev) => {
+                    if (prev.some((p) => p.id === info.personId)) return prev;
+                    return [
+                      {
+                        id: info.personId,
+                        display_name: info.displayName,
+                        relation: info.relation,
+                        birth_date: null,
+                        birth_precision: info.deferred ? "none" : "date",
+                        is_minor: info.isMinor
+                      },
+                      ...prev
+                    ];
+                  });
+                }}
+              />
+              {inlineSaved ? (
+                <div style={{ marginTop: 12 }}>
+                  <AskAfterAdd userId={userId} info={inlineSaved} />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <button className="btn-primary" onClick={() => void runCompare()} disabled={running} style={{ width: "fit-content", gap: 8 }}>
             {running && <Spinner size={13} color="#1a1206" />}
             {running ? "Running…" : "Run comparison"}

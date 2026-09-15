@@ -1,117 +1,104 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BlogCategory, BlogCategorySlug } from "../../lib/blog";
 import { slugify } from "../../lib/slugify";
 import type { AdminPostDetail } from "../../lib/admin/posts";
+import type { BlogImage } from "../../lib/admin/post-images";
+import {
+  countBodyWords,
+  insertImageAfter,
+  moveBlock,
+  parseBodyBlocks,
+  removeBlock,
+  serializeBodyBlocks,
+  shouldWarnBeforeBodySave,
+  type BodyBlock
+} from "../../lib/admin/post-body-blocks";
+import { PostImageChooser } from "./post-image-chooser";
+import { PostImagePicker } from "./post-image-picker";
+
+const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatLastSaved(iso: string): string {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "unknown";
+  const day = String(at.getUTCDate());
+  const month = SHORT_MONTHS[at.getUTCMonth()];
+  const year = at.getUTCFullYear();
+  const hour = String(at.getUTCHours()).padStart(2, "0");
+  const minute = String(at.getUTCMinutes()).padStart(2, "0");
+  return `${day} ${month} ${year}, ${hour}:${minute} UTC`;
+}
 
 /**
  * Create/edit form for one `posts` row, shared by `/admin/posts/new` and
- * `/admin/posts/[id]`. POSTs/PATCHes the guarded `/api/admin/posts[/id]`
- * routes (validate + write + audit log all happen there, not here — this
- * component has no privileged logic of its own, same contract
- * `CompActionButton`/`ResendEmailButton` follow).
+ * `/admin/posts/[slug]`. POSTs/PATCHes the guarded `/api/admin/posts[/id]`
+ * routes (validate + write + audit log all happen there, not here).
  *
- * The body editor is a plain markdown textarea with an "Insert image"
- * button, per the v1 scope this was built for: this repo has
- * `react-markdown`/`remark-gfm` for the READ side (app/[slug]/page.tsx)
- * but no rich-text/WYSIWYG editor dependency, so a full editor would be a
- * new dependency this task didn't ask for. "Insert image" uploads through
- * the same `/api/admin/posts/images` endpoint the hero-image field uses,
- * then splices `![](url)` into the textarea at the current cursor
- * position — enough to author inline images without hand-typing markdown
- * image syntax or a URL.
+ * Photo management is the load-bearing work: hero is chosen from the
+ * `blog-images` bucket or uploaded to `blog-images/photos/`; the body is
+ * a list of heading/paragraph/image blocks that can be reordered and have
+ * images inserted after any block. One explicit Save writes body +
+ * hero_image_url (and the rest of the row). No auto-save.
  */
 export function PostEditorForm({
   mode,
   categories,
-  post
+  post,
+  images
 }: {
   mode: "create" | "edit";
   categories: BlogCategory[];
   post?: AdminPostDetail;
+  images: BlogImage[];
 }) {
   const router = useRouter();
-  const bodyRef = useRef<HTMLTextAreaElement>(null);
-  const heroFileInputRef = useRef<HTMLInputElement>(null);
-  const insertFileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState(post?.title ?? "");
   const [slug, setSlug] = useState(post?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(mode === "edit");
   const [dek, setDek] = useState(post?.dek ?? "");
   const [category, setCategory] = useState<BlogCategorySlug>(post?.category ?? categories[0]?.slug ?? "guides");
-  const [body, setBody] = useState(post?.body ?? "");
+  const [blocks, setBlocks] = useState<BodyBlock[]>(() => parseBodyBlocks(post?.body ?? ""));
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(post?.hero_image_url ?? null);
   const [status, setStatus] = useState<"draft" | "published">(post?.status ?? "draft");
+  const [imageList, setImageList] = useState<BlogImage[]>(images);
 
-  const [heroUploading, setHeroUploading] = useState(false);
-  const [insertUploading, setInsertUploading] = useState(false);
+  const [pickerAfterIndex, setPickerAfterIndex] = useState<number | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(post?.updated_at ?? null);
+
+  const body = serializeBodyBlocks(blocks);
+  const wordCount = countBodyWords(body);
 
   function onTitleChange(value: string) {
     setTitle(value);
     if (!slugTouched) setSlug(slugify(value));
   }
 
-  async function uploadImage(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/admin/posts/images", { method: "POST", body: formData });
-    const responseBody = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
-    if (!res.ok || !responseBody.url) {
-      throw new Error(responseBody.error ?? "Couldn't upload the image. Please try again.");
-    }
-    return responseBody.url;
+  function rememberImage(url: string, name: string) {
+    setImageList((prev) => {
+      if (prev.some((image) => image.url === url)) return prev;
+      const path = name.includes("/") ? name : `photos/${name}`;
+      return [...prev, { path, name: path.split("/").pop() ?? name, url }].sort((a, b) =>
+        a.path.localeCompare(b.path)
+      );
+    });
   }
 
-  async function onHeroFileSelected(file: File | undefined) {
-    if (!file) return;
-    setError(null);
-    setHeroUploading(true);
-    try {
-      const url = await uploadImage(file);
-      setHeroImageUrl(url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't upload the hero image.");
-    } finally {
-      setHeroUploading(false);
-      if (heroFileInputRef.current) heroFileInputRef.current.value = "";
-    }
+  function applyPickedImage(image: { url: string; name: string }, afterIndex: number) {
+    rememberImage(image.url, image.name);
+    setBlocks((prev) => insertImageAfter(prev, afterIndex, image.url, image.name));
   }
 
-  async function onInsertImageFileSelected(file: File | undefined) {
-    if (!file) return;
-    setError(null);
-    setInsertUploading(true);
-    try {
-      const url = await uploadImage(file);
-      const textarea = bodyRef.current;
-      const markdownImage = `![${file.name.replace(/\.[^.]+$/, "")}](${url})`;
-      if (textarea) {
-        const start = textarea.selectionStart ?? body.length;
-        const end = textarea.selectionEnd ?? body.length;
-        const next = `${body.slice(0, start)}${markdownImage}\n${body.slice(end)}`;
-        setBody(next);
-        // Restore focus + caret just after the inserted markdown, next tick
-        // (after React has committed the new value to the textarea).
-        requestAnimationFrame(() => {
-          const caret = start + markdownImage.length + 1;
-          textarea.focus();
-          textarea.setSelectionRange(caret, caret);
-        });
-      } else {
-        setBody((prev) => `${prev}\n${markdownImage}\n`);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't upload the image.");
-    } finally {
-      setInsertUploading(false);
-      if (insertFileInputRef.current) insertFileInputRef.current.value = "";
-    }
+  function onHeroPicked(image: { url: string; name: string }) {
+    rememberImage(image.url, image.name);
+    setHeroImageUrl(image.url);
   }
 
   async function onSave() {
@@ -119,6 +106,12 @@ export function PostEditorForm({
     if (!title.trim()) {
       setError("Title is required.");
       return;
+    }
+    if (shouldWarnBeforeBodySave(body)) {
+      const confirmed = window.confirm(
+        `This body is over 10,000 words (${wordCount.toLocaleString("en-US")}). Saving rewrites the entire body column. Continue?`
+      );
+      if (!confirmed) return;
     }
     setSaving(true);
     try {
@@ -136,12 +129,24 @@ export function PostEditorForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      const responseBody = (await res.json().catch(() => ({}))) as { error?: string };
+      const responseBody = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        post?: AdminPostDetail;
+      };
       if (!res.ok) {
         setError(responseBody.error ?? "Couldn't save the post. Please try again.");
         return;
       }
-      router.push("/admin/posts");
+      const saved = responseBody.post;
+      setLastSavedAt(saved?.updated_at ?? new Date().toISOString());
+      if (mode === "create" && saved?.slug) {
+        router.push(`/admin/posts/${saved.slug}` as never);
+        router.refresh();
+        return;
+      }
+      if (saved?.slug && saved.slug !== slug) {
+        router.replace(`/admin/posts/${saved.slug}` as never);
+      }
       router.refresh();
     } catch {
       setError("Couldn't save the post. Please try again.");
@@ -230,63 +235,130 @@ export function PostEditorForm({
       </div>
 
       <div className="glass-card" style={{ display: "grid", gap: 12 }}>
-        <span className="muted" style={{ fontSize: ".78rem", fontWeight: 600 }}>Hero image</span>
+        <h2 className="admin-editor-section-title">Hero image</h2>
         {heroImageUrl ? (
+          <img
+            src={heroImageUrl}
+            alt=""
+            style={{ width: "100%", maxWidth: 420, borderRadius: 14, border: "1px solid rgba(230,174,108,.2)" }}
+          />
+        ) : (
+          <p className="muted">none set</p>
+        )}
+        <PostImageChooser
+          images={imageList}
+          selectedUrl={heroImageUrl}
+          disabled={busy}
+          onSelectUrl={setHeroImageUrl}
+          onPicked={onHeroPicked}
+        />
+        {heroImageUrl ? (
+          <button type="button" className="pill-link" onClick={() => setHeroImageUrl(null)} disabled={busy}>
+            Remove hero image
+          </button>
+        ) : null}
+      </div>
+
+      <div className="glass-card" style={{ display: "grid", gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+          <h2 className="admin-editor-section-title">Body photo blocks</h2>
+          <p className="muted" style={{ fontSize: ".78rem" }}>
+            {wordCount.toLocaleString("en-US")} {wordCount === 1 ? "word" : "words"}
+          </p>
+        </div>
+
+        {blocks.length === 0 ? (
           <div style={{ display: "grid", gap: 10 }}>
-            <img
-              src={heroImageUrl}
-              alt=""
-              style={{ width: "100%", maxWidth: 420, borderRadius: 14, border: "1px solid rgba(230,174,108,.2)" }}
-            />
-            <div style={{ display: "flex", gap: 10 }}>
-              <button type="button" className="pill-link" onClick={() => heroFileInputRef.current?.click()} disabled={heroUploading}>
-                {heroUploading ? "Uploading…" : "Replace image"}
-              </button>
-              <button type="button" className="pill-link" onClick={() => setHeroImageUrl(null)}>
-                Remove
-              </button>
-            </div>
+            <p className="muted">No body blocks yet.</p>
+            <button type="button" className="pill-link" onClick={() => setPickerAfterIndex(-1)} disabled={busy}>
+              Insert image
+            </button>
           </div>
         ) : (
-          <button type="button" className="pill-link" onClick={() => heroFileInputRef.current?.click()} disabled={heroUploading}>
-            {heroUploading ? "Uploading…" : "Upload hero image"}
-          </button>
+          <ol className="post-block-list">
+            {blocks.map((block, index) => (
+              <li
+                key={block.id}
+                className={dragIndex === index ? "post-block post-block--dragging" : "post-block"}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const from = Number(e.dataTransfer.getData("text/plain"));
+                  setBlocks((prev) => moveBlock(prev, from, index));
+                  setDragIndex(null);
+                }}
+              >
+                <button
+                  type="button"
+                  className="post-block-handle"
+                  draggable
+                  aria-label={`Reorder block ${index + 1}`}
+                  onDragStart={(e) => {
+                    setDragIndex(index);
+                    e.dataTransfer.effectAllowed = "move";
+                    e.dataTransfer.setData("text/plain", String(index));
+                  }}
+                  onDragEnd={() => setDragIndex(null)}
+                >
+                  <span aria-hidden="true">::</span>
+                </button>
+
+                <div className="post-block-body">
+                  {block.kind === "image" && block.url ? (
+                    <div className="post-block-image">
+                      <img src={block.url} alt={block.alt || ""} className="post-block-thumb" />
+                      <p className="muted" style={{ fontSize: ".78rem", wordBreak: "break-all" }}>
+                        {block.alt || "photo"}
+                      </p>
+                      <button
+                        type="button"
+                        className="pill-link"
+                        onClick={() => setBlocks((prev) => removeBlock(prev, index))}
+                        disabled={busy}
+                      >
+                        Remove image
+                      </button>
+                    </div>
+                  ) : (
+                    <textarea
+                      className="field field--rect"
+                      rows={block.kind === "heading" ? 2 : 5}
+                      value={block.markdown}
+                      onChange={(e) => {
+                        const markdown = e.target.value;
+                        setBlocks((prev) =>
+                          prev.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, markdown } : item
+                          )
+                        );
+                      }}
+                      style={{ fontFamily: "var(--mono, monospace)", fontSize: ".88rem", lineHeight: 1.6 }}
+                    />
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  className="pill-link"
+                  onClick={() => setPickerAfterIndex(index)}
+                  disabled={busy}
+                >
+                  Insert image after
+                </button>
+              </li>
+            ))}
+          </ol>
         )}
-        <input
-          ref={heroFileInputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif"
-          style={{ display: "none" }}
-          onChange={(e) => void onHeroFileSelected(e.target.files?.[0])}
-        />
       </div>
 
-      <div className="glass-card" style={{ display: "grid", gap: 10 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span className="muted" style={{ fontSize: ".78rem", fontWeight: 600 }}>Body (Markdown)</span>
-          <button type="button" className="pill-link" onClick={() => insertFileInputRef.current?.click()} disabled={insertUploading}>
-            {insertUploading ? "Uploading…" : "Insert image"}
-          </button>
-          <input
-            ref={insertFileInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-            style={{ display: "none" }}
-            onChange={(e) => void onInsertImageFileSelected(e.target.files?.[0])}
-          />
-        </div>
-        <textarea
-          ref={bodyRef}
-          className="field field--rect"
-          rows={20}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          style={{ fontFamily: "var(--mono, monospace)", fontSize: ".88rem", lineHeight: 1.6 }}
-          placeholder={"## A section heading\n\nA paragraph. **Bold** and *italic* work. Use \"Insert image\" above to add a photo inline."}
-        />
-      </div>
-
-      <div className="glass-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <div className="glass-card" style={{ display: "grid", gap: 14 }}>
+        <h2 className="admin-editor-section-title">Save</h2>
+        <p className="muted">
+          {lastSavedAt ? `Last saved ${formatLastSaved(lastSavedAt)}` : "Not saved yet"}
+        </p>
         <div role="radiogroup" aria-label="Publish status" style={{ display: "flex", gap: 8 }}>
           <button
             type="button"
@@ -305,20 +377,27 @@ export function PostEditorForm({
             Published
           </button>
         </div>
-
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           {mode === "edit" ? (
             <button type="button" className="pill-link" onClick={() => void onDelete()} disabled={busy}>
               {deleting ? "Deleting…" : "Delete post"}
             </button>
           ) : null}
           <button type="button" className="pill-link--gold" onClick={() => void onSave()} disabled={busy}>
-            {saving ? "Saving…" : mode === "create" ? "Create post" : "Save changes"}
+            {saving ? "Saving…" : mode === "create" ? "Create post" : "Save"}
           </button>
         </div>
       </div>
 
       {error ? <p className="error">{error}</p> : null}
+
+      {pickerAfterIndex !== null ? (
+        <PostImagePicker
+          images={imageList}
+          onPick={(image) => applyPickedImage(image, pickerAfterIndex)}
+          onClose={() => setPickerAfterIndex(null)}
+        />
+      ) : null}
     </div>
   );
 }

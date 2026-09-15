@@ -10,9 +10,12 @@ import { StatusPill } from "../../../components/admin/status-pill";
  * Admin post list — mirrors `/admin/users`'s shape (missingEnv guard,
  * service-role read via a `lib/admin/*` module, `glass-card` table,
  * `pill-link` actions) rather than inventing a separate admin design
- * language. Renders behind `app/admin/layout.tsx`'s `requireAdmin()` call —
- * no guard call here, same one-call-per-request convention every other
- * page under `/admin/**` documents for itself.
+ * language. Renders behind `app/admin/layout.tsx`'s `requireAdmin()` call,
+ * the same gate as `/admin/analytics`. No guard call here, same
+ * one-call-per-request convention every other page under `/admin/**`
+ * documents for itself.
+ *
+ * Each row links to `/admin/posts/{slug}` (the photo-block editor).
  */
 export default async function AdminPostsPage() {
   if (!publicEnv.supabaseUrl || !privateEnv.serviceRole) {
@@ -54,9 +57,10 @@ export default async function AdminPostsPage() {
         <div className="glass-card">
           <table className="admin-table admin-table--fixed admin-table--rows-clickable">
             <colgroup>
-              <col style={{ width: "52%" }} />
+              <col style={{ width: "40%" }} />
               <col style={{ width: "16%" }} />
-              <col style={{ width: "20%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "14%" }} />
               <col style={{ width: "12%" }} />
             </colgroup>
             <thead>
@@ -64,13 +68,14 @@ export default async function AdminPostsPage() {
                 <th>Title</th>
                 <th>Status</th>
                 <th>Published</th>
+                <th>Hero</th>
                 <th aria-hidden="true"></th>
               </tr>
             </thead>
             <tbody>
               {posts.length === 0 ? (
                 <tr className="admin-table-row--empty">
-                  <td colSpan={4} className="muted">
+                  <td colSpan={5} className="muted">
                     No posts yet.
                   </td>
                 </tr>
@@ -84,8 +89,9 @@ export default async function AdminPostsPage() {
                         <StatusPill label={status.label} variant={status.variant} />
                       </td>
                       <td>{formatDate(post.published_at)}</td>
+                      <td>{post.hero_image_url ? "set" : "none"}</td>
                       <td>
-                        <Link href={`/admin/posts/${post.id}`} className="admin-row-link" aria-label={`Edit ${post.title}`}>
+                        <Link href={`/admin/posts/${post.slug}` as never} className="admin-row-link" aria-label={`Edit ${post.title}`}>
                           Edit <span aria-hidden="true">→</span>
                         </Link>
                       </td>

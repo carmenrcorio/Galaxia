@@ -7,6 +7,7 @@ import { PendingConnectInvites } from "../../../components/pending-connect-invit
 import { PendingShareLinks } from "../../../components/pending-share-links";
 import { Spinner } from "../../../components/spinner";
 import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "@galaxia/astro";
+import { DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
 import { EMPTY_STATE_WELCOME_HREF } from "../../../lib/nav-links";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
@@ -62,9 +63,16 @@ export default function SettingsPage() {
   const [supportBody, setSupportBody] = useState("");
   const [submittingSupport, setSubmittingSupport] = useState(false);
   const [supportStatus, setSupportStatus] = useState<string | null>(null);
+  const [prefsLoading, setPrefsLoading] = useState(true);
+  const [prefsError, setPrefsError] = useState(false);
+  const [prefsReload, setPrefsReload] = useState(0);
 
   useEffect(() => {
     const load = async () => {
+      setPrefsLoading(true);
+      setPrefsError(false);
+      try {
+        await withTimeout((async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
@@ -88,9 +96,15 @@ export default function SettingsPage() {
       setRelationalTransitAlerts(isRelationalTransitAlertsPref(profile?.relational_transit_alerts) ? profile.relational_transit_alerts : "all");
       setPeople((peopleRows ?? []) as PersonLite[]);
       setGroups((groupRows ?? []) as GroupLite[]);
+        })(), DEFAULT_FETCH_TIMEOUT_MS);
+      } catch {
+        setPrefsError(true);
+      } finally {
+        setPrefsLoading(false);
+      }
     };
     void load();
-  }, [supabase]);
+  }, [supabase, prefsReload]);
 
   const changeHouseSystem = async (next: HouseSystem) => {
     if (!userId || next === houseSystem) return;
@@ -99,7 +113,8 @@ export default function SettingsPage() {
     setHouseSystem(next);
     const { error } = await supabase.from("profiles").upsert({ id: userId, house_system: next });
     setSavingHouseSystem(false);
-    if (error) { setHouseSystem(previous); setHouseSystemStatus(error.message); return; }
+    // FOUNDER-REVIEW: house system save failed.
+    if (error) { setHouseSystem(previous); setHouseSystemStatus("House system could not be saved. Try again."); return; }
     setHouseSystemStatus("Saved. Each chart recomputes with the new system the next time you open it.");
   };
 
@@ -110,7 +125,8 @@ export default function SettingsPage() {
     setDailyNudgeEmailsEnabled(next);
     const { error } = await supabase.from("profiles").update({ daily_nudge_emails_enabled: next }).eq("id", userId);
     setSavingConsent(false);
-    if (error) { setDailyNudgeEmailsEnabled(previous); setConsentStatus(error.message); return; }
+    // FOUNDER-REVIEW: daily sky email preference save failed.
+    if (error) { setDailyNudgeEmailsEnabled(previous); setConsentStatus("Daily sky email preference could not be saved. Try again."); return; }
     setConsentStatus(next ? "Saved. Daily sky emails are on." : "Saved. Daily sky emails are off.");
   };
 
@@ -121,7 +137,8 @@ export default function SettingsPage() {
     setWeeklyLetterEnabled(next);
     const { error } = await supabase.from("profiles").update({ weekly_constellation_letter_enabled: next }).eq("id", userId);
     setSavingWeeklyLetter(false);
-    if (error) { setWeeklyLetterEnabled(previous); setWeeklyLetterStatus(error.message); return; }
+    // FOUNDER-REVIEW: weekly letter preference save failed.
+    if (error) { setWeeklyLetterEnabled(previous); setWeeklyLetterStatus("Weekly letter preference could not be saved. Try again."); return; }
     setWeeklyLetterStatus(next ? "Saved. The weekly letter is on." : "Saved. The weekly letter is off.");
   };
 
@@ -132,7 +149,8 @@ export default function SettingsPage() {
     setRelationalTransitAlerts(next);
     const { error } = await supabase.from("profiles").update({ relational_transit_alerts: next }).eq("id", userId);
     setSavingRelationalPref(false);
-    if (error) { setRelationalTransitAlerts(previous); setRelationalPrefStatus(error.message); return; }
+    // FOUNDER-REVIEW: this-week alerts preference save failed.
+    if (error) { setRelationalTransitAlerts(previous); setRelationalPrefStatus("This week alerts preference could not be saved. Try again."); return; }
     setRelationalPrefStatus("Saved.");
   };
 
@@ -159,7 +177,8 @@ export default function SettingsPage() {
     });
     setSubmittingSupport(false);
     if (error) {
-      setSupportStatus(error.message);
+      // FOUNDER-REVIEW: support form insert failed.
+      setSupportStatus("The support message could not be sent. Try again.");
       return;
     }
     setSupportSubject("");
@@ -170,7 +189,12 @@ export default function SettingsPage() {
   const signOut = async () => {
     setSigningOut(true);
     const { error } = await supabase.auth.signOut();
-    if (error) { setStatus(error.message); setSigningOut(false); return; }
+    if (error) {
+      // FOUNDER-REVIEW: sign-out failed.
+      setStatus("Sign out could not finish. Try again.");
+      setSigningOut(false);
+      return;
+    }
     window.location.href = "/login";
   };
 
@@ -178,6 +202,19 @@ export default function SettingsPage() {
     <main className="app-content">
       <p className="eyebrow">Account</p>
       <h1 className="page-title">Settings</h1>
+
+      {prefsLoading ? (
+        <section className="glass-card async-frame" aria-busy="true">
+          {/* FOUNDER-REVIEW: settings prefs are loading. */}
+          <p className="muted" style={{ margin: 0 }}>Loading your settings.</p>
+        </section>
+      ) : prefsError ? (
+        <section className="glass-card async-frame" aria-live="polite">
+          {/* FOUNDER-REVIEW: settings prefs fetch failed or timed out. */}
+          <p className="muted" style={{ margin: 0 }}>Your settings could not load. Try again.</p>
+          <button type="button" className="pill-link" onClick={() => setPrefsReload((n) => n + 1)}>Try again</button>
+        </section>
+      ) : null}
 
       <SettingsSubscriptionPanel />
 

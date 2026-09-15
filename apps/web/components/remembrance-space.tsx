@@ -77,17 +77,16 @@ export function RemembranceSpace({
     setLoading(true);
     setLoadFailed(false);
     try {
-      const { data, error } = await withTimeout(
-        supabase
+      const { data, error } = await withTimeout((async () => {
+        return await supabase
           .from("notes")
           .select("id, body, created_at")
           .eq("owner_id", userId)
           .eq("about_person", person.id)
           .eq("kind", REMEMBRANCE_NOTE_KIND)
           .order("created_at", { ascending: false })
-          .limit(40),
-        DEFAULT_FETCH_TIMEOUT_MS
-      );
+          .limit(40);
+      })(), DEFAULT_FETCH_TIMEOUT_MS);
       if (error) throw new Error("load");
       setReflections((data ?? []) as ReflectionRow[]);
     } catch {

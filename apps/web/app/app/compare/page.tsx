@@ -39,20 +39,25 @@ import {
   orderedScoreEntries,
   relationshipWatchLine,
   whatTheyNeed,
+  recentComparedPeople,
   type RelationType,
 } from "@galaxia/astro";
 import { CHART_PRECISION_ADD_DATE, isMinorForSafety, orderPair, shouldShowLiveTransits, sunSignFromChart } from "@galaxia/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { AddPersonForm, AskAfterAdd, type AddPersonSavedInfo } from "../../../components/add-person-form";
 import { ChartImageExport, chartExportFilename } from "../../../components/chart-image-export";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES, orientSynastryWheel } from "../../../components/chart-wheel";
+import {
+  COMPARE_PERSON_PICKER_COPY,
+  ComparePersonField,
+} from "../../../components/compare-person-picker";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { GenerationalSection } from "../../../components/generational-section";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
+import { compareAddPersonHref, emptyCompareSlot } from "../../../lib/compare-add-person";
 import { COMPAT_LABELS, compatWord } from "../../../lib/design";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 import {
@@ -62,6 +67,9 @@ import {
   type ComparisonHistoryItem,
   type ComparisonHistoryRow,
 } from "../../../components/compare-history";
+
+// FOUNDER-REVIEW: authored — reveals the existing relationship-type pills.
+const COMPARE_RELATION_CHANGE = "Change";
 
 interface PersonLite {
   id: string; display_name: string; relation: string;
@@ -141,7 +149,6 @@ function ComparePageInner() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const searchParams = useSearchParams();
   const [userId, setUserId] = useState<string | null>(null);
-  const [inlineSaved, setInlineSaved] = useState<AddPersonSavedInfo | null>(null);
   const [people, setPeople]       = useState<PersonLite[]>([]);
   const [personAId, setPersonAId] = useState<string | null>(null);
   const [personBId, setPersonBId] = useState<string | null>(null);
@@ -150,8 +157,10 @@ function ComparePageInner() {
   // in the pairing the default drops to an age-appropriate non-romantic type
   // (see the selection effect below). Tag suggestion (self + other) may set
   // partners only from an explicit saved `partner` tag — then the minor clamp
-  // below still wins.
-  const [relationType, setRelationType] = useState<RelationType>(defaultCompareRelationType(false));
+  // below still wins. Null when the pair cannot be derived and the user has
+  // not picked a pill yet.
+  const [relationType, setRelationType] = useState<RelationType | null>(null);
+  const [showTypePills, setShowTypePills] = useState(false);
   // Tracks whether the user has explicitly chosen a relationship type, so tag
   // suggestions and the minor-aware default never override an untouched pick.
   const userChoseTypeRef = useRef(false);
@@ -229,11 +238,28 @@ function ComparePageInner() {
     selectedB?.relation
   );
 
-  // Apply tag suggestion (or the adult fallback) when the pair changes —
-  // never overrides an explicit user choice. Minor clamp runs AFTER this.
+  const bothSelected = Boolean(selectedA && selectedB && selectedA.id !== selectedB.id);
+  const recentPeople = useMemo(() => recentComparedPeople(history, people, 5), [history, people]);
+  const addPersonHrefA = compareAddPersonHref({ personAId, personBId, fillSlot: "a" });
+  const addPersonHrefB = compareAddPersonHref({ personAId, personBId, fillSlot: "b" });
+  const addPersonHrefEmpty = compareAddPersonHref({
+    personAId,
+    personBId,
+    fillSlot: emptyCompareSlot(personAId, personBId),
+  });
+
+  // A new pair re-derives. An explicit Change pick is only for the current pair.
+  useEffect(() => {
+    userChoseTypeRef.current = false;
+  }, [personAId, personBId]);
+
+  // Apply tag suggestion when the pair changes — never overrides an explicit
+  // user choice. Unmapped pairs stay unset so the pill row renders with no
+  // selection. Minor clamp runs AFTER this.
   useEffect(() => {
     if (userChoseTypeRef.current) return;
-    setRelationType(suggestedRelationType ?? defaultCompareRelationType(false));
+    setRelationType(suggestedRelationType);
+    setShowTypePills(suggestedRelationType === null);
   }, [personAId, personBId, suggestedRelationType]);
 
   // Age-aware minor status of the CURRENTLY-SELECTED pair (before running), so
@@ -257,7 +283,7 @@ function ComparePageInner() {
   //    step 1 above has already caught anything romantic.
   useEffect(() => {
     if (!selectionHasMinor) return;
-    if (isRomanticRelation(relationType)) {
+    if (relationType && isRomanticRelation(relationType)) {
       setRelationType(defaultCompareRelationType(true));
       return;
     }
@@ -265,7 +291,7 @@ function ComparePageInner() {
       setRelationType(
         suggestedRelationType && !isRomanticRelation(suggestedRelationType)
           ? suggestedRelationType
-          : defaultCompareRelationType(true)
+          : null
       );
     }
   }, [selectionHasMinor, relationType, suggestedRelationType]);
@@ -444,7 +470,7 @@ function ComparePageInner() {
   }
 
   async function saveReading() {
-    if (!userId || !result) return;
+    if (!userId || !result || !relationType) return;
     setSavingReading(true);
     const a: PersonLite = result.personA, b: PersonLite = result.personB;
     const { pairLow, pairHigh } = orderPair(a.id, b.id);
@@ -475,7 +501,7 @@ function ComparePageInner() {
    * the picker (no binary collapse); never recomputes astrology.
    */
   async function createShareUrl({ expiresInDays }: { expiresInDays: number | null }): Promise<string> {
-    if (!result?.chartA || !result?.chartB || !result?.synastry) {
+    if (!result?.chartA || !result?.chartB || !result?.synastry || !relationType) {
       throw new Error("Run a comparison before sharing.");
     }
     // Live pairHasMinor (isMinorForSafety); not stored on the compare_reading note.
@@ -523,7 +549,7 @@ function ComparePageInner() {
   const provenanceMissingReading = savedReadings.find(r => r.comparability === "provenance_missing");
 
   async function saveMoment() {
-    if (!userId || !result || !noteDraft.trim()) return;
+    if (!userId || !result || !noteDraft.trim() || !relationType) return;
     setSaving(true);
     const [low, high] = [result.personA.id, result.personB.id].sort();
     const { error } = await supabase.from("notes").insert({
@@ -538,7 +564,7 @@ function ComparePageInner() {
   // ── Relationship-type-aware engine data (derived; recomputes on type switch) ──
   // Flows/catches sort + framing live in FlowsAndCatchesSection (shared path).
   // House/element lines still read only real computed data here.
-  const houseOverlay = result?.synastry ? relationHouseOverlays(result.synastry, relationType) : null;
+  const houseOverlay = result?.synastry && relationType ? relationHouseOverlays(result.synastry, relationType) : null;
   const elementSignal = result?.synastry ? relationElementSignal(result.synastry, result.personA.display_name, result.personB.display_name) : null;
   // Self owns the inner house frame regardless of picker A/B order.
   const wheel = result?.synastry
@@ -555,7 +581,7 @@ function ComparePageInner() {
   // Defense in depth (ENGINEERING.md §13): even if a romantic type were somehow
   // reached with a minor present, refuse to render the (romantically framed)
   // reading and show a safe message instead — never generate it.
-  const blockRomanticMinorRender = pairHasMinor && isRomanticRelation(relationType);
+  const blockRomanticMinorRender = relationType !== null && pairHasMinor && isRomanticRelation(relationType);
 
   return (
     <main className="app-content">
@@ -569,98 +595,83 @@ function ComparePageInner() {
 
       {/* Pickers */}
       <section className="glass-card fade-in">
-        <p className="eyebrow" style={{ marginBottom: 12 }}>Relationship type</p>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: (selectionHasMinor || showSuggestionHint) ? 8 : 16 }}>
-          {availableTypes.map(type => (
-            <button key={type} onClick={() => { userChoseTypeRef.current = true; setRelationType(type); }} className="pill-link"
-              style={{ fontSize: ".8rem", padding: "7px 14px", borderColor: relationType === type ? "rgba(230,174,108,.5)" : undefined, color: relationType === type ? "var(--gold)" : undefined }}>
-              {/* FOUNDER-REVIEW: authored — picker labels come from the shared
-                  COMPARE_RELATION_LABEL map instead of printing the raw id. */}
-              {compareRelationLabel(type)}
-            </button>
-          ))}
+        <div className="compare-person-fields">
+          <ComparePersonField
+            label="Person A"
+            people={people}
+            recentPeople={recentPeople}
+            selectedId={personAId}
+            disabledId={personBId}
+            onSelect={setPersonAId}
+            addPersonHref={addPersonHrefA}
+          />
+          <ComparePersonField
+            label="Person B"
+            people={people}
+            recentPeople={recentPeople}
+            selectedId={personBId}
+            disabledId={personAId}
+            onSelect={setPersonBId}
+            addPersonHref={addPersonHrefB}
+          />
         </div>
-        {showSuggestionHint ? (
-          <p className="muted" style={{ fontSize: ".75rem", lineHeight: 1.55, marginBottom: selectionHasMinor ? 8 : 16 }}>
-            {/* FOUNDER-REVIEW: authored — refine voice. */}
-            {COMPARE_RELATION_SUGGESTION_HINT}
-          </p>
-        ) : null}
-        {selectionHasMinor ? (
-          <p className="muted" style={{ fontSize: ".75rem", lineHeight: 1.55, marginBottom: 16, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
-            A minor is part of this comparison, so only non-romantic readings are available. Romantic and partner framing is turned off for pairings involving a child.
-          </p>
-        ) : null}
-        <div style={{ display: "grid", gap: 10 }}>
-          {([
-            { label: "Person A", value: personAId, onChange: setPersonAId },
-            { label: "Person B", value: personBId, onChange: setPersonBId },
-          ] as const).map((slot) => (
-            <div key={slot.label}>
-              <p className="eyebrow" style={{ fontSize: ".62rem", marginBottom: 5 }}>{slot.label}</p>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {people.map((p) => {
-                  const selected = slot.value === p.id;
-                  return (
-                    <button
-                      key={`${slot.label}-${p.id}`}
-                      type="button"
-                      className={`group-member-chip${selected ? " group-member-chip--selected" : ""}`}
-                      aria-pressed={selected}
-                      onClick={() => slot.onChange(p.id)}
-                    >
-                      <InitialAvatar
-                        name={p.display_name}
-                        size="sm"
-                        personId={p.id}
-                        sunSign={p.sun}
-                        memorial={Boolean(p.passed_at)}
-                      />
-                      <span>{p.display_name}</span>
-                    </button>
-                  );
-                })}
+        <div style={{ margin: "10px 0 16px" }}>
+          <Link href={addPersonHrefEmpty as never} className="pill-link" style={{ fontSize: ".82rem" }}>
+            {/* FOUNDER-REVIEW: COMPARE_PERSON_PICKER_COPY.addPerson */}
+            {COMPARE_PERSON_PICKER_COPY.addPerson}
+          </Link>
+        </div>
+        {bothSelected ? (
+          <>
+            {suggestedRelationType && relationType && !showTypePills ? (
+              <div className="compare-relation-line">
+                <span className="compare-relation-line__label">{compareRelationLabel(relationType)}</span>
+                <button
+                  type="button"
+                  className="pill-link"
+                  style={{ fontSize: ".76rem", padding: "4px 12px" }}
+                  onClick={() => setShowTypePills(true)}
+                >
+                  {COMPARE_RELATION_CHANGE}
+                </button>
               </div>
-            </div>
-          ))}
-          {userId ? (
-            <div style={{ marginTop: 8, paddingTop: 12, borderTop: "1px solid rgba(183,154,216,.1)" }}>
-              <p className="eyebrow" style={{ marginBottom: 8 }}>Add a person</p>
-              <AddPersonForm
-                userId={userId}
-                idPrefix="compare-add"
-                showStatus={false}
-                resetOnSave
-                onSaved={(info) => {
-                  setInlineSaved(info);
-                  setPeople((prev) => {
-                    if (prev.some((p) => p.id === info.personId)) return prev;
-                    return [
-                      {
-                        id: info.personId,
-                        display_name: info.displayName,
-                        relation: info.relation,
-                        birth_date: null,
-                        birth_precision: info.deferred ? "none" : "date",
-                        is_minor: info.isMinor
-                      },
-                      ...prev
-                    ];
-                  });
-                }}
-              />
-              {inlineSaved ? (
-                <div style={{ marginTop: 12 }}>
-                  <AskAfterAdd userId={userId} info={inlineSaved} />
+            ) : (
+              <>
+                <p className="eyebrow" style={{ marginBottom: 12 }}>Relationship type</p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: (selectionHasMinor || showSuggestionHint) ? 8 : 16 }}>
+                  {availableTypes.map(type => (
+                    <button key={type} onClick={() => { userChoseTypeRef.current = true; setRelationType(type); }} className="pill-link"
+                      style={{ fontSize: ".8rem", padding: "7px 14px", borderColor: relationType === type ? "rgba(230,174,108,.5)" : undefined, color: relationType === type ? "var(--gold)" : undefined }}>
+                      {/* FOUNDER-REVIEW: authored — picker labels come from the shared
+                          COMPARE_RELATION_LABEL map instead of printing the raw id. */}
+                      {compareRelationLabel(type)}
+                    </button>
+                  ))}
                 </div>
-              ) : null}
-            </div>
-          ) : null}
-          <button className="btn-primary" onClick={() => void runCompare()} disabled={running} style={{ width: "fit-content", gap: 8 }}>
-            {running && <Spinner size={13} color="#1a1206" />}
-            {running ? "Running…" : "Run comparison"}
-          </button>
-        </div>
+              </>
+            )}
+            {showSuggestionHint ? (
+              <p className="muted" style={{ fontSize: ".75rem", lineHeight: 1.55, marginBottom: selectionHasMinor ? 8 : 16 }}>
+                {/* FOUNDER-REVIEW: authored — refine voice. */}
+                {COMPARE_RELATION_SUGGESTION_HINT}
+              </p>
+            ) : null}
+            {selectionHasMinor ? (
+              <p className="muted" style={{ fontSize: ".75rem", lineHeight: 1.55, marginBottom: 16, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+                A minor is part of this comparison, so only non-romantic readings are available. Romantic and partner framing is turned off for pairings involving a child.
+              </p>
+            ) : null}
+          </>
+        ) : null}
+        <button
+          className="btn-primary"
+          onClick={() => void runCompare()}
+          disabled={running || !bothSelected || !relationType}
+          style={{ width: "fit-content", gap: 8 }}
+        >
+          {running && <Spinner size={13} color="#1a1206" />}
+          {running ? "Running…" : "Run comparison"}
+        </button>
       </section>
 
       {previousViewedAt && transitDelta && selectedA && selectedB ? (
@@ -690,7 +701,7 @@ function ComparePageInner() {
             A minor is part of this comparison, so Galaxia won&apos;t produce a romantic or partner reading here. Choose any of the other relationship types above to see the comparison.
           </p>
         </section>
-      ) : result ? (
+      ) : result && relationType ? (
         <>
           {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
           {/* Capture is the headline (avatars, names, wheel) plus the six-row

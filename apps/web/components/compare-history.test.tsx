@@ -7,7 +7,8 @@ import {
   COMPARE_NEWLY_ACTIVE,
   COMPARE_SINCE_HEADING,
   compareNatalAspectsConstant,
-  hydrateComparisonHistory
+  hydrateComparisonHistory,
+  recentComparedPeople
 } from "@galaxia/astro";
 import { CompareHistoryList, CompareSinceLastViewed } from "./compare-history";
 
@@ -43,6 +44,39 @@ describe("hydrateComparisonHistory", () => {
     expect(items[0]!.nameA).toBe("Bea");
     expect(items[0]!.nameB).toBe("Ada");
     expect(items[0]!.personAId).toBe("11111111-aaaa-4aaa-8aaa-000000000002");
+  });
+});
+
+describe("recentComparedPeople", () => {
+  it("returns the last five distinct people in newest-pair order", () => {
+    const people = [
+      { id: "a", display_name: "Ada" },
+      { id: "b", display_name: "Bea" },
+      { id: "c", display_name: "Cara" },
+      { id: "d", display_name: "Dee" },
+      { id: "e", display_name: "Eve" },
+      { id: "f", display_name: "Fay" }
+    ];
+    const recent = recentComparedPeople(
+      [
+        { personAId: "a", personBId: "b" },
+        { personAId: "a", personBId: "c" },
+        { personAId: "d", personBId: "e" },
+        { personAId: "a", personBId: "f" }
+      ],
+      people,
+      5
+    );
+    expect(recent.map((p) => p.id)).toEqual(["a", "b", "c", "d", "e"]);
+  });
+
+  it("skips people who are no longer in the constellation", () => {
+    const recent = recentComparedPeople(
+      [{ personAId: "gone", personBId: "kept" }],
+      [{ id: "kept", display_name: "Kept" }],
+      5
+    );
+    expect(recent.map((p) => p.id)).toEqual(["kept"]);
   });
 });
 

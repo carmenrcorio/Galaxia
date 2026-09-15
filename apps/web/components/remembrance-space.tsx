@@ -15,11 +15,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Spinner } from "./spinner";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import {
+  DEFAULT_FETCH_TIMEOUT_MS,
   REMEMBRANCE_NOTE_KIND,
   buildRemembranceNoteInsert,
   remembranceChartLines,
   remembranceUsesAncientLight,
   shouldShowRemembranceSpace,
+  withTimeout,
 } from "@galaxia/core";
 import { REMEMBRANCE_CHROME, remembranceVelaHref } from "../lib/remembrance";
 import { MemorialConstellationPicker } from "./memorial-constellation-picker";
@@ -39,6 +41,12 @@ interface ReflectionRow {
   body: string;
   created_at: string;
 }
+
+// FOUNDER-REVIEW: remembrance reflections loading / empty / failure.
+const REMEMBRANCE_LOADING = "Loading reflections…";
+const REMEMBRANCE_EMPTY = "No reflections yet. Write the first one above.";
+const REMEMBRANCE_LOAD_ERROR = "Reflections could not load. Try again.";
+const REMEMBRANCE_SAVE_ERROR = "This reflection could not be saved. Try again.";
 
 export const REMEMBRANCE_ANCHOR_ID = "remembrance";
 
@@ -62,21 +70,32 @@ export function RemembranceSpace({
   const [status, setStatus] = useState<string | null>(null);
   const [reflections, setReflections] = useState<ReflectionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const loadReflections = useCallback(async () => {
     if (!userId || !person.id) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from("notes")
-      .select("id, body, created_at")
-      .eq("owner_id", userId)
-      .eq("about_person", person.id)
-      .eq("kind", REMEMBRANCE_NOTE_KIND)
-      .order("created_at", { ascending: false })
-      .limit(40);
-    if (error) setStatus(error.message);
-    else setReflections((data ?? []) as ReflectionRow[]);
-    setLoading(false);
+    setLoadFailed(false);
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("notes")
+          .select("id, body, created_at")
+          .eq("owner_id", userId)
+          .eq("about_person", person.id)
+          .eq("kind", REMEMBRANCE_NOTE_KIND)
+          .order("created_at", { ascending: false })
+          .limit(40),
+        DEFAULT_FETCH_TIMEOUT_MS
+      );
+      if (error) throw new Error("load");
+      setReflections((data ?? []) as ReflectionRow[]);
+    } catch {
+      setStatus(REMEMBRANCE_LOAD_ERROR);
+      setLoadFailed(true);
+    } finally {
+      setLoading(false);
+    }
   }, [supabase, userId, person.id]);
 
   useEffect(() => {
@@ -98,7 +117,7 @@ export function RemembranceSpace({
     const { error } = await supabase.from("notes").insert(row);
     setSaving(false);
     if (error) {
-      setStatus(error.message);
+      setStatus(REMEMBRANCE_SAVE_ERROR);
       return;
     }
     setDraft("");
@@ -229,7 +248,12 @@ export function RemembranceSpace({
       </div>
 
       {loading ? (
-        <p className="muted" style={{ fontSize: ".8rem", marginTop: 18 }}>Loading reflections…</p>
+        <p className="muted" style={{ fontSize: ".8rem", marginTop: 18 }}>{REMEMBRANCE_LOADING}</p>
+      ) : loadFailed ? (
+        <div style={{ marginTop: 18 }}>
+          <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>{REMEMBRANCE_LOAD_ERROR}</p>
+          <button type="button" className="pill-link" onClick={() => void loadReflections()}>Try again</button>
+        </div>
       ) : reflections.length > 0 ? (
         <div
           style={{
@@ -271,7 +295,7 @@ export function RemembranceSpace({
         </div>
       ) : (
         <p className="muted" style={{ fontSize: ".8rem", marginTop: 18, lineHeight: 1.55 }}>
-          No reflections yet: when you&apos;re ready, write one above.
+          {REMEMBRANCE_EMPTY}
         </p>
       )}
 

@@ -13,12 +13,14 @@ import { useCallback, useEffect, useState } from "react";
 import { Spinner } from "./spinner";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import {
+  DEFAULT_FETCH_TIMEOUT_MS,
   HONOR_RELATION_TYPE,
   buildHonorRelationshipInsert,
   connectionDiff,
   livingHonorCandidates,
   livingIdsFromHonorRows,
   shouldShowRemembranceSpace,
+  withTimeout,
   type HonorPerson,
 } from "@galaxia/core";
 import { REMEMBRANCE_CHROME } from "../lib/remembrance";
@@ -31,6 +33,11 @@ interface HonorPersonInput {
 }
 
 export const HONOR_LIGHT_ANCHOR_ID = "honor-light";
+
+// FOUNDER-REVIEW: honor-declaration loading / failure.
+const HONOR_LOADING = "Loading who carries their light.";
+const HONOR_LOAD_ERROR = "Who carries their light could not load. Try again.";
+const HONOR_SAVE_ERROR = "Who carries their light could not be saved. Try again.";
 
 export function HonorDeclarationBox({
   person,
@@ -49,13 +56,17 @@ export function HonorDeclarationBox({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [honorLoading, setHonorLoading] = useState(true);
+  const [honorFailed, setHonorFailed] = useState(false);
   const [honorSaving, setHonorSaving] = useState(false);
   const [honorStatus, setHonorStatus] = useState<string | null>(null);
 
   const loadHonorConnections = useCallback(async () => {
     if (!userId || !person.id) return;
     setHonorLoading(true);
+    setHonorFailed(false);
     setHonorStatus(null);
+    try {
+      await withTimeout((async () => {
     const [{ data: peopleRows, error: peopleErr }, { data: relRows, error: relErr }] =
       await Promise.all([
         supabase
@@ -69,9 +80,7 @@ export function HonorDeclarationBox({
           .eq("owner_id", userId),
       ]);
     if (peopleErr || relErr) {
-      setHonorStatus(peopleErr?.message ?? relErr?.message ?? "Unable to load connections.");
-      setHonorLoading(false);
-      return;
+      throw new Error("load");
     }
     const people = (peopleRows ?? []) as HonorPerson[];
     const living = livingHonorCandidates(people, person.id);
@@ -82,7 +91,13 @@ export function HonorDeclarationBox({
     setCandidates(living);
     setSavedIds(declared);
     setSelectedIds(declared);
-    setHonorLoading(false);
+      })(), DEFAULT_FETCH_TIMEOUT_MS);
+    } catch {
+      setHonorStatus(HONOR_LOAD_ERROR);
+      setHonorFailed(true);
+    } finally {
+      setHonorLoading(false);
+    }
   }, [supabase, userId, person.id]);
 
   useEffect(() => {
@@ -118,7 +133,7 @@ export function HonorDeclarationBox({
         );
       if (error) {
         setHonorSaving(false);
-        setHonorStatus(error.message);
+        setHonorStatus(HONOR_SAVE_ERROR);
         return;
       }
     }
@@ -132,7 +147,7 @@ export function HonorDeclarationBox({
       const { error } = await supabase.from("relationships").insert(row);
       if (error) {
         setHonorSaving(false);
-        setHonorStatus(error.message);
+        setHonorStatus(HONOR_SAVE_ERROR);
         return;
       }
     }
@@ -183,7 +198,12 @@ export function HonorDeclarationBox({
         </p>
 
         {honorLoading ? (
-          <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>Loading…</p>
+          <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>{HONOR_LOADING}</p>
+        ) : honorFailed ? (
+          <div>
+            <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>{HONOR_LOAD_ERROR}</p>
+            <button type="button" className="pill-link" onClick={() => void loadHonorConnections()}>Try again</button>
+          </div>
         ) : candidates.length === 0 ? (
           <p className="muted" style={{ fontSize: ".8rem", margin: 0, lineHeight: 1.5 }}>
             Add someone living to your galaxy first. Then you can connect their light here.

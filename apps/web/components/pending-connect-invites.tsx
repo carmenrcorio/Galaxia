@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
 import {
   CONNECT_EMPTY_PENDING,
   CONNECT_GENERIC_ERROR,
+  CONNECT_PENDING_LOADING,
   CONNECT_PENDING_TITLE,
   connectInviteTimeRemaining,
   connectRelationLabel,
 } from "../lib/connect-invite";
-// FOUNDER-REVIEW: pending-list copy lives in lib/connect-invite.ts (CONNECT_PENDING_TITLE, CONNECT_EMPTY_PENDING).
-// FOUNDER-REVIEW: Loading…, Revoke, Revoking…, and the Revoke invite for {name} aria-label.
+// FOUNDER-REVIEW: pending-list copy lives in lib/connect-invite.ts.
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";
 
@@ -29,6 +30,8 @@ export function PendingConnectInvites() {
 
   useEffect(() => {
     const load = async () => {
+      try {
+        await withTimeout((async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setRows([]);
@@ -70,6 +73,11 @@ export function PendingConnectInvites() {
           recipient_name: (row.person_id && names.get(row.person_id)) || null,
         })),
       );
+        })(), DEFAULT_FETCH_TIMEOUT_MS);
+      } catch {
+        setError(CONNECT_GENERIC_ERROR);
+        setRows([]);
+      }
     };
     void load();
   }, [supabase]);
@@ -102,7 +110,7 @@ export function PendingConnectInvites() {
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <Spinner size={12} />
           <p className="muted" style={{ margin: 0, fontSize: ".84rem" }}>
-            Loading…
+            {CONNECT_PENDING_LOADING}
           </p>
         </div>
       ) : rows.length === 0 ? (

@@ -324,7 +324,8 @@ export function FirstRunFlow() {
       setHasSelf(true);
       goTo("next", userId);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to save.";
+      // FOUNDER-REVIEW: first-run self persist failed.
+      const message = error instanceof Error ? error.message : "Your profile could not be saved. Try again.";
       if (message.includes("people_one_self_per_owner")) {
         setHasSelf(true);
         goTo("next", userId);

@@ -214,6 +214,8 @@ export const SHARE_NEED_GENERATIONAL =
 export const SHARE_PENDING_TITLE = "Share links";
 export const SHARE_PENDING_EMPTY = "No live share links right now.";
 export const SHARE_PENDING_ERROR = "Could not load share links. Try again.";
+// FOUNDER-REVIEW: pending share links are loading.
+export const SHARE_PENDING_LOADING = "Loading your share links.";
 export const SHARE_REVOKE_LABEL = "Revoke";
 export const SHARE_REVOKING_LABEL = "Revoking…";
 export const SHARE_PENDING_COMPARE_LABEL = "Compatibility reading";

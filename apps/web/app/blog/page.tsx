@@ -66,9 +66,14 @@ export default async function BlogIndexPage() {
         </nav>
 
         <div className="blog-post-list">
-          {posts.map((post) => (
-            <BlogPostCard key={post.slug} post={post} />
-          ))}
+          {posts.length === 0 ? (
+            // FOUNDER-REVIEW: blog index empty (Supabase unset or no published rows).
+            <p className="blog-category-empty">No posts yet. New guides will show up here.</p>
+          ) : (
+            posts.map((post) => (
+              <BlogPostCard key={post.slug} post={post} />
+            ))
+          )}
         </div>
       </main>
       <SiteFooter />

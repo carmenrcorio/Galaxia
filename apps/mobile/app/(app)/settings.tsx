@@ -1,4 +1,6 @@
 import { tokens } from "@galaxia/ui";
+import { DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
+import { Link } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { supabase } from "../../src/lib/supabase";
@@ -45,6 +47,8 @@ export default function SettingsScreen() {
   const [periodEndLabel, setPeriodEndLabel] = useState<string | null>(null);
   const [relationalTransitAlerts, setRelationalTransitAlerts] = useState<RelationalTransitAlertsPref>("all");
   const [savingRelationalPref, setSavingRelationalPref] = useState(false);
+  const [prefsLoading, setPrefsLoading] = useState(true);
+  const [prefsError, setPrefsError] = useState(false);
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -53,6 +57,10 @@ export default function SettingsScreen() {
 
   const loadSettingsData = async () => {
     if (!session?.user.id) return;
+    setPrefsLoading(true);
+    setPrefsError(false);
+    try {
+      await withTimeout((async () => {
     const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
       supabase
         .from("profiles")
@@ -67,6 +75,12 @@ export default function SettingsScreen() {
     setRelationalTransitAlerts(isRelationalTransitAlertsPref(profile?.relational_transit_alerts) ? profile.relational_transit_alerts : "all");
     setPeople((peopleRows ?? []) as PersonLite[]);
     setGroups((groupRows ?? []) as GroupLite[]);
+      })(), DEFAULT_FETCH_TIMEOUT_MS);
+    } catch {
+      setPrefsError(true);
+    } finally {
+      setPrefsLoading(false);
+    }
   };
 
   const changeRelationalTransitAlerts = async (next: RelationalTransitAlertsPref) => {
@@ -78,7 +92,8 @@ export default function SettingsScreen() {
     setSavingRelationalPref(false);
     if (error) {
       setRelationalTransitAlerts(previous);
-      setStatus(error.message);
+      // FOUNDER-REVIEW: this-week alerts preference save failed.
+      setStatus("This week alerts preference could not be saved. Try again.");
     }
   };
 
@@ -104,6 +119,20 @@ export default function SettingsScreen() {
     <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink2 }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
       <Text style={{ color: tokens.colors.cream, fontSize: 30, fontWeight: "700" }}>Settings</Text>
 
+      {prefsLoading ? (
+        <View style={cardStyle}>
+          {/* FOUNDER-REVIEW: settings prefs are loading. */}
+          <Text style={cardBody}>Loading your settings.</Text>
+        </View>
+      ) : prefsError ? (
+        <View style={cardStyle}>
+          {/* FOUNDER-REVIEW: settings prefs fetch failed or timed out. */}
+          <Text style={cardBody}>Your settings could not load. Try again.</Text>
+          <Pressable onPress={() => void loadSettingsData()}>
+            <Text style={{ color: tokens.colors.gold, fontWeight: "700" }}>Try again</Text>
+          </Pressable>
+        </View>
+      ) : null}
       <View style={cardStyle}>
         <Text style={cardTitle}>Subscription</Text>
         <Text style={cardBody}>{subscriptionBody}</Text>
@@ -149,7 +178,12 @@ export default function SettingsScreen() {
       <View style={cardStyle}>
         <Text style={cardTitle}>People</Text>
         {people.length === 0 ? (
-          <Text style={cardBody}>No people yet.</Text>
+          <Link href="/onboarding" asChild>
+            <Pressable accessibilityRole="link" accessibilityLabel="Add someone">
+              {/* FOUNDER-REVIEW: settings people empty. */}
+              <Text style={cardBody}>No people yet. Add someone to your constellation.</Text>
+            </Pressable>
+          </Link>
         ) : (
           people.map((person) => (
             <View key={person.id} style={listItem}>
@@ -163,7 +197,8 @@ export default function SettingsScreen() {
       <View style={cardStyle}>
         <Text style={cardTitle}>Groups</Text>
         {groups.length === 0 ? (
-          <Text style={cardBody}>No groups yet.</Text>
+          {/* FOUNDER-REVIEW: settings groups empty. */}
+          <Text style={cardBody}>No groups yet. Create one from Groups.</Text>
         ) : (
           groups.map((group) => (
             <View key={group.id} style={listItem}>

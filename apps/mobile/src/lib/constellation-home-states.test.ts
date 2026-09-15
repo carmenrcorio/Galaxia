@@ -20,6 +20,8 @@ describe("source wiring — mobile constellation loading / empty / error", () =>
     expect(home).toContain("CONSTELLATION_RETRY");
     expect(home).toContain("setConstellationFailed(true)");
     expect(home).toContain('href="/onboarding"');
+    expect(home).toContain("withTimeout");
+    expect(home).toContain("DEFAULT_FETCH_TIMEOUT_MS");
   });
 
   it("cross-fades over 250ms and holds points static when reduceMotion is on", () => {

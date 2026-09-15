@@ -72,6 +72,8 @@ import {
   shouldOfferFirstRunRestart,
   starCoreRadius,
   sunSignFromChart,
+  withTimeout,
+  DEFAULT_FETCH_TIMEOUT_MS,
   usesMemorialGlyph,
   type HonorEdge,
   type MemorialConstellation,
@@ -346,7 +348,7 @@ export default function AppHomePage() {
 
   useEffect(() => {
     let cancelled = false;
-    supabase.auth.getUser()
+    withTimeout(supabase.auth.getUser(), DEFAULT_FETCH_TIMEOUT_MS)
       .then(({ data: { user } }) => {
         if (cancelled) return;
         if (!user) {
@@ -1643,6 +1645,20 @@ export default function AppHomePage() {
     setLoading(true);
     setLoadError(false);
     try {
+      await withTimeout(loadHomeInner(uid), DEFAULT_FETCH_TIMEOUT_MS);
+    } catch {
+      setLoadError(true);
+      setPeople([]);
+      setLinks([]);
+      setHonorEdges([]);
+      setPersonSkies([]);
+      setThreadChips([]);
+      setCohortByPerson({});
+      setUnackedPersonIds(new Set());
+    } finally { setLoading(false); }
+  }
+
+  async function loadHomeInner(uid: string) {
       const idQuery = await supabase.from("people").select("id").eq("owner_id", uid);
       if (idQuery.error) throw idQuery.error;
       const personIds = (idQuery.data ?? []).map(r => r.id as string);
@@ -1830,16 +1846,6 @@ export default function AppHomePage() {
           people: chipPeople([t.subject_person, t.pair_low, t.pair_high]),
         })));
       }
-    } catch {
-      setLoadError(true);
-      setPeople([]);
-      setLinks([]);
-      setHonorEdges([]);
-      setPersonSkies([]);
-      setThreadChips([]);
-      setCohortByPerson({});
-      setUnackedPersonIds(new Set());
-    } finally { setLoading(false); }
   }
 
   function retryHome() {
@@ -1847,7 +1853,7 @@ export default function AppHomePage() {
       void loadHome(ownerId);
       return;
     }
-    void supabase.auth.getUser().then(({ data: { user } }) => {
+    void withTimeout(supabase.auth.getUser(), DEFAULT_FETCH_TIMEOUT_MS).then(({ data: { user } }) => {
       if (!user) {
         setLoadError(true);
         setLoading(false);
@@ -1855,6 +1861,9 @@ export default function AppHomePage() {
       }
       setOwnerId(user.id);
       void loadHome(user.id);
+    }).catch(() => {
+      setLoadError(true);
+      setLoading(false);
     });
   }
 

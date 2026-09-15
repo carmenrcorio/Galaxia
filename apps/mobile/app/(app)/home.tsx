@@ -18,6 +18,7 @@ import {
   galaxySeatsResolved,
   effectiveSeat,
   constellationSkeletonSeats,
+  DEFAULT_FETCH_TIMEOUT_MS,
   formFromRelation,
   isMinorForSafety,
   nodeDrawnExtent,
@@ -27,6 +28,7 @@ import {
   ringIndex,
   sunSignFromChart,
   usesMemorialGlyph,
+  withTimeout,
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
@@ -241,6 +243,7 @@ export default function HomeScreen() {
     setHomeStatus(null);
     setConstellationFailed(false);
     try {
+      await withTimeout((async () => {
       const cacheKey = `home_state:${session.user.id}`;
       /* FOUND HOLE CLOSED (web home parity): loadHome previously selected
          birth_precision but NOT is_minor / birth_date, so isMinorForSafety
@@ -474,6 +477,7 @@ export default function HomeScreen() {
         personSkies: skies,
         threadChips: computedThreadChips
       });
+      })(), DEFAULT_FETCH_TIMEOUT_MS);
     } catch {
       const cached = await cacheGet<{
         welcomeName?: string | null;

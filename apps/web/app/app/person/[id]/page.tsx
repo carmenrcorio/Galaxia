@@ -47,6 +47,7 @@ import {
 import {
   buildPersonPageGroups,
   groupForPersonSection,
+  isTodaySection,
   PERSON_TAB_LABEL,
   PERSON_TAB_VOCAB,
   resolvePersonPageEntry,
@@ -386,6 +387,8 @@ export default function PersonProfilePage() {
   const [aspectsAllOpen, setAspectsAllOpen]       = useState(false);
   const [housesAllOpen, setHousesAllOpen]         = useState(false);
   const [activeGroup, setActiveGroup] = useState<PersonGroupKey>("them");
+  const [wheelOpen, setWheelOpen] = useState(true);
+  const [wheelMounted, setWheelMounted] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editUpgradeTo, setEditUpgradeTo] = useState<Exclude<ChartPrecision, "none"> | null>(null);
   const entryAppliedFor = useRef<string | null>(null);
@@ -393,6 +396,12 @@ export default function PersonProfilePage() {
   const toggleRow = useCallback((key: string) => {
     setOpenRows(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
   }, []);
+
+  useEffect(() => {
+    if (!wheelOpen) return;
+    const frame = window.requestAnimationFrame(() => setWheelMounted(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [wheelOpen]);
 
   const openPrecisionUpgrade = useCallback((target: Exclude<ChartPrecision, "none">) => {
     setEditUpgradeTo(target);
@@ -891,6 +900,15 @@ export default function PersonProfilePage() {
         </div>
       </div>
 
+      {userId ? (
+        <RelationshipEdgesBox
+          person={person}
+          userId={userId}
+          subjectIsMinor={personIsMinor}
+          showRemembranceNote={showHonorBox}
+        />
+      ) : null}
+
       {showHonorBox ? (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <a href={`#${HONOR_LIGHT_ANCHOR_ID}`} className="pill-link" style={{ fontSize: ".82rem" }}>
@@ -953,15 +971,6 @@ export default function PersonProfilePage() {
         ) : null}
       </section>
 
-      {userId ? (
-        <RelationshipEdgesBox
-          person={person}
-          userId={userId}
-          subjectIsMinor={personIsMinor}
-          showRemembranceNote={showHonorBox}
-        />
-      ) : null}
-
       {showHonorBox ? (
         <HonorDeclarationBox
           person={person}
@@ -1012,8 +1021,10 @@ export default function PersonProfilePage() {
   });
 
   const goToSection = (id: PersonNavSectionId) => {
-    const group = groupForPersonSection(id, showRemembrance);
-    setActiveGroup(group);
+    if (!isTodaySection(id)) {
+      const group = groupForPersonSection(id, showRemembrance);
+      setActiveGroup(group);
+    }
     if (typeof window !== "undefined") {
       window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
     }
@@ -1041,6 +1052,67 @@ export default function PersonProfilePage() {
   // same convention rebuildDateUTC relies on above) — no new fetch needed.
   const birthYear = person.birth_date ? parseInt(person.birth_date.slice(0, 4), 10) : null;
   const generationInfo = birthYear !== null && !Number.isNaN(birthYear) ? generationNameForYear(birthYear) : null;
+
+  const renderPlacementRow = (p: Placement) => {
+    const bk  = normaliseBody(p.body);
+    const sk  = normaliseSign(p.sign);
+    const el  = signElement(p.sign);
+    const gly = BODY_GLYPH[p.body] ?? p.body[0].toUpperCase();
+    const safety = { minorSafe: personIsMinor };
+    const domain = bodyDomain(bk, safety);
+    const isGen  = GENERATIONAL.includes(bk);
+    if (p.confident === false) {
+      return (
+        <div key={p.body} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65 }}>
+          <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{gly}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{domain}</div>
+            <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{p.body.charAt(0).toUpperCase() + p.body.slice(1)}: sign uncertain</div>
+          </div>
+          <span style={{ fontSize: ".76rem", color: "var(--mist2)", fontStyle: "italic", textAlign: "right" }}>
+            {p.possibleSigns?.length ? `Could be ${p.possibleSigns.join(" or ")}` : isGen ? "Changed sign that year" : "Needs a birth date"}
+          </span>
+        </div>
+      );
+    }
+    const signR = interpretPlacement(bk, sk, safety);
+    if (process.env.NODE_ENV !== "production" && !signR.short) console.warn(`[interpretations] missing: ${bk} in ${sk}`);
+    const houseR = (p.house && hasHouses)
+      ? (() => { const hr = interpretHouse(bk, p.house as HouseKey, safety); const hm = houseMeaning(p.house as HouseKey); return hm && hr.long ? { houseName: hm.name, houseDomain: hm.domain, long: hr.long } : null; })()
+      : null;
+    const bodyAspects = (aspectsByBody.get(p.body) ?? []).flatMap(a => {
+      const reading = interpretAspect(normaliseBody(a.from), normaliseBody(a.to), normaliseAspect(a.type));
+      if (!reading) return [];
+      return [{
+        from: a.from, to: a.to, type: a.type, orb: a.orb, tight: a.orb < 2,
+        short: reading.short
+      }];
+    });
+    const rowKey = `pl-${p.body}`;
+    const plutoExtended: PlutoSignExtended | null =
+      p.body === "pluto" ? PLUTO_SIGN_EXTENDED[sk] ?? null : null;
+    return (
+      <ExpandRow
+        key={p.body}
+        open={openRows.has(rowKey)}
+        onToggle={() => toggleRow(rowKey)}
+        label={`${p.body.charAt(0).toUpperCase() + p.body.slice(1)} in ${p.sign}${isGen ? " ✦" : ""}`}
+        domain={domain}
+        degree={toDMS(p.degree)}
+        house={p.house}
+        el={el}
+        glyph={gly}
+        short={signR.short}
+        long={signR.long}
+        houseReading={houseR}
+        planetAspects={bodyAspects}
+        hasHouses={hasHouses}
+        plutoExtended={plutoExtended}
+        plutoSign={plutoExtended ? sk : undefined}
+        showWorkView={isProfessionalPersonRelation(person.relation)}
+      />
+    );
+  };
 
   return (
     <main className={`app-content${personPassed ? " app-content--remembrance" : ""}`}>
@@ -1079,6 +1151,15 @@ export default function PersonProfilePage() {
           ) : null}
         </div>
       </div>
+
+      {userId ? (
+        <RelationshipEdgesBox
+          person={person}
+          userId={userId}
+          subjectIsMinor={personIsMinor}
+          showRemembranceNote={showHonorBox}
+        />
+      ) : null}
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
@@ -1125,34 +1206,10 @@ export default function PersonProfilePage() {
         </div>
       ) : null}
 
-      {userId ? (
-        <RelationshipEdgesBox
-          person={person}
-          userId={userId}
-          subjectIsMinor={personIsMinor}
-          showRemembranceNote={showHonorBox}
-        />
-      ) : null}
-
-      <PersonProfileNav
-        groups={groupsForPage}
-        activeGroup={activeGroup}
-        onGroupChange={(group) => {
-          setActiveGroup(group);
-          window.setTimeout(() => {
-            document.getElementById(`person-group-panel-${group}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }, 40);
-        }}
-        onJump={goToSection}
-        personName={person.display_name}
-      />
-
       <div
-        id="person-group-panel-now"
-        role="tabpanel"
-        aria-labelledby="person-group-now"
-        className="person-group-panel"
-        hidden={activeGroup !== "now"}
+        id="person-today"
+        className="person-today"
+        style={{ display: "grid", gap: 14 }}
       >
       {showActiveTodayNote && dailyNudge ? (
         <section id="active-today" className="glass-card fade-in" style={{ borderColor: "rgba(230,174,108,.28)", background: "rgba(230,174,108,.05)" }}>
@@ -1237,6 +1294,18 @@ export default function PersonProfilePage() {
       ) : null}
       </div>
 
+      <PersonProfileNav
+        groups={groupsForPage}
+        activeGroup={activeGroup}
+        onGroupChange={(group) => {
+          setActiveGroup(group);
+          window.setTimeout(() => {
+            document.getElementById(`person-group-panel-${group}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 40);
+        }}
+        personName={person.display_name}
+      />
+
       <div
         id="person-group-panel-them"
         role="tabpanel"
@@ -1250,10 +1319,10 @@ export default function PersonProfilePage() {
         {sectionHead("big-three")}
         <div style={{ display: "grid", gap: 8 }}>
           {([
-            { key: "sun",    label: "Sun",    sign: sun?.sign,  body: "sun",  house: sun?.house,  uncertain: sun?.confident === false,  possibleSigns: sun?.possibleSigns  },
-            { key: "moon",   label: "Moon",   sign: moon?.sign, body: "moon", house: moon?.house, uncertain: moon?.confident === false, possibleSigns: moon?.possibleSigns },
-            { key: "rising", label: "Rising", sign: chart.asc,  body: null,   house: undefined,   uncertain: false, possibleSigns: undefined },
-          ] as { key: string; label: string; sign: string|undefined; body: string|null; house: number|undefined; uncertain: boolean; possibleSigns: string[]|undefined }[]).map(({ key, label, sign, body, house, uncertain, possibleSigns }) => {
+            { key: "sun",    label: "Sun",    sign: sun?.sign,  body: "sun",  house: sun?.house,  uncertain: sun?.confident === false,  possibleSigns: sun?.possibleSigns,  degree: sun && sun.confident !== false ? toDMS(sun.degree) : undefined  },
+            { key: "moon",   label: "Moon",   sign: moon?.sign, body: "moon", house: moon?.house, uncertain: moon?.confident === false, possibleSigns: moon?.possibleSigns, degree: moon && moon.confident !== false ? toDMS(moon.degree) : undefined },
+            { key: "rising", label: "Rising", sign: chart.asc,  body: null,   house: undefined,   uncertain: false, possibleSigns: undefined, degree: undefined },
+          ] as { key: string; label: string; sign: string|undefined; body: string|null; house: number|undefined; uncertain: boolean; possibleSigns: string[]|undefined; degree?: string }[]).map(({ key, label, sign, body, house, uncertain, possibleSigns, degree }) => {
             if (!sign) return (
               <div key={key} className="sign-chip" style={{ opacity: .45 }}>
                 {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
@@ -1296,6 +1365,7 @@ export default function PersonProfilePage() {
                       {label}{house && hasHouses ? <HouseBadge house={house} /> : null}
                     </div>
                     <div style={{ fontFamily: "var(--serif)", fontSize: ".95rem", color: "var(--cream)" }}>{sign}</div>
+                    {degree ? <div style={{ fontSize: ".72rem", color: "var(--mist2)" }}>{degree}</div> : null}
                   </div>
                   <span style={{ fontSize: ".76rem", color: "var(--mist)", fontStyle: "italic", flex: 1, textAlign: "right" }}>{signReading.short}</span>
                   <span style={{ color: "var(--mist2)", fontSize: ".7rem", flexShrink: 0, marginLeft: 6, transform: isOpen ? "rotate(90deg)" : "none", display: "inline-block", transition: "transform .2s" }}>▶</span>
@@ -1347,6 +1417,52 @@ export default function PersonProfilePage() {
         ) : null}
       </section>
 
+      {/* ── Chart Wheel (collapsible, open by default; SVG mounts after first paint) ── */}
+      {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
+      <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
+        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1">
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8, gap: 8 }}>
+            <div>{sectionHead("chart-wheel")}</div>
+            <button
+              type="button"
+              className="pill-link"
+              style={{ fontSize: ".7rem", padding: "3px 10px" }}
+              onClick={() => setWheelOpen((open) => !open)}
+              aria-expanded={wheelOpen}
+            >
+              {wheelOpen ? "Hide wheel" : "Show wheel"}
+            </button>
+          </div>
+          {wheelOpen ? (
+            <>
+              <p className="muted" style={{ fontSize: ".72rem", margin: "0 0 14px" }}>
+                {chart.precision === "exact" && chart.asc
+                  ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
+                  : enduringEyebrow("Zodiac wheel")}
+              </p>
+              <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", textAlign: "center", marginBottom: 12 }}>
+                {person.display_name}
+              </p>
+              {wheelMounted ? (
+                <ChartWheel chart={chart} aspects={natalAspects} exportSafe />
+              ) : (
+                <div aria-hidden style={{ width: 300, height: 300, margin: "0 auto" }} />
+              )}
+              {chart.houseSystemFallbackReason ? (
+                <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
+                  {chart.houseSystemFallbackReason}
+                </p>
+              ) : null}
+              {(chart.precision !== "exact" || !chart.asc) ? (
+                <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "48ch", margin: "10px auto 0" }}>
+                  Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+                </p>
+              ) : null}
+            </>
+          ) : null}
+        </section>
+      </ChartImageExport>
+
       {/* ── Placements ── */}
       <section id="placements" className="glass-card fade-in fade-in-delay-1">
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8, gap: 8 }}>
@@ -1369,99 +1485,33 @@ export default function PersonProfilePage() {
           </div>
         ))}
 
-        {chart.placements.map(p => {
-          const bk  = normaliseBody(p.body);
-          const sk  = normaliseSign(p.sign);
-          const el  = signElement(p.sign);
-          const gly = BODY_GLYPH[p.body] ?? p.body[0].toUpperCase();
-          const safety = { minorSafe: personIsMinor };
-          const domain = bodyDomain(bk, safety);
-          if (p.confident === false) {
-            // Year-only data: the sign is not known. Say so: never interpret a guess.
+        {chart.placements
+          .filter((p) => p.body !== "sun" && p.body !== "moon" && !GENERATIONAL.includes(normaliseBody(p.body)))
+          .map((p) => renderPlacementRow(p))}
+
+        <div id="generational">
+          {generationInfo ? (
+            <p style={{ fontSize: ".78rem", color: "var(--cream)", fontWeight: 600, margin: "12px 0 2px" }}>
+              {generationInfo.name} · {generationInfo.span}
+            </p>
+          ) : null}
+          <p className="muted" style={{ fontSize: ".8rem", marginBottom: 12 }}>{chart.generational.cohortLabel}</p>
+          {chart.placements
+            .filter((p) => GENERATIONAL.includes(normaliseBody(p.body)))
+            .map((p) => renderPlacementRow(p))}
+          {!person.is_self && viewerPlutoSign && chart.generational.pluto.confident ? (() => {
+            const bridge = getFamilyBridge(viewerPlutoSign, chart.generational.pluto.sign);
+            if (!bridge) return null;
             return (
-              <div key={p.body} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65 }}>
-                <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{gly}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{domain}</div>
-                  <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{p.body.charAt(0).toUpperCase() + p.body.slice(1)}: sign uncertain</div>
-                </div>
-                <span style={{ fontSize: ".76rem", color: "var(--mist2)", fontStyle: "italic", textAlign: "right" }}>
-                  {p.possibleSigns?.length ? `Could be ${p.possibleSigns.join(" or ")}` : "Needs a birth date"}
-                </span>
+              <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 12, border: "1px solid rgba(183,154,216,.22)", background: "rgba(255,255,255,.025)" }}>
+                <p className="eyebrow" style={{ marginBottom: 6 }}>
+                  You + {person.relation || person.display_name}
+                </p>
+                <p style={{ fontSize: ".84rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{bridge}</p>
               </div>
             );
-          }
-          const signR = interpretPlacement(bk, sk, safety);
-          if (process.env.NODE_ENV !== "production" && !signR.short) console.warn(`[interpretations] missing: ${bk} in ${sk}`);
-          const houseR = (p.house && hasHouses)
-            ? (() => { const hr = interpretHouse(bk, p.house as HouseKey, safety); const hm = houseMeaning(p.house as HouseKey); return hm && hr.long ? { houseName: hm.name, houseDomain: hm.domain, long: hr.long } : null; })()
-            : null;
-          const bodyAspects = (aspectsByBody.get(p.body) ?? []).flatMap(a => {
-            const reading = interpretAspect(normaliseBody(a.from), normaliseBody(a.to), normaliseAspect(a.type));
-            if (!reading) return [];
-            return [{
-              from: a.from, to: a.to, type: a.type, orb: a.orb, tight: a.orb < 2,
-              short: reading.short
-            }];
-          });
-          const rowKey = `pl-${p.body}`;
-          const isGen  = GENERATIONAL.includes(bk);
-          return (
-            <ExpandRow
-              key={p.body}
-              open={openRows.has(rowKey)}
-              onToggle={() => toggleRow(rowKey)}
-              label={`${p.body.charAt(0).toUpperCase() + p.body.slice(1)} in ${p.sign}${isGen ? " ✦" : ""}`}
-              domain={domain}
-              degree={toDMS(p.degree)}
-              house={p.house}
-              el={el}
-              glyph={gly}
-              short={signR.short}
-              long={signR.long}
-              houseReading={houseR}
-              planetAspects={bodyAspects}
-              hasHouses={hasHouses}
-            />
-          );
-        })}
-
-        {/* Element + modality balance */}
-        {elementBalance ? (
-          <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,.05)" }}>
-            <p className="eyebrow" style={{ marginBottom: 8 }}>Element & modality balance</p>
-            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 8 }}>
-              {(["fire","earth","air","water"] as const).map(el => (
-                <span key={el} style={{ fontSize: ".75rem", color: `var(--${el})` }}>{el.charAt(0).toUpperCase() + el.slice(1)} {elementBalance[el]}</span>
-              ))}
-            </div>
-            {modalityBalance ? (
-              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10 }}>
-                {(["cardinal","fixed","mutable"] as const).map(m => (
-                  <span key={m} style={{ fontSize: ".75rem", color: "var(--mist2)" }}>{m.charAt(0).toUpperCase() + m.slice(1)} {modalityBalance[m]}</span>
-                ))}
-              </div>
-            ) : null}
-            {(() => {
-              const counts = elementBalance;
-              const max = Math.max(...Object.values(counts));
-              const dom = (Object.entries(counts) as [string,number][]).find(([,v]) => v === max)?.[0] as "fire"|"earth"|"air"|"water"|undefined;
-              const absent = (Object.entries(counts) as [string,number][]).filter(([,v]) => v === 0).map(([k]) => k as "fire"|"earth"|"air"|"water");
-              const mcounts = modalityBalance ?? { cardinal:0, fixed:0, mutable:0 };
-              const mmax = Math.max(...Object.values(mcounts));
-              const mdom = (Object.entries(mcounts) as [string,number][]).find(([,v]) => v === mmax)?.[0] as keyof typeof MODALITY_DOMINANT|undefined;
-              const mabsent = (Object.entries(mcounts) as [string,number][]).filter(([,v]) => v === 0).map(([k]) => k);
-              return (
-                <div style={{ display: "grid", gap: 6 }}>
-                  {dom && max >= 3 ? <p style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.55, margin: 0, borderLeft: `2px solid var(--${dom})`, paddingLeft: 10 }}>{ELEMENT_DOMINANT[dom]}</p> : null}
-                  {absent.map(el => <p key={el} style={{ fontSize: ".8rem", color: "var(--mist2)", lineHeight: 1.55, margin: 0, borderLeft: "2px solid rgba(183,154,216,.25)", paddingLeft: 10 }}>{ELEMENT_ABSENT[el]}</p>)}
-                  {mdom && mmax >= 4 ? <p style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.55, margin: 0, borderLeft: "2px solid rgba(183,154,216,.4)", paddingLeft: 10 }}>{MODALITY_DOMINANT[mdom]}</p> : null}
-                  {mabsent.map(m => <p key={m} style={{ fontSize: ".8rem", color: "var(--mist2)", lineHeight: 1.55, margin: 0, borderLeft: "2px solid rgba(183,154,216,.15)", paddingLeft: 10 }}>{MODALITY_ABSENT[m]}</p>)}
-                </div>
-              );
-            })()}
-          </div>
-        ) : null}
+          })() : null}
+        </div>
       </section>
 
       {/* ── Key aspects ── */}
@@ -1594,116 +1644,41 @@ export default function PersonProfilePage() {
         }
       />
 
-      {/* ── Generational layer ── */}
-      <section id="generational" className="glass-card fade-in fade-in-delay-2">
-        {sectionHead("generational")}
-        {generationInfo ? (
-          <p style={{ fontSize: ".78rem", color: "var(--cream)", fontWeight: 600, marginBottom: 2 }}>
-            {generationInfo.name} · {generationInfo.span}
-          </p>
-        ) : null}
-        <p className="muted" style={{ fontSize: ".8rem", marginBottom: 12 }}>{chart.generational.cohortLabel}</p>
-        {(["uranus","neptune","pluto"] as const).map(planet => {
-          const data = chart.generational[planet as "uranus"|"neptune"|"pluto"];
-          const bk = planet as BodyKey;
-          if (data.confident === false) {
-            // The planet changed sign during the birth year: we don't know which side.
+      {elementBalance ? (
+        <section id="element-balance" className="glass-card fade-in fade-in-delay-2">
+          <p className="eyebrow" style={{ marginBottom: 8 }}>Element & modality balance</p>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 8 }}>
+            {(["fire","earth","air","water"] as const).map(el => (
+              <span key={el} style={{ fontSize: ".75rem", color: `var(--${el})` }}>{el.charAt(0).toUpperCase() + el.slice(1)} {elementBalance[el]}</span>
+            ))}
+          </div>
+          {modalityBalance ? (
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10 }}>
+              {(["cardinal","fixed","mutable"] as const).map(m => (
+                <span key={m} style={{ fontSize: ".75rem", color: "var(--mist2)" }}>{m.charAt(0).toUpperCase() + m.slice(1)} {modalityBalance[m]}</span>
+              ))}
+            </div>
+          ) : null}
+          {(() => {
+            const counts = elementBalance;
+            const max = Math.max(...Object.values(counts));
+            const dom = (Object.entries(counts) as [string,number][]).find(([,v]) => v === max)?.[0] as "fire"|"earth"|"air"|"water"|undefined;
+            const absent = (Object.entries(counts) as [string,number][]).filter(([,v]) => v === 0).map(([k]) => k as "fire"|"earth"|"air"|"water");
+            const mcounts = modalityBalance ?? { cardinal:0, fixed:0, mutable:0 };
+            const mmax = Math.max(...Object.values(mcounts));
+            const mdom = (Object.entries(mcounts) as [string,number][]).find(([,v]) => v === mmax)?.[0] as keyof typeof MODALITY_DOMINANT|undefined;
+            const mabsent = (Object.entries(mcounts) as [string,number][]).filter(([,v]) => v === 0).map(([k]) => k);
             return (
-              <div key={planet} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65 }}>
-                <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{BODY_GLYPH[planet] ?? planet[0].toUpperCase()}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{bodyDomain(bk, { minorSafe: personIsMinor })}</div>
-                  <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{planet.charAt(0).toUpperCase() + planet.slice(1)}: sign uncertain</div>
-                </div>
-                <span style={{ fontSize: ".76rem", color: "var(--mist2)", fontStyle: "italic", textAlign: "right" }}>
-                  {data.possibleSigns?.length ? `Could be ${data.possibleSigns.join(" or ")}` : "Changed sign that year"}
-                </span>
+              <div style={{ display: "grid", gap: 6 }}>
+                {dom && max >= 3 ? <p style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.55, margin: 0, borderLeft: `2px solid var(--${dom})`, paddingLeft: 10 }}>{ELEMENT_DOMINANT[dom]}</p> : null}
+                {absent.map(el => <p key={el} style={{ fontSize: ".8rem", color: "var(--mist2)", lineHeight: 1.55, margin: 0, borderLeft: "2px solid rgba(183,154,216,.25)", paddingLeft: 10 }}>{ELEMENT_ABSENT[el]}</p>)}
+                {mdom && mmax >= 4 ? <p style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.55, margin: 0, borderLeft: "2px solid rgba(183,154,216,.4)", paddingLeft: 10 }}>{MODALITY_DOMINANT[mdom]}</p> : null}
+                {mabsent.map(m => <p key={m} style={{ fontSize: ".8rem", color: "var(--mist2)", lineHeight: 1.55, margin: 0, borderLeft: "2px solid rgba(183,154,216,.15)", paddingLeft: 10 }}>{MODALITY_ABSENT[m]}</p>)}
               </div>
             );
-          }
-          const sk = normaliseSign(data.sign);
-          const reading = interpretPlacement(bk, sk, { minorSafe: personIsMinor });
-          const rowKey = `gen-${planet}`;
-          // Pluto only, and only for a confident sign — never render extended
-          // content (corruption signature / historical figures / era events)
-          // from a guessed sign (§12). Uranus and Neptune rows are unchanged.
-          const plutoExtended: PlutoSignExtended | null =
-            planet === "pluto" ? PLUTO_SIGN_EXTENDED[sk] ?? null : null;
-          return (
-            <ExpandRow key={planet} open={openRows.has(rowKey)} onToggle={() => toggleRow(rowKey)}
-              label={`${planet.charAt(0).toUpperCase() + planet.slice(1)} in ${data.sign}`}
-              domain={bodyDomain(bk, { minorSafe: personIsMinor })} el={signElement(data.sign)}
-              glyph={BODY_GLYPH[planet] ?? planet[0].toUpperCase()}
-              short={reading.short} long={reading.long}
-              hasHouses={false}
-              plutoExtended={plutoExtended}
-              plutoSign={plutoExtended ? sk : undefined}
-              showWorkView={isProfessionalPersonRelation(person.relation)}
-            />
-          );
-        })}
-        {/* Family Bridge — only when viewing someone else's chart, both Pluto
-            signs are confident, and the pair has authored copy. Never falls
-            back to a generic line (§12): no entry means no card. */}
-        {!person.is_self && viewerPlutoSign && chart.generational.pluto.confident ? (() => {
-          const bridge = getFamilyBridge(viewerPlutoSign, chart.generational.pluto.sign);
-          if (!bridge) return null;
-          return (
-            <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 12, border: "1px solid rgba(183,154,216,.22)", background: "rgba(255,255,255,.025)" }}>
-              <p className="eyebrow" style={{ marginBottom: 6 }}>
-                You + {person.relation || person.display_name}
-              </p>
-              <p style={{ fontSize: ".84rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{bridge}</p>
-            </div>
-          );
-        })() : null}
-      </section>
-
-      {/* ── Chart Wheel ── */}
-      {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
-      <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
-        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1">
-          {sectionHead("chart-wheel")}
-          <p className="muted" style={{ fontSize: ".72rem", margin: "0 0 14px" }}>
-            {chart.precision === "exact" && chart.asc
-              ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
-              : enduringEyebrow("Zodiac wheel")}
-          </p>
-          <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", textAlign: "center", marginBottom: 12 }}>
-            {person.display_name}
-          </p>
-          {(sun?.sign || moon?.sign || chart.asc) ? (
-            <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", marginBottom: 14 }}>
-              {([
-                { label: "Sun", sign: sun?.sign },
-                { label: "Moon", sign: moon?.sign },
-                { label: "Rising", sign: chart.asc },
-              ] as { label: string; sign: string | undefined }[])
-                .filter((chip) => chip.sign)
-                .map((chip) => (
-                  <div key={chip.label} className="sign-chip">
-                    <span className="sign-chip__glyph" style={{ color: `var(--${signElement(chip.sign as string)})` }}>
-                      {SIGN_GLYPH[chip.sign as string]}
-                    </span>
-                    <span className="sign-chip__label">{chip.label}</span>
-                    <span className="sign-chip__value">{chip.sign}</span>
-                  </div>
-                ))}
-            </div>
-          ) : null}
-          <ChartWheel chart={chart} aspects={natalAspects} exportSafe />
-          {chart.houseSystemFallbackReason ? (
-            <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
-              {chart.houseSystemFallbackReason}
-            </p>
-          ) : null}
-          {(chart.precision !== "exact" || !chart.asc) ? (
-            <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "48ch", margin: "10px auto 0" }}>
-              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
-            </p>
-          ) : null}
+          })()}
         </section>
-      </ChartImageExport>
+      ) : null}
       </div>
 
       <div
@@ -1782,11 +1757,11 @@ export default function PersonProfilePage() {
         <section id="past-conversations" className="glass-card fade-in fade-in-delay-3">
           {sectionHead("past-conversations")}
           <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>Archived Vela threads about {person.display_name}. Nothing is ever deleted.</p>
-          {/* grid-template-columns: minmax(0,1fr) — without it the single implicit
+          {/* grid-template-columns: minmax(0,1fr): without it the single implicit
               grid track is `auto`, which sizes to the max-content of its rows.
               Each row's body <p> is white-space:nowrap (single-line ellipsis),
               and overflow:hidden/ellipsis do NOT shrink an element's max-content
-              contribution — so the track (and thus the whole page's layout
+              contribution, so the track (and thus the whole page's layout
               viewport) grew to the untruncated text width, forcing horizontal
               overflow / pinch-zoom-out on mobile. minmax(0,1fr) caps the track
               at the container width so the ellipsis truncation actually engages. */}
@@ -1795,7 +1770,7 @@ export default function PersonProfilePage() {
               <div key={entry.id} style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: "2px solid rgba(183,154,216,.25)", display: "flex", justifyContent: "space-between", alignItems: entry.withdrawnReason ? "flex-start" : "center", gap: 8 }}>
                 <div style={{ minWidth: 0 }}>
                   {/* Withdrawn previews are already user-facing (formatWithdrawnReasonForDisplay
-                      in lib/record.ts) — wrap so asserted / chart / when stay readable.
+                      in lib/record.ts): wrap so asserted / chart / when stay readable.
                       Ordinary previews keep single-line ellipsis. */}
                   <p style={{
                     margin: 0,

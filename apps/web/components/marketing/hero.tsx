@@ -31,17 +31,17 @@ export function Hero() {
           <span className="eyebrow fade-in">Your life. Your people. Your galaxy.</span>
           {/* FOUNDER-REVIEW: "The night sky belongs to everyone. Yours doesn't." moved to WhySection (/why-galaxia). */}
           <h1 className="hero-h1 fade-in fade-in-delay-1">
-            {/* FOUNDER-REVIEW: homepage hero headline. */}
-            Better understand the people in your life
+            {/* FOUNDER-REVIEW: homepage hero headline. Gold italic on the terminal beat, matching close-h. */}
+            Better understand the people <em className="hero-h1__accent">in your life</em>
           </h1>
           <div className="hero-copy fade-in fade-in-delay-2">
             <p className="lede">
               {/* FOUNDER-REVIEW: homepage hero subheading. */}
-              Build a real chart for your partner, your mother, your difficult colleague, even the ones you have lost, and learn who they are at their core.
+              Build a real chart for everyone who matters: your loved ones, your colleagues, even the ones you've lost, and learn who they are at their core.
             </p>
-            <p className="lede hero-copy-defense">
-              {/* FOUNDER-REVIEW: homepage hero value proposition. */}
-              Yes, it uses astrology. We won't tell you to avoid Geminis, we'll tell you how to talk to one.
+            <p className="lede">
+              {/* FOUNDER-REVIEW: homepage hero value proposition. Same brightness as the lede above; no dimming class. */}
+              Yes, it's real astrology. We won't tell you to avoid Geminis, we'll help you actually understand one.
             </p>
           </div>
           <div className="hero-cta-stack fade-in fade-in-delay-3">

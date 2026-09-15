@@ -27,11 +27,14 @@ describe("homepage outcome-led copy", () => {
     expect(src).not.toContain("Galaxia · your inner circle");
     expect(src).not.toContain("YOUR INNER CIRCLE");
     expect(src).not.toContain("Your Inner Circle");
-    expect(src).toContain("Better understand the people in your life");
+    expect(src).toContain('Better understand the people <em className="hero-h1__accent">in your life</em>');
     expect(src).not.toContain("Better understand the people in your life.");
-    expect(src).toContain("Build a real chart for your partner, your mother, your difficult colleague, even the ones you have lost, and learn who they are at their core.");
-    expect(src).toContain("Yes, it uses astrology. We won't tell you to avoid Geminis, we'll tell you how to talk to one.");
-    expect(src).not.toContain("Yes, it uses astrology. No, it will not tell you to avoid Geminis.");
+    expect(src).toContain("Build a real chart for everyone who matters: your loved ones, your colleagues, even the ones you've lost, and learn who they are at their core.");
+    expect(src).toContain("Yes, it's real astrology. We won't tell you to avoid Geminis, we'll help you actually understand one.");
+    expect(src).not.toContain("hero-copy-defense");
+    expect(src).not.toContain("Build a real chart for your partner, your mother, your difficult colleague");
+    expect(src).not.toContain("Yes, it uses astrology.");
+    expect(src).not.toContain("we'll tell you how to talk to one.");
     expect(src).not.toContain("Galaxia builds a real chart for every person in your life, your partner,");
     expect(src).toContain("No card required · Works with just a birth date");
     expect(src).not.toContain("No card. Works with just a birth date.");
@@ -40,8 +43,8 @@ describe("homepage outcome-led copy", () => {
     const withoutComments = src.replace(/\/\*[\s\S]*?\*\//g, "");
     expect(withoutComments).not.toContain("The night sky belongs to everyone.");
     expect(withoutComments).not.toContain("Every app like this is about you.");
-    const copyIdx = withoutComments.indexOf("Build a real chart for your partner");
-    const defenseIdx = withoutComments.indexOf("Yes, it uses astrology.");
+    const copyIdx = withoutComments.indexOf("Build a real chart for everyone who matters");
+    const defenseIdx = withoutComments.indexOf("Yes, it's real astrology.");
     const ctaIdx = withoutComments.indexOf("{HERO_PRIMARY_CTA.label}");
     const noteIdx = withoutComments.indexOf("No card required · Works with just a birth date");
     const loginIdx = withoutComments.indexOf("{MARKETING_NAV_LOGIN.label}");
@@ -52,6 +55,11 @@ describe("homepage outcome-led copy", () => {
     expect(loginIdx).toBeGreaterThan(noteIdx);
     expect(HERO_PRIMARY_CTA).toEqual({ href: "/chart", label: "See someone's chart free" });
     expect(MARKETING_NAV_LOGIN).toEqual({ href: "/login", label: "Log in" });
+    const css = read("app/globals.css");
+    expect(css).toMatch(
+      /\.marketing \.hero-h1 em\.hero-h1__accent\s*\{\s*color:\s*var\(--gold\);/,
+    );
+    expect(css).not.toContain(".lede.hero-copy-defense");
   });
 
   it("keeps teaser destinations unchanged", () => {

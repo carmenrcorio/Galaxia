@@ -1280,6 +1280,11 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 }
 /* Lean into the italic cut for the emotional core of the line. */
 .marketing .hero-h1 em { font-style: italic; font-weight: 400; color: var(--cream); }
+/* Same specificity as the cream rule, plus the accent class, so gold wins.
+   Mirrors `.close-h em { color: var(--gold) }` on the closing headline. */
+.marketing .hero-h1 em.hero-h1__accent {
+  color: var(--gold);
+}
 
 .hero-copy {
   margin-top: 18px;
@@ -1288,7 +1293,6 @@ section { padding-block: clamp(76px, 12vh, 140px); }
   align-items: flex-start;
   gap: 12px;
 }
-.lede.hero-copy-defense { color: var(--mist2); }
 
 .hero-cta-stack {
   margin-top: 24px;

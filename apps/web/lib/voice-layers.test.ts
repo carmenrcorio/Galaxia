@@ -68,7 +68,7 @@ describe("layer one: lead with outcome, never an astrology app", () => {
     expect(h1?.[1]).toBeDefined();
     const text = h1![1]!.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
     expect(text.toLowerCase().startsWith("astrology")).toBe(false);
-    expect(src).toContain("Better understand the people in your life");
+    expect(src).toContain('Better understand the people <em className="hero-h1__accent">in your life</em>');
     expect(src).not.toContain("Better understand the people in your life.");
     expect(text.toLowerCase()).toContain("people in your life");
   });

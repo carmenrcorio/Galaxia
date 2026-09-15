@@ -101,13 +101,13 @@ export default function GroupsScreen() {
     void (async () => {
       setRosterLoading(true);
       setRosterError(false);
-      try {
-        await withTimeout(Promise.all([fetchPeople(), fetchGroups()]), DEFAULT_FETCH_TIMEOUT_MS);
-      } catch {
-        if (!cancelled) setRosterError(true);
-      } finally {
-        if (!cancelled) setRosterLoading(false);
-      }
+      await withTimeout(Promise.all([fetchPeople(), fetchGroups()]), DEFAULT_FETCH_TIMEOUT_MS)
+        .catch(() => {
+          if (!cancelled) setRosterError(true);
+        })
+        .finally(() => {
+          if (!cancelled) setRosterLoading(false);
+        });
     })();
     return () => { cancelled = true; };
   }, [session?.user.id]);

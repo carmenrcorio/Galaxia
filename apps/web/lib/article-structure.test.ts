@@ -154,6 +154,12 @@ describe("post template wiring", () => {
     expect(page.indexOf("article-read-next")).toBeLessThan(page.indexOf("article-cta"));
   });
 
+  it("places the chart-reading capture after the article body and before Read next", () => {
+    expect(page).toContain("ChartReadingCapture");
+    expect(page.indexOf("ArticleMarkdown")).toBeLessThan(page.indexOf("ChartReadingCapture"));
+    expect(page.indexOf("ChartReadingCapture")).toBeLessThan(page.indexOf("article-read-next"));
+  });
+
   it("injects the mid-post CTA through ArticleMarkdown, not the stored body", () => {
     expect(page).toContain("midCtaHref={midPostCtaHref(post.category)}");
     expect(page).not.toContain(MID_CTA_MARKER);

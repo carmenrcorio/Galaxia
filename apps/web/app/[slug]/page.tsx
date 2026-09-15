@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArticleMarkdown } from "../../components/blog/article-markdown";
 import { BlogHeader } from "../../components/blog/blog-header";
 import { BlogPostCard } from "../../components/blog/blog-post-card";
+import { ChartReadingCapture } from "../../components/blog/chart-reading-capture";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { JsonLd } from "../../components/seo/json-ld";
 import {
@@ -90,6 +91,8 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
           </nav>
         ) : null}
         <ArticleMarkdown midCtaHref={midPostCtaHref(post.category)}>{post.body}</ArticleMarkdown>
+
+        <ChartReadingCapture />
 
         {related.length > 0 ? (
           <section className="article-read-next" aria-labelledby="article-read-next-heading">

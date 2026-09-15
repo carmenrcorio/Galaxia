@@ -105,6 +105,8 @@ describe("isSensitiveRequestPath", () => {
     expect(isSensitiveRequestPath("/api/constellation-letter/unsubscribe")).toBe(true);
     expect(isSensitiveRequestPath("/api/constellation-letter/open")).toBe(true);
     expect(isSensitiveRequestPath("/api/constellation-letter/go")).toBe(true);
+    expect(isSensitiveRequestPath("/api/blog/chart-reading-capture")).toBe(true);
+    expect(isSensitiveRequestPath("/api/blog/chart-reading-unsubscribe")).toBe(true);
   });
 
   it("does not match public marketing routes", () => {

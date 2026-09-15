@@ -64,7 +64,7 @@ export const PURGED_USER_TABLES = [
  * Public tables that are not a user's account graph. Purge must not wipe
  * them. Update this list when you add a lookup/editorial table.
  */
-export const RETAINED_NON_USER_TABLES = ["posts", "galaxy_relations"] as const;
+export const RETAINED_NON_USER_TABLES = ["posts", "galaxy_relations", "blog_email_captures"] as const;
 
 /**
  * Rows stay, identifiers pointing at the caller are cleared.
@@ -256,6 +256,9 @@ update profiles set pinned_sky_person_id = '11111111-aaaa-4aaa-8aaa-000000000001
 insert into posts (slug, title, dek, category, body, status)
 values ('purge-replay-post', 'Retained post', 'dek', 'guides', 'body', 'published');
 
+insert into blog_email_captures (email, has_birth_data)
+values ('purge-replay-capture@example.com', false);
+
 -- set_config(..., true) is transaction-local. A DO block keeps jwt + purge
 -- in one transaction so auth.uid() is visible to the function.
 do $$
@@ -425,6 +428,7 @@ select jsonb_build_object(
   'founder_admin', (select count(*) from admin_users where owner_id = '${FOUNDER}'),
   'posts', (select count(*) from posts where slug = 'purge-replay-post'),
   'galaxy_relations', (select count(*) from galaxy_relations),
+  'blog_email_captures', (select count(*) from blog_email_captures where email = 'purge-replay-capture@example.com'),
   'other_thread', (select count(*) from threads where id = '33333333-bbbb-4bbb-8bbb-000000000001'),
   'bare_star', (
     select count(*) from people
@@ -451,6 +455,7 @@ select jsonb_build_object(
         expect(audit.third_user).toBe(1);
         expect(audit.founder_admin).toBe(1);
         expect(audit.posts).toBe(1);
+        expect(audit.blog_email_captures).toBe(1);
         // The point of this row is that a retained lookup table survives the
         // purge untouched, not that the canonical relation list is any
         // particular length. Deriving the count from the TypeScript source

@@ -592,7 +592,7 @@ export default function PersonProfilePage() {
       return;
     }
     if (pErr || !pData) { setStatus(PERSON_LOAD_ERROR); setLoading(false); return; }
-    const personRow = pData as PersonRow & { tz_offset_min?: number | null };
+    const personRow = pData as unknown as PersonRow & { tz_offset_min?: number | null };
     void acknowledgeConnectIfNeeded(uid, personRow);
     // Progressive capture: a person with no chart yet (birth_precision 'none')
     // is not an error — render the "add birth data" state instead of failing.

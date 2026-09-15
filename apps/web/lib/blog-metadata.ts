@@ -30,7 +30,7 @@ export interface CategoryMetadataInput {
  */
 export function buildPostMetadata(post: PostMetadataInput): Metadata {
   const ogImage = post.heroImageUrl
-    ? [{ url: post.heroImageUrl, alt: post.title }]
+    ? [{ url: post.heroImageUrl, alt: post.title, width: 1200, height: 630 }]
     : [SITE_OG_IMAGE];
 
   return {

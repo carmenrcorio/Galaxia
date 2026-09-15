@@ -55,7 +55,9 @@ describe("buildPostMetadata", () => {
       dek: "Dek",
       heroImageUrl: "https://example.com/hero.png"
     });
-    expect(meta.openGraph?.images).toEqual([{ url: "https://example.com/hero.png", alt: "Title" }]);
+    expect(meta.openGraph?.images).toEqual([
+      { url: "https://example.com/hero.png", alt: "Title", width: 1200, height: 630 }
+    ]);
   });
 });
 

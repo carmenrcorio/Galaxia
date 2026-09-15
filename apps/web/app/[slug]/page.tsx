@@ -43,9 +43,8 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const post = await getPublishedPost(slug);
   if (!post) return {};
 
-  // Prefer the post's own hero image for link previews once one is set
-  // (Part C); falls back to the generic site OG card exactly like before
-  // for a post that has none yet.
+  // Prefer the post's own stored hero for link previews; falls back to the
+  // generic site OG card when hero_image_url is null.
   return buildPostMetadata(post);
 }
 
@@ -65,12 +64,12 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
       <JsonLd data={buildArticleJsonLd(post)} />
       <BlogHeader />
       <main className="container article-page article-content">
+        <h1 className="auth-title article-title">{post.title}</h1>
         {post.heroImageUrl ? (
           <figure className="article-hero">
-            <img src={post.heroImageUrl} alt="" />
+            <img src={post.heroImageUrl} alt="" width={1200} height={630} />
           </figure>
         ) : null}
-        <h1 className="auth-title article-title">{post.title}</h1>
         {/* FOUNDER-REVIEW: post byline row (author, date, read time). */}
         <p className="article-byline">
           {post.byline}

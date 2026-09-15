@@ -34,13 +34,10 @@ const R_PLANET_A = 72;
 const R_PLANET_B = 96;
 const LINE_COLOR = "rgba(230,174,108,.13)";
 
-// FOUNDER-REVIEW: authored — compare bi-wheel missing-houses hedge (all Compare surfaces).
 export const COMPARE_WHEEL_NEEDS_HOUSES =
-  "Add an exact birth time and city for the house-frame person to unlock the synastry wheel.";
+  "Add an exact birth time and city and the synastry wheel opens up.";
 
-// FOUNDER-REVIEW — overlay mounted without aspects (call-site bug, not year precision).
 export const OVERLAY_ASPECTS_MISSING_NOTE =
-  // FOUNDER-REVIEW: rewritten (no U+2014).
   "Aspect lines need the compare aspects: none were passed to this wheel.";
 
 export type WheelAspect = {
@@ -468,7 +465,6 @@ export function ChartWheel({ chart, overlayChart, aspects: aspectsProp, interact
         })}
       </svg>
       {showYearNote ? (
-        // FOUNDER-REVIEW — honest empty-center copy when year-only data cannot place aspects.
         <p
           className="muted"
           style={{ fontSize: ".72rem", marginTop: 8, textAlign: "center", maxWidth: "36ch", marginLeft: "auto", marginRight: "auto", lineHeight: 1.45 }}

@@ -13,7 +13,6 @@ import type { PersonGroupKey, PersonNavSection, PersonPageGroup } from "@galaxia
  * Quiet astrology-term line inside a renamed person-profile section.
  * The tab chip uses the plain-language label; this is the vocabulary
  * a reader who knows the chart terms is looking for.
- * FOUNDER-REVIEW: vocab subhead. Terms come from PERSON_TAB_VOCAB.
  */
 export function ChartVocabSubhead({ term }: { term: string }) {
   return <p className="chart-vocab-subhead">{term}</p>;

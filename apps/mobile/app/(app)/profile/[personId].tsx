@@ -206,7 +206,6 @@ export default function PersonProfileScreen() {
       });
     }
 
-    // FOUNDER-REVIEW: formatPersonDeleteConfirmation
     const warning = formatPersonDeleteConfirmation({
       personName: person.display_name,
       collapsingGroups,
@@ -247,8 +246,7 @@ export default function PersonProfileScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: tokens.colors.ink, justifyContent: "center", alignItems: "center", padding: 20 }}>
         <Text style={{ color: tokens.colors.cream, textAlign: "center" }}>
-          {/* FOUNDER-REVIEW: loading / missing person. */}
-          {status ?? "Loading this person."}
+                    {status ?? "Loading this person."}
         </Text>
         {status === "This person could not load. Try again." ? (
           <Pressable
@@ -320,8 +318,7 @@ export default function PersonProfileScreen() {
                 borderColor: selected ? tokens.colors.gold : tokens.colors.line
               }}
             >
-              {/* FOUNDER-REVIEW: PERSON_GROUP_LABEL */}
-              <Text
+                            <Text
                 style={{
                   color: selected ? tokens.colors.ink : tokens.colors.mist,
                   fontWeight: "700",
@@ -340,11 +337,9 @@ export default function PersonProfileScreen() {
         chart ? (
           <>
             <View style={cardStyle}>
-              {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
-              <Text style={cardTitle}>{PERSON_TAB_LABEL["big-three"]}</Text>
+                            <Text style={cardTitle}>{PERSON_TAB_LABEL["big-three"]}</Text>
               <Text style={vocabSubhead}>{PERSON_TAB_VOCAB["big-three"] ?? "Big three"}</Text>
-              {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-              <Text style={cardBody}>Sun: {sun?.confident === false ? "Uncertain (year-only birth data)" : sun?.sign ?? "·"}</Text>
+                            <Text style={cardBody}>Sun: {sun?.confident === false ? "Uncertain (year-only birth data)" : sun?.sign ?? "·"}</Text>
               <Text style={cardBody}>Moon: {moon?.confident === false ? "Uncertain (year-only birth data)" : moon?.sign ?? "·"}</Text>
               <Text style={cardBody}>
                 Rising: {rising ?? "Exact time and city needed"}
@@ -352,8 +347,7 @@ export default function PersonProfileScreen() {
             </View>
 
             <View style={cardStyle}>
-              {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
-              <Text style={cardTitle}>{PERSON_TAB_LABEL["chart-wheel"]}</Text>
+                            <Text style={cardTitle}>{PERSON_TAB_LABEL["chart-wheel"]}</Text>
               <Text style={vocabSubhead}>
                 {chart.precision === "exact" ? PERSON_TAB_VOCAB["chart-wheel"] : "Sign strip"}
               </Text>
@@ -376,8 +370,7 @@ export default function PersonProfileScreen() {
             </View>
 
             <View style={cardStyle}>
-              {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
-              <Text style={cardTitle}>{PERSON_TAB_LABEL.placements}</Text>
+                            <Text style={cardTitle}>{PERSON_TAB_LABEL.placements}</Text>
               <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.placements ?? "Placements"}</Text>
               {chart.placements
                 .filter((placement) => placement.body !== "sun" && placement.body !== "moon")
@@ -392,10 +385,8 @@ export default function PersonProfileScreen() {
               <View style={cardStyle}>
                 <Text style={cardTitle}>{PERSON_TAB_LABEL.aspects}</Text>
                 <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.aspects ?? "Aspects"}</Text>
-                {/* FOUNDER-REVIEW: ASPECTS_UNAVAILABLE_YEAR_BODY */}
-                <Text style={cardBody}>{ASPECTS_UNAVAILABLE_YEAR_BODY}</Text>
-                {/* FOUNDER-REVIEW: ASPECTS_UNAVAILABLE_YEAR_FOLLOW_UP */}
-                <Text style={cardBody}>{ASPECTS_UNAVAILABLE_YEAR_FOLLOW_UP}</Text>
+                                <Text style={cardBody}>{ASPECTS_UNAVAILABLE_YEAR_BODY}</Text>
+                                <Text style={cardBody}>{ASPECTS_UNAVAILABLE_YEAR_FOLLOW_UP}</Text>
               </View>
             ) : null}
 
@@ -416,8 +407,7 @@ export default function PersonProfileScreen() {
             ) : null}
 
             <View style={cardStyle}>
-              {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
-              <Text style={cardTitle}>{PERSON_TAB_LABEL.generational}</Text>
+                            <Text style={cardTitle}>{PERSON_TAB_LABEL.generational}</Text>
               <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.generational ?? "Generational"}</Text>
               <Text style={badgeStyle}>Reads from your birth year</Text>
               <Text style={cardBody}>{chart.generational.cohortLabel}</Text>
@@ -481,17 +471,12 @@ export default function PersonProfileScreen() {
           </>
         ) : chartLoadError ? (
           <View style={cardStyle}>
-            {/* FOUNDER-REVIEW: a failed chart read says so. It is never shown as
-                an empty chart or as missing birth data (ENGINEERING §12). */}
-            <Text style={cardTitle}>Chart could not be loaded</Text>
+                        <Text style={cardTitle}>Chart could not be loaded</Text>
             <Text style={cardBody}>{chartLoadError}</Text>
           </View>
         ) : person.birth_precision === "none" ? (
           <View style={cardStyle}>
-            {/* FOUNDER-REVIEW: new copy for a person saved without birth data.
-                Mobile has no birth-data editor yet, so this states the situation
-                without promising a control that is not here. */}
-            <Text style={cardTitle}>{CHART_PRECISION_NONE_FACT}</Text>
+                        <Text style={cardTitle}>{CHART_PRECISION_NONE_FACT}</Text>
             <Text style={cardBody}>
               There is no chart to show until {person.display_name}&apos;s birth data is added. A birth year on its own is
               enough for the generational layer.
@@ -499,10 +484,8 @@ export default function PersonProfileScreen() {
           </View>
         ) : (
           <View style={cardStyle}>
-            {/* FOUNDER-REVIEW: CHART_SAVED_DETAILS_NO_CHART_TITLE */}
-            <Text style={cardTitle}>{CHART_SAVED_DETAILS_NO_CHART_TITLE}</Text>
-            {/* FOUNDER-REVIEW: CHART_SAVED_DETAILS_NO_CHART_BODY */}
-            <Text style={cardBody}>{CHART_SAVED_DETAILS_NO_CHART_BODY}</Text>
+                        <Text style={cardTitle}>{CHART_SAVED_DETAILS_NO_CHART_TITLE}</Text>
+                        <Text style={cardBody}>{CHART_SAVED_DETAILS_NO_CHART_BODY}</Text>
           </View>
         )
       ) : null}
@@ -514,8 +497,7 @@ export default function PersonProfileScreen() {
             onPress={() => router.push({ pathname: "/moment", params: { personId: person.id } })}
             style={{ borderWidth: 1, borderColor: tokens.colors.gold, borderRadius: 999, paddingVertical: 10 }}
           >
-            {/* FOUNDER-REVIEW: authored. Person-profile entry into The Moment. */}
-            <Text style={{ color: tokens.colors.gold, fontWeight: "700", textAlign: "center" }}>Capture a moment</Text>
+                        <Text style={{ color: tokens.colors.gold, fontWeight: "700", textAlign: "center" }}>Capture a moment</Text>
           </Pressable>
           <TextInput
             value={noteDraft}
@@ -605,18 +587,15 @@ function ChartPrecisionFacts({
       </Pressable>
       {open ? (
         <View style={{ gap: 8 }}>
-          {/* FOUNDER-REVIEW: CHART_PRECISION_SUPPORTS_HEADING */}
-          <Text style={{ color: tokens.colors.mist2, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" }}>
+                    <Text style={{ color: tokens.colors.mist2, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" }}>
             {CHART_PRECISION_SUPPORTS_HEADING}
           </Text>
           <Text style={{ color: tokens.colors.mist, lineHeight: 20 }}>{explanation.supports}</Text>
-          {/* FOUNDER-REVIEW: CHART_PRECISION_DOES_NOT_HEADING */}
-          <Text style={{ color: tokens.colors.mist2, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" }}>
+                    <Text style={{ color: tokens.colors.mist2, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" }}>
             {CHART_PRECISION_DOES_NOT_HEADING}
           </Text>
           <Text style={{ color: tokens.colors.mist, lineHeight: 20 }}>{explanation.doesNot}</Text>
-          {/* FOUNDER-REVIEW: CHART_PRECISION_WHY_HEADING */}
-          <Text style={{ color: tokens.colors.mist2, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" }}>
+                    <Text style={{ color: tokens.colors.mist2, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" }}>
             {CHART_PRECISION_WHY_HEADING}
           </Text>
           <Text style={{ color: tokens.colors.mist, lineHeight: 20 }}>{explanation.why}</Text>

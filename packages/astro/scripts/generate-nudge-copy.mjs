@@ -1,6 +1,6 @@
 /**
  * One-shot generator for transit-nudge copy-matrix.ts.
- * Every string is a COMPLETE authored sentence (FOUNDER-REVIEW).
+ * Every string is a COMPLETE authored sentence.
  * Resolver never concatenates fragments — it only selects keys.
  */
 import fs from "node:fs";
@@ -24,7 +24,7 @@ const WEIGHTED = {
   general: [],
 };
 
-// PHASE 1 GRAMMAR FIX (FOUNDER-REVIEW: authored): "thoughts and talk" is a
+// PHASE 1 GRAMMAR FIX: "thoughts and talk" is a
 // compound/plural subject ("thoughts AND talk"), but every sentence template
 // below pairs THEME_WORD with a singular verb (opens/adds/is/runs/helps/
 // supports/tests/lifts/eases/presses/amplifies) — e.g. "Thoughts and talk
@@ -76,7 +76,7 @@ const FRAMING_ADDR = {
 };
 
 /**
- * PHASE 2 OPENER VARIETY (FOUNDER-REVIEW: authored — refine voice).
+ * PHASE 2 OPENER VARIETY.
  * DROP_DOMAIN audit: every "partner" drop line (all 10 themes x 3 classes =
  * 30 lines) closed with the identical FRAMING_ADDR.partner.tip
  * ("A little steadiness between you goes far."), regardless of which planet
@@ -247,8 +247,6 @@ for (const framing of FRAMINGS) {
 
 const outPath = path.join(__dirname, "../src/transit-nudge/copy-matrix.ts");
 const banner = `/**
- * FOUNDER-REVIEW: authored. Transit nudge copy matrix.
- * FOUNDER-REVIEW: rewritten (no U+2014).
  * Every value is a COMPLETE sentence. The resolver selects a key and freezes
  * the string; it never concatenates FORCE/AREA/GUIDANCE fragments.
  *

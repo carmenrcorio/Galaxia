@@ -34,10 +34,8 @@ export function CancelSubscription({
       const res = await fetch("/api/cancel", { method: "POST" });
       if (res.ok) { setCanceled(true); return; }
       const body = await res.json().catch(() => ({}));
-      // FOUNDER-REVIEW: cancel API failed.
       setError(body.error ?? "Cancellation could not be completed. Try again.");
     } catch {
-      // FOUNDER-REVIEW: cancel request never reached the server.
       setError("Cancellation could not reach the server. Check your connection and try again.");
     } finally {
       setSubmitting(false);
@@ -54,8 +52,7 @@ export function CancelSubscription({
         {/* Optional, AFTER cancellation — clearly optional */}
         {feedbackSent ? (
           <p className="muted" style={{ fontSize: ".84rem" }}>
-            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-            Thank you: that goes straight to the person who built this.
+                        Thank you: that goes straight to the person who built this.
           </p>
         ) : (
           <div style={{ display: "grid", gap: 8 }}>

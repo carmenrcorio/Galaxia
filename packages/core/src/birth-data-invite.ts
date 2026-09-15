@@ -24,14 +24,11 @@ export function askBirthDataAskCopy(personName: string): string {
   return `Ask ${personName} for their birth details`;
 }
 
-// FOUNDER-REVIEW: Share button label.
 export const ASK_BIRTH_DATA_SHARE = "Share";
 
-// FOUNDER-REVIEW: reused-link explanation.
 export const ASK_BIRTH_DATA_REUSED =
   "This is the same link as before.";
 
-// FOUNDER-REVIEW: pre-submit toggle on every precision tier.
 export const ASK_BIRTH_DATA_TOGGLE = "Ask them for their birth details";
 
 export function birthDataInviteExpiresAt(now: Date = new Date()): string {

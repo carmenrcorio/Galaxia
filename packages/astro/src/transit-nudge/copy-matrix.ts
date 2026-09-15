@@ -1,6 +1,4 @@
 /**
- * FOUNDER-REVIEW: authored. Transit nudge copy matrix.
- * FOUNDER-REVIEW: rewritten (no U+2014).
  * Every value is a COMPLETE sentence. The resolver selects a key and freezes
  * the string; it never concatenates FORCE/AREA/GUIDANCE fragments.
  *

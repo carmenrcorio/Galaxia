@@ -102,7 +102,6 @@ function AddPersonPageInner() {
             <section className="glass-card fade-in fade-in-delay-1">
               <p className="success" style={{ marginBottom: 12 }}>
                 {lastSaved.deferred
-                  // FOUNDER-REVIEW: success copy. Ask now lives on this screen.
                   ? `${lastSaved.displayName} is in your sky. You can send them a link from this screen, or add a date whenever you're ready.`
                   : `${lastSaved.displayName} is in your constellation.`}
               </p>

@@ -13,13 +13,11 @@ export const SOFTWARE_APPLICATION_JSON_LD: JsonLdObject = {
   applicationCategory: "LifestyleApplication",
   operatingSystem: "Web",
   url: "https://galaxiamea.com",
-  // FOUNDER-REVIEW: matches HOMEPAGE_DESCRIPTION. Prior JSON-LD keywords flagged in the PR for founder review.
   description: HOMEPAGE_DESCRIPTION,
   offers: {
     "@type": "Offer",
     price: "9.99",
     priceCurrency: "USD",
-    // FOUNDER-REVIEW: rewritten. Machine-readable offer must match the 14-day trial then $9.99/month paywall.
     description: "14 day trial, then $9.99 per month. No credit card required to start."
   },
   publisher: {

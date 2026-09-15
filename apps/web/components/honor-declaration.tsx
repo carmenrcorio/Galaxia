@@ -34,7 +34,6 @@ interface HonorPersonInput {
 
 export const HONOR_LIGHT_ANCHOR_ID = "honor-light";
 
-// FOUNDER-REVIEW: honor-declaration loading / failure.
 const HONOR_LOADING = "Loading who carries their light.";
 const HONOR_LOAD_ERROR = "Who carries their light could not load. Try again.";
 const HONOR_SAVE_ERROR = "Who carries their light could not be saved. Try again.";
@@ -156,7 +155,6 @@ export function HonorDeclarationBox({
     setHonorSaving(false);
     setHonorStatus(
       selectedIds.length === 0
-        // FOUNDER-REVIEW: rewritten (no U+2014).
         ? "No one carries their light on the constellation: you can add someone anytime."
         : "Saved. Their light will reach the people you chose on your constellation."
     );

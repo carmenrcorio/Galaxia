@@ -88,8 +88,7 @@ export function AccountDataPanel({
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <section style={card}>
-        {/* FOUNDER-REVIEW: ACCOUNT_EXPORT_COPY */}
-        <h2 style={{ marginTop: 0 }}>{ACCOUNT_EXPORT_COPY.title}</h2>
+                <h2 style={{ marginTop: 0 }}>{ACCOUNT_EXPORT_COPY.title}</h2>
         <p style={{ color: "var(--mist)", lineHeight: 1.6 }}>{ACCOUNT_EXPORT_COPY.lead}</p>
         {email ? (
           <p style={{ color: "var(--gold-soft)", fontSize: 14 }}>Account: {email}</p>
@@ -108,8 +107,7 @@ export function AccountDataPanel({
       </section>
 
       <section style={card}>
-        {/* FOUNDER-REVIEW: ACCOUNT_DELETE_COPY */}
-        <h2 style={{ marginTop: 0 }}>{ACCOUNT_DELETE_COPY.title}</h2>
+                <h2 style={{ marginTop: 0 }}>{ACCOUNT_DELETE_COPY.title}</h2>
         <p style={{ color: "var(--mist)", lineHeight: 1.6 }}>{ACCOUNT_DELETE_COPY.lead}</p>
         <p style={{ color: "var(--mist)", lineHeight: 1.6 }}>{ACCOUNT_DELETE_COPY.irreversible}</p>
         <p style={{ color: "var(--mist)", lineHeight: 1.6, fontSize: 14 }}>

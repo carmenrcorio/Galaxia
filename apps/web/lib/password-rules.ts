@@ -11,11 +11,11 @@
  */
 export const PASSWORD_MIN_LENGTH = 8;
 
-/** FOUNDER-REVIEW: authored password hint shown under password fields. */
+
 export const PASSWORD_RULE_HINT = `At least ${PASSWORD_MIN_LENGTH} characters.`;
 
-/** FOUNDER-REVIEW: authored error shown when a password is too short. */
+
 export const PASSWORD_TOO_SHORT_ERROR = `That password is too short. Use at least ${PASSWORD_MIN_LENGTH} characters.`;
 
-/** FOUNDER-REVIEW: authored error shown when the two password fields disagree. */
+
 export const PASSWORD_MISMATCH_ERROR = "Those two passwords do not match. Retype them and try again.";

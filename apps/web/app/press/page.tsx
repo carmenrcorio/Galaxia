@@ -11,7 +11,6 @@ import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { RELATED_LINKS } from "../../lib/nav-links";
 
-// FOUNDER-REVIEW: layer-two metadata. Visible press copy is layer one.
 const TITLE = "Press: Galaxia, Relationship Intelligence from Computed Astrology";
 const DESCRIPTION =
   `Press materials for Galaxia. Relationship intelligence powered by computed natal charts and synastry. Guidance, not fortune telling. Contact ${GALAXIA_HELP_EMAIL}.`;

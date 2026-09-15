@@ -7,18 +7,17 @@ import { readLegalMarkdown } from "./legal-content";
  * components/legal-document.tsx), so an HTML comment left in
  * content/legal/*.md renders as literal escaped text on /privacy and /terms
  * instead of being dropped. readLegalMarkdown strips comments before the
- * page ever sees them; this locks that in for the FOUNDER-REVIEW markers
- * already used in both documents.
+ * page ever sees them.
  */
 describe("readLegalMarkdown", () => {
-  it("strips FOUNDER-REVIEW (and any other HTML comment) out of the Privacy Policy", () => {
+  it("strips HTML comments out of the Privacy Policy", () => {
     const markdown = readLegalMarkdown("privacy-policy.md");
     expect(markdown).not.toContain("<!--");
     expect(markdown).not.toContain("-->");
     expect(markdown).not.toContain("FOUNDER-REVIEW");
   });
 
-  it("strips FOUNDER-REVIEW (and any other HTML comment) out of the Terms of Service", () => {
+  it("strips HTML comments out of the Terms of Service", () => {
     const markdown = readLegalMarkdown("terms-of-service.md");
     expect(markdown).not.toContain("<!--");
     expect(markdown).not.toContain("-->");

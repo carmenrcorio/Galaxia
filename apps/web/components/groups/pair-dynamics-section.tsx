@@ -61,7 +61,6 @@ function PairDetailLine({ summary, fallback }: { summary: string; fallback: stri
   );
 }
 
-// FOUNDER-REVIEW: empty because this group has no pair highlights yet.
 export const PAIR_DYNAMICS_EMPTY =
   "No pair highlights yet. Add members with charts so Galaxia can name the fault lines and shared generations.";
 

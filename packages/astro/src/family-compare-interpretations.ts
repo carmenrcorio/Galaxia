@@ -48,7 +48,6 @@ export function interpretSharedPlacement(pattern: SharedPlacementPattern, totalP
   }
   const vibe = SIGN_VIBE[pattern.sign] ?? pattern.sign.toLowerCase();
   const domain = PLANET_GROUP_DOMAIN[pattern.planet];
-  // FOUNDER-REVIEW: rewritten (no U+2014). Mechanical fallback only.
   return `${prefix}, which shapes ${domain}, and here it runs ${vibe}.`;
 }
 

@@ -10,7 +10,6 @@ import { VelaExampleSection } from "../../components/marketing/vela-example-sect
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { RELATED_LINKS } from "../../lib/nav-links";
 
-// FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Meet Vela, Your AI Astrology Guide | Galaxia";
 const DESCRIPTION =
   "Vela is Galaxia's AI guide. Ask about your chart, a relationship, or a transit. Every answer is grounded in your real computed data, never generic.";

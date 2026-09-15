@@ -99,13 +99,9 @@ const CONSTELLATION_BOX_HEIGHT = 340;
 const SKELETON_SEATS = constellationSkeletonSeats();
 const CONSTELLATION_CROSSFADE_MS = 250;
 
-// FOUNDER-REVIEW: empty constellation, zero people.
 const CONSTELLATION_EMPTY = "Your constellation is empty. Add the first person to begin.";
-// FOUNDER-REVIEW: empty constellation primary action.
 const CONSTELLATION_EMPTY_ACTION = "Add the first person";
-// FOUNDER-REVIEW: load failure, short line.
 const CONSTELLATION_LOAD_ERROR = "The constellation could not load.";
-// FOUNDER-REVIEW: retry after load failure.
 const CONSTELLATION_RETRY = "Try again";
 
 export default function HomeScreen() {
@@ -509,8 +505,7 @@ export default function HomeScreen() {
   return (
     <ScrollView ref={scrollRef} style={{ flex: 1, backgroundColor: tokens.colors.ink }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
       <Text style={{ color: tokens.colors.cream, fontSize: 33, fontWeight: "700" }}>Galaxia Mea</Text>
-      {/* FOUNDER-REVIEW: authored greeting, including the no-name variant. */}
-      <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
+            <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
         {welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."} Here’s your constellation at a glance.
       </Text>
       <Text style={{ color: tokens.colors.goldSoft }}>Plan: {tier === "plus" ? "Galaxia+" : "Free"}</Text>
@@ -542,8 +537,7 @@ export default function HomeScreen() {
         >
           {constellationFailed ? (
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 12 }}>
-              {/* FOUNDER-REVIEW: CONSTELLATION_LOAD_ERROR */}
-              <Text style={[cardBody, { textAlign: "center" }]}>{CONSTELLATION_LOAD_ERROR}</Text>
+                            <Text style={[cardBody, { textAlign: "center" }]}>{CONSTELLATION_LOAD_ERROR}</Text>
               <Pressable accessibilityRole="button" accessibilityLabel={CONSTELLATION_RETRY} onPress={() => void loadHome()} style={pillButton}>
                 <Text style={pillText}>{CONSTELLATION_RETRY}</Text>
               </Pressable>
@@ -551,8 +545,7 @@ export default function HomeScreen() {
           ) : null}
           {!homeLoading && !constellationFailed && people.length === 0 ? (
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 12 }}>
-              {/* FOUNDER-REVIEW: CONSTELLATION_EMPTY */}
-              <Text style={[cardBody, { textAlign: "center" }]}>{CONSTELLATION_EMPTY}</Text>
+                            <Text style={[cardBody, { textAlign: "center" }]}>{CONSTELLATION_EMPTY}</Text>
               <Link href="/onboarding" asChild>
                 <Pressable accessibilityRole="button" accessibilityLabel={CONSTELLATION_EMPTY_ACTION} style={pillButton}>
                   <Text style={pillText}>{CONSTELLATION_EMPTY_ACTION}</Text>
@@ -648,7 +641,6 @@ export default function HomeScreen() {
         <Text style={cardTitle}>Today in your sky</Text>
         <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
           {activeTransitIds.length > 0
-            // FOUNDER-REVIEW: rewritten (no U+2014).
             ? "Daily sky notes from each person's own chart: fixed once for the day."
             : "No sky notes near an exact pass for anyone right now."}
         </Text>
@@ -728,8 +720,7 @@ export default function HomeScreen() {
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         <Link href="/moment" asChild>
           <Pressable accessibilityRole="button" accessibilityLabel="Capture a moment" style={pillButton}>
-            {/* FOUNDER-REVIEW: authored. Home entry into The Moment. */}
-            <Text style={pillText}>Capture a moment</Text>
+                        <Text style={pillText}>Capture a moment</Text>
           </Pressable>
         </Link>
         <Link href="/onboarding" asChild>

@@ -12,12 +12,10 @@ Understand who you love
 
 ## Promotional text (max 170 characters)
 
-<!-- FOUNDER-REVIEW: authored store listing. -->
 Show up for the people already in your life. Galaxia maps how you and your inner circle are built, then helps you tend each bond with more intention.
 
 ## Description
 
-<!-- FOUNDER-REVIEW: authored store listing. -->
 Galaxia is relationship intelligence for the people you actually live beside: partner, kids, parents, siblings, the friends who became family.
 
 Add someone once. See how they are built, where the two of you flow, where you catch, and what they need from you when the conversation gets hard. Not a daily blurb written for millions of strangers. Not for swiping.

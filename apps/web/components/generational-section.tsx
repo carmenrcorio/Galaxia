@@ -28,7 +28,6 @@ export type GenerationalSectionData = {
   diverged: { planet: string; signA: string; signB: string }[];
 };
 
-// FOUNDER-REVIEW: authored - honest generic when a placement has no library entry.
 const GENERIC_SHARED =
   "You both share this generational placement. It is a cohort-level instinct from the same era, not a personal chart detail.";
 

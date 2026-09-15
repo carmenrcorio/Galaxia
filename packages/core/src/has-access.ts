@@ -77,7 +77,5 @@ export function trialDaysRemaining(trialEndsAt: string | Date | null | undefined
   return Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86_400_000));
 }
 
-// FOUNDER-REVIEW: authored — vela-chat 403 when profile missing or unentitled.
 export const VELA_ENTITLEMENT_REQUIRED_ERROR =
-  // FOUNDER-REVIEW: rewritten (no U+2014).
   "Access required. Your trial has ended or your subscription is inactive. Continue on the web to keep using Vela.";

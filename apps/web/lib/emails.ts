@@ -109,11 +109,6 @@ function trialUnsubscribeUrl(siteUrl: string): string {
   return `${siteUrl}${EMAIL_PATHS.notifications}`;
 }
 
-/**
- * FOUNDER-REVIEW: greeting. First name once, and only when we actually have
- * one. Never an email local-part. Neutral fallback when the account has no
- * captured name.
- */
 export function ownerGreeting(firstName: string | null | undefined): string {
   const name = (firstName ?? "").trim();
   return name ? `Hi ${name},` : "Hi there,";
@@ -135,13 +130,10 @@ export function ownerNameMentionsInBody(body: string, firstName: string | null |
 /** Day 1 — after they add their first person. */
 export function day1Email(d: TrialEmailData): RenderedEmail {
   const person = d.personName?.trim();
-  // FOUNDER-REVIEW: subject. Person first when we have one; no sky/astrology vocab.
   const subject = person ? `${person} is in your circle now` : "Someone is in your circle now";
-  // FOUNDER-REVIEW: preview. Continues the subject; does not repeat it.
   const preview = "Add one more person. A year is enough.";
   const greeting = ownerGreeting(d.firstName);
   const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
-  // FOUNDER-REVIEW: body. One true fact about who they added, one next step.
   const addedLine = person ? `You've added ${person}.` : "You've added someone.";
   const nextLine = "Add one more person. A date is enough. A year is enough.";
   const trialLine = `Your trial runs through ${d.trialEndDate}. Nothing will be charged before then.`;
@@ -161,13 +153,10 @@ export function day1Email(d: TrialEmailData): RenderedEmail {
 /** Day 4 — if they have 2+ people. */
 export function day4MultiEmail(d: TrialEmailData): RenderedEmail {
   const person = d.personName?.trim();
-  // FOUNDER-REVIEW: subject. Names a real person when we have one.
   const subject = person ? `What ${person} needs from you` : "What they need from you";
-  // FOUNDER-REVIEW: preview.
   const preview = "Open Compare. It's built from their charts.";
   const greeting = ownerGreeting(d.firstName);
   const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
-  // FOUNDER-REVIEW: body. Real count, one action.
   const mappedLine = `You've mapped ${d.peopleCount} people.`;
   const actionLine = `Open <strong style="color:${CREAM}">Compare</strong>, choose two of them, and read what they need from you. It's built from their actual placements.`;
   const actionText = "Open Compare, choose two of them, and read what they need from you. It's built from their actual placements.";
@@ -186,13 +175,10 @@ export function day4MultiEmail(d: TrialEmailData): RenderedEmail {
 /** Day 4 — if they have only 1 person (the at-risk path). */
 export function day4OneEmail(d: TrialEmailData): RenderedEmail {
   const person = d.personName?.trim();
-  // FOUNDER-REVIEW: subject. Outcome, not product-first.
   const subject = "Add one more person";
-  // FOUNDER-REVIEW: preview.
   const preview = "A date works. A year works.";
   const greeting = ownerGreeting(d.firstName);
   const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
-  // FOUNDER-REVIEW: body.
   const factLine = person
     ? `You've added ${person}. Almost nothing here works with one person.`
     : "Almost nothing here works with one person.";
@@ -211,13 +197,10 @@ export function day4OneEmail(d: TrialEmailData): RenderedEmail {
 
 /** Day 11 — the honest reminder, card-optional rewrite (approved). */
 export function day11Email(d: TrialEmailData): RenderedEmail {
-  // FOUNDER-REVIEW: subject. Outcome (when the trial ends), not astrology vocab.
   const subject = `Your trial ends ${d.trialEndDate}`;
-  // FOUNDER-REVIEW: preview.
   const preview = "Nothing will be charged. Everything stays saved.";
   const greeting = ownerGreeting(d.firstName);
   const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
-  // FOUNDER-REVIEW: body. Real counts only, one continue link.
   const endsLine = `Your trial ends on ${d.trialEndDate}. We never asked for a card, so nothing will be charged. When it ends, access pauses until you choose to continue.`;
   const listHtml = `<ul style="color:${MIST};margin:0 0 14px;padding-left:18px">
     <li><strong style="color:${CREAM}">${d.peopleCount}</strong> people</li>
@@ -242,13 +225,10 @@ export function day11Email(d: TrialEmailData): RenderedEmail {
 
 /** Day 14 — trial ended, not converted. */
 export function day14Email(d: TrialEmailData): RenderedEmail {
-  // FOUNDER-REVIEW: subject. Outcome: their people are still here.
   const subject = "Your people are still here";
-  // FOUNDER-REVIEW: preview.
   const preview = "Nothing was deleted. Come back whenever.";
   const greeting = ownerGreeting(d.firstName);
   const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
-  // FOUNDER-REVIEW: body. One action (come back). Feedback is a sentence, not a second button.
   const endedLine = "Your trial has ended. We haven't charged you.";
   const savedLine = `Everything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted.`;
   const feedbackLine = `If it wasn't right, one line to ${GALAXIA_HELP_EMAIL} is enough. It goes to the person who built this.`;
@@ -310,7 +290,6 @@ export async function dispatchEmail(
     console.log(`[emails] skipped ${recipientId}: RESEND_API_KEY absent, skipping "${email.subject}"`);
     return { sent: false, id: null };
   }
-  // FOUNDER-REVIEW: send-from uses the one Galaxia contact address unless RESEND_FROM is set.
   const from = process.env.RESEND_FROM ?? `Galaxia <${GALAXIA_HELP_EMAIL}>`;
   const headers: Record<string, string> = { "Content-Type": "application/json", Authorization: `Bearer ${key}` };
   if (options?.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
@@ -385,15 +364,9 @@ export interface SkyTodayEmailData {
  * lock-screen preview because this function's signature never receives them.
  */
 export function nudgeEmailSubject(subjectPersonName: string): string {
-  // FOUNDER-REVIEW: subject. Person first, no "sky" / astrology vocab.
   return `${subjectPersonName}, today`;
 }
 
-/**
- * FOUNDER-REVIEW: preview. Continues the subject without repeating the name
- * and without receiving copy_resolved, so a lock screen cannot leak the
- * transit sentence.
- */
 export function nudgeEmailPreview(): string {
   return "One note on how to show up for them.";
 }
@@ -402,11 +375,9 @@ export function skyTodayEmail(d: SkyTodayEmailData): RenderedEmail {
   const subject = nudgeEmailSubject(d.subjectPersonName);
   const preview = nudgeEmailPreview();
   const greeting = ownerGreeting(d.ownerFirstName);
-  // FOUNDER-REVIEW: first-send context line.
   const firstEmailLine = d.isFirstEmail
     ? "You're getting this because you're a Galaxia member. Turn it off any time from the link below."
     : null;
-  // FOUNDER-REVIEW: body lead. Names the constellation person once; copy_resolved stays verbatim.
   const leadLineHtml = `For <strong style="color:${CREAM}">${d.subjectPersonName}</strong> today:`;
   const leadLineText = `For ${d.subjectPersonName} today:`;
 
@@ -465,7 +436,7 @@ export interface ConstellationLetterEmailData {
   clickUrl: string;
 }
 
-/** FOUNDER-REVIEW: subject. Outcome / people first, never astrology vocab. */
+
 export function constellationLetterSubject(personNames: string[]): string {
   if (personNames.length === 1) {
     const subject = `${personNames[0]}, this week`;
@@ -478,7 +449,7 @@ export function constellationLetterSubject(personNames: string[]): string {
   return "This week in your circle";
 }
 
-/** FOUNDER-REVIEW: preview. Continues the subject; does not repeat it. */
+
 export function constellationLetterPreview(): string {
   return "Who in your circle has something real moving.";
 }
@@ -487,7 +458,6 @@ export function constellationLetterEmail(d: ConstellationLetterEmailData): Rende
   const subject = constellationLetterSubject(d.personNames);
   const preview = constellationLetterPreview();
   const greeting = ownerGreeting(d.ownerFirstName);
-  // FOUNDER-REVIEW: CTA. A sentence with a link, not a dashboard button.
   const ctaHtml = `If you want the same sky on the screen, <a href="${d.clickUrl}" style="color:${GOLD};text-decoration:underline">open this week in Galaxia</a>.`;
   const ctaText = `If you want the same sky on the screen, open this week in Galaxia: ${d.clickUrl}`;
   const portraitHtml = d.portraits

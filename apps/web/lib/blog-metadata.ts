@@ -61,7 +61,6 @@ export function buildPostMetadata(post: PostMetadataInput): Metadata {
  * `twitter` so Next does not replace the root default with an imageless object.
  */
 export function buildCategoryMetadata(category: CategoryMetadataInput): Metadata {
-  // FOUNDER-REVIEW: layer-two blog category metadata. Astrology keywords stay.
   const copy =
     category.slug === "debunked"
       ? {

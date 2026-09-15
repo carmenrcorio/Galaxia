@@ -222,7 +222,6 @@ export function EditPersonPanel({
       });
     }
 
-    // FOUNDER-REVIEW: formatPersonDeleteConfirmation
     setDeleteWarning(
       formatPersonDeleteConfirmation({
         personName: person.display_name,
@@ -257,12 +256,10 @@ export function EditPersonPanel({
       .eq("id", person.id)
       .eq("owner_id", userId);
     setRemembranceBusy(false);
-    // FOUNDER-REVIEW: remembrance toggle failed.
     if (error) { setStatus("Remembrance could not be updated. Try again."); return; }
     setPassedAt(value);
     setConfirmRemembrance(false);
     setStatus(nextPassed
-      // FOUNDER-REVIEW: rewritten (no U+2014).
       ? "Their light stays in your galaxy, remembered."
       : "Restored. They're held as present again.");
     onSaved();
@@ -277,10 +274,8 @@ export function EditPersonPanel({
       .eq("id", person.id)
       .eq("owner_id", userId);
     setResettingPosition(false);
-    // FOUNDER-REVIEW: constellation seat reset failed.
     if (error) { setStatus("Their constellation seat could not be reset. Try again."); return; }
     setCustomPosition(null);
-    // FOUNDER-REVIEW: reset constellation seat
     setStatus("Back on their ring.");
     onSaved();
   }
@@ -345,7 +340,7 @@ export function EditPersonPanel({
                   type="button"
                   role="radio"
                   aria-checked={selected}
-                  /* FOUNDER-REVIEW: swatch.label */
+
                   aria-label={swatch.label}
                   title={swatch.label}
                   onClick={() => setStarColor(swatch.hex)}
@@ -370,8 +365,7 @@ export function EditPersonPanel({
           </div>
           {starColor ? (
             <p style={{ fontSize: ".72rem", color: "var(--mist)", marginTop: 6 }}>
-              {/* FOUNDER-REVIEW: palette label */}
-              {STAR_COLOR_PALETTE.find((s) => s.hex === starColor)?.label ?? "Custom"}
+                            {STAR_COLOR_PALETTE.find((s) => s.hex === starColor)?.label ?? "Custom"}
             </p>
           ) : (
             <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginTop: 6 }}>
@@ -381,10 +375,8 @@ export function EditPersonPanel({
         </div>
 
         <div>
-          {/* FOUNDER-REVIEW: slider label */}
-          <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginBottom: 6 }}>Star size</p>
-          {/* FOUNDER-REVIEW: slider helper */}
-          <p className="muted" style={{ fontSize: ".72rem", lineHeight: 1.5, marginBottom: 8 }}>
+                    <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginBottom: 6 }}>Star size</p>
+                    <p className="muted" style={{ fontSize: ".72rem", lineHeight: 1.5, marginBottom: 8 }}>
             How large this star appears on your constellation. Does not move their seat.
           </p>
           <input
@@ -407,10 +399,8 @@ export function EditPersonPanel({
 
         {customPosition && !person.is_self ? (
           <div>
-            {/* FOUNDER-REVIEW: placement section label */}
-            <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginBottom: 6 }}>Constellation seat</p>
-            {/* FOUNDER-REVIEW: placement helper */}
-            <p className="muted" style={{ fontSize: ".72rem", lineHeight: 1.5, marginBottom: 8 }}>
+                        <p style={{ fontSize: ".72rem", color: "var(--mist2)", marginBottom: 6 }}>Constellation seat</p>
+                        <p className="muted" style={{ fontSize: ".72rem", lineHeight: 1.5, marginBottom: 8 }}>
               You placed this star by hand. Reset returns them to their ring.
             </p>
             <button
@@ -420,8 +410,7 @@ export function EditPersonPanel({
               onClick={() => void resetPosition()}
               style={{ fontSize: 12 }}
             >
-              {/* FOUNDER-REVIEW: reset constellation position */}
-              {resettingPosition ? "Resetting…" : "Reset position"}
+                            {resettingPosition ? "Resetting…" : "Reset position"}
             </button>
           </div>
         ) : null}
@@ -555,8 +544,7 @@ export function EditPersonPanel({
               </p>
               <p className="muted" style={{ fontSize: ".78rem", lineHeight: 1.55, marginBottom: 12 }}>
                 Their chart stays. They remain in your galaxy and in Compare. You can restore them as present anytime.
-                {/* FOUNDER-REVIEW */}
-                {" "}Choose their constellation in the Remembrance space on this page.
+                                {" "}Choose their constellation in the Remembrance space on this page.
               </p>
 
               {!confirmRemembrance ? (

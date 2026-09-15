@@ -35,7 +35,6 @@ const ASPECT_VERB: Record<AspectType, string> = {
   opposition: "pulling against",
 };
 
-// FOUNDER-REVIEW: names-first dynamic lead (fusion / friction / flow). Planet is not the headline.
 const DYNAMIC_LEAD: Record<"flow" | "friction" | "fusion", string> = {
   fusion: "the same intensity is landing on you at the same time",
   friction: "the same pressure is showing up between you, in different ways",
@@ -93,7 +92,6 @@ export function interpretRelationalTransitPlanetNote(event: Pick<RelationalTrans
 // (planet, aspect type) combinations the spec's "~20 templates" scopes.
 const RELATIONAL_BODY: Record<RelationalTransitBody, Record<"flow" | "friction" | "fusion", string>> = {
   saturn: {
-    // FOUNDER-REVIEW: rewritten (no U+2014).
     fusion: "Saturn is bearing down on both of you at once: the same demand for patience, structure, or follow-through, showing up in each of your lives on its own terms. If the weight of responsibility feels heavier than usual this week, naming it to each other may lighten it more than trying to solve it will.",
     friction: "Saturn is testing both of you at the same time: different pressures, the same underlying demand for patience and follow-through. If you're both a little short this week, it's worth remembering it's not really about each other; Saturn is working on you separately.",
     flow: "Saturn is quietly rewarding steadiness in both of you right now: the discipline you've each been building is paying off on its own schedule. A good week to lean on each other's follow-through instead of going it alone.",

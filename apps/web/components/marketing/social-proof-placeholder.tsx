@@ -11,8 +11,7 @@ export function SocialProofPlaceholder() {
       aria-label="Placeholder for future testimonials"
     >
       <div className="social-proof-placeholder-inner reveal">
-        {/* FOUNDER-REVIEW: authored - empty social-proof placeholder (do not invent). */}
-        <span className="eyebrow">Coming later</span>
+                <span className="eyebrow">Coming later</span>
         <h2>What people say</h2>
         <p className="lede">
           Placeholder only. Real testimonials, quotes, ratings, and press will go here once they

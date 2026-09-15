@@ -14,7 +14,6 @@ import {
   shareInviteTimeRemaining,
   type QuickShareListItem,
 } from "../lib/quick-share";
-// FOUNDER-REVIEW: pending share-link copy lives in lib/quick-share.ts.
 import { Spinner } from "./spinner";
 
 export function PendingShareLinks() {

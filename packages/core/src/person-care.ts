@@ -41,10 +41,6 @@ export type PersonNavSectionId =
 
 export type PersonNavSection = { id: PersonNavSectionId; label: string };
 
-/**
- * FOUNDER-REVIEW: person-profile tab labels. Anchor ids stay on the old
- * vocabulary so deep links and the sitemap of in-page hashes do not move.
- */
 export const PERSON_TAB_LABEL: Record<PersonNavSectionId, string> = {
   remembrance: "Remembrance",
   "memorial-timeline": "Timeline",
@@ -61,10 +57,6 @@ export const PERSON_TAB_LABEL: Record<PersonNavSectionId, string> = {
   "honor-light": "Their light",
 };
 
-/**
- * FOUNDER-REVIEW: astrology (or prior) term rendered as the quiet in-section
- * subhead when the tab label is no longer that term.
- */
 export const PERSON_TAB_VOCAB: Partial<Record<PersonNavSectionId, string>> = {
   "active-today": "Active today",
   "vela-on-them": "Vela",
@@ -108,7 +100,6 @@ export type PersonPageGroup = {
 };
 
 /**
- * FOUNDER-REVIEW: top-level person-profile groups.
  * Today (was Now) is not a tab: its two cards sit above the remaining pair.
  * Who they are / You and them are the living tabs. Remembrance replaces
  * You and them on a memorial profile.

@@ -13,7 +13,6 @@ const TEASERS: Teaser[] = [
   {
     eyebrow: "The shift",
     title: "Why Galaxia",
-    // FOUNDER-REVIEW: outcome first, feature second.
     body: "You find out what they need from you. Why Galaxia reads their real charts, not a horoscope about you.",
     href: FEATURE_TEASER_LINKS[0].href,
     cta: FEATURE_TEASER_LINKS[0].label
@@ -21,7 +20,6 @@ const TEASERS: Teaser[] = [
   {
     eyebrow: "The edge",
     title: "Generations",
-    // FOUNDER-REVIEW: outcome first, feature second.
     body: "You see the sky a whole family or friend group shares, and where one person quietly diverges. Generations does that from a birth year.",
     href: FEATURE_TEASER_LINKS[1].href,
     cta: FEATURE_TEASER_LINKS[1].label
@@ -29,7 +27,6 @@ const TEASERS: Teaser[] = [
   {
     eyebrow: "Your guide",
     title: "Meet Vela",
-    // FOUNDER-REVIEW: outcome first, feature second. Shared spaces are unshipped; this describes private Vela only.
     body: "You get something to actually do, grounded in both charts. Vela is the guide that never invents a placement and never breaches your privacy.",
     href: FEATURE_TEASER_LINKS[2].href,
     cta: FEATURE_TEASER_LINKS[2].label
@@ -37,7 +34,6 @@ const TEASERS: Teaser[] = [
   {
     eyebrow: "Built on trust",
     title: "Private by design",
-    // FOUNDER-REVIEW: outcome first, feature second.
     body: "What you write about someone stays yours, and a child never sits in a two-way chat. Private by design is real astronomical data, never an AI guess.",
     href: FEATURE_TEASER_LINKS[3].href,
     cta: FEATURE_TEASER_LINKS[3].label
@@ -45,7 +41,6 @@ const TEASERS: Teaser[] = [
   {
     eyebrow: "Pricing",
     title: "One honest plan",
-    // FOUNDER-REVIEW: outcome first, feature second.
     body: "You add everyone without paying per person. One honest plan is the same everything, 14 days free, no feature tiers.",
     href: FEATURE_TEASER_LINKS[4].href,
     cta: FEATURE_TEASER_LINKS[4].label

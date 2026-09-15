@@ -9,13 +9,11 @@ import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 // time in production.
 const LEGAL_CONTENT_ROOT = path.join(process.cwd(), "..", "..", "content", "legal");
 
-// content/legal/*.md carries internal editorial markers as HTML comments
-// (e.g. `<!-- FOUNDER-REVIEW: ... -->`, per ENGINEERING.md §15's convention).
+// content/legal/*.md may carry internal editorial markers as HTML comments.
 // LegalDocument's react-markdown has no rehype-raw plugin wired in, so
 // without stripping, an HTML comment renders as literal escaped text on the
 // live page instead of being dropped. Strip comments here, at the read
-// boundary, so the source markdown keeps the markers for grep/review while
-// nothing reaches the renderer.
+// boundary, so nothing reaches the renderer.
 const HTML_COMMENT = /<!--[\s\S]*?-->/g;
 const HELP_EMAIL_TOKEN = "{{GALAXIA_HELP_EMAIL}}";
 

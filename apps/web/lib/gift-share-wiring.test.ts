@@ -88,7 +88,7 @@ describe("gift share reuses /s/[token] rather than a fourth token pattern", () =
     expect(src).toContain("galaxiamea.com");
   });
 
-  it("authored gift copy is tagged FOUNDER-REVIEW and has no em dash", () => {
+  it("authored gift copy has no em dash", () => {
     const files = [
       "apps/web/lib/quick-share.ts",
       "apps/web/components/share-link-button.tsx",
@@ -102,7 +102,6 @@ describe("gift share reuses /s/[token] rather than a fourth token pattern", () =
     expect(SHARE_NEED_SUBJECT).toBe("This person");
     for (const rel of files) {
       const src = read(rel);
-      expect(src, rel).toContain("FOUNDER-REVIEW");
       const withoutComments = src
         .replace(/\/\*[\s\S]*?\*\//g, " ")
         .replace(/^\s*\/\/.*$/gm, " ")

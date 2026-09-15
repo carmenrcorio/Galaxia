@@ -5,12 +5,9 @@ import { PersonPickerField, type PersonPickerOption } from "./person-picker";
 
 export type VelaFocusScope = "person" | "pair" | "group";
 
-// FOUNDER-REVIEW: "Understand" slot label
 export const VELA_PERSON_SLOT_LABEL = "Understand";
-// FOUNDER-REVIEW: "Person A" and "Person B" pair slot labels
 export const VELA_PAIR_SLOT_A_LABEL = "Person A";
 export const VELA_PAIR_SLOT_B_LABEL = "Person B";
-// FOUNDER-REVIEW: "Group" slot label
 export const VELA_GROUP_SLOT_LABEL = "Group";
 
 export const VELA_ADD_PERSON_HREF = "/app/add-person";

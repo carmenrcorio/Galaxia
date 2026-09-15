@@ -8,8 +8,7 @@
 export function RemembranceSection() {
   return (
     <section className="shift container" id="remembrance">
-      {/* FOUNDER-REVIEW: authored - remembrance section. */}
-      <span className="eyebrow reveal">Remembrance</span>
+            <span className="eyebrow reveal">Remembrance</span>
       <h2 className="reveal">The loved ones you've lost are still part of your sky.</h2>
       <p className="body reveal">
         Galaxia helps you memorialize your loved ones who are gone. Add a parent, a

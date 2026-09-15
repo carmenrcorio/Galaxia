@@ -98,8 +98,7 @@ export function MemorialConstellationPicker({
 
   return (
     <div style={{ marginBottom: 18 }}>
-      {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.label */}
-      <p className="eyebrow" style={{ marginBottom: 8, color: REMEMBRANCE_CHROME.ancient }}>
+            <p className="eyebrow" style={{ marginBottom: 8, color: REMEMBRANCE_CHROME.ancient }}>
         {MEMORIAL_CONSTELLATION_PICKER_COPY.label}
       </p>
 
@@ -148,28 +147,23 @@ export function MemorialConstellationPicker({
               overflowWrap: "anywhere",
             }}
           >
-            {/* FOUNDER-REVIEW: pattern.name / MEMORIAL_CONSTELLATION_PICKER_COPY.noneLabel */}
-            {selectedName}
+                        {selectedName}
           </span>
           {pattern ? (
             <>
-              {/* FOUNDER-REVIEW: pattern.summary */}
-              <span className="muted" style={{ fontSize: ".76rem", lineHeight: 1.45 }}>
+                            <span className="muted" style={{ fontSize: ".76rem", lineHeight: 1.45 }}>
                 {pattern.summary}
               </span>
-              {/* FOUNDER-REVIEW: pattern.myth — curated Greco-Roman mythology only */}
-              <span style={{ fontSize: ".76rem", lineHeight: 1.45, color: "var(--mist)", fontFamily: "var(--serif)" }}>
+                            <span style={{ fontSize: ".76rem", lineHeight: 1.45, color: "var(--mist)", fontFamily: "var(--serif)" }}>
                 {pattern.myth}
               </span>
             </>
           ) : (
             <>
-              {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.noneHelper */}
-              <span className="muted" style={{ fontSize: ".76rem", lineHeight: 1.45 }}>
+                            <span className="muted" style={{ fontSize: ".76rem", lineHeight: 1.45 }}>
                 {MEMORIAL_CONSTELLATION_PICKER_COPY.noneHelper}
               </span>
-              {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.noneMyth */}
-              <span style={{ fontSize: ".76rem", lineHeight: 1.45, color: "var(--mist)", fontFamily: "var(--serif)" }}>
+                            <span style={{ fontSize: ".76rem", lineHeight: 1.45, color: "var(--mist)", fontFamily: "var(--serif)" }}>
                 {MEMORIAL_CONSTELLATION_PICKER_COPY.noneMyth}
               </span>
             </>
@@ -251,8 +245,7 @@ export function MemorialConstellationPicker({
                 paddingBottom: 4,
               }}
             >
-              {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.label */}
-              <p id={dialogTitleId} className="eyebrow" style={{ margin: 0, color: REMEMBRANCE_CHROME.ancient }}>
+                            <p id={dialogTitleId} className="eyebrow" style={{ margin: 0, color: REMEMBRANCE_CHROME.ancient }}>
                 {MEMORIAL_CONSTELLATION_PICKER_COPY.label}
               </p>
               <button
@@ -273,14 +266,13 @@ export function MemorialConstellationPicker({
               </button>
             </div>
             <div style={{ overflowY: "auto", minHeight: 0, flex: 1 }}>
-            {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.helper */}
-            <p className="muted" style={{ fontSize: ".78rem", lineHeight: 1.55, margin: "0 0 14px", maxWidth: "52ch" }}>
+                        <p className="muted" style={{ fontSize: ".78rem", lineHeight: 1.55, margin: "0 0 14px", maxWidth: "52ch" }}>
               {MEMORIAL_CONSTELLATION_PICKER_COPY.helper}
             </p>
 
             <div
               role="radiogroup"
-              /* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.label */
+
               aria-label={MEMORIAL_CONSTELLATION_PICKER_COPY.label}
               style={{ display: "grid", gap: 8 }}
             >
@@ -289,7 +281,7 @@ export function MemorialConstellationPicker({
                 type="button"
                 role="radio"
                 aria-checked={selected === null}
-                /* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.noneLabel */
+
                 aria-label={MEMORIAL_CONSTELLATION_PICKER_COPY.noneLabel}
                 disabled={busy}
                 onClick={() => void choose(null)}
@@ -325,16 +317,13 @@ export function MemorialConstellationPicker({
                   }}
                 />
                 <span style={{ display: "grid", gap: 4, minWidth: 0 }}>
-                  {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.noneLabel */}
-                  <span style={{ fontSize: ".92rem", color: selected === null ? "var(--gold)" : "var(--cream)" }}>
+                                    <span style={{ fontSize: ".92rem", color: selected === null ? "var(--gold)" : "var(--cream)" }}>
                     {MEMORIAL_CONSTELLATION_PICKER_COPY.noneLabel}
                   </span>
-                  {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.noneHelper */}
-                  <span className="muted" style={{ fontSize: ".76rem", lineHeight: 1.45 }}>
+                                    <span className="muted" style={{ fontSize: ".76rem", lineHeight: 1.45 }}>
                     {MEMORIAL_CONSTELLATION_PICKER_COPY.noneHelper}
                   </span>
-                  {/* FOUNDER-REVIEW: MEMORIAL_CONSTELLATION_PICKER_COPY.noneMyth */}
-                  <span style={{ fontSize: ".76rem", lineHeight: 1.45, color: "var(--mist)", fontFamily: "var(--serif)" }}>
+                                    <span style={{ fontSize: ".76rem", lineHeight: 1.45, color: "var(--mist)", fontFamily: "var(--serif)" }}>
                     {MEMORIAL_CONSTELLATION_PICKER_COPY.noneMyth}
                   </span>
                 </span>
@@ -348,7 +337,7 @@ export function MemorialConstellationPicker({
                     type="button"
                     role="radio"
                     aria-checked={isSelected}
-                    /* FOUNDER-REVIEW: pattern.name */
+
                     aria-label={entry.name}
                     disabled={busy}
                     onClick={() => void choose(entry.id as MemorialConstellationId)}
@@ -378,19 +367,16 @@ export function MemorialConstellationPicker({
                       title={entry.name}
                     />
                     <span style={{ display: "grid", gap: 4, minWidth: 0 }}>
-                      {/* FOUNDER-REVIEW: pattern.name */}
-                      <span style={{ fontSize: ".92rem", color: isSelected ? "var(--gold)" : "var(--cream)" }}>
+                                            <span style={{ fontSize: ".92rem", color: isSelected ? "var(--gold)" : "var(--cream)" }}>
                         {entry.name}
                         <span className="muted" style={{ fontSize: ".72rem", marginLeft: 8, fontFamily: "var(--sans)" }}>
                           {entry.iau}
                         </span>
                       </span>
-                      {/* FOUNDER-REVIEW: pattern.summary */}
-                      <span className="muted" style={{ fontSize: ".76rem", lineHeight: 1.45 }}>
+                                            <span className="muted" style={{ fontSize: ".76rem", lineHeight: 1.45 }}>
                         {entry.summary}
                       </span>
-                      {/* FOUNDER-REVIEW: pattern.myth — real mythology only */}
-                      <span style={{ fontSize: ".76rem", lineHeight: 1.45, color: "var(--mist)", fontFamily: "var(--serif)" }}>
+                                            <span style={{ fontSize: ".76rem", lineHeight: 1.45, color: "var(--mist)", fontFamily: "var(--serif)" }}>
                         {entry.myth}
                       </span>
                     </span>

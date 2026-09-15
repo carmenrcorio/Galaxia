@@ -14,13 +14,13 @@
 export interface MemorialConstellation {
   /** Stable id persisted on `people.memorial_constellation`. */
   id: string;
-  /** Display name — FOUNDER-REVIEW. */
+  /** Display name. */
   name: string;
   /** IAU abbreviation (e.g. Cas, Ori). */
   iau: string;
-  /** One-line sky description for the picker — FOUNDER-REVIEW. */
+  /** One-line sky description for the picker. */
   summary: string;
-  /** Curated Greco-Roman myth for meaningful choice — FOUNDER-REVIEW. Real mythology only; never generated. */
+  /** Curated Greco-Roman myth for meaningful choice. Real mythology only; never generated. */
   myth: string;
   /** Normalized star coords in roughly [-1, 1]; barycenter near origin. */
   stars: ReadonlyArray<readonly [number, number]>;
@@ -30,17 +30,13 @@ export interface MemorialConstellation {
 
 /**
  * Curated memorial patterns (16). Order matches the picker.
- * Display names marked FOUNDER-REVIEW.
  */
 export const MEMORIAL_CONSTELLATIONS = [
   {
     id: "cassiopeia",
-    // FOUNDER-REVIEW: constellation display name
     name: "Cassiopeia",
     iau: "Cas",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "A bright W of five stars near the north celestial pole.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The vain queen who boasted she was more beautiful than the sea nymphs. Poseidon bound her to her throne in the sky, circling the pole forever, upside down half the night as humbling for her pride.",
     stars: [
       [0.92, 0.5013],
@@ -53,13 +49,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "orion",
-    // FOUNDER-REVIEW: constellation display name
     name: "Orion",
     iau: "Ori",
-    // FOUNDER-REVIEW: one-line sky description
-    // FOUNDER-REVIEW: rewritten (no U+2014).
     summary: "The hunter: three belt stars between bright shoulders and knees.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The great hunter, son of Poseidon, who could walk on water. Slain by a scorpion's sting and placed among the stars, still striding across the winter sky with his belt and sword.",
     stars: [
       [-0.2471, 0.5587],
@@ -75,12 +67,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "lyra",
-    // FOUNDER-REVIEW: constellation display name
     name: "Lyra",
     iau: "Lyr",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "Vega and a small parallelogram: a compact lyre.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The lyre of Orpheus, whose music could charm stones, tame beasts, and soften the hearts of the dead. After his death Zeus set his instrument in the sky.",
     stars: [
       [-0.551, 0.5545],
@@ -94,12 +83,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "cygnus",
-    // FOUNDER-REVIEW: constellation display name
     name: "Cygnus",
     iau: "Cyg",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "The Northern Cross: wings spread along the Milky Way.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The swan. In one telling, Zeus in swan form; in another, the grieving friend of Phaethon who dove again and again into the river for his body until the gods, moved by his loyalty, made him a swan among the stars.",
     stars: [
       [0.4652, 0.3491],
@@ -116,12 +102,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "scorpius",
-    // FOUNDER-REVIEW: constellation display name
     name: "Scorpius",
     iau: "Sco",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "A long curved body ending in a hooked stinger.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The scorpion sent by Gaia to kill Orion. The two were placed at opposite ends of the sky, so the hunter sets as his killer rises and they never meet.",
     stars: [
       [0.7125, -0.3464],
@@ -145,12 +128,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "leo",
-    // FOUNDER-REVIEW: constellation display name
     name: "Leo",
     iau: "Leo",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "The sickle of the lion's head, with a triangle of hindquarters.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The Nemean lion, whose hide no weapon could pierce. Heracles strangled it with his bare hands as the first of his twelve labors, and it was raised to the heavens.",
     stars: [
       [0.5041, -0.1879],
@@ -167,12 +147,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "ursa_major",
-    // FOUNDER-REVIEW: constellation display name
     name: "Ursa Major",
     iau: "UMa",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "The Plough: seven bright stars of the Great Bear.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "Callisto, a nymph loved by Zeus and turned into a bear by his jealous wife. Years later her own son nearly hunted her; Zeus lifted them both into the sky to keep them safe together.",
     stars: [
       [0.92, -0.4663],
@@ -187,12 +164,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "ursa_minor",
-    // FOUNDER-REVIEW: constellation display name
     name: "Ursa Minor",
     iau: "UMi",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "The Little Dipper, with Polaris at the end of the handle.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "Arcas, Callisto's son, set beside his mother as the Little Bear so the two would circle the pole together and never be parted.",
     stars: [
       [0.1254, -0.0539],
@@ -207,12 +181,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "andromeda",
-    // FOUNDER-REVIEW: constellation display name
     name: "Andromeda",
     iau: "And",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "A chain of stars stretching from the Square of Pegasus.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The princess chained to a rock as a sacrifice to a sea monster, to pay for her mother Cassiopeia's pride. Rescued by Perseus, she was placed among the stars near the family whose vanity had doomed her.",
     stars: [
       [0.5359, 0.8658],
@@ -227,12 +198,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "perseus",
-    // FOUNDER-REVIEW: constellation display name
     name: "Perseus",
     iau: "Per",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "The hero's figure near Cassiopeia, home of Algol.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The hero who slew Medusa and, flying home with her head, found Andromeda chained and saved her. He holds the severed head, whose winking star Algol marks the Gorgon's eye.",
     stars: [
       [-0.92, 0.4104],
@@ -253,12 +221,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "aquila",
-    // FOUNDER-REVIEW: constellation display name
     name: "Aquila",
     iau: "Aql",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "Altair and the eagle's wings along the Milky Way.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The eagle of Zeus, who carried his thunderbolts and bore the youth Ganymede up to Olympus. Set in the sky along the Milky Way.",
     stars: [
       [-0.6508, -0.92],
@@ -276,12 +241,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "corona_borealis",
-    // FOUNDER-REVIEW: constellation display name
     name: "Corona Borealis",
     iau: "CrB",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "A delicate arc: a northern crown of stars.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The crown of Ariadne, given by Dionysus. When she died he threw it into the sky, its jewels becoming stars, so their love would be remembered.",
     stars: [
       [-0.4924, 0.6737],
@@ -295,12 +257,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "gemini",
-    // FOUNDER-REVIEW: constellation display name
     name: "Gemini",
     iau: "Gem",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "Twin bright heads, Castor and Pollux, with parallel bodies.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "Castor and Pollux, twin brothers, one mortal and one immortal. When Castor died, Pollux begged to share his immortality rather than be parted, and Zeus set them together in the sky.",
     stars: [
       [-0.3558, -0.9045],
@@ -320,12 +279,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "taurus",
-    // FOUNDER-REVIEW: constellation display name
     name: "Taurus",
     iau: "Tau",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "The V of the Hyades and long horns, Aldebaran as the eye.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The bull, Zeus in disguise, who carried Europa across the sea. Its face is marked by the Hyades and its shoulder by the Pleiades, the seven sisters.",
     stars: [
       [-0.8049, -0.4417],
@@ -344,12 +300,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "bootes",
-    // FOUNDER-REVIEW: constellation display name
     name: "Boötes",
     iau: "Boo",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "A kite-shaped herdsman with brilliant Arcturus at his heel.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The herdsman who drives the bears around the pole, holding the leash of the hunting dogs. Sometimes called the first ploughman, given a place in the sky for inventing the plough.",
     stars: [
       [-0.3838, -0.6204],
@@ -367,12 +320,9 @@ export const MEMORIAL_CONSTELLATIONS = [
   },
   {
     id: "draco",
-    // FOUNDER-REVIEW: constellation display name
     name: "Draco",
     iau: "Dra",
-    // FOUNDER-REVIEW: one-line sky description
     summary: "A long winding dragon coiled between the bears.",
-    // FOUNDER-REVIEW: traditional myth — real mythology only
     myth: "The dragon Ladon, who guarded the golden apples of the Hesperides until Heracles slew it. Hera set it in the sky, coiled forever around the pole.",
     stars: [
       [0.2054, -0.3246],
@@ -447,7 +397,7 @@ export function usesMemorialGlyph(person: MemorialGlyphPerson | null | undefined
   return getMemorialConstellation(person.memorial_constellation) != null;
 }
 
-/** FOUNDER-REVIEW: picker section label + helper copy (Remembrance space). */
+
 export const MEMORIAL_CONSTELLATION_PICKER_COPY = {
   label: "Their constellation",
   helper:

@@ -93,8 +93,7 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
   return (
     <div className="glass-card" style={{ maxWidth: 460 }}>
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 10 }}>
-        {/* FOUNDER-REVIEW: authored signup name labels and hint. */}
-        <label className="muted" htmlFor="signup-first-name">
+                <label className="muted" htmlFor="signup-first-name">
           First name
         </label>
         <input
@@ -128,8 +127,7 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
           Password
         </label>
         <input id="signup-password" className="field" required minLength={PASSWORD_MIN_LENGTH} autoComplete="new-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-        {/* FOUNDER-REVIEW: authored password hint. */}
-        <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>{PASSWORD_RULE_HINT}</p>
+                <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>{PASSWORD_RULE_HINT}</p>
         {/* COPPA age gate: required on account creation, never on login. Purely
             client-side (no birth-data column, no server enforcement) — the
             submit button stays disabled until this is checked. */}
@@ -153,16 +151,14 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
         >
           {status === "submitting" ? "Creating account..." : "Create account"}
         </button>
-        {/* FOUNDER-REVIEW: authored */}
-        <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>
+                <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>
           By creating an account you agree to our <Link href="/terms">Terms</Link> and{" "}
           <Link href="/privacy">Privacy Policy</Link>.
         </p>
       </form>
       {status === "confirm" ? <p className="success">Check your email to confirm your account.</p> : null}
       {error ? <p className="error">{error}</p> : null}
-      {/* FOUNDER-REVIEW: Already have an account? Sign in. */}
-      <p className="muted">
+            <p className="muted">
         Already have an account?{" "}
         <Link
           href={

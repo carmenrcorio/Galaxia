@@ -18,8 +18,7 @@ export function TrustSection() {
         <div className="tcard glass-card reveal">
           <div className="tcard-ico">✶</div>
           <h3>Your notes are yours</h3>
-          {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-          <p>What you write about someone is private to you, always. It's never shared, and never fed into a conversation they can see.</p>
+                    <p>What you write about someone is private to you, always. It's never shared, and never fed into a conversation they can see.</p>
         </div>
         <div className="tcard glass-card reveal">
           <div className="tcard-ico">☾</div>

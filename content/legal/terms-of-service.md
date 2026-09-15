@@ -43,12 +43,10 @@ You are responsible for the information you provide, for maintaining the confide
 
 ## 5\. Subscriptions, trial, billing, renewal, and cancellation
 
-<!-- FOUNDER-REVIEW: rewritten. The paywall sells monthly only; yearly is not offered. -->
 **Plans.** Access to paid features requires a subscription. We offer a monthly plan at the price shown in the Service at the time you subscribe. We may change prices prospectively; changes will not affect the term you have already paid for.
 
 **Free trial.** We may offer a free trial. If you start a trial and do not cancel before it ends, your subscription will begin automatically and the payment method you provided will be charged the applicable price. The length of the trial and the date it converts are shown to you at signup.
 
-<!-- FOUNDER-REVIEW: rewritten. Renewals are monthly only. -->
 **Automatic renewal.** Subscriptions renew automatically at the end of each monthly billing period at the then-current price, using your payment method on file, until you cancel. By subscribing, you authorize us and our payment providers to charge your payment method on a recurring basis.
 
 **Cancellation.** You may cancel at any time through the Service or through the platform you subscribed on. When you cancel, you will retain access until the end of your current billing period, and you will not be charged again after that. Cancelling does not, by itself, delete your account or data; to delete your data, use the account-deletion feature (see Section 9).
@@ -75,16 +73,12 @@ This section is essential to the Service and to your use of it.
 
 **Indemnity for third-party data.** You agree to indemnify and hold us harmless from claims arising out of information you provide about other people or your use of readings about them, as described in Section 13\.
 
-<!-- FOUNDER-REVIEW: added. Invitation-flow addendum, covers both the birth_data flow and the constellation_connect flow (schema merged as PR #217). changelog.d/cursor-invitation-legal-addendum-5920.md -->
 **Invitation feature.** If you use Galaxia's invitation feature to invite another person to provide their own information, whether to complete a profile you started for them or, where available, to connect their own account and share a copy of their chart with you, Galaxia does not send that invitation on your behalf. You share a link through whatever channel you choose, and Galaxia has no visibility into how or to whom you send it.
 
-<!-- FOUNDER-REVIEW: added. Invitation-flow addendum. changelog.d/cursor-invitation-legal-addendum-5920.md -->
 **Your representations.** By generating an invitation link, you represent that you have a personal or preexisting relationship with the person you intend to send it to, that you will not use this feature to contact anyone without a personal connection or to send unsolicited or bulk communications, and that where the invited person's information becomes visible to you, you understand it was provided by that person directly, not by you, and you will not use it in a way that violates their reasonable expectation of privacy.
 
-<!-- FOUNDER-REVIEW: added. Invitation-flow addendum. changelog.d/cursor-invitation-legal-addendum-5920.md -->
 **Consent by the invited person.** A person who accepts an invitation and submits their own information, or creates an account to do so, is deemed to consent to Galaxia processing that information as described in our Privacy Policy, by the act of submitting the form or completing signup. Galaxia does not independently verify the relationship between the two parties beyond what is represented above.
 
-<!-- FOUNDER-REVIEW: added. Invitation-flow addendum. changelog.d/cursor-invitation-legal-addendum-5920.md -->
 **Platform role and indemnity.** Galaxia facilitates the technical transmission and storage of information you and your invitees choose to share through this feature. It does not review, endorse, or verify the accuracy of that information or the legitimacy of the relationship between you. You agree to defend, indemnify, and hold harmless Galaxia Mea LLC, its operators, and affiliates against any claims, liabilities, or damages arising from your use of this feature, including from inviting someone without a proper basis to do so.
 
 ---
@@ -184,7 +178,6 @@ Subject to the above, you agree that the state and federal courts located in Gre
 
 ## 17\. Contact
 
-<!-- FOUNDER-REVIEW: rewritten. Contact block matches the one Galaxia legal entity and help address. -->
 **GALAXIA MEA LLC**  
 Email: [{{GALAXIA_HELP_EMAIL}}](mailto:{{GALAXIA_HELP_EMAIL}})  
 Mailing address: 1 Shadowrock Ct, Simpsonville, SC 29680 

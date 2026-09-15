@@ -51,7 +51,6 @@ function sameMembers(a: string[], b: string[]): boolean {
 }
 
 /**
- * FOUNDER-REVIEW preview titles. Never title an unsaved composition as a saved group.
  * - dirty + loaded: "Unsaved preview, based on {group name}"
  * - dirty / no loaded: "Unsaved preview"
  * - clean + loaded: saved group name
@@ -329,7 +328,6 @@ function GroupsPageInner() {
       setStatus(error.message);
       return;
     }
-    // FOUNDER-REVIEW: formatGroupDeleteConfirmation
     setDeleteWarning(formatGroupDeleteConfirmation(loadedGroup.name, count ?? 0));
     setConfirmDelete(true);
   }
@@ -635,8 +633,7 @@ function GroupsPageInner() {
         </div>
       ) : rosterError ? (
         <section className="glass-card async-frame">
-          {/* FOUNDER-REVIEW: groups roster fetch failed or timed out. */}
-          <p className="muted" style={{ margin: 0 }}>Your groups could not load. Try again.</p>
+                    <p className="muted" style={{ margin: 0 }}>Your groups could not load. Try again.</p>
           <button type="button" className="btn-primary" style={{ marginTop: 14 }} onClick={() => { setRosterReady(false); setRosterReload((n) => n + 1); }}>
             Try again
           </button>

@@ -37,7 +37,6 @@ export const SIGN_KEYS = [
 
 export type SignKey = (typeof SIGN_KEYS)[number];
 
-// FOUNDER-REVIEW: authored. Beginner planet meanings, one line each.
 export const PLANET_MEANINGS: Record<PlanetKey, string> = {
   sun: "The core self: what a person wants to be seen as, and where they shine.",
   moon: "Emotional needs: what makes someone feel safe, soothed, and at home.",
@@ -51,7 +50,6 @@ export const PLANET_MEANINGS: Record<PlanetKey, string> = {
   pluto: "Where someone meets power, control, and deep transformation.",
 };
 
-// FOUNDER-REVIEW: authored. Beginner sign meanings, one line each.
 export const SIGN_MEANINGS: Record<SignKey, string> = {
   Aries: "Bold, first-out-the-gate energy that starts things and does not wait.",
   Taurus: "Steady, sensory, and built to last. Hard to rush, loyal to what is already working.",

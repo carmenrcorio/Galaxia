@@ -150,8 +150,7 @@ export function NatalSignReveal({
 
       {signupHref ? (
         <div className="natal-sign-reveal__signup" style={{ marginTop: 4, marginBottom: rising ? 0 : 10 }}>
-          {/* FOUNDER-REVIEW: authored — landing reveal signup CTA. */}
-          <Link href={signupHref as Route} className="btn-primary">
+                    <Link href={signupHref as Route} className="btn-primary">
             Start 14 days free
           </Link>
         </div>
@@ -159,8 +158,7 @@ export function NatalSignReveal({
 
       {!rising ? (
         <p className="muted natal-sign-reveal__rising-note" style={{ fontSize: ".76rem", marginTop: 8, lineHeight: 1.5 }}>
-          {/* FOUNDER-REVIEW: authored — Rising absent; conversion hook when href provided. */}
-          Rising needs a birth time and city.
+                    Rising needs a birth time and city.
           {fullChartHref ? (
             <>
               {" "}

@@ -8,7 +8,6 @@ import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { BLOG_CATEGORIES, getPublishedPosts } from "../../lib/blog";
 
-// FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Galaxia Blog: Birth Charts, Synastry, and Astrology Guides";
 const DESCRIPTION = "Guides for reading real birth charts: synastry, generations, and what astrology can and can't actually tell you.";
 
@@ -67,7 +66,6 @@ export default async function BlogIndexPage() {
 
         <div className="blog-post-list">
           {posts.length === 0 ? (
-            // FOUNDER-REVIEW: blog index empty (Supabase unset or no published rows).
             <p className="blog-category-empty">No posts yet. New guides will show up here.</p>
           ) : (
             posts.map((post) => (

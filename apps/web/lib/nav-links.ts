@@ -10,7 +10,6 @@ export type NavLink = { href: string; label: string };
 
 export const MARKETING_NAV_BRAND_HREF = "/";
 
-// FOUNDER-REVIEW: marketing nav labels only. Hrefs, H1s, and metadata titles stay.
 export const MARKETING_NAV_LINKS: NavLink[] = [
   { href: "/why-galaxia", label: "How it works" },
   { href: "/generations", label: "Your people" },
@@ -35,7 +34,6 @@ export const APP_NAV_LINKS: NavLink[] = [
   // Public route. There is no /app/chart page. The free chart stays on /chart
   // so the SEO URL is not split; that page renders the app nav when a session
   // is present so a signed-in viewer never leaves the product.
-  // FOUNDER-REVIEW: app-nav label only. Href stays /chart.
   { href: "/chart", label: "Free chart" },
   { href: "/blog", label: "Blog" },
 ];
@@ -43,7 +41,6 @@ export const APP_NAV_LINKS: NavLink[] = [
 export const APP_NAV_ACCOUNT: NavLink = { href: "/account", label: "Account" };
 export const APP_NAV_ACTIONS: NavLink[] = [APP_NAV_ACCOUNT];
 
-// FOUNDER-REVIEW: footer labels for the same destinations as the marketing nav.
 export const SITE_FOOTER_LINKS: NavLink[] = [
   { href: "/why-galaxia", label: "How it works" },
   { href: "/generations", label: "Your people" },
@@ -75,7 +72,6 @@ export const PUBLISHED_BLOG_POST_HREFS: readonly string[] = [
 ];
 
 export const FOR_WORK_CHART_CTA: NavLink = { href: "/chart", label: "Try a free chart" };
-// FOUNDER-REVIEW: pricing-page CTA. Public chart, not a free membership.
 export const PRICING_FREE_CHART_CTA: NavLink = { href: "/chart", label: "Run a real chart" };
 
 export const RELATED_LINKS = {
@@ -127,7 +123,6 @@ export const RELATED_LINKS = {
     { href: "/for-work", label: "Galaxia for work" },
     { href: "/security", label: "Privacy and data" },
   ],
-  // FOUNDER-REVIEW: glossary related-link labels.
   glossary: [
     { href: "/blog", label: "Read the guides these terms come from" },
     { href: "/chart", label: "See a natal chart in this vocabulary" },
@@ -135,7 +130,6 @@ export const RELATED_LINKS = {
   ],
 } as const satisfies Record<string, readonly NavLink[]>;
 
-// FOUNDER-REVIEW: teaser CTAs only. Card H3 titles stay on the page names.
 export const FEATURE_TEASER_LINKS: NavLink[] = [
   { href: "/why-galaxia", label: "How it works" },
   { href: "/generations", label: "Your people" },
@@ -144,7 +138,6 @@ export const FEATURE_TEASER_LINKS: NavLink[] = [
   { href: "/pricing", label: "View pricing" },
 ];
 
-// FOUNDER-REVIEW: outcome-led homepage primary CTA. Destination is the public free chart.
 export const HERO_PRIMARY_CTA: NavLink = { href: "/chart", label: "See someone's chart free" };
 
 export const HERO_HOW_IT_WORKS: NavLink = { href: "/#how", label: "See how it works" };

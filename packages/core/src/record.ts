@@ -77,7 +77,6 @@ export function sanitizeMomentType(value: unknown): MomentTypeId | null {
   return isMomentType(value) ? value : null;
 }
 
-// FOUNDER-REVIEW: authored. Moment type chips and Record fallback body.
 export const MOMENT_TYPE_LABELS: Record<MomentTypeId, string> = {
   hard_conversation: "Hard conversation",
   breakthrough: "Breakthrough",

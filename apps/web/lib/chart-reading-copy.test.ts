@@ -11,9 +11,8 @@ import {
 } from "./chart-reading-copy";
 
 describe("chart-reading authored copy", () => {
-  it("tags every authored string FOUNDER-REVIEW and never uses U+2014", () => {
+  it("never uses U+2014 in authored chart-reading copy", () => {
     const src = readFileSync(join(__dirname, "chart-reading-copy.ts"), "utf8");
-    expect(src).toContain("FOUNDER-REVIEW");
     expect(src).not.toContain("\u2014");
     for (const value of [
       CHART_READING_FRAMING,

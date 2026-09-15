@@ -57,7 +57,6 @@ export async function upsertGroupsCurrentReading(
     overlay: input.overlay,
     pairHighlights: input.pairHighlights
   });
-  // FOUNDER-REVIEW: authored — body line for the current Groups cohort reading note.
   const body = `Current cohort reading for ${input.groupName}: ${payload.overlay.label}`;
 
   const { data: existingRows } = await supabase

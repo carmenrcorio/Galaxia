@@ -34,8 +34,7 @@ export default function GlobalError({
         }}
       >
         <main style={{ textAlign: "center", padding: "2rem" }}>
-          {/* FOUNDER-REVIEW: root error boundary. Names the page load, not a vendor. */}
-          <p>This page could not load. Try again.</p>
+                    <p>This page could not load. Try again.</p>
           <button
             type="button"
             onClick={() => reset()}

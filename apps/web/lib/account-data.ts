@@ -45,7 +45,6 @@ export interface AccountExportPayload {
   messages: Record<string, unknown>[];
 }
 
-// FOUNDER-REVIEW: authored - delete confirmation / irreversibility (account deletion, not trial end).
 export const ACCOUNT_DELETE_COPY = {
   title: "Delete your account",
   lead:
@@ -63,7 +62,6 @@ export const ACCOUNT_DELETE_COPY = {
   successRedirectNote: "Your account has been deleted."
 } as const;
 
-// FOUNDER-REVIEW: authored - data export section.
 export const ACCOUNT_EXPORT_COPY = {
   title: "Export your data",
   lead:

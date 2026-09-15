@@ -13,7 +13,6 @@ import { WhyNotSection } from "../../components/marketing/why-not-section";
 import { WhySection } from "../../components/marketing/why-section";
 import { RELATED_LINKS } from "../../lib/nav-links";
 
-// FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Why Galaxia: Relationship Intelligence, Not Horoscopes";
 const DESCRIPTION =
   "Galaxia uses computed astrology (real planetary positions, not sun-sign guesses) to map how you actually connect with the people in your life.";

@@ -19,7 +19,6 @@ export const SUBSCRIPTION_FETCH_TIMEOUT_MS = 2000;
 
 export const BILLING_SUPPORT_EMAIL = GALAXIA_HELP_EMAIL;
 
-// FOUNDER-REVIEW: Settings subscription panel copy.
 export const SETTINGS_SUBSCRIPTION_COPY = {
   supportEmail: BILLING_SUPPORT_EMAIL,
   manageBillingLabel: "Manage billing",
@@ -160,7 +159,6 @@ export function planDisplayName(plan: string | null | undefined, status: string 
 }
 
 function trialDaysCopy(days: number): string {
-  // FOUNDER-REVIEW: trial days remaining on the Settings subscription card.
   if (days === 1) return "1 day remaining.";
   return `${days} days remaining.`;
 }

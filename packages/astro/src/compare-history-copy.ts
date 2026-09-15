@@ -1,47 +1,47 @@
 /**
- * User-visible Compare history copy. Every string is tagged FOUNDER-REVIEW.
+ * User-visible Compare history copy.
  * No U+2014. Do not "fix" an em dash with a hyphen.
  */
 
-/** FOUNDER-REVIEW: authored */
+
 export const COMPARE_HISTORY_HEADING = "Recent comparisons";
 
-/** FOUNDER-REVIEW: authored */
+
 export const COMPARE_HISTORY_EMPTY =
   "Pick two people to start. After you run a comparison, it will wait here so this page is not an empty form the next time you come back.";
 
-/** FOUNDER-REVIEW: authored */
+
 export function compareHistoryLastViewed(date: string): string {
   return `Last viewed ${date}`;
 }
 
-/** FOUNDER-REVIEW: authored */
+
 export const COMPARE_HISTORY_OPEN = "Open this comparison";
 
-/** FOUNDER-REVIEW: authored */
+
 export const COMPARE_SINCE_HEADING = "Since you last looked";
 
-/** FOUNDER-REVIEW: authored */
+
 export function compareNatalAspectsConstant(nameA: string, nameB: string): string {
   return `The natal aspects between ${nameA} and ${nameB} have not changed. Those are fixed by the two birth charts.`;
 }
 
-/** FOUNDER-REVIEW: authored */
+
 export const COMPARE_NEWLY_ACTIVE = "Newly active between these two";
 
-/** FOUNDER-REVIEW: authored */
+
 export const COMPARE_MOVED_ON = "Moved on since you last looked";
 
-/** FOUNDER-REVIEW: authored */
+
 export function compareNoTransitShift(date: string): string {
   return `No transits have entered or left orb between these two since ${date}.`;
 }
 
-/** FOUNDER-REVIEW: authored */
+
 export const COMPARE_TRANSITS_UNAVAILABLE =
   "Transits for this pair cannot be shown honestly with the birth data on file.";
 
-/** FOUNDER-REVIEW: authored */
+
 export function describePairTransitLine(
   name: string,
   hit: { transitBody: string; type: string; natalBody: string }

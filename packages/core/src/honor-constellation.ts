@@ -34,6 +34,38 @@ export const RELATIONSHIP_EDGE_TYPES = [
 
 export type RelationshipEdgeType = (typeof RELATIONSHIP_EDGE_TYPES)[number];
 
+/**
+ * Types the person-page picker can write.
+ * Remembrance stays on HonorDeclarationBox; this list never includes it.
+ */
+export const DECLARED_BOND_TYPES = [
+  "partner",
+  "family",
+  "friend",
+  "colleague",
+  "chosen",
+  "other",
+] as const;
+
+export type DeclaredBondType = (typeof DECLARED_BOND_TYPES)[number];
+
+/** FOUNDER-REVIEW: picker labels for person-to-person constellation lines. */
+export const DECLARED_BOND_LABELS: Record<DeclaredBondType, string> = {
+  partner: "Partner",
+  family: "Family",
+  friend: "Friend",
+  colleague: "Colleague",
+  chosen: "Chosen",
+  other: "Other",
+};
+
+export function isDeclaredBondType(
+  type: string | null | undefined
+): type is DeclaredBondType {
+  if (!type) return false;
+  return (DECLARED_BOND_TYPES as readonly string[]).includes(type);
+}
+
 /** Lower uuid in person_a, higher in person_b. Refuses a self-loop. */
 export function canonicalRelationshipPair(
   personA: string,
@@ -196,6 +228,88 @@ export function buildHonorRelationshipInsert(input: {
     person_b: pair.person_b,
     relation_type: HONOR_RELATION_TYPE,
   };
+}
+
+/** True when neither endpoint is a minor via isMinorForSafety. */
+export function partnerBondAllowed(
+  personA: MinorSafetyInput,
+  personB: MinorSafetyInput,
+  now: Date = new Date()
+): boolean {
+  return !isMinorForSafety(personA, now) && !isMinorForSafety(personB, now);
+}
+
+export type BuildRelationshipInsertResult =
+  | { ok: true; row: HonorRelationshipRow }
+  | { ok: false; reason: "self" | "partner-minor" | "remembrance" | "not-declared" };
+
+/**
+ * Insert payload for a picker-declared bond.
+ * Canonical UUID order. Refuses remembrance (honor declaration owns that write),
+ * self-loops, unknown types, and partner when either endpoint is a minor.
+ * Never rewrites partner to another type.
+ */
+export function buildRelationshipInsert(input: {
+  ownerId: string;
+  personAId: string;
+  personBId: string;
+  relationType: string;
+  personA: MinorSafetyInput;
+  personB: MinorSafetyInput;
+  now?: Date;
+}): BuildRelationshipInsertResult {
+  if (input.personAId === input.personBId) return { ok: false, reason: "self" };
+  if (isHonorRelationType(input.relationType)) return { ok: false, reason: "remembrance" };
+  if (!isDeclaredBondType(input.relationType)) return { ok: false, reason: "not-declared" };
+  if (
+    input.relationType === "partner" &&
+    !partnerBondAllowed(input.personA, input.personB, input.now)
+  ) {
+    return { ok: false, reason: "partner-minor" };
+  }
+  const pair = canonicalRelationshipPair(input.personAId, input.personBId);
+  return {
+    ok: true,
+    row: {
+      owner_id: input.ownerId,
+      person_a: pair.person_a,
+      person_b: pair.person_b,
+      relation_type: input.relationType,
+    },
+  };
+}
+
+export type DeclaredBond = {
+  otherId: string;
+  relationType: DeclaredBondType;
+};
+
+/** Picker rows for one person. Skips remembrance and unknown types. */
+export function declaredBondsFromRows(
+  rows: Array<{ person_a: string; person_b: string; relation_type: string }>,
+  subjectId: string
+): DeclaredBond[] {
+  const bonds: DeclaredBond[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    if (!isDeclaredBondType(row.relation_type)) continue;
+    if (row.person_a !== subjectId && row.person_b !== subjectId) continue;
+    const otherId = row.person_a === subjectId ? row.person_b : row.person_a;
+    if (otherId === subjectId) continue;
+    const key = `${otherId}:${row.relation_type}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    bonds.push({ otherId, relationType: row.relation_type });
+  }
+  return bonds;
+}
+
+export function declaredBondExists(
+  bonds: readonly DeclaredBond[],
+  otherId: string,
+  relationType: string
+): boolean {
+  return bonds.some((b) => b.otherId === otherId && b.relationType === relationType);
 }
 
 /**

@@ -89,10 +89,12 @@ textarea:focus-visible {
   max-width: 100%;
   box-sizing: border-box;
 }
-.honor-declare {
+.honor-declare,
+.relationship-edges {
   min-width: 0;
 }
-.honor-declare-summary {
+.honor-declare-summary,
+.relationship-edges-summary {
   list-style: none;
   cursor: pointer;
   display: flex;
@@ -102,20 +104,24 @@ textarea:focus-visible {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
-.honor-declare-summary::-webkit-details-marker {
+.honor-declare-summary::-webkit-details-marker,
+.relationship-edges-summary::-webkit-details-marker {
   display: none;
 }
-.honor-declare-summary::marker {
+.honor-declare-summary::marker,
+.relationship-edges-summary::marker {
   content: "";
 }
-.honor-declare-summary::after {
+.honor-declare-summary::after,
+.relationship-edges-summary::after {
   content: "▶";
   flex-shrink: 0;
   color: var(--mist2);
   font-size: .72rem;
   transition: transform .2s;
 }
-.honor-declare[open] > .honor-declare-summary::after {
+.honor-declare[open] > .honor-declare-summary::after,
+.relationship-edges[open] > .relationship-edges-summary::after {
   transform: rotate(90deg);
 }
 .honor-declare-option {
@@ -236,10 +242,12 @@ textarea:focus-visible {
   }
   .remembrance-space .btn-primary,
   .remembrance-space .pill-link,
-  .honor-declare .btn-primary {
+  .honor-declare .btn-primary,
+  .relationship-edges .btn-primary {
     max-width: 100%;
   }
-  .honor-declare {
+  .honor-declare,
+  .relationship-edges {
     padding: 12px 10px;
     border-radius: 12px;
   }

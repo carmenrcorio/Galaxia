@@ -14,11 +14,13 @@ import { PairDynamicsSection, PAIR_DYNAMICS_EMPTY } from "./groups/pair-dynamics
 import {
   RELATIONAL_TRANSIT_FEED_EMPTY,
   RELATIONAL_TRANSIT_FEED_EMPTY_TODAY,
+  RELATIONAL_TRANSIT_FEED_ERROR,
   RELATIONAL_TRANSIT_FEED_LOADING,
   RELATIONAL_TRANSIT_FEED_OFF,
+  RELATIONAL_TRANSIT_FEED_RETRY,
   RelationalTransitFeed,
   relationalTransitFeedEmptyMessage,
-} from "./relational-transit-feed";
+} from "./relational-transit-feed"; from "./relational-transit-feed";
 import { SAVE_TO_GALAXY_CHECKING, SaveToGalaxyButton } from "./save-to-galaxy-button";
 
 afterEach(() => {
@@ -102,6 +104,20 @@ describe("RelationalTransitFeed formerly-null states", () => {
     const settings = screen.getByRole("link", { name: "Settings" });
     expect(settings.getAttribute("href")).toBe("/app/settings");
     expect(screen.getByText(/This week alerts are off/).textContent).toBe(RELATIONAL_TRANSIT_FEED_OFF);
+  });
+
+  it("turns a hung fetch into a named failure with retry, not an endless spinner", async () => {
+    hangFeed = true;
+    vi.useFakeTimers();
+    try {
+      render(<RelationalTransitFeed ownerId="owner-1" />);
+      expect(screen.getByText(RELATIONAL_TRANSIT_FEED_LOADING)).toBeTruthy();
+      await vi.advanceTimersByTimeAsync(8000);
+      expect(await screen.findByText(RELATIONAL_TRANSIT_FEED_ERROR)).toBeTruthy();
+      expect(screen.getByRole("button", { name: RELATIONAL_TRANSIT_FEED_RETRY })).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

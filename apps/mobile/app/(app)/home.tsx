@@ -519,6 +519,8 @@ export default function HomeScreen() {
 
       <ThisWeekCard
         loading={homeLoading}
+        error={constellationFailed}
+        onRetry={() => void loadHome()}
         preference={relationalPref}
         rows={relationalTransits}
         nextDateISO={nextRelationalDateISO}

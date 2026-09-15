@@ -54,6 +54,7 @@ export const SITE_FOOTER_LINKS: NavLink[] = [
   { href: "/chart", label: "Free chart" },
   { href: "/download", label: "Download" },
   { href: "/blog", label: "Blog" },
+  { href: "/glossary", label: "Glossary" },
   { href: "/press", label: "Press" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
@@ -125,6 +126,12 @@ export const RELATED_LINKS = {
     { href: "/why-galaxia", label: "Why Galaxia exists" },
     { href: "/for-work", label: "Galaxia for work" },
     { href: "/security", label: "Privacy and data" },
+  ],
+  // FOUNDER-REVIEW: glossary related-link labels.
+  glossary: [
+    { href: "/blog", label: "Read the guides these terms come from" },
+    { href: "/chart", label: "See a natal chart in this vocabulary" },
+    { href: SYNASTRY_CHART_MEANING_HREF, label: "What a synastry chart actually tells you" },
   ],
 } as const satisfies Record<string, readonly NavLink[]>;
 

@@ -295,6 +295,7 @@ describe("footer hrefs resolve to App Router pages", () => {
       "/chart",
       "/download",
       "/blog",
+      "/glossary",
       "/press",
       "/privacy",
       "/terms",
@@ -309,6 +310,7 @@ describe("footer hrefs resolve to App Router pages", () => {
       "Free chart",
       "Download",
       "Blog",
+      "Glossary",
       "Press",
       "Privacy",
       "Terms",
@@ -375,6 +377,7 @@ describe("CTA hrefs resolve to App Router pages", () => {
     assertRendersFromConfig(readWeb("app/pricing/page.tsx"), ["RELATED_LINKS.pricing"], "pricing leftover literal");
     assertRendersFromConfig(readWeb("app/for-work/page.tsx"), ["RELATED_LINKS.forWork"], "for-work leftover literal");
     assertRendersFromConfig(readWeb("app/press/page.tsx"), ["RELATED_LINKS.press"], "press leftover literal");
+    assertRendersFromConfig(readWeb("app/glossary/page.tsx"), ["RELATED_LINKS.glossary"], "glossary leftover literal");
     assertRendersFromConfig(readWeb("app/chart/quick-chart-page.tsx"), ["RELATED_LINKS.chart", "CHART_MODE_COMPARE"], "quick-chart leftover literal");
     assertRendersFromConfig(readWeb("app/chart/compare/page.tsx"), ["RELATED_LINKS.chartCompare", "CHART_MODE_SINGLE"], "quick-compare leftover literal");
   });
@@ -568,6 +571,7 @@ describe("public sitemap routes are unchanged by this relabel", () => {
     expect(routesBlock).toContain('"/security"');
     expect(routesBlock).toContain('"/pricing"');
     expect(routesBlock).toContain('"/blog"');
+    expect(routesBlock).toContain('"/glossary"');
     expect(routesBlock).toContain('"/privacy"');
     expect(routesBlock).toContain('"/terms"');
     expect(routesBlock).toContain('"/download"');

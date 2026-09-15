@@ -46,7 +46,7 @@ describe("app/sitemap.ts — /login and /signup excluded", () => {
   });
 
   it("keeps every other previously-listed static route", () => {
-    for (const route of ["/", "/blog", "/privacy", "/terms", "/download", "/chart", "/chart/compare", "/for-work", "/press"]) {
+    for (const route of ["/", "/blog", "/glossary", "/privacy", "/terms", "/download", "/chart", "/chart/compare", "/for-work", "/press"]) {
       expect(src).toContain(`"${route}"`);
     }
   });
@@ -170,5 +170,10 @@ describe("WebPage JSON-LD on legal, blog, and chart", () => {
   it("/for-work renders WebPageJsonLd matching its canonical path", () => {
     expect(readRoute("apps/web/app/for-work/page.tsx")).toContain('WebPageJsonLd path="/for-work"');
     expect(readRoute("apps/web/app/for-work/page.tsx")).toContain('canonical: "/for-work"');
+  });
+
+  it("/glossary renders WebPageJsonLd matching its canonical path", () => {
+    expect(readRoute("apps/web/app/glossary/page.tsx")).toContain('WebPageJsonLd path="/glossary"');
+    expect(readRoute("apps/web/app/glossary/page.tsx")).toContain('canonical: "/glossary"');
   });
 });

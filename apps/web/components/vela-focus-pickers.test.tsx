@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GROUP_PICKER_COPY } from "./group-picker-field";
 import { COMPARE_PERSON_PICKER_COPY, type PersonPickerOption } from "./person-picker";
 import {
@@ -131,9 +131,10 @@ describe("VelaFocusPickers", () => {
       />
     );
     fireEvent.click(screen.getByRole("button", { name: COMPARE_PERSON_PICKER_COPY.placeholder }));
-    const carmen = screen.getByRole("button", { name: /Carmen/ });
+    const dialog = screen.getByRole("dialog");
+    const carmen = within(dialog).getByRole("button", { name: /Carmen/ });
     expect(carmen).toHaveProperty("disabled", true);
-    expect(screen.getByRole("button", { name: /Bea/ })).toHaveProperty("disabled", false);
+    expect(within(dialog).getByRole("button", { name: /Bea/ })).toHaveProperty("disabled", false);
   });
 
   it("group focus renders GroupPickerField, not a native select", () => {

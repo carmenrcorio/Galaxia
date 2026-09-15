@@ -35,6 +35,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             <Link href="/admin/support" className="pill-link">
               Support
             </Link>
+            <Link href="/admin/analytics" className="pill-link">
+              Adoption
+            </Link>
           </div>
         </div>
       </nav>

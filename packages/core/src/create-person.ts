@@ -165,7 +165,11 @@ export async function createPerson(
     .select("id")
     .single();
   if (error || !data) {
-    throw new Error(error?.message ?? "Failed to save person.");
+    if (error?.message?.includes("people_one_self_per_owner")) {
+      throw new Error("people_one_self_per_owner");
+    }
+    // FOUNDER-REVIEW: person insert failed. Never pass a database error through.
+    throw new Error("This person could not be saved. Try again.");
   }
   return { ...row, id: data.id, refusedRelation };
 }

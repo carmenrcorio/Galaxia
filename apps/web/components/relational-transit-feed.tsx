@@ -31,7 +31,7 @@ import {
   type RelationalTransitBody,
   type RelationalTransitPersonInput,
 } from "@galaxia/astro";
-import { getMemorialConstellation, sunSignFromChart, usesMemorialGlyph } from "@galaxia/core";
+import { getMemorialConstellation, sunSignFromChart, usesMemorialGlyph, DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { InitialAvatar } from "./initial-avatar";
@@ -101,6 +101,11 @@ export function formatRelationalTransitQuietDate(iso: string): string {
 
 // FOUNDER-REVIEW: loading line while the feed is fetching.
 export const RELATIONAL_TRANSIT_FEED_LOADING = "Checking this week's shared transits.";
+// FOUNDER-REVIEW: the feed fetch failed or timed out.
+export const RELATIONAL_TRANSIT_FEED_ERROR =
+  "This week's shared transits could not load. Try again.";
+// FOUNDER-REVIEW: retry after a feed load failure.
+export const RELATIONAL_TRANSIT_FEED_RETRY = "Try again";
 // FOUNDER-REVIEW: empty because the owner turned alerts off.
 export const RELATIONAL_TRANSIT_FEED_OFF =
   "This week alerts are off. Turn them on in Settings to see shared transits.";
@@ -125,13 +130,17 @@ function QuietFeedStatus({
   message,
   off,
   todayLink,
+  error,
+  onRetry,
 }: {
   message: string;
   off?: boolean;
   todayLink?: boolean;
+  error?: boolean;
+  onRetry?: () => void;
 }) {
   return (
-    <section className="glass-card fade-in fade-in-delay-1" data-this-week-card="empty" style={{ padding: "14px 16px" }}>
+    <section className="glass-card fade-in fade-in-delay-1 async-frame" data-this-week-card={error ? "error" : "empty"} style={{ padding: "14px 16px" }}>
       <p className="eyebrow">This week</p>
       <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.55, margin: 0 }}>
         {off ? (
@@ -151,6 +160,14 @@ function QuietFeedStatus({
           <Link href={TODAY_SKY_HREF as never} style={{ color: "var(--gold-soft)", fontSize: ".76rem", textDecoration: "none" }}>
             {RELATIONAL_TRANSIT_FEED_EMPTY_TODAY}
           </Link>
+        </p>
+      ) : null}
+      {error && onRetry ? (
+        <p style={{ margin: "8px 0 0" }}>
+          <button type="button" className="btn-primary" onClick={onRetry}>
+            {/* FOUNDER-REVIEW: RELATIONAL_TRANSIT_FEED_RETRY */}
+            {RELATIONAL_TRANSIT_FEED_RETRY}
+          </button>
         </p>
       ) : null}
     </section>
@@ -181,9 +198,16 @@ export function RelationalTransitFeed({
   const [preference, setPreference] = useState<"all" | "major_only" | "off">("all");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [nextDateISO, setNextDateISO] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
     void (async () => {
+      setLoading(true);
+      setError(false);
+      try {
+        await withTimeout((async () => {
       const nowISO = new Date().toISOString();
       const [{ data: profileRow }, { data: transitRows }, { data: peopleRows }, { data: upcomingRows }] = await Promise.all([
         supabase.from("profiles").select("relational_transit_alerts").eq("id", ownerId).maybeSingle(),
@@ -260,9 +284,15 @@ export function RelationalTransitFeed({
       }
 
       setNextDateISO(nextISO);
-      setLoading(false);
+        })(), DEFAULT_FETCH_TIMEOUT_MS);
+      } catch {
+        if (!cancelled) setError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-  }, [supabase, ownerId]);
+    return () => { cancelled = true; };
+  }, [supabase, ownerId, reload]);
 
   const visibleRows = useMemo(() => {
     if (preference === "off") return [];
@@ -283,6 +313,15 @@ export function RelationalTransitFeed({
   const overflowCount = compact ? Math.max(0, visibleRows.length - shownRows.length) : 0;
 
   if (loading) return <QuietFeedStatus message={RELATIONAL_TRANSIT_FEED_LOADING} />;
+  if (error) {
+    return (
+      <QuietFeedStatus
+        message={RELATIONAL_TRANSIT_FEED_ERROR}
+        error
+        onRetry={() => setReload((n) => n + 1)}
+      />
+    );
+  }
   if (preference === "off") return <QuietFeedStatus message={RELATIONAL_TRANSIT_FEED_OFF} off />;
   if (visibleRows.length === 0) {
     return <QuietFeedStatus message={relationalTransitFeedEmptyMessage(nextDateISO)} todayLink />;

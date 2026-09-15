@@ -7,21 +7,43 @@
  * rows, never fabricated.
  */
 
+import { DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { RelationalTransitFeed } from "../../../components/relational-transit-feed";
+import { useCallback, useEffect, useState } from "react";
+import {
+  RELATIONAL_TRANSIT_FEED_ERROR,
+  RELATIONAL_TRANSIT_FEED_LOADING,
+  RELATIONAL_TRANSIT_FEED_RETRY,
+  RelationalTransitFeed,
+} from "../../../components/relational-transit-feed";
 import { APP_NAV_BRAND_HREF } from "../../../lib/nav-links";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 export default function ThisWeekPage() {
   const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [authError, setAuthError] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+
+  const resolveOwner = useCallback(() => {
+    const supabase = createSupabaseBrowserClient();
+    setAuthReady(false);
+    setAuthError(false);
+    void withTimeout(supabase.auth.getUser(), DEFAULT_FETCH_TIMEOUT_MS)
+      .then(({ data: { user } }) => {
+        if (user) setOwnerId(user.id);
+        else setAuthError(true);
+      })
+      .catch(() => {
+        setAuthError(true);
+      })
+      .finally(() => {
+        setAuthReady(true);
+      });
+  }, []);
 
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
-    void supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setOwnerId(user.id);
-    });
-  }, []);
+    resolveOwner();
+  }, [resolveOwner]);
 
   return (
     <main className="app-content">
@@ -32,7 +54,28 @@ export default function ThisWeekPage() {
         {/* FOUNDER-REVIEW: full-feed page dek. */}
         <p className="muted">Every slow-moving transit currently pulling on two or more people in your circle at once.</p>
       </div>
-      {ownerId ? <RelationalTransitFeed ownerId={ownerId} variant="full" /> : null}
+      {!authReady ? (
+        <section className="glass-card fade-in async-frame" style={{ padding: "14px 16px" }}>
+          <p className="eyebrow">This week</p>
+          <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.55, margin: 0 }}>
+            {RELATIONAL_TRANSIT_FEED_LOADING}
+          </p>
+        </section>
+      ) : authError || !ownerId ? (
+        <section className="glass-card fade-in async-frame" style={{ padding: "14px 16px" }}>
+          <p className="eyebrow">This week</p>
+          <p className="muted" style={{ fontSize: ".86rem", lineHeight: 1.55, margin: 0 }}>
+            {RELATIONAL_TRANSIT_FEED_ERROR}
+          </p>
+          <p style={{ margin: "8px 0 0" }}>
+            <button type="button" className="btn-primary" onClick={resolveOwner}>
+              {RELATIONAL_TRANSIT_FEED_RETRY}
+            </button>
+          </p>
+        </section>
+      ) : (
+        <RelationalTransitFeed ownerId={ownerId} variant="full" />
+      )}
       <p>
         {/* FOUNDER-REVIEW: return to constellation home. */}
         <Link href={APP_NAV_BRAND_HREF as never} style={{ color: "var(--gold-soft)", fontSize: ".82rem", textDecoration: "none" }}>

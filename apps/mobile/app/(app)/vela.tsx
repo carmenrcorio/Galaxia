@@ -1,6 +1,6 @@
-import { isMinorForSafety, sunSignFromChart } from "@galaxia/core";
+import { isMinorForSafety, sunSignFromChart, DEFAULT_FETCH_TIMEOUT_MS, VELA_FETCH_TIMEOUT_MS, isFetchTimeoutError, withTimeout } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
-import { useLocalSearchParams } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { InitialAvatar } from "../../src/components/initial-avatar";
@@ -38,6 +38,24 @@ interface ChatLine {
   text: string;
 }
 
+// FOUNDER-REVIEW: Vela roster is loading.
+const VELA_ROSTER_LOADING = "Loading the people Vela can talk about.";
+// FOUNDER-REVIEW: Vela people fetch failed or timed out.
+const VELA_ROSTER_ERROR = "Vela could not load your people. Try again.";
+// FOUNDER-REVIEW: empty constellation on Vela.
+const VELA_NO_PEOPLE = "Add someone to your constellation before you can ask Vela.";
+const VELA_NO_PEOPLE_ACTION = "Add someone";
+// FOUNDER-REVIEW: empty groups picker.
+const VELA_NO_GROUPS = "Create a group first. Then you can ask about it here.";
+// FOUNDER-REVIEW: send timed out.
+const VELA_SEND_TIMEOUT = "Vela did not answer in time. Check your connection and try again.";
+// FOUNDER-REVIEW: send failed without a timeout.
+const VELA_SEND_NETWORK = "Network error talking to Vela.";
+// FOUNDER-REVIEW: consent save failed.
+const VELA_CONSENT_ERROR = "Consent could not be saved. Try again.";
+// FOUNDER-REVIEW: thread history failed.
+const VELA_THREAD_ERROR = "This thread could not be restored. Try again.";
+
 export default function VelaScreen() {
   const params = useLocalSearchParams<{ threadId?: string | string[] }>();
   const { session } = useAuth();
@@ -47,6 +65,8 @@ export default function VelaScreen() {
   const [relationshipType, setRelationshipType] = useState("general");
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [groups, setGroups] = useState<GroupLite[]>([]);
+  const [rosterLoading, setRosterLoading] = useState(true);
+  const [rosterError, setRosterError] = useState(false);
   const [subjectPersonId, setSubjectPersonId] = useState<string | null>(null);
   const [pairPersonId, setPairPersonId] = useState<string | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
@@ -95,6 +115,10 @@ export default function VelaScreen() {
   const dailyBlocked = !canSendVelaMessage();
 
   const fetchScopeData = async () => {
+    setRosterLoading(true);
+    setRosterError(false);
+    try {
+      await withTimeout((async () => {
     const [{ data: peopleData }, { data: groupData }] = await Promise.all([
       supabase.from("people").select("id, display_name, is_minor, birth_date, birth_precision, passed_at").eq("owner_id", session?.user.id).order("display_name", { ascending: true }),
       supabase.from("groups").select("id, name").eq("owner_id", session?.user.id).order("name", { ascending: true })
@@ -115,6 +139,12 @@ export default function VelaScreen() {
     if (!subjectPersonId && allPeople[0]) setSubjectPersonId(allPeople[0].id);
     if (!pairPersonId && allPeople[1]) setPairPersonId(allPeople[1].id);
     if (!groupId && groupData?.[0]) setGroupId(groupData[0].id as string);
+      })(), DEFAULT_FETCH_TIMEOUT_MS);
+    } catch {
+      setRosterError(true);
+    } finally {
+      setRosterLoading(false);
+    }
   };
 
   const loadThreadHistory = async (targetThreadId: string) => {
@@ -124,29 +154,35 @@ export default function VelaScreen() {
       setLines(cached);
     }
 
-    const { data, error } = await supabase
-      .from("messages")
-      .select("sender, body")
-      .eq("thread_id", targetThreadId)
-      .order("created_at", { ascending: true })
-      .limit(80);
-    if (error) {
-      setStatus(error.message);
-      return;
+    try {
+      const { data, error } = await withTimeout((async () => {
+        return await supabase
+          .from("messages")
+          .select("sender, body")
+          .eq("thread_id", targetThreadId)
+          .order("created_at", { ascending: true })
+          .limit(80);
+      })(), DEFAULT_FETCH_TIMEOUT_MS);
+      if (error) {
+        setStatus(VELA_THREAD_ERROR);
+        return;
+      }
+      const restored: ChatLine[] = [
+        {
+          role: "system",
+          text: "Resumed thread. Private by default; shared mode excludes private notes."
+        },
+        ...(data ?? []).map((row) => ({
+          role: row.sender === "vela" ? ("vela" as const) : ("user" as const),
+          text: row.body as string
+        }))
+      ];
+      setLines(restored);
+      await cacheSet(cacheKey, restored);
+      setStatus("Thread restored.");
+    } catch {
+      setStatus(VELA_THREAD_ERROR);
     }
-    const restored: ChatLine[] = [
-      {
-        role: "system",
-        text: "Resumed thread. Private by default; shared mode excludes private notes."
-      },
-      ...(data ?? []).map((row) => ({
-        role: row.sender === "vela" ? ("vela" as const) : ("user" as const),
-        text: row.body as string
-      }))
-    ];
-    setLines(restored);
-    await cacheSet(cacheKey, restored);
-    setStatus("Thread restored.");
   };
 
   const functionUrl = useMemo(() => {
@@ -180,7 +216,7 @@ export default function VelaScreen() {
     });
     if (!res.ok) {
       const body = await safeJson(res);
-      setStatus(body?.error ?? "Unable to save consent.");
+      setStatus(body?.error ?? VELA_CONSENT_ERROR);
       return;
     }
     setStatus("Consent captured for this thread.");
@@ -220,7 +256,7 @@ export default function VelaScreen() {
     setLines((current) => [...current, { role: "user", text: userText }, { role: "vela", text: "" }]);
 
     try {
-      const res = await fetch(functionUrl, {
+      const res = await withTimeout(fetch(functionUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -236,7 +272,7 @@ export default function VelaScreen() {
           groupId: scope === "group" ? groupId : undefined,
           userMessage: userText
         })
-      });
+      }), VELA_FETCH_TIMEOUT_MS);
 
       const nextThreadId = res.headers.get("x-thread-id");
       if (nextThreadId) setThreadId(nextThreadId);
@@ -284,7 +320,7 @@ export default function VelaScreen() {
         await cacheSet(`vela_thread:${threadId}`, lines);
       }
     } catch (error) {
-      const messageText = error instanceof Error ? error.message : "Network error talking to Vela.";
+      const messageText = isFetchTimeoutError(error) ? VELA_SEND_TIMEOUT : VELA_SEND_NETWORK;
       setStatus(messageText);
       setLines((current) => {
         const next = [...current];
@@ -339,7 +375,19 @@ export default function VelaScreen() {
           <>
             <Text style={labelStyle}>Primary person</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {people.map((person) => (
+              {rosterLoading ? (
+                <Text style={cardBody}>{VELA_ROSTER_LOADING}</Text>
+              ) : rosterError ? (
+                <Pressable onPress={() => void fetchScopeData()}>
+                  <Text style={cardBody}>{VELA_ROSTER_ERROR}</Text>
+                </Pressable>
+              ) : people.length === 0 ? (
+                <Link href="/onboarding" asChild>
+                  <Pressable accessibilityRole="link" accessibilityLabel={VELA_NO_PEOPLE_ACTION}>
+                    <Text style={cardBody}>{VELA_NO_PEOPLE}</Text>
+                  </Pressable>
+                </Link>
+              ) : people.map((person) => (
                 <Pressable
                   key={person.id}
                   onPress={() => setSubjectPersonId(person.id)}
@@ -360,7 +408,19 @@ export default function VelaScreen() {
           <>
             <Text style={labelStyle}>Second person</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {people.map((person) => (
+              {rosterLoading ? (
+                <Text style={cardBody}>{VELA_ROSTER_LOADING}</Text>
+              ) : rosterError ? (
+                <Pressable onPress={() => void fetchScopeData()}>
+                  <Text style={cardBody}>{VELA_ROSTER_ERROR}</Text>
+                </Pressable>
+              ) : people.length === 0 ? (
+                <Link href="/onboarding" asChild>
+                  <Pressable accessibilityRole="link" accessibilityLabel={VELA_NO_PEOPLE_ACTION}>
+                    <Text style={cardBody}>{VELA_NO_PEOPLE}</Text>
+                  </Pressable>
+                </Link>
+              ) : people.map((person) => (
                 <Pressable
                   key={`pair-${person.id}`}
                   onPress={() => setPairPersonId(person.id)}
@@ -381,7 +441,15 @@ export default function VelaScreen() {
           <>
             <Text style={labelStyle}>Group</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {groups.map((group) => (
+              {rosterLoading ? (
+                <Text style={cardBody}>{VELA_ROSTER_LOADING}</Text>
+              ) : rosterError ? (
+                <Pressable onPress={() => void fetchScopeData()}>
+                  <Text style={cardBody}>{VELA_ROSTER_ERROR}</Text>
+                </Pressable>
+              ) : groups.length === 0 ? (
+                <Text style={cardBody}>{VELA_NO_GROUPS}</Text>
+              ) : groups.map((group) => (
                 <Pressable key={group.id} onPress={() => setGroupId(group.id)} style={chip(groupId === group.id)}>
                   <Text style={{ color: groupId === group.id ? tokens.colors.gold : tokens.colors.cream }}>{group.name}</Text>
                 </Pressable>

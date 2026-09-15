@@ -99,3 +99,5 @@ export * from "./chart-precision";
 export * from "./create-person";
 
 export * from "./birth-data-invite";
+
+export * from "./async-surface";

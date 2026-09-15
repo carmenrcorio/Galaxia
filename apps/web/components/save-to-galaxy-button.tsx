@@ -128,7 +128,8 @@ export function SaveToGalaxyButton({
         router.push(personProfileHref(created.personId) as never);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save.");
+      // FOUNDER-REVIEW: save-to-galaxy persist failed.
+      setError(err instanceof Error ? err.message : "This person could not be saved to your constellation. Try again.");
     } finally {
       setSaving(false);
     }

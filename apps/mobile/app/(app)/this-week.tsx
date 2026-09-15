@@ -5,7 +5,7 @@ import {
   type Precision,
   type RelationalTransitPersonInput,
 } from "@galaxia/astro";
-import { sunSignFromChart } from "@galaxia/core";
+import { DEFAULT_FETCH_TIMEOUT_MS, sunSignFromChart, withTimeout } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useState } from "react";
@@ -17,14 +17,21 @@ import { useAuth } from "../../src/providers/auth-provider";
 export default function ThisWeekScreen() {
   const { session } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [preference, setPreference] = useState<"all" | "major_only" | "off">("all");
   const [rows, setRows] = useState<ThisWeekRow[]>([]);
   const [nextDateISO, setNextDateISO] = useState<string | null>(null);
   const [personChip, setPersonChip] = useState<Record<string, { sunSign?: string | null; memorial?: boolean }>>({});
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     if (!session?.user.id) return;
+    let cancelled = false;
     void (async () => {
+      setLoading(true);
+      setLoadError(false);
+      try {
+        await withTimeout((async () => {
       const ownerId = session.user.id;
       const nowISO = new Date().toISOString();
       const [{ data: profile }, { data: transitRows }, { data: peopleRows }, { data: upcomingRows }] = await Promise.all([
@@ -106,9 +113,15 @@ export default function ThisWeekScreen() {
         }
       }
       setNextDateISO(nextISO);
-      setLoading(false);
+        })(), DEFAULT_FETCH_TIMEOUT_MS);
+      } catch {
+        if (!cancelled) setLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-  }, [session?.user.id]);
+    return () => { cancelled = true; };
+  }, [session?.user.id, reload]);
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
@@ -118,7 +131,16 @@ export default function ThisWeekScreen() {
       <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
         Every slow-moving transit currently pulling on two or more people in your circle at once.
       </Text>
-      <ThisWeekCard loading={loading} preference={preference} rows={rows} nextDateISO={nextDateISO} compact={false} personChip={personChip} />
+      <ThisWeekCard
+        loading={loading}
+        error={loadError}
+        onRetry={() => setReload((n) => n + 1)}
+        preference={preference}
+        rows={rows}
+        nextDateISO={nextDateISO}
+        compact={false}
+        personChip={personChip}
+      />
       <Link href="/home" asChild>
         <Pressable accessibilityRole="link" accessibilityLabel="Back to home">
           {/* FOUNDER-REVIEW: return to constellation home. */}

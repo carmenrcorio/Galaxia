@@ -125,7 +125,8 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
       const canSynastry = otherChart.precision !== "year" && myChart.precision !== "year";
       setResult({ otherChart, synastry: canSynastry ? computeSynastry(myChart, otherChart) : null });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't compute that.");
+      // FOUNDER-REVIEW: quick-check natal compute failed.
+      setError(err instanceof Error ? err.message : "This chart could not be computed. Check the birth details and try again.");
     } finally {
       setComputing(false);
     }
@@ -150,7 +151,8 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
         askForBirthData: askThem && !created.isMinor
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save.");
+      // FOUNDER-REVIEW: quick-check save-to-galaxy persist failed.
+      setError(err instanceof Error ? err.message : "This person could not be saved to your constellation. Try again.");
     } finally {
       setSaving(false);
     }

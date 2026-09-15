@@ -12,11 +12,13 @@ import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import {
   DECLARED_BOND_LABELS,
   DECLARED_BOND_TYPES,
+  DEFAULT_FETCH_TIMEOUT_MS,
   buildRelationshipInsert,
   canonicalRelationshipPair,
   declaredBondExists,
   declaredBondsFromRows,
   partnerBondAllowed,
+  withTimeout,
   type DeclaredBond,
   type DeclaredBondType,
   type HonorPerson,
@@ -34,6 +36,7 @@ export const RELATIONSHIP_PICKER_COPY = {
   emptyGalaxy:
     "Add someone else to your galaxy first. Then you can draw a line here.",
   noneYet: "No lines yet. Nothing is guessed.",
+  loading: "Loading the lines on this constellation.",
   personLabel: "Someone in your galaxy",
   typeLabel: "Kind of bond",
   personPlaceholder: "Choose a person",
@@ -44,7 +47,9 @@ export const RELATIONSHIP_PICKER_COPY = {
   removed: "Removed. You can add it again anytime.",
   duplicate: "That line is already on the constellation.",
   self: "A line cannot connect a person to themselves.",
-  loadError: "Unable to load connections.",
+  loadError: "The lines on this constellation could not load. Try again.",
+  saveError: "This constellation line could not be saved. Try again.",
+  removeError: "This constellation line could not be removed. Try again.",
   partnerRefuse:
     "Partner is a bond between two adults. It is not drawn when either person is under 18. Family, friend, colleague, chosen, or other still can be.",
 } as const;
@@ -74,6 +79,7 @@ export function RelationshipEdgesBox({
   const [people, setPeople] = useState<HonorPerson[]>([]);
   const [bonds, setBonds] = useState<DeclaredBond[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [otherId, setOtherId] = useState("");
@@ -82,7 +88,10 @@ export function RelationshipEdgesBox({
   const loadEdges = useCallback(async () => {
     if (!userId || !person.id) return;
     setLoading(true);
+    setLoadFailed(false);
     setStatus(null);
+    try {
+      await withTimeout((async () => {
     const [{ data: peopleRows, error: peopleErr }, { data: relRows, error: relErr }] =
       await Promise.all([
         supabase
@@ -96,9 +105,7 @@ export function RelationshipEdgesBox({
           .eq("owner_id", userId),
       ]);
     if (peopleErr || relErr) {
-      setStatus(peopleErr?.message ?? relErr?.message ?? RELATIONSHIP_PICKER_COPY.loadError);
-      setLoading(false);
-      return;
+      throw new Error("load");
     }
     const nextPeople = (peopleRows ?? []) as HonorPerson[];
     setPeople(nextPeople);
@@ -108,7 +115,13 @@ export function RelationshipEdgesBox({
         person.id
       )
     );
-    setLoading(false);
+      })(), DEFAULT_FETCH_TIMEOUT_MS);
+    } catch {
+      setStatus(RELATIONSHIP_PICKER_COPY.loadError);
+      setLoadFailed(true);
+    } finally {
+      setLoading(false);
+    }
   }, [supabase, userId, person.id]);
 
   useEffect(() => {
@@ -188,7 +201,7 @@ export function RelationshipEdgesBox({
       setStatus(
         error.code === "23505"
           ? RELATIONSHIP_PICKER_COPY.duplicate
-          : error.message
+          : RELATIONSHIP_PICKER_COPY.saveError
       );
       return;
     }
@@ -212,7 +225,7 @@ export function RelationshipEdgesBox({
       .eq("person_b", pair.person_b);
     if (error) {
       setSaving(false);
-      setStatus(error.message);
+      setStatus(RELATIONSHIP_PICKER_COPY.removeError);
       return;
     }
     setSaving(false);
@@ -249,7 +262,12 @@ export function RelationshipEdgesBox({
         </p>
 
         {loading ? (
-          <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>Loading…</p>
+          <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>{RELATIONSHIP_PICKER_COPY.loading}</p>
+        ) : loadFailed ? (
+          <div>
+            <p className="muted" style={{ fontSize: ".8rem", margin: 0 }}>{RELATIONSHIP_PICKER_COPY.loadError}</p>
+            <button type="button" className="pill-link" onClick={() => void loadEdges()}>Try again</button>
+          </div>
         ) : candidates.length === 0 ? (
           <p className="muted" style={{ fontSize: ".8rem", margin: 0, lineHeight: 1.5 }}>
             {RELATIONSHIP_PICKER_COPY.emptyGalaxy}

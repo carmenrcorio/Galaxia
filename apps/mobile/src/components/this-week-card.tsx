@@ -28,6 +28,11 @@ export const THIS_WEEK_HOME_LIMIT = 3;
 
 // FOUNDER-REVIEW: loading line while the feed is fetching.
 export const RELATIONAL_TRANSIT_FEED_LOADING = "Checking this week's shared transits.";
+// FOUNDER-REVIEW: the feed fetch failed or timed out.
+export const RELATIONAL_TRANSIT_FEED_ERROR =
+  "This week's shared transits could not load. Try again.";
+// FOUNDER-REVIEW: retry after a feed load failure.
+export const RELATIONAL_TRANSIT_FEED_RETRY = "Try again";
 // FOUNDER-REVIEW: empty because the owner turned alerts off.
 export const RELATIONAL_TRANSIT_FEED_OFF =
   "This week alerts are off. Turn them on in Settings to see shared transits.";
@@ -86,6 +91,8 @@ export function ThisWeekCard({
   compact,
   onSeeToday,
   personChip,
+  error,
+  onRetry,
 }: {
   loading: boolean;
   preference: "all" | "major_only" | "off";
@@ -95,6 +102,8 @@ export function ThisWeekCard({
   onSeeToday?: () => void;
   /** Sun + memorial from the people row — chips never invent a local color. */
   personChip?: Record<string, { sunSign?: string | null; memorial?: boolean }>;
+  error?: boolean;
+  onRetry?: () => void;
 }) {
   const shown = compact ? rows.slice(0, THIS_WEEK_HOME_LIMIT) : rows;
   const overflow = compact ? Math.max(0, rows.length - shown.length) : 0;
@@ -104,6 +113,20 @@ export function ThisWeekCard({
       <View style={cardStyle} testID="this-week-card">
         <Text style={titleStyle}>This week</Text>
         <Text style={bodyStyle}>{RELATIONAL_TRANSIT_FEED_LOADING}</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={cardStyle} testID="this-week-card">
+        <Text style={titleStyle}>This week</Text>
+        <Text style={bodyStyle}>{RELATIONAL_TRANSIT_FEED_ERROR}</Text>
+        {onRetry ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={RELATIONAL_TRANSIT_FEED_RETRY} onPress={onRetry}>
+            <Text style={linkStyle}>{RELATIONAL_TRANSIT_FEED_RETRY}</Text>
+          </Pressable>
+        ) : null}
       </View>
     );
   }

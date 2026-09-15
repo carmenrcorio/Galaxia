@@ -42,7 +42,7 @@ import {
   recentComparedPeople,
   type RelationType,
 } from "@galaxia/astro";
-import { CHART_PRECISION_ADD_DATE, isMinorForSafety, orderPair, shouldShowLiveTransits, sunSignFromChart } from "@galaxia/core";
+import { CHART_PRECISION_ADD_DATE, DEFAULT_FETCH_TIMEOUT_MS, isMinorForSafety, orderPair, shouldShowLiveTransits, sunSignFromChart, withTimeout } from "@galaxia/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -63,6 +63,9 @@ import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 import {
   CompareHistoryList,
   CompareSinceLastViewed,
+  COMPARE_ROSTER_ERROR,
+  COMPARE_ROSTER_LOADING,
+  COMPARE_ROSTER_RETRY,
   hydrateComparisonHistory,
   type ComparisonHistoryItem,
   type ComparisonHistoryRow,
@@ -150,6 +153,9 @@ function ComparePageInner() {
   const searchParams = useSearchParams();
   const [userId, setUserId] = useState<string | null>(null);
   const [people, setPeople]       = useState<PersonLite[]>([]);
+  const [rosterLoading, setRosterLoading] = useState(true);
+  const [rosterError, setRosterError] = useState(false);
+  const [rosterReload, setRosterReload] = useState(0);
   const [personAId, setPersonAId] = useState<string | null>(null);
   const [personBId, setPersonBId] = useState<string | null>(null);
   // SAFETY (ENGINEERING.md §9/§13): never default to a romantic type. A user
@@ -182,12 +188,19 @@ function ComparePageInner() {
   } | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
+    let cancelled = false;
+    void (async () => {
+      setRosterLoading(true);
+      setRosterError(false);
+      try {
+        await withTimeout((async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("signed-out");
       setUserId(user.id);
-      const { data } = await supabase.from("people")
+      const { data, error: peopleErr } = await supabase.from("people")
         .select("id, display_name, relation, birth_date, birth_precision, is_minor, passed_at, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min")
         .eq("owner_id", user.id).order("created_at", { ascending: false });
+      if (peopleErr) throw peopleErr;
       const rows = (data ?? []) as PersonLite[];
       const ids = rows.map((r) => r.id);
       if (ids.length) {
@@ -225,8 +238,15 @@ function ComparePageInner() {
           : initialComparePairIds(rows);
       if (aId) setPersonAId(aId);
       if (bId) setPersonBId(bId);
-    });
-  }, [supabase, searchParams]);
+        })(), DEFAULT_FETCH_TIMEOUT_MS);
+      } catch {
+        if (!cancelled) setRosterError(true);
+      } finally {
+        if (!cancelled) setRosterLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [supabase, searchParams, rosterReload]);
 
   const selectedA = people.find(p => p.id === personAId) ?? null;
   const selectedB = people.find(p => p.id === personBId) ?? null;
@@ -591,7 +611,20 @@ function ComparePageInner() {
         See where two people flow, where they catch, and what each one needs.
       </p>
 
-      <CompareHistoryList items={history} onOpen={(a, b) => { void runCompare(a, b); }} />
+      {rosterLoading ? (
+        <section className="glass-card fade-in async-frame" aria-busy="true">
+          <p className="muted" style={{ margin: 0 }}>{COMPARE_ROSTER_LOADING}</p>
+        </section>
+      ) : rosterError ? (
+        <section className="glass-card fade-in async-frame" aria-live="polite">
+          <p className="muted" style={{ margin: 0 }}>{COMPARE_ROSTER_ERROR}</p>
+          <button type="button" className="btn-primary" style={{ marginTop: 14 }} onClick={() => setRosterReload((n) => n + 1)}>
+            {COMPARE_ROSTER_RETRY}
+          </button>
+        </section>
+      ) : (
+        <CompareHistoryList items={history} onOpen={(a, b) => { void runCompare(a, b); }} />
+      )}
 
       {/* Pickers */}
       <section className="glass-card fade-in">

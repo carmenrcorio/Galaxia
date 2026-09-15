@@ -1,5 +1,6 @@
 import {
   COMPARE_HISTORY_HEADING,
+  COMPARE_HISTORY_EMPTY,
   COMPARE_HISTORY_OPEN,
   COMPARE_MOVED_ON,
   COMPARE_NEWLY_ACTIVE,
@@ -21,6 +22,13 @@ import { InitialAvatar } from "./initial-avatar";
 export type { ComparisonHistoryItem, ComparisonHistoryPerson, ComparisonHistoryRow };
 export { hydrateComparisonHistory };
 
+// FOUNDER-REVIEW: Compare roster is loading.
+export const COMPARE_ROSTER_LOADING = "Loading the people in your constellation.";
+// FOUNDER-REVIEW: Compare people fetch failed or timed out.
+export const COMPARE_ROSTER_ERROR = "Your people could not load for Compare. Try again.";
+// FOUNDER-REVIEW: retry after a Compare roster failure.
+export const COMPARE_ROSTER_RETRY = "Try again";
+
 export function CompareHistoryList({
   items,
   onOpen
@@ -28,7 +36,18 @@ export function CompareHistoryList({
   items: readonly ComparisonHistoryItem[];
   onOpen: (personAId: string, personBId: string) => void;
 }) {
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return (
+      <section className="glass-card fade-in async-frame">
+        {/* FOUNDER-REVIEW: COMPARE_HISTORY_HEADING */}
+        <p className="eyebrow" style={{ marginBottom: 12 }}>{COMPARE_HISTORY_HEADING}</p>
+        <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
+          {/* FOUNDER-REVIEW: COMPARE_HISTORY_EMPTY */}
+          {COMPARE_HISTORY_EMPTY}
+        </p>
+      </section>
+    );
+  }
   return (
     <section className="glass-card fade-in">
       {/* FOUNDER-REVIEW: COMPARE_HISTORY_HEADING */}

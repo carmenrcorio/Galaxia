@@ -180,7 +180,8 @@ export function AddPersonForm({
       }
       onSaved?.(info);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to add person.";
+      // FOUNDER-REVIEW: add-person persist failed.
+      const message = error instanceof Error ? error.message : "This person could not be added. Try again.";
       if (showStatus) setStatus({ text: message, ok: false });
       onError?.(message);
     } finally {

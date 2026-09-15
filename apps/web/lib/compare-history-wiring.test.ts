@@ -12,6 +12,8 @@ describe("Compare history wiring", () => {
     expect(src).toContain("last_viewed_at");
     expect(src).toContain("onConflict: \"owner_id,person_low,person_high\"");
     expect(src).toContain("CompareHistoryList");
+    expect(src).toContain("COMPARE_ROSTER_ERROR");
+    expect(src).toContain("withTimeout");
     expect(src).toContain("CompareSinceLastViewed");
     expect(src).toContain("diffPairTransits");
     expect(src).toContain("activePairTransits");
@@ -31,6 +33,7 @@ describe("Compare history wiring", () => {
     const src = read("apps/mobile/app/(app)/compare.tsx");
     expect(src).toContain('from("comparison_history")');
     expect(src).toContain("COMPARE_HISTORY_HEADING");
+    expect(src).toContain("COMPARE_HISTORY_EMPTY");
     expect(src).toContain("COMPARE_SINCE_HEADING");
     expect(src).toContain("compareNatalAspectsConstant");
     expect(src).toContain("diffPairTransits");

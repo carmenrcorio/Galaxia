@@ -170,11 +170,11 @@ export function EditPersonPanel({
         star_color: normalizeStarColorForWrite(starColor),
         star_scale: normalizeStarScale(starScale),
       }).eq("id", person.id).eq("owner_id", userId);
-      if (pErr) throw new Error(pErr.message);
+      if (pErr) throw new Error("This person's details could not be saved. Try again.");
       const { error: cErr } = await supabase.from("charts").upsert({ person_id: person.id, house_system: natal.houseSystem ?? null, data: natal, engine_version: CHART_ENGINE_VERSION });
-      if (cErr) throw new Error(cErr.message);
+      if (cErr) throw new Error("This person's chart could not be saved. Try again.");
       setStatus("Saved."); setOpen(false); onSaved();
-    } catch (err) { setStatus(err instanceof Error ? err.message : "Unable to save."); }
+    } catch (err) { setStatus(err instanceof Error ? err.message : "This person could not be saved. Try again."); }
     finally { setSaving(false); }
   }
 
@@ -184,7 +184,7 @@ export function EditPersonPanel({
       .from("group_members")
       .select("group_id")
       .eq("person_id", person.id);
-    if (memErr) { setStatus(memErr.message); return; }
+    if (memErr) { setStatus("This person could not be deleted. Try again."); return; }
 
     const groupIds = [...new Set((memberships ?? []).map((r) => r.group_id as string))];
     const memberCounts: Array<{ groupId: string; name: string; memberCount: number }> = [];
@@ -239,7 +239,7 @@ export function EditPersonPanel({
     const { error } = await supabase.rpc("delete_own_person", { p_person_id: person.id });
     setDeleting(false);
     if (error) {
-      setStatus(error.message || OWNED_DELETE_COPY.personErrorGeneric);
+      setStatus(OWNED_DELETE_COPY.personErrorGeneric);
       return;
     }
     onDeleted();
@@ -257,7 +257,8 @@ export function EditPersonPanel({
       .eq("id", person.id)
       .eq("owner_id", userId);
     setRemembranceBusy(false);
-    if (error) { setStatus(error.message); return; }
+    // FOUNDER-REVIEW: remembrance toggle failed.
+    if (error) { setStatus("Remembrance could not be updated. Try again."); return; }
     setPassedAt(value);
     setConfirmRemembrance(false);
     setStatus(nextPassed
@@ -276,7 +277,8 @@ export function EditPersonPanel({
       .eq("id", person.id)
       .eq("owner_id", userId);
     setResettingPosition(false);
-    if (error) { setStatus(error.message); return; }
+    // FOUNDER-REVIEW: constellation seat reset failed.
+    if (error) { setStatus("Their constellation seat could not be reset. Try again."); return; }
     setCustomPosition(null);
     // FOUNDER-REVIEW: reset constellation seat
     setStatus("Back on their ring.");

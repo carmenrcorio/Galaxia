@@ -1014,6 +1014,15 @@ select.field--rect {
 .skeleton-text  { height: 13px; margin-bottom: 8px; border-radius: 4px; }
 .skeleton-title { height: 26px; width: 55%; margin-bottom: 12px; border-radius: 6px; }
 
+/* Loading / empty / error frames. Preserve height so content does not jump
+   (ENGINEERING.md §18). Reduced-motion already holds .skeleton static. */
+.async-frame {
+  min-height: 160px;
+}
+.async-frame--form {
+  min-height: 220px;
+}
+
 /* ─── Constellation loading star field (/app) ──────────────────────────── */
 .constellation-stage {
   container-type: size;

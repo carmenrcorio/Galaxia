@@ -164,7 +164,8 @@ export default function OnboardingScreen() {
       await fetchPeople();
       setStatus("Saved your profile and natal chart.");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to save your profile.";
+      // FOUNDER-REVIEW: onboarding self persist failed.
+      const message = error instanceof Error ? error.message : "Your profile could not be saved. Try again.";
       if (message.includes("people_one_self_per_owner")) {
         await fetchPeople();
         setStatus("You're already in your sky (added just now, perhaps on another device). Edit your profile from your chart.");
@@ -216,7 +217,8 @@ export default function OnboardingScreen() {
           : `${savedName} is in your constellation.`
       );
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to add person.");
+      // FOUNDER-REVIEW: onboarding add-person persist failed.
+      setStatus(error instanceof Error ? error.message : "This person could not be added. Try again.");
     } finally {
       setSavingPerson(false);
     }

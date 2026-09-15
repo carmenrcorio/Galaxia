@@ -27,6 +27,8 @@ describe("source wiring — constellation home loading / empty / error", () => {
     expect(home).toContain("if (peopleRes.error) throw peopleRes.error");
     expect(home).toContain("ConstellationLoadError");
     expect(home).toContain("retryHome");
+    expect(home).toContain("withTimeout");
+    expect(home).toContain("DEFAULT_FETCH_TIMEOUT_MS");
   });
 
   it("renders the empty constellation with one add-person action", () => {

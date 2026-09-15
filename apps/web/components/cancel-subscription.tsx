@@ -34,9 +34,11 @@ export function CancelSubscription({
       const res = await fetch("/api/cancel", { method: "POST" });
       if (res.ok) { setCanceled(true); return; }
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Something went wrong. Please try again.");
+      // FOUNDER-REVIEW: cancel API failed.
+      setError(body.error ?? "Cancellation could not be completed. Try again.");
     } catch {
-      setError("Network error. Please try again.");
+      // FOUNDER-REVIEW: cancel request never reached the server.
+      setError("Cancellation could not reach the server. Check your connection and try again.");
     } finally {
       setSubmitting(false);
     }

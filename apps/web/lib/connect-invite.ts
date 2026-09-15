@@ -217,7 +217,7 @@ export const CONNECT_OPEN_FAILED = "This invite could not be opened.";
 export const CONNECT_LINK_CREATE_FAILED = "The link could not be created.";
 
 // FOUNDER-REVIEW: generic fallback so a database error never reaches the person.
-export const CONNECT_GENERIC_ERROR = "Something went wrong. Try again in a moment.";
+export const CONNECT_GENERIC_ERROR = "The connection invite could not be completed. Try again.";
 
 // FOUNDER-REVIEW: fallback inviter name when the landing has no display name.
 export const CONNECT_UNKNOWN_SENDER = "Someone you know";
@@ -238,6 +238,9 @@ export const CONNECT_EMPTY_PENDING = "Nothing pending right now.";
 
 // FOUNDER-REVIEW: pending list section title.
 export const CONNECT_PENDING_TITLE = "Pending invites";
+
+// FOUNDER-REVIEW: pending invites are loading.
+export const CONNECT_PENDING_LOADING = "Loading your connection invites.";
 
 // FOUNDER-REVIEW: interstitial after accept. Title only. One sentence.
 export function connectConnectedHeading(senderName: string): string {

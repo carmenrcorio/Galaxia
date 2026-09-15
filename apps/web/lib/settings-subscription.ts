@@ -1,4 +1,10 @@
-import { GALAXIA_HELP_EMAIL, hasAccess, trialDaysRemaining } from "@galaxia/core";
+import {
+  FetchTimeoutError,
+  GALAXIA_HELP_EMAIL,
+  hasAccess,
+  trialDaysRemaining,
+  withTimeout as raceTimeout
+} from "@galaxia/core";
 
 /**
  * Settings subscription panel: read-only view over `profiles` billing columns.
@@ -49,20 +55,11 @@ export class SubscriptionLoadTimeoutError extends Error {
 }
 
 export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const id = setTimeout(() => {
-      reject(new SubscriptionLoadTimeoutError());
-    }, ms);
-    promise.then(
-      (value) => {
-        clearTimeout(id);
-        resolve(value);
-      },
-      (err) => {
-        clearTimeout(id);
-        reject(err);
-      }
-    );
+  return raceTimeout(promise, ms).catch((err) => {
+    if (err instanceof FetchTimeoutError) {
+      throw new SubscriptionLoadTimeoutError();
+    }
+    throw err;
   });
 }
 

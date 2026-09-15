@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
 import {
   SHARE_PENDING_EMPTY,
   SHARE_PENDING_ERROR,
+  SHARE_PENDING_LOADING,
   SHARE_PENDING_NATAL_FALLBACK,
   SHARE_PENDING_COMPARE_LABEL,
   SHARE_PENDING_TITLE,
@@ -21,7 +23,7 @@ export function PendingShareLinks() {
   const [revoking, setRevoking] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/quick-share");
+    const res = await withTimeout(fetch("/api/quick-share"), DEFAULT_FETCH_TIMEOUT_MS);
     if (res.status === 401) {
       setRows([]);
       return;
@@ -69,7 +71,7 @@ export function PendingShareLinks() {
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <Spinner size={12} />
           <p className="muted" style={{ margin: 0, fontSize: ".84rem" }}>
-            Loading…
+            {SHARE_PENDING_LOADING}
           </p>
         </div>
       ) : rows.length === 0 ? (

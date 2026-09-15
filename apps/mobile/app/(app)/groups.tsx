@@ -4,7 +4,9 @@ import {
   formatGroupDeleteConfirmation,
   isBelowGroupMinimum,
   readyMembersForCohortOverlay,
-  sunSignFromChart
+  sunSignFromChart,
+  DEFAULT_FETCH_TIMEOUT_MS,
+  withTimeout
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useLocalSearchParams } from "expo-router";
@@ -89,11 +91,25 @@ export default function GroupsScreen() {
   const [groupKind, setGroupKind] = useState<GroupKind>("group");
   const [status, setStatus] = useState<string | null>(null);
   const [cohort, setCohort] = useState<CohortState | null>(null);
+  const [rosterLoading, setRosterLoading] = useState(true);
+  const [rosterError, setRosterError] = useState(false);
   const paramLoadRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!session?.user.id) return;
-    void Promise.all([fetchPeople(), fetchGroups()]);
+    let cancelled = false;
+    void (async () => {
+      setRosterLoading(true);
+      setRosterError(false);
+      await withTimeout(Promise.all([fetchPeople(), fetchGroups()]), DEFAULT_FETCH_TIMEOUT_MS)
+        .catch(() => {
+          if (!cancelled) setRosterError(true);
+        })
+        .finally(() => {
+          if (!cancelled) setRosterLoading(false);
+        });
+    })();
+    return () => { cancelled = true; };
   }, [session?.user.id]);
 
   useEffect(() => {
@@ -458,7 +474,17 @@ export default function GroupsScreen() {
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Saved groups</Text>
-        {groups.length === 0 ? (
+        {rosterLoading ? (
+          <Text style={cardBody}>
+            {/* FOUNDER-REVIEW: groups roster is loading. */}
+            Loading your groups.
+          </Text>
+        ) : rosterError ? (
+          <Text style={cardBody}>
+            {/* FOUNDER-REVIEW: groups roster fetch failed or timed out. */}
+            Your groups could not load. Try again.
+          </Text>
+        ) : groups.length === 0 ? (
           <Text style={cardBody}>No groups yet. Create one below.</Text>
         ) : (
           groups.map((group) => (

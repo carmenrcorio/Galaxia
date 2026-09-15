@@ -66,4 +66,14 @@ describe("homepage outcome-led copy", () => {
     const src = read("components/marketing/why-section.tsx");
     expect(src).toContain("The night sky belongs to everyone.");
   });
+
+  it("locks the closing hero slogan with italic gold on the terminal beat", () => {
+    const src = read("components/marketing/close-section.tsx");
+    const headline = "Your life. Your People. <em>Your Galaxy.</em>";
+    expect(src).toContain(headline);
+    expect(src).toContain("FOUNDER-REVIEW");
+    expect(src).not.toContain("The small, bright,");
+    expect(src).not.toContain("irreplaceable");
+    expect(headline.includes("\u2014")).toBe(false);
+  });
 });

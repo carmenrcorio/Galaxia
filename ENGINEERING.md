@@ -245,3 +245,26 @@ Do not "fix" a red run by deleting a production ledger row or by editing an alre
 
 `apps/web/lib/voice-layers.test.ts` is the gate. Do not "fix" a red run by deleting astrology from a title tag.
 
+---
+
+## 18. Every async surface has loading, empty, and failure
+
+**Rule:** No screen or major panel may render nothing while it waits, has no data, or has failed. A blank container is a bug. An indefinite spinner is a bug. "Something went wrong" is a bug.
+
+This rule exists because the same two holes shipped as product:
+
+1. `/app` waited on people and charts with a generic 400px shimmer (mobile: an empty 340px card). The wait read as missing, not intentional. The constellation skeleton (#229) is the loading pattern: preserve the loaded frame's height, draw a quiet placeholder on the real geometry, then cross-fade. Empty names the condition and offers one action. Failure stops the placeholder and offers retry.
+2. Settings subscription never left "Loading subscription…". It treated a missing `profiles.subscription_status` as infinite load and awaited a client SDK call with no timeout (#230). The card now reads billing columns with a 2s timeout. Timeout and error say what is known and what to do next. A null status after a successful read is an honest unknown, not a spinner.
+
+**What this means in code:**
+
+- Every async surface has an explicit **loading**, **empty**, and **error** branch. No `return null` for a state the person should see. A section that is not applicable (trial banner when not trialing, remembrance on a living profile) may stay hidden. A fetch that has not finished, returned zero rows, or failed may not.
+- **Loading preserves layout height** so content does not jump. Match the loaded frame (constellation `CONSTELLATION_STAGE_STYLE`, a glass card `min-height`) rather than a collapsing one-line spinner. Pulse and shimmer are CSS; `prefers-reduced-motion` holds them static.
+- **No spinner runs indefinitely.** Wrap every fetch in `@galaxia/core` `withTimeout`. Data screens use `DEFAULT_FETCH_TIMEOUT_MS` (8s). Vela's streamed reply uses `VELA_FETCH_TIMEOUT_MS` (15s). Settings subscription stays at 2s. Timeout is a failure state, never a longer spinner.
+- **Error copy says what failed and what to do next**, in the interface voice. It does not apologise and it is never vague. Name the surface ("The constellation could not load.") and the next step ("Try again", or email `GALAXIA_HELP_EMAIL` when the person cannot self-serve). Never render a raw database `error.message`. Never "Something went wrong."
+- **Empty copy states the condition and offers one action.** It never renders a blank container. "Your constellation is empty. Add the first person to begin." plus the add-person control. Compare history uses the authored `COMPARE_HISTORY_EMPTY` string, not `return null`.
+
+Gold standards to copy, not reinvent: `apps/web/components/constellation-starfield-skeleton.tsx`, `apps/web/lib/settings-subscription.ts`. New user-visible strings are tagged `FOUNDER-REVIEW`. No em dashes (§15).
+
+**CI:** `@galaxia/core` `withTimeout` / `FetchTimeoutError` are the shared primitive. Settings subscription keeps its own 2s wrapper so that panel's tests stay the source of truth for billing. Do not "fix" a hang by raising the timeout until the spinner looks fine.
+

@@ -18,12 +18,19 @@ describe("suggestCompareRelationType — self + other, and neither-side-self", (
     expect(suggestCompareRelationType("self", "friend")).toBe("friends");
     expect(suggestCompareRelationType("self", "parent")).toBe("parent-child");
     expect(suggestCompareRelationType("self", "child")).toBe("parent-child");
+    expect(suggestCompareRelationType("self", "mother")).toBe("parent-child");
+    expect(suggestCompareRelationType("self", "father")).toBe("parent-child");
+    expect(suggestCompareRelationType("father", "self")).toBe("parent-child");
+    expect(suggestCompareRelationType("self", "grandchild")).toBe("parent-child");
     expect(suggestCompareRelationType("self", "ancestor")).toBe("ancestor");
   });
 
   it("does not suggest for self + grandparent / acquaintance / unmapped", () => {
     expect(suggestCompareRelationType("self", "grandparent")).toBeNull();
     expect(suggestCompareRelationType("self", "acquaintance")).toBeNull();
+    expect(suggestCompareRelationType("self", "cousin")).toBeNull();
+    expect(suggestCompareRelationType("self", "ex")).toBeNull();
+    expect(suggestCompareRelationType("self", "other")).toBeNull();
     expect(suggestCompareRelationType("self", "spouse")).toBeNull(); // no fuzzy match
     expect(suggestCompareRelationType("self", "Partner")).toBeNull(); // exact, case-sensitive
     expect(suggestCompareRelationType("self", "")).toBeNull();
@@ -86,9 +93,10 @@ describe("suggestCompareRelationType — self + other, and neither-side-self", (
 
   it("neither side self: no possible tag pair ever suggests a romantic type", () => {
     const tags = [
-      "self", "partner", "sibling", "friend", "parent", "child", "grandparent", "grandchild",
+      "self", "partner", "sibling", "friend", "parent", "child", "mother", "father",
+      "grandparent", "grandchild",
       "colleague", "coworker", "co-worker", "boss", "manager", "professor", "mentor",
-      "acquaintance", "ancestor", "",
+      "acquaintance", "ancestor", "cousin", "ex", "other", "",
     ];
     for (const t of tags) {
       const suggested = suggestCompareRelationType(t, t);

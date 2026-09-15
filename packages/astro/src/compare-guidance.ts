@@ -172,6 +172,12 @@ const SELF_OTHER_TO_COMPARE: Readonly<Record<string, RelationType>> = {
   friend: "friends",
   parent: "parent-child",
   child: "parent-child",
+  // First-run stores "my mother" / "my father" as themselves, not flattened
+  // to `parent`. Same caregiving frame as `parent`.
+  mother: "parent-child",
+  father: "parent-child",
+  // Child-generation picker value. Same descent frame as `child`.
+  grandchild: "parent-child",
   ancestor: "ancestor",
   // Working relationships. A saved work tag previously fell through to the
   // neutral `friends` fallback, so a colleague was read through a friendship
@@ -184,7 +190,9 @@ const SELF_OTHER_TO_COMPARE: Readonly<Record<string, RelationType>> = {
   manager: "manager-report",
   professor: "mentor-mentee",
   mentor: "mentor-mentee",
-  // grandparent, acquaintance, self, and any other string: unmapped
+  // Unmapped on purpose (no sound pair frame, or would fabricate / romanticise):
+  // grandparent, cousin, relative, aunt, uncle, niece, nephew, in-law, ex,
+  // acquaintance, other, self.
 };
 
 /**

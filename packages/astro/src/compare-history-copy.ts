@@ -109,3 +109,29 @@ export function hydrateComparisonHistory(
   return items;
 }
 
+/**
+ * Last `limit` distinct people who appeared in comparison history, newest
+ * pair first. History must already be newest-first. People missing from
+ * `people` are skipped. Used by the Compare person picker Recent section.
+ */
+export function recentComparedPeople<T extends { id: string }>(
+  history: readonly Pick<ComparisonHistoryItem, "personAId" | "personBId">[],
+  people: readonly T[],
+  limit = 5
+): T[] {
+  const byId = new Map(people.map((person) => [person.id, person]));
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const item of history) {
+    for (const id of [item.personAId, item.personBId]) {
+      if (seen.has(id)) continue;
+      const person = byId.get(id);
+      if (!person) continue;
+      seen.add(id);
+      out.push(person);
+      if (out.length >= limit) return out;
+    }
+  }
+  return out;
+}
+

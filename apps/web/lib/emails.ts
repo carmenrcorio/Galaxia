@@ -1,6 +1,6 @@
 /**
- * Marketing emails: five trial lifecycle emails, the daily nudge, and the
- * weekly constellation letter.
+ * Marketing emails: five trial lifecycle emails, the daily nudge, the
+ * weekly constellation letter, and the public blog chart-reading email.
  * Subjects are voice layer one (`design/galaxia-voice-layers.md`): outcome
  * or a real person, never astrology vocabulary first. Bodies may use inner
  * vocabulary once the recipient is already a member. Every number and
@@ -10,6 +10,14 @@
  */
 
 import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
+import {
+  CHART_READING_CLOSING_LINE,
+  chartReadingEmailPreview,
+  chartReadingEmailSubject,
+  chartReadingOpeningLine,
+  placementLabel
+} from "./chart-reading-copy";
+import { BODY_LABEL, type ChartReading } from "./chart-reading";
 import { EMAIL_PATHS } from "./nav-links";
 
 export type TrialEmailKind = "day1" | "day4_one" | "day4_multi" | "day11" | "day14";
@@ -521,3 +529,100 @@ export function constellationLetterHeaders(unsubscribeUrl: string): EmailHeaders
     "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
   };
 }
+
+const READING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
+const FRAME_FONT = "'DM Sans', -apple-system, Segoe UI, sans-serif";
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function goldRule(): string {
+  return `<div style="height:1px;background:${GOLD};opacity:.45;margin:22px 0;line-height:1;font-size:1px">&nbsp;</div>`;
+}
+
+function chartReadingShell(bodyHtml: string, preview: string): string {
+  return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=DM+Sans:wght@400;500&display=swap');</style>
+    </head>
+    <body style="margin:0;background:${INK};color:${CREAM};font-family:${FRAME_FONT};line-height:1.65">
+    ${preheader(preview)}
+    <div style="max-width:520px;margin:0 auto;padding:32px 24px">
+      ${bodyHtml}
+    </div>
+  </body></html>`;
+}
+
+function frameP(text: string): string {
+  return `<p style="color:${MIST};margin:0 0 14px;font-family:${FRAME_FONT}">${text}</p>`;
+}
+
+function readingP(label: string, text: string): string {
+  return `<p style="color:${CREAM};margin:0;font-family:${READING_FONT};font-size:18px;line-height:1.7"><strong style="color:${GOLD};font-weight:500">${escapeHtml(label)}</strong> ${escapeHtml(text)}</p>`;
+}
+
+export interface ChartReadingEmailData {
+  reading: ChartReading;
+  unsubscribeUrl: string;
+}
+
+export function chartReadingEmail(d: ChartReadingEmailData): RenderedEmail {
+  const subject = chartReadingEmailSubject(d.reading.moonSign);
+  const preview = chartReadingEmailPreview();
+  const opening = chartReadingOpeningLine({
+    personName: d.reading.personName,
+    sample: d.reading.sample,
+    sunSign: d.reading.sunSign ?? undefined,
+    moonSign: d.reading.moonSign ?? undefined
+  });
+  const placementBlocks = d.reading.placements.map((placement) => {
+    const label = placementLabel(BODY_LABEL[placement.body], placement.sign);
+    return { label, text: placement.text };
+  });
+  const emptyNote = d.reading.emptyNote;
+
+  const htmlParts: string[] = [frameP(escapeHtml(opening))];
+  if (emptyNote) {
+    htmlParts.push(goldRule(), frameP(escapeHtml(emptyNote)));
+  }
+  for (const block of placementBlocks) {
+    htmlParts.push(goldRule(), readingP(block.label, block.text));
+  }
+  htmlParts.push(goldRule(), frameP(escapeHtml(CHART_READING_CLOSING_LINE)));
+  htmlParts.push(complianceFooterHtml(d.unsubscribeUrl));
+
+  const textParts = [
+    opening,
+    "",
+    emptyNote ? `${emptyNote}\n` : "",
+    ...placementBlocks.flatMap((block) => [`${block.label} ${block.text}`, ""]),
+    CHART_READING_CLOSING_LINE,
+    "",
+    complianceFooterText(d.unsubscribeUrl)
+  ].filter((line) => line !== "");
+
+  return {
+    subject,
+    preview,
+    html: chartReadingShell(htmlParts.join(""), preview),
+    text: textParts.join("\n")
+  };
+}
+
+export function chartReadingEmailHeaders(unsubscribeUrl: string): EmailHeaders {
+  return {
+    "List-Unsubscribe": `<${unsubscribeUrl}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+  };
+}
+
+export {
+  chartReadingEmailPreview,
+  chartReadingEmailSubject,
+  chartReadingOpeningLine
+} from "./chart-reading-copy";
+

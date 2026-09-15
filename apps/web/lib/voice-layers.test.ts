@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  chartReadingEmailSubject,
   constellationLetterSubject,
   day1Email,
   day4MultiEmail,
@@ -103,7 +104,9 @@ describe("layer one: lead with outcome, never an astrology app", () => {
       nudgeEmailSubject("Riley"),
       constellationLetterSubject(["Riley"]),
       constellationLetterSubject(["Riley", "Ada"]),
-      constellationLetterSubject(["Riley", "Ada", "Sam"])
+      constellationLetterSubject(["Riley", "Ada", "Sam"]),
+      chartReadingEmailSubject("Cancer"),
+      chartReadingEmailSubject(null)
     ];
     const layerOneStart = /^(astrology|sky|galaxy|natal|synastry|horoscope|transit)\b/i;
     for (const subject of subjects) {

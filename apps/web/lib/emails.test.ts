@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import {
+  chartReadingEmail,
+  chartReadingEmailHeaders,
   constellationLetterEmail,
   constellationLetterHeaders,
   constellationLetterPreview,
@@ -20,6 +22,8 @@ import {
   skyTodayEmail,
   type TrialEmailData
 } from "./emails";
+import { BODY_LABEL, buildChartReading } from "./chart-reading";
+import { CHART_READING_CLOSING_LINE, chartReadingOpeningLine, placementLabel } from "./chart-reading-copy";
 
 const FOOTER_ENTITY = "Galaxia Mea LLC · 1 Shadowrock Ct, Simpsonville, SC 29680";
 const FOOTER_WHY = "You are receiving this email because you signed up for Galaxia Mea.";
@@ -450,5 +454,83 @@ describe("dispatchEmail — tags, idempotency, and Resend id", () => {
     const body = JSON.parse(init.body as string);
     expect(body.tags).toEqual([{ name: "kind", value: "constellation-letter" }]);
     expect((init.headers as Record<string, string>)["Idempotency-Key"]).toBe("constellation-letter/owner/2026-09-13");
+  });
+});
+
+describe("chartReadingEmail", () => {
+  const unsubscribeUrl = "https://galaxiamea.com/api/blog/chart-reading-unsubscribe?token=abc";
+
+  it("renders interpretPlacement longs verbatim for the published fallback chart", () => {
+    const reading = buildChartReading({});
+    const rendered = chartReadingEmail({ reading, unsubscribeUrl });
+    expect(reading.sample).toBe(true);
+    expect(rendered.subject).toBe(`What a ${reading.moonSign} Moon actually does`);
+    expect(rendered.preview).toBe("Three placements, in the words we already have.");
+    expect(rendered.html).toContain(chartReadingOpeningLine({
+      personName: null,
+      sample: true,
+      sunSign: reading.sunSign ?? undefined,
+      moonSign: reading.moonSign ?? undefined
+    }));
+    for (const placement of reading.placements) {
+      const label = placementLabel(BODY_LABEL[placement.body], placement.sign);
+      expect(rendered.html).toContain(placement.text);
+      expect(rendered.text).toContain(`${label} ${placement.text}`);
+      expect(rendered.html.split(placement.text)).toHaveLength(2);
+    }
+    expect(rendered.html).toContain(CHART_READING_CLOSING_LINE);
+    expect(rendered.text).toContain(CHART_READING_CLOSING_LINE);
+  });
+
+  it("opens with the person's name when birth data was given", () => {
+    const reading = buildChartReading({
+      name: "Sam",
+      month: 4,
+      day: 10,
+      year: 1993,
+      birthPlace: "New York"
+    });
+    const rendered = chartReadingEmail({ reading, unsubscribeUrl });
+    expect(rendered.html).toContain("Here is Sam's reading.");
+    expect(rendered.html).not.toContain("Hi Sam");
+    expect(rendered.html).not.toContain("Thanks for signing up");
+    expect(rendered.subject).not.toMatch(/your astrology reading/i);
+  });
+
+  it("uses Cormorant Garamond for readings, DM Sans for framing, and the existing navy/gold spec", () => {
+    const reading = buildChartReading({});
+    const rendered = chartReadingEmail({ reading, unsubscribeUrl });
+    expect(rendered.html).toContain("Cormorant Garamond");
+    expect(rendered.html).toContain("DM Sans");
+    expect(rendered.html).toContain("#0a0717");
+    expect(rendered.html).toContain("#E6AE6C");
+    expect(rendered.html).not.toContain("<img");
+    expect(rendered.html).not.toContain(">Galaxia</div>");
+  });
+
+  it("includes the unmodified CAN-SPAM footer and List-Unsubscribe headers", () => {
+    const reading = buildChartReading({});
+    const rendered = chartReadingEmail({ reading, unsubscribeUrl });
+    expect(rendered.html).toContain(FOOTER_ENTITY);
+    expect(rendered.html).toContain(FOOTER_WHY);
+    expect(rendered.html).toContain(unsubscribeUrl);
+    expect(rendered.text).toContain(unsubscribeUrl);
+    expect(chartReadingEmailHeaders(unsubscribeUrl)).toEqual({
+      "List-Unsubscribe": `<${unsubscribeUrl}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+    });
+  });
+
+  it("authored chrome never uses an em dash", () => {
+    const reading = buildChartReading({ name: "Sam" });
+    const rendered = chartReadingEmail({ reading, unsubscribeUrl });
+    const chrome = [rendered.subject, rendered.preview, chartReadingOpeningLine({
+      personName: "Sam",
+      sample: true,
+      sunSign: reading.sunSign ?? undefined,
+      moonSign: reading.moonSign ?? undefined
+    }), CHART_READING_CLOSING_LINE].join("\n");
+    expect(chrome).not.toContain("\u2014");
+    expect(rendered.subject).not.toContain("\u2014");
   });
 });

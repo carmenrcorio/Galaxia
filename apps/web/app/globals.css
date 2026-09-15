@@ -2293,6 +2293,50 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   font-size: .95rem;
 }
 .article-mid-cta a:hover { color: var(--mist); }
+.article-chart-reading {
+  margin: 40px 0 0;
+  padding: 22px 0 8px;
+  border-top: 1px solid rgba(230,174,108,.28);
+}
+.article-chart-reading-framing {
+  color: var(--mist);
+  font-weight: 300;
+  line-height: 1.65;
+  margin: 0 0 16px;
+}
+.article-chart-reading-form {
+  display: grid;
+  gap: 10px;
+}
+.article-chart-reading-date {
+  display: grid;
+  grid-template-columns: 2fr 1fr 2fr;
+  gap: 6px;
+}
+.article-chart-reading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+.article-chart-reading-privacy {
+  color: var(--mist2);
+  font-size: .82rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.article-chart-reading-privacy:hover { color: var(--mist); }
+.article-chart-reading-error {
+  color: var(--rose);
+  margin: 0;
+  font-size: .86rem;
+}
+.article-chart-reading-confirm {
+  color: var(--mist);
+  margin: 0;
+  font-weight: 300;
+}
 .article-read-next {
   margin-top: 40px;
 }

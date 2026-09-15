@@ -7,6 +7,7 @@ import { deferredPersonRow } from "./deferred-person-row";
 import { getPreferredHouseSystem } from "./house-system";
 
 const onboardingSrc = readFileSync(resolve(__dirname, "../../app/(app)/onboarding.tsx"), "utf8");
+const persistSrc = readFileSync(resolve(__dirname, "./persist-person.ts"), "utf8");
 const profileSrc = readFileSync(resolve(__dirname, "../../app/(app)/profile/[personId].tsx"), "utf8");
 
 /** Minimal stand-in for the one query getPreferredHouseSystem makes. */
@@ -56,13 +57,13 @@ describe("mobile reads the saved house system instead of hardcoding Placidus", (
     expect(whole.cusps).not.toEqual(placidus.cusps);
   });
 
-  it("wiring: onboarding computes with the profile preference, not a literal", () => {
-    expect(onboardingSrc).toContain("getPreferredHouseSystem");
-    expect(onboardingSrc).toContain("computeNatalChart({ ...built.birth, houseSystem })");
-    expect(onboardingSrc).not.toContain('houseSystem: "placidus"');
-    // The stored engine version comes from the shared constant, same as web.
-    expect(onboardingSrc).toContain("engine_version: CHART_ENGINE_VERSION");
-    expect(onboardingSrc).not.toContain("engine_version: 2");
+  it("wiring: persistPerson computes with the profile preference, not a literal", () => {
+    expect(persistSrc).toContain("getPreferredHouseSystem");
+    expect(persistSrc).toContain("computeNatalChart({ ...built.birth, houseSystem })");
+    expect(persistSrc).not.toContain('houseSystem: "placidus"');
+    expect(persistSrc).toContain("engine_version: CHART_ENGINE_VERSION");
+    expect(persistSrc).not.toContain("engine_version: 2");
+    expect(onboardingSrc).toContain("persistPerson");
   });
 });
 
@@ -109,13 +110,12 @@ describe("mobile can save a person with no birth data (web precision parity)", (
     expect(flagged.is_minor).toBe(true);
   });
 
-  it("wiring: onboarding offers the tier and returns before chart computation", () => {
-    expect(onboardingSrc).toContain('key: "none"');
-    expect(onboardingSrc).toContain("deferredPersonRow");
-    expect(onboardingSrc).toContain('if (input.precision === "none")');
-    // The none branch must sit above buildBirthInput, which throws on "none".
-    expect(onboardingSrc.indexOf('if (input.precision === "none")')).toBeLessThan(
-      onboardingSrc.indexOf("buildBirthInput(input)")
+  it("wiring: persistPerson offers none through createPerson before chart computation", () => {
+    expect(onboardingSrc).toContain("CHART_PRECISION_NONE_TIER");
+    expect(persistSrc).toContain('input.precision === "none"');
+    expect(persistSrc).toContain("createPerson");
+    expect(persistSrc.indexOf('input.precision === "none"')).toBeLessThan(
+      persistSrc.indexOf("buildBirthInput(input)")
     );
   });
 

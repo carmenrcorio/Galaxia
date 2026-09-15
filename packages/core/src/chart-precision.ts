@@ -47,8 +47,9 @@ export const CHART_PRECISION_YEAR_UNLOCKS =
 
 // FOUNDER-REVIEW: authored — add-person data tier ladder (none).
 export const CHART_PRECISION_NONE_LABEL = "Add birth data later";
+// FOUNDER-REVIEW: revised tier copy. Ask is now on this screen, not a later profile visit.
 export const CHART_PRECISION_NONE_UNLOCKS =
-  "Just save their name and relationship now: you can add a year, date, or exact time whenever you have it (or ask them to).";
+  "Just save their name and relationship now. You can add a year, date, or exact time whenever you have it, or send them a link from this screen.";
 
 // FOUNDER-REVIEW: authored — profile indicator for a person with no birth data.
 export const CHART_PRECISION_NONE_FACT = "No birth data yet";

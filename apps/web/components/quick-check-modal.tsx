@@ -28,7 +28,6 @@ import {
   type HouseSystem,
   type NatalChart,
   type BirthFormInput,
-  CHART_ENGINE_VERSION,
   interpretSynastryAspect,
   type AspectKey,
   type BodyKey,
@@ -37,14 +36,17 @@ import {
   relationshipWatchLine,
   type RelationType,
 } from "@galaxia/astro";
-import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety } from "@galaxia/core";
+import { ASK_BIRTH_DATA_TOGGLE, GALAXY_RELATION_PICKER_OPTIONS } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
 import { COMPAT_LABELS, compatWord } from "../lib/design";
 import { getPreferredHouseSystem } from "../lib/house-system";
 import { EMPTY_STATE_WELCOME_HREF } from "../lib/nav-links";
+import { persistPerson } from "../lib/persist-person";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
+import { AskBirthData } from "./ask-birth-data";
+import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
+import { CustomCheck } from "./custom-check";
 import { Spinner } from "./spinner";
 
 // FOUNDER-REVIEW: picker labels — refine voice before merge.
@@ -91,7 +93,8 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
   const [result, setResult] = useState<{ otherChart: NatalChart; synastry: ReturnType<typeof computeSynastry> | null } | null>(null);
   const [saving, setSaving] = useState(false);
   const [relation, setRelation] = useState<(typeof RELATIONS)[number]["value"]>("partner");
-  const [savedId, setSavedId] = useState<string | null>(null);
+  const [saved, setSaved] = useState<{ id: string; isMinor: boolean; askForBirthData: boolean } | null>(null);
+  const [askThem, setAskThem] = useState(false);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -133,21 +136,19 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
     setSaving(true); setError(null);
     try {
       const supabase = createSupabaseBrowserClient();
-      const built = buildBirthInput(input);
-      // This flow has no minor checkbox at all — the age backstop is the
-      // ONLY protection a child saved here gets, so it must run on save.
-      const effectiveIsMinor = isMinorForSafety({ isMinor: false, birthDate: built.birthDate, birthPrecision: input.precision });
-      const { data: person, error: pErr } = await supabase.from("people").insert({
-        owner_id: userId, is_self: false, display_name: name.trim() || "New person", relation, is_minor: effectiveIsMinor,
-        birth_date: built.birthDate, birth_time: built.birthTime, birth_place: built.birthPlace, birth_precision: input.precision,
-        birth_lat: built.birth.lat ?? null, birth_lng: built.birth.lng ?? null, tz_offset_min: built.tzOffsetMin ?? null,
-      }).select("id").single();
-      if (pErr || !person) throw new Error(pErr?.message ?? "Failed to save.");
-      const { error: cErr } = await supabase.from("charts").upsert({
-        person_id: person.id, house_system: result.otherChart.houseSystem ?? null, data: result.otherChart, engine_version: CHART_ENGINE_VERSION
+      const created = await persistPerson(supabase, {
+        userId,
+        displayName: name.trim() || "New person",
+        relation,
+        isSelf: false,
+        isMinor: false,
+        input
       });
-      if (cErr) throw new Error(cErr.message);
-      setSavedId(person.id);
+      setSaved({
+        id: created.personId,
+        isMinor: created.isMinor,
+        askForBirthData: askThem && !created.isMinor
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save.");
     } finally {
@@ -170,10 +171,19 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
             <p className="muted" style={{ marginBottom: 12 }}>Add your own birth data first to run a quick check.</p>
             <Link href={EMPTY_STATE_WELCOME_HREF as never} className="btn-primary">Add my birth data</Link>
           </div>
-        ) : savedId ? (
-          <div style={{ textAlign: "center" }}>
-            <p style={{ color: "var(--teal)", marginBottom: 10 }}>✦ Added to your galaxy.</p>
-            <Link href={`/app/person/${savedId}`} className="btn-primary">View their profile</Link>
+        ) : saved ? (
+          <div style={{ textAlign: "center", display: "grid", gap: 10 }}>
+            <p style={{ color: "var(--teal)", marginBottom: 0 }}>✦ Added to your galaxy.</p>
+            {userId && !saved.isMinor ? (
+              <AskBirthData
+                personId={saved.id}
+                personName={name.trim() || "them"}
+                userId={userId}
+                autoCreate={saved.askForBirthData}
+                isMinor={saved.isMinor}
+              />
+            ) : null}
+            <Link href={`/app/person/${saved.id}`} className="btn-primary">View their profile</Link>
           </div>
         ) : !result ? (
           <div style={{ display: "grid", gap: 12 }}>
@@ -250,6 +260,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
                 </button>
               ))}
             </div>
+            <CustomCheck checked={askThem} onChange={setAskThem} label={ASK_BIRTH_DATA_TOGGLE} id="quick-check-ask-them" />
             <div style={{ display: "flex", gap: 8 }}>
               <button className="btn-primary" onClick={addToGalaxy} disabled={saving} style={{ gap: 8, flex: 1 }}>
                 {saving && <Spinner size={13} color="#1a1206" />}

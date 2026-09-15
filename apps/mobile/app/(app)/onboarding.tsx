@@ -1,20 +1,22 @@
 import {
-  buildBirthInput,
-  computeNatalChart,
-  CHART_ENGINE_VERSION,
   formatDateForConfirmation,
   searchPlaces,
   type BirthFormInput,
   type FormPrecision,
   type GeoCandidate
 } from "@galaxia/astro";
-import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety, type GalaxyPickerRelation } from "@galaxia/core";
+import {
+  ASK_BIRTH_DATA_TOGGLE,
+  CHART_PRECISION_NONE_TIER,
+  GALAXY_RELATION_PICKER_OPTIONS,
+  type GalaxyPickerRelation
+} from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
-import { deferredPersonRow } from "../../src/lib/deferred-person-row";
-import { getPreferredHouseSystem } from "../../src/lib/house-system";
+import { AskBirthData } from "../../src/components/ask-birth-data";
+import { persistPerson } from "../../src/lib/persist-person";
 import { supabase } from "../../src/lib/supabase";
 import { useAuth } from "../../src/providers/auth-provider";
 import { useEntitlement } from "../../src/providers/entitlement-provider";
@@ -48,9 +50,9 @@ const precisionTiers: PrecisionTier[] = [
 // existing "Add birth data later" tier verbatim (apps/web/components/birth-fields.tsx)
 // so the two surfaces offer the same choice in the same words.
 const deferredTier: PrecisionTier = {
-  key: "none",
-  label: "Add birth data later",
-  unlocks: "Just save their name and relationship now: you can add a year, date, or exact time whenever you have it (or ask them)."
+  key: CHART_PRECISION_NONE_TIER.key,
+  label: CHART_PRECISION_NONE_TIER.label,
+  unlocks: CHART_PRECISION_NONE_TIER.unlocks
 };
 
 // FOUNDER-REVIEW: picker labels — refine voice before merge.
@@ -87,6 +89,13 @@ export default function OnboardingScreen() {
   const [personRelation, setPersonRelation] = useState<Relation>("friend");
   const [personMinor, setPersonMinor] = useState(false);
   const [personInput, setPersonInput] = useState<BirthFormInput>(baseInput);
+  const [askThem, setAskThem] = useState(false);
+  const [lastSaved, setLastSaved] = useState<{
+    personId: string;
+    displayName: string;
+    isMinor: boolean;
+    askForBirthData: boolean;
+  } | null>(null);
   const [people, setPeople] = useState<Array<{ id: string; display_name: string; relation: string; birth_precision: string; is_self?: boolean }>>([]);
   const [savingSelf, setSavingSelf] = useState(false);
   const [savingPerson, setSavingPerson] = useState(false);
@@ -94,6 +103,14 @@ export default function OnboardingScreen() {
 
   const canSaveSelf = useMemo(() => selfName.trim().length > 1, [selfName]);
   const canSavePerson = useMemo(() => personName.trim().length > 1, [personName]);
+
+  useEffect(() => {
+    if (personMinor) {
+      setAskThem(false);
+      return;
+    }
+    if (personInput.precision === "none") setAskThem(true);
+  }, [personInput.precision, personMinor]);
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -111,96 +128,6 @@ export default function OnboardingScreen() {
   };
 
   const selfPerson = people.find((p) => p.is_self) ?? null;
-
-  const persistPerson = async ({
-    displayName,
-    relation,
-    isSelf,
-    isMinor,
-    input
-  }: {
-    displayName: string;
-    relation: Relation;
-    isSelf: boolean;
-    isMinor: boolean;
-    input: BirthFormInput;
-  }) => {
-    if (!session?.user.id) {
-      throw new Error("Please sign in first.");
-    }
-
-    // Progressive capture, web parity (apps/web/lib/persist-person.ts): a person
-    // with no birth data has no chart at all. buildBirthInput deliberately throws
-    // on "none" rather than synthesizing a date, so this branch returns first.
-    if (input.precision === "none") {
-      const { error } = await supabase.from("people").insert(
-        deferredPersonRow({
-          ownerId: session.user.id,
-          displayName,
-          relation,
-          isSelf,
-          isMinor
-        })
-      );
-      if (error) {
-        throw new Error(error.message);
-      }
-      return;
-    }
-
-    // Shared buildBirthInput refuses exact precision without a resolved timezone
-    // (never stamps local wall-clock as UTC). Date-only / year-only do not need tz.
-    const built = buildBirthInput(input);
-    // The user's saved preference, not a hardcoded system: a chart saved from the
-    // phone used to claim Placidus even when Settings said Whole Sign or Equal.
-    const houseSystem = await getPreferredHouseSystem(supabase, session.user.id);
-    const natal = computeNatalChart({ ...built.birth, houseSystem });
-    // natal.houseSystem is the system the engine actually computed (it can
-    // fall back to Whole Sign at polar latitudes) — store that, never a claim.
-
-    // The age backstop runs at save time too, not only when a gate reads the
-    // row later — so a child is protected even if the "This person is a
-    // minor" switch was left off (it resets after every add on this form).
-    const effectiveIsMinor = isMinorForSafety({
-      isMinor,
-      birthDate: built.birthDate,
-      birthPrecision: input.precision
-    });
-
-    const { data: person, error: personError } = await supabase
-      .from("people")
-      .insert({
-        owner_id: session.user.id,
-        is_self: isSelf,
-        display_name: displayName.trim(),
-        relation,
-        is_minor: effectiveIsMinor,
-        birth_date: built.birthDate,
-        birth_time: built.birthTime,
-        birth_place: built.birthPlace,
-        birth_precision: input.precision,
-        birth_lat: built.birth.lat ?? null,
-        birth_lng: built.birth.lng ?? null,
-        tz_offset_min: built.tzOffsetMin ?? null
-      })
-      .select("id")
-      .single();
-
-    if (personError || !person) {
-      throw new Error(personError?.message ?? "Failed to save person.");
-    }
-
-    const { error: chartError } = await supabase.from("charts").upsert({
-      person_id: person.id,
-      house_system: natal.houseSystem ?? null,
-      data: natal,
-      engine_version: CHART_ENGINE_VERSION
-    });
-
-    if (chartError) {
-      throw new Error(chartError.message);
-    }
-  };
 
   const saveSelf = async () => {
     if (!session?.user.id) {
@@ -226,7 +153,8 @@ export default function OnboardingScreen() {
         setStatus("You're already in your sky. Edit your profile from your chart.");
         return;
       }
-      await persistPerson({
+      await persistPerson(supabase, {
+        userId: session.user.id,
         displayName: selfName,
         relation: "self",
         isSelf: true,
@@ -252,15 +180,20 @@ export default function OnboardingScreen() {
     setSavingPerson(true);
     setStatus(null);
     try {
+      if (!session?.user.id) {
+        setStatus("Please sign in first.");
+        return;
+      }
       if (!canAddPerson(people.length)) {
         setStatus(`Free tier limit reached (${peopleLimit} people). Upgrade in settings for unlimited people.`);
         return;
       }
       const deferred = personInput.precision === "none";
       const savedName = personName.trim();
-      await persistPerson({
+      const created = await persistPerson(supabase, {
+        userId: session.user.id,
         displayName: personName,
-        relation: personRelation,
+        relation: personRelation === "self" ? "friend" : personRelation,
         isSelf: false,
         isMinor: personMinor,
         input: personInput
@@ -270,12 +203,17 @@ export default function OnboardingScreen() {
       setPersonRelation("friend");
       setPersonInput(baseInput);
       await fetchPeople();
+      setLastSaved({
+        personId: created.personId,
+        displayName: savedName,
+        isMinor: created.isMinor,
+        askForBirthData: askThem && !created.isMinor
+      });
       setStatus(
         deferred
-          // FOUNDER-REVIEW: new copy for the deferred-birth-data save. Mobile has
-          // no birth-data editor yet, so this promises nothing web-only.
-          ? `${savedName} is in your sky. No birth data yet, and nothing is lost by starting light.`
-          : "Person added to your constellation."
+          // FOUNDER-REVIEW: success copy. Ask now lives on this screen.
+          ? `${savedName} is in your sky. You can send them a link from this screen, or add a date whenever you're ready.`
+          : `${savedName} is in your constellation.`
       );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to add person.");
@@ -368,11 +306,30 @@ export default function OnboardingScreen() {
         Galaxia also automatically protects anyone whose birth date shows they're under 18, even if this stays off.
       </Text>
       <BirthFields input={personInput} onChange={setPersonInput} allowNone />
+      {!personMinor ? (
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text style={{ color: tokens.colors.cream, flex: 1, paddingRight: 12 }}>{ASK_BIRTH_DATA_TOGGLE}</Text>
+          <Switch
+            value={askThem}
+            onValueChange={setAskThem}
+            disabled={personMinor}
+          />
+        </View>
+      ) : null}
       <Pressable onPress={savePerson} disabled={!canSavePerson || savingPerson} style={primaryButtonStyle}>
         <Text style={primaryButtonLabel}>{savingPerson ? "Saving..." : "Add person"}</Text>
       </Pressable>
 
       {status ? <Text style={{ color: tokens.colors.gold }}>{status}</Text> : null}
+      {lastSaved && session?.user.id ? (
+        <AskBirthData
+          personId={lastSaved.personId}
+          personName={lastSaved.displayName}
+          userId={session.user.id}
+          autoCreate={lastSaved.askForBirthData}
+          isMinor={lastSaved.isMinor}
+        />
+      ) : null}
 
       <View style={{ gap: 8 }}>
         <Text style={{ color: tokens.colors.cream, fontSize: 20, fontWeight: "700" }}>Your constellation</Text>

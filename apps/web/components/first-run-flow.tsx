@@ -11,7 +11,7 @@ import {
 } from "@galaxia/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AddPersonForm, type AddPersonSavedInfo } from "./add-person-form";
+import { AddPersonForm, AskAfterAdd, type AddPersonSavedInfo } from "./add-person-form";
 import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
 import { Spinner } from "./spinner";
 import {
@@ -164,6 +164,7 @@ export function FirstRunFlow() {
   const [choice, setChoice] = useState<FirstRunRelationOption | null>(null);
   const [subject, setSubject] = useState<Subject | null>(null);
   const [hasSelf, setHasSelf] = useState(false);
+  const [askAfterSave, setAskAfterSave] = useState(false);
 
   const [selfName, setSelfName] = useState("");
   const [selfInput, setSelfInput] = useState<BirthFormInput>(BASE_BIRTH_INPUT);
@@ -286,6 +287,7 @@ export function FirstRunFlow() {
       isMinor: info.isMinor,
       refusedRelation: info.refusedRelation,
     });
+    setAskAfterSave(info.askForBirthData);
     goTo("reading", userId);
   };
 
@@ -484,6 +486,20 @@ export function FirstRunFlow() {
                     {FIRST_RUN_COPY.readingEmpty(subject.displayName)}
                   </p>
                 )}
+
+                {userId && !subject.isMinor ? (
+                  <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid rgba(183,154,216,.1)" }}>
+                    <AskAfterAdd
+                      userId={userId}
+                      info={{
+                        personId: subject.personId,
+                        displayName: subject.displayName,
+                        isMinor: subject.isMinor,
+                        askForBirthData: askAfterSave
+                      }}
+                    />
+                  </div>
+                ) : null}
 
                 <button
                   className="btn-primary"

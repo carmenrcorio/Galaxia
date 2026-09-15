@@ -1,19 +1,16 @@
 "use client";
 
-import {
-  computeNatalChart,
-  buildBirthInput,
-  type BirthFormInput,
-  CHART_ENGINE_VERSION,
-} from "@galaxia/astro";
-import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety } from "@galaxia/core";
+import { type BirthFormInput } from "@galaxia/astro";
+import { ASK_BIRTH_DATA_TOGGLE, GALAXY_RELATION_PICKER_OPTIONS } from "@galaxia/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getPreferredHouseSystem } from "../lib/house-system";
+import { persistPerson } from "../lib/persist-person";
 import { personProfileHref, signupWithNextHref } from "../lib/nav-links";
 import { buildWelcomePrefillPath } from "../lib/quick-chart";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
+import { AskBirthData } from "./ask-birth-data";
+import { CustomCheck } from "./custom-check";
 import { Spinner } from "./spinner";
 
 // FOUNDER-REVIEW: picker labels — refine voice before merge.
@@ -36,7 +33,7 @@ export function addToConstellationLabel(name?: string): string {
 export const CONFIRM_ADD_TO_CONSTELLATION = "Add to constellation";
 
 export function addedToConstellationLine(name: string): string {
-  // FOUNDER-REVIEW: signed-in save success. Viewer is about to open this person's profile.
+  // FOUNDER-REVIEW: signed-in save success. Ask is on this screen.
   return `✦ ${name} is in your constellation.`;
 }
 
@@ -45,11 +42,9 @@ export const VIEW_THEIR_PROFILE = "View their profile";
 /**
  * The Quick Chart save CTA.
  *
- * Logged in: saves the person now (name/relation confirmed inline), using the
- * SAME buildBirthInput + computeNatalChart pipeline every other add-person
- * flow uses, respecting the owner's house-system preference. On /chart the
- * default is to open that person's profile after save so the viewer is not
- * dumped back on an empty form.
+ * Logged in: saves the person now (name/relation confirmed inline) through
+ * persistPerson / createPerson. Stays on this screen so the ask can happen
+ * without opening edit.
  *
  * Logged out: links to /signup?next=/welcome?prefill=...&name=... — the birth
  * data (and, only for this one-time redirect, the typed name) travels through
@@ -59,13 +54,13 @@ export const VIEW_THEIR_PROFILE = "View their profile";
 export function SaveToGalaxyButton({
   birthInput,
   defaultName,
-  navigateToProfileOnSave = true,
+  navigateToProfileOnSave = false,
   ctaLabel,
   loggedOutHref,
 }: {
   birthInput: BirthFormInput;
   defaultName?: string;
-  /** When false (Quick Compare), stay on the result with a profile link. */
+  /** When true, still open the profile after save. Default false so the ask is reachable. */
   navigateToProfileOnSave?: boolean;
   /** Override the signed-in / logged-out primary label. */
   ctaLabel?: string;
@@ -81,9 +76,10 @@ export function SaveToGalaxyButton({
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(defaultName ?? "");
   const [relation, setRelation] = useState<(typeof RELATIONS)[number]["value"]>("friend");
+  const [askThem, setAskThem] = useState(birthInput.precision === "none");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedPersonId, setSavedPersonId] = useState<string | null>(null);
+  const [saved, setSaved] = useState<{ personId: string; isMinor: boolean; askForBirthData: boolean } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,32 +111,21 @@ export function SaveToGalaxyButton({
     setSaving(true); setError(null);
     try {
       const supabase = createSupabaseBrowserClient();
-      const built = buildBirthInput(birthInput);
-      const houseSystem = await getPreferredHouseSystem(supabase, userId);
-      const natal = computeNatalChart({ ...built.birth, houseSystem });
-
-      // This flow has no minor checkbox at all — the age backstop is the
-      // ONLY protection a child saved here gets, so it must run on save.
-      const effectiveIsMinor = isMinorForSafety({ isMinor: false, birthDate: built.birthDate, birthPrecision: birthInput.precision });
-
-      const { data: person, error: pErr } = await supabase.from("people").insert({
-        owner_id: userId, is_self: false, display_name: name.trim(), relation, is_minor: effectiveIsMinor,
-        birth_date: built.birthDate, birth_time: built.birthTime, birth_place: built.birthPlace,
-        birth_precision: birthInput.precision,
-        birth_lat: built.birth.lat ?? null, birth_lng: built.birth.lng ?? null,
-        tz_offset_min: built.tzOffsetMin ?? null,
-      }).select("id").single();
-      if (pErr || !person) throw new Error(pErr?.message ?? "Failed to save.");
-
-      const { error: cErr } = await supabase.from("charts").upsert({
-        person_id: person.id, house_system: natal.houseSystem ?? null, data: natal, engine_version: CHART_ENGINE_VERSION
+      const created = await persistPerson(supabase, {
+        userId,
+        displayName: name,
+        relation,
+        isSelf: false,
+        isMinor: false,
+        input: birthInput
       });
-      if (cErr) throw new Error(cErr.message);
-
-      setSavedPersonId(person.id);
+      setSaved({
+        personId: created.personId,
+        isMinor: created.isMinor,
+        askForBirthData: askThem && !created.isMinor
+      });
       if (navigateToProfileOnSave) {
-        // Type-only: personProfileHref returns string; typedRoutes wants RouteImpl.
-        router.push(personProfileHref(person.id) as never);
+        router.push(personProfileHref(created.personId) as never);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save.");
@@ -157,11 +142,20 @@ export function SaveToGalaxyButton({
     );
   }
 
-  if (savedPersonId) {
+  if (saved) {
     return (
-      <div style={{ textAlign: "center" }}>
-        <p style={{ color: "var(--teal)", fontSize: ".88rem", marginBottom: 8 }}>{addedToConstellationLine(name)}</p>
-        <Link href={personProfileHref(savedPersonId) as never} className="pill-link">{VIEW_THEIR_PROFILE}</Link>
+      <div style={{ textAlign: "center", display: "grid", gap: 10 }}>
+        <p style={{ color: "var(--teal)", fontSize: ".88rem", marginBottom: 0 }}>{addedToConstellationLine(name)}</p>
+        {userId && !saved.isMinor ? (
+          <AskBirthData
+            personId={saved.personId}
+            personName={name.trim()}
+            userId={userId}
+            autoCreate={saved.askForBirthData}
+            isMinor={saved.isMinor}
+          />
+        ) : null}
+        <Link href={personProfileHref(saved.personId) as never} className="pill-link">{VIEW_THEIR_PROFILE}</Link>
       </div>
     );
   }
@@ -196,7 +190,8 @@ export function SaveToGalaxyButton({
           </button>
         ))}
       </div>
-      <button className="btn-primary" onClick={save} disabled={saving || !name.trim()} style={{ gap: 8 }}>
+      <CustomCheck checked={askThem} onChange={setAskThem} label={ASK_BIRTH_DATA_TOGGLE} id="save-to-galaxy-ask-them" />
+      <button className="btn-primary" onClick={() => void save()} disabled={saving || !name.trim()} style={{ gap: 8 }}>
         {saving && <Spinner size={13} color="#1a1206" />}
         {saving ? "Saving…" : CONFIRM_ADD_TO_CONSTELLATION}
       </button>

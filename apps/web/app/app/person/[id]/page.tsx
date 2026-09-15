@@ -938,7 +938,14 @@ export default function PersonProfilePage() {
         {userId && !usesAncientLight(person) ? (
         <div style={{ borderTop: "1px solid rgba(183,154,216,.1)", paddingTop: 14 }}>
           <p className="eyebrow" style={{ marginBottom: 8 }}>Don&apos;t know their details?</p>
-          <AskBirthData personId={person.id} personName={person.display_name} userId={userId} />
+          <AskBirthData
+            personId={person.id}
+            personName={person.display_name}
+            userId={userId}
+            isMinor={personIsMinor}
+            birthDate={person.birth_date}
+            birthPrecision={person.birth_precision}
+          />
           <div style={{ marginTop: 10 }}>
             <ConnectInviteButton person={person} />
           </div>

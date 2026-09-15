@@ -1,18 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { AddPersonForm, AskAfterAdd, type AddPersonSavedInfo } from "../../../components/add-person-form";
+import { comparePathAfterAddPerson } from "../../../lib/compare-add-person";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 /**
  * Standalone add-person entry — not onboarding.
  * Reached from "+ Add person" on /app. Shares AddPersonForm with /welcome
  * step 2, but deliberately omits StepProgress, "Onboarding" eyebrow, and
- * welcome framing. Submit stays on this screen so the ask can happen now.
+ * welcome framing. Submit stays on this screen so the ask can happen now,
+ * unless Compare sent us here (`next=/app/compare`), in which case we
+ * return with the new person selected.
  */
 export default function AddPersonPage() {
+  return (
+    <Suspense fallback={<main className="app-content"><div className="skeleton skeleton-title" /></main>}>
+      <AddPersonPageInner />
+    </Suspense>
+  );
+}
+
+function AddPersonPageInner() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastSaved, setLastSaved] = useState<AddPersonSavedInfo | null>(null);
@@ -27,6 +41,16 @@ export default function AddPersonPage() {
     };
     void load();
   }, [supabase]);
+
+  const cancelHref = comparePathAfterAddPerson({
+    next: searchParams.get("next"),
+    slot: searchParams.get("slot"),
+    personAId: searchParams.get("a"),
+    personBId: searchParams.get("b"),
+    newPersonId: ""
+  })
+    ? "/app/compare"
+    : "/app";
 
   return (
     <main className="app-content">
@@ -57,7 +81,20 @@ export default function AddPersonPage() {
             <AddPersonForm
               userId={userId}
               showStatus={false}
-              onSaved={(info) => setLastSaved(info)}
+              onSaved={(info) => {
+                const dest = comparePathAfterAddPerson({
+                  next: searchParams.get("next"),
+                  slot: searchParams.get("slot"),
+                  personAId: searchParams.get("a"),
+                  personBId: searchParams.get("b"),
+                  newPersonId: info.personId
+                });
+                if (dest) {
+                  router.push(dest as never);
+                  return;
+                }
+                setLastSaved(info);
+              }}
             />
           </section>
 
@@ -86,7 +123,7 @@ export default function AddPersonPage() {
             </section>
           ) : (
             <div className="fade-in" style={{ marginTop: 4 }}>
-              <Link href="/app" className="pill-link">
+              <Link href={cancelHref as never} className="pill-link">
                 Cancel
               </Link>
             </div>

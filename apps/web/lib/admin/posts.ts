@@ -32,6 +32,7 @@ export interface AdminPostListRow {
   title: string;
   status: "draft" | "published";
   published_at: string | null;
+  hero_image_url: string | null;
   created_at: string;
 }
 
@@ -47,6 +48,7 @@ export interface AdminPostDetail {
   read_time_minutes: number;
   published_at: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export interface PostInput {
@@ -73,9 +75,11 @@ export class PostNotFoundError extends Error {
   }
 }
 
-const LIST_FIELDS = "id, slug, title, status, published_at, created_at";
+const LIST_FIELDS = "id, slug, title, status, published_at, hero_image_url, created_at";
 const DETAIL_FIELDS =
-  "id, slug, title, dek, category, body, hero_image_url, status, read_time_minutes, published_at, created_at";
+  "id, slug, title, dek, category, body, hero_image_url, status, read_time_minutes, published_at, created_at, updated_at";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function listPostsForAdmin(serviceRoleClient: SupabaseClient): Promise<AdminPostListRow[]> {
   const { data, error } = await serviceRoleClient
@@ -97,6 +101,34 @@ export async function getPostForAdmin(
     .maybeSingle();
   if (error) throw new Error(error.message);
   return (data as AdminPostDetail | null) ?? null;
+}
+
+export async function getPostForAdminBySlug(
+  serviceRoleClient: SupabaseClient,
+  slug: string
+): Promise<AdminPostDetail | null> {
+  const { data, error } = await serviceRoleClient
+    .from("posts")
+    .select(DETAIL_FIELDS)
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as AdminPostDetail | null) ?? null;
+}
+
+/**
+ * Editor URL is `/admin/posts/{slug}`. Old bookmarks still used the row
+ * uuid (`/admin/posts/{id}`); if the path looks like a uuid and no slug
+ * matches, fall back to the id lookup so those links keep working.
+ */
+export async function getPostForAdminBySlugOrId(
+  serviceRoleClient: SupabaseClient,
+  slugOrId: string
+): Promise<AdminPostDetail | null> {
+  const bySlug = await getPostForAdminBySlug(serviceRoleClient, slugOrId);
+  if (bySlug) return bySlug;
+  if (UUID_RE.test(slugOrId)) return getPostForAdmin(serviceRoleClient, slugOrId);
+  return null;
 }
 
 function normalizeInput(input: PostInput) {

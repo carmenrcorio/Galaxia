@@ -4,9 +4,9 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   COMPARE_PERSON_PICKER_COPY,
-  ComparePersonField,
-  type ComparePersonOption
-} from "./compare-person-picker";
+  PersonPickerField,
+  type PersonPickerOption
+} from "./person-picker";
 
 vi.mock("./initial-avatar", () => ({
   InitialAvatar: ({ name }: { name: string }) => <span>{name[0]}</span>
@@ -22,8 +22,13 @@ afterEach(() => {
   cleanup();
 });
 
-function person(id: string, name: string, relation = "friend"): ComparePersonOption {
-  return { id, display_name: name, relation };
+function person(
+  id: string,
+  name: string,
+  relation = "friend",
+  extra: Partial<PersonPickerOption> = {}
+): PersonPickerOption {
+  return { id, display_name: name, relation, ...extra };
 }
 
 function mockMatchMedia(matches: boolean) {
@@ -45,11 +50,11 @@ beforeEach(() => {
   mockMatchMedia(true);
 });
 
-describe("ComparePersonField", () => {
+describe("PersonPickerField", () => {
   it("shows placeholder when empty and opens a searchable picker", () => {
     const onSelect = vi.fn();
     render(
-      <ComparePersonField
+      <PersonPickerField
         label="Person A"
         people={[person("a", "Ada"), person("b", "Bea")]}
         recentPeople={[]}
@@ -69,7 +74,7 @@ describe("ComparePersonField", () => {
 
   it("shows avatar name and stored role when selected", () => {
     render(
-      <ComparePersonField
+      <PersonPickerField
         label="Person A"
         people={[person("self-1", "Carmen", "self"), person("b", "Bea", "friend")]}
         recentPeople={[]}
@@ -85,7 +90,7 @@ describe("ComparePersonField", () => {
 
   it("filters by name and keeps a disabled counterpart visible", () => {
     render(
-      <ComparePersonField
+      <PersonPickerField
         label="Person B"
         people={[person("a", "Ada"), person("b", "Bea"), person("c", "Cara")]}
         recentPeople={[]}
@@ -110,7 +115,7 @@ describe("ComparePersonField", () => {
   it("shows Recent then an alphabetical list, and an add-person link when nothing matches", () => {
     const people = [person("z", "Zed"), person("a", "Ada"), person("m", "Mo")];
     render(
-      <ComparePersonField
+      <PersonPickerField
         label="Person B"
         people={people}
         recentPeople={[people[2]!]}
@@ -138,7 +143,7 @@ describe("ComparePersonField", () => {
       person(`p-${i}`, `Person ${String(i).padStart(2, "0")}`)
     );
     render(
-      <ComparePersonField
+      <PersonPickerField
         label="Person A"
         people={people}
         recentPeople={[]}
@@ -154,5 +159,32 @@ describe("ComparePersonField", () => {
     expect(list.className).toContain("compare-person-picker__list");
     expect(within(list).getAllByRole("button")).toHaveLength(50);
     expect(screen.queryByRole("button", { name: /Person 49/ })?.closest(".compare-person-picker__list")).toBe(list);
+  });
+
+  it("appends the minor suffix in the accessible text of a gated row and keeps the row selectable", () => {
+    const onSelect = vi.fn();
+    render(
+      <PersonPickerField
+        label="Person A"
+        people={[
+          person("a", "Ada"),
+          person("child-1", "Elena", "child", {
+            is_minor: false,
+            birth_date: "2017-04-03",
+            birth_precision: "exact"
+          })
+        ]}
+        recentPeople={[]}
+        selectedId={null}
+        disabledId={null}
+        onSelect={onSelect}
+        addPersonHref="/app/add-person"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: COMPARE_PERSON_PICKER_COPY.placeholder }));
+    const row = screen.getByRole("button", { name: /Elena \(minor\)/ });
+    expect(row).toHaveProperty("disabled", false);
+    fireEvent.click(row);
+    expect(onSelect).toHaveBeenCalledWith("child-1");
   });
 });

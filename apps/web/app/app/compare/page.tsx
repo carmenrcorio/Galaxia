@@ -50,8 +50,8 @@ import { ChartImageExport, chartExportFilename } from "../../../components/chart
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES, orientSynastryWheel } from "../../../components/chart-wheel";
 import {
   COMPARE_PERSON_PICKER_COPY,
-  ComparePersonField,
-} from "../../../components/compare-person-picker";
+  PersonPickerField,
+} from "../../../components/person-picker";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { GenerationalSection } from "../../../components/generational-section";
 import { InitialAvatar } from "../../../components/initial-avatar";
@@ -629,7 +629,7 @@ function ComparePageInner() {
       {/* Pickers */}
       <section className="glass-card fade-in">
         <div className="compare-person-fields">
-          <ComparePersonField
+          <PersonPickerField
             label="Person A"
             people={people}
             recentPeople={recentPeople}
@@ -638,7 +638,7 @@ function ComparePageInner() {
             onSelect={setPersonAId}
             addPersonHref={addPersonHrefA}
           />
-          <ComparePersonField
+          <PersonPickerField
             label="Person B"
             people={people}
             recentPeople={recentPeople}

@@ -1,24 +1,27 @@
 "use client";
 
 /**
- * Searchable person field for /app/compare. Replaces the dual wrap-flex
- * pill grids. Sheet on small viewports, anchored popover from 720px up.
- * The options list scrolls inside a fixed-height container so the page
- * height does not grow with constellation size.
+ * Searchable person field shared by /app/compare (and later Vela). Sheet on
+ * small viewports, anchored popover from 720px up. The options list scrolls
+ * inside a fixed-height container so the page height does not grow with
+ * constellation size.
  */
 
-import { GALAXY_RELATION_PICKER_OPTIONS } from "@galaxia/core";
+import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { InitialAvatar } from "./initial-avatar";
 
-export type ComparePersonOption = {
+export type PersonPickerOption = {
   id: string;
   display_name: string;
   relation: string;
   sun?: string | null;
   passed_at?: string | null;
+  is_minor?: boolean | null;
+  birth_date?: string | null;
+  birth_precision?: "none" | "exact" | "date" | "year" | null;
 };
 
 // FOUNDER-REVIEW: authored — Compare person picker.
@@ -31,6 +34,9 @@ export const COMPARE_PERSON_PICKER_COPY = {
   selfRole: "You"
 };
 
+// FOUNDER-REVIEW: " (minor)" label text
+const MINOR_NAME_SUFFIX = " (minor)";
+
 const DESKTOP_MQ = "(min-width: 720px)";
 const POPOVER_WIDTH = 320;
 
@@ -38,6 +44,17 @@ function storedRelationLabel(relation: string): string {
   if (relation === "self") return COMPARE_PERSON_PICKER_COPY.selfRole;
   const option = GALAXY_RELATION_PICKER_OPTIONS.find((entry) => entry.value === relation);
   return option?.label ?? relation;
+}
+
+function displayNameForPicker(person: PersonPickerOption): string {
+  if (!isMinorForSafety({
+    isMinor: person.is_minor ?? false,
+    birthDate: person.birth_date,
+    birthPrecision: person.birth_precision
+  })) {
+    return person.display_name;
+  }
+  return `${person.display_name}${MINOR_NAME_SUFFIX}`;
 }
 
 function useDesktopPicker(): boolean {
@@ -60,18 +77,18 @@ function popoverCoords(trigger: HTMLElement): { top: number; left: number; width
   return { top: rect.bottom + 8, left, width };
 }
 
-function sortByName(people: readonly ComparePersonOption[]): ComparePersonOption[] {
+function sortByName(people: readonly PersonPickerOption[]): PersonPickerOption[] {
   return [...people].sort((a, b) =>
     a.display_name.localeCompare(b.display_name, undefined, { sensitivity: "base" })
   );
 }
 
-function matchesQuery(person: ComparePersonOption, query: string): boolean {
+function matchesQuery(person: PersonPickerOption, query: string): boolean {
   if (!query) return true;
   return person.display_name.toLowerCase().includes(query);
 }
 
-export function ComparePersonField({
+export function PersonPickerField({
   label,
   people,
   recentPeople,
@@ -81,8 +98,8 @@ export function ComparePersonField({
   addPersonHref
 }: {
   label: string;
-  people: readonly ComparePersonOption[];
-  recentPeople: readonly ComparePersonOption[];
+  people: readonly PersonPickerOption[];
+  recentPeople: readonly PersonPickerOption[];
   selectedId: string | null;
   disabledId: string | null;
   onSelect: (id: string) => void;
@@ -261,7 +278,7 @@ export function ComparePersonField({
               memorial={Boolean(selected.passed_at)}
             />
             <span className="compare-person-field__text">
-              <span className="compare-person-field__name">{selected.display_name}</span>
+              <span className="compare-person-field__name">{displayNameForPicker(selected)}</span>
               <span className="compare-person-field__role">
                 {storedRelationLabel(selected.relation)}
               </span>
@@ -285,7 +302,7 @@ function PersonOptionRow({
   disabled,
   onChoose
 }: {
-  person: ComparePersonOption;
+  person: PersonPickerOption;
   selected: boolean;
   disabled: boolean;
   onChoose: (id: string) => void;
@@ -307,7 +324,7 @@ function PersonOptionRow({
         memorial={Boolean(person.passed_at)}
       />
       <span className="compare-person-field__text">
-        <span className="compare-person-field__name">{person.display_name}</span>
+        <span className="compare-person-field__name">{displayNameForPicker(person)}</span>
         <span className="compare-person-field__role">{storedRelationLabel(person.relation)}</span>
       </span>
     </button>

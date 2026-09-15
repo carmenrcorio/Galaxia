@@ -22,6 +22,11 @@ describe("homepage outcome-led copy", () => {
 
   it("renders the headline, unified value proposition, and free-chart CTA", () => {
     const src = read("components/marketing/hero.tsx");
+    expect(src).toContain("Your life. Your people. Your galaxy.");
+    expect(src).toContain("FOUNDER-REVIEW");
+    expect(src).not.toContain("Galaxia · your inner circle");
+    expect(src).not.toContain("YOUR INNER CIRCLE");
+    expect(src).not.toContain("Your Inner Circle");
     expect(src).toContain("Better understand the people in your life");
     expect(src).not.toContain("Better understand the people in your life.");
     expect(src).toContain("Build a real chart for your partner, your mother, your difficult colleague, even the ones you have lost, and learn who they are at their core.");

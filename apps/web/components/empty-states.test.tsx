@@ -20,7 +20,7 @@ import {
   RELATIONAL_TRANSIT_FEED_RETRY,
   RelationalTransitFeed,
   relationalTransitFeedEmptyMessage,
-} from "./relational-transit-feed"; from "./relational-transit-feed";
+} from "./relational-transit-feed";
 import { SAVE_TO_GALAXY_CHECKING, SaveToGalaxyButton } from "./save-to-galaxy-button";
 
 afterEach(() => {

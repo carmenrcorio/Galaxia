@@ -43,7 +43,6 @@ interface GenerationalMapProps {
   chipPeople?: Array<{ id: string; name: string; sunSign?: string | null; memorial?: boolean }>;
 }
 
-// FOUNDER-REVIEW: empty because the map needs two members to place.
 export const GENERATIONAL_MAP_EMPTY =
   "The generational map needs two people. Add another member to see where the slow planets land.";
 

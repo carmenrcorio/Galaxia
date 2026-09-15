@@ -11,7 +11,6 @@ import { orderedScoreEntries } from "@galaxia/astro";
 import type { ReactNode } from "react";
 import { COMPAT_LABELS, compatWord } from "../lib/design";
 
-// FOUNDER-REVIEW: authored — ease-scale legend for Your dynamic ratings table.
 const DYNAMIC_SCALE_LEGEND =
   "How to read this: these run from easiest to most effort. Gold comes naturally, teal takes a little tending, rose takes real work. Charged is the far end, the most friction between you, not the most spark.";
 

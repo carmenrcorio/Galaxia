@@ -16,8 +16,7 @@ export function EdgeSection() {
             <span className="eyebrow edge-eyebrow">The edge</span>
             <h2 className="edge-h2">The sky you were all born under.</h2>
             <p className="lede edge-lede">
-              {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-              The slow planets (the ones that shape a whole generation) drift so gently that everyone
+                            The slow planets (the ones that shape a whole generation) drift so gently that everyone
               born within a few years shares them. It's why siblings feel cut from the same cloth, why a
               friend group just <em>gets</em> each other, and why the people who came before you saw the
               world the way they did. No other tool in this space reads your whole circle this way: what

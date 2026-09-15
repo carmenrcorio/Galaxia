@@ -110,7 +110,6 @@ export default function AccountPage() {
             {account.hasName ? (
               <p className="muted" style={{ margin: 0, fontSize: 14 }}>{email}</p>
             ) : (
-              // FOUNDER-REVIEW: authored prompt shown when no name is stored yet.
               <p className="muted" style={{ margin: 0, fontSize: 14 }}>
                 No name saved yet, so your email is standing in. Add your name below.
               </p>
@@ -123,8 +122,7 @@ export default function AccountPage() {
           <p className="eyebrow" style={{ marginBottom: 10 }}>Your profile</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div style={{ flex: "1 1 160px", minWidth: 0 }}>
-              {/* FOUNDER-REVIEW: authored name field labels. */}
-              <label htmlFor="account-first-name" className="muted" style={{ display: "block", fontSize: 13, marginBottom: 6 }}>
+                            <label htmlFor="account-first-name" className="muted" style={{ display: "block", fontSize: 13, marginBottom: 6 }}>
                 First name
               </label>
               <input
@@ -167,8 +165,7 @@ export default function AccountPage() {
             </p>
           ) : null}
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
-            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-            {email} stays your login: it's never shown as your name.
+                        {email} stays your login: it's never shown as your name.
           </p>
           {nameStatus ? (
             <p className={nameStatus === "Saved." ? "success" : "error"} style={{ fontSize: 13, marginTop: 8 }}>{nameStatus}</p>

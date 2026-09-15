@@ -34,8 +34,6 @@ export function isBelowGroupMinimum(memberCount: number): boolean {
   return memberCount < GROUP_MIN_MEMBERS;
 }
 
-// FOUNDER-REVIEW: authored — group delete confirmation; names the group and
-// conversation count so the user sees what history is destroyed.
 export function formatGroupDeleteConfirmation(
   groupName: string,
   conversationCount: number
@@ -55,8 +53,6 @@ export function formatGroupDeleteConfirmation(
  * own conversation count (same voice as formatGroupDeleteConfirmation), and
  * any person/pair conversations that go with them.
  *
- * FOUNDER-REVIEW: authored — person delete side-effect on groups; each
- * collapsing group named with its saved conversation count.
  */
 export function formatPersonDeleteConfirmation(input: {
   personName: string;

@@ -77,8 +77,8 @@ describe("historicalFigures natal Pluto matches the sign they are filed under", 
     PLUTO_SIGN_EXTENDED[sign]!.historicalFigures.map((figure) => ({ sign, figure }))
   );
 
-  // The birth-year range each list claims in its FOUNDER-REVIEW comment, so
-  // the prose and the data cannot drift apart unnoticed.
+  // The birth-year range each list claims, so the prose and the data cannot
+  // drift apart unnoticed.
   const COHORT_YEARS: Partial<Record<keyof typeof PLUTO_SIGN_EXTENDED, [number, number]>> = {
     Cancer: [1926, 1935],
     Leo: [1938, 1957],

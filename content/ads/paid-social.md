@@ -2,8 +2,6 @@
 
 **Layer one** (`design/galaxia-voice-layers.md`). Lead with outcome. Astrology is not the first word.
 
-All lines are FOUNDER-REVIEW.
-
 ## Primary text
 
 1. Understand the people you already live your life beside. Then show up for them.

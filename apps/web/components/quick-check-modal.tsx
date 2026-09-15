@@ -49,7 +49,6 @@ import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
 import { CustomCheck } from "./custom-check";
 import { Spinner } from "./spinner";
 
-// FOUNDER-REVIEW: picker labels — refine voice before merge.
 const RELATIONS = GALAXY_RELATION_PICKER_OPTIONS;
 const FOCUS_TYPES: { key: RelationType; label: string }[] = [
   { key: "romantic", label: "Romantic" },
@@ -125,7 +124,6 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
       const canSynastry = otherChart.precision !== "year" && myChart.precision !== "year";
       setResult({ otherChart, synastry: canSynastry ? computeSynastry(myChart, otherChart) : null });
     } catch (err) {
-      // FOUNDER-REVIEW: quick-check natal compute failed.
       setError(err instanceof Error ? err.message : "This chart could not be computed. Check the birth details and try again.");
     } finally {
       setComputing(false);
@@ -151,7 +149,6 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
         askForBirthData: askThem && !created.isMinor
       });
     } catch (err) {
-      // FOUNDER-REVIEW: quick-check save-to-galaxy persist failed.
       setError(err instanceof Error ? err.message : "This person could not be saved to your constellation. Try again.");
     } finally {
       setSaving(false);
@@ -257,8 +254,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
               {RELATIONS.map(({ value, label }) => (
                 <button key={value} type="button" className="pill-link" onClick={() => setRelation(value)}
                   style={{ fontSize: ".76rem", padding: "4px 10px", borderColor: relation === value ? "rgba(230,174,108,.5)" : undefined, color: relation === value ? "var(--gold)" : undefined }}>
-                  {/* FOUNDER-REVIEW: picker label */}
-                  {label}
+                                    {label}
                 </button>
               ))}
             </div>

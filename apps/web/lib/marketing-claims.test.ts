@@ -29,7 +29,6 @@ describe("marketing claims match what ships", () => {
     expect(src).toContain("per month");
     expect(src).toContain("Vela is included. Never charged per message.");
     expect(src).toContain("Without an account, anyone can run a real chart.");
-    expect(src).toContain("FOUNDER-REVIEW");
     expect(src).not.toContain("\u2014");
     expect(src).not.toContain("\u2013");
     const description = page.match(/const DESCRIPTION =\s*"([^"]+)"/)?.[1] ?? "";

@@ -155,8 +155,7 @@ export function InviteBirthDataForm({ token, personName, inviterName }: { token:
             </div>
           ) : null}
 
-          {/* FOUNDER-REVIEW: rewritten (no U+2014). City required for exact (timezone), optional otherwise. */}
-          <div>
+                    <div>
             <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 5 }}>
               Birth city {precision === "exact" ? "(required for an exact-time chart)" : "(optional)"}
             </p>

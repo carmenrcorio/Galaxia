@@ -40,7 +40,6 @@ import { createSupabaseBrowserClient } from "../lib/supabase/client";
  * drift from this one. Never duplicate it here.
  * ────────────────────────────────────────────────────────────────────────── */
 
-// FOUNDER-REVIEW: authored first-run copy — refine voice.
 export const FIRST_RUN_COPY = {
   pageEyebrow: "First run",
   pageTitle: "Start with someone you already know",
@@ -324,7 +323,6 @@ export function FirstRunFlow() {
       setHasSelf(true);
       goTo("next", userId);
     } catch (error) {
-      // FOUNDER-REVIEW: first-run self persist failed.
       const message = error instanceof Error ? error.message : "Your profile could not be saved. Try again.";
       if (message.includes("people_one_self_per_owner")) {
         setHasSelf(true);
@@ -397,8 +395,7 @@ export function FirstRunFlow() {
                         goTo("birth", userId);
                       }}
                     >
-                      {/* FOUNDER-REVIEW: first-run relationship quick option. */}
-                      {option.label}
+                                            {option.label}
                     </button>
                   ))}
                 </div>

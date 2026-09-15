@@ -302,8 +302,7 @@ export default function QuickComparePage() {
               <p className="eyebrow" style={{ marginBottom: 8 }}>Person B</p>
               {giftToken ? (
                 <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.55, margin: 0 }}>
-                  {/* FOUNDER-REVIEW: SHARE_GIFT_COMPARE_B_LOCKED */}
-                  {SHARE_GIFT_COMPARE_B_LOCKED}
+                                    {SHARE_GIFT_COMPARE_B_LOCKED}
                 </p>
               ) : (
                 <>
@@ -322,8 +321,7 @@ export default function QuickComparePage() {
         </>
       ) : (
         <>
-          {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
-          {/* Capture is headline + wheel + reading-held notice (if any) + the
+                    {/* Capture is headline + wheel + reading-held notice (if any) + the
               six-row dynamic table. FlowsAndCatchesSection (the full aspect
               list) and GenerationalSection render outside the capture, matching
               the task's "not the full aspect list" boundary. */}

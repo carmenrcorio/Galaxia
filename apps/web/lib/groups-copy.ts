@@ -17,7 +17,6 @@ export type GenPlanetKey = (typeof GEN_PLANETS)[number];
 export type SharedSkyCoverage = "whole" | "majority" | "pair";
 export type PairEraGapBand = "adjacent" | "mid" | "distant";
 
-// FOUNDER-REVIEW: authored. One-line domain gloss per generational planet. Static, never generated.
 export const GEN_PLANET_MEANING: Record<GenPlanetKey, string> = {
   uranus: "how the group handles disruption and change",
   neptune: "shared idealism vs. disillusionment",
@@ -29,7 +28,6 @@ export const GEN_PLANET_MEANING: Record<GenPlanetKey, string> = {
  * Distinct along both axes so Neptune-across-four and Uranus-across-two
  * never resolve to the same ending. Looked up, never generated at render.
  */
-// FOUNDER-REVIEW: authored. Shared Sky tails by (coverage, planet).
 export const SHARED_SKY_TAIL: {
   whole: Record<GenPlanetKey, string>;
   majority: Record<GenPlanetKey, string>;
@@ -47,27 +45,18 @@ export const SHARED_SKY_TAIL: {
   },
   pair: {
     uranus: {
-      // FOUNDER-REVIEW: authored. Pair-only tail varies by Uranus era gap band (to the nearest non-sharer sign group).
       adjacent: "They are only one Uranus chapter away from the rest of the room, so they can translate change without sounding alien.",
-      // FOUNDER-REVIEW: authored. Pair-only tail varies by Uranus era gap band (to the nearest non-sharer sign group).
       mid: "They sit a few Uranus chapters from the room's center, so their pace of change can feel out of sync in both directions.",
-      // FOUNDER-REVIEW: authored. Pair-only tail varies by Uranus era gap band (to the nearest non-sharer sign group).
       distant: "They stand several Uranus chapters from the room's center, so they may read disruption much earlier or later than everyone else.",
     },
     neptune: {
-      // FOUNDER-REVIEW: authored. Pair-only tail varies by Neptune era gap band (to the nearest non-sharer sign group).
       adjacent: "Their shared Neptune dream sits near the room's, so the ideals differ by tone more than by direction.",
-      // FOUNDER-REVIEW: authored. Pair-only tail varies by Neptune era gap band (to the nearest non-sharer sign group).
       mid: "Their Neptune dream comes from a different chapter, close enough to recognize and far enough to misread.",
-      // FOUNDER-REVIEW: authored. Pair-only tail varies by Neptune era gap band (to the nearest non-sharer sign group).
       distant: "Their Neptune dream was formed far from the room's weather, so they may carry a vision others do not immediately trust.",
     },
     pluto: {
-      // FOUNDER-REVIEW: authored. Pair-only tail varies by Pluto era gap band (to the nearest non-sharer sign group).
       adjacent: "Their Pluto lesson is one era from the room's, so control clashes are usually about style, not intent.",
-      // FOUNDER-REVIEW: authored. Pair-only tail varies by Pluto era gap band (to the nearest non-sharer sign group).
       mid: "Their Pluto lesson comes from a clearly different era, so they can agree on stakes while disagreeing on how power should move.",
-      // FOUNDER-REVIEW: authored. Pair-only tail varies by Pluto era gap band (to the nearest non-sharer sign group).
       distant: "Their Pluto lesson sits generations from the room's center, so they may lock in with each other while others read the stakes differently.",
     },
   },
@@ -138,40 +127,30 @@ export function sharedSkyTail(
   return SHARED_SKY_TAIL[coverage][planet];
 }
 
-// FOUNDER-REVIEW: authored. Generational map framing line under the header.
 export const GENERATIONAL_MAP_FRAMING =
   "These planets move slowly, so everyone born within a few years shares them. They show where instincts were formed, and where generations split.";
 
-// FOUNDER-REVIEW: authored. Groups page first-visit intro, three short lines.
 export const GROUPS_INTRO_LINES = [
   "This page reads the slow planets: Uranus, Neptune, and Pluto. Everyone born within a few years shares them.",
   "Shared sky is what the group has in common. Fault lines are where generations split.",
   "Tap a gold-underlined name to see what a planet or sign means in plain English.",
 ] as const;
 
-// FOUNDER-REVIEW: authored. Dismisses the Groups first-visit intro.
 export const GROUPS_INTRO_GOT_IT = "Got it";
 
-// FOUNDER-REVIEW: authored. Badge on the Groups empty-state example reading.
 export const GROUPS_EXAMPLE_BADGE = "Example";
 
-// FOUNDER-REVIEW: authored. Title of the curated empty-state example group.
 export const GROUPS_EXAMPLE_TITLE = "A sample group";
 
-// FOUNDER-REVIEW: authored. Makes clear the example is not the user's data.
 export const GROUPS_EXAMPLE_NOTICE =
   "This is an example reading, not your group. The names are fictional. The charts are real.";
 
-// FOUNDER-REVIEW: authored. Requirement under the example, before create.
 export const GROUPS_CREATE_REQUIREMENT = "A group needs three or more people.";
 
-// FOUNDER-REVIEW: authored. Link to add a person from the Groups empty state.
 export const GROUPS_EMPTY_ADD_SOMEONE = "Add someone";
 
-// FOUNDER-REVIEW: authored. One-tap CTA when the user already has three or more people and no group.
 export const GROUPS_EMPTY_BUILD_THIS_GROUP = "Build this group";
 
-// FOUNDER-REVIEW: authored. Default name for a one-tap group built from existing people.
 export const GROUPS_EMPTY_DEFAULT_NAME = "My circle";
 
 /**
@@ -181,7 +160,6 @@ export const GROUPS_EMPTY_DEFAULT_NAME = "My circle";
  */
 export const GROUPS_EMPTY_PREFILL_MAX = 8;
 
-// FOUNDER-REVIEW: authored. Fail-closed if example ids ever reach save.
 export const GROUPS_EXAMPLE_CANNOT_SAVE = "Example people cannot be saved as a group.";
 
 /** How many more people a roster needs to reach the group minimum of three. */
@@ -189,7 +167,7 @@ export function groupsEmptyPeopleNeeded(peopleCount: number): number {
   return Math.max(0, 3 - Math.max(0, peopleCount));
 }
 
-/** FOUNDER-REVIEW: authored. Names how many people the user has, and how many more a group needs. */
+
 export function groupsEmptyPeopleStatus(peopleCount: number): string {
   const have = Math.max(0, peopleCount);
   const more = groupsEmptyPeopleNeeded(have);
@@ -204,7 +182,7 @@ export function groupsEmptyPrefillPeople<T>(people: readonly T[]): T[] {
   return people.slice(0, GROUPS_EMPTY_PREFILL_MAX);
 }
 
-/** FOUNDER-REVIEW: authored. One-tap offer listing the user's actual people. */
+
 export function groupsEmptyBuildWith(names: readonly string[]): string {
   return `Build a group with ${joinNames(names)}.`;
 }
@@ -455,7 +433,6 @@ export function sharedSkyLines(overlay: CohortOverlayLike, totalMembers: number)
 }
 
 /** Fallback line when there is truly no overlap of any size on any planet. */
-// FOUNDER-REVIEW: authored. Shared Sky empty state when nothing overlaps.
 export const SHARED_SKY_NO_OVERLAP_NOTE =
   "No outer planet sign is shared across all members. This group bridges generational cohorts, which is both its richness and its friction. See Fault Lines below for what divides them.";
 
@@ -487,13 +464,10 @@ type ShiftingFaultLeadFn = (planets: string) => string;
  * every listed planet). Banded by how many planets create the split.
  */
 export const FAULT_LINES_LEAD_TWO_WAY: Record<PlanetCountBand, TwoWayFaultLeadFn> = {
-  // FOUNDER-REVIEW: authored. Fault Lines lead, 2-way split, 1 planet.
   1: (planets, minority, majority) =>
     `This group spans two distinct generational cohorts. ${planets} is the one planet that splits them: ${minority}'s instincts were shaped by a different era than ${majority}'s.`,
-  // FOUNDER-REVIEW: authored. Fault Lines lead, 2-way split, 2 planets.
   2: (planets, minority, majority) =>
     `This group spans two distinct generational cohorts. On ${planets}, ${minority}'s instincts were shaped by a different era than ${majority}'s. The same split runs through both planets.`,
-  // FOUNDER-REVIEW: authored. Fault Lines lead, 2-way split, all 3 planets.
   3: (planets, minority, majority) =>
     `This group spans two distinct generational cohorts. On ${planets}, ${minority}'s instincts were shaped by a different era than ${majority}'s, which is both what makes this group rich and where its deepest friction lives.`,
 };
@@ -503,13 +477,10 @@ export const FAULT_LINES_LEAD_TWO_WAY: Record<PlanetCountBand, TwoWayFaultLeadFn
  * Banded by how many planets create a split.
  */
 export const FAULT_LINES_LEAD_SHIFTING: Record<PlanetCountBand, ShiftingFaultLeadFn> = {
-  // FOUNDER-REVIEW: authored. Fault Lines lead, shifting partition, 1 planet.
   1: (planets) =>
     `${planets} splits this group along more than one sign. That split is real: different people carry the friction depending on what is being negotiated.`,
-  // FOUNDER-REVIEW: authored. Fault Lines lead, shifting partition, 2 planets.
   2: (planets) =>
     `This group's generational fault lines shift depending on the planet. ${planets} each split the group along a different line. Different people carry the friction depending on what is being negotiated.`,
-  // FOUNDER-REVIEW: authored. Fault Lines lead, shifting partition, all 3 planets.
   3: (planets) =>
     `${planets} each split this group along a different line. The fault line moves with the planet, so different people carry the friction depending on what is being negotiated.`,
 };
@@ -684,13 +655,10 @@ type PairFaultLeadFn = (nameA: string, nameB: string, planets: string, remainder
  * axis stays fully enumerable if a persisted summary lists a single share.
  */
 export const SAME_GENERATION_LEAD: Record<PlanetCountBand, PairShareLeadFn> = {
-  // FOUNDER-REVIEW: authored. Pair Dynamics Same Generation, 1 shared planet.
   1: (nameA, nameB, planets) =>
     `${nameA} and ${nameB} share ${planets}. That one planet is a common thread in how they were formed.`,
-  // FOUNDER-REVIEW: authored. Pair Dynamics Same Generation, 2 shared planets.
   2: (nameA, nameB, planets) =>
     `${nameA} and ${nameB} share ${planets}. Those two planets give them enough common generational ground to feel like the same era.`,
-  // FOUNDER-REVIEW: authored. Pair Dynamics Same Generation, all 3 shared.
   3: (nameA, nameB, planets) =>
     `${nameA} and ${nameB} share ${planets}. Their instincts about change, ideals, and power all come from the same era.`,
 };
@@ -706,13 +674,10 @@ export const SAME_GENERATION_LEAD: Record<PlanetCountBand, PairShareLeadFn> = {
  * authored so the axis stays fully enumerable.
  */
 export const FAULT_LINE_PAIR_LEAD: Record<PlanetCountBand, PairFaultLeadFn> = {
-  // FOUNDER-REVIEW: authored. Pair Dynamics Fault Line, 1 diverged planet.
   1: (nameA, nameB, planets, remainder) =>
     `${nameA} and ${nameB} diverge on ${planets}. That one planet is the generational split between them, and they still share ${remainder}.`,
-  // FOUNDER-REVIEW: authored. Pair Dynamics Fault Line, 2 diverged planets.
   2: (nameA, nameB, planets, remainder) =>
     `${nameA} and ${nameB} diverge on ${planets}. Those two planets are a real generational fault line, though they still share ${remainder}.`,
-  // FOUNDER-REVIEW: authored. Pair Dynamics Fault Line, all 3 diverged.
   3: (nameA, nameB, planets) =>
     `${nameA} and ${nameB} diverge on ${planets}. Their instincts about change, ideals, and power were shaped by different eras.`,
 };

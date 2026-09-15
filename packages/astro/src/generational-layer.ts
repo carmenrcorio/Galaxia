@@ -114,10 +114,6 @@ export interface EraEvent {
 
 /**
  * Plain-language lead for one Pluto-sign cohort.
- * FOUNDER-REVIEW: every field. Names how this era shaped the relationship
- * to authority, to institutions, to change, and to trust. Astrology
- * vocabulary stays out of the lead; the placement is the source line
- * underneath (`plutoSourceLine`), never omitted on inner surfaces.
  */
 export interface GenerationalEraReading {
   authority: string;
@@ -141,22 +137,15 @@ export interface GenerationalEraReading {
  * skip, never a generated stand-in (§12).
  */
 export interface GenerationalWorkView {
-  // FOUNDER-REVIEW: how this era is likely to read respect.
   respect: string;
-  // FOUNDER-REVIEW: how this era prefers decisions to be made.
   decisions: string;
-  // FOUNDER-REVIEW: where friction tends to show up under pressure.
   friction: string;
 }
 
 export interface PlutoSignExtended {
-  // FOUNDER-REVIEW: plain-language lead. Authority, institutions, change, trust.
   eraReading: GenerationalEraReading;
-  // FOUNDER-REVIEW: professional lead. Respect, decisions, friction under pressure.
   workView: GenerationalWorkView;
   corruptionSignature: string;
-  // FOUNDER-REVIEW: every figure's natal Pluto is verified against the sign
-  // they are filed under by test/generational-layer.test.ts, from `born`.
   historicalFigures: HistoricalFigure[];
   eraEvents: EraEvent[];
 }
@@ -179,7 +168,6 @@ export function isProfessionalPersonRelation(
   return (PROFESSIONAL_PERSON_RELATIONS as readonly string[]).includes(relation);
 }
 
-// FOUNDER-REVIEW: authored labels for the era-reading lead.
 export const ERA_READING_LABELS = {
   authority: "Authority",
   institutions: "Institutions",
@@ -187,20 +175,16 @@ export const ERA_READING_LABELS = {
   trust: "Trust",
 } as const;
 
-// FOUNDER-REVIEW: authored heading for the sociological lead.
 export const ERA_READING_HEADING = "How this era shaped them";
 
-// FOUNDER-REVIEW: authored labels for the work view. Cohort-level, not a verdict.
 export const WORK_VIEW_LABELS = {
   respect: "How they read respect",
   decisions: "How they prefer decisions",
   friction: "Where friction shows under pressure",
 } as const;
 
-// FOUNDER-REVIEW: authored heading. Outcome first; placement is the source line.
 export const WORK_VIEW_HEADING = "What this era brings to work";
 
-// FOUNDER-REVIEW: authored. The placement that produces the reading, never hidden.
 export function plutoSourceLine(sign: SignKey): string {
   return `Source: Pluto in ${sign}`;
 }
@@ -280,7 +264,6 @@ export function generationalLeadForPair(
   return leads;
 }
 
-// FOUNDER-REVIEW: authored. Compare professional frames link out to the public page.
 export const WORK_VIEW_FOR_WORK_HREF = "/for-work";
 export const WORK_VIEW_FOR_WORK_LINK = "How Galaxia reads this at work";
 
@@ -288,21 +271,16 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
 
   Cancer: {
     eraReading: {
-      // FOUNDER-REVIEW: Cancer era, authority. Traces to fascism's "hearth / bloodline / homeland" and Depression as unseen force in corruptionSignature + eraEvents.
       authority:
         "This era learned that the people in charge spoke the language of home and family, then used it to command. Authority arrived as a parent, a homeland, a household. It asked to be trusted because it claimed to protect you.",
-      // FOUNDER-REVIEW: Cancer era, institutions. Traces to The New Deal era event: government as first large household protector.
       institutions:
         "The first large institution many of them ever trusted was the government stepping in as protector of the household. That trust was new, and it was earned in collapse: the New Deal after the Depression, the war effort after the hearth was already under threat.",
-      // FOUNDER-REVIEW: Cancer era, change. Traces to Depression, Dust Bowl, World War II era events.
       change:
         "Change arrived as catastrophe, not as a plan. The Depression, the Dust Bowl, and the war stripped the ground from under a family. This era did not experience change as progress. It experienced change as what happens to you when the land or the market or the border fails.",
-      // FOUNDER-REVIEW: Cancer era, trust. Traces to corruptionSignature: family values as cover for catastrophe; Holocaust as home weaponized.
       trust:
         "Trust was learned as hold on to what you have, because the ground can vanish. They also learned that family talk could be the cover story for catastrophe. Protecting the circle became the test of whether anyone in charge was telling the truth.",
     },
     workView: {
-      // FOUNDER-REVIEW: Cancer work view. Cohort reading from the same Pluto-in-Cancer record (home as the thing you fight for). Not a competence claim.
       respect:
         "This era reads respect as protection of the people who depend on you. Loyalty to the circle counts more than a speech about vision.",
       decisions:
@@ -313,7 +291,6 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
     corruptionSignature:
       "Power weaponized the language of home and family itself. Fascism across Europe and Asia promised to restore the hearth, protect the bloodline, and secure the homeland, then burned the world doing it. At home, the Depression stripped households bare through forces no individual could see or stop. This generation learned early that the things you were told to protect could become instruments of destruction, and that 'family values' could be the cover story for catastrophe.",
     historicalFigures: [
-      // FOUNDER-REVIEW: all born 1926–1935, Pluto in Cancer confirmed by year
       { name: "Martin Luther King Jr.", born: "1929-01-15", knownFor: "Civil rights leader", plutoBridge: "Pluto in Cancer as the will to protect the beloved community, and the willingness to die for it." },
       { name: "Audrey Hepburn", born: "1929-05-04", knownFor: "Actress and humanitarian", plutoBridge: "A childhood surviving Nazi occupation became the fuel for a life spent feeding the world's most vulnerable children." },
       { name: "Anne Frank", born: "1929-06-12", knownFor: "Diarist, Holocaust victim", plutoBridge: "Wrote about the human need for home and hope from inside the hiding place that couldn't hold." },
@@ -331,21 +308,16 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
 
   Leo: {
     eraReading: {
-      // FOUNDER-REVIEW: Leo era, authority. Traces to postwar "world was theirs" and the king who forgets the kingdom, corruptionSignature.
       authority:
         "This era was handed a postwar world and told it was theirs. Authority looked like the hero, the star, the person who could stand in the lights and speak for the room.",
-      // FOUNDER-REVIEW: Leo era, institutions. Traces to Postwar Boom, Cold War, Civil Rights era events.
       institutions:
         "Institutions arrived as spectacle and as superpower: television, the suburb, the Cold War state that needed to be seen as the hero of the story. Civil rights made the demand to be seen, fully, into law.",
-      // FOUNDER-REVIEW: Leo era, change. Traces to Rock and Roll and The Space Race era events.
       change:
         "Change came as abundance and as a claim on the spotlight: rock and roll, the space race, a generation that refused to be quieted. They experienced change as something you author, not only something you survive.",
-      // FOUNDER-REVIEW: Leo era, trust. Traces to corruptionSignature: handed specialness; shadow is the leader who needs to be worshipped.
       trust:
         "They were told they were special, and many of them believed it. Trust in a leader who needs to be worshipped is the shadow. Trust in a person who will stand in the light and take the hit is the other side of the same era.",
     },
     workView: {
-      // FOUNDER-REVIEW: Leo work view. Cohort reading from Pluto in Leo (being seen, named ownership). Not a hiring claim.
       respect:
         "This era reads respect as being seen as the person who can carry it. Credit and presence matter. Being interchangeable does not.",
       decisions:
@@ -356,7 +328,6 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
     corruptionSignature:
       "The hero's ego, unchecked. This generation was handed a postwar world and told it was theirs: the most prosperous, the most powerful, the most special. The shadow is the narcissism that calcified: the leader who needs to be worshipped, the parent who can't let a child become their own person, the generation that consumed what prior generations built and called it vision. The corruption of Leo's gold is the king who forgets the kingdom exists for the people, not the other way around.",
     historicalFigures: [
-      // FOUNDER-REVIEW: all born 1938–1957, Pluto in Leo confirmed by year
       { name: "Tina Turner", born: "1939-11-26", knownFor: "Singer, survivor, icon", plutoBridge: "Power reclaimed entirely on her own terms after years of being held by force: Pluto in Leo's full redemption arc." },
       { name: "Muhammad Ali", born: "1942-01-17", knownFor: "Boxer and activist", plutoBridge: "'I am the greatest' as political act, not vanity: the Boomer who used the spotlight to demand justice." },
       { name: "Jimi Hendrix", born: "1942-11-27", knownFor: "Guitarist, musical revolutionary", plutoBridge: "Sound as pure power. The electric guitar as a way to set the world on fire and mean it." },
@@ -374,21 +345,16 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
 
   Virgo: {
     eraReading: {
-      // FOUNDER-REVIEW: Virgo era, authority. Traces to Watergate era event and corruptionSignature (systems rebuilt, uncelebrated).
       authority:
         "This era watched the hero story break on television, then watched the curtain come down on the idea that government was trustworthy. Authority had to prove itself in the details, because the big story had already failed.",
-      // FOUNDER-REVIEW: Virgo era, institutions. Traces to AIDS Crisis (institutions looked away) and Watergate.
       institutions:
         "Institutions looked away during the AIDS crisis, and a generation learned to organize without permission. The systems they inherited (healthcare, labor, technology, the environment) were the ones they rebuilt through meticulous, largely uncelebrated work.",
-      // FOUNDER-REVIEW: Virgo era, change. Traces to Personal Computer and Environmental Movement era events.
       change:
         "Change arrived as repair work: the machine entering the household, the planet understood as in trouble, the daily system that had to be made to function. Progress, for this era, was the unglamorous fix.",
-      // FOUNDER-REVIEW: Virgo era, trust. Traces to Watergate aftermath and AIDS: trust the work, not the announcement.
       trust:
         "Trust was learned in the aftermath of Watergate and in rooms where friends died while official bodies stalled. This era trusts the person who stays with the broken thing. It does not trust a promise that cannot be inspected.",
     },
     workView: {
-      // FOUNDER-REVIEW: Virgo work view. Cohort reading from Pluto in Virgo (detail as where justice lives). Not a performance claim.
       respect:
         "This era reads respect as staying with the broken thing until it actually works, not as a speech about vision.",
       decisions:
@@ -399,20 +365,11 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
     corruptionSignature:
       "Perfection weaponized into control. This generation rebuilt the systems the Boomers handed them (healthcare, labor, technology, the environment) through meticulous, largely uncelebrated work. The shadow is the self-criticism that became other-criticism: the impossible standard, the body that was never right, the workaholic who burned out serving a corporation that didn't notice. The corruption of Virgo's precision is the healer who turns the scalpel on themselves.",
     historicalFigures: [
-      // FOUNDER-REVIEW: all born 1956–1971, Pluto in Virgo confirmed by year
       { name: "Princess Diana", born: "1961-07-01", knownFor: "Princess of Wales, humanitarian", plutoBridge: "Brought the camera into AIDS wards and minefields: Virgo Pluto as service that refuses to look away from what's uncomfortable." },
       { name: "Barack Obama", born: "1961-08-04", knownFor: "44th U.S. President", plutoBridge: "The meticulous case for change: Virgo Pluto as the insistence that policy is the detail where justice actually lives or dies." },
       { name: "Michael Jackson", born: "1958-08-29", knownFor: "Musician, global icon", plutoBridge: "The perfectionist who remade popular culture one precise gesture at a time, and was consumed by the standard he set." },
       { name: "Kurt Cobain", born: "1967-02-20", knownFor: "Musician, Nirvana frontman", plutoBridge: "Named the exhaustion of performing competence for a world that wanted polish without pain: Virgo's wound at full volume." },
       { name: "Madonna", born: "1958-08-16", knownFor: "Musician, cultural provocateur", plutoBridge: "Controlled every detail of her own image and used that control to rewrite what women in public were allowed to be." },
-      // FOUNDER-REVIEW: refiled here from Libra (PR #215 removed him rather
-      // than move him, leaving the plutoBridge for a follow-up). Born
-      // 1972-05-21, five weeks into the 1972 retrograde dip that also makes
-      // Eminem's list a boundary case: his natal Pluto is Virgo 29 degrees 24
-      // minutes retrograde, 0.59 degrees from the Libra cusp (engine-verified,
-      // six times the engine's ~0.1 degree tolerance, cross-checked against
-      // astro.com). plutoBridge is new copy in Virgo's register; the old
-      // Libra line ("systemic imbalance") was not reused or adapted.
       { name: "Biggie Smalls", born: "1972-05-21", knownFor: "Rapper, storyteller", plutoBridge: "Rhymed in exact inventory: names, numbers, consequences, never approximate. Virgo Pluto's eye for exactly what's wrong." },
     ],
     eraEvents: [
@@ -426,21 +383,16 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
 
   Libra: {
     eraReading: {
-      // FOUNDER-REVIEW: Libra era, authority. Traces to corruptionSignature: systems smiled and stalled; fairness invoked to delay.
       authority:
         "This era fought to make the systems fairer, and watched authority smile, stall, and make incremental gestures while the underlying imbalance held. Power learned to sound like a committee.",
-      // FOUNDER-REVIEW: Libra era, institutions. Traces to LA Riots, LGBTQ+ Rights, The Internet era events.
       institutions:
         "Institutions promised balance: courts, cameras, relationship recognition as a civil right. The gap between the law's promise and its practice was documented on camera. The internet made information infinitely available and infinitely manipulable.",
-      // FOUNDER-REVIEW: Libra era, change. Traces to corruptionSignature: endless negotiation as excuse not to act; End of the Cold War.
       change:
         "Change arrived as negotiation that could become an excuse not to act: the both-sides framing, the compromise that left the most vulnerable exactly where they were. The Cold War ended and called itself peace. A new disorder followed.",
-      // FOUNDER-REVIEW: Libra era, trust. Traces to fairness invoked to delay; beauty used to distract.
       trust:
         "Trust was tested by fairness talk that delayed the real move. This era learned to ask whether the process was a path or a performance. Beauty used to distract is the same lesson in another register.",
     },
     workView: {
-      // FOUNDER-REVIEW: Libra work view. Cohort reading from Pluto in Libra (fairness vs performance of fairness). Not a hiring claim.
       respect:
         "This era reads respect as a seat at the table that is real: treated as an equal in the process, not consulted after the decision is already made.",
       decisions:
@@ -451,21 +403,9 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
     corruptionSignature:
       "Justice as performance without delivery. This generation fought to make the systems fairer (for women, for queer people, for people of color) and the systems smiled and stalled and made incremental gestures while the underlying imbalance held. The shadow of Libra's scales is the endless negotiation that becomes an excuse not to act: the committee, the both-sides framing, the compromise that leaves the most vulnerable exactly where they were. Beauty used to distract. Fairness invoked to delay.",
     historicalFigures: [
-      // FOUNDER-REVIEW: all born 1971–1983, Pluto in Libra confirmed by year
       { name: "Beyoncé", born: "1981-09-04", knownFor: "Musician, cultural force", plutoBridge: "Turned the pop spectacle into a sustained argument about beauty, power, and who gets to write history: Libra Pluto at its most deliberate." },
-      // FOUNDER-REVIEW: Eminem is the reason this file stores a full date and
-      // not a birth year. 1972 is a Pluto boundary year (Libra from 1971-10-05,
-      // retrograde back to Virgo 1972-04-17, Libra again from 1972-07-30), so
-      // the year alone resolves to "Libra or Virgo" and settles nothing. His
-      // October birth is Libra at 2.75 degrees.
       { name: "Eminem", born: "1972-10-17", knownFor: "Rapper, songwriter", plutoBridge: "Made white America look at itself through hip-hop's mirror: the Libra instinct for uncomfortable confrontation dressed as entertainment." },
       { name: "Aaliyah", born: "1979-01-16", knownFor: "Singer, actress", plutoBridge: "Quiet authority: the artist who moved with complete ease inside a music industry that routinely consumed women." },
-      // FOUNDER-REVIEW: this list held five figures until PR #215 removed
-      // Biggie Smalls (born 1972-05-21): he was born inside that same
-      // retrograde window, so his natal Pluto is Virgo 29 degrees 24 minutes,
-      // not Libra. He is now refiled under Virgo with a fresh plutoBridge in
-      // Virgo's register (his old Libra line, "systemic imbalance", was not
-      // reused). See the Virgo list below and changelog.d for this branch.
       { name: "Britney Spears", born: "1981-12-02", knownFor: "Singer, survivor", plutoBridge: "Her public unraveling and subsequent legal fight became a generational conversation about who controls women's lives and how." },
     ],
     eraEvents: [
@@ -479,21 +419,16 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
 
   Scorpio: {
     eraReading: {
-      // FOUNDER-REVIEW: Scorpio era, authority. Traces to corruptionSignature: tools to see through institutions; 9/11 security theater.
       authority:
         "This era arrived with the tools to see through whoever was in charge: the institutions, the myths, the curated identities. Authority after 9/11 looked like mass security theater that never quite went away.",
-      // FOUNDER-REVIEW: Scorpio era, institutions. Traces to 2008 Crash, Rise of the Internet, Opioid Epidemic era events.
       institutions:
         "The financial system built by their parents failed publicly. Every institution's backstage landed on camera. The pain-management system turned predatory. Structures were exposed, and then often monetized.",
-      // FOUNDER-REVIEW: Scorpio era, change. Traces to #MeToo and everything becoming visible.
       change:
         "Change arrived as naming what had always been there. A generation that grew up post-9/11, through the 2008 crash, and into #MeToo learned that the surface story is usually the last thing to trust.",
-      // FOUNDER-REVIEW: Scorpio era, trust. Traces to cynicism, conspiracy filling the void, intimacy economy.
       trust:
         "Trust collapsed into cynicism when no institution held, and conspiracy filled some of the void. This era trusts the person who will name the unspeakable. It does not trust a room that demands performed confidence.",
     },
     workView: {
-      // FOUNDER-REVIEW: Scorpio work view. Cohort reading from Pluto in Scorpio (truth below the surface). Not a competence claim.
       respect:
         "This era reads respect as honesty about what is actually happening, not the official story.",
       decisions:
@@ -504,14 +439,9 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
     corruptionSignature:
       "Power structures exposed, and then monetized. This generation arrived with the tools to see through everything: the institutions, the myths, the curated identities. The shadow is the collapse into cynicism, the conspiracy that fills the void when no institution holds, the intimacy economy that turns vulnerability itself into content. Scorpio's gift is truth-telling; its corruption is the exposure that serves no one except the one holding the camera.",
     historicalFigures: [
-      // FOUNDER-REVIEW: all born 1983–1995, Pluto in Scorpio confirmed by year
       { name: "Taylor Swift", born: "1989-12-13", knownFor: "Musician, cultural figure", plutoBridge: "Documented her own emotional underworld in real time and turned the power struggle over her own catalog into a public education." },
       { name: "Kendrick Lamar", born: "1987-06-17", knownFor: "Rapper, Pulitzer Prize winner", plutoBridge: "Took the Scorpio instinct to excavate (self, community, history) and made it the most precise moral argument in American music." },
       { name: "Ariana Grande", born: "1993-06-26", knownFor: "Singer", plutoBridge: "Performed publicly through collective trauma and personal grief, transforming loss into the most-streamed thing of the year." },
-      // FOUNDER-REVIEW: new entry, authored for Rihanna specifically. Born
-      // 1988-02-20, natal Pluto in Scorpio (engine-verified). She takes the
-      // slot vacated by Malala Yousafzai, whose 1997 birth puts her Pluto in
-      // Sagittarius; none of Malala's copy was reused here.
       { name: "Rihanna", born: "1988-02-20", knownFor: "Musician, Fenty founder", plutoBridge: "Had her private life turned into public property young, then spent the next decade buying the machinery that sold it." },
       { name: "Harry Styles", born: "1994-02-01", knownFor: "Musician", plutoBridge: "Dismantled the rules around gender in popular culture simply by refusing to acknowledge them as rules." },
     ],
@@ -526,21 +456,16 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
 
   Sagittarius: {
     eraReading: {
-      // FOUNDER-REVIEW: Sagittarius era, authority. Traces to corruptionSignature: personal truth as universal; infinite information.
       authority:
         "This era grew up in infinite information and used it to question every authority that could not explain itself. 'Because we said so' lost its force. A personal truth could be broadcast as if it were everyone's.",
-      // FOUNDER-REVIEW: Sagittarius era, institutions. Traces to Social Media, Global Internet, Climate Crisis era events.
       institutions:
         "Institutions of belief and of school were interrupted (COVID closed the buildings; the world went online). Social media connected and fragmented at once. The climate timeline was taught as fact, while the people making the decisions would not live to see the result.",
-      // FOUNDER-REVIEW: Sagittarius era, change. Traces to going everywhere mentally without landing; 2008 floor gone before they could stand.
       change:
         "Change arrived as range: every culture, every idea, every piece of misinformation, available from a bedroom. The economic floor had already given way before many of them were old enough to stand on it. The risk is going everywhere without landing.",
-      // FOUNDER-REVIEW: Sagittarius era, trust. Traces to the answer always being somewhere else; the archer who does not look where the arrow lands.
       trust:
         "Trust was learned as a question that keeps widening. This era trusts a reason that is bigger than the room. It does not trust a fence with no why, and it can miss the landing while it looks for a larger map.",
     },
     workView: {
-      // FOUNDER-REVIEW: Sagittarius work view. Cohort reading from Pluto in Sagittarius (why, range, landing). Not a performance claim.
       respect:
         "This era reads respect as room to ask why, and a reason bigger than 'because we said so'.",
       decisions:
@@ -551,17 +476,9 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
     corruptionSignature:
       "Freedom as escape rather than expansion. This generation grew up in the age of infinite information and used it to go everywhere mentally without necessarily landing anywhere. The shadow of Sagittarius's great question is the belief that the answer is always somewhere else: the influencer who travels everywhere and is at home nowhere, the algorithm-shaped conviction that one's personal truth is everyone's universal truth. The archer who fires without looking at where the arrow lands.",
     historicalFigures: [
-      // FOUNDER-REVIEW: all born 1995–2008, Pluto in Sagittarius confirmed by year
       { name: "Billie Eilish", born: "2001-12-18", knownFor: "Musician", plutoBridge: "Built a global audience from her childhood bedroom and used the reach to refuse the image the industry wanted: the Sagittarian who named the cage." },
       { name: "Greta Thunberg", born: "2003-01-03", knownFor: "Climate activist", plutoBridge: "Turned a school strike into a planetary movement: Sagittarius Pluto as the individual voice that insists the biggest possible problem is everyone's business." },
       { name: "Olivia Rodrigo", born: "2003-02-20", knownFor: "Musician", plutoBridge: "Documented the specific emotional vocabulary of her generation with enough precision that it became universal." },
-      // FOUNDER-REVIEW: moved here from Scorpio. Born 1997-07-12, so her natal
-      // Pluto is in Sagittarius (engine-verified), not Scorpio as previously
-      // listed. `knownFor` is carried over verbatim. `plutoBridge` is rewritten:
-      // the Scorpio line led on surviving the assassination attempt and "the
-      // force that refuses to be extinguished," which reads Scorpio (survival,
-      // intensity) under a Sagittarius heading. This one leads on the outward
-      // moral argument and its widening reach instead.
       { name: "Malala Yousafzai", born: "1997-07-12", knownFor: "Activist, Nobel Peace Prize laureate", plutoBridge: "Carried the case for every girl's education from one valley to the floor of the UN: Sagittarius Pluto as a conviction that will not stop widening its audience." },
     ],
     eraEvents: [
@@ -575,21 +492,16 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
 
   Capricorn: {
     eraReading: {
-      // FOUNDER-REVIEW: Capricorn era, authority. Traces to corruptionSignature: institutions mid-collapse; efficiency weaponized.
       authority:
         "This era arrived into institutions already mid-collapse: financial systems exposed, governments destabilized, the planet in measurable crisis. Authority looked like the person or the algorithm still willing to be responsible for a number.",
-      // FOUNDER-REVIEW: Capricorn era, institutions. Traces to AI Revolution and Global Instability era events.
       institutions:
         "The tools arrived faster than the rules. Democratic institutions came under pressure worldwide. Mechanisms that promised democratization often consolidated power at the top. They will inherit both the damage and the responsibility.",
-      // FOUNDER-REVIEW: Capricorn era, change. Traces to 2008 Crash (born into restructure), Climate Crisis as present, COVID childhood.
       change:
         "Change is not an abstract future. They were born into a world already mid-restructure, into a climate crisis you can observe, into a childhood documented in masks. The long work is rebuilding what broke, with a real constraint, not a slogan.",
-      // FOUNDER-REVIEW: Capricorn era, trust. Traces to efficiency past humanity; algorithm as decision-maker.
       trust:
         "Trust attaches to a structure that can be inspected: who decided, what it cost, whether a person is still in the loop. Efficiency that erases the community is the corruption of the same instinct that wants a system to actually hold.",
     },
     workView: {
-      // FOUNDER-REVIEW: Capricorn work view. Cohort reading from Pluto in Capricorn (accountability, named constraint). Not a hiring claim.
       respect:
         "This era reads respect as accountability that can be inspected: a structure that actually holds, not a speech about holding.",
       decisions:
@@ -600,8 +512,6 @@ export const PLUTO_SIGN_EXTENDED: Partial<Record<SignKey, PlutoSignExtended>> = 
     corruptionSignature:
       "Systems optimized past the point of humanity. This generation arrived into institutions already mid-collapse: financial systems exposed, governments destabilized, the planet in measurable crisis. The corruption signature is efficiency weaponized: the AI that makes the decision, the algorithm that determines the outcome, the restructuring that makes the quarterly number and destroys the community. Power consolidated at the top through the exact mechanisms that promised democratization.",
     historicalFigures: [],
-    // FOUNDER-REVIEW: Pluto in Capricorn cohort (born 2008–2023) has not yet
-    // produced widely recognized named figures. Leave empty. Do not fabricate.
     eraEvents: [
       { label: "The 2008 Crash", detail: "The world they were born into was already mid-restructure. They never knew the world before the fall." },
       { label: "Climate Crisis", detail: "Not an abstract future threat: an observable present they're inheriting." },

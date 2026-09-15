@@ -23,7 +23,6 @@ describe("homepage outcome-led copy", () => {
   it("renders the headline, unified value proposition, and free-chart CTA", () => {
     const src = read("components/marketing/hero.tsx");
     expect(src).toContain("Your life. Your people. Your galaxy.");
-    expect(src).toContain("FOUNDER-REVIEW");
     expect(src).not.toContain("Galaxia · your inner circle");
     expect(src).not.toContain("YOUR INNER CIRCLE");
     expect(src).not.toContain("Your Inner Circle");
@@ -76,7 +75,6 @@ describe("homepage outcome-led copy", () => {
     const src = read("components/marketing/close-section.tsx");
     const headline = "Your Life. Your People. <em>Your Galaxy.</em>";
     expect(src).toContain(headline);
-    expect(src).toContain("FOUNDER-REVIEW");
     expect(src).not.toContain("The small, bright,");
     expect(src).not.toContain("irreplaceable");
     expect(src).not.toContain("Your life.");

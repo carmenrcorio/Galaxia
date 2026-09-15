@@ -10,7 +10,6 @@ import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { RELATED_LINKS } from "../../lib/nav-links";
 
-// FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Generations: Your Family's Astrology, Together | Galaxia";
 const DESCRIPTION =
   "Parents, siblings, grandparents, the people you've lost. Galaxia maps your whole family's charts and shows how generational patterns actually work.";

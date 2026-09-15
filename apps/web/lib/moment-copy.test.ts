@@ -17,9 +17,8 @@ import {
 const COPY_FILE = join(__dirname, "moment-copy.ts");
 
 describe("moment-copy", () => {
-  it("tags every authored string FOUNDER-REVIEW and never uses em dashes", () => {
+  it("never uses em dashes in authored moment copy", () => {
     const src = readFileSync(COPY_FILE, "utf8");
-    expect(src).toContain("FOUNDER-REVIEW");
     expect(src).not.toContain("\u2014");
     expect(src).not.toContain("\u2013");
     expect(CAPTURE_MOMENT).toBe("Capture a moment");

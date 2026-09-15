@@ -34,7 +34,6 @@ import { SIGN_GLYPH } from "../../lib/design";
 const MIN_GRID_PEOPLE = 3;
 const MAX_GRID_PEOPLE = 8;
 
-// FOUNDER-REVIEW: empty because the grid needs three charted members.
 export const CHART_GRID_EMPTY =
   "Chart grid needs three people with birth charts. Add members, or their dates, to compare Sun through Mars.";
 
@@ -136,8 +135,7 @@ export function ChartGridSection({ members, allowShare = true }: ChartGridSectio
                             </span>
                           ) : (
                             <span className="muted" style={{ fontSize: ".78rem" }}>
-                              {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-                              ·
+                                                            ·
                             </span>
                           )}
                         </td>

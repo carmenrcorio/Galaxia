@@ -1,9 +1,6 @@
 // packages/astro/src/generational-interpretations.ts
 //
 // Curated generational interpretation copy for the compare "Generational call-out".
-// FOUNDER-REVIEW: every string below is static, hand-authored copy. It is looked up
-// by (planet, sign) or by planet. It is NEVER generated, composed, or paraphrased at
-// render time. Same discipline as the natal interpretation library.
 //
 // Generational placements are cohort-level by nature (everyone born in the same window
 // shares them). Copy is written to read as honestly cohort-level, never as a personal

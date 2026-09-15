@@ -27,29 +27,23 @@ export function Hero() {
     <header className="hero container">
       <div className="hero-grid">
         <div className="hero-text">
-          {/* FOUNDER-REVIEW: homepage hero eyebrow. Wordmark already names the product; tagline only. */}
-          <span className="eyebrow fade-in">Your life. Your people. Your galaxy.</span>
-          {/* FOUNDER-REVIEW: "The night sky belongs to everyone. Yours doesn't." moved to WhySection (/why-galaxia). */}
-          <h1 className="hero-h1 fade-in fade-in-delay-1">
-            {/* FOUNDER-REVIEW: homepage hero headline. */}
-            Better understand the people in your life
+                    <span className="eyebrow fade-in">Your life. Your people. Your galaxy.</span>
+                    <h1 className="hero-h1 fade-in fade-in-delay-1">
+                        Better understand the people in your life
           </h1>
           <div className="hero-copy fade-in fade-in-delay-2">
             <p className="lede">
-              {/* FOUNDER-REVIEW: homepage hero subheading. */}
-              Build a real chart for your partner, your mother, your difficult colleague, even the ones you have lost, and learn who they are at their core.
+                            Build a real chart for your partner, your mother, your difficult colleague, even the ones you have lost, and learn who they are at their core.
             </p>
             <p className="lede hero-copy-defense">
-              {/* FOUNDER-REVIEW: homepage hero value proposition. */}
-              Yes, it uses astrology. We won't tell you to avoid Geminis, we'll tell you how to talk to one.
+                            Yes, it uses astrology. We won't tell you to avoid Geminis, we'll tell you how to talk to one.
             </p>
           </div>
           <div className="hero-cta-stack fade-in fade-in-delay-3">
             <div className="hero-cta-primary">
               <Link href={HERO_PRIMARY_CTA.href as never} className="btn-primary">{HERO_PRIMARY_CTA.label}</Link>
               <p className="hero-cta-note">
-                {/* FOUNDER-REVIEW: line under the free-chart CTA. */}
-                No card required · Works with just a birth date
+                                No card required · Works with just a birth date
               </p>
             </div>
             <div className="hero-secondary">

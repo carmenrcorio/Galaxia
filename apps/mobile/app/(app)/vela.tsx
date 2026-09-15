@@ -38,22 +38,14 @@ interface ChatLine {
   text: string;
 }
 
-// FOUNDER-REVIEW: Vela roster is loading.
 const VELA_ROSTER_LOADING = "Loading the people Vela can talk about.";
-// FOUNDER-REVIEW: Vela people fetch failed or timed out.
 const VELA_ROSTER_ERROR = "Vela could not load your people. Try again.";
-// FOUNDER-REVIEW: empty constellation on Vela.
 const VELA_NO_PEOPLE = "Add someone to your constellation before you can ask Vela.";
 const VELA_NO_PEOPLE_ACTION = "Add someone";
-// FOUNDER-REVIEW: empty groups picker.
 const VELA_NO_GROUPS = "Create a group first. Then you can ask about it here.";
-// FOUNDER-REVIEW: send timed out.
 const VELA_SEND_TIMEOUT = "Vela did not answer in time. Check your connection and try again.";
-// FOUNDER-REVIEW: send failed without a timeout.
 const VELA_SEND_NETWORK = "Network error talking to Vela.";
-// FOUNDER-REVIEW: consent save failed.
 const VELA_CONSENT_ERROR = "Consent could not be saved. Try again.";
-// FOUNDER-REVIEW: thread history failed.
 const VELA_THREAD_ERROR = "This thread could not be restored. Try again.";
 
 export default function VelaScreen() {

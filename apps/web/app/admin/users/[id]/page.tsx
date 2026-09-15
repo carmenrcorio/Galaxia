@@ -67,8 +67,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
         <div className="glass-card">
           <p className="eyebrow">Admin</p>
           <h1 className="page-title" style={{ fontSize: "1.6rem" }}>User not found</h1>
-          {/* FOUNDER-REVIEW: authored — admin user-detail not-found state. */}
-          <p className="muted">No user matches this id. They may have been deleted, or the link may be incorrect.</p>
+                    <p className="muted">No user matches this id. They may have been deleted, or the link may be incorrect.</p>
         </div>
       </section>
     );
@@ -132,8 +131,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
         <h2 className="card-title" style={{ fontSize: "1rem" }}>Account details</h2>
         <table className="admin-table">
           <tbody>
-            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-            <DetailRow label="Plan" value={user.plan ?? "none"} />
+                        <DetailRow label="Plan" value={user.plan ?? "none"} />
             <DetailRow label="Tier" value={user.subscription_tier ?? "none"} />
             <DetailRow label="Cancel at period end" value={user.cancel_at_period_end ? "Yes" : "No"} />
             <DetailRow label="Current period end" value={formatDate(user.current_period_end)} />
@@ -165,7 +163,6 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
         {auditError ? (
           <p className="error">{auditError}</p>
         ) : auditHistory.length === 0 ? (
-          // FOUNDER-REVIEW: authored — empty admin-audit-history state.
           <p className="muted">No admin actions recorded for this user.</p>
         ) : (
           <div className="glass-card">
@@ -239,7 +236,6 @@ function DetailRow({ label, value }: { label: string; value: string }) {
  */
 function renderAuditFieldValue(value: unknown): string {
   if (value === null || value === undefined) {
-    // FOUNDER-REVIEW: authored — absent before/after value in audit history.
     return "Unknown";
   }
   return typeof value === "string" ? value : JSON.stringify(value);

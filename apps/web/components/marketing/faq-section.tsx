@@ -7,8 +7,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "Do I need everyone's exact birth time?",
     a: (
       <>
-        {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-        No. And that's the point. An exact time unlocks the deepest detail (houses, your rising sign,
+                No. And that's the point. An exact time unlocks the deepest detail (houses, your rising sign,
         the precise Moon). But the signs, the compatibility reads, and the entire generational layer
         work from just a birth date: often just a <em>year</em>. Add the people you have, at whatever
         detail you have. The grandmother you only know a birth year for still belongs in your sky.

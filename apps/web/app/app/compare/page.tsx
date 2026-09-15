@@ -71,7 +71,6 @@ import {
   type ComparisonHistoryRow,
 } from "../../../components/compare-history";
 
-// FOUNDER-REVIEW: authored — reveals the existing relationship-type pills.
 const COMPARE_RELATION_CHANGE = "Change";
 
 interface PersonLite {
@@ -650,8 +649,7 @@ function ComparePageInner() {
         </div>
         <div style={{ margin: "10px 0 16px" }}>
           <Link href={addPersonHrefEmpty as never} className="pill-link" style={{ fontSize: ".82rem" }}>
-            {/* FOUNDER-REVIEW: COMPARE_PERSON_PICKER_COPY.addPerson */}
-            {COMPARE_PERSON_PICKER_COPY.addPerson}
+                        {COMPARE_PERSON_PICKER_COPY.addPerson}
           </Link>
         </div>
         {bothSelected ? (
@@ -675,9 +673,7 @@ function ComparePageInner() {
                   {availableTypes.map(type => (
                     <button key={type} onClick={() => { userChoseTypeRef.current = true; setRelationType(type); }} className="pill-link"
                       style={{ fontSize: ".8rem", padding: "7px 14px", borderColor: relationType === type ? "rgba(230,174,108,.5)" : undefined, color: relationType === type ? "var(--gold)" : undefined }}>
-                      {/* FOUNDER-REVIEW: authored — picker labels come from the shared
-                          COMPARE_RELATION_LABEL map instead of printing the raw id. */}
-                      {compareRelationLabel(type)}
+                                            {compareRelationLabel(type)}
                     </button>
                   ))}
                 </div>
@@ -685,8 +681,7 @@ function ComparePageInner() {
             )}
             {showSuggestionHint ? (
               <p className="muted" style={{ fontSize: ".75rem", lineHeight: 1.55, marginBottom: selectionHasMinor ? 8 : 16 }}>
-                {/* FOUNDER-REVIEW: authored — refine voice. */}
-                {COMPARE_RELATION_SUGGESTION_HINT}
+                                {COMPARE_RELATION_SUGGESTION_HINT}
               </p>
             ) : null}
             {selectionHasMinor ? (
@@ -729,15 +724,12 @@ function ComparePageInner() {
         <section className="glass-card fade-in">
           <p className="eyebrow" style={{ marginBottom: 8 }}>Reading held</p>
           <p className="muted" style={{ fontSize: ".88rem", lineHeight: 1.6 }}>
-            {/* FOUNDER-REVIEW: authored — no longer enumerates the safe types,
-                so adding a frame cannot leave this list stale. */}
-            A minor is part of this comparison, so Galaxia won&apos;t produce a romantic or partner reading here. Choose any of the other relationship types above to see the comparison.
+                        A minor is part of this comparison, so Galaxia won&apos;t produce a romantic or partner reading here. Choose any of the other relationship types above to see the comparison.
           </p>
         </section>
       ) : result && relationType ? (
         <>
-          {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
-          {/* Capture is the headline (avatars, names, wheel) plus the six-row
+                    {/* Capture is the headline (avatars, names, wheel) plus the six-row
               "Your dynamic" table and tip blocks. FlowsAndCatchesSection (the
               full aspect list) and everything below render outside the
               capture, matching the task's "not the full aspect list" boundary. */}
@@ -914,8 +906,7 @@ function ComparePageInner() {
           {/* Save this reading — an immutable, dated snapshot (never a trend) */}
           <section className="glass-card fade-in fade-in-delay-2">
             <p className="eyebrow" style={{ marginBottom: 8 }}>Save this reading</p>
-            {/* FOUNDER-REVIEW: authored — save-reading framing (deterministic when charts match). */}
-            <p className="muted" style={{ fontSize: ".8rem", marginBottom: 10 }}>
+                        <p className="muted" style={{ fontSize: ".8rem", marginBottom: 10 }}>
               With the same chart positions, a comparison is the same every time, so a saved reading is a dated record, not a trend.
               It lives on both {result.personA.display_name}&apos;s and {result.personB.display_name}&apos;s pages.
             </p>
@@ -933,17 +924,14 @@ function ComparePageInner() {
             </div>
 
             {chartRewrittenReading ? (
-              // FOUNDER-REVIEW: authored — saved reading vs chart rewrite (not a relationship trend).
               <p className="muted" style={{ fontSize: ".78rem", marginTop: 12, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
                 A reading saved on {new Date(chartRewrittenReading.createdAt).toLocaleDateString()} is not comparable to this re-run. The planet positions in one or both charts were corrected since it was saved. That is a chart update, not the relationship moving.
               </p>
             ) : birthChangedReading ? (
-              // FOUNDER-REVIEW: authored — saved reading vs birth-field edit.
               <p className="muted" style={{ fontSize: ".78rem", marginTop: 12, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
                 A reading saved on {new Date(birthChangedReading.createdAt).toLocaleDateString()} differs from this one because the birth data changed since, not because the relationship did.
               </p>
             ) : provenanceMissingReading ? (
-              // FOUNDER-REVIEW: authored — legacy saved reading without chart fingerprint.
               <p className="muted" style={{ fontSize: ".78rem", marginTop: 12, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
                 A reading saved on {new Date(provenanceMissingReading.createdAt).toLocaleDateString()} has no chart provenance, so its score cannot be checked against this re-run. Treat it as a dated snapshot only.
               </p>
@@ -954,8 +942,7 @@ function ComparePageInner() {
                 <p className="muted" style={{ fontSize: ".72rem" }}>Saved readings for this pair:</p>
                 {savedReadings.map(r => (
                   <div key={r.id} style={{ fontSize: ".78rem", color: "var(--mist)" }}>
-                    {/* FOUNDER-REVIEW: authored — history-row provenance labels. */}
-                    {r.comparability === "comparable" ? (
+                                        {r.comparability === "comparable" ? (
                       <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""}</>
                     ) : r.comparability === "chart_rewritten" ? (
                       <>Read on {new Date(r.createdAt).toLocaleDateString()}{r.scores ? ` · overall ${r.scores.overall}` : ""} · not comparable to this re-run. Chart positions were corrected since</>
@@ -986,8 +973,7 @@ function ComparePageInner() {
       {status ? <p className={status.includes("error") || status.includes("Missing") ? "error" : "success"}>{status}</p> : null}
       {precisionGapPerson ? (
         <Link href={`/app/person/${precisionGapPerson.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>
-          {/* FOUNDER-REVIEW: CHART_PRECISION_ADD_DATE */}
-          {CHART_PRECISION_ADD_DATE}
+                    {CHART_PRECISION_ADD_DATE}
         </Link>
       ) : null}
     </main>

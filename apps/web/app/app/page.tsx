@@ -1884,8 +1884,7 @@ export default function AppHomePage() {
       <div className="fade-in">
         <p className="eyebrow">Home</p>
         <h1 className="page-title">Galaxia Mea</h1>
-        {/* FOUNDER-REVIEW: authored greeting, including the no-name variant. */}
-        <p className="muted">{welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."}</p>
+                <p className="muted">{welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."}</p>
 
         {/* First-run orientation was skipped or never finished. The door stays
             open and visible here rather than only in the zero-people empty
@@ -1897,8 +1896,7 @@ export default function AppHomePage() {
             data-first-run-restart
             style={{ display: "inline-block", marginTop: 10, fontSize: ".82rem" }}
           >
-            {/* FOUNDER-REVIEW: first-run re-entry from the constellation. */}
-            Walk me through my first person
+                        Walk me through my first person
           </Link>
         ) : null}
       </div>
@@ -1930,7 +1928,6 @@ export default function AppHomePage() {
               </Link>
             ) : null}
             {!loading && !loadError && people.length > 0 ? (
-              // FOUNDER-REVIEW: authored - "Share sky image" export label
               <ChartImageExportButton
                 frameRef={galaxyFrameRef}
                 filename={chartExportFilename(null, "galaxia-constellation.png")}
@@ -2008,8 +2005,7 @@ export default function AppHomePage() {
                 userSelect: "none",
               }}
             >
-              {/* FOUNDER-REVIEW: rings toggle label */}
-              RINGS
+                            RINGS
             </button>
             </div>
           ) : null}
@@ -2043,8 +2039,7 @@ export default function AppHomePage() {
               </span>
             ))}
             <span style={{ marginLeft: "auto", fontSize: ".68rem", color: "var(--mist2)" }}>
-              {/* FOUNDER-REVIEW: constellation hover status, replacing the floating inspector */}
-              {hoverPerson ? `${hoverPerson.display_name} · ${hoverPerson.relation}` : "Click a star to open"}
+                            {hoverPerson ? `${hoverPerson.display_name} · ${hoverPerson.relation}` : "Click a star to open"}
             </span>
           </div>
         ) : null}

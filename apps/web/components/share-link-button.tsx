@@ -46,7 +46,6 @@ export function ShareLinkButton({
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch (err) {
-      // FOUNDER-REVIEW: authored — share persist / clipboard failure.
       setError(err instanceof Error ? err.message : "Could not copy a share link.");
     } finally {
       setBusy(false);
@@ -56,8 +55,7 @@ export function ShareLinkButton({
   return (
     <div style={{ display: "grid", gap: 8, justifyItems: "center", maxWidth: 420, margin: "0 auto" }}>
       <p className="muted" style={{ fontSize: ".76rem", lineHeight: 1.55, textAlign: "center", margin: 0 }}>
-        {/* FOUNDER-REVIEW: SHARE_GIFT_DISCLOSURE / SHARE_COMPARE_DISCLOSURE */}
-        {variant === "gift" ? SHARE_GIFT_DISCLOSURE : SHARE_COMPARE_DISCLOSURE}
+                {variant === "gift" ? SHARE_GIFT_DISCLOSURE : SHARE_COMPARE_DISCLOSURE}
       </p>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
         {options.map((option) => {
@@ -76,15 +74,13 @@ export function ShareLinkButton({
                 color: selected ? "var(--gold)" : undefined,
               }}
             >
-              {/* FOUNDER-REVIEW: SHARE_EXPIRY_OPTIONS labels */}
-              {option.label}
+                            {option.label}
             </button>
           );
         })}
       </div>
       <p className="muted" style={{ fontSize: ".72rem", lineHeight: 1.5, textAlign: "center", margin: 0 }}>
-        {/* FOUNDER-REVIEW: SHARE_ANON_EXPIRY_NOTE / SHARE_SIGNED_IN_REVOKE_NOTE */}
-        {signedIn ? SHARE_SIGNED_IN_REVOKE_NOTE : SHARE_ANON_EXPIRY_NOTE}
+                {signedIn ? SHARE_SIGNED_IN_REVOKE_NOTE : SHARE_ANON_EXPIRY_NOTE}
       </p>
       <button type="button" className="pill-link" onClick={() => void copy()} disabled={busy}>
         {busy ? "Creating link…" : copied ? "✦ Link copied" : "Copy share link"}

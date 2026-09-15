@@ -277,8 +277,7 @@ export function MemorialTimeline({
 
       {person.birth_precision === "none" ? (
         <p className="muted" style={{ fontSize: ".76rem", lineHeight: 1.6, marginTop: 10, maxWidth: "50ch" }}>
-          {/* FOUNDER-REVIEW: MEMORIAL_TIMELINE_NEEDS_BIRTH_YEAR */}
-          {MEMORIAL_TIMELINE_NEEDS_BIRTH_YEAR}
+                    {MEMORIAL_TIMELINE_NEEDS_BIRTH_YEAR}
         </p>
       ) : null}
 

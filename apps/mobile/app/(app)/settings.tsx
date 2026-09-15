@@ -37,7 +37,6 @@ function formatDate(iso: string | null): string | null {
   return d.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
 }
 
-// FOUNDER-REVIEW: settings prefs loading / failure / empty lists.
 const SETTINGS_PREFS_LOADING = "Loading your settings.";
 const SETTINGS_PREFS_ERROR = "Your settings could not load. Try again.";
 const SETTINGS_PREFS_RETRY = "Try again";
@@ -99,16 +98,12 @@ export default function SettingsScreen() {
     setSavingRelationalPref(false);
     if (error) {
       setRelationalTransitAlerts(previous);
-      // FOUNDER-REVIEW: this-week alerts preference save failed.
       setStatus("This week alerts preference could not be saved. Try again.");
     }
   };
 
-  // FOUNDER-REVIEW: Settings subscription card copy — refine voice.
   let subscriptionBody: string;
   if (comped) {
-    // FOUNDER-REVIEW: permanent comp access — not a subscription, not a trial.
-    // FOUNDER-REVIEW: rewritten (no U+2014).
     subscriptionBody = "Permanent access. This account is complimentary. You are not billed.";
   } else if (subStatus === "trialing") {
     subscriptionBody = `14 days, everything included. ${trialDaysLeft} left in your trial.`;

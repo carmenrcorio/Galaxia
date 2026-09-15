@@ -20,7 +20,6 @@ import type { LifespanTransitEvent } from "./lifespan-transits";
 import type { BodyName } from "./index";
 
 const OUTER_PLANET_THEME: Partial<Record<BodyName, string>> = {
-  // FOUNDER-REVIEW: rewritten (no U+2014).
   uranus: "a break from the familiar: change arriving whether or not it was invited",
   neptune: "a softening of the edges: dreams, faith, or loss loosening the grip of the everyday",
   pluto: "a deep, slow-moving pressure to shed something and become someone a little different",

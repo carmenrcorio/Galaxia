@@ -13,10 +13,8 @@ import { AskBirthData } from "./ask-birth-data";
 import { CustomCheck } from "./custom-check";
 import { Spinner } from "./spinner";
 
-// FOUNDER-REVIEW: picker labels — refine voice before merge.
 const RELATIONS = GALAXY_RELATION_PICKER_OPTIONS;
 
-// FOUNDER-REVIEW: quiet line while auth is still resolving on /chart.
 export const SAVE_TO_GALAXY_CHECKING = "Checking whether you are signed in.";
 
 /** Logged-out primary CTA. Do not change: this is the top-of-funnel save. */
@@ -24,16 +22,13 @@ export function saveToGalaxyLoggedOutLabel(name?: string): string {
   return name ? `Save ${name} to your galaxy` : "Save to your galaxy";
 }
 
-// FOUNDER-REVIEW: signed-in chart CTA. Adds the already-entered person to the constellation.
 export function addToConstellationLabel(name?: string): string {
   return name ? `Add ${name} to your constellation` : "Add this person to your constellation";
 }
 
-// FOUNDER-REVIEW: signed-in confirm on the inline name/relation form.
 export const CONFIRM_ADD_TO_CONSTELLATION = "Add to constellation";
 
 export function addedToConstellationLine(name: string): string {
-  // FOUNDER-REVIEW: signed-in save success. Ask is on this screen.
   return `✦ ${name} is in your constellation.`;
 }
 
@@ -128,7 +123,6 @@ export function SaveToGalaxyButton({
         router.push(personProfileHref(created.personId) as never);
       }
     } catch (err) {
-      // FOUNDER-REVIEW: save-to-galaxy persist failed.
       setError(err instanceof Error ? err.message : "This person could not be saved to your constellation. Try again.");
     } finally {
       setSaving(false);
@@ -186,8 +180,7 @@ export function SaveToGalaxyButton({
         {RELATIONS.map(({ value, label }) => (
           <button key={value} type="button" className="pill-link" onClick={() => setRelation(value)}
             style={{ fontSize: ".78rem", padding: "5px 11px", borderColor: relation === value ? "rgba(230,174,108,.5)" : undefined, color: relation === value ? "var(--gold)" : undefined }}>
-            {/* FOUNDER-REVIEW: picker label */}
-            {label}
+                        {label}
           </button>
         ))}
       </div>

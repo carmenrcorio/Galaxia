@@ -235,8 +235,7 @@ export function ConnectAcceptView({
           <h1 style={{ fontFamily: "var(--font-fraunces)", fontSize: 38, marginTop: 4 }}>
             {headline}
           </h1>
-          {/* FOUNDER-REVIEW: layer-one framing. Astrology is not the first word. */}
-          <p style={{ color: "var(--mist)", lineHeight: 1.7 }}>{CONNECT_WHAT_GALAXIA_IS}</p>
+                    <p style={{ color: "var(--mist)", lineHeight: 1.7 }}>{CONNECT_WHAT_GALAXIA_IS}</p>
           <div className="glass-card" style={{ marginTop: 20 }}>
             <p style={{ color: "var(--cream)", lineHeight: 1.7, margin: 0 }}>{CONNECT_SHARING}</p>
           </div>
@@ -267,8 +266,7 @@ export function ConnectAcceptView({
             style={{ gap: 8 }}
           >
             {phase === "accepting" ? <Spinner size={13} /> : null}
-            {/* FOUNDER-REVIEW: Connecting… */}
-            {phase === "accepting" ? "Connecting…" : connectAcceptLabel(inviterName)}
+                        {phase === "accepting" ? "Connecting…" : connectAcceptLabel(inviterName)}
           </button>
         </div>
       ) : null}

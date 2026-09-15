@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { LoginForm } from "../../components/login-form";
 import { authReturnPath } from "../../lib/safe-next-path";
 
-// FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Sign in to Galaxia";
 const DESCRIPTION = "Sign in to your Galaxia account.";
 
@@ -35,8 +34,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="container" style={{ paddingTop: 72, paddingBottom: 72, maxWidth: 820 }}>
       <h1 className="auth-title">Sign in to Galaxia</h1>
-      {/* FOUNDER-REVIEW: authored — matches the future-tense mobile framing on signup/account/download. */}
-      <p className="muted">
+            <p className="muted">
         Use your Galaxia account on web today. When mobile links are live, this same account
         carries over.
       </p>

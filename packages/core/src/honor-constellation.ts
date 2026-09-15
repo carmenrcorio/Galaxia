@@ -49,7 +49,7 @@ export const DECLARED_BOND_TYPES = [
 
 export type DeclaredBondType = (typeof DECLARED_BOND_TYPES)[number];
 
-/** FOUNDER-REVIEW: picker labels for person-to-person constellation lines. */
+
 export const DECLARED_BOND_LABELS: Record<DeclaredBondType, string> = {
   partner: "Partner",
   family: "Family",
@@ -455,7 +455,6 @@ export function honorEdgeFraming(touchesMinor: boolean): {
     kind: "remembrance",
     romantic: false,
     label: touchesMinor
-      // FOUNDER-REVIEW: rewritten (no U+2014).
       ? "Remembrance light: continuity, never romantic"
       : "Remembrance light: continuity",
   };

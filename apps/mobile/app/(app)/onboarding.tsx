@@ -46,16 +46,12 @@ const precisionTiers: PrecisionTier[] = [
   { key: "year", label: "Year / decade", unlocks: "Generational layer and broad archetypal context. No timezone needed." }
 ];
 
-// FOUNDER-REVIEW: new mobile precision option. Label and description are web's
-// existing "Add birth data later" tier verbatim (apps/web/components/birth-fields.tsx)
-// so the two surfaces offer the same choice in the same words.
 const deferredTier: PrecisionTier = {
   key: CHART_PRECISION_NONE_TIER.key,
   label: CHART_PRECISION_NONE_TIER.label,
   unlocks: CHART_PRECISION_NONE_TIER.unlocks
 };
 
-// FOUNDER-REVIEW: picker labels — refine voice before merge.
 const relationOptions = GALAXY_RELATION_PICKER_OPTIONS;
 
 const baseInput: BirthFormInput = {
@@ -164,7 +160,6 @@ export default function OnboardingScreen() {
       await fetchPeople();
       setStatus("Saved your profile and natal chart.");
     } catch (error) {
-      // FOUNDER-REVIEW: onboarding self persist failed.
       const message = error instanceof Error ? error.message : "Your profile could not be saved. Try again.";
       if (message.includes("people_one_self_per_owner")) {
         await fetchPeople();
@@ -212,12 +207,10 @@ export default function OnboardingScreen() {
       });
       setStatus(
         deferred
-          // FOUNDER-REVIEW: success copy. Ask now lives on this screen.
           ? `${savedName} is in your sky. You can send them a link from this screen, or add a date whenever you're ready.`
           : `${savedName} is in your constellation.`
       );
     } catch (error) {
-      // FOUNDER-REVIEW: onboarding add-person persist failed.
       setStatus(error instanceof Error ? error.message : "This person could not be added. Try again.");
     } finally {
       setSavingPerson(false);
@@ -235,8 +228,7 @@ export default function OnboardingScreen() {
       {selfPerson ? (
         <>
           <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>
-            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-            You've already added yourself as {selfPerson.display_name}. Edit your birth data from your chart. No need to add yourself again.
+                        You've already added yourself as {selfPerson.display_name}. Edit your birth data from your chart. No need to add yourself again.
           </Text>
           <Link href={`/profile/${selfPerson.id}`} asChild>
             <Pressable style={primaryButtonStyle}>
@@ -247,8 +239,7 @@ export default function OnboardingScreen() {
       ) : (
         <>
           <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>
-            {/* FOUNDER-REVIEW: layer-one onboarding. Outcome first. */}
-            Galaxia helps you show up for the people already in your life. We start with you, then add the rest of your circle. A birth date is enough. A time sharpens the picture.
+                        Galaxia helps you show up for the people already in your life. We start with you, then add the rest of your circle. A birth date is enough. A time sharpens the picture.
           </Text>
           <Text style={{ color: tokens.colors.goldSoft }}>
             Plan: {tier === "plus" ? "Galaxia+" : "Free"} · {tier === "plus" ? "unlimited people" : `${peopleLimit} people max`}
@@ -295,8 +286,7 @@ export default function OnboardingScreen() {
               paddingVertical: 8
             }}
           >
-            {/* FOUNDER-REVIEW: picker label */}
-            <Text style={{ color: personRelation === value ? tokens.colors.gold : tokens.colors.cream }}>{label}</Text>
+                        <Text style={{ color: personRelation === value ? tokens.colors.gold : tokens.colors.cream }}>{label}</Text>
           </Pressable>
         ))}
       </View>

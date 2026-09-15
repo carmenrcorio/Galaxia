@@ -10,17 +10,14 @@ import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
 import { CustomCheck } from "./custom-check";
 import { Spinner } from "./spinner";
 
-// FOUNDER-REVIEW: picker labels — refine voice before merge.
 const relationOptions = GALAXY_RELATION_PICKER_OPTIONS;
 
 // Shared field copy — used by onboarding step 2 and the standalone add-person
 // page. Onboarding may wrap this form with its own titles / precision callout;
 // this component never renders onboarding chrome or step progress.
-// FOUNDER-REVIEW: authored minor-safety copy — refine voice.
 const FIELD_COPY = {
   minorLabel: "This person is a minor (under 18)",
   minorExplain:
-    // FOUNDER-REVIEW: rewritten (no U+2014).
     "If you're adding a child, check this. Galaxia keeps guidance about a minor private to you: there's never any two-way AI chat with a child. As a backstop, we also protect anyone whose birth date shows they're under 18 even if this is left unchecked, but checking it makes your intent clear from the start."
 };
 
@@ -164,7 +161,6 @@ export function AddPersonForm({
       };
       if (showStatus) {
         const base = deferred
-          // FOUNDER-REVIEW: success copy. Ask now lives on this screen.
           ? `${savedName} is in your sky. You can send them a link from this screen, or add a date whenever you're ready.`
           : `${savedName} is in your constellation.`;
         // A relation we refused is always said out loud. Storing something
@@ -172,7 +168,6 @@ export function AddPersonForm({
         // change made behind the user's back.
         setStatus({
           text: saved.refusedRelation
-            // FOUNDER-REVIEW: minor-safety relation refusal notice.
             ? `${base} ${savedName} is a minor, so this is saved as an unspecified relationship. Galaxia never holds a romantic or partner framing against a child.`
             : base,
           ok: true
@@ -180,7 +175,6 @@ export function AddPersonForm({
       }
       onSaved?.(info);
     } catch (error) {
-      // FOUNDER-REVIEW: add-person persist failed.
       const message = error instanceof Error ? error.message : "This person could not be added. Try again.";
       if (showStatus) setStatus({ text: message, ok: false });
       onError?.(message);
@@ -215,8 +209,7 @@ export function AddPersonForm({
               color: relation === value ? "var(--gold)" : undefined
             }}
           >
-            {/* FOUNDER-REVIEW: picker label */}
-            {label}
+                        {label}
           </button>
         ))}
       </div>

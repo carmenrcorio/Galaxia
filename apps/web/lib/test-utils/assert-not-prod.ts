@@ -64,7 +64,6 @@ export function assertDisposableDbTarget(url: string | undefined | null): string
   if (!allow) {
     throw new ProdDbGuardError(
       "[assert-not-prod] ABORT: ALLOW_LIVE_DB_TESTS_AGAINST is not set. Live-DB tests require an explicit " +
-        // FOUNDER-REVIEW: rewritten (no U+2014).
         `opt-in that names the disposable project ref they expect ("${ref}"). Refusing to run silently ` +
         "against whatever credentials happen to be in the environment."
     );

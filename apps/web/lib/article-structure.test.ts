@@ -118,9 +118,8 @@ describe("midPostCtaHref", () => {
 });
 
 describe("authored chrome strings", () => {
-  it("tags FOUNDER-REVIEW copy and never uses U+2014", () => {
+  it("locks authored chrome strings and never uses U+2014", () => {
     const src = readFileSync(join(__dirname, "article-structure.ts"), "utf8");
-    expect(src).toContain("FOUNDER-REVIEW");
     expect(ARTICLE_TOC_LABEL).toBe("In this piece");
     expect(READ_NEXT_LABEL).toBe("Read next");
     expect(MID_POST_CTA_COPY).toBe("See how this plays out in your own chart");
@@ -151,7 +150,6 @@ describe("post template wiring", () => {
     expect(page).toContain("formatPostDate");
     expect(page).toContain("readTimeMinutes");
     expect(page).toContain("min read");
-    expect(page).toContain("FOUNDER-REVIEW");
   });
 
   it("renders In this piece from h2s when read time is at least 5, and Read next before the bottom CTA", () => {

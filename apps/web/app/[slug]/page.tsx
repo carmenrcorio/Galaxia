@@ -71,8 +71,7 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
             <img src={post.heroImageUrl} alt="" width={1200} height={630} />
           </figure>
         ) : null}
-        {/* FOUNDER-REVIEW: post byline row (author, date, read time). */}
-        <p className="article-byline">
+                <p className="article-byline">
           {post.byline}
           {publishedLabel ? ` · ${publishedLabel}` : ""}
           {` · ${post.readTimeMinutes} min read`}

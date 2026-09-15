@@ -66,7 +66,6 @@ export const BLOG_CATEGORIES: BlogCategory[] = [
   {
     slug: "debunked",
     label: "Astrology, debunked",
-    // FOUNDER-REVIEW: rewritten (no U+2014).
     emptyNote: "More on this soon. We're building out a whole category on what astrology can't actually claim."
   }
 ];

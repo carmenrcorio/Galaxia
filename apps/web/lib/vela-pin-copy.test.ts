@@ -20,9 +20,8 @@ import {
 const COPY_FILE = join(__dirname, "vela-pin-copy.ts");
 
 describe("vela-pin-copy", () => {
-  it("tags every authored string FOUNDER-REVIEW and never uses em dashes", () => {
+  it("never uses em dashes in authored pin copy", () => {
     const src = readFileSync(COPY_FILE, "utf8");
-    expect(src).toContain("FOUNDER-REVIEW");
     expect(src).not.toContain("\u2014");
     expect(src).not.toContain("\u2013");
     expect(PIN_THEME_LABELS).toEqual({

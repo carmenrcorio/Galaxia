@@ -54,12 +54,10 @@ export function QuickChartEntry() {
     const d = Number(day);
     const y = Number(year);
     if (!m || !d || !y) {
-      // FOUNDER-REVIEW: authored - mini-form validation.
       setError("Add a month, day, and year to see the chart.");
       return;
     }
     if (d > new Date(y, m, 0).getDate()) {
-      // FOUNDER-REVIEW: authored - mini-form validation.
       setError("That day is not in the month you picked.");
       return;
     }
@@ -75,7 +73,6 @@ export function QuickChartEntry() {
       });
       const body = await res.json();
       if (!res.ok) {
-        // FOUNDER-REVIEW: authored - mini-form compute failure.
         setError(typeof body.error === "string" ? body.error : "Could not compute that chart.");
         return;
       }
@@ -86,8 +83,6 @@ export function QuickChartEntry() {
         birthDate: body.birthDate,
       });
     } catch {
-      // FOUNDER-REVIEW: authored - mini-form network failure.
-      // FOUNDER-REVIEW: rewritten (no U+2014).
       setError("Network error. Check your connection and try again.");
     } finally {
       setLoading(false);
@@ -107,13 +102,11 @@ export function QuickChartEntry() {
 
   return (
     <div className="quick-chart-entry glass-card fade-in fade-in-delay-3">
-      {/* FOUNDER-REVIEW: authored - hero Quick Chart entry framing. */}
-      <div className="quick-chart-entry-copy">
+            <div className="quick-chart-entry-copy">
         <span className="eyebrow">Try it free</span>
         <h2 className="quick-chart-entry-h">See how someone you love is built.</h2>
         <p className="quick-chart-entry-lede">
-          {/* FOUNDER-REVIEW: layer-one ATF try-it. Outcome first; not an astrology app. */}
-          Enter a name and birthday. No signup. Not a daily horoscope.
+                    Enter a name and birthday. No signup. Not a daily horoscope.
         </p>
       </div>
 
@@ -131,8 +124,7 @@ export function QuickChartEntry() {
             className="quick-chart-entry-reveal"
           />
           <button type="button" className="pill-link quick-chart-entry-again" onClick={tryAnother}>
-            {/* FOUNDER-REVIEW: authored - reset mini-form after inline reveal. */}
-            Try another birthday
+                        Try another birthday
           </button>
         </div>
       ) : (
@@ -189,8 +181,7 @@ export function QuickChartEntry() {
           </div>
           <button type="submit" className="btn-primary" disabled={loading} style={{ gap: 8 }}>
             {loading ? <Spinner size={13} color="#1a1206" /> : null}
-            {/* FOUNDER-REVIEW: authored - mini-form pending label. */}
-            {loading ? "Computing…" : "See the chart"}
+                        {loading ? "Computing…" : "See the chart"}
           </button>
           {error ? <p className="error quick-chart-entry-error">{error}</p> : null}
         </form>

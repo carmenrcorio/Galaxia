@@ -54,7 +54,7 @@ export function bodiesWithMovedLongitudes(
   return moved;
 }
 
-/** Cap for display: "Sun, Moon, Mercury" — caller owns FOUNDER-REVIEW framing. */
+
 export function formatMovedBodies(bodies: BodyName[]): string {
   if (bodies.length === 0) return "";
   const cap = (b: string) => b.charAt(0).toUpperCase() + b.slice(1);

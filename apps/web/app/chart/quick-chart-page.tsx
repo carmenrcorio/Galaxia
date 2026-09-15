@@ -102,7 +102,6 @@ export default function QuickChartPage() {
         window.history.replaceState(null, "", `/chart?${qs}`);
       }
     } catch {
-      // FOUNDER-REVIEW: rewritten (no U+2014).
       setError("Network error. Check your connection and try again.");
     } finally {
       setLoading(false);
@@ -196,8 +195,7 @@ export default function QuickChartPage() {
         </>
       ) : (
         <>
-          {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
-          <ChartImageExport filename={chartExportFilename(name, "natal-chart.png")} label="Share chart image">
+                    <ChartImageExport filename={chartExportFilename(name, "natal-chart.png")} label="Share chart image">
             <NatalSignReveal
               chart={result.chart}
               displayDate={result.displayDate}

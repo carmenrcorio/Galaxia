@@ -26,7 +26,6 @@ import {
 
 export const RELATIONSHIP_EDGES_ANCHOR_ID = "relationship-edges";
 
-// FOUNDER-REVIEW: person-page relationship picker copy.
 export const RELATIONSHIP_PICKER_COPY = {
   eyebrow: "Lines on the constellation",
   lede:

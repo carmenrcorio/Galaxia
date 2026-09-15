@@ -348,7 +348,6 @@ const SIGN_MODALITY: Record<string, "cardinal"|"fixed"|"mutable"> = {
   Gemini:"mutable",Virgo:"mutable",Sagittarius:"mutable",Pisces:"mutable"
 };
 const MODALITY_DOMINANT: Record<string, string> = {
-  // FOUNDER-REVIEW: rewritten (no U+2014).
   cardinal: "Heavy on cardinal signs: they initiate well. Starting is the gift; finishing is the practice.",
   fixed:    "Heavy on fixed signs: they hold their ground. Persistence is the gift; letting go is the practice.",
   mutable:  "Heavy on mutable signs: they adapt well. Flexibility is the gift; commitment is the practice.",
@@ -360,13 +359,9 @@ const MODALITY_ABSENT: Record<string, string> = {
 };
 
 /* ─── Main page ─────────────────────────────────────────────────────────── */
-// FOUNDER-REVIEW: person page load failure.
 const PERSON_LOAD_ERROR = "This person could not load. Try again.";
-// FOUNDER-REVIEW: retry after a person load failure.
 const PERSON_RETRY = "Try again";
-// FOUNDER-REVIEW: missing row, not a fetch failure.
 const PERSON_NOT_FOUND = "This person is not in your constellation.";
-// FOUNDER-REVIEW: no self row yet.
 const PERSON_NO_SELF = "No self profile yet.";
 
 export default function PersonProfilePage() {
@@ -635,7 +630,6 @@ export default function PersonProfilePage() {
         if (lonChanged) {
           const moved = bodiesWithMovedLongitudes(chartData, recomputed);
           const movedList = formatMovedBodies(moved);
-          // FOUNDER-REVIEW: authored — chart longitude correction Record body.
           longitudeCorrectionBody = movedList
             ? `Planet positions were corrected from the birth details already on file, not from a new edit. Bodies that moved: ${movedList}.`
             : `Planet positions were corrected from the birth details already on file, not from a new edit.`;
@@ -922,8 +916,7 @@ export default function PersonProfilePage() {
             </p>
           ) : (
             <p className="muted" style={{ fontSize: ".88rem", margin: "8px 0 0" }}>
-              {/* FOUNDER-REVIEW: CHART_PRECISION_NONE_WAITING / CHART_SAVED_DETAILS_NO_CHART_BODY */}
-              {person.birth_precision === "none" ? CHART_PRECISION_NONE_WAITING : CHART_SAVED_DETAILS_NO_CHART_BODY}
+                            {person.birth_precision === "none" ? CHART_PRECISION_NONE_WAITING : CHART_SAVED_DETAILS_NO_CHART_BODY}
             </p>
           )}
         </div>
@@ -1069,8 +1062,7 @@ export default function PersonProfilePage() {
     const vocab = PERSON_TAB_VOCAB[id];
     return (
       <>
-        {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is ChartVocabSubhead. */}
-        <p className="eyebrow" style={{ marginBottom: vocab ? 2 : 8 }}>{enduringEyebrow(PERSON_TAB_LABEL[id])}</p>
+                <p className="eyebrow" style={{ marginBottom: vocab ? 2 : 8 }}>{enduringEyebrow(PERSON_TAB_LABEL[id])}</p>
         {vocab ? <ChartVocabSubhead term={vocab} /> : null}
       </>
     );
@@ -1222,7 +1214,6 @@ export default function PersonProfilePage() {
       </div>
 
       {chartCorrectionNotice ? (
-        // FOUNDER-REVIEW: authored — person-page banner after longitude-changing rewrite.
         <div
           className="glass-card fade-in"
           role="status"
@@ -1279,12 +1270,10 @@ export default function PersonProfilePage() {
           style={{ borderStyle: "dashed", opacity: 0.7, scrollMarginTop: 92 }}
         >
           {sectionHead("active-today")}
-          {/* FOUNDER-REVIEW: DAILY_SKY_UNAVAILABLE_YEAR_BODY */}
-          <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>
+                    <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>
             {DAILY_SKY_UNAVAILABLE_YEAR_BODY}
           </p>
-          {/* FOUNDER-REVIEW: DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP */}
-          <p className="muted" style={{ fontSize: ".78rem", marginTop: 8 }}>
+                    <p className="muted" style={{ fontSize: ".78rem", marginTop: 8 }}>
             {DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP}
           </p>
           <div style={{ marginTop: 10 }}>
@@ -1354,8 +1343,7 @@ export default function PersonProfilePage() {
           ] as { key: string; label: string; sign: string|undefined; body: string|null; house: number|undefined; uncertain: boolean; possibleSigns: string[]|undefined; degree?: string }[]).map(({ key, label, sign, body, house, uncertain, possibleSigns, degree }) => {
             if (!sign) return (
               <div key={key} className="sign-chip" style={{ opacity: .45 }}>
-                {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-                <span className="sign-chip__glyph" style={{ color: "var(--mist2)" }}>·</span>
+                                <span className="sign-chip__glyph" style={{ color: "var(--mist2)" }}>·</span>
                 <span className="sign-chip__label">{label}</span>
                 <span className="sign-chip__value">{label === "Rising" ? "Exact time + city needed" : "·"}</span>
               </div>
@@ -1447,8 +1435,7 @@ export default function PersonProfilePage() {
       </section>
 
       {/* ── Chart Wheel (collapsible, open by default; SVG mounts after first paint) ── */}
-      {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
-      <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
+            <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
         <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1">
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8, gap: 8 }}>
             <div>{sectionHead("chart-wheel")}</div>

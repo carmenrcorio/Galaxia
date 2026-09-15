@@ -318,28 +318,23 @@ export default function CompareScreen() {
       </Text>
 
       <View style={cardStyle}>
-        {/* FOUNDER-REVIEW: COMPARE_HISTORY_HEADING */}
-        <Text style={cardTitle}>{COMPARE_HISTORY_HEADING}</Text>
+                <Text style={cardTitle}>{COMPARE_HISTORY_HEADING}</Text>
         {rosterLoading ? (
           <Text style={{ color: tokens.colors.mist, lineHeight: 20 }}>
-            {/* FOUNDER-REVIEW: Compare roster is loading. */}
-            Loading the people in your constellation.
+                        Loading the people in your constellation.
           </Text>
         ) : rosterError ? (
           <>
             <Text style={{ color: tokens.colors.mist, lineHeight: 20 }}>
-              {/* FOUNDER-REVIEW: Compare people fetch failed or timed out. */}
-              Your people could not load for Compare. Try again.
+                            Your people could not load for Compare. Try again.
             </Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Try again" onPress={() => void fetchPeople()}>
-              {/* FOUNDER-REVIEW: retry after a Compare roster failure. */}
-              <Text style={{ color: tokens.colors.gold, fontWeight: "600" }}>Try again</Text>
+                            <Text style={{ color: tokens.colors.gold, fontWeight: "600" }}>Try again</Text>
             </Pressable>
           </>
         ) : history.length === 0 ? (
           <Text style={{ color: tokens.colors.mist, lineHeight: 20 }}>
-            {/* FOUNDER-REVIEW: COMPARE_HISTORY_EMPTY */}
-            {COMPARE_HISTORY_EMPTY}
+                        {COMPARE_HISTORY_EMPTY}
           </Text>
         ) : (
           history.map((item) => (
@@ -350,8 +345,7 @@ export default function CompareScreen() {
               style={{ gap: 4, paddingVertical: 6 }}
             >
               <Text style={{ color: tokens.colors.cream }}>{item.nameA} × {item.nameB}</Text>
-              {/* FOUNDER-REVIEW: compareHistoryLastViewed */}
-              <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
+                            <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
                 {compareHistoryLastViewed(formatCompareLastViewed(item.lastViewedAt))}
               </Text>
             </Pressable>
@@ -377,13 +371,11 @@ export default function CompareScreen() {
                 paddingVertical: 8
               }}
             >
-              {/* FOUNDER-REVIEW: authored — shared picker labels (web parity). */}
-              <Text style={{ color: relationType === type ? tokens.colors.gold : tokens.colors.cream }}>{compareRelationLabel(type)}</Text>
+                            <Text style={{ color: relationType === type ? tokens.colors.gold : tokens.colors.cream }}>{compareRelationLabel(type)}</Text>
             </Pressable>
           ))}
         </View>
         {showSuggestionHint ? (
-          // FOUNDER-REVIEW: authored — refine voice.
           <Text style={{ color: tokens.colors.mist2, fontSize: 12, lineHeight: 18 }}>
             {COMPARE_RELATION_SUGGESTION_HINT}
           </Text>
@@ -449,11 +441,9 @@ export default function CompareScreen() {
 
       {previousViewedAt && transitDelta && selectedA && selectedB ? (
         <View style={cardStyle}>
-          {/* FOUNDER-REVIEW: COMPARE_SINCE_HEADING */}
-          <Text style={cardTitle}>{COMPARE_SINCE_HEADING}</Text>
+                    <Text style={cardTitle}>{COMPARE_SINCE_HEADING}</Text>
           <Text style={cardBody}>
-            {/* FOUNDER-REVIEW: compareNatalAspectsConstant */}
-            {compareNatalAspectsConstant(selectedA.display_name, selectedB.display_name)}
+                        {compareNatalAspectsConstant(selectedA.display_name, selectedB.display_name)}
           </Text>
           {!transitDelta.honest ? (
             <Text style={cardBody}>{COMPARE_TRANSITS_UNAVAILABLE}</Text>

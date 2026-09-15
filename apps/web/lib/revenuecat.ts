@@ -225,13 +225,8 @@ export function isCheckoutSetupRejection(failure: RcPurchaseFailure): boolean {
   return request !== null && CHECKOUT_OPENING_REQUESTS.has(request) && httpStatus === UNPROCESSABLE_ENTITY;
 }
 
-// FOUNDER-REVIEW: authored. Shown when the backend refuses to open checkout, so
-// it has to be true of every such refusal: we know checkout never opened and
-// that the refusal came from our side, and we know nothing else. It names no
-// cause, claims nothing about the user's card or money, and does not promise
-// that trying again will work, because for a setup rejection it will not.
 const CHECKOUT_SETUP_REJECTED_COPY =
-  "We couldn't start checkout on our end. This one is ours to fix, so please check back a little later rather than trying again now.";
+  "Checkout isn't loading right now. This is on us. Try again in a few minutes.";
 
 /**
  * User-facing copy for a failed purchase. Deliberately claims only what the
@@ -262,8 +257,7 @@ export function purchaseErrorCopy(
     case RC_ERROR_CODE.userCancelled:
       return null;
     case RC_ERROR_CODE.paymentPending:
-      // FOUNDER-REVIEW: rewritten (no U+2014).
-      return "Your payment is still being confirmed. We'll unlock your galaxy as soon as it clears: no need to pay again.";
+      return "Your payment is still processing. You'll be in as soon as it clears. Don't pay again.";
     case RC_ERROR_CODE.alreadyPurchased:
       return "You're already subscribed. Refresh this page, or manage your plan from your account.";
   }

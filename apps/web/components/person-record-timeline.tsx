@@ -34,7 +34,6 @@ const RECORD_META: Record<string, { label: string; color: string }> = {
   compare_reading: { label: "Saved comparison", color: "rgba(230,174,108,.5)" },
   cohort_reading:  { label: "Saved group reading", color: "rgba(111,177,184,.4)" },
   remembrance:     { label: "Remembrance",     color: "rgba(111,177,184,.55)" },
-  // FOUNDER-REVIEW: authored. Record label for longitude-changing chart rewrite.
   chart_correction:{ label: "Chart corrected", color: "rgba(230,174,108,.55)" },
   moment:           { label: MOMENT_RECORD_KIND, color: "rgba(230,174,108,.55)" },
   conversation:    { label: "Vela conversation", color: "rgba(183,154,216,.4)" },

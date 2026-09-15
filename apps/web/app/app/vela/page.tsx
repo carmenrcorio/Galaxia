@@ -28,18 +28,12 @@ interface ChatLine   { role: "user" | "vela"; text: string; suggestions?: string
 
 const PRIVACY_CAPTION = "Private by default · no private notes in shared mode · consent required for shared threads";
 
-// FOUNDER-REVIEW: Vela roster is loading.
 const VELA_ROSTER_LOADING = "Loading the people Vela can talk about.";
-// FOUNDER-REVIEW: Vela people fetch failed or timed out.
 const VELA_ROSTER_ERROR = "Vela could not load your people. Try again.";
 const VELA_ROSTER_RETRY = "Try again";
-// FOUNDER-REVIEW: send timed out.
 const VELA_SEND_TIMEOUT = "Vela did not answer in time. Check your connection and try again.";
-// FOUNDER-REVIEW: send failed without a timeout.
 const VELA_SEND_NETWORK = "Network error. Check your connection and try again.";
-// FOUNDER-REVIEW: consent save failed.
 const VELA_CONSENT_ERROR = "Consent could not be saved. Try again.";
-// FOUNDER-REVIEW: pin failed.
 const VELA_PIN_FAILED = "This insight could not be pinned. Try again.";
 
 const SUGGESTED_PROMPTS = [
@@ -368,7 +362,6 @@ export default function VelaPage() {
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { error?: string };
         const msg = res.status === 503
-          // FOUNDER-REVIEW: rewritten (no U+2014).
           ? "Vela isn't available right now. The AI provider may not be configured."
           : body.error ?? `Vela responded with an error (${res.status}).`;
         setLines(prev => [...prev, { role: "vela", text: msg }]);

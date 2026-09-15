@@ -71,7 +71,6 @@ const ASPECT_TONE: Record<AspectKey, Tone> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// FOUNDER-REVIEW: authored — refine voice.
 // TRANSIT_FORCE — what the TRANSITING body is doing in the sky right now, in
 // plain language (no planet-name jargon). Written as a phrase that reads
 // naturally as the OBJECT of "against" / "from" / "a dose of", so it never has
@@ -91,7 +90,6 @@ const TRANSIT_FORCE: Record<BodyKey, string> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// FOUNDER-REVIEW: authored — refine voice.
 // NATAL_AREA — the part of the PERSON the transit is touching, in plain terms.
 // Always used as "{poss} {area}" (a possessive determiner + noun), so `{poss}`
 // is never a subject pronoun. Mirrors BODY_DOMAIN in interpretations.ts but
@@ -112,7 +110,6 @@ const NATAL_AREA: Record<BodyKey, string> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// FOUNDER-REVIEW: authored — refine voice.
 // TRANSIT_GUIDANCE — the small "what helps" tail, keyed to the transiting body
 // (i.e. what genuinely helps when THIS planet is pressing). Specific to the
 // planet's function; never generic "stay positive" filler.
@@ -121,7 +118,6 @@ const TRANSIT_GUIDANCE: Record<BodyKey, string> = {
   sun:     "let it be acknowledged",
   moon:    "let the feeling move through and pass",
   mercury: "say the thing plainly",
-  // FOUNDER-REVIEW: rewritten (no U+2014).
   venus:   "reach out. Small warmth counts",
   mars:    "aim the energy before it spikes",
   jupiter: "say yes to a little more than usual",
@@ -173,7 +169,6 @@ interface CuratedLine {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// FOUNDER-REVIEW: authored — refine voice.
 // TRANSIT_PAIR — curated meaning for the highest-signal transits, keyed by the
 // DIRECTIONAL pair `transitBody-natalBody` (transit → natal; unlike synastry,
 // order matters) then by aspect tone. Every string is specific to those two
@@ -193,7 +188,6 @@ const TRANSIT_PAIR: Record<string, Partial<Record<Tone, CuratedLine>>> = {
   [PAIR("saturn", "moon")]: {
     friction: {
       short: "A heavier stretch where {poss} emotional footing feels tested: steady routines and rest help more than pushing.",
-      // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj} + base-form verb).
       long: "Transiting Saturn is putting weight on how safe {subj} feel. Things can read as lonelier or heavier than they are; small, reliable routines steady it faster than forcing a mood.",
     },
     fusion:   { short: "Feelings turn serious and a little heavy today. {poss} need for security is front and centre. Go gently, keep it simple." },
@@ -201,9 +195,7 @@ const TRANSIT_PAIR: Record<string, Partial<Record<Tone, CuratedLine>>> = {
   },
   [PAIR("saturn", "sun")]: {
     friction: { short: "A day that asks a lot of {poss} sense of self: progress feels slow, but the effort counts. Pace it." },
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj} + base-form verb).
     fusion:   { short: "A serious, consolidating day for who {subj} are: less flash, more foundation." },
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj} + base-form verb).
     flow:     { short: "Quiet, solid progress on what {subj} are building: reliable work pays off now." },
   },
   [PAIR("saturn", "venus")]: {
@@ -212,18 +204,15 @@ const TRANSIT_PAIR: Record<string, Partial<Record<Tone, CuratedLine>>> = {
   },
   [PAIR("saturn", "uranus")]: {
     friction: { short: "A day that tests {poss} need for freedom against real limits: patience goes far.", long: "Transiting Saturn is pressing on {poss} urge to break out and do it differently. The pull between changing everything and staying put is real today; neither has to win right now: patience buys the better answer." },
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj} + base-form verb).
     fusion:   { short: "Freedom and structure collide head-on today. {subj} feel the tug between breaking out and settling down. No rush to resolve it." },
   },
   [PAIR("saturn", "mars")]: {
     friction: { short: "{poss} drive meets a wall today: frustration is likely, so put it into one steady task instead of forcing all of it." },
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
     flow:     { short: "Disciplined energy today: a good day for {obj} to grind out real, patient work." },
   },
   // ── Jupiter: opening, optimism, room to grow ──
   [PAIR("jupiter", "sun")]: {
     flow:   { short: "A day that widens {poss} horizons: confidence and timing are on {poss} side. Reach a little further." },
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
     fusion: { short: "A genuinely expansive day for {obj}: say yes to the bigger version." },
   },
   [PAIR("jupiter", "moon")]: {
@@ -231,7 +220,6 @@ const TRANSIT_PAIR: Record<string, Partial<Record<Tone, CuratedLine>>> = {
     fusion: { short: "Warm, hopeful feelings run high today. {poss} outlook lifts on its own." },
   },
   [PAIR("jupiter", "venus")]: {
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
     flow:   { short: "A warm, sociable day for {obj}: generosity and good company flow easily. A good time to connect." },
     fusion: { short: "A big-hearted day for {poss} bonds: affection and generosity come easily." },
   },
@@ -245,11 +233,8 @@ const TRANSIT_PAIR: Record<string, Partial<Record<Tone, CuratedLine>>> = {
     fusion:   { short: "Emotions run hot and fast today: the reaction comes before the thought, so give it a beat." },
   },
   [PAIR("mars", "venus")]: {
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj}/{poss} + base-form verb).
     friction: { short: "Wanting and warmth pull in different directions today. {subj} may feel restless in {poss} bonds. Say plainly what {subj} actually need.", adultOnly: true },
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
     fusion:   { short: "Attraction and heat run strong today for {obj}: good chemistry, quick to spark. Keep it honest.", adultOnly: true },
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
     flow:     { short: "An easy, affectionate energy for {obj} today: warmth and get-up-and-go point the same way." },
   },
   [PAIR("mars", "mars")]: {
@@ -262,7 +247,6 @@ const TRANSIT_PAIR: Record<string, Partial<Record<Tone, CuratedLine>>> = {
   },
   [PAIR("pluto", "sun")]: {
     friction: { short: "A day of quiet power struggles. {poss} sense of self is being reshaped. Hold steady without needing to win." },
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
     fusion:   { short: "A day of real inner change for {obj}: an old version is loosening its grip. Let it." },
   },
   // ── Uranus: the jolt, the break from routine ──
@@ -276,7 +260,6 @@ const TRANSIT_PAIR: Record<string, Partial<Record<Tone, CuratedLine>>> = {
   // ── Neptune: the soft, blurring, dreamy fog ──
   [PAIR("neptune", "moon")]: {
     fusion:   { short: "A tender, dreamy, slightly foggy day. {poss} feelings blur at the edges. Rest and quiet help; big decisions can wait." },
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
     friction: { short: "Emotional signals are hard to read today: don't trust the fog to tell {obj} the whole story." },
   },
   [PAIR("neptune", "sun")]: {
@@ -285,27 +268,21 @@ const TRANSIT_PAIR: Record<string, Partial<Record<Tone, CuratedLine>>> = {
   // ── Venus: warmth, ease, connection (all family-safe) ──
   [PAIR("venus", "moon")]: {
     flow:   { short: "A soft, affectionate day. {poss} closest bonds feel easy and warm. Enjoy the closeness." },
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
     fusion: { short: "Warmth is front and centre today: a lovely day for {obj} to feel connected." },
   },
   [PAIR("venus", "venus")]: {
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
     flow: { short: "An easy, pleasant day for {obj}: good company and small comforts land well." },
   },
   // ── Mercury: thinking, talking, small decisions ──
   [PAIR("mercury", "moon")]: {
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj} + base-form verb).
     friction: { short: "Thoughts and feelings tangle today. {subj} may say it sideways. Ask what {subj} actually feel." },
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}/{subj} + base-form verb).
     flow:     { short: "A good day for {obj} to say how {subj} feel: words and emotions line up." },
   },
   [PAIR("mercury", "mercury")]: {
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
     flow: { short: "A quick, clear-thinking day for {obj}: good for conversations and decisions." },
   },
   // ── Sun: vitality, focus, being seen ──
   [PAIR("sun", "sun")]: {
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({obj}).
     fusion: { short: "A day that puts {obj} in the spotlight: energy and focus return. Use it." },
   },
   [PAIR("sun", "moon")]: {
@@ -313,7 +290,6 @@ const TRANSIT_PAIR: Record<string, Partial<Record<Tone, CuratedLine>>> = {
   },
   // ── Moon: the fast, monthly emotional weather ──
   [PAIR("moon", "moon")]: {
-    // FOUNDER-REVIEW: authored — pronoun-slot rewrite ({subj} + base-form verb).
     fusion: { short: "The monthly reset of {poss} emotional weather: a day to notice how {subj} actually feel and recalibrate." },
   },
 };

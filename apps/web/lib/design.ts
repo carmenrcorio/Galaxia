@@ -29,7 +29,6 @@ export const ASPECT_GLYPH: Record<string, string> = {
 
 /* Aspect one-liners — from galaxia.jsx ASPLINE */
 export const ASPECT_LINE: Record<string, string> = {
-  // FOUNDER-REVIEW: rewritten (no U+2014).
   conjunction:  "fused: one charged focus",
   sextile:      "easy, supportive talent",
   square:       "inner friction that drives growth",

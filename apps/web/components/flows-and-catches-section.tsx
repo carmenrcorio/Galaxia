@@ -30,16 +30,11 @@ export type FlowsCatchesAspect = {
   harmony: number;
 };
 
-// FOUNDER-REVIEW: authored — Quick Compare flows/catches intro (romantic).
 const INTRO_ROMANTIC = "The strongest currents between you two, strongest first.";
-// FOUNDER-REVIEW: authored — Quick Compare flows/catches intro (platonic / non-romantic).
 const INTRO_PLATONIC = "What runs strongest between you two, strongest first.";
-// FOUNDER-REVIEW: authored — flows vs catches legend (once per section).
 const FLOWS_CATCHES_LEGEND =
   "Flows are what comes easily between you. Catches are where you two snag, and usually where the growth is.";
-// FOUNDER-REVIEW: authored — closed-by-default disclosure for dense aspect notation.
 const SHOW_ASPECT_DETAIL = "▶ Show aspect detail";
-// FOUNDER-REVIEW: authored — disclosure close label (mirrors See full chart).
 const HIDE_ASPECT_DETAIL = "▼ Hide aspect detail";
 
 type Props = {

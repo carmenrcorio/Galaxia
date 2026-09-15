@@ -55,7 +55,6 @@ function sameMembers(a: string[], b: string[]): boolean {
 }
 
 /**
- * FOUNDER-REVIEW preview titles. Never title an unsaved composition as a saved group.
  * - dirty + loaded: "Unsaved preview, based on {group name}"
  * - dirty / no loaded: "Unsaved preview"
  * - clean + loaded: saved group name
@@ -199,7 +198,6 @@ export default function GroupsScreen() {
       setStatus(countError.message);
       return;
     }
-    // FOUNDER-REVIEW: formatGroupDeleteConfirmation
     const warning = formatGroupDeleteConfirmation(loadedGroup.name, count ?? 0);
     Alert.alert("Delete group", warning, [
       { text: "Cancel", style: "cancel" },
@@ -476,13 +474,11 @@ export default function GroupsScreen() {
         <Text style={cardTitle}>Saved groups</Text>
         {rosterLoading ? (
           <Text style={cardBody}>
-            {/* FOUNDER-REVIEW: groups roster is loading. */}
-            Loading your groups.
+                        Loading your groups.
           </Text>
         ) : rosterError ? (
           <Text style={cardBody}>
-            {/* FOUNDER-REVIEW: groups roster fetch failed or timed out. */}
-            Your groups could not load. Try again.
+                        Your groups could not load. Try again.
           </Text>
         ) : groups.length === 0 ? (
           <Text style={cardBody}>No groups yet. Create one below.</Text>

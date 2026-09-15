@@ -19,8 +19,7 @@ export function VelaExampleSection() {
           <span className="eyebrow">Your guide</span>
           <h2 className="vela-h2">Meet <em style={{ color: "var(--gold)" }}>Vela</em>.</h2>
           <p className="lede vela-lede">
-            {/* FOUNDER-REVIEW: rewritten. Shared spaces are unshipped; this describes private Vela only. */}
-            Most apps talk <em>at</em> you. Vela talks with you: an astrologer who already knows both
+                        Most apps talk <em>at</em> you. Vela talks with you: an astrologer who already knows both
             charts and a coach who gives you something to actually do. It never invents a placement,
             and never breaches your privacy.
           </p>
@@ -36,8 +35,7 @@ export function VelaExampleSection() {
             </div>
             <div className="bubble bubble-vela">
               <div className="bubble-sender">Vela</div>
-              {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-              I don't have her exact birth time, so I won't claim anything about her houses or Rising.
+                            I don't have her exact birth time, so I won't claim anything about her houses or Rising.
               That'd be guessing. But from her Taurus Moon and Capricorn Sun, here's what I can say with
               confidence: she's wired to feel safe through steadiness and competence, not reassurance.
               When you jump in to help, a Capricorn Sun kid can read it as "you don't think I can do this

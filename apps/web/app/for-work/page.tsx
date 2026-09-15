@@ -15,7 +15,6 @@ import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { RELATED_LINKS } from "../../lib/nav-links";
 
-// FOUNDER-REVIEW: layer-two metadata. Visible copy on this page is layer one.
 // Title keeps the astrology keyword from main (ENGINEERING.md §17: never strip
 // astrology from metadata). Visible H1 stays the outcome-only line.
 const TITLE = "Galaxia for Work: Relationship Intelligence from Computed Astrology";

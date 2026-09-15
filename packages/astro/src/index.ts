@@ -613,7 +613,6 @@ export function compareGenerational(a: GenSignature, b: GenSignature, birthYearG
   };
 }
 
-// FOUNDER-REVIEW: authored — Groups cohort summary headline.
 // Keyed to sharedSky.length (same field Shared Sky renders). Fail-safe: anything
 // other than 1/2/3 (empty/unclear) uses shared_0. Never fabricate from faultLines.
 const COHORT_SHARED_SKY_LABELS = {

@@ -16,7 +16,6 @@ export type GroupPickerOption = {
   memberCount?: number;
 };
 
-// FOUNDER-REVIEW: authored group picker copy.
 export const GROUP_PICKER_COPY = {
   placeholder: "Choose a group",
   search: "Search by name",
@@ -28,7 +27,6 @@ const DESKTOP_MQ = "(min-width: 720px)";
 const POPOVER_WIDTH = 320;
 
 function memberCountLabel(count: number): string {
-  // FOUNDER-REVIEW: "(N members)" member count label text
   return `(${count} members)`;
 }
 
@@ -179,12 +177,10 @@ export function GroupPickerField({
               ) : (
                 <div style={{ padding: "8px 2px 4px" }}>
                   <p className="muted" style={{ fontSize: ".82rem", marginBottom: 8 }}>
-                    {/* FOUNDER-REVIEW: GROUP_PICKER_COPY.empty */}
-                    {GROUP_PICKER_COPY.empty}
+                                        {GROUP_PICKER_COPY.empty}
                   </p>
                   <Link href={addGroupHref as never} className="pill-link" style={{ fontSize: ".82rem" }}>
-                    {/* FOUNDER-REVIEW: "Add a group" empty-state link label text */}
-                    {GROUP_PICKER_COPY.addGroup}
+                                        {GROUP_PICKER_COPY.addGroup}
                   </Link>
                 </div>
               )}
@@ -225,8 +221,7 @@ export function GroupPickerField({
           </>
         ) : (
           <span className="compare-person-field__placeholder">
-            {/* FOUNDER-REVIEW: GROUP_PICKER_COPY.placeholder */}
-            {GROUP_PICKER_COPY.placeholder}
+                        {GROUP_PICKER_COPY.placeholder}
           </span>
         )}
       </button>

@@ -5,8 +5,7 @@
 export function ForWorkSection() {
   return (
     <section className="container why-not" id="for-work">
-      {/* FOUNDER-REVIEW: layer-one for-work page. */}
-      <span className="eyebrow reveal">For people whose work is other people</span>
+            <span className="eyebrow reveal">For people whose work is other people</span>
       <h2 className="reveal">The people you work with are not a personality quiz.</h2>
       <p className="body reveal">
         Coaches, managers, therapists, team leads. Anyone whose job is to understand someone

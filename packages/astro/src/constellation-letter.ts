@@ -50,7 +50,6 @@ const ASPECT_VERB: Record<AspectType, string> = {
 };
 
 /**
- * FOUNDER-REVIEW: one suggested intention per (outer body x aspect class).
  * Traces to the same relational body x class library as the in-app This Week
  * cards. Never a generic "be kind" line.
  */
@@ -197,7 +196,6 @@ function dynamicSentence(
   const planet = PLANET_LABEL[event.transitBody];
   const verb = ASPECT_VERB[event.aspectType];
   const subject = subjectPhrase(person, hit.natalBody);
-  // FOUNDER-REVIEW: one sentence. Real natal body, real transiting body, real aspect.
   if (others.length === 0) {
     return `${subject} is ${verb} ${planet} this week.`;
   }
@@ -207,14 +205,12 @@ function dynamicSentence(
 function intentionSentence(person: LetterPerson, event: RelationalTransitEvent): string {
   const aspectClass = ASPECT_CLASS[event.aspectType];
   const tryThis = INTENTION[event.transitBody][aspectClass];
-  // FOUNDER-REVIEW: one suggested intention. Traces to the same body x class as the in-app card.
   if (person.isSelf) return `One thing to try: ${tryThis}.`;
   return `One thing to try with ${person.personName}: ${tryThis}.`;
 }
 
 function openingLine(portraits: LetterPortrait[]): string {
   const names = portraits.map((p) => (p.isSelf ? "you" : p.personName));
-  // FOUNDER-REVIEW: opening. Names only the people the letter is actually about.
   if (portraits.length === 1) {
     const name = portraits[0]!.isSelf ? "you" : portraits[0]!.personName;
     return `This week's letter is about ${name}. The rest of the circle is quiet.`;

@@ -5,7 +5,8 @@ import { MARKETING_NAV_SIGNUP } from "../../lib/nav-links";
 export function CloseSection() {
   return (
     <section className="container close" id="join">
-      <h2 className="close-h reveal">The small, bright, <em>irreplaceable</em> galaxy that is yours.</h2>
+      {/* FOUNDER-REVIEW: homepage closing hero slogan. */}
+      <h2 className="close-h reveal">Your life. Your People. <em>Your Galaxy.</em></h2>
       <div className="close-cta reveal">
         <Link href={MARKETING_NAV_SIGNUP.href as never} className="btn-primary">{MARKETING_NAV_SIGNUP.label}</Link>
       </div>

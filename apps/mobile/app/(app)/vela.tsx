@@ -155,15 +155,14 @@ export default function VelaScreen() {
     }
 
     try {
-      const { data, error } = await withTimeout(
-        supabase
+      const { data, error } = await withTimeout((async () => {
+        return await supabase
           .from("messages")
           .select("sender, body")
           .eq("thread_id", targetThreadId)
           .order("created_at", { ascending: true })
-          .limit(80),
-        DEFAULT_FETCH_TIMEOUT_MS
-      );
+          .limit(80);
+      })(), DEFAULT_FETCH_TIMEOUT_MS);
       if (error) {
         setStatus(VELA_THREAD_ERROR);
         return;

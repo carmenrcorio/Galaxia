@@ -1750,11 +1750,11 @@ export default function PersonProfilePage() {
         <section id="past-conversations" className="glass-card fade-in fade-in-delay-3">
           {sectionHead("past-conversations")}
           <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>Archived Vela threads about {person.display_name}. Nothing is ever deleted.</p>
-          {/* grid-template-columns: minmax(0,1fr) — without it the single implicit
+          {/* grid-template-columns: minmax(0,1fr): without it the single implicit
               grid track is `auto`, which sizes to the max-content of its rows.
               Each row's body <p> is white-space:nowrap (single-line ellipsis),
               and overflow:hidden/ellipsis do NOT shrink an element's max-content
-              contribution — so the track (and thus the whole page's layout
+              contribution, so the track (and thus the whole page's layout
               viewport) grew to the untruncated text width, forcing horizontal
               overflow / pinch-zoom-out on mobile. minmax(0,1fr) caps the track
               at the container width so the ellipsis truncation actually engages. */}
@@ -1763,7 +1763,7 @@ export default function PersonProfilePage() {
               <div key={entry.id} style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: "2px solid rgba(183,154,216,.25)", display: "flex", justifyContent: "space-between", alignItems: entry.withdrawnReason ? "flex-start" : "center", gap: 8 }}>
                 <div style={{ minWidth: 0 }}>
                   {/* Withdrawn previews are already user-facing (formatWithdrawnReasonForDisplay
-                      in lib/record.ts) — wrap so asserted / chart / when stay readable.
+                      in lib/record.ts): wrap so asserted / chart / when stay readable.
                       Ordinary previews keep single-line ellipsis. */}
                   <p style={{
                     margin: 0,

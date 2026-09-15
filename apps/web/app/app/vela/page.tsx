@@ -2,25 +2,25 @@
 
 import { isMinorForSafety, orderPair, suggestPinTheme, sunSignFromChart, type PinThemeId, DEFAULT_FETCH_TIMEOUT_MS, VELA_FETCH_TIMEOUT_MS, isFetchTimeoutError, withTimeout } from "@galaxia/core";
 import { detectCrisisLanguage, splitVelaReply } from "@galaxia/vela";
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { PinThemePicker } from "../../../components/pin-theme-picker";
 import { Spinner } from "../../../components/spinner";
+import { VelaFocusPickers } from "../../../components/vela-focus-pickers";
 import { publicEnv } from "../../../lib/env";
-import { EMPTY_STATE_WELCOME_HREF } from "../../../lib/nav-links";
 import { updateNoteTheme } from "../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
+import { toVelaGroups, toVelaPeople, velaDefaultSubjectId } from "../../../lib/vela-roster";
 
 type VelaMode = "ask" | "shared";
 type Scope     = "person" | "pair" | "group";
 interface PersonLite {
-  id: string; display_name: string; is_minor: boolean;
+  id: string; display_name: string; relation: string; is_minor: boolean;
   birth_date: string | null; birth_precision: "none" | "exact" | "date" | "year" | null;
   passed_at?: string | null;
   sunSign?: string | null;
 }
-interface GroupLite  { id: string; name: string; }
+interface GroupLite  { id: string; name: string; memberCount?: number; }
 /** Single source of truth (ENGINEERING.md §9) — never read person.is_minor directly. */
 const minorOf = (p: PersonLite | null | undefined) =>
   Boolean(p) && isMinorForSafety({ isMinor: p!.is_minor, birthDate: p!.birth_date, birthPrecision: p!.birth_precision });
@@ -33,11 +33,6 @@ const VELA_ROSTER_LOADING = "Loading the people Vela can talk about.";
 // FOUNDER-REVIEW: Vela people fetch failed or timed out.
 const VELA_ROSTER_ERROR = "Vela could not load your people. Try again.";
 const VELA_ROSTER_RETRY = "Try again";
-// FOUNDER-REVIEW: empty constellation on Vela.
-const VELA_NO_PEOPLE = "Add someone to your constellation before you can ask Vela.";
-const VELA_NO_PEOPLE_ACTION = "Add someone";
-// FOUNDER-REVIEW: empty groups picker.
-const VELA_NO_GROUPS = "Create a group first. Then you can ask about it here.";
 // FOUNDER-REVIEW: send timed out.
 const VELA_SEND_TIMEOUT = "Vela did not answer in time. Check your connection and try again.";
 // FOUNDER-REVIEW: send failed without a timeout.
@@ -103,8 +98,14 @@ export default function VelaPage() {
   } | null>(null);
   // Suppress the focus-change reset while we programmatically restore a thread.
   const restoringRef = useRef(false);
+  // Seed Person A (subject) once from initialComparePairIds. A user who
+  // then changes slots must not be reset on roster reload.
+  const subjectSeededRef = useRef(false);
   const chatRef  = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const velaPeople = useMemo(() => toVelaPeople(people), [people]);
+  const velaGroups = useMemo(() => toVelaGroups(groups), [groups]);
 
   const selectedSubject = people.find(p => p.id === subjectId) ?? null;
   const selectedPair    = people.find(p => p.id === pairId)    ?? null;
@@ -166,10 +167,13 @@ export default function VelaPage() {
       setAccessToken(session.access_token);
       setUserId(user.id);
       const [{ data: pd }, { data: gd }] = await Promise.all([
-        supabase.from("people").select("id, display_name, is_minor, birth_date, birth_precision, passed_at").eq("owner_id", user.id).order("display_name"),
+        supabase.from("people").select("id, display_name, relation, is_minor, birth_date, birth_precision, passed_at").eq("owner_id", user.id).order("display_name"),
         supabase.from("groups").select("id, name").eq("owner_id", user.id).order("name")
       ]);
-      const allPeople = (pd ?? []) as PersonLite[];
+      const allPeople = ((pd ?? []) as PersonLite[]).map((p) => ({
+        ...p,
+        relation: p.relation ?? ""
+      }));
       const ids = allPeople.map((p) => p.id);
       if (ids.length) {
         const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
@@ -181,7 +185,20 @@ export default function VelaPage() {
         for (const p of allPeople) p.sunSign = sunById.get(p.id) ?? null;
       }
       setPeople(allPeople);
-      setGroups((gd ?? []) as GroupLite[]);
+      const groupRows = (gd ?? []) as GroupLite[];
+      if (groupRows.length) {
+        const { data: memberRows } = await supabase
+          .from("group_members")
+          .select("group_id")
+          .in("group_id", groupRows.map((g) => g.id));
+        const counts = new Map<string, number>();
+        for (const row of memberRows ?? []) {
+          const gid = row.group_id as string;
+          counts.set(gid, (counts.get(gid) ?? 0) + 1);
+        }
+        for (const g of groupRows) g.memberCount = counts.get(g.id) ?? 0;
+      }
+      setGroups(groupRows);
 
       restoringRef.current = true;
 
@@ -201,6 +218,7 @@ export default function VelaPage() {
           setThreadId(boot.threadId);
           await loadHistory(boot.threadId);
           prevSubjectRef.current = row.pair_low ?? row.subject_person ?? null;
+          subjectSeededRef.current = true;
           restoringRef.current = false;
           return;
         }
@@ -211,15 +229,23 @@ export default function VelaPage() {
         setScope("pair"); setSubjectId(boot.subject); setPairId(boot.pair);
         if (boot.relType) setRelType(boot.relType);
         prevSubjectRef.current = boot.subject;
+        subjectSeededRef.current = true;
       } else if (boot.scope === "group" && boot.groupId) {
         setScope("group"); setGroupId(boot.groupId);
       } else if (boot.subject) {
         setScope("person"); setSubjectId(boot.subject);
         prevSubjectRef.current = boot.subject;
+        subjectSeededRef.current = true;
       } else {
-        // 3) Fresh session defaults.
-        if (allPeople[0]) { setSubjectId(allPeople[0].id); prevSubjectRef.current = allPeople[0].id; }
-        if (allPeople[1]) setPairId(allPeople[1].id);
+        // 3) Fresh session defaults. Slot A prefers self via
+        // initialComparePairIds; slot B stays empty so the next action is
+        // picking the second person.
+        if (!subjectSeededRef.current) {
+          const nextSubject = velaDefaultSubjectId(null, allPeople);
+          setSubjectId((current) => current ?? nextSubject);
+          if (nextSubject) prevSubjectRef.current = nextSubject;
+          subjectSeededRef.current = nextSubject !== null;
+        }
         if (gd?.[0]) setGroupId(gd[0].id as string);
       }
       restoringRef.current = false;
@@ -464,76 +490,25 @@ export default function VelaPage() {
                 </button>
               ))}
             </div>
-            {scope !== "group"
-              ? (
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                  {rosterLoading ? (
-                    <p className="muted" style={{ margin: 0, minHeight: 40 }}>{VELA_ROSTER_LOADING}</p>
-                  ) : rosterError ? (
-                    <div>
-                      <p className="muted" style={{ margin: 0 }}>{VELA_ROSTER_ERROR}</p>
-                      <button type="button" className="pill-link" onClick={() => setRosterReload((n) => n + 1)}>{VELA_ROSTER_RETRY}</button>
-                    </div>
-                  ) : people.length === 0 ? (
-                    <div>
-                      <p className="muted" style={{ margin: 0 }}>{VELA_NO_PEOPLE}</p>
-                      <Link href={EMPTY_STATE_WELCOME_HREF as never} className="pill-link">{VELA_NO_PEOPLE_ACTION}</Link>
-                    </div>
-                  ) : people.map((p) => {
-                    const selected = subjectId === p.id;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        className={`group-member-chip${selected ? " group-member-chip--selected" : ""}`}
-                        aria-pressed={selected}
-                        onClick={() => setSubjectId(p.id)}
-                      >
-                        <InitialAvatar name={p.display_name} size="sm" personId={p.id} sunSign={p.sunSign} memorial={Boolean(p.passed_at)} />
-                        <span>{p.display_name}{minorOf(p) ? " (minor)" : ""}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )
-              : null}
-            {scope === "pair"
-              ? (
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                  {people.map((p) => {
-                    const selected = pairId === p.id;
-                    return (
-                      <button
-                        key={`pair-${p.id}`}
-                        type="button"
-                        className={`group-member-chip${selected ? " group-member-chip--selected" : ""}`}
-                        aria-pressed={selected}
-                        onClick={() => setPairId(p.id)}
-                      >
-                        <InitialAvatar name={p.display_name} size="sm" personId={p.id} sunSign={p.sunSign} memorial={Boolean(p.passed_at)} />
-                        <span>{p.display_name}{minorOf(p) ? " (minor)" : ""}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )
-              : null}
-            {scope === "group"
-              ? rosterLoading ? (
-                  <p className="muted" style={{ margin: "0 0 8px" }}>{VELA_ROSTER_LOADING}</p>
-                ) : rosterError ? (
-                  <div style={{ marginBottom: 8 }}>
-                    <p className="muted" style={{ margin: 0 }}>{VELA_ROSTER_ERROR}</p>
-                    <button type="button" className="pill-link" onClick={() => setRosterReload((n) => n + 1)}>{VELA_ROSTER_RETRY}</button>
-                  </div>
-                ) : groups.length === 0
-                ? <p className="muted" style={{ margin: "0 0 8px" }}>{VELA_NO_GROUPS}</p>
-                : <select className="field" style={{ borderRadius: 14, marginBottom: 8 }}
-                  value={groupId ?? ""}
-                  onChange={e => setGroupId(e.target.value)}>
-                  {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-              : null}
+            <div style={{ marginBottom: 8 }}>
+              <VelaFocusPickers
+                scope={scope}
+                people={velaPeople}
+                groups={velaGroups}
+                subjectId={subjectId}
+                pairId={pairId}
+                groupId={groupId}
+                onSubjectSelect={setSubjectId}
+                onPairSelect={setPairId}
+                onGroupSelect={setGroupId}
+                loading={rosterLoading}
+                error={rosterError}
+                loadingLabel={VELA_ROSTER_LOADING}
+                errorLabel={VELA_ROSTER_ERROR}
+                retryLabel={VELA_ROSTER_RETRY}
+                onRetry={() => setRosterReload((n) => n + 1)}
+              />
+            </div>
             <input className="field" style={{ borderRadius: 14 }} value={relType}
               onChange={e => setRelType(e.target.value)}
               placeholder="Relationship type (partner, sibling, general…)" />

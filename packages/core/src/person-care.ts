@@ -108,13 +108,15 @@ export type PersonPageGroup = {
 };
 
 /**
- * FOUNDER-REVIEW: top-level person-profile groups. Remembrance is the
- * memorial-surface placeholder (label-rename left that chip as Remembrance).
+ * FOUNDER-REVIEW: top-level person-profile groups.
+ * Today (was Now) is not a tab: its two cards sit above the remaining pair.
+ * Who they are / You and them are the living tabs. Remembrance replaces
+ * You and them on a memorial profile.
  */
 export const PERSON_GROUP_LABEL: Record<PersonGroupKey, string> = {
-  now: "Now",
-  them: "Them",
-  yours: "Yours",
+  now: "Today",
+  them: "Who they are",
+  yours: "You and them",
   remembrance: "Remembrance",
 };
 
@@ -137,11 +139,11 @@ export const PERSON_SECTION_GROUP: Record<PersonNavSectionId, PersonGroupKey> = 
 
 const THEM_SECTION_ORDER: PersonNavSectionId[] = [
   "big-three",
+  "chart-wheel",
   "placements",
   "aspects",
   "houses",
   "generational",
-  "chart-wheel",
 ];
 
 const REMEMBRANCE_SECTION_ORDER: PersonNavSectionId[] = [
@@ -152,8 +154,13 @@ const REMEMBRANCE_SECTION_ORDER: PersonNavSectionId[] = [
   "past-conversations",
 ];
 
-const GROUP_STRIP_LIVING: PersonGroupKey[] = ["now", "them", "yours"];
-const GROUP_STRIP_MEMORIAL: PersonGroupKey[] = ["now", "them", "remembrance"];
+const GROUP_STRIP_LIVING: PersonGroupKey[] = ["them", "yours"];
+const GROUP_STRIP_MEMORIAL: PersonGroupKey[] = ["them", "remembrance"];
+
+/** Today cards live above the tab strip; they are never a selected group. */
+export function isTodaySection(id: PersonNavSectionId): boolean {
+  return PERSON_SECTION_GROUP[id] === "now";
+}
 
 export function isPersonNavSectionId(id: string): id is PersonNavSectionId {
   return Object.prototype.hasOwnProperty.call(PERSON_SECTION_GROUP, id);
@@ -219,8 +226,9 @@ export type PersonPageEntry = {
 };
 
 /**
- * Deep-link + default-group resolver. Hash wins, then ?transit=1, then Now
- * when there is a live sky note today, otherwise Them.
+ * Deep-link + default-group resolver. Hash wins, then ?transit=1 scrolls to
+ * the always-visible Today cards. Default group is Who they are (them).
+ * Today is not a tab, so now-section hashes keep the them (or first) group.
  */
 export function resolvePersonPageEntry(input: {
   hash: string | null | undefined;
@@ -231,23 +239,25 @@ export function resolvePersonPageEntry(input: {
 }): PersonPageEntry {
   const available = new Set(input.groups.flatMap((group) => group.sections.map((section) => section.id)));
   const presentGroups = new Set(input.groups.map((group) => group.key));
+  const fallbackGroup: PersonGroupKey = presentGroups.has("them")
+    ? "them"
+    : (input.groups[0]?.key ?? "them");
   const rawHash = (input.hash ?? "").replace(/^#/, "");
 
   if (rawHash && isPersonNavSectionId(rawHash)) {
+    if (isTodaySection(rawHash)) {
+      return { group: fallbackGroup, sectionId: rawHash };
+    }
     const group = groupForPersonSection(rawHash, input.isMemorial);
     if (presentGroups.has(group)) {
       return { group, sectionId: available.has(rawHash) ? rawHash : null };
     }
   }
 
-  if (input.transit === "1" && available.has("active-today")) {
-    return { group: "now", sectionId: "active-today" };
-  }
-
-  if (input.hasActiveToday && presentGroups.has("now")) {
-    return { group: "now", sectionId: null };
+  if (input.transit === "1" && input.hasActiveToday) {
+    return { group: fallbackGroup, sectionId: "active-today" };
   }
 
   if (presentGroups.has("them")) return { group: "them", sectionId: null };
-  return { group: input.groups[0]?.key ?? "them", sectionId: null };
+  return { group: fallbackGroup, sectionId: null };
 }

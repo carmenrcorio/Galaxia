@@ -23,10 +23,16 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     expect(src).toContain("buildPersonPageGroups");
     expect(src).toContain("resolvePersonPageEntry");
     expect(src).toContain('get("transit")');
-    expect(src).toContain("person-group-panel-now");
+    expect(src).toContain("person-today");
+    expect(src).not.toContain("person-group-panel-now");
     expect(src).toContain("person-group-panel-them");
     expect(src).toContain('person-group-panel-remembrance" : "person-group-panel-yours"');
-    expect(src.indexOf('id="generational"')).toBeLessThan(src.indexOf('id="chart-wheel"'));
+    expect(src.indexOf('id="big-three"')).toBeLessThan(src.indexOf('id="chart-wheel"'));
+    expect(src.indexOf('id="chart-wheel"')).toBeLessThan(src.indexOf('id="placements"'));
+    expect(src.indexOf('id="placements"')).toBeLessThan(src.indexOf('id="generational"'));
+    expect(src.indexOf('id="generational"')).toBeLessThan(src.indexOf('id="aspects"'));
+    expect(src.indexOf('id="aspects"')).toBeLessThan(src.indexOf('id="houses"'));
+    expect(src.indexOf('id="houses"')).toBeLessThan(src.indexOf('id="element-balance"'));
     expect(src).toContain("ChartVocabSubhead");
     expect(src).toContain("PERSON_TAB_LABEL");
     expect(src).toContain("PERSON_TAB_VOCAB");

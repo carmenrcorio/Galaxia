@@ -306,8 +306,7 @@ export default function PersonProfileScreen() {
                   color: selected ? tokens.colors.ink : tokens.colors.mist,
                   fontWeight: "700",
                   fontSize: 13,
-                  letterSpacing: 0.8,
-                  textTransform: "uppercase"
+                  letterSpacing: 0.2
                 }}
               >
                 {PERSON_GROUP_LABEL[key]}
@@ -334,9 +333,35 @@ export default function PersonProfileScreen() {
 
             <View style={cardStyle}>
               {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
+              <Text style={cardTitle}>{PERSON_TAB_LABEL["chart-wheel"]}</Text>
+              <Text style={vocabSubhead}>
+                {chart.precision === "exact" ? PERSON_TAB_VOCAB["chart-wheel"] : "Sign strip"}
+              </Text>
+              {chart.precision === "exact" ? (
+                <View style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.gold, width: 220, height: 220, alignSelf: "center", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ color: tokens.colors.gold }}>Wheel placeholder</Text>
+                  <Text style={{ color: tokens.colors.mist, fontSize: 12, marginTop: 4 }}>SVG wheel component next slice</Text>
+                </View>
+              ) : (
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {chart.placements.map((placement) => (
+                    <View key={placement.body} style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 6, paddingHorizontal: 10 }}>
+                      <Text style={{ color: tokens.colors.cream, textTransform: "capitalize" }}>
+                        {placement.body}: {placement.sign}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            <View style={cardStyle}>
+              {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
               <Text style={cardTitle}>{PERSON_TAB_LABEL.placements}</Text>
               <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.placements ?? "Placements"}</Text>
-              {chart.placements.map((placement) => (
+              {chart.placements
+                .filter((placement) => placement.body !== "sun" && placement.body !== "moon")
+                .map((placement) => (
                 <Text key={placement.body} style={cardBody}>
                   {placement.body.toUpperCase()} {placement.sign} {placement.degree.toFixed(1)}°{placement.house ? ` · House ${placement.house}` : ""}
                 </Text>
@@ -369,15 +394,6 @@ export default function PersonProfileScreen() {
                 })()}
               </View>
             ) : null}
-
-            <View style={cardStyle}>
-              <Text style={cardTitle}>Elemental balance</Text>
-              {elementBalance ? (
-                <Text style={cardBody}>
-                  Fire {elementBalance.fire} · Earth {elementBalance.earth} · Air {elementBalance.air} · Water {elementBalance.water}
-                </Text>
-              ) : null}
-            </View>
 
             <View style={cardStyle}>
               {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
@@ -435,27 +451,12 @@ export default function PersonProfileScreen() {
             </View>
 
             <View style={cardStyle}>
-              {/* FOUNDER-REVIEW: tab-matching section label. Astrology term is the line below. */}
-              <Text style={cardTitle}>{PERSON_TAB_LABEL["chart-wheel"]}</Text>
-              <Text style={vocabSubhead}>
-                {chart.precision === "exact" ? PERSON_TAB_VOCAB["chart-wheel"] : "Sign strip"}
-              </Text>
-              {chart.precision === "exact" ? (
-                <View style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.gold, width: 220, height: 220, alignSelf: "center", alignItems: "center", justifyContent: "center" }}>
-                  <Text style={{ color: tokens.colors.gold }}>Wheel placeholder</Text>
-                  <Text style={{ color: tokens.colors.mist, fontSize: 12, marginTop: 4 }}>SVG wheel component next slice</Text>
-                </View>
-              ) : (
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {chart.placements.map((placement) => (
-                    <View key={placement.body} style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 6, paddingHorizontal: 10 }}>
-                      <Text style={{ color: tokens.colors.cream, textTransform: "capitalize" }}>
-                        {placement.body}: {placement.sign}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
+              <Text style={cardTitle}>Elemental balance</Text>
+              {elementBalance ? (
+                <Text style={cardBody}>
+                  Fire {elementBalance.fire} · Earth {elementBalance.earth} · Air {elementBalance.air} · Water {elementBalance.water}
+                </Text>
+              ) : null}
             </View>
           </>
         ) : chartLoadError ? (

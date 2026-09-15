@@ -7,6 +7,7 @@ import {
   PERSON_TAB_LABEL,
   PERSON_TAB_VOCAB,
   resolvePersonPageEntry,
+  isTodaySection,
   type PersonGroupKey,
   isMinorForSafety,
   peopleForTodaySky,
@@ -243,33 +244,36 @@ const MEMORIAL_FLAGS = {
 describe("person profile groups", () => {
   it("names the four groups in founder-approved copy", () => {
     expect(PERSON_GROUP_LABEL).toEqual({
-      now: "Now",
-      them: "Them",
-      yours: "Yours",
+      now: "Today",
+      them: "Who they are",
+      yours: "You and them",
       remembrance: "Remembrance",
     });
   });
 
-  it("buckets a living profile into Now, Them, Yours with founder Them order", () => {
+  it("buckets a living profile into Who they are and You and them, with Today off the strip", () => {
     const groups = buildPersonPageGroups({ ...LIVING_FLAGS, isMemorial: false });
-    expect(groups.map((g) => g.key)).toEqual(["now", "them", "yours"]);
-    expect(groups.map((g) => g.label)).toEqual(["Now", "Them", "Yours"]);
-    expect(groups.find((g) => g.key === "now")?.sections.map((s) => s.id)).toEqual([
-      "active-today",
-      "vela-on-them",
-    ]);
+    expect(groups.map((g) => g.key)).toEqual(["them", "yours"]);
+    expect(groups.map((g) => g.label)).toEqual(["Who they are", "You and them"]);
+    expect(groups.find((g) => g.key === "now")).toBeUndefined();
     expect(groups.find((g) => g.key === "them")?.sections.map((s) => s.id)).toEqual([
       "big-three",
+      "chart-wheel",
       "placements",
       "aspects",
       "houses",
       "generational",
-      "chart-wheel",
     ]);
     expect(groups.find((g) => g.key === "yours")?.sections.map((s) => s.id)).toEqual([
       "notes",
       "past-conversations",
     ]);
+  });
+
+  it("treats Today hashes as always-visible, not a selected group", () => {
+    expect(isTodaySection("active-today")).toBe(true);
+    expect(isTodaySection("vela-on-them")).toBe(true);
+    expect(isTodaySection("notes")).toBe(false);
   });
 
   it("replaces Yours with Remembrance on a memorial profile", () => {
@@ -310,7 +314,7 @@ describe("resolvePersonPageEntry", () => {
   const emptyNow = buildPersonPageGroups({ ...LIVING_FLAGS, hasActiveToday: false, isMemorial: false });
   const memorial = buildPersonPageGroups({ ...MEMORIAL_FLAGS, isMemorial: true });
 
-  it("defaults to Now when there is a live sky note today", () => {
+  it("defaults to Who they are even when Today has a live sky note", () => {
     expect(
       resolvePersonPageEntry({
         hash: null,
@@ -319,7 +323,7 @@ describe("resolvePersonPageEntry", () => {
         isMemorial: false,
         groups: living,
       })
-    ).toEqual({ group: "now", sectionId: null });
+    ).toEqual({ group: "them", sectionId: null });
   });
 
   it("defaults to Them when Now has no active content today", () => {
@@ -334,7 +338,7 @@ describe("resolvePersonPageEntry", () => {
     ).toEqual({ group: "them", sectionId: null });
   });
 
-  it("resolves ?transit=1 to Now scrolled to #active-today", () => {
+  it("resolves ?transit=1 to Who they are scrolled to #active-today", () => {
     expect(
       resolvePersonPageEntry({
         hash: null,
@@ -343,7 +347,7 @@ describe("resolvePersonPageEntry", () => {
         isMemorial: false,
         groups: living,
       })
-    ).toEqual({ group: "now", sectionId: "active-today" });
+    ).toEqual({ group: "them", sectionId: "active-today" });
   });
 
   it("lets a section hash win over ?transit=1", () => {
@@ -360,8 +364,8 @@ describe("resolvePersonPageEntry", () => {
 
   it("opens the parent group for each of the thirteen bookmarkable hashes", () => {
     const livingCases: Array<[string, PersonGroupKey]> = [
-      ["active-today", "now"],
-      ["vela-on-them", "now"],
+      ["active-today", "them"],
+      ["vela-on-them", "them"],
       ["chart-wheel", "them"],
       ["big-three", "them"],
       ["placements", "them"],

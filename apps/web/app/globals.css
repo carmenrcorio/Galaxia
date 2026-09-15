@@ -129,7 +129,7 @@ textarea:focus-visible {
   touch-action: manipulation;
 }
 
-/* Person / chart quick-nav — sticky group tabs + wrap jump, not nested scrollers */
+/* Person profile chrome — one sticky tab layer, sentence case */
 .person-profile-nav {
   position: sticky;
   top: 68px;
@@ -145,7 +145,7 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: 6px;
-  margin: 0 0 8px;
+  margin: 0;
 }
 .person-group-tab {
   min-height: 36px;
@@ -153,8 +153,8 @@ textarea:focus-visible {
   border-radius: 999px;
   font-size: .78rem;
   font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  letter-spacing: .02em;
+  text-transform: none;
   color: var(--mist);
   background: rgba(255,255,255,.04);
   border: 1px solid rgba(183,154,216,.18);
@@ -171,10 +171,10 @@ textarea:focus-visible {
 .person-group-panel section,
 .person-group-panel [id="remembrance"],
 .person-group-panel [id="memorial-timeline"],
-.person-group-panel [id="honor-light"] {
-  /* Beat leftover inline 92px on older section styles; wrapped jump chips
-     make the sticky chrome taller than the old single chip rail. */
-  scroll-margin-top: 168px !important;
+.person-group-panel [id="honor-light"],
+#person-today section {
+  /* Single tab row; Today cards sit above the strip. */
+  scroll-margin-top: 92px !important;
 }
 .chart-section-nav {
   min-width: 0;
@@ -228,8 +228,9 @@ textarea:focus-visible {
   .person-group-panel section,
   .person-group-panel [id="remembrance"],
   .person-group-panel [id="memorial-timeline"],
-  .person-group-panel [id="honor-light"] {
-    scroll-margin-top: 228px !important;
+  .person-group-panel [id="honor-light"],
+  #person-today section {
+    scroll-margin-top: 120px !important;
   }
   .chart-section-nav__chip {
     padding: 7px 10px;

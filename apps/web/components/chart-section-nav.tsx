@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * Person profile chrome: three top-level groups plus a wrap jump list
- * for the active group. Jump chips wrap; they are not a nested horizontal
- * scroller (see ChartSectionNav list: flex-wrap, no overflow-x).
+ * Person profile chrome: one tab layer (Who they are / You and them, or
+ * Remembrance on a memorial profile). Today sits above this strip.
+ * Jump chips remain available as ChartSectionNav for other surfaces; the
+ * person page no longer mounts a second nav layer.
  */
 
 import type { PersonGroupKey, PersonNavSection, PersonPageGroup } from "@galaxia/core";
@@ -62,17 +63,14 @@ export function PersonProfileNav({
   groups,
   activeGroup,
   onGroupChange,
-  onJump,
   personName,
 }: {
   groups: PersonPageGroup[];
   activeGroup: PersonGroupKey;
   onGroupChange: (group: PersonGroupKey) => void;
-  onJump: (id: PersonNavSection["id"]) => void;
   personName: string;
 }) {
   if (groups.length === 0) return null;
-  const jump = groups.find((group) => group.key === activeGroup)?.sections ?? [];
 
   return (
     <div className="person-profile-nav">
@@ -99,13 +97,6 @@ export function PersonProfileNav({
           );
         })}
       </div>
-      {jump.length > 1 ? (
-        <ChartSectionNav
-          sections={jump}
-          ariaLabel={`Jump within ${groups.find((g) => g.key === activeGroup)?.label ?? "this group"}`}
-          onJump={onJump}
-        />
-      ) : null}
     </div>
   );
 }

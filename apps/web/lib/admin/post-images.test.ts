@@ -57,12 +57,13 @@ describe("uploadPostImage", () => {
     const result = await uploadPostImage(client, file);
 
     expect(from).toHaveBeenCalledWith(BLOG_IMAGES_BUCKET);
-    expect(upload).toHaveBeenCalledTimes(1);
-    const [path, _body, options] = upload.mock.calls[0];
-    expect(path).toMatch(new RegExp(`^${BLOG_IMAGES_PHOTO_PREFIX}/[0-9a-f-]+\\.png$`));
-    expect(options).toMatchObject({ contentType: "image/png", upsert: false });
-    expect(result.path).toBe(path);
-    expect(result.url).toBe(`https://cdn.example/${BLOG_IMAGES_BUCKET}/${path}`);
+    expect(result.path).toMatch(new RegExp(`^${BLOG_IMAGES_PHOTO_PREFIX}/[0-9a-f-]+\\.png$`));
+    expect(result.url).toBe(`https://cdn.example/${BLOG_IMAGES_BUCKET}/${result.path}`);
+    expect(upload).toHaveBeenCalledWith(
+      result.path,
+      expect.any(ArrayBuffer),
+      expect.objectContaining({ contentType: "image/png", cacheControl: "31536000", upsert: false })
+    );
   });
 
   it("rejects an unsupported mime type before touching storage", async () => {

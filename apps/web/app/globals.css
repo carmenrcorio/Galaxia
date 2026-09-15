@@ -2665,3 +2665,32 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
 .pill-status--danger  { color: var(--rose); background: rgba(218,140,140,.12); border: 1px solid rgba(218,140,140,.28); }
 .pill-status--muted   { color: var(--mist); background: rgba(183,154,216,.08); border: 1px solid rgba(183,154,216,.18); }
 .pill-status--accent  { color: var(--gold-bright); background: rgba(230,174,108,.16); border: 1px solid rgba(230,174,108,.34); }
+
+.admin-analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.admin-analytics-sections { display: grid; gap: 20px; }
+.admin-analytics-section-title {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  color: var(--gold);
+  font-weight: 600;
+  margin: 0 0 12px;
+  padding: 0 14px;
+}
+.admin-metric-value {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  color: var(--cream);
+  font-variant-numeric: tabular-nums;
+}
+.admin-metric-week {
+  color: var(--gold);
+  font-size: .86rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

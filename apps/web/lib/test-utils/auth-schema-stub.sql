@@ -33,6 +33,10 @@ create table if not exists auth.users (
   raw_user_meta_data jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
+  -- GoTrue has these; admin_adoption_metrics reads both. Omit them and
+  -- from-scratch replay dies on 20260915021648.
+  last_sign_in_at timestamptz,
+  deleted_at timestamptz,
   confirmation_token text default '',
   recovery_token text default '',
   email_change_token_new text default '',

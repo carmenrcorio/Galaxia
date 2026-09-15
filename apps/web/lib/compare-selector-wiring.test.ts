@@ -9,7 +9,7 @@ const WEB_COMPARE = "apps/web/app/app/compare/page.tsx";
 describe("Compare selection UI scales without dual pill grids", () => {
   it("web Compare uses the searchable person fields, not wrap-flex people.map grids", () => {
     const src = read(WEB_COMPARE);
-    expect(src).toContain("ComparePersonField");
+    expect(src).toContain("PersonPickerField");
     expect(src).toContain("compareAddPersonHref");
     expect(src).toContain("recentComparedPeople");
     expect(src).not.toContain("AddPersonForm");

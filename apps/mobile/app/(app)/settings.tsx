@@ -37,6 +37,13 @@ function formatDate(iso: string | null): string | null {
   return d.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
 }
 
+// FOUNDER-REVIEW: settings prefs loading / failure / empty lists.
+const SETTINGS_PREFS_LOADING = "Loading your settings.";
+const SETTINGS_PREFS_ERROR = "Your settings could not load. Try again.";
+const SETTINGS_PREFS_RETRY = "Try again";
+const SETTINGS_PEOPLE_EMPTY = "No people yet. Add someone to your constellation.";
+const SETTINGS_GROUPS_EMPTY = "No groups yet. Create one from Groups.";
+
 export default function SettingsScreen() {
   const { session } = useAuth();
   const { status: subStatus, trialDaysLeft, comped } = useEntitlement();
@@ -121,15 +128,13 @@ export default function SettingsScreen() {
 
       {prefsLoading ? (
         <View style={cardStyle}>
-          {/* FOUNDER-REVIEW: settings prefs are loading. */}
-          <Text style={cardBody}>Loading your settings.</Text>
+          <Text style={cardBody}>{SETTINGS_PREFS_LOADING}</Text>
         </View>
       ) : prefsError ? (
         <View style={cardStyle}>
-          {/* FOUNDER-REVIEW: settings prefs fetch failed or timed out. */}
-          <Text style={cardBody}>Your settings could not load. Try again.</Text>
+          <Text style={cardBody}>{SETTINGS_PREFS_ERROR}</Text>
           <Pressable onPress={() => void loadSettingsData()}>
-            <Text style={{ color: tokens.colors.gold, fontWeight: "700" }}>Try again</Text>
+            <Text style={{ color: tokens.colors.gold, fontWeight: "700" }}>{SETTINGS_PREFS_RETRY}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -180,8 +185,7 @@ export default function SettingsScreen() {
         {people.length === 0 ? (
           <Link href="/onboarding" asChild>
             <Pressable accessibilityRole="link" accessibilityLabel="Add someone">
-              {/* FOUNDER-REVIEW: settings people empty. */}
-              <Text style={cardBody}>No people yet. Add someone to your constellation.</Text>
+              <Text style={cardBody}>{SETTINGS_PEOPLE_EMPTY}</Text>
             </Pressable>
           </Link>
         ) : (
@@ -197,8 +201,7 @@ export default function SettingsScreen() {
       <View style={cardStyle}>
         <Text style={cardTitle}>Groups</Text>
         {groups.length === 0 ? (
-          {/* FOUNDER-REVIEW: settings groups empty. */}
-          <Text style={cardBody}>No groups yet. Create one from Groups.</Text>
+          <Text style={cardBody}>{SETTINGS_GROUPS_EMPTY}</Text>
         ) : (
           groups.map((group) => (
             <View key={group.id} style={listItem}>

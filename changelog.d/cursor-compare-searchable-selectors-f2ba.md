@@ -6,4 +6,6 @@
 
 `[CHANGED]` `SELF_OTHER_TO_COMPARE` now maps first-run `mother` / `father` and picker `grandchild` onto `parent-child`. `grandparent`, extended family, `ex`, `acquaintance`, and `other` stay unmapped so Compare does not fabricate a pair frame. Synastry math, interpretation selection, and `isMinorForSafety` gating are unchanged.
 
+`[TESTED]` **375px · DPR-2 · 50-person demo** (Playwright; temporary `__demo` seed + middleware bypass removed before commit): no horizontal overflow (`scrollWidth` 375); picker sheet holds 50 options in a `360px` list (`scrollHeight` 2581) and page height stays 978px closed and open; Carmen × Elena derives "Parent and child" and enables Run. Same charts + same `relationType` from a derived tag vs an equivalent pill pick stringify to identical headline / need / watch / aspect-row output; `computeSynastry` still takes only the two charts. `self+mother` is the intentional mapping change (now `parent-child`, not the old unmapped fallback).
+
 `[OPEN]` Expo Compare (`apps/mobile/app/(app)/compare.tsx`) still uses dual pill grids and the always-visible 8-type row. Out of scope for this branch; follow-up pass needed so web and mobile do not stay diverged.

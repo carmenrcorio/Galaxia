@@ -112,7 +112,7 @@ export function FeaturesSection() {
               <div className="bubble bubble-user">Why do we keep having the same fight?</div>
               <div className="bubble bubble-vela">
                 <div className="bubble-sender">Vela</div>
-                Your Mars square his Saturn is the root: you move fast and say it out loud; Daniel
+                Your charts share a rare harmonic pattern: you move fast and say it out loud; Daniel
                 goes quiet to keep the peace. Winning isn't the goal. Naming the pattern before you're
                 in it is. Try: "we're doing the thing again, can we slow down?"
               </div>

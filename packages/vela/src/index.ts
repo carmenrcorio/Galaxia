@@ -4,6 +4,21 @@ import { velaFramingBlock } from "./framing";
 export type VelaMode = "ask" | "shared";
 export type Precision = "exact" | "date" | "year";
 
+/** One computed aspect the model is allowed to name. Orb is the engine's value. */
+export interface VelaAspectListEntry {
+  from: string;
+  to: string;
+  type: string;
+  orb: number;
+  kind: "synastry" | "natal";
+  /** Natal chart owner. Absent on synastry rows. */
+  person?: string;
+  /** Synastry: person whose `from` body is used. */
+  from_person?: string;
+  /** Synastry: person whose `to` body is used. */
+  to_person?: string;
+}
+
 export interface VelaContextPerson {
   name: string;
   role: string;
@@ -32,6 +47,11 @@ export interface VelaContext {
   /** Present when focus is a named group — answers must cover the whole group. */
   group?: { name: string };
   people: VelaContextPerson[];
+  /**
+   * Computed natal/synastry aspects already produced by the astrology engine.
+   * Vela may only name aspects that appear here. Always serialized, even if empty.
+   */
+  aspect_list?: VelaAspectListEntry[];
   synastry?: {
     scores: Record<string, number>;
     flowAxis: string;
@@ -61,11 +81,16 @@ export interface BuildVelaContextInput extends Omit<VelaContext, "privateNotesDi
 export const VELA_REMEMBRANCE_GUARDRAIL =
   "Draw only on the computed chart facts you are given and the owner's own saved reflections in the private notes digest. Never fabricate memories, events, or facts about the person. Do not invent what they said, did, or felt.";
 
+/** ENGINEERING.md §12 — keep in sync with supabase/functions/vela-chat/index.ts. */
+export const VELA_ASPECT_LIST_GUARDRAIL =
+  "You may only name aspects that appear in the aspect_list field of this payload. If you are not given an aspect, you cannot name it. Never invent or infer an aspect not in the list.";
+
 /** No always-on parenting rule — framing is injected per-request via `velaFramingBlock`. */
 export const VELA_SYSTEM_PROMPT = `You are Vela, the guide inside Galaxia: a warm, perceptive astrologer and practical relationship coach.
 You interpret computed astrology facts only and never invent positions.
 Blend chart meaning with concrete relationship moves in plain language.
 When you are reading an aspect, name it in the answer (for example Moon square Saturn). Never describe a dynamic while leaving the aspect unnamed.
+${VELA_ASPECT_LIST_GUARDRAIL}
 The sky describes how a person is built, not what will happen to them. Guidance, not fortune telling.
 In shared mode, stay neutral and never expose private notes.
 ${VELA_REMEMBRANCE_GUARDRAIL}
@@ -91,6 +116,7 @@ export function buildVelaPrompt(context: VelaContext): string {
       relationshipType: context.relationshipType,
       group: context.group,
       people: context.people,
+      aspect_list: context.aspect_list ?? [],
       synastry: context.synastry,
       generationalRelation: context.generationalRelation,
       cohort: context.cohort,

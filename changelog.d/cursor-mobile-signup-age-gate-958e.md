@@ -1,0 +1,5 @@
+## Mobile signup uses the server-side age gate (branch `cursor/mobile-signup-age-gate-958e`) — 2026-09-16
+
+**Trigger**: Web account creation goes through `POST /api/auth/signup`, which rejects the request unless `age_confirmed` is boolean `true`. Mobile still called `supabase.auth.signUp` directly, so a client that skipped the checkbox could create an account without attesting age.
+
+`[FIXED]` **Mobile signup now posts to the same web route.** `apps/mobile/app/index.tsx` Create account calls `signupViaServer` (`apps/mobile/src/lib/signup.ts`) with `{ email, password, age_confirmed }` taken from the existing age-gate checkbox. If the checkbox is not checked the request is not sent and the button stays disabled. A 400 `"Age confirmation required"` shows "Please confirm you are 18 or older to continue." (FOUNDER-REVIEW). Sign-in is unchanged (`signInWithPassword`). No database column; no persistence of the flag. Native React Native does not need CORS on this route, so the web handler is untouched.

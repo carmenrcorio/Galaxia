@@ -3,6 +3,7 @@ import { Redirect } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { resolvePublicIndexGate } from "../src/lib/authed-route-gate";
+import { AGE_GATE_REJECTED_MESSAGE, signupViaServer } from "../src/lib/signup";
 import { supabase } from "../src/lib/supabase";
 import { useAuth } from "../src/providers/auth-provider";
 import { useEntitlement } from "../src/providers/entitlement-provider";
@@ -19,8 +20,8 @@ export default function PublicIndexScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  // COPPA age gate, required for account creation only (never for sign-in),
-  // purely client-side: no birth-data column, no server enforcement.
+  // COPPA age gate, required for account creation only (never for sign-in).
+  // The checkbox is client UX; POST /api/auth/signup enforces age_confirmed.
   const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   const gate = resolvePublicIndexGate({
@@ -34,10 +35,12 @@ export default function PublicIndexScreen() {
     setSubmitting(true);
     setError(null);
     try {
-      const fn = mode === "sign-in" ? supabase.auth.signInWithPassword : supabase.auth.signUp;
-      const { error: authError } = await fn({ email, password });
-      if (authError) {
-        setError(authError.message);
+      if (mode === "sign-in") {
+        const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+        if (authError) {
+          setError(authError.message);
+        }
+        return;
       }
       // Signing up deliberately writes no display_name. This used to store
       // email.split("@")[0] as the user's name, which put a fragment of a login
@@ -45,6 +48,21 @@ export default function PublicIndexScreen() {
       // header reads. It then showed up as the person's name on the web account
       // screen and in invite emails. No name captured here means no name stored,
       // and the account screen honestly asks for one.
+      if (!ageConfirmed) {
+        setError(AGE_GATE_REJECTED_MESSAGE);
+        return;
+      }
+      const result = await signupViaServer({ email, password, ageConfirmed });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      if (result.session?.access_token && result.session.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: result.session.access_token,
+          refresh_token: result.session.refresh_token
+        });
+      }
     } finally {
       setSubmitting(false);
     }

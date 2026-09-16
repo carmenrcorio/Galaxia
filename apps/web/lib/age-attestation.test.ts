@@ -53,6 +53,18 @@ describe("POST /api/auth/signup age attestation wiring", () => {
     expect(form).not.toContain("supabase.auth.signUp");
   });
 
+  it("mobile signup posts age_confirmed to this route and no longer calls signUp on the client", () => {
+    const mobileScreen = read("apps/mobile/app/index.tsx");
+    const mobileSignup = read("apps/mobile/src/lib/signup.ts");
+    expect(mobileSignup).toContain('siteUrlFor("api/auth/signup")');
+    expect(mobileSignup).toContain("age_confirmed: input.ageConfirmed");
+    expect(mobileSignup).not.toContain("supabase.auth.signUp");
+    expect(mobileScreen).toContain("signupViaServer");
+    expect(mobileScreen).not.toContain("supabase.auth.signUp");
+    expect(mobileScreen).toContain('testID="age-gate-checkbox"');
+    expect(mobileScreen).toContain("disabled={submitting || !ageConfirmed}");
+  });
+
   it("constellation-connect signup uses the same /signup form, so the same server check", () => {
     expect(read("apps/web/lib/connect-invite.ts")).toContain("signupWithNextHref(connectPath(token))");
     expect(read("apps/web/app/signup/page.tsx")).toContain("<SignupForm");

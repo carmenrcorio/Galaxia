@@ -51,6 +51,7 @@ import { useViewer } from "../lib/use-viewer";
 import { ChartImageExport, chartExportFilename } from "./chart-image-export";
 import { ChartPdfExport } from "./chart-pdf-export";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES } from "./chart-wheel";
+import { SignGlanceTiles } from "./sign-glance-tiles";
 import { DynamicTableSection } from "./dynamic-table-section";
 import { FlowsAndCatchesSection } from "./flows-and-catches-section";
 import { GenerationalSection } from "./generational-section";
@@ -96,6 +97,7 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
         {payload.chart.cusps ? (
           <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
             <ChartWheel chart={payload.chart} exportSafe />
+            <SignGlanceTiles chart={payload.chart} />
           </section>
         ) : null}
         <HousesUnavailableCard

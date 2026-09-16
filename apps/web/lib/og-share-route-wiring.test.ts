@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -157,5 +157,21 @@ describe("app/layout.tsx — metadataBase set from publicEnv.siteUrl with the ex
 
   it("sets metadataBase to a URL built from publicEnv.siteUrl, falling back to the existing prod URL", () => {
     expect(src).toMatch(/metadataBase:\s*new URL\(publicEnv\.siteUrl \|\| "https:\/\/galaxia-three\.vercel\.app"\)/);
+  });
+
+  it("keeps a site-wide openGraph.images entry pointing at the branded OG card", () => {
+    expect(src).toMatch(/openGraph:\s*\{[\s\S]*images:\s*\[DEFAULT_OG_IMAGE\]/);
+    expect(src).toContain('url: "/og-image.png"');
+  });
+});
+
+describe("site-wide /opengraph-image file convention", () => {
+  it("commits a static 1200x630 PNG at app/opengraph-image.png so /opengraph-image is not a blank 404", () => {
+    const imagePath = join(REPO_ROOT, "apps/web/app/opengraph-image.png");
+    expect(existsSync(imagePath)).toBe(true);
+    const png = readFileSync(imagePath);
+    expect(png.subarray(0, 8).toString("binary")).toBe("\x89PNG\r\n\x1a\n");
+    expect(png.readUInt32BE(16)).toBe(1200);
+    expect(png.readUInt32BE(20)).toBe(630);
   });
 });

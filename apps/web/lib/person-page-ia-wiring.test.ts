@@ -16,10 +16,11 @@ describe("person page information architecture", () => {
     expect(page).toContain("Archived Vela threads about");
   });
 
-  it("keeps Sun/Moon/Rising at most twice: header glance and Big three", () => {
+  it("shows Sun/Moon/Rising as header glance, Big three, and wheel tiles", () => {
     expect(page).toContain("Sun sign uncertain (year-only birth data)");
     expect(page).toContain('sectionHead("big-three")');
-    expect(page).not.toContain('{ label: "Sun", sign: sun?.sign }');
+    expect(page).toContain("<SignGlanceTiles chart={chart} />");
+    expect(page.indexOf("<ChartWheel")).toBeLessThan(page.indexOf("<SignGlanceTiles"));
     expect(page).toContain('p.body !== "sun" && p.body !== "moon"');
   });
 

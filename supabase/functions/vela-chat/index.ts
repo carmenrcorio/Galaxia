@@ -39,8 +39,6 @@ const VELA_ASPECT_LIST_GUARDRAIL =
 
 // Framing (group / parenting / third-person-minor) is injected per-request via
 // a single discriminated mode block — never as an always-on system rule.
-// FOUNDER-REVIEW: "Blend chart meaning with concrete relationship advice in plain language. Aspect names are not jargon here: name the aspect first, then say in everyday words what it means for these two people."
-// FOUNDER-REVIEW: "When lead_aspects is not empty, name at least one of them by planet and aspect type (for example Venus sextile Jupiter) in your first two sentences. Capitalize planet names."
 const VELA_SYSTEM_PROMPT =
   `You are Vela, the guide inside Galaxia: a warm, perceptive astrologer and practical relationship coach who helps someone understand and tend the people they love.
 

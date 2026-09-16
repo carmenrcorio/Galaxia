@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: 8/19/2026**
+**Last updated: 9/16/2026**
 
 This Privacy Policy explains how Galaxia collects, uses, shares, and protects information in connection with the Galaxia application and the website at galaxiamea.com (together, the "Service").
 
@@ -152,11 +152,21 @@ If we become aware of a security breach affecting your personal information, we 
 
 ---
 
-## 11\. Children's privacy
+## 11\. Children's and minors' privacy
 
-The Service is not directed to children, and you must meet the minimum age in our Terms of Service to hold an account. We do not knowingly collect personal information directly from a child under 13 (or the equivalent minimum age in your jurisdiction) as an account holder. If you believe a child has created an account or provided information to us as an account holder, contact us at [{{GALAXIA_HELP_EMAIL}}](mailto:{{GALAXIA_HELP_EMAIL}}) and we will take appropriate steps to delete it.
+### 11.1 No direct account creation by minors
 
-This is distinct from information about a minor that an adult user provides when adding that minor as a person in their galaxy, which is governed by Section 5\. \[This area — the distinction between a minor account holder and a minor added as a subject, and the requirements of COPPA and equivalent laws — should be reviewed by counsel, as it depends on product decisions about who may hold an account and who may be added.\]
+The Service is intended solely for individuals who have reached the age of majority in their jurisdiction, and in any case at least 18 years old. We do not knowingly solicit, collect, or process personal data directly from anyone under that age as an account holder. If we learn that an account was created by someone under the age of majority, we may suspend or terminate the account and delete the associated data. If you believe a minor has created an account, contact us at [{{GALAXIA_HELP_EMAIL}}](mailto:{{GALAXIA_HELP_EMAIL}}) and we will investigate and take appropriate action.
+
+### 11.2 Profiles concerning minors
+
+An adult account holder may add information about a minor as a person in their galaxy, subject to the safety limits in Section 5. Adding a minor this way does not create an account for that minor, does not give the minor access to the Service, and does not establish a direct relationship between Galaxia and the minor.
+
+### 11.3 Representations concerning minor data
+
+By adding or maintaining information about a minor on the Service, you represent and warrant that you are the minor's parent or legal guardian, or have obtained legally sufficient consent from the minor's parent or legal guardian, and that you will not disclose the minor's personal data in violation of applicable law or a third party's rights.
+
+You agree to defend, indemnify, and hold harmless Galaxia and its officers from claims, liabilities, damages, or regulatory fines arising from your submission of a minor's personal data without the authorization required under Section 11.3.
 
 ---
 

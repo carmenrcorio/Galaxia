@@ -39,14 +39,17 @@ const VELA_ASPECT_LIST_GUARDRAIL =
 
 // Framing (group / parenting / third-person-minor) is injected per-request via
 // a single discriminated mode block — never as an always-on system rule.
+// FOUNDER-REVIEW: "Blend chart meaning with concrete relationship advice in plain language. Aspect names are not jargon here: name the aspect first, then say in everyday words what it means for these two people."
+// FOUNDER-REVIEW: "When lead_aspects is not empty, name at least one of them by planet and aspect type (for example Venus sextile Jupiter) in your first two sentences. Capitalize planet names."
 const VELA_SYSTEM_PROMPT =
   `You are Vela, the guide inside Galaxia: a warm, perceptive astrologer and practical relationship coach who helps someone understand and tend the people they love.
 
 HOW YOU THINK
 - You are given COMPUTED astrology facts (planets, signs, aspects, generational signatures). Treat them as ground truth; never invent a placement.
-- Blend chart meaning with concrete relationship advice in plain, jargon-free language.
+- Blend chart meaning with concrete relationship advice in plain language. Aspect names are not jargon here: name the aspect first, then say in everyday words what it means for these two people.
 - When you are reading an aspect, name it in the answer (for example Moon square Saturn). Never describe a dynamic while leaving the aspect unnamed.
 - ${VELA_ASPECT_LIST_GUARDRAIL}
+- When lead_aspects is not empty, name at least one of them by planet and aspect type (for example Venus sextile Jupiter) in your first two sentences. Capitalize planet names.
 - The sky describes how a person is built, not what will happen to them. Guidance, not fortune telling.
 - In shared mode, stay neutral and never reference private notes.
 - ${VELA_REMEMBRANCE_GUARDRAIL}
@@ -58,6 +61,45 @@ SAFETY
 OUTPUT
 - 2–5 sentences, warm and specific.
 - End with up to 3 short suggested follow-up prompts, each on its own line, prefixed with "→ ".`;
+
+const VELA_CITATION_PLANETS = [
+  "sun", "moon", "mercury", "venus", "mars",
+  "jupiter", "saturn", "uranus", "neptune", "pluto"
+] as const;
+const VELA_CITATION_ASPECTS = [
+  "conjunction", "sextile", "square", "trine", "opposition"
+] as const;
+const VELA_CITATION_RE = new RegExp(
+  `\\b(${VELA_CITATION_PLANETS.join("|")})\\s+(${VELA_CITATION_ASPECTS.join("|")})\\s+(${VELA_CITATION_PLANETS.join("|")})\\b`,
+  "gi"
+);
+
+function aspectPairKey(from: string, type: string, to: string): string {
+  const a = from.toLowerCase();
+  const b = to.toLowerCase();
+  const t = type.toLowerCase();
+  return a < b ? `${a}|${t}|${b}` : `${b}|${t}|${a}`;
+}
+
+function countVelaAspectCitations(
+  reply: string,
+  list: Array<{ from: string; to: string; type: string }>
+): { list_size: number; named_in_list: number; named_not_in_list: number } {
+  VELA_CITATION_RE.lastIndex = 0;
+  const listKeys = new Set(list.map((a) => aspectPairKey(a.from, a.type, a.to)));
+  const namedIn = new Set<string>();
+  const namedOut = new Set<string>();
+  for (const match of reply.matchAll(VELA_CITATION_RE)) {
+    const key = aspectPairKey(match[1], match[2], match[3]);
+    if (listKeys.has(key)) namedIn.add(key);
+    else namedOut.add(key);
+  }
+  return {
+    list_size: list.length,
+    named_in_list: namedIn.size,
+    named_not_in_list: namedOut.size
+  };
+}
 
 const CRISIS_PATTERN =
   /\b(suicid(e|al)|kill myself|self harm|self-harm|hurt myself|end my life|want to die|homicid(e|al)|kill them|abuse)\b/i;
@@ -668,6 +710,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Pair threads: synastry first (orb asc), then natal (orb asc).
+    // Non-pair: natal only, orb asc. lead_aspects = three tightest of the
+    // primary kind (synastry for pairs, natal otherwise). Year-only charts
+    // leave both lists empty — Vela names no aspect, which is correct.
+    aspect_list.sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === "synastry" ? -1 : 1;
+      return a.orb - b.orb;
+    });
+    const isPairThread = Boolean(thread.pair_low && thread.pair_high);
+    const leadKind = isPairThread ? "synastry" as const : "natal" as const;
+    const lead_aspects = aspect_list.filter((a) => a.kind === leadKind).slice(0, 3);
+
     // Group cohort: read the persisted overlay (path a). Never recompute shared
     // sky / fault lines here (that would drift from @galaxia/astro cohortOverlay).
     // Prefer the current row written by POST /api/groups/cohort; fall back to the
@@ -790,6 +844,7 @@ Deno.serve(async (req) => {
       ...(groupName ? { group: { name: groupName } } : {}),
       people:         peopleCtx,
       aspect_list,
+      lead_aspects,
       synastry,
       generationalRelation: genRelation,
       ...(cohort ? { cohort } : {}),
@@ -913,6 +968,9 @@ Deno.serve(async (req) => {
               });
             }
           }
+
+          const citation = countVelaAspectCitations(trimmedReply, aspect_list);
+          console.log(`vela_aspect_citation ${JSON.stringify(citation)}`);
 
           controller.close();
         } catch (streamErr) {

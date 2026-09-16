@@ -500,6 +500,31 @@ select.field--rect {
   border: 1px solid rgba(255,255,255,.06);
   display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
+
+/* Compact Sun/Moon/Rising row directly under the natal wheel (galaxia.jsx .kd-three). */
+.chart-sign-tiles {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  width: 100%;
+}
+.chart-sign-tiles .sign-chip {
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  /* Subtle star scatter, same recipe as glass cards sitting on the cosmic field. */
+  background:
+    radial-gradient(1px 1px at 18% 24%, rgba(255,255,255,.38), transparent 100%),
+    radial-gradient(1px 1px at 72% 18%, rgba(255,255,255,.28), transparent 100%),
+    radial-gradient(1.5px 1px at 42% 78%, rgba(255,255,255,.22), transparent 100%),
+    radial-gradient(1px 1px at 86% 62%, rgba(255,255,255,.2), transparent 100%),
+    rgba(10, 7, 24, .55);
+}
+.chart-sign-tiles__moon {
+  font-size: 1.45rem;
+  line-height: 1;
+  color: var(--mist);
+}
 .sign-chip__glyph { font-size: 1.2rem; display: block; }
 .sign-chip__label { font-size: 0.8125rem; color: var(--mist2); text-transform: uppercase; letter-spacing: .12em; }
 .sign-chip__value { font-family: var(--serif); font-size: .88rem; color: var(--cream); font-weight: 500; }

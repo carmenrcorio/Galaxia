@@ -13,7 +13,7 @@ import {
   type TrialEmailData
 } from "./emails";
 import { SOFTWARE_APPLICATION_JSON_LD } from "./homepage-software-application-json-ld";
-import { HOMEPAGE_DESCRIPTION } from "./homepage-seo";
+import { HOMEPAGE_DESCRIPTION, HOMEPAGE_JSON_LD_DESCRIPTION, HOMEPAGE_TITLE } from "./homepage-seo";
 import { TITLE as CHART_TITLE, DESCRIPTION as CHART_DESCRIPTION } from "../app/chart/chart-seo";
 import { buildCategoryMetadata, SITE_OG_IMAGE } from "./blog-metadata";
 
@@ -81,7 +81,14 @@ describe("layer one: lead with outcome, never an astrology app", () => {
     const iosVisible = ios.split("## Keywords")[0] ?? ios;
     expect(iosVisible).not.toMatch(ASTROLOGY_APP);
     expect(play).not.toMatch(ASTROLOGY_APP);
-    expect(play).toMatch(/Understand the people you love/);
+    expect(play).toMatch(/Your Life\. Your People\. Your Galaxy\./);
+    const playShort = play.split("## Full description")[0]?.split("## Short description")[1] ?? "";
+    const playShortLine = playShort
+      .split("\n")
+      .map((line) => line.trim())
+      .find((line) => line.length > 0 && !line.startsWith("<!--") && !line.startsWith("(max"));
+    expect(playShortLine).toBeDefined();
+    expect(playShortLine!.length).toBeLessThanOrEqual(80);
   });
 
   it("email subjects lead with outcome, not astrology", () => {
@@ -122,9 +129,12 @@ describe("layer one: lead with outcome, never an astrology app", () => {
 
 describe("layer two: astrology language stays where search and in-product intent live", () => {
   it("does not strip astrology from homepage metadata or JSON-LD", () => {
+    expect(HOMEPAGE_TITLE).toContain("Your Life. Your People. Your Galaxy.");
     expect(HOMEPAGE_DESCRIPTION).toMatch(/astrology/i);
     expect(HOMEPAGE_DESCRIPTION).toMatch(/birth chart/i);
-    expect(SOFTWARE_APPLICATION_JSON_LD.description as string).toBe(HOMEPAGE_DESCRIPTION);
+    expect(HOMEPAGE_JSON_LD_DESCRIPTION).toMatch(/astrology/i);
+    expect(HOMEPAGE_JSON_LD_DESCRIPTION).toMatch(/birth chart/i);
+    expect(SOFTWARE_APPLICATION_JSON_LD.description as string).toBe(HOMEPAGE_JSON_LD_DESCRIPTION);
     expect(SITE_OG_IMAGE.alt).toMatch(/astrology/i);
     expect(readRepo("apps/web/app/page.tsx")).toMatch(/HOMEPAGE_TITLE/);
   });

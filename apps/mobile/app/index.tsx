@@ -73,8 +73,9 @@ export default function PublicIndexScreen() {
       }}
     >
       <Text style={{ color: tokens.colors.cream, fontSize: 34, fontWeight: "700" }}>Galaxia</Text>
+      {/* FOUNDER-REVIEW: locked homepage tagline, then the sign-in cue. */}
       <Text style={{ color: tokens.colors.mist, lineHeight: 22 }}>
-                Understand the people you love. Sign in to map your inner circle, then show up for each bond with more intention.
+        Your Life. Your People. Your Galaxy. Sign in to map your inner circle, then show up for each bond with more intention.
       </Text>
       <TextInput
         placeholder="Email"

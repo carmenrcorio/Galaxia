@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE } from "./homepage-seo";
+import { HOMEPAGE_DESCRIPTION, HOMEPAGE_JSON_LD_DESCRIPTION, HOMEPAGE_TAGLINE, HOMEPAGE_TITLE } from "./homepage-seo";
 import { FEATURE_TEASER_LINKS, HERO_HOW_IT_WORKS, MARKETING_NAV_LOGIN, MARKETING_NAV_SIGNUP } from "./nav-links";
 
 const WEB_ROOT = join(__dirname, "..");
@@ -12,17 +12,24 @@ function read(relPath: string): string {
 
 describe("homepage outcome-led copy", () => {
   it("locks the founder-specified title and description", () => {
-    expect(HOMEPAGE_TITLE).toBe("Understand the people you love | Galaxia");
+    expect(HOMEPAGE_TAGLINE).toBe("Your Life. Your People. Your Galaxy.");
+    expect(HOMEPAGE_TITLE).toBe("Your Life. Your People. Your Galaxy. | Galaxia");
     expect(HOMEPAGE_DESCRIPTION).toBe(
+      "Your Life. Your People. Your Galaxy. Galaxia computes the real birth chart of everyone in your life, your partner, your parents, your friends, the ones you have lost, and tells you what each of them needs from you. Real astrology, plain language, no horoscopes.",
+    );
+    expect(HOMEPAGE_JSON_LD_DESCRIPTION).toBe(
       "Galaxia computes the real birth chart of everyone in your life, your partner, your parents, your friends, the ones you have lost, and tells you what each of them needs from you. Real astrology, plain language, no horoscopes.",
     );
+    expect(HOMEPAGE_TITLE.startsWith(HOMEPAGE_TAGLINE)).toBe(true);
+    expect(HOMEPAGE_DESCRIPTION.startsWith(HOMEPAGE_TAGLINE)).toBe(true);
     expect(HOMEPAGE_TITLE.includes("\u2014")).toBe(false);
     expect(HOMEPAGE_DESCRIPTION.includes("\u2014")).toBe(false);
+    expect(HOMEPAGE_JSON_LD_DESCRIPTION.includes("\u2014")).toBe(false);
   });
 
   it("renders the headline, unified value proposition, and how-it-works cue", () => {
     const src = read("components/marketing/hero.tsx");
-    expect(src).toContain("Your life. Your people. Your galaxy.");
+    expect(src).toContain("Your Life. Your People. Your Galaxy.");
     expect(src).not.toContain("Galaxia · your inner circle");
     expect(src).not.toContain("YOUR INNER CIRCLE");
     expect(src).not.toContain("Your Inner Circle");

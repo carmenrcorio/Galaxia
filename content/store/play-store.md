@@ -1,6 +1,6 @@
 # Play Store listing (Android)
 
-Paste into Play Console. Visible fields are **layer one** (`design/galaxia-voice-layers.md`): lead with outcome. Astrology is not the first word.
+Paste into Play Console. Visible fields are **layer one** (`design/galaxia-voice-layers.md`): lead with outcome. Astrology is not the first word. Short description tagged FOUNDER-REVIEW.
 
 ## Title (max 30 characters)
 
@@ -8,7 +8,7 @@ Galaxia
 
 ## Short description (max 80 characters)
 
-Understand the people you love. Show up for each bond with more intention.
+Your Life. Your People. Your Galaxy. Show up for each bond with more intention.
 
 ## Full description
 

@@ -1,5 +1,14 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildVelaContext, buildVelaPrompt, detectCrisisLanguage, VELA_REMEMBRANCE_GUARDRAIL, VELA_SYSTEM_PROMPT } from "../src/index";
+import {
+  buildVelaContext,
+  buildVelaPrompt,
+  detectCrisisLanguage,
+  VELA_ASPECT_LIST_GUARDRAIL,
+  VELA_REMEMBRANCE_GUARDRAIL,
+  VELA_SYSTEM_PROMPT
+} from "../src/index";
 
 const baseInput = {
   mode: "ask" as const,
@@ -79,6 +88,49 @@ describe("Remembrance Phase 2 — Vela never fabricates memories", () => {
   it("system prompt requires naming the aspect it is reading and forbids prediction", () => {
     expect(VELA_SYSTEM_PROMPT).toContain("When you are reading an aspect, name it in the answer");
     expect(VELA_SYSTEM_PROMPT).toContain("The sky describes how a person is built, not what will happen to them");
+  });
+
+  it("system prompt forbids naming aspects that are not in aspect_list, verbatim", () => {
+    expect(VELA_ASPECT_LIST_GUARDRAIL).toBe(
+      "You may only name aspects that appear in the aspect_list field of this payload. If you are not given an aspect, you cannot name it. Never invent or infer an aspect not in the list."
+    );
+    expect(VELA_SYSTEM_PROMPT).toContain(VELA_ASPECT_LIST_GUARDRAIL);
+    const edge = readFileSync(
+      resolve(__dirname, "../../../supabase/functions/vela-chat/index.ts"),
+      "utf8"
+    );
+    expect(edge).toContain(VELA_ASPECT_LIST_GUARDRAIL);
+    expect(edge).toMatch(/aspect_list,/);
+  });
+});
+
+describe("aspect_list payload", () => {
+  it("serializes computed aspects into the prompt payload", () => {
+    const context = buildVelaContext({
+      ...baseInput,
+      aspect_list: [
+        {
+          from: "mars",
+          to: "saturn",
+          type: "square",
+          orb: 1.2,
+          kind: "synastry",
+          from_person: "Carmen",
+          to_person: "Daniel"
+        }
+      ]
+    });
+    const prompt = buildVelaPrompt(context);
+    expect(prompt).toContain("aspect_list");
+    expect(prompt).toContain("square");
+    expect(prompt).toContain("1.2");
+    expect(prompt).toContain("mars");
+    expect(prompt).toContain("saturn");
+  });
+
+  it("always includes aspect_list even when none were computed", () => {
+    const prompt = buildVelaPrompt(buildVelaContext(baseInput));
+    expect(prompt).toContain('"aspect_list": []');
   });
 });
 

@@ -148,13 +148,15 @@ describe("layer two: astrology language stays where search and in-product intent
     expect(readRepo("apps/web/app/chart/compare/page.tsx")).toMatch(/aspects between you/);
   });
 
-  it("how-it-works keeps natal, synastry, aspects, houses, and Vela names the aspect", () => {
+  it("how-it-works keeps natal, synastry, aspects, houses, without naming a fabricated aspect", () => {
     const how = readRepo("apps/web/components/marketing/features-section.tsx");
     expect(how).toMatch(/id="how"/);
     expect(how).toMatch(/natal chart/i);
     expect(how).toMatch(/synastry/i);
     expect(how).toMatch(/Rising, houses/);
-    expect(how).toMatch(/Mars square his Saturn/);
+    expect(how).toMatch(/Your charts share a rare harmonic pattern/);
+    expect(how).not.toMatch(/Mars square his Saturn/);
+    expect(how).not.toMatch(/Moon square Saturn/);
     expect(readRepo("apps/web/app/page.tsx")).toMatch(/FeaturesSection/);
   });
 
@@ -183,6 +185,9 @@ describe("layer two: astrology language stays where search and in-product intent
     for (const src of [vela, edge]) {
       expect(src).toContain("When you are reading an aspect, name it in the answer");
       expect(src).toContain("The sky describes how a person is built, not what will happen to them");
+      expect(src).toContain(
+        "You may only name aspects that appear in the aspect_list field of this payload. If you are not given an aspect, you cannot name it. Never invent or infer an aspect not in the list."
+      );
     }
   });
 });

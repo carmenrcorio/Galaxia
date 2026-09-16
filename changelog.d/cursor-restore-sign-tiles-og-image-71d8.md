@@ -1,7 +1,5 @@
 ## Restore sign tiles and OG share image (branch `cursor/restore-sign-tiles-og-image-71d8`) — 2026-09-16
 
-**Trigger**: Two visual regressions: Sun/Moon/Rising glance tiles no longer sat under the natal wheel, and `GET /opengraph-image` had no App Router file so the share card 404'd even though `/og-image.png` still existed.
+**Trigger**: `GET /opengraph-image` 404'd. Sun/Moon/Rising tiles under the natal wheel were restored on `main` by #309; this branch keeps that landing and adds the missing App Router OG route.
 
-`[FIXED]` **Natal wheel glance tiles.** `SignGlanceTiles` renders a horizontal row of dark 12px-radius cards directly under `ChartWheel` on `/app/person/[id]`, `/chart`, and `/s` singles. Data is the same chart object the wheel uses: confident `sun`/`moon` placements and `chart.asc` for Rising. Uncertain or missing placements are omitted, never fabricated. Moon uses the crescent body glyph; Sun and Rising use a purple zodiac-sign badge. Labels are SUN / MOON / RISING. Big three readings, NatalSignReveal, and the header glance line are unchanged.
-
-`[FIXED]` **Site-wide `/opengraph-image`.** Added `apps/web/app/opengraph-image.tsx`, a Next.js metadata route that returns a 1200x630 branded PNG (`#09091c` ground, gold `#d4a855`, violet bloom, Cormorant Garamond, locked homepage tagline). `app/layout.tsx` still restates `openGraph.images` as `/og-image.png`.
+`[FIXED]` **Site-wide `/opengraph-image`.** Added `apps/web/app/opengraph-image.tsx`, a Next.js metadata route that returns a 1200x630 branded PNG (deep navy `#09091c`, gold `#d4a855`, violet bloom, Cormorant Garamond, locked homepage tagline). Without this file, `app/[slug]/page.tsx` treated `/opengraph-image` as a missing blog post. `app/layout.tsx` still restates `openGraph.images` as `/og-image.png`.

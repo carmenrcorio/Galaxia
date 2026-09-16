@@ -76,8 +76,8 @@ import { AskBirthData } from "../../../../components/ask-birth-data";
 import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../../components/chart-precision-indicator";
 import { ConnectInviteButton } from "../../../../components/connect-invite-button";
 import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
+import { ChartSignTiles } from "../../../../components/chart-sign-tiles";
 import { ChartWheel } from "../../../../components/chart-wheel";
-import { SignGlanceTiles } from "../../../../components/sign-glance-tiles";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { GenerationalEraSurface } from "../../../../components/generational-era-surface";
 import { InitialAvatar } from "../../../../components/initial-avatar";
@@ -1465,7 +1465,7 @@ export default function PersonProfilePage() {
               ) : (
                 <div aria-hidden style={{ width: 300, height: 300, margin: "0 auto" }} />
               )}
-              <SignGlanceTiles chart={chart} />
+              <ChartSignTiles chart={chart} />
               {chart.houseSystemFallbackReason ? (
                 <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
                   {chart.houseSystemFallbackReason}

@@ -120,12 +120,9 @@ function applyNotesRecordFilters<T extends {
 
 // ─── Withdrawn preview voice (read-time only; DB reason untouched) ───────────
 
-// FOUNDER-REVIEW: authored — generic withdrawn preview when the stored reason
-// has no asserted/computed/date shape we can restate plainly.
 const WITHDRAWN_PREVIEW_FALLBACK =
   "We caught an answer here that didn't match the chart on file, so we withdrew it.";
 
-// FOUNDER-REVIEW: authored — older client/DB fallback, restated in the same voice.
 const LEGACY_GENERIC_REASON =
   "This note referenced inaccurate chart data and has been withdrawn.";
 
@@ -160,7 +157,6 @@ export function formatWithdrawnReasonForDisplay(
   );
   const head = (auditMatch?.[1] ?? raw).trim().replace(/[.;\s]+$/, "");
   const when = auditMatch?.[2] ? formatWithdrawalDate(auditMatch[2]) : null;
-  // FOUNDER-REVIEW: authored — date clause for withdrawn previews.
   const whenClause = when ? ` on ${when}` : "";
 
   const computedMatch = head.match(
@@ -169,23 +165,18 @@ export function formatWithdrawnReasonForDisplay(
   if (computedMatch) {
     const asserted = stripConfidentTag(computedMatch[1]!);
     const chartShows = stripConfidentTag(computedMatch[2]!);
-    // FOUNDER-REVIEW: authored — asserted vs computed chart withdrawal preview.
     return `Vela said ${asserted}, but the chart on file shows ${chartShows}. We withdrew that answer${whenClause}.`;
   }
 
   const assertedMatch = head.match(/^Asserted\s+(.+)$/i);
   if (assertedMatch) {
     const detail = stripConfidentTag(assertedMatch[1]!)
-      // FOUNDER-REVIEW: rewritten (no U+2014).
       .replace(/;\s*/g, ": ")
       .replace(/\ba confident\b/gi, "a");
-    // FOUNDER-REVIEW: authored — asserted-without-computed withdrawal preview
-    // (e.g. year-only birth where a concrete sign cannot be supported).
     return `Vela stated ${detail}. That didn't hold against the chart on file, so we withdrew that answer${whenClause}.`;
   }
 
   if (when) {
-    // FOUNDER-REVIEW: authored — withdrawal with date when the head isn't Asserted-shaped.
     return `We caught an answer here that didn't match the chart on file, so we withdrew it${whenClause}.`;
   }
 

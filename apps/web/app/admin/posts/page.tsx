@@ -36,7 +36,7 @@ export default async function AdminPostsPage() {
   try {
     posts = await listPostsForAdmin(serviceRoleClient);
   } catch {
-    loadError = "Couldn't load posts. Please try again.";
+    loadError = "Couldn't load posts. Try again.";
   }
 
   return (
@@ -108,7 +108,6 @@ export default async function AdminPostsPage() {
 }
 
 function formatDate(iso: string | null): string {
-  // FOUNDER-REVIEW: rewritten (no U+2014).
   if (!iso) return "none";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "none";

@@ -22,11 +22,8 @@ import { InitialAvatar } from "./initial-avatar";
 export type { ComparisonHistoryItem, ComparisonHistoryPerson, ComparisonHistoryRow };
 export { hydrateComparisonHistory };
 
-// FOUNDER-REVIEW: Compare roster is loading.
 export const COMPARE_ROSTER_LOADING = "Loading the people in your constellation.";
-// FOUNDER-REVIEW: Compare people fetch failed or timed out.
 export const COMPARE_ROSTER_ERROR = "Your people could not load for Compare. Try again.";
-// FOUNDER-REVIEW: retry after a Compare roster failure.
 export const COMPARE_ROSTER_RETRY = "Try again";
 
 export function CompareHistoryList({
@@ -39,19 +36,16 @@ export function CompareHistoryList({
   if (items.length === 0) {
     return (
       <section className="glass-card fade-in async-frame">
-        {/* FOUNDER-REVIEW: COMPARE_HISTORY_HEADING */}
-        <p className="eyebrow" style={{ marginBottom: 12 }}>{COMPARE_HISTORY_HEADING}</p>
+                <p className="eyebrow" style={{ marginBottom: 12 }}>{COMPARE_HISTORY_HEADING}</p>
         <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
-          {/* FOUNDER-REVIEW: COMPARE_HISTORY_EMPTY */}
-          {COMPARE_HISTORY_EMPTY}
+                    {COMPARE_HISTORY_EMPTY}
         </p>
       </section>
     );
   }
   return (
     <section className="glass-card fade-in">
-      {/* FOUNDER-REVIEW: COMPARE_HISTORY_HEADING */}
-      <p className="eyebrow" style={{ marginBottom: 12 }}>{COMPARE_HISTORY_HEADING}</p>
+            <p className="eyebrow" style={{ marginBottom: 12 }}>{COMPARE_HISTORY_HEADING}</p>
       <div style={{ display: "grid", gap: 8 }}>
         {items.map((item) => (
           <button
@@ -69,8 +63,7 @@ export function CompareHistoryList({
               <span style={{ overflowWrap: "anywhere" }}>{item.nameA} &amp; {item.nameB}</span>
             </span>
             <span style={{ fontSize: ".72rem", color: "var(--mist2)", whiteSpace: "nowrap" }}>
-              {/* FOUNDER-REVIEW: compareHistoryLastViewed */}
-              {compareHistoryLastViewed(formatCompareLastViewed(item.lastViewedAt))}
+                            {compareHistoryLastViewed(formatCompareLastViewed(item.lastViewedAt))}
             </span>
           </button>
         ))}
@@ -100,33 +93,27 @@ export function CompareSinceLastViewed({
   const noShift = honest && newlyActive.length === 0 && movedOn.length === 0;
   return (
     <section className="glass-card fade-in">
-      {/* FOUNDER-REVIEW: COMPARE_SINCE_HEADING */}
-      <p className="eyebrow" style={{ marginBottom: 8 }}>{COMPARE_SINCE_HEADING}</p>
+            <p className="eyebrow" style={{ marginBottom: 8 }}>{COMPARE_SINCE_HEADING}</p>
       <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6, marginBottom: 10 }}>
-        {/* FOUNDER-REVIEW: compareNatalAspectsConstant */}
-        {compareNatalAspectsConstant(nameA, nameB)}
+                {compareNatalAspectsConstant(nameA, nameB)}
       </p>
       {!honest ? (
         <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6, margin: 0 }}>
-          {/* FOUNDER-REVIEW: COMPARE_TRANSITS_UNAVAILABLE */}
-          {COMPARE_TRANSITS_UNAVAILABLE}
+                    {COMPARE_TRANSITS_UNAVAILABLE}
         </p>
       ) : noShift ? (
         <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6, margin: 0 }}>
-          {/* FOUNDER-REVIEW: compareNoTransitShift */}
-          {compareNoTransitShift(viewed)}
+                    {compareNoTransitShift(viewed)}
         </p>
       ) : (
         <div style={{ display: "grid", gap: 12 }}>
           {newlyActive.length > 0 ? (
             <div>
-              {/* FOUNDER-REVIEW: COMPARE_NEWLY_ACTIVE */}
-              <p className="eyebrow" style={{ fontSize: ".62rem", marginBottom: 6 }}>{COMPARE_NEWLY_ACTIVE}</p>
+                            <p className="eyebrow" style={{ fontSize: ".62rem", marginBottom: 6 }}>{COMPARE_NEWLY_ACTIVE}</p>
               <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 4 }}>
                 {newlyActive.map((hit) => (
                   <li key={`new-${pairLineKey(hit)}`} className="muted" style={{ fontSize: ".82rem", lineHeight: 1.5 }}>
-                    {/* FOUNDER-REVIEW: describePairTransitLine */}
-                    {describePairTransitLine(nameById(hit.personId), hit)}
+                                        {describePairTransitLine(nameById(hit.personId), hit)}
                   </li>
                 ))}
               </ul>
@@ -134,13 +121,11 @@ export function CompareSinceLastViewed({
           ) : null}
           {movedOn.length > 0 ? (
             <div>
-              {/* FOUNDER-REVIEW: COMPARE_MOVED_ON */}
-              <p className="eyebrow" style={{ fontSize: ".62rem", marginBottom: 6 }}>{COMPARE_MOVED_ON}</p>
+                            <p className="eyebrow" style={{ fontSize: ".62rem", marginBottom: 6 }}>{COMPARE_MOVED_ON}</p>
               <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 4 }}>
                 {movedOn.map((hit) => (
                   <li key={`gone-${pairLineKey(hit)}`} className="muted" style={{ fontSize: ".82rem", lineHeight: 1.5 }}>
-                    {/* FOUNDER-REVIEW: describePairTransitLine */}
-                    {describePairTransitLine(nameById(hit.personId), hit)}
+                                        {describePairTransitLine(nameById(hit.personId), hit)}
                   </li>
                 ))}
               </ul>

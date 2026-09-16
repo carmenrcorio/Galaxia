@@ -25,7 +25,7 @@ export function AspectsUnavailableCard({
 }: {
   precision: string;
   eyebrow?: string;
-  /** FOUNDER-REVIEW: person-page friendly label. */
+
   title?: string;
   id?: string;
   className?: string;
@@ -43,12 +43,10 @@ export function AspectsUnavailableCard({
     >
       {title ? <p className="eyebrow" style={{ marginBottom: 2 }}>{title}</p> : null}
       <p className={title ? "chart-vocab-subhead" : "eyebrow"} style={title ? undefined : { marginBottom: 6 }}>{eyebrow}</p>
-      {/* FOUNDER-REVIEW: ASPECTS_UNAVAILABLE_YEAR_BODY */}
-      <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>
+            <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>
         {ASPECTS_UNAVAILABLE_YEAR_BODY}
       </p>
-      {/* FOUNDER-REVIEW: ASPECTS_UNAVAILABLE_YEAR_FOLLOW_UP */}
-      <p className="muted" style={{ fontSize: ".78rem", marginTop: 8 }}>
+            <p className="muted" style={{ fontSize: ".78rem", marginTop: 8 }}>
         {ASPECTS_UNAVAILABLE_YEAR_FOLLOW_UP}
       </p>
       {action ? <div style={{ marginTop: 10 }}>{action}</div> : null}

@@ -35,7 +35,6 @@ const VELA_REMEMBRANCE_GUARDRAIL =
 
 // Framing (group / parenting / third-person-minor) is injected per-request via
 // a single discriminated mode block — never as an always-on system rule.
-// FOUNDER-REVIEW: rewritten (no U+2014).
 const VELA_SYSTEM_PROMPT =
   `You are Vela, the guide inside Galaxia: a warm, perceptive astrologer and practical relationship coach who helps someone understand and tend the people they love.
 
@@ -142,7 +141,6 @@ function resolveVelaFramingMode(input: {
   return { kind: "default" };
 }
 
-// FOUNDER-REVIEW: authored — Vela framing blocks (prompt injection).
 function velaFramingBlock(mode: VelaFramingMode): string {
   switch (mode.kind) {
     case "group":
@@ -251,7 +249,6 @@ function compareGenerational(
       ? "You move through power, ideals, and change with very similar instincts."
       : shared.length >= 2
         ? "Most of your generational sky is shared, with one key fault line."
-        // FOUNDER-REVIEW: rewritten (no U+2014).
         : "You were shaped by different eras: assumptions about trust and change can differ."
   };
 }
@@ -293,7 +290,6 @@ Deno.serve(async (req) => {
     }
     if (!anthropicKey) {
       return jsonResponse(503, {
-        // FOUNDER-REVIEW: rewritten (no U+2014).
         error: "Vela isn't configured yet. Add ANTHROPIC_API_KEY to the vela-chat function secrets in Supabase."
       });
     }
@@ -555,7 +551,6 @@ Deno.serve(async (req) => {
         const p = placements.find((pl) => pl.body === body);
         if (!p) return "Unknown";
         if (p.confident === false) {
-          // FOUNDER-REVIEW: rewritten (no U+2014).
           return p.possibleSigns?.length ? `Uncertain (${p.possibleSigns.join(" or ")})` : "Uncertain (birth year only)";
         }
         return p.sign;
@@ -563,7 +558,6 @@ Deno.serve(async (req) => {
       const genSign = (g?: { sign?: string; confident?: boolean; possibleSigns?: string[] }) => {
         if (!g?.sign) return "Unknown";
         if (g.confident === false) {
-          // FOUNDER-REVIEW: rewritten (no U+2014).
           return g.possibleSigns?.length ? `Uncertain (${g.possibleSigns.join(" or ")})` : "Uncertain (birth year only)";
         }
         return g.sign;
@@ -765,7 +759,6 @@ Deno.serve(async (req) => {
       let errBody: Record<string, any> = {};
       try { errBody = await anthropicRes.json(); } catch { /* ignore */ }
       const errMsg =
-        // FOUNDER-REVIEW: rewritten (no U+2014).
         anthropicRes.status === 401 ? "Invalid Anthropic API key. Check the ANTHROPIC_API_KEY secret." :
         anthropicRes.status === 429 ? "Anthropic rate limit reached. Please wait a moment and try again." :
         anthropicRes.status === 400 ? `Anthropic rejected the request: ${errBody?.error?.message ?? "bad request"}` :

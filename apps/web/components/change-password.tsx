@@ -106,8 +106,7 @@ export function ChangePassword() {
         <p className="eyebrow" style={{ marginBottom: 10 }}>Password</p>
         <p className="muted" style={{ display: "flex", alignItems: "center", gap: 8, margin: 0, fontSize: 13 }}>
           <Spinner size={12} />
-          {/* FOUNDER-REVIEW: authored loading line for the password card. */}
-          Checking your session.
+                    Checking your session.
         </p>
       </section>
     );
@@ -117,8 +116,7 @@ export function ChangePassword() {
     return (
       <section className="glass-card fade-in">
         <p className="eyebrow" style={{ marginBottom: 10 }}>Password</p>
-        {/* FOUNDER-REVIEW: authored copy for a signed-out or expired session. */}
-        <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+                <p className="muted" style={{ margin: 0, fontSize: 13 }}>
           Your session has ended, so your password cannot be changed from here right now.{" "}
           <a href="/login?next=/account" style={{ color: "var(--gold)" }}>Sign in again</a> and this card comes back.
         </p>
@@ -129,13 +127,11 @@ export function ChangePassword() {
   return (
     <section className="glass-card fade-in">
       <p className="eyebrow" style={{ marginBottom: 10 }}>Password</p>
-      {/* FOUNDER-REVIEW: authored change-password copy. */}
-      <p className="muted" style={{ marginTop: 0, marginBottom: 12, fontSize: 13 }}>
+            <p className="muted" style={{ marginTop: 0, marginBottom: 12, fontSize: 13 }}>
         Set a new password for this account. You stay signed in on this device.
       </p>
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 8, maxWidth: 420 }}>
-        {/* FOUNDER-REVIEW: authored password field labels and the card eyebrow. */}
-        <label className="muted" htmlFor="new-password" style={{ fontSize: 13 }}>
+                <label className="muted" htmlFor="new-password" style={{ fontSize: 13 }}>
           New password
         </label>
         <input
@@ -161,8 +157,7 @@ export function ChangePassword() {
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
         />
-        {/* FOUNDER-REVIEW: authored password hint. */}
-        <p className="muted" style={{ fontSize: 13, margin: 0 }}>{PASSWORD_RULE_HINT}</p>
+                <p className="muted" style={{ fontSize: 13, margin: 0 }}>{PASSWORD_RULE_HINT}</p>
         <div>
           <button
             className="btn-primary"
@@ -171,14 +166,12 @@ export function ChangePassword() {
             style={{ gap: 8 }}
           >
             {submitting && <Spinner size={12} color="#1a1206" />}
-            {/* FOUNDER-REVIEW: authored button labels. */}
-            {submitting ? "Changing password..." : "Change password"}
+                        {submitting ? "Changing password..." : "Change password"}
           </button>
         </div>
       </form>
       <div ref={statusRef}>
-        {/* FOUNDER-REVIEW: authored success confirmation. */}
-        {saved ? (
+                {saved ? (
           <p className="success" style={{ fontSize: 13, marginTop: 10, marginBottom: 0 }}>
             Password changed. Use the new one next time you sign in.
           </p>

@@ -8,8 +8,7 @@ import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 export function PressKitSection() {
   return (
     <section className="container why-not" id="press">
-      {/* FOUNDER-REVIEW: layer-one press materials. */}
-      <span className="eyebrow reveal">Boilerplate</span>
+            <span className="eyebrow reveal">Boilerplate</span>
       <h2 className="reveal">One sentence.</h2>
       <p className="body reveal">
         Galaxia is relationship intelligence for the people already in your life: a private map

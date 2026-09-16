@@ -76,9 +76,6 @@ export function ChartImageExportFrame({
 export function ChartImageExportButton({
   frameRef,
   filename,
-  // FOUNDER-REVIEW: authored - default label; every call site overrides it
-  // with a surface-specific label, so this default only fires if a future
-  // caller forgets to.
   label = "Share image",
   pairHasMinor = false,
   capture,

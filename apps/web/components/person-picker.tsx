@@ -24,7 +24,6 @@ export type PersonPickerOption = {
   birth_precision?: "none" | "exact" | "date" | "year" | null;
 };
 
-// FOUNDER-REVIEW: authored — Compare person picker.
 export const COMPARE_PERSON_PICKER_COPY = {
   placeholder: "Choose a person",
   search: "Search by name",
@@ -34,7 +33,6 @@ export const COMPARE_PERSON_PICKER_COPY = {
   selfRole: "You"
 };
 
-// FOUNDER-REVIEW: " (minor)" label text
 const MINOR_NAME_SUFFIX = " (minor)";
 
 const DESKTOP_MQ = "(min-width: 720px)";
@@ -211,8 +209,7 @@ export function PersonPickerField({
               {showRecent ? (
                 <div style={{ marginBottom: 10 }}>
                   <p className="eyebrow" style={{ fontSize: ".62rem", marginBottom: 6 }}>
-                    {/* FOUNDER-REVIEW: COMPARE_PERSON_PICKER_COPY.recent */}
-                    {COMPARE_PERSON_PICKER_COPY.recent}
+                                        {COMPARE_PERSON_PICKER_COPY.recent}
                   </p>
                   {filteredRecent.map((person) => (
                     <PersonOptionRow
@@ -238,12 +235,10 @@ export function PersonPickerField({
               ) : (
                 <div style={{ padding: "8px 2px 4px" }}>
                   <p className="muted" style={{ fontSize: ".82rem", marginBottom: 8 }}>
-                    {/* FOUNDER-REVIEW: COMPARE_PERSON_PICKER_COPY.empty */}
-                    {COMPARE_PERSON_PICKER_COPY.empty}
+                                        {COMPARE_PERSON_PICKER_COPY.empty}
                   </p>
                   <Link href={addPersonHref as never} className="pill-link" style={{ fontSize: ".82rem" }}>
-                    {/* FOUNDER-REVIEW: COMPARE_PERSON_PICKER_COPY.addPerson */}
-                    {COMPARE_PERSON_PICKER_COPY.addPerson}
+                                        {COMPARE_PERSON_PICKER_COPY.addPerson}
                   </Link>
                 </div>
               )}
@@ -286,8 +281,7 @@ export function PersonPickerField({
           </>
         ) : (
           <span className="compare-person-field__placeholder">
-            {/* FOUNDER-REVIEW: COMPARE_PERSON_PICKER_COPY.placeholder */}
-            {COMPARE_PERSON_PICKER_COPY.placeholder}
+                        {COMPARE_PERSON_PICKER_COPY.placeholder}
           </span>
         )}
       </button>

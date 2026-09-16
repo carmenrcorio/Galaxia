@@ -4,7 +4,6 @@ import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { readLegalMarkdown } from "../../lib/legal-content";
 
 const TITLE = "Privacy Policy · Galaxia";
-// FOUNDER-REVIEW: authored. Page-specific description; do not inherit SITE_DESCRIPTION.
 const DESCRIPTION =
   "How Galaxia collects, uses, and protects birth data about you and the people you add, and what we never do with that information.";
 

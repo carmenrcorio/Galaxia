@@ -69,18 +69,15 @@ export function ChartPrecisionIndicator({
           style={{ marginTop: 10, padding: "12px 14px", display: "grid", gap: 10 }}
         >
           <div>
-            {/* FOUNDER-REVIEW: CHART_PRECISION_SUPPORTS_HEADING */}
-            <p className="eyebrow" style={{ marginBottom: 4 }}>{CHART_PRECISION_SUPPORTS_HEADING}</p>
+                        <p className="eyebrow" style={{ marginBottom: 4 }}>{CHART_PRECISION_SUPPORTS_HEADING}</p>
             <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.55, margin: 0 }}>{explanation.supports}</p>
           </div>
           <div>
-            {/* FOUNDER-REVIEW: CHART_PRECISION_DOES_NOT_HEADING */}
-            <p className="eyebrow" style={{ marginBottom: 4 }}>{CHART_PRECISION_DOES_NOT_HEADING}</p>
+                        <p className="eyebrow" style={{ marginBottom: 4 }}>{CHART_PRECISION_DOES_NOT_HEADING}</p>
             <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.55, margin: 0 }}>{explanation.doesNot}</p>
           </div>
           <div>
-            {/* FOUNDER-REVIEW: CHART_PRECISION_WHY_HEADING */}
-            <p className="eyebrow" style={{ marginBottom: 4 }}>{CHART_PRECISION_WHY_HEADING}</p>
+                        <p className="eyebrow" style={{ marginBottom: 4 }}>{CHART_PRECISION_WHY_HEADING}</p>
             <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.55, margin: 0 }}>{explanation.why}</p>
           </div>
         </div>

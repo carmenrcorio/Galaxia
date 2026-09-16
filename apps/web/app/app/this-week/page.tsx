@@ -49,10 +49,8 @@ export default function ThisWeekPage() {
     <main className="app-content">
       <div className="fade-in">
         <p className="eyebrow">This week</p>
-        {/* FOUNDER-REVIEW: full-feed page title. */}
-        <h1 className="page-title">Shared transits</h1>
-        {/* FOUNDER-REVIEW: full-feed page dek. */}
-        <p className="muted">Every slow-moving transit currently pulling on two or more people in your circle at once.</p>
+                <h1 className="page-title">Shared transits</h1>
+                <p className="muted">Every slow-moving transit currently pulling on two or more people in your circle at once.</p>
       </div>
       {!authReady ? (
         <section className="glass-card fade-in async-frame" style={{ padding: "14px 16px" }}>
@@ -77,8 +75,7 @@ export default function ThisWeekPage() {
         <RelationalTransitFeed ownerId={ownerId} variant="full" />
       )}
       <p>
-        {/* FOUNDER-REVIEW: return to constellation home. */}
-        <Link href={APP_NAV_BRAND_HREF as never} style={{ color: "var(--gold-soft)", fontSize: ".82rem", textDecoration: "none" }}>
+                <Link href={APP_NAV_BRAND_HREF as never} style={{ color: "var(--gold-soft)", fontSize: ".82rem", textDecoration: "none" }}>
           Back to home
         </Link>
       </p>

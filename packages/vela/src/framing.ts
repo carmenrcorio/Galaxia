@@ -51,17 +51,14 @@ export function resolveVelaFramingMode(input: ResolveVelaFramingModeInput): Vela
   return { kind: "default" };
 }
 
-// FOUNDER-REVIEW: authored — Vela group framing block (prompt injection).
 export function groupFramingBlock(groupName: string): string {
   return `You are answering about the group "${groupName}". "We" and "this group" mean every member listed in people and cohort.members. Speak about all of them by name. Never ask who "we" refers to.`;
 }
 
-// FOUNDER-REVIEW: authored — Vela parenting framing block (prompt injection).
 export function parentingFramingBlock(subjectName: string): string {
   return `This is a parenting conversation about ${subjectName}, who is a minor and tagged as the user's child. Coach the user as their parent. Never address ${subjectName} directly.`;
 }
 
-// FOUNDER-REVIEW: authored — Vela third-person-minor framing block (prompt injection).
 export function thirdPersonMinorFramingBlock(subjectName: string): string {
   return `You are speaking with the user about ${subjectName}, who is a minor. Speak about ${subjectName} in the third person. Never address them directly. Do not assume the user is their parent and do not coach the user as a parent.`;
 }

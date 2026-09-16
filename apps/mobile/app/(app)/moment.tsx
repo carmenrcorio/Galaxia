@@ -28,7 +28,6 @@ interface PersonLite {
   passed_at: string | null;
 }
 
-// FOUNDER-REVIEW: authored. Mobile Moment flow copy.
 const COPY = {
   eyebrow: "The Moment",
   title: "Sixty seconds",

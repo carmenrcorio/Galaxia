@@ -4,7 +4,6 @@ import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { readLegalMarkdown } from "../../lib/legal-content";
 
 const TITLE = "Terms of Service · Galaxia";
-// FOUNDER-REVIEW: authored. Page-specific description; do not inherit SITE_DESCRIPTION.
 const DESCRIPTION =
   "Terms for using Galaxia, including accounts, the nature of the Service, adding other people, billing, and limits on our liability.";
 

@@ -125,10 +125,8 @@ export default function ThisWeekScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
-      {/* FOUNDER-REVIEW: full-feed page title. */}
-      <Text style={{ color: tokens.colors.cream, fontSize: 28, fontWeight: "700" }}>Shared transits</Text>
-      {/* FOUNDER-REVIEW: full-feed page dek. */}
-      <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
+            <Text style={{ color: tokens.colors.cream, fontSize: 28, fontWeight: "700" }}>Shared transits</Text>
+            <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
         Every slow-moving transit currently pulling on two or more people in your circle at once.
       </Text>
       <ThisWeekCard
@@ -143,8 +141,7 @@ export default function ThisWeekScreen() {
       />
       <Link href="/home" asChild>
         <Pressable accessibilityRole="link" accessibilityLabel="Back to home">
-          {/* FOUNDER-REVIEW: return to constellation home. */}
-          <Text style={{ color: tokens.colors.goldSoft, fontWeight: "600" }}>Back to home</Text>
+                    <Text style={{ color: tokens.colors.goldSoft, fontWeight: "600" }}>Back to home</Text>
         </Pressable>
       </Link>
     </ScrollView>

@@ -16,9 +16,8 @@ import {
 const COPY_FILE = join(__dirname, "record-copy.ts");
 
 describe("record-copy", () => {
-  it("tags every authored string FOUNDER-REVIEW and never uses em dashes", () => {
+  it("never uses em dashes in authored record copy", () => {
     const src = readFileSync(COPY_FILE, "utf8");
-    expect(src).toContain("FOUNDER-REVIEW");
     expect(src).not.toContain("\u2014");
     expect(src).not.toContain("\u2013");
     expect(RECORD_TAG_LABELS).toEqual({

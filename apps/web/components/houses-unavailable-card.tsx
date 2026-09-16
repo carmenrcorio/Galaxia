@@ -44,7 +44,7 @@ export function HousesUnavailableCard({
   hasHouses: boolean;
   precision: Precision;
   eyebrow?: string;
-  /** FOUNDER-REVIEW: person-page friendly label. Quick Chart and share omit this. */
+
   title?: string;
   id?: string;
   className?: string;

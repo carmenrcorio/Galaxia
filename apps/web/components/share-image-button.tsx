@@ -131,7 +131,6 @@ export function ShareImageButton({
         const result = await deliverSharePng(blob, filename);
         setStatus(result === "shared" ? "Shared" : "Image saved");
       } catch (shareErr) {
-        // FOUNDER-REVIEW: rewritten (no U+2014).
         // A cancelled OS share sheet is not an error: just stop without
         // surfacing anything red.
         if (shareErr instanceof DOMException && shareErr.name === "AbortError") return;

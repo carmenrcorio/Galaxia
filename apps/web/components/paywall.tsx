@@ -43,7 +43,6 @@ const MONTHLY_PLAN = {
 
 const INCLUDED: { title: string; body: string }[] = [
   { title: "Everyone you love.", body: "No limit on how many people you add. Your grandmother should not cost extra." },
-  // FOUNDER-REVIEW: rewritten (no U+2014).
   { title: "Real charts.", body: "Computed from precise astronomical data: placements, houses, angles, aspects, to the degree. Never guessed by an AI." },
   { title: "Vela.", body: "An astrologer and relationship coach who knows both charts and gives you something to actually do." },
   { title: "The generational layer.", body: "See the sky your whole family was born under. Works from just a birth year." },

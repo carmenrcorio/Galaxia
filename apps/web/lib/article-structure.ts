@@ -9,13 +9,13 @@ import { slugify } from "./slugify";
 /** Sentinel injected into markdown, then swapped for the mid-post CTA. Never authored into post bodies. */
 export const MID_CTA_MARKER = "%%GALAXIA_MID_CTA%%";
 
-/** FOUNDER-REVIEW: in-article table of contents label. */
+
 export const ARTICLE_TOC_LABEL = "In this piece";
 
-/** FOUNDER-REVIEW: mid-post CTA. Carmen to customise per post. */
+
 export const MID_POST_CTA_COPY = "See how this plays out in your own chart";
 
-/** FOUNDER-REVIEW: related posts heading. */
+
 export const READ_NEXT_LABEL = "Read next";
 
 export function midPostCtaHref(category: "guides" | "debunked"): "/chart" | "/chart/compare" {

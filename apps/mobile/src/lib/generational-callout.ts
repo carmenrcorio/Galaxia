@@ -44,7 +44,6 @@ export type GenerationalCalloutModel = {
   diverged: DivergedGenCard[];
 };
 
-// FOUNDER-REVIEW: authored. Honest generic when a placement has no library entry.
 export const GENERIC_SHARED =
   "You both share this generational placement. It is a cohort-level instinct from the same era, not a personal chart detail.";
 

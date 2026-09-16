@@ -121,7 +121,7 @@ export function shouldOfferFirstRunRestart(profile: FirstRunProfileRow | null | 
 export interface FirstRunRelationOption {
   /** Stable id, used as the radio value and in tests. Not user-visible. */
   id: string;
-  /** FOUNDER-REVIEW: first-run relationship quick option. */
+
   label: string;
   /** Stored on people.relation. Every value is in GALAXY_RELATION_PICKER_OPTIONS. */
   relation: GalaxyPickerRelation;

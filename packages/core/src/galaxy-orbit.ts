@@ -112,7 +112,6 @@ const PARENT_FORM_RELS = new Set([
  * create_connect_invite to validate a relation. Adding a value here without a
  * matching migration silently breaks connect invites for that value.
  */
-// FOUNDER-REVIEW: picker labels — refine voice before merge.
 export const GALAXY_RELATION_PICKER_OPTIONS = [
   { value: "partner", label: "Partner" },
   { value: "child", label: "Child" },

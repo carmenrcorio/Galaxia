@@ -44,7 +44,6 @@ describe("MEMORIAL_CONSTELLATIONS library", () => {
   });
 
   it("ships founder-approved Greco-Roman myth copy for every library entry", () => {
-    // FOUNDER-REVIEW: curated static myths — never generated. Exact strings.
     const FOUNDER_MYTHS: Record<(typeof EXPECTED_IDS)[number], string> = {
       cassiopeia:
         "The vain queen who boasted she was more beautiful than the sea nymphs. Poseidon bound her to her throne in the sky, circling the pole forever, upside down half the night as humbling for her pride.",

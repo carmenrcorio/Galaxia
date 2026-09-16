@@ -17,7 +17,6 @@ import {
 } from "../../lib/glossary-terms";
 import { RELATED_LINKS } from "../../lib/nav-links";
 
-// FOUNDER-REVIEW: title, description, and visible lede live in glossary-terms.ts.
 const TITLE = GLOSSARY_TITLE;
 const DESCRIPTION = GLOSSARY_DESCRIPTION;
 

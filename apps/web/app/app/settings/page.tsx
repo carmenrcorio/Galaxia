@@ -26,7 +26,6 @@ interface GroupLite {
 /** Generations Feature 3 preference — mirrors the `profiles.relational_transit_alerts` check constraint. */
 type RelationalTransitAlertsPref = "all" | "major_only" | "off";
 const RELATIONAL_TRANSIT_ALERTS_OPTIONS: { value: RelationalTransitAlertsPref; label: string; description: string }[] = [
-  // FOUNDER-REVIEW: rewritten (no U+2014).
   { value: "all", label: "All transits", description: "Jupiter, Saturn, Uranus, Neptune, and Pluto: every relational transit we find." },
   { value: "major_only", label: "Major only", description: "Just Saturn, Uranus, and Pluto. Skip the lighter Jupiter and Neptune windows." },
   { value: "off", label: "Off", description: "No relational transit alerts, in the app or by push." },
@@ -113,7 +112,6 @@ export default function SettingsPage() {
     setHouseSystem(next);
     const { error } = await supabase.from("profiles").upsert({ id: userId, house_system: next });
     setSavingHouseSystem(false);
-    // FOUNDER-REVIEW: house system save failed.
     if (error) { setHouseSystem(previous); setHouseSystemStatus("House system could not be saved. Try again."); return; }
     setHouseSystemStatus("Saved. Each chart recomputes with the new system the next time you open it.");
   };
@@ -125,7 +123,6 @@ export default function SettingsPage() {
     setDailyNudgeEmailsEnabled(next);
     const { error } = await supabase.from("profiles").update({ daily_nudge_emails_enabled: next }).eq("id", userId);
     setSavingConsent(false);
-    // FOUNDER-REVIEW: daily sky email preference save failed.
     if (error) { setDailyNudgeEmailsEnabled(previous); setConsentStatus("Daily sky email preference could not be saved. Try again."); return; }
     setConsentStatus(next ? "Saved. Daily sky emails are on." : "Saved. Daily sky emails are off.");
   };
@@ -137,7 +134,6 @@ export default function SettingsPage() {
     setWeeklyLetterEnabled(next);
     const { error } = await supabase.from("profiles").update({ weekly_constellation_letter_enabled: next }).eq("id", userId);
     setSavingWeeklyLetter(false);
-    // FOUNDER-REVIEW: weekly letter preference save failed.
     if (error) { setWeeklyLetterEnabled(previous); setWeeklyLetterStatus("Weekly letter preference could not be saved. Try again."); return; }
     setWeeklyLetterStatus(next ? "Saved. The weekly letter is on." : "Saved. The weekly letter is off.");
   };
@@ -149,7 +145,6 @@ export default function SettingsPage() {
     setRelationalTransitAlerts(next);
     const { error } = await supabase.from("profiles").update({ relational_transit_alerts: next }).eq("id", userId);
     setSavingRelationalPref(false);
-    // FOUNDER-REVIEW: this-week alerts preference save failed.
     if (error) { setRelationalTransitAlerts(previous); setRelationalPrefStatus("This week alerts preference could not be saved. Try again."); return; }
     setRelationalPrefStatus("Saved.");
   };
@@ -177,7 +172,6 @@ export default function SettingsPage() {
     });
     setSubmittingSupport(false);
     if (error) {
-      // FOUNDER-REVIEW: support form insert failed.
       setSupportStatus("The support message could not be sent. Try again.");
       return;
     }
@@ -190,7 +184,6 @@ export default function SettingsPage() {
     setSigningOut(true);
     const { error } = await supabase.auth.signOut();
     if (error) {
-      // FOUNDER-REVIEW: sign-out failed.
       setStatus("Sign out could not finish. Try again.");
       setSigningOut(false);
       return;
@@ -205,13 +198,11 @@ export default function SettingsPage() {
 
       {prefsLoading ? (
         <section className="glass-card async-frame" aria-busy="true">
-          {/* FOUNDER-REVIEW: settings prefs are loading. */}
-          <p className="muted" style={{ margin: 0 }}>Loading your settings.</p>
+                    <p className="muted" style={{ margin: 0 }}>Loading your settings.</p>
         </section>
       ) : prefsError ? (
         <section className="glass-card async-frame" aria-live="polite">
-          {/* FOUNDER-REVIEW: settings prefs fetch failed or timed out. */}
-          <p className="muted" style={{ margin: 0 }}>Your settings could not load. Try again.</p>
+                    <p className="muted" style={{ margin: 0 }}>Your settings could not load. Try again.</p>
           <button type="button" className="pill-link" onClick={() => setPrefsReload((n) => n + 1)}>Try again</button>
         </section>
       ) : null}
@@ -260,8 +251,7 @@ export default function SettingsPage() {
 
       <section className="glass-card">
         <h2 className="card-title">Daily sky email</h2>
-        {/* FOUNDER-REVIEW: Daily sky email card copy, voice pass pending. */}
-        <p className="muted" style={{ marginBottom: 12 }}>
+                <p className="muted" style={{ marginBottom: 12 }}>
           A short email with what's moving in your sky today, sent once a day. On by default. Turn it off any time here, no login required (every email also has a one-click unsubscribe link).
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -282,8 +272,7 @@ export default function SettingsPage() {
 
       <section className="glass-card">
         <h2 className="card-title">Weekly constellation letter</h2>
-        {/* FOUNDER-REVIEW: Weekly constellation letter card copy. */}
-        <p className="muted" style={{ marginBottom: 12 }}>
+                <p className="muted" style={{ marginBottom: 12 }}>
           A Sunday letter about who in your circle has something real moving this week. On by default. Independent of the daily sky email. Turn it off any time here; every letter also has a one-click unsubscribe link.
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -344,9 +333,7 @@ export default function SettingsPage() {
           Export your data or delete your account from{" "}
           <a href="/account/data" style={{ color: "var(--gold)" }}>Your data</a>.
         </p>
-        {/* FOUNDER-REVIEW: authored pointer to the password control. It lives on
-            Account, next to your name, rather than being duplicated here. */}
-        <p className="muted" style={{ marginTop: 10 }}>
+                <p className="muted" style={{ marginTop: 10 }}>
           Change your password from{" "}
           <a href="/account" style={{ color: "var(--gold)" }}>Account</a>.
         </p>

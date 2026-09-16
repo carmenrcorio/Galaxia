@@ -62,7 +62,6 @@ export const VELA_REMEMBRANCE_GUARDRAIL =
   "Draw only on the computed chart facts you are given and the owner's own saved reflections in the private notes digest. Never fabricate memories, events, or facts about the person. Do not invent what they said, did, or felt.";
 
 /** No always-on parenting rule — framing is injected per-request via `velaFramingBlock`. */
-// FOUNDER-REVIEW: rewritten (no U+2014).
 export const VELA_SYSTEM_PROMPT = `You are Vela, the guide inside Galaxia: a warm, perceptive astrologer and practical relationship coach.
 You interpret computed astrology facts only and never invent positions.
 Blend chart meaning with concrete relationship moves in plain language.

@@ -83,8 +83,7 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
 
   return (
     <>
-      {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
-      <ChartImageExport filename={chartExportFilename(payload.name, "natal-chart.png")} label="Share chart image">
+            <ChartImageExport filename={chartExportFilename(payload.name, "natal-chart.png")} label="Share chart image">
         <NatalSignReveal
           chart={payload.chart}
           displayDate={payload.displayDate}
@@ -109,8 +108,7 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
 
       <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
         <p className="eyebrow" style={{ marginBottom: 8 }}>
-          {/* FOUNDER-REVIEW: SHARE_NEED_HEADING */}
-          {SHARE_NEED_HEADING}
+                    {SHARE_NEED_HEADING}
         </p>
         {need ? (
           <>
@@ -123,20 +121,17 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
               </p>
             </div>
             <p className="muted" style={{ fontSize: ".76rem", marginTop: 10 }}>
-              {/* FOUNDER-REVIEW: SHARE_NEED_PROVENANCE */}
-              {SHARE_NEED_PROVENANCE}
+                            {SHARE_NEED_PROVENANCE}
             </p>
             {need.generational ? (
               <p className="muted" style={{ fontSize: ".76rem", marginTop: 6 }}>
-                {/* FOUNDER-REVIEW: SHARE_NEED_GENERATIONAL */}
-                {SHARE_NEED_GENERATIONAL}
+                                {SHARE_NEED_GENERATIONAL}
               </p>
             ) : null}
           </>
         ) : (
           <p className="muted" style={{ fontSize: ".88rem", lineHeight: 1.6, margin: 0 }}>
-            {/* FOUNDER-REVIEW: SHARE_NEED_EMPTY */}
-            {SHARE_NEED_EMPTY}
+                        {SHARE_NEED_EMPTY}
           </p>
         )}
       </section>
@@ -157,8 +152,7 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
                   <div key={p.body} style={{ display: "flex", gap: 10, alignItems: "center", opacity: 0.6, padding: "6px 0" }}>
                     <span style={{ width: 20, textAlign: "center" }}>{BODY_GLYPH[p.body] ?? p.body[0]}</span>
                     <span className="muted" style={{ fontSize: ".82rem" }}>
-                      {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-                      {p.body[0].toUpperCase() + p.body.slice(1)}: sign uncertain, add a birth date to settle it
+                                            {p.body[0].toUpperCase() + p.body.slice(1)}: sign uncertain, add a birth date to settle it
                     </span>
                   </div>
                 );
@@ -220,18 +214,15 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
               loggedOutHref={signupWithNextHref(sharePath(token))}
             />
             <Link href={giftComparePath(token) as never} className="pill-link">
-              {/* FOUNDER-REVIEW: SHARE_COMPARE_CTA */}
-              {SHARE_COMPARE_CTA}
+                            {SHARE_COMPARE_CTA}
             </Link>
             <p className="muted" style={{ fontSize: ".76rem", margin: 0 }}>
-              {/* FOUNDER-REVIEW: SHARE_COMPARE_HINT */}
-              {SHARE_COMPARE_HINT}
+                            {SHARE_COMPARE_HINT}
             </p>
           </>
         ) : (
           <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.55, margin: 0 }}>
-            {/* FOUNDER-REVIEW: SHARE_NO_GIFT_BIRTH */}
-            {SHARE_NO_GIFT_BIRTH}
+                        {SHARE_NO_GIFT_BIRTH}
           </p>
         )}
         {viewer.isSubscriber ? (
@@ -273,8 +264,7 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
 
   return (
     <>
-      {/* FOUNDER-REVIEW: authored - "Share chart image" export label */}
-      {/* Capture is headline + wheel + reading-held notice (if any) + the
+            {/* Capture is headline + wheel + reading-held notice (if any) + the
           six-row dynamic table. FlowsAndCatchesSection (the full aspect
           list) and GenerationalSection render outside the capture, matching
           the task's "not the full aspect list" boundary. */}
@@ -400,20 +390,17 @@ export function ShareSnapshotView({
 }) {
   const viewer = useViewer();
   const isCompare = kind === "compare";
-  // FOUNDER-REVIEW: authored — read-only shared snapshot titles.
   const title = isCompare ? "A shared compatibility reading" : "A shared birth chart";
   const eyebrow = isCompare ? "Shared Compatibility" : "Shared Chart";
 
   return (
     <QuickChartShell eyebrow={eyebrow} title={title} authed={!!viewer.userId}>
       <p className="lede" style={{ marginBottom: isCompare ? 20 : 8 }}>
-        {/* FOUNDER-REVIEW: SHARE_SINGLE_LEDE / SHARE_COMPARE_LEDE */}
-        {isCompare ? SHARE_COMPARE_LEDE : SHARE_SINGLE_LEDE}
+                {isCompare ? SHARE_COMPARE_LEDE : SHARE_SINGLE_LEDE}
       </p>
       {isCompare ? null : (
         <p className="muted" style={{ marginBottom: 20, fontSize: ".9rem" }}>
-          {/* FOUNDER-REVIEW: SHARE_GALAXIA_FRAME */}
-          {SHARE_GALAXIA_FRAME}
+                    {SHARE_GALAXIA_FRAME}
         </p>
       )}
       {isCompare ? (

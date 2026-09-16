@@ -8,12 +8,10 @@ Galaxia
 
 ## Short description (max 80 characters)
 
-<!-- FOUNDER-REVIEW: authored store listing. -->
 Understand the people you love. Show up for each bond with more intention.
 
 ## Full description
 
-<!-- FOUNDER-REVIEW: authored store listing. -->
 Galaxia is relationship intelligence for the small circle that actually shapes your days.
 
 Add a partner, a child, a parent, a sibling, a friend. See how they are built, where you flow, where you catch, and what they need from you. Not a daily blurb. Not for strangers.

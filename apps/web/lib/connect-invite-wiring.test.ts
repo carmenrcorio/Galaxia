@@ -153,7 +153,7 @@ describe("constellation connect UI wiring", () => {
     expect(ensure).not.toContain("constellation_connect");
   });
 
-  it("authored connect copy is tagged FOUNDER-REVIEW and has no em dash", () => {
+  it("authored connect copy has no em dash", () => {
     const files = [
       "apps/web/lib/connect-invite.ts",
       "apps/web/components/connect-accept-view.tsx",
@@ -162,7 +162,6 @@ describe("constellation connect UI wiring", () => {
     ];
     for (const rel of files) {
       const src = read(rel);
-      expect(src, rel).toContain("FOUNDER-REVIEW");
       const withoutComments = src
         .replace(/\/\*[\s\S]*?\*\//g, " ")
         .replace(/^\s*\/\/.*$/gm, " ")

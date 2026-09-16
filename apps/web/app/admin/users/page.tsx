@@ -120,8 +120,7 @@ export default async function AdminUsersPage({
                     const comp = compPillInfo(user.comped);
                     return (
                       <tr key={user.id}>
-                        {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-                        <td className="admin-table-email-cell">{user.email ?? "none"}</td>
+                                                <td className="admin-table-email-cell">{user.email ?? "none"}</td>
                         <td>
                           <StatusPill label={status.label} variant={status.variant} />
                         </td>

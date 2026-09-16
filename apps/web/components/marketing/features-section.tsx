@@ -20,12 +20,10 @@ export function FeaturesSection() {
         <div className="steps">
         <div className="step reveal">
           <div className="step-text">
-            {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-            <span className="step-num">01. Add</span>
+                        <span className="step-num">01. Add</span>
             <h3>Add anyone in your life.</h3>
             <p>
-              {/* FOUNDER-REVIEW: layer-two how-it-works. Astrology vocabulary stays. */}
-              A name and a birth date is enough to start a natal chart: a full birth time and place
+                            A name and a birth date is enough to start a natal chart: a full birth time and place
               unlocks Rising, houses, and the precise Moon. Add the people you have, at whatever
               precision you have.{" "}
               <em>Depth for the astrology lover; clarity for everyone else.</em>
@@ -61,8 +59,7 @@ export function FeaturesSection() {
             <span className="step-num">02. Understand</span>
             <h3>Understand what's between you.</h3>
             <p>
-              {/* FOUNDER-REVIEW: layer-two how-it-works. Synastry and aspects stay. */}
-              Compare any two natal charts (synastry) and see the aspects between you: where you
+                            Compare any two natal charts (synastry) and see the aspects between you: where you
               flow, where you catch, and exactly what each of you needs from the other, read
               differently whether you're partners, parent and child, or siblings.{" "}
               <em>Not a dating-app score. A real map.</em>
@@ -104,8 +101,7 @@ export function FeaturesSection() {
             <span className="step-num">03. Care</span>
             <h3>Care for the bond.</h3>
             <p>
-              {/* FOUNDER-REVIEW: rewritten. Shared spaces are unshipped; this describes private Vela only. */}
-              Vela, your AI astrologer and relationship coach, helps you navigate the hard conversations,
+                            Vela, your AI astrologer and relationship coach, helps you navigate the hard conversations,
               drawing on the chart <em>and</em> plain good sense. Ask privately. Your notes about
               someone stay yours.
             </p>

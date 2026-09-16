@@ -36,7 +36,6 @@ export const HOUSE_MEANING: Record<HouseKey, HouseMeaning> = {
   9:  { name: "Ninth House",   domain: "Meaning & the far world", short: "belief, distance, and the bigger frame", long: "Faith, philosophy, foreign places, higher study. Where they go looking for a reason." },
   10: { name: "Tenth House",   domain: "Public role & legacy",  short: "what they're known for",             long: "Career, reputation, the thing strangers know about them. Also the parent whose expectation still hums under it all." },
   11: { name: "Eleventh House", domain: "Community & hopes",    short: "their people, and what they're building toward", long: "Friends, chosen family, the collective, and the future they'd like to live in. Where belonging is chosen rather than given." },
-  // FOUNDER-REVIEW: rewritten (no U+2014).
   12: { name: "Twelfth House", domain: "The hidden & the undoing", short: "what runs beneath, unwatched",   long: "Solitude, the unconscious, what they hide even from themselves. Not a curse: a private room. Things here operate before they're noticed." },
 };
 
@@ -189,7 +188,6 @@ export const PLANET_IN_HOUSE: Record<BodyKey, Record<HouseKey, Reading>> = {
  * romance, attraction, courtship, or merge-as-intimacy.
  * Lookup only via interpretHouse(..., { minorSafe: true }).
  */
-// FOUNDER-REVIEW: authored — all twelve minor Venus-in-house shorts + longs.
 export const VENUS_IN_HOUSE_MINOR: Record<HouseKey, Reading> = {
   1:  { short: "liked for how they show up",     long: "Warmth arrives with them. People notice them first: make sure they still feel seen for who they are underneath." },
   2:  { short: "cares about what lasts",         long: "Affection shows up in things kept, shared, and made comfortable. They care with their hands and with what they give." },

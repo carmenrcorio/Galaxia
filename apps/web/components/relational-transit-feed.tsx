@@ -99,22 +99,15 @@ export function formatRelationalTransitQuietDate(iso: string): string {
   return `${d.getUTCDate()} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
-// FOUNDER-REVIEW: loading line while the feed is fetching.
 export const RELATIONAL_TRANSIT_FEED_LOADING = "Checking this week's shared transits.";
-// FOUNDER-REVIEW: the feed fetch failed or timed out.
 export const RELATIONAL_TRANSIT_FEED_ERROR =
   "This week's shared transits could not load. Try again.";
-// FOUNDER-REVIEW: retry after a feed load failure.
 export const RELATIONAL_TRANSIT_FEED_RETRY = "Try again";
-// FOUNDER-REVIEW: empty because the owner turned alerts off.
 export const RELATIONAL_TRANSIT_FEED_OFF =
   "This week alerts are off. Turn them on in Settings to see shared transits.";
-// FOUNDER-REVIEW: empty because no active overlapping transits, and no next date is computable.
 export const RELATIONAL_TRANSIT_FEED_EMPTY =
   "Nothing is currently pulling on two people in your circle at once. The sky is quiet this week.";
-// FOUNDER-REVIEW: next action when the week is quiet.
 export const RELATIONAL_TRANSIT_FEED_EMPTY_TODAY = "See today's sky for each person";
-// FOUNDER-REVIEW: link from the compact home card to the full feed.
 export const RELATIONAL_TRANSIT_FEED_SEE_ALL = "See the full feed";
 
 /** Honest empty copy. Never fabricates an event; interpolates a real next date only. */
@@ -122,7 +115,6 @@ export function relationalTransitFeedEmptyMessage(nextDateISO: string | null): s
   if (!nextDateISO) return RELATIONAL_TRANSIT_FEED_EMPTY;
   const label = formatRelationalTransitQuietDate(nextDateISO);
   if (!label) return RELATIONAL_TRANSIT_FEED_EMPTY;
-  // FOUNDER-REVIEW: empty with a real next window from stored rows or scanned geometry.
   return `Nothing is currently pulling on two people in your circle at once. The next shared pull begins around ${label}.`;
 }
 
@@ -165,8 +157,7 @@ function QuietFeedStatus({
       {error && onRetry ? (
         <p style={{ margin: "8px 0 0" }}>
           <button type="button" className="btn-primary" onClick={onRetry}>
-            {/* FOUNDER-REVIEW: RELATIONAL_TRANSIT_FEED_RETRY */}
-            {RELATIONAL_TRANSIT_FEED_RETRY}
+                        {RELATIONAL_TRANSIT_FEED_RETRY}
           </button>
         </p>
       ) : null}
@@ -178,7 +169,6 @@ function MemorialMark({ person }: { person: PersonMemorialInfo | undefined }) {
   if (!person?.passed_at) return null;
   if (usesMemorialGlyph(person)) {
     const pattern = getMemorialConstellation(person.memorial_constellation);
-    // FOUNDER-REVIEW: rewritten (no U+2014).
     if (pattern) return <MemorialConstellationGlyph pattern={pattern} size={14} strokeWidth={1} starRadius={1} title={`${person.display_name}, remembered`} />;
   }
   return <span aria-label={`${person.display_name}, remembered`} style={{ color: "var(--gold-soft)", fontSize: ".7rem" }}>✦</span>;
@@ -334,8 +324,7 @@ export function RelationalTransitFeed({
       style={{ padding: compact ? "14px 16px" : undefined }}
     >
       <p className="eyebrow">This week</p>
-      {/* FOUNDER-REVIEW: compact intro. Full intro is the existing feed dek. */}
-      <p className="muted" style={{ fontSize: compact ? ".74rem" : ".78rem", marginBottom: compact ? 8 : 10, lineHeight: 1.45 }}>
+            <p className="muted" style={{ fontSize: compact ? ".74rem" : ".78rem", marginBottom: compact ? 8 : 10, lineHeight: 1.45 }}>
         {compact
           ? "What is pulling on two people in your circle at once."
           : "Transits moving across more than one person in your constellation at once: the sky's dynamic between you, not just what one of you is feeling alone."}

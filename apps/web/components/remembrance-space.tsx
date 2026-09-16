@@ -42,7 +42,6 @@ interface ReflectionRow {
   created_at: string;
 }
 
-// FOUNDER-REVIEW: remembrance reflections loading / empty / failure.
 const REMEMBRANCE_LOADING = "Loading reflections…";
 const REMEMBRANCE_EMPTY = "No reflections yet. Write the first one above.";
 const REMEMBRANCE_LOAD_ERROR = "Reflections could not load. Try again.";
@@ -150,8 +149,7 @@ export function RemembranceSpace({
           maxWidth: "52ch",
         }}
       >
-        {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-        A private space for {person.display_name}. Only you see this. Their chart stays with you;
+                A private space for {person.display_name}. Only you see this. Their chart stays with you;
         nothing here is shared.
       </p>
 

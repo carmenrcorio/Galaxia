@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { SignupForm } from "../../components/signup-form";
 import { authReturnPath } from "../../lib/safe-next-path";
 
-// FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Start free with Galaxia";
-// FOUNDER-REVIEW: rewritten. Signup collects name, email, and password; birth data is on /welcome.
 const DESCRIPTION =
   "Create your Galaxia account with your name, email, and a password. No credit card. You add birth details after you sign in.";
 

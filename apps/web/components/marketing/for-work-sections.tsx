@@ -95,7 +95,6 @@ export const FOR_WORK_SOURCE_LINE = plutoSourceLine(FOR_WORK_EXAMPLE_SIGN);
 
 export const WORK_RELATION_LABELS = workRelationLabels();
 
-// FOUNDER-REVIEW: authored. Three workplace moments; two sentences each.
 const MOMENTS = [
   {
     title: "Before a one to one",
@@ -127,18 +126,14 @@ export function ForWorkHero() {
       <nav aria-label="Breadcrumb" className="section-page-breadcrumb">
         <Link href={MARKETING_NAV_BRAND_HREF as never}>Galaxia</Link>
         <span aria-hidden="true">/</span>
-        {/* FOUNDER-REVIEW: authored breadcrumb. */}
-        <span aria-current="page">For work</span>
+                <span aria-current="page">For work</span>
       </nav>
       <div className="hero-text">
-        {/* FOUNDER-REVIEW: authored eyebrow. */}
-        <span className="eyebrow fade-in">For the people you work with</span>
-        {/* FOUNDER-REVIEW: authored H1. Founder supplies the final line. Placeholder shape held. */}
-        <h1 className="hero-h1 fade-in fade-in-delay-1">
+                <span className="eyebrow fade-in">For the people you work with</span>
+                <h1 className="hero-h1 fade-in fade-in-delay-1">
           Know how this person is wired before the conversation that matters.
         </h1>
-        {/* FOUNDER-REVIEW: authored lede. Outcome only on the first screen. */}
-        <p className="lede fade-in fade-in-delay-2" style={{ marginTop: 18 }}>
+                <p className="lede fade-in fade-in-delay-2" style={{ marginTop: 18 }}>
           Before the one to one, the negotiation, or the hard feedback. A read on how they
           are wired, and what shaped them.
         </p>
@@ -150,12 +145,10 @@ export function ForWorkHero() {
 export function ForWorkMoments() {
   return (
     <section className="container why-not" id="moments">
-      {/* FOUNDER-REVIEW: authored section head. */}
-      <span className="eyebrow reveal">Three moments</span>
+            <span className="eyebrow reveal">Three moments</span>
       <h2 className="reveal">The conversation is already on the calendar.</h2>
       <p className="body reveal">
-        {/* FOUNDER-REVIEW: authored. */}
-        These are the hours when knowing how someone is wired is not a nice extra. It is
+                These are the hours when knowing how someone is wired is not a nice extra. It is
         the difference between walking in cold and walking in prepared.
       </p>
       <div className="teaser-grid" style={{ marginTop: 28 }}>
@@ -180,12 +173,10 @@ export function ForWorkGenerational() {
       <div className="container edge-inner">
         <div className="edge-copy reveal">
           <div className="edge-head">
-            {/* FOUNDER-REVIEW: authored. Astrology is not named yet. */}
-            <span className="eyebrow edge-eyebrow">What shaped them</span>
+                        <span className="eyebrow edge-eyebrow">What shaped them</span>
             <h2 className="edge-h2">The era they came up in still shows up at work.</h2>
             <p className="lede edge-lede">
-              {/* FOUNDER-REVIEW: authored thesis. */}
-              The decade someone came of age is not trivia. It is the weather they grew up
+                            The decade someone came of age is not trivia. It is the weather they grew up
               in: who they were taught to trust, how they meet a boss, whether a new
               process feels like progress or a threat. Two people can sit in the same
               meeting and hear two different rooms, because they came up in two different
@@ -194,8 +185,7 @@ export function ForWorkGenerational() {
             </p>
           </div>
           <div className="teal-callout edge-callout">
-            {/* FOUNDER-REVIEW: authored frame around package copy. */}
-            <b style={{ color: "var(--teal)" }}>This is from the product, word for word.</b>{" "}
+                        <b style={{ color: "var(--teal)" }}>This is from the product, word for word.</b>{" "}
             <span style={{ color: "var(--mist)", fontWeight: 300 }}>
               The three notes here are entries Galaxia already keeps for the era a
               person came up in. They are not sketches, and they are not rewritten here.
@@ -203,8 +193,7 @@ export function ForWorkGenerational() {
           </div>
         </div>
         <div className="cohort glass-card reveal">
-          {/* FOUNDER-REVIEW: authored card eyebrow. Work view leads; era events follow as evidence. */}
-          <span className="mock-label">From the generational record</span>
+                    <span className="mock-label">From the generational record</span>
           <p className="eyebrow" style={{ marginTop: 8, marginBottom: 10 }}>{WORK_VIEW_HEADING}</p>
           <div className="pl-row">
             <div>
@@ -266,34 +255,29 @@ export function ForWorkGenerational() {
 export function ForWorkWhatThisIsNot() {
   return (
     <section className="container why-not" id="not-this">
-      {/* FOUNDER-REVIEW: authored. Required section, not optional. */}
-      <span className="eyebrow reveal">What this is not</span>
+            <span className="eyebrow reveal">What this is not</span>
       <h2 className="reveal">A prompt for better questions, not a verdict.</h2>
       <p className="body reveal">
-        {/* FOUNDER-REVIEW: authored. */}
-        Use it to walk into a conversation more carefully. Do not use it to close a
+                Use it to walk into a conversation more carefully. Do not use it to close a
         decision about someone.
       </p>
       <ul className="why-not-list">
         <li className="reveal">
-          {/* FOUNDER-REVIEW: authored. */}
-          <strong>This does not predict performance.</strong>{" "}
+                    <strong>This does not predict performance.</strong>{" "}
           <span>
             It will not tell you who will hit a number, who will stall, or who to promote.
             Output is still something you see in the work.
           </span>
         </li>
         <li className="reveal">
-          {/* FOUNDER-REVIEW: authored. */}
-          <strong>It is not a hiring tool.</strong>{" "}
+                    <strong>It is not a hiring tool.</strong>{" "}
           <span>
             Do not screen candidates with it, rank a shortlist with it, or treat a birth
             date as a proxy for fit. Hiring is a decision this page is not offering to make.
           </span>
         </li>
         <li className="reveal">
-          {/* FOUNDER-REVIEW: authored. */}
-          <strong>It is not a personality test.</strong>{" "}
+                    <strong>It is not a personality test.</strong>{" "}
           <span>
             There is no type, no badge, no score that stands in for the person in front of
             you. What you get is a way to ask a better next question.
@@ -310,8 +294,7 @@ export function ForWorkHowItWorks() {
     <section className="container why-not" id="how">
       <div className="how-panel">
         <div className="how-head reveal">
-          {/* FOUNDER-REVIEW: authored. Language layer: this is where astrology is named. */}
-          <h2>This is astrology, named plainly.</h2>
+                    <h2>This is astrology, named plainly.</h2>
           <p>
             Real birth data. Real computed charts. No generic reading written for a
             million people who share a month.
@@ -319,8 +302,7 @@ export function ForWorkHowItWorks() {
         </div>
         <ul className="why-not-list">
           <li className="reveal">
-            {/* FOUNDER-REVIEW: authored. */}
-            <strong>Real birth data.</strong>{" "}
+                        <strong>Real birth data.</strong>{" "}
             <span>
               A birth date is enough to start. A birth time and place, when you have them,
               unlock the deepest detail. You add the people you actually work with
@@ -328,8 +310,7 @@ export function ForWorkHowItWorks() {
             </span>
           </li>
           <li className="reveal">
-            {/* FOUNDER-REVIEW: authored. */}
-            <strong>Real computed charts.</strong>{" "}
+                        <strong>Real computed charts.</strong>{" "}
             <span>
               Every placement comes from astronomical positions at birth, not from a
               sun-sign guess and not from an AI inventing what is not there. The chart is
@@ -337,8 +318,7 @@ export function ForWorkHowItWorks() {
             </span>
           </li>
           <li className="reveal">
-            {/* FOUNDER-REVIEW: authored. */}
-            <strong>No generic readings.</strong>{" "}
+                        <strong>No generic readings.</strong>{" "}
             <span>
               The read is for this person in this role, not a blurb for everyone born in
               the same week. {WORK_RELATION_LABELS.join(", ")} are relationship types the
@@ -348,8 +328,7 @@ export function ForWorkHowItWorks() {
           </li>
         </ul>
         <div className="teal-callout" style={{ marginTop: 28 }}>
-          {/* FOUNDER-REVIEW: authored frame. The paragraph that follows is package copy. */}
-          <b style={{ color: "var(--teal)" }}>A real reading, not a sketch.</b>{" "}
+                    <b style={{ color: "var(--teal)" }}>A real reading, not a sketch.</b>{" "}
           <span style={{ color: "var(--mist)", fontWeight: 300 }}>
             When two people at work came up in different eras, this is the kind of sentence
             the generational layer already writes. It is about how each of you learned to
@@ -359,8 +338,7 @@ export function ForWorkHowItWorks() {
             {FOR_WORK_FAMILY_BRIDGE}
           </p>
           <p className="body" style={{ marginTop: 16 }}>
-            {/* FOUNDER-REVIEW: authored. Names the placement after the outcome, never hidden. */}
-            The work reading and the era notes on this page come from the same record.
+                        The work reading and the era notes on this page come from the same record.
             {` ${FOR_WORK_SOURCE_LINE}`}
           </p>
         </div>
@@ -372,8 +350,7 @@ export function ForWorkHowItWorks() {
 export function ForWorkClose() {
   return (
     <section className="container close" id="join">
-      {/* FOUNDER-REVIEW: authored close. */}
-      <h2 className="close-h reveal">
+            <h2 className="close-h reveal">
         Read them before the conversation that matters.
       </h2>
       <div className="close-cta hero-actions reveal">

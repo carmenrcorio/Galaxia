@@ -159,80 +159,62 @@ export function shareInviteTimeRemaining(expiresAt: string | null, now: Date = n
   return `${days} days left`;
 }
 
-// FOUNDER-REVIEW: one-line Galaxia framing on a gifted natal chart.
 export const SHARE_GALAXIA_FRAME =
   "Galaxia computes a real natal chart and says, in plain language, what this person needs.";
 
-// FOUNDER-REVIEW: subject for nameless gifted charts. Never a real person's name.
 export const SHARE_NEED_SUBJECT = "This person";
 
-// FOUNDER-REVIEW: disclosure on the copy-share control for a gifted natal chart.
 export const SHARE_GIFT_DISCLOSURE =
   "Anyone with this link can see the natal chart, the birth date, and the birth place if you entered one. They can add this person to their own constellation or compare without retyping those details. They cannot see notes. The URL never includes a name.";
 
-// FOUNDER-REVIEW: disclosure on compare share controls.
 export const SHARE_COMPARE_DISCLOSURE =
   "Anyone with this link can see this compatibility reading and both charts. They cannot see notes. The URL never includes a name.";
 
-// FOUNDER-REVIEW: anonymous creators cannot pick no-expiry because they cannot revoke later.
 export const SHARE_ANON_EXPIRY_NOTE =
   "Signed out: this link expires, and you cannot revoke it later. Sign in to pick no expiry, or to revoke from Settings.";
 
-// FOUNDER-REVIEW: signed-in revoke pointer on the share control.
 export const SHARE_SIGNED_IN_REVOKE_NOTE = "You can revoke this link from Settings.";
 
-// FOUNDER-REVIEW: gifted-chart lede. Readable with no account.
 export const SHARE_SINGLE_LEDE =
   "A gifted natal chart. Readable with no account. Birth details are not in the URL.";
 
-// FOUNDER-REVIEW: compare snapshot lede.
 export const SHARE_COMPARE_LEDE =
   "A read-only snapshot of a Galaxia reading. Nothing here can be edited, and birth details are not in the link.";
 
-// FOUNDER-REVIEW: return-path CTAs on the gifted chart.
 export const SHARE_ADD_CTA = "Add this person to my own constellation";
 export const SHARE_COMPARE_CTA = "See how you and this person compare";
 export const SHARE_COMPARE_HINT = "You only need to enter your own birth details.";
 
-// FOUNDER-REVIEW: older snapshots that predate the gift envelope.
 export const SHARE_NO_GIFT_BIRTH =
   "This older link does not carry birth details, so they cannot be added or compared from here.";
 
-// FOUNDER-REVIEW: heading above the gifted need statement.
 export const SHARE_NEED_HEADING = "What this person needs";
 export const SHARE_NEED_EMPTY =
   "There is not enough birth data in this chart to say what this person needs yet.";
 
-// FOUNDER-REVIEW: provenance under the gifted need statement.
 export const SHARE_NEED_PROVENANCE = "Computed from their birth data. Not generated, not guessed.";
 
-// FOUNDER-REVIEW: generational (year-only) need on a gifted chart.
 export const SHARE_NEED_GENERATIONAL =
   "A birth year settles only the slowest planets, so this describes the era that shaped them rather than them alone.";
 
-// FOUNDER-REVIEW: settings list for live share links.
 export const SHARE_PENDING_TITLE = "Share links";
 export const SHARE_PENDING_EMPTY = "No live share links right now.";
 export const SHARE_PENDING_ERROR = "Could not load share links. Try again.";
-// FOUNDER-REVIEW: pending share links are loading.
 export const SHARE_PENDING_LOADING = "Loading your share links.";
 export const SHARE_REVOKE_LABEL = "Revoke";
 export const SHARE_REVOKING_LABEL = "Revoking…";
 export const SHARE_PENDING_COMPARE_LABEL = "Compatibility reading";
 export const SHARE_PENDING_NATAL_FALLBACK = "Natal chart";
 
-// FOUNDER-REVIEW: gifted compare landing when person B is locked from the token.
 export const SHARE_GIFT_COMPARE_B_LOCKED = "Using the gifted chart. You only enter your own birth details.";
 export const SHARE_GIFT_COMPARE_MISSING =
   "This gift link is missing, expired, or no longer available, so the other person's chart cannot be loaded.";
 export const SHARE_GIFT_COMPARE_NOT_SINGLE =
   "This link is a compatibility reading, not a gifted natal chart, so it cannot be compared from here.";
 
-// FOUNDER-REVIEW: authored — Quick Compare held-reading (shared with /s).
 export const QUICK_COMPARE_HELD_READING =
   "A minor is part of this comparison, so Galaxia won't produce a romantic reading here. Only a platonic reading is available for this pairing.";
 
-// FOUNDER-REVIEW: authored — minor notice under the focus pills (shared with /s).
 export const QUICK_COMPARE_MINOR_NOTICE =
   "A minor is part of this comparison, so only a platonic reading is available. Romantic framing is turned off for pairings involving a child.";
 
@@ -452,7 +434,6 @@ export function validateQuickSharePersistBody(body: unknown): PersistValidation 
     return {
       ok: false,
       status: 400,
-      // FOUNDER-REVIEW: authored — persist refusal when a minor + romantic framing is submitted.
       error: "Galaxia will not store a romantic reading for a pairing that includes a minor.",
     };
   }

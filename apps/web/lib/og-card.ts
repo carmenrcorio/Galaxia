@@ -55,24 +55,8 @@ export function buildOgSingleCard(payload: SingleSharePayload): OgSingleCard {
   };
 }
 
-/**
- * FOUNDER-REVIEW: authored — one-line neutral summary for the OG card when
- * the relationship is romantic (`isRomanticRelation` true). The card never
- * shows a relationship read, a warmth level, or an attraction score for a
- * romantic pairing — only this neutral line, matching the existing
- * "A shared compatibility reading" framing already used by
- * `share-snapshot-view.tsx`'s title for every compare kind.
- */
 export const OG_NEUTRAL_COMPARE_SUBTITLE = "A shared compatibility reading. Open the link for the full reading.";
 
-/**
- * FOUNDER-REVIEW: authored — the one non-romantic relationship type
- * `RELATION_HEADLINE` (@galaxia/astro) does not cover. Matches the voice and
- * length of the existing entries there (two short sentences, no scores, no
- * attraction language). Used only as a last-resort per-type line; if
- * `RELATION_HEADLINE` ever gains a "platonic" entry, that one wins instead
- * (see `resolveOgCompareSummary`).
- */
 export const OG_PLATONIC_SUMMARY =
   "This is a connection you have chosen to read together, kept easy by staying open with each other. Here is what comes easy, and where it needs a little care.";
 

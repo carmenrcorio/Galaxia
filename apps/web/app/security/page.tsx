@@ -10,7 +10,6 @@ import { TrustSection } from "../../components/marketing/trust-section";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { RELATED_LINKS } from "../../lib/nav-links";
 
-// FOUNDER-REVIEW: rewritten (no U+2014).
 const TITLE = "Your Data and Privacy on Galaxia";
 const DESCRIPTION =
   "Galaxia stores birth data about you and your family. Here's exactly how we handle it, who can see it, and what we'll never do with it.";

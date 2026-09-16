@@ -7,8 +7,7 @@ export default function ShareNotFound() {
     <div style={{ position: "relative", minHeight: "100vh" }}>
       <CosmicBackground />
       <main className="container" style={{ position: "relative", zIndex: 2, paddingTop: 80, maxWidth: 560 }}>
-        {/* FOUNDER-REVIEW: authored — unknown / forged share token. */}
-        <p className="eyebrow">Shared reading</p>
+                <p className="eyebrow">Shared reading</p>
         <h1 className="page-title" style={{ marginBottom: 12 }}>This link isn&apos;t available</h1>
         <p className="muted" style={{ lineHeight: 1.65, marginBottom: 24 }}>
           The share link may be mistyped, expired, or no longer available. It never opens someone else&apos;s reading.

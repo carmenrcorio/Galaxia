@@ -29,7 +29,6 @@ export interface GlossaryLetterGroup {
   terms: GlossaryTerm[];
 }
 
-// FOUNDER-REVIEW: every `term`, `definition`, and `readMore.title` below.
 // Titles of existing posts are quoted as published; definitions are new.
 
 export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
@@ -434,7 +433,6 @@ export function groupGlossaryByLetter(
   return groups;
 }
 
-// FOUNDER-REVIEW: page title, meta description, and visible lede.
 export const GLOSSARY_TITLE = "Astrology terms, plainly defined";
 export const GLOSSARY_DESCRIPTION =
   "Plain-English definitions of natal charts, synastry, aspects, and houses. What each term is, and why it matters for understanding a person.";

@@ -26,24 +26,16 @@ export interface ThisWeekRow {
 
 export const THIS_WEEK_HOME_LIMIT = 3;
 
-// FOUNDER-REVIEW: loading line while the feed is fetching.
 export const RELATIONAL_TRANSIT_FEED_LOADING = "Checking this week's shared transits.";
-// FOUNDER-REVIEW: the feed fetch failed or timed out.
 export const RELATIONAL_TRANSIT_FEED_ERROR =
   "This week's shared transits could not load. Try again.";
-// FOUNDER-REVIEW: retry after a feed load failure.
 export const RELATIONAL_TRANSIT_FEED_RETRY = "Try again";
-// FOUNDER-REVIEW: empty because the owner turned alerts off.
 export const RELATIONAL_TRANSIT_FEED_OFF =
   "This week alerts are off. Turn them on in Settings to see shared transits.";
-// FOUNDER-REVIEW: empty because no active overlapping transits, and no next date is computable.
 export const RELATIONAL_TRANSIT_FEED_EMPTY =
   "Nothing is currently pulling on two people in your circle at once. The sky is quiet this week.";
-// FOUNDER-REVIEW: next action when the week is quiet.
 export const RELATIONAL_TRANSIT_FEED_EMPTY_TODAY = "See today's sky for each person";
-// FOUNDER-REVIEW: link from the compact home card to the full feed.
 export const RELATIONAL_TRANSIT_FEED_SEE_ALL = "See the full feed";
-// FOUNDER-REVIEW: compact intro.
 export const RELATIONAL_TRANSIT_FEED_COMPACT_INTRO =
   "What is pulling on two people in your circle at once.";
 
@@ -58,7 +50,6 @@ export function relationalTransitFeedEmptyMessage(nextDateISO: string | null): s
   if (!nextDateISO) return RELATIONAL_TRANSIT_FEED_EMPTY;
   const label = formatRelationalTransitQuietDate(nextDateISO);
   if (!label) return RELATIONAL_TRANSIT_FEED_EMPTY;
-  // FOUNDER-REVIEW: empty with a real next window from stored rows or scanned geometry.
   return `Nothing is currently pulling on two people in your circle at once. The next shared pull begins around ${label}.`;
 }
 

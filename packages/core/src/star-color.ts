@@ -21,9 +21,8 @@ export type ElementNodeColorKey = keyof typeof ELEMENT_NODE_COLORS;
 
 /**
  * Curated picker palette — design-system hues proven on the dark canvas
- * (element colours + rose / gold-bright). Names are FOUNDER-REVIEW.
+ * (element colours + rose / gold-bright).
  */
-// FOUNDER-REVIEW: palette display names — refine voice before merge.
 export const STAR_COLOR_PALETTE = [
   { id: "ember", hex: "#E0825C", label: "Ember" },
   { id: "honey", hex: "#E6AE6C", label: "Honey" },

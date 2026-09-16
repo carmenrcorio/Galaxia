@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { publicEnv } from "../lib/env";
-// FOUNDER-REVIEW: generate/share copy lives in lib/connect-invite.ts (CONNECT_INVITE_ACTION, CONNECT_LINK_EXPIRES, CONNECT_RATE_LIMIT).
-// FOUNDER-REVIEW: Creating link…, Copy, Copied, Share, Invite link.
 import {
   CONNECT_GENERIC_ERROR,
   CONNECT_INVITE_ACTION,

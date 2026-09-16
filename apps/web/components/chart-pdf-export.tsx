@@ -110,8 +110,7 @@ function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion,
           {bigThree.map(({ label, sign, reading }) => (
             <div key={label} className="pdf-chip">
               <span className="pdf-chip-glyph" style={{ color: sign ? `var(--${signElement(sign)})` : undefined }}>
-                {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-                {sign ? SIGN_GLYPH[sign] : "·"}
+                                {sign ? SIGN_GLYPH[sign] : "·"}
               </span>
               <span className="pdf-chip-label">{label}</span>
               <span className="pdf-chip-value">{sign ?? (label === "Rising" ? "Needs time + city" : "·")}</span>
@@ -151,8 +150,7 @@ function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion,
           {hasHouses
             ? `Houses computed with the ${houseSystemLabelForChart(chart, engineVersion)} system. `
             : "Add an exact birth time and city to unlock the Ascendant, houses, and the full wheel. "}
-          {/* FOUNDER-REVIEW: PDF footnote brand + public URL. */}
-          Computed from precise astronomical data by Galaxia: never guessed. galaxiamea.com
+                    Computed from precise astronomical data by Galaxia: never guessed. galaxiamea.com
         </p>
       </div>
     </div>

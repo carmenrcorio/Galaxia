@@ -52,7 +52,6 @@ export interface PlacementSafetyOpts {
   minorSafe: boolean;
 }
 
-// FOUNDER-REVIEW: authored — minor-safe Venus domain label.
 const VENUS_DOMAIN_MINOR = "How they care";
 
 /**
@@ -87,7 +86,6 @@ export const PLANET_IN_SIGN: Record<BodyKey, Record<SignKey, Reading>> = {
   // ─────────────────────────── MOON ───────────────────────────
   moon: {
     Aries:       { short: "feels fast, forgives fast", long: "The flare is real and it's over in minutes; they're baffled that you're still holding it an hour later. Say the hard thing directly, then let it go as fast as they do." },
-    // FOUNDER-REVIEW: rewritten (no U+2014).
     Taurus:      { short: "soothed by the physical", long: "Safety is sensory: the same meal, the same side of the bed, a hand on their back. In a crisis, don't process: feed them and sit close." },
     Gemini:      { short: "talks its way to calm", long: "They need to narrate a feeling before they can feel it, and it will change three times while they do. Don't hold them to the first version." },
     Cancer:      { short: "tidal, and remembers everything", long: "Their moods have weather and their memory keeps receipts, especially for tenderness. A small ritual of care will steady them faster than any conversation." },
@@ -267,7 +265,7 @@ export const ASPECT_NATURE: Record<AspectKey, { tone: "flow" | "friction" | "fus
  * Coverage lock: authored=38 possible=225
  *
  * 18 cells shipped with the original table. Batch 1 adds 20 cells in
- * production-render frequency order (FOUNDER-REVIEW on each new string),
+ * production-render frequency order,
  * then stops. Remaining unauthored cells never render in a reading slot.
  */
 export const NATAL_ASPECT_BODIES: BodyKey[] = [
@@ -366,7 +364,6 @@ export const ASPECT_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> = 
     conjunction: { short: "what they want and what they need agree", long: "Their identity and their emotional needs point the same way, which makes them coherent and a little unexamined." },
     square:      { short: "wants one thing, needs another", long: "What makes them proud isn't what makes them safe, and they will keep choosing the first. Ask what they need, not what they want." },
     opposition:  { short: "at odds with themselves", long: "Their public self and private self were built in different rooms. Don't take the contradiction personally; it predates you." },
-    // FOUNDER-REVIEW: batch 1, rank 7 (moon-sun trine).
     trine:       { short: "self and feeling point the same way, easily", long: "Who they are and what they need do not fight. That ease is a real gift, and it can hide from them. Ask how they are, not just how they are doing." },
   },
   [PAIR("moon", "venus")]: {
@@ -378,15 +375,12 @@ export const ASPECT_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> = 
     conjunction: { short: "desire and affection, one fire", long: "They don't separate wanting from loving. It's intense, and it burns through anything lukewarm." },
     square:      { short: "wants what unsettles them", long: "Attraction and comfort pull opposite ways here. The tension is real chemistry and also real trouble." },
     opposition:  { short: "chases what it can't hold", long: "They're drawn to what resists them. Name the pattern out loud and it loosens." },
-    // FOUNDER-REVIEW: batch 1, rank 19 (mars-venus sextile).
     sextile:     { short: "warmth and drive can work together", long: "Affection and get-up-and-go sit in easy reach of each other. It takes a little intention to use; when they do, care looks like showing up and doing the thing." },
   },
   [PAIR("mars", "moon")]: {
     square:      { short: "anger sits close to hurt", long: "The heat comes up fast because the feeling did. The fight is almost never about the thing." },
     conjunction: { short: "feels it and acts on it, instantly", long: "No gap between the emotion and the response. Give them a beat before they speak and they'll thank you." },
-    // FOUNDER-REVIEW: batch 1, rank 10 (mars-moon sextile).
     sextile:     { short: "hurt can move into action when they let it", long: "The feeling and the drive can work together here if they reach for it. A walk, a task, a clean sentence of anger all help more than sitting on it." },
-    // FOUNDER-REVIEW: batch 1, rank 18 (mars-moon trine).
     trine:       { short: "feeling and drive move as one", long: "They can act on what they feel without a long translation. That is a gift in a crisis and a way to skip the conversation. Invite the sentence before the action when the stakes are someone else's heart." },
   },
   [PAIR("mercury", "moon")]: {
@@ -396,7 +390,6 @@ export const ASPECT_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> = 
   [PAIR("saturn", "moon")]: {
     square:      { short: "learned not to need", long: "Someone taught them early that needing was unsafe, so they manage instead of asking. Offer before they ask; they won't ask." },
     conjunction: { short: "carries the feeling alone", long: "Emotion arrives with a weight and a duty attached. Being allowed to be a mess is the most generous thing you can give them." },
-    // FOUNDER-REVIEW: batch 1, rank 12 (moon-saturn opposition).
     opposition:  { short: "need on one side, duty on the other", long: "They swing between wanting to be held and insisting they can manage. Both are real. Offer care without making them ask, then let them keep their dignity." },
   },
   [PAIR("saturn", "venus")]: {
@@ -404,63 +397,48 @@ export const ASPECT_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> = 
   },
   [PAIR("pluto", "moon")]: {
     square:      { short: "feelings arrive as weather systems", long: "Emotion comes with an intensity that frightens even them. Don't fear it, and don't try to manage it for them." },
-    // FOUNDER-REVIEW: batch 1, rank 4 (moon-pluto conjunction).
     conjunction: { short: "feeling arrives at full intensity", long: "Emotion does not arrive in sips. They live at a depth that can scare people who wanted something lighter. Stay with them in it rather than trying to turn the volume down." },
   },
   [PAIR("jupiter", "sun")]: {
     conjunction: { short: "generous, expansive, easy to like", long: "Life gives them a little more room than it gives others, and they mostly share it." },
-    // FOUNDER-REVIEW: batch 1, rank 17 (jupiter-sun opposition).
     opposition:  { short: "the self and the bigger life pull apart", long: "They can feel torn between staying themselves and becoming larger. The job is not to pick a winner. Ask which side has been doing all the talking lately." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 1 (neptune-pluto sextile). Cohort weather; do not overclaim as a private talent.
   [PAIR("neptune", "pluto")]: {
     sextile: { short: "dream and overhaul in easy conversation", long: "The era they grew up in taught them that ideals and deep change can sit side by side. This is cohort weather, not a private talent; treat it as the air they breathe, and ask how it shows up in them specifically." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 2 (mercury-venus conjunction).
   [PAIR("mercury", "venus")]: {
     conjunction: { short: "kindness in the way they speak", long: "How they talk and how they care are the same motion. A harsh word from you lands as withdrawn affection, so say the true thing gently." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 3 (mars-mercury square).
   [PAIR("mars", "mercury")]: {
     square: { short: "words come out sharper than they meant", long: "They think by arguing, and the heat arrives before the sentence is finished. Give them a chance to rephrase; the first version is rarely the one they meant to keep." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 5 (pluto-uranus sextile). Cohort weather with a personal tell.
   [PAIR("pluto", "uranus")]: {
     sextile: { short: "change and overhaul that cooperate", long: "Their generation learned that shaking the old structure and transforming it can work together. Name the personal version: where they break a rule in order to go deeper, not just to be different." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 6 (neptune-uranus conjunction). Cohort weather.
   [PAIR("neptune", "uranus")]: {
     conjunction: { short: "the dream and the break arrive together", long: "They came up in a cohort that fused idealism with rupture. The personal tell is a sudden softness or a sudden exit that feels like both. Ask which one they actually needed." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 8 (mercury-sun conjunction).
   [PAIR("mercury", "sun")]: {
     conjunction: { short: "they become themselves by saying it", long: "Identity and voice occupy the same room. They need to talk a thing through to know what they think, so silence from you can feel like being erased. Let them hear their own mind out loud." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 9 (jupiter-moon conjunction).
   [PAIR("jupiter", "moon")]: {
     conjunction: { short: "feeling comes with extra room", long: "Their emotional life tends to open rather than contract. They forgive easily and may over-give. Let them be large, and also ask what they need back." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 11 (moon-neptune trine).
   [PAIR("moon", "neptune")]: {
     trine: { short: "feeling and imagining share a channel", long: "They pick up the mood in a room before anyone names it, and they can drown in it. Help them tell which feeling is theirs and which they borrowed." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 13 (neptune-saturn square).
   [PAIR("neptune", "saturn")]: {
     square: { short: "structure scrapes against the fog", long: "They try to make a plan of something that will not sit still, or they dissolve a plan that was actually working. Name the two jobs: one part of them needs a container, the other needs mystery. Give each a turn." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 14 (neptune-sun conjunction).
   [PAIR("neptune", "sun")]: {
     conjunction: { short: "selfhood with soft edges", long: "They become themselves through empathy, art, or a cause, and they can lose the outline of who they are inside it. Ask them to say the simple I-want, even if it feels small." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 15 (pluto-venus square). Care-framed, family-safe.
   [PAIR("pluto", "venus")]: {
     square: { short: "care comes with high stakes", long: "Affection is never casual here. They attach deeply and fear the loss of it. Steady, undramatic loyalty lands better than intensity that matches theirs." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 16 (jupiter-saturn sextile).
   [PAIR("jupiter", "saturn")]: {
     sextile: { short: "growth that can take a real shape", long: "The part of them that wants more and the part that wants a plan can actually talk to each other. Help them pick one expansion that has a container, not twenty that have none." },
   },
-  // FOUNDER-REVIEW: batch 1, rank 20 (pluto-saturn trine).
   [PAIR("pluto", "saturn")]: {
     trine: { short: "endurance that can actually transform something", long: "They can stay with a hard change long enough for it to finish. The risk is making endurance the whole personality. Ask what they are allowing to end, not only what they are holding." },
   },
@@ -479,7 +457,6 @@ export function interpretAspect(a: BodyKey, b: BodyKey, aspect: AspectKey): Read
  * friendship / care / loyalty framed — never chase, devotion-as-romance, or merge.
  * Lookup only via interpretPlacement(..., { minorSafe: true }).
  */
-// FOUNDER-REVIEW: authored — all twelve minor Venus shorts + longs.
 export const VENUS_IN_SIGN_MINOR: Record<SignKey, Reading> = {
   Aries:       { short: "cares by going first", long: "They show liking by starting: the invite, the plan, the dare. Waiting around for someone else to begin feels like being left out." },
   Taurus:      { short: "cares by staying", long: "Loyalty looks like the same snack, the same spot, showing up again tomorrow. They prove it by not disappearing." },

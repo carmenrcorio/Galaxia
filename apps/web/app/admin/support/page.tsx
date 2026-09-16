@@ -53,8 +53,7 @@ export default async function AdminSupportPage() {
         <p className="eyebrow">Admin</p>
         <h1 className="page-title" style={{ fontSize: "1.9rem" }}>Support</h1>
         <p className="muted" style={{ marginTop: 6 }}>
-          {/* FOUNDER-REVIEW: rewritten (no U+2014). */}
-          In-app requests only: the help@ inbox is not read into this list.{" "}
+                    In-app requests only: the help@ inbox is not read into this list.{" "}
           <a href={HELP_INBOX_MAILTO} style={{ color: "var(--gold)" }}>
             Open the help@ inbox ↗
           </a>

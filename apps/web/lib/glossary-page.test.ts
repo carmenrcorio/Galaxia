@@ -17,16 +17,14 @@ function read(path: string): string {
 }
 
 const PAGE = "apps/web/app/glossary/page.tsx";
-const TERMS = "apps/web/lib/glossary-terms.ts";
 
 function sentenceCount(text: string): number {
   return (text.match(/[.!?](?:\s|$)/g) ?? []).length;
 }
 
 describe("/glossary metadata", () => {
-  it("exports the founder-review title, a short description, and a self canonical", () => {
+  it("exports the title, a short description, and a self canonical", () => {
     const src = read(PAGE);
-    expect(src).toContain("FOUNDER-REVIEW");
     expect(GLOSSARY_TITLE).toBe("Astrology terms, plainly defined");
     expect(GLOSSARY_DESCRIPTION.length).toBeLessThan(155);
     expect(GLOSSARY_DESCRIPTION).toMatch(/natal chart/i);
@@ -73,8 +71,6 @@ describe("glossary term list", () => {
   });
 
   it("authors 2-3 sentence definitions in the app register, never apologetic or predictive", () => {
-    const src = read(TERMS);
-    expect(src).toContain("FOUNDER-REVIEW");
     for (const item of GLOSSARY_TERMS) {
       const n = sentenceCount(item.definition);
       expect(n, `${item.term} has ${n} sentences`).toBeGreaterThanOrEqual(2);

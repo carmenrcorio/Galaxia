@@ -49,10 +49,8 @@ export default function SubscribeScreen() {
     return <Redirect href="/home" />;
   }
 
-  // FOUNDER-REVIEW: authored — mobile paywall when trial/subscription ended.
   const body =
     status === "trialing" && trialDaysLeft === 0
-      // FOUNDER-REVIEW: rewritten (no U+2014).
       ? "Your trial has ended. Everything you've built is still here: every chart, every note, every constellation. Continue on the web whenever you're ready."
       : "Access is paused on this account. Everything you've built is still here. Continue on the web to keep using Galaxia.";
 
@@ -80,12 +78,9 @@ export default function SubscribeScreen() {
             paddingVertical: 12
           }}
         >
-          {/* FOUNDER-REVIEW: authored. Opens the web paywall in the browser. */}
-          <Text style={{ color: tokens.colors.ink, textAlign: "center", fontWeight: "700" }}>Open Galaxia on the web</Text>
+                    <Text style={{ color: tokens.colors.ink, textAlign: "center", fontWeight: "700" }}>Open Galaxia on the web</Text>
         </Pressable>
       ) : (
-        // FOUNDER-REVIEW: authored. Shown only when this build has no web
-        // address, so we say there is no link instead of offering a dead one.
         <Text style={{ color: tokens.colors.mist2, lineHeight: 22 }}>
           This build cannot open the web link for you. Visit Galaxia in your browser to continue.
         </Text>

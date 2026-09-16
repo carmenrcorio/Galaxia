@@ -17,45 +17,27 @@ import { splitFullName } from "@galaxia/core";
 export const FAMILY_PATTERN_CARD_SIZE = { width: 1080, height: 1080 } as const;
 export const FAMILY_PATTERN_CARD_FILENAME = "group-pattern.png";
 
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_SHARE_LABEL = "Share pattern";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_EYEBROW = "A shared pattern";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_PRIVACY_TITLE = "Before you share this card";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_PRIVACY_BODY =
   "This card will show first names and the shared signs below. No birth date, birth time, or birth place will appear.";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_WHO_HEADING = "Who is on this card";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_WHAT_HEADING = "What will appear";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_HEADLINE_LABEL = "Headline";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_LINE_LABEL = "Pattern line";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_CONFIRM = "Create and share this card";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_CANCEL = "Cancel";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_REMOVE = "Remove";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_REMEMBERED = "remembered";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_ACK =
   "I have checked the names and the pattern on this card.";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_NO_PATTERN =
   "No shared sign remains with the people still on this card. Add someone back, or cancel.";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_UNNAMED = "Someone";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_WATERMARK = "galaxiamea.com";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_DISABLED =
   "A pattern card needs two or more people who share a sign in the same placement.";
-// FOUNDER-REVIEW
 export const FAMILY_PATTERN_CARD_FAIL = "Could not create the image. Try again.";
 
 export type FamilyPatternCardPerson = {

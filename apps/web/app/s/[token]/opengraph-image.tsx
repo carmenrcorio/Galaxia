@@ -390,8 +390,6 @@ const RELATION_LABEL: Record<RelationType, string> = {
   ancestor: "ANCESTOR",
   romantic: "COMPATIBILITY",
   platonic: "PLATONIC",
-  // FOUNDER-REVIEW: authored — working-frame card labels (uppercase, matching
-  // the rest of this map rather than COMPARE_RELATION_LABEL's sentence case).
   colleagues: "COLLEAGUES",
   "manager-report": "MANAGER & REPORT",
   "mentor-mentee": "MENTOR & MENTEE",

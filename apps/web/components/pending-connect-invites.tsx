@@ -10,7 +10,6 @@ import {
   connectInviteTimeRemaining,
   connectRelationLabel,
 } from "../lib/connect-invite";
-// FOUNDER-REVIEW: pending-list copy lives in lib/connect-invite.ts.
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { Spinner } from "./spinner";
 

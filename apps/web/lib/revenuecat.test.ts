@@ -186,7 +186,7 @@ describe("purchaseErrorCopy", () => {
   it("does not call a pending payment a failure or ask for a second payment", () => {
     const copy = purchaseErrorCopy(RC_ERROR_CODE.paymentPending);
     expect(copy).toBeTruthy();
-    expect(copy!.toLowerCase()).toContain("no need to pay again");
+    expect(copy!.toLowerCase()).toContain("don't pay again");
   });
 
   it("does not tell the user to retry a misconfiguration they cannot fix", () => {
@@ -363,14 +363,14 @@ describe("purchaseErrorCopy for a checkout setup rejection", () => {
       const copy = purchaseErrorCopy(failure);
       expect(copy).toBeTruthy();
       expect(copy).not.toBe(generic);
-      expect(copy).toContain("start checkout");
+      expect(copy).toContain("isn't loading");
     }
   });
 
-  it("does not promise the user that trying again will work", () => {
+  it("tells the user this is on us and to try again in a few minutes", () => {
     const copy = purchaseErrorCopy(DIRECT_REJECTION)!.toLowerCase();
-    expect(copy).not.toMatch(/please try again\b/);
-    expect(copy).toContain("rather than trying again now");
+    expect(copy).toContain("this is on us");
+    expect(copy).toContain("try again in a few minutes");
   });
 
   it("names no cause it cannot verify and nothing about the user's money", () => {

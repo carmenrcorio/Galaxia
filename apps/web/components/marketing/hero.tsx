@@ -27,9 +27,7 @@ export function Hero() {
     <header className="hero container">
       <div className="hero-grid">
         <div className="hero-text">
-          {/* FOUNDER-REVIEW: homepage hero eyebrow. Wordmark already names the product; tagline only. */}
           <span className="eyebrow fade-in">Your life. Your people. Your galaxy.</span>
-          {/* FOUNDER-REVIEW: "The night sky belongs to everyone. Yours doesn't." moved to WhySection (/why-galaxia). */}
           <h1 className="hero-h1 fade-in fade-in-delay-1">
             {/* FOUNDER-REVIEW: homepage hero headline. Gold italic on the terminal beat, matching close-h. */}
             Better understand the people <em className="hero-h1__accent">in your life</em>
@@ -48,7 +46,6 @@ export function Hero() {
             <div className="hero-cta-primary">
               <Link href={HERO_PRIMARY_CTA.href as never} className="btn-primary">{HERO_PRIMARY_CTA.label}</Link>
               <p className="hero-cta-note">
-                {/* FOUNDER-REVIEW: line under the free-chart CTA. */}
                 No card required · Works with just a birth date
               </p>
             </div>

@@ -5,8 +5,7 @@
 export function WhyNotSection() {
   return (
     <section className="container why-not" id="why-not">
-      {/* FOUNDER-REVIEW: authored - why not a horoscope app. */}
-      <span className="eyebrow reveal">Why not a horoscope app</span>
+            <span className="eyebrow reveal">Why not a horoscope app</span>
       <h2 className="reveal">Because your people are not a daily blurb.</h2>
       <p className="body reveal">
         Most astrology apps serve a sun-sign line for the day, or a one-off reading you forget.

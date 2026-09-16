@@ -4,7 +4,6 @@ import { publicEnv } from "../../lib/env";
 import { WaitlistForm } from "../../components/waitlist-form";
 
 const TITLE = "Download Galaxia";
-// FOUNDER-REVIEW: rewritten. Native apps are coming soon; notify-me is on this page.
 const DESCRIPTION =
   "Galaxia is on the web today. Native iOS and Android apps are coming soon. Leave your email and we will tell you when they ship.";
 
@@ -18,7 +17,6 @@ export const metadata: Metadata = {
     siteName: "Galaxia",
     type: "website",
     url: "/download",
-    // FOUNDER-REVIEW: rewritten (no U+2014).
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for the people you love" }]
   },
   twitter: {
@@ -37,8 +35,7 @@ export default function DownloadPage() {
   return (
     <main className="container" style={{ paddingTop: 56, paddingBottom: 56, maxWidth: 920 }}>
       <h1 className="auth-title">Download Galaxia</h1>
-      {/* FOUNDER-REVIEW: rewritten. Web is live; native apps are coming soon. */}
-      <p className="muted">
+            <p className="muted">
         Use your Galaxia account on the web today. Native iOS and Android apps are coming soon
         and will use the same account.
       </p>
@@ -62,8 +59,7 @@ export default function DownloadPage() {
         </div>
         {!hasAnyLink ? (
           <div style={{ marginTop: 16 }}>
-            {/* FOUNDER-REVIEW: authored. Notify-me lives on this page, not on signup or the landing page. */}
-            <p className="muted" style={{ marginTop: 0 }}>
+                        <p className="muted" style={{ marginTop: 0 }}>
               Leave your email and we will tell you when the apps are ready.
             </p>
             <WaitlistForm source="close" />
@@ -75,8 +71,7 @@ export default function DownloadPage() {
         <ul className="muted" style={{ lineHeight: 1.7 }}>
           <li>A living constellation view of the people at the center of your life.</li>
           <li>Real computed charts and relationship mapping built from astronomical data.</li>
-          {/* FOUNDER-REVIEW: rewritten. Shared spaces are unshipped; this names private Vela only. */}
-          <li>Vela guidance for private reflection.</li>
+                    <li>Vela guidance for private reflection.</li>
         </ul>
       </section>
       <div style={{ marginTop: 12 }}>

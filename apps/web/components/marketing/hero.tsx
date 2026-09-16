@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { HERO_HOW_IT_WORKS, HERO_PRIMARY_CTA, MARKETING_NAV_LOGIN } from "../../lib/nav-links";
+import { HERO_HOW_IT_WORKS } from "../../lib/nav-links";
 import { HeroGraph } from "./hero-graph";
 import { QuickChartEntry } from "./quick-chart-entry";
 
@@ -7,10 +7,10 @@ import { QuickChartEntry } from "./quick-chart-entry";
  * Hero — outcome-led copy. The poetic kicker ("The night sky belongs to
  * everyone. Yours doesn't.") moved to WhySection on /why-galaxia so it is
  * not lost. Premise (chart-for-each-person + anti-horoscope defense) lives
- * in the copy block so a visitor can read it before the CTA. Only the
- * friction reducer sits under the button. Log in and See how it works are
- * a separate, lower-emphasis row. Destinations are unchanged. Quick Chart
- * mini-form still sits under the grid as the no-signup try-it entry.
+ * in the copy block so a visitor can read it before scrolling. The only
+ * in-hero CTA is "See how it works", which scrolls to #how. Log in and
+ * Sign up live in the top nav. The free-chart gold button is gone; Quick
+ * Chart mini-form still sits under the grid as the no-signup try-it entry.
  *
  * Uses .fade-in (a CSS-only keyframe that plays on mount), not the
  * scroll-triggered .reveal + IntersectionObserver pattern used further down
@@ -43,19 +43,10 @@ export function Hero() {
             </p>
           </div>
           <div className="hero-cta-stack fade-in fade-in-delay-3">
-            <div className="hero-cta-primary">
-              <Link href={HERO_PRIMARY_CTA.href as never} className="btn-primary">{HERO_PRIMARY_CTA.label}</Link>
-              <p className="hero-cta-note">
-                No card required · Works with just a birth date
-              </p>
-            </div>
-            <div className="hero-secondary">
-              <Link href={MARKETING_NAV_LOGIN.href as never} className="pill-link">{MARKETING_NAV_LOGIN.label}</Link>
-              <Link href={HERO_HOW_IT_WORKS.href as never} className="hero-scroll-cue">
-                <span>{HERO_HOW_IT_WORKS.label}</span>
-                <ArrowDown />
-              </Link>
-            </div>
+            <Link href={HERO_HOW_IT_WORKS.href as never} className="hero-scroll-cue">
+              <span>{HERO_HOW_IT_WORKS.label}</span>
+              <ArrowDown />
+            </Link>
           </div>
         </div>
         <div className="constellation fade-in fade-in-delay-2">
@@ -69,7 +60,7 @@ export function Hero() {
 
 function ArrowDown() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 14 14" fill="none" aria-hidden="true">
       <path d="M7 1v10.5M2.5 8 7 12.5 11.5 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );

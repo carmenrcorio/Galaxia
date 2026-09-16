@@ -158,4 +158,22 @@ describe("app/layout.tsx — metadataBase set from publicEnv.siteUrl with the ex
   it("sets metadataBase to a URL built from publicEnv.siteUrl, falling back to the existing prod URL", () => {
     expect(src).toMatch(/metadataBase:\s*new URL\(publicEnv\.siteUrl \|\| "https:\/\/galaxia-three\.vercel\.app"\)/);
   });
+
+  it("keeps a site-wide openGraph.images entry pointing at the branded OG card", () => {
+    expect(src).toMatch(/openGraph:\s*\{[\s\S]*images:\s*\[DEFAULT_OG_IMAGE\]/);
+    expect(src).toContain('url: "/og-image.png"');
+  });
+});
+
+describe("site-wide /opengraph-image file convention", () => {
+  it("exports a 1200x630 PNG metadata route at app/opengraph-image.tsx", () => {
+    const src = readRoute("apps/web/app/opengraph-image.tsx");
+    expect(src).toContain("export const size = { width: 1200, height: 630 }");
+    expect(src).toContain('export const contentType = "image/png"');
+    expect(src).toContain("new ImageResponse");
+    expect(src).toContain("#09091c");
+    expect(src).toContain("#d4a855");
+    expect(src).toContain("HOMEPAGE_TAGLINE");
+    expect(src).not.toMatch(/^await\s/m);
+  });
 });

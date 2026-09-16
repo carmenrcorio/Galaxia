@@ -17,6 +17,12 @@ import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+if (!ANTHROPIC_API_KEY) {
+  console.error("Set ANTHROPIC_API_KEY.");
+  process.exit(1);
+}
+
 const self = fileURLToPath(import.meta.url);
 const root = join(dirname(self), "..");
 
@@ -34,21 +40,15 @@ if (process.env.VELA_ASPECT_EVAL_LOADED !== "1") {
   process.exit(result.status === null ? 1 : result.status);
 }
 
-const { computeNatalChart } = await import("@galaxia/astro");
+const { computeNatalChart } = await import("../packages/astro/src/index.ts");
 const {
   VELA_SYSTEM_PROMPT,
   countVelaAspectCitations,
   selectLeadAspects,
   sortVelaAspectList
-} = await import("@galaxia/vela");
+} = await import("../packages/vela/src/index.ts");
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
-
-if (!ANTHROPIC_API_KEY) {
-  console.error("Set ANTHROPIC_API_KEY.");
-  process.exit(1);
-}
 
 // Same finder as supabase/functions/vela-chat/index.ts computeSynastryScores.
 function computeSynastryScores(placementsA, placementsB) {

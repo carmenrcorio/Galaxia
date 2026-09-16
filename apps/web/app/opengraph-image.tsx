@@ -11,9 +11,10 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import { SITE_OG_ALT } from "../lib/brand-copy";
 import { HOMEPAGE_TAGLINE } from "../lib/homepage-seo";
 
-export const alt = "Galaxia: astrology to understand the people in your life"; // FOUNDER-REVIEW
+export const alt = SITE_OG_ALT;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

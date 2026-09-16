@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SITE_OG_ALT } from "./brand-copy";
 
 /**
  * Site-wide OG card restated by any route that sets its own `openGraph` /
@@ -9,7 +10,7 @@ export const SITE_OG_IMAGE = {
   url: "/og-image.png",
   width: 1200,
   height: 630,
-  alt: "Galaxia: astrology to understand the people in your life" // FOUNDER-REVIEW
+  alt: SITE_OG_ALT
 } as const;
 
 export interface PostMetadataInput {
@@ -71,7 +72,7 @@ export function buildCategoryMetadata(category: CategoryMetadataInput): Metadata
       : {
           title: "Astrology Guides for Real Birth Charts | Galaxia Blog",
           description:
-            "Guides for reading natal charts, synastry, placements, aspects, and houses. What astrology can actually tell you about understanding the people in your life." // FOUNDER-REVIEW
+            "Guides for reading natal charts, synastry, placements, aspects, and houses. What astrology can actually tell you about understanding the people in your life."
         };
   const { title, description } = copy;
 

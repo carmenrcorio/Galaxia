@@ -186,7 +186,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
           </div>
         ) : !result ? (
           <div style={{ display: "grid", gap: 12 }}>
-            <p className="muted" style={{ fontSize: ".82rem" }}>Just met someone? Enter what you know for an instant compatibility read against your own chart. Nothing saves unless you choose to.</p>
+            <p className="muted" style={{ fontSize: ".82rem" }}>Just met someone? Enter what you know for an instant synastry read against your own chart. Nothing saves unless you choose to.</p>{/* FOUNDER-REVIEW */}
 
             <div>
               <p className="eyebrow" style={{ marginBottom: 8 }}>Romantic or platonic?</p>
@@ -205,7 +205,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
 
             <button className="btn-primary" onClick={compute} disabled={computing} style={{ gap: 8 }}>
               {computing && <Spinner size={13} color="#1a1206" />}
-              {computing ? "Checking…" : "Check compatibility"}
+              {computing ? "Checking…" : "Compare charts" /* FOUNDER-REVIEW */}
             </button>
             {error ? <p className="error" style={{ fontSize: ".8rem" }}>{error}</p> : null}
           </div>

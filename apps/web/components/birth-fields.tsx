@@ -311,7 +311,8 @@ export function BirthFields({
                 onChange={e => onChange({ ...input, lng: e.target.value })}
                 placeholder="Longitude (e.g. -92.1099)" />
               <p style={{ margin: 0, fontSize: ".72rem", color: "var(--mist2)" }}>
-                If entering coordinates manually, also set tzOffsetMin via the search above to ensure correct UTC conversion.
+                {/* FOUNDER-REVIEW */}
+                Search for the birth city first. Coordinates alone do not set the time zone, so the chart would be wrong.
               </p>
             </div>
           </details>

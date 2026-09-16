@@ -10,6 +10,7 @@
  */
 
 import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
+import { SITE_CLOSER } from "./brand-copy";
 import {
   CHART_READING_CLOSING_LINE,
   chartReadingEmailPreview,
@@ -58,14 +59,13 @@ function preheader(preview: string): string {
   return `<div style="display:none;font-size:1px;color:${INK};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden">${preview}${pad}</div>`;
 }
 
-/** FOUNDER-REVIEW: email closer. */
 function shell(bodyHtml: string, preview: string): string {
   return `<!doctype html><html><body style="margin:0;background:${INK};color:${CREAM};font-family:-apple-system,Segoe UI,Inter,sans-serif;line-height:1.65">
     ${preheader(preview)}
     <div style="max-width:520px;margin:0 auto;padding:32px 24px">
       <div style="font-family:Georgia,serif;font-size:22px;color:${GOLD};margin-bottom:24px">Galaxia</div>
       ${bodyHtml}
-      <p style="color:#8076a6;font-size:12px;margin-top:32px">Understand the people in your life, written in the stars.</p>
+      <p style="color:#8076a6;font-size:12px;margin-top:32px">${SITE_CLOSER}</p>
     </div>
   </body></html>`;
 }

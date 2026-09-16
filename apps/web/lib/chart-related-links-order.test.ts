@@ -19,7 +19,7 @@ describe("Quick Chart RelatedLinks sit after the compute form", () => {
 
   it("/chart/compare places RelatedLinks after the compatibility control", () => {
     const src = read("apps/web/app/chart/compare/page.tsx");
-    const formIdx = src.indexOf("See our compatibility");
+    const formIdx = src.indexOf("Compare our charts");
     const linksIdx = src.indexOf("<RelatedLinks");
     expect(formIdx).toBeGreaterThan(-1);
     expect(linksIdx).toBeGreaterThan(formIdx);

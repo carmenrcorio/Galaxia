@@ -145,6 +145,8 @@ Every meaningful change, decision, or reversal is recorded with a date and a rea
 
 **One-line instruction for AI-agent prompts:** *"Record this change by adding a new `changelog.d/<branch-slug>.md` fragment (see `changelog.d/README.md`) — do not edit `CHANGELOG.md` directly."*
 
+**FOUNDER-REVIEW tags do not reach main.** Agents tag new user-visible strings while a PR is in review. Once Carmen approves the strings in the PR, the agent removes those tags in a final commit before merge. `pnpm founder-review:list` must show no tags added by that PR.
+
 ---
 
 ## 12. Galaxia never fabricates

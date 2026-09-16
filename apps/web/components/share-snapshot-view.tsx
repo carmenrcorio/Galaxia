@@ -261,7 +261,7 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
 
   const exportFilename = chartExportFilename(
     `${personA.display_name}-${personB.display_name}`,
-    "synastry-chart.png" // FOUNDER-REVIEW
+    "synastry-chart.png"
   );
 
   return (
@@ -392,8 +392,8 @@ export function ShareSnapshotView({
 }) {
   const viewer = useViewer();
   const isCompare = kind === "compare";
-  const title = isCompare ? "A shared synastry reading" : "A shared birth chart"; // FOUNDER-REVIEW
-  const eyebrow = isCompare ? "Shared Synastry" : "Shared Chart"; // FOUNDER-REVIEW
+  const title = isCompare ? "A shared synastry reading" : "A shared birth chart";
+  const eyebrow = isCompare ? "Shared Synastry" : "Shared Chart";
 
   return (
     <QuickChartShell eyebrow={eyebrow} title={title} authed={!!viewer.userId}>

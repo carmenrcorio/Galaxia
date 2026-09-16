@@ -250,13 +250,13 @@ export default function QuickComparePage() {
 
   return (
     <QuickChartShell
-      eyebrow="Quick Synastry" // FOUNDER-REVIEW
+      eyebrow="Quick Synastry"
       title={
         fromShareLink
-          ? "A shared synastry reading" /* FOUNDER-REVIEW */
+          ? "A shared synastry reading"
           : viewer.userId
-            ? "See where two charts flow and catch." /* FOUNDER-REVIEW */
-            : "See where two charts flow and catch, free." /* FOUNDER-REVIEW */
+            ? "See where two charts flow and catch."
+            : "See where two charts flow and catch, free."
       }
       authed={!!viewer.userId}
     >
@@ -324,7 +324,7 @@ export default function QuickComparePage() {
 
             <button className="btn-primary" onClick={() => runCompare(inputA, inputB)} disabled={loading || giftLoading} style={{ gap: 8, justifySelf: "start" }}>
               {loading && <Spinner size={13} color="#1a1206" />}
-              {loading ? "Comparing…" : giftLoading ? "Loading gifted chart…" : "Compare our charts" /* FOUNDER-REVIEW */}
+              {loading ? "Comparing…" : giftLoading ? "Loading gifted chart…" : "Compare our charts"}
             </button>
             {error ? <p className="error" style={{ fontSize: ".84rem" }}>{error}</p> : null}
           </section>
@@ -336,7 +336,7 @@ export default function QuickComparePage() {
               list) and GenerationalSection render outside the capture, matching
               the task's "not the full aspect list" boundary. */}
           <ChartImageExport
-            filename={chartExportFilename(`${personA!.display_name}-${personB!.display_name}`, "synastry-chart.png" /* FOUNDER-REVIEW */)}
+            filename={chartExportFilename(`${personA!.display_name}-${personB!.display_name}`, "synastry-chart.png")}
             label="Share chart image"
             pairHasMinor={pairHasMinor}
           >

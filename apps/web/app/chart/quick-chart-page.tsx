@@ -186,9 +186,9 @@ export default function QuickChartPage() {
               )
             ) : null}
             <div>
-              <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional)" style={{ borderRadius: 14 }} />{/* FOUNDER-REVIEW */}
+              <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional)" style={{ borderRadius: 14 }} />
               <p className="muted" style={{ fontSize: ".74rem", margin: "6px 0 0", lineHeight: 1.5 }}>
-                Shown only to you. Never saved or shared.{/* FOUNDER-REVIEW */}
+                Shown only to you. Never saved or shared.
               </p>
             </div>
             <BirthFields input={input} onChange={setInput} />

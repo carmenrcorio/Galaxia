@@ -16,19 +16,19 @@ function read(path: string): string {
 describe("family-pattern-card route — bundled fonts, no Google Fonts fetch", () => {
   const src = read(ROUTE_PATH);
 
-  it("reads the five local TTF files inside a lazy loader", () => {
+  it("reads the four local TTF files inside a lazy loader", () => {
     const loaderIndex = src.indexOf("async function loadPatternCardFonts(");
     expect(loaderIndex).toBeGreaterThan(-1);
     const loaderBody = src.slice(loaderIndex);
     for (const file of [
-      "CormorantGaramond-Regular.ttf",
-      "CormorantGaramond-SemiBold.ttf",
-      "CormorantGaramond-Italic.ttf",
+      "Fraunces-Regular.ttf",
+      "Fraunces-SemiBold.ttf",
       "DMSans-Regular.ttf",
       "DMSans-Medium.ttf",
     ]) {
       expect(loaderBody).toContain(file);
     }
+    expect(loaderBody).not.toContain("Cormorant");
   });
 
   it("never mentions fonts.googleapis.com or next/font/google", () => {
@@ -64,15 +64,15 @@ describe("family-pattern-card route — bundled fonts, no Google Fonts fetch", (
 });
 
 describe("bundled font files exist", () => {
-  it("ships NOTICE, OFL, and the five TTF files", () => {
+  it("ships NOTICE, OFL, and the Fraunces + DM Sans TTF files", () => {
     const notice = read(`${FONT_DIR}/NOTICE.md`);
-    expect(notice).toContain("Cormorant Garamond");
+    expect(notice).toContain("Fraunces");
+    expect(notice).not.toContain("Cormorant Garamond");
     expect(notice).toContain("DM Sans");
     expect(notice).toContain("must not fetch Google Fonts");
     for (const file of [
-      "CormorantGaramond-Regular.ttf",
-      "CormorantGaramond-SemiBold.ttf",
-      "CormorantGaramond-Italic.ttf",
+      "Fraunces-Regular.ttf",
+      "Fraunces-SemiBold.ttf",
       "DMSans-Regular.ttf",
       "DMSans-Medium.ttf",
       "OFL.txt",
@@ -81,6 +81,16 @@ describe("bundled font files exist", () => {
       const buf = readFileSync(join(REPO_ROOT, FONT_DIR, file));
       expect(buf.byteLength).toBeGreaterThan(32);
     }
+  });
+});
+
+describe("family-pattern-card view — Fraunces, brand gold", () => {
+  it("renders serif copy in Fraunces at #E6AE6C, never Cormorant", () => {
+    const view = read(VIEW_PATH);
+    expect(view).toContain('fontFamily: "Fraunces"');
+    expect(view).toContain('gold: "#E6AE6C"');
+    expect(view).not.toContain("Cormorant");
+    expect(view).not.toContain("#d4a855");
   });
 });
 

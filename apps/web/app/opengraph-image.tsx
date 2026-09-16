@@ -18,29 +18,27 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 const BG = "#09091c";
-const GOLD = "#d4a855";
+const GOLD = "#E6AE6C";
 const VIOLET = "#7c5fdb";
 const CREAM = "#f4ecdb";
 const MUTED = "#a99ec9";
 
 const FONT_DIR = join(process.cwd(), "app/api/family-pattern-card/fonts");
 
-type OgFont = { name: string; data: Buffer; weight: 400 | 600; style: "normal" | "italic" };
+type OgFont = { name: string; data: Buffer; weight: 400 | 600; style: "normal" };
 
 let fontsPromise: Promise<OgFont[]> | null = null;
 
 async function loadSiteOgFonts(): Promise<OgFont[]> {
   if (!fontsPromise) {
     fontsPromise = Promise.all([
-      readFile(join(FONT_DIR, "CormorantGaramond-Regular.ttf")),
-      readFile(join(FONT_DIR, "CormorantGaramond-SemiBold.ttf")),
-      readFile(join(FONT_DIR, "CormorantGaramond-Italic.ttf")),
+      readFile(join(FONT_DIR, "Fraunces-Regular.ttf")),
+      readFile(join(FONT_DIR, "Fraunces-SemiBold.ttf")),
       readFile(join(FONT_DIR, "DMSans-Regular.ttf")),
     ])
-      .then(([regular, semibold, italic, dmSans]): OgFont[] => [
-        { name: "Cormorant Garamond", data: regular, weight: 400, style: "normal" },
-        { name: "Cormorant Garamond", data: semibold, weight: 600, style: "normal" },
-        { name: "Cormorant Garamond", data: italic, weight: 400, style: "italic" },
+      .then(([regular, semibold, dmSans]): OgFont[] => [
+        { name: "Fraunces", data: regular, weight: 400, style: "normal" },
+        { name: "Fraunces", data: semibold, weight: 600, style: "normal" },
         { name: "DM Sans", data: dmSans, weight: 400, style: "normal" },
       ])
       .catch((error: unknown) => {
@@ -92,7 +90,7 @@ export default async function OpenGraphImage() {
           <div
             style={{
               display: "flex",
-              fontFamily: "Cormorant Garamond",
+              fontFamily: "Fraunces",
               fontSize: 96,
               fontWeight: 600,
               color: GOLD,
@@ -115,7 +113,7 @@ export default async function OpenGraphImage() {
           <div
             style={{
               display: "flex",
-              fontFamily: "Cormorant Garamond",
+              fontFamily: "Fraunces",
               fontSize: 42,
               fontWeight: 400,
               color: CREAM,

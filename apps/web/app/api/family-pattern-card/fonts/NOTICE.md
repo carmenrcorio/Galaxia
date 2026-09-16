@@ -8,9 +8,9 @@ families the pattern card uses, read via `fs.readFile` from this directory.
 
 All source fonts are SIL Open Font License 1.1 (OFL.txt below):
 
-- `CormorantGaramond-Regular.ttf` / `CormorantGaramond-SemiBold.ttf` /
-  `CormorantGaramond-Italic.ttf` — Latin subset from
-  [Cormorant Garamond](https://github.com/CatharsisFonts/Cormorant)
+- `Fraunces-Regular.ttf` / `Fraunces-SemiBold.ttf` — same static Latin
+  instances as `app/s/[token]/opengraph-image/fonts` (pinned from
+  [Fraunces](https://github.com/undercasetype/fraunces))
 - `DMSans-Regular.ttf` / `DMSans-Medium.ttf` — Latin subset from
   [DM Sans](https://github.com/googlefonts/dm-fonts)
 

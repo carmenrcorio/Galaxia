@@ -31,16 +31,14 @@ let fontsPromise: Promise<CardFont[]> | null = null;
 async function loadPatternCardFonts(): Promise<CardFont[]> {
   if (!fontsPromise) {
     fontsPromise = Promise.all([
-      readFile(join(FONT_DIR, "CormorantGaramond-Regular.ttf")),
-      readFile(join(FONT_DIR, "CormorantGaramond-SemiBold.ttf")),
-      readFile(join(FONT_DIR, "CormorantGaramond-Italic.ttf")),
+      readFile(join(FONT_DIR, "Fraunces-Regular.ttf")),
+      readFile(join(FONT_DIR, "Fraunces-SemiBold.ttf")),
       readFile(join(FONT_DIR, "DMSans-Regular.ttf")),
       readFile(join(FONT_DIR, "DMSans-Medium.ttf")),
     ])
-      .then(([cormorantRegular, cormorantSemiBold, cormorantItalic, dmSansRegular, dmSansMedium]): CardFont[] => [
-        { name: "Cormorant Garamond", data: cormorantRegular, weight: 400, style: "normal" },
-        { name: "Cormorant Garamond", data: cormorantSemiBold, weight: 600, style: "normal" },
-        { name: "Cormorant Garamond", data: cormorantItalic, weight: 400, style: "italic" },
+      .then(([frauncesRegular, frauncesSemiBold, dmSansRegular, dmSansMedium]): CardFont[] => [
+        { name: "Fraunces", data: frauncesRegular, weight: 400, style: "normal" },
+        { name: "Fraunces", data: frauncesSemiBold, weight: 600, style: "normal" },
         { name: "DM Sans", data: dmSansRegular, weight: 400, style: "normal" },
         { name: "DM Sans", data: dmSansMedium, weight: 500, style: "normal" },
       ])

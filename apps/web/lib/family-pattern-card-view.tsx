@@ -2,9 +2,8 @@
  * Satori markup for the 1080 family/group pattern card.
  *
  * Literal hex, `display: flex` on every multi-child div, no CSS variables,
- * no `filter`/blur (Satori ignores both). Fonts are the bundled Cormorant
- * Garamond + DM Sans files loaded by the route, never Google Fonts at
- * render time.
+ * no `filter`/blur (Satori ignores both). Fonts are the bundled Fraunces
+ * + DM Sans files loaded by the route, never Google Fonts at render time.
  */
 
 import type { FamilyPatternCardRenderInput } from "./family-pattern-card";
@@ -83,7 +82,7 @@ export function FamilyPatternCardImage({ card }: { card: FamilyPatternCardRender
         </span>
         <span
           style={{
-            fontFamily: "Cormorant Garamond",
+            fontFamily: "Fraunces",
             fontWeight: 600,
             fontSize: headlineFontSize(card.headline),
             color: FAMILY_PATTERN_CARD_PALETTE.cream,
@@ -120,7 +119,7 @@ export function FamilyPatternCardImage({ card }: { card: FamilyPatternCardRender
             >
               <span
                 style={{
-                  fontFamily: "Cormorant Garamond",
+                  fontFamily: "Fraunces",
                   fontSize: 32,
                   color: FAMILY_PATTERN_CARD_PALETTE.goldBright,
                 }}

@@ -172,7 +172,10 @@ describe("site-wide /opengraph-image file convention", () => {
     expect(src).toContain('export const contentType = "image/png"');
     expect(src).toContain("new ImageResponse");
     expect(src).toContain("#09091c");
-    expect(src).toContain("#d4a855");
+    expect(src).toContain("#E6AE6C");
+    expect(src).not.toContain("#d4a855");
+    expect(src).toContain("Fraunces");
+    expect(src).not.toContain("Cormorant");
     expect(src).toContain("HOMEPAGE_TAGLINE");
     expect(src).not.toMatch(/^await\s/m);
   });

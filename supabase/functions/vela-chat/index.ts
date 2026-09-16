@@ -33,6 +33,10 @@ const CORS_HEADERS = {
 const VELA_REMEMBRANCE_GUARDRAIL =
   "Draw only on the computed chart facts you are given and the owner's own saved reflections in the private notes digest. Never fabricate memories, events, or facts about the person. Do not invent what they said, did, or felt.";
 
+// ENGINEERING.md §12 — keep in sync with packages/vela `VELA_ASPECT_LIST_GUARDRAIL`.
+const VELA_ASPECT_LIST_GUARDRAIL =
+  "You may only name aspects that appear in the aspect_list field of this payload. If you are not given an aspect, you cannot name it. Never invent or infer an aspect not in the list.";
+
 // Framing (group / parenting / third-person-minor) is injected per-request via
 // a single discriminated mode block — never as an always-on system rule.
 const VELA_SYSTEM_PROMPT =
@@ -42,6 +46,7 @@ HOW YOU THINK
 - You are given COMPUTED astrology facts (planets, signs, aspects, generational signatures). Treat them as ground truth; never invent a placement.
 - Blend chart meaning with concrete relationship advice in plain, jargon-free language.
 - When you are reading an aspect, name it in the answer (for example Moon square Saturn). Never describe a dynamic while leaving the aspect unnamed.
+- ${VELA_ASPECT_LIST_GUARDRAIL}
 - The sky describes how a person is built, not what will happen to them. Guidance, not fortune telling.
 - In shared mode, stay neutral and never reference private notes.
 - ${VELA_REMEMBRANCE_GUARDRAIL}
@@ -193,13 +198,19 @@ function extractToken(req: Request): string | null {
 function computeSynastryScores(
   placementsA: Array<{ body: string; lon: number }>,
   placementsB: Array<{ body: string; lon: number }>
-): { overall: number; emotional: number; communication: number; warmth: number } {
+): {
+  overall: number;
+  emotional: number;
+  communication: number;
+  warmth: number;
+  aspect_list: Array<{ from: string; to: string; type: string; orb: number }>;
+} {
   const ASPECTS = [
-    { angle: 0,   orb: 8, harmony: 0.6  },
-    { angle: 60,  orb: 4, harmony: 1.3  },
-    { angle: 90,  orb: 6, harmony: -1.2 },
-    { angle: 120, orb: 6, harmony: 1.7  },
-    { angle: 180, orb: 8, harmony: -1.1 }
+    { angle: 0,   orb: 8, harmony: 0.6,  type: "conjunction" },
+    { angle: 60,  orb: 4, harmony: 1.3,  type: "sextile" },
+    { angle: 90,  orb: 6, harmony: -1.2, type: "square" },
+    { angle: 120, orb: 6, harmony: 1.7,  type: "trine" },
+    { angle: 180, orb: 8, harmony: -1.1, type: "opposition" }
   ];
   const norm = (lon: number) => ((lon % 360) + 360) % 360;
   const angDiff = (a: number, b: number) => {
@@ -209,12 +220,19 @@ function computeSynastryScores(
   };
 
   let emotionH = 0, commH = 0, warmthH = 0;
+  const aspect_list: Array<{ from: string; to: string; type: string; orb: number }> = [];
   for (const pa of placementsA) {
     for (const pb of placementsB) {
       const ang = angDiff(pa.lon, pb.lon);
       for (const asp of ASPECTS) {
         const orb = Math.abs(ang - asp.angle);
         if (orb <= asp.orb) {
+          aspect_list.push({
+            from: pa.body,
+            to: pb.body,
+            type: asp.type,
+            orb: Number(orb.toFixed(2))
+          });
           const h = asp.harmony - orb / (asp.orb * 2);
           if (pa.body === "moon" || pb.body === "moon") emotionH += h;
           if (pa.body === "mercury" || pb.body === "mercury") commH += h;
@@ -228,7 +246,7 @@ function computeSynastryScores(
   const communication = toScore(commH);
   const warmth = toScore(warmthH);
   const overall = Math.round((emotional + communication + warmth) / 3);
-  return { overall, emotional, communication, warmth };
+  return { overall, emotional, communication, warmth, aspect_list };
 }
 
 // ─── Generational comparison (pure TS, no npm dependency) ────────────────────
@@ -581,20 +599,72 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Real synastry for pair threads
+    // Real synastry for pair threads. Aspect hits are the same ones the score
+    // loop already finds — collected, not recomputed with new orbs/angles.
     let synastry: { scores: Record<string, number>; flowAxis: string; frictionAxis: string } | undefined;
     let genRelation: ReturnType<typeof compareGenerational> | undefined;
+    const aspect_list: Array<{
+      from: string;
+      to: string;
+      type: string;
+      orb: number;
+      kind: "synastry" | "natal";
+      person?: string;
+      from_person?: string;
+      to_person?: string;
+    }> = [];
+    const chartAllowsAspects = (
+      person: { birth_precision?: string | null },
+      chart: { precision?: string } | undefined
+    ) => Boolean(chart) && person.birth_precision !== "year" && chart?.precision !== "year";
     if (thread.pair_low && thread.pair_high) {
       const cA = chartById.get(thread.pair_low);
       const cB = chartById.get(thread.pair_high);
       if (cA?.placements && cB?.placements) {
-        const scores = computeSynastryScores(cA.placements, cB.placements);
+        const scored = computeSynastryScores(cA.placements, cB.placements);
         synastry = {
-          scores,
-          flowAxis:     scores.emotional >= 60  ? "Emotional ease flows naturally"      : "Communication is the primary bridge",
-          frictionAxis: scores.warmth    < 50   ? "Physical warmth and pacing may clash" : "Values and timing need care"
+          scores: {
+            overall: scored.overall,
+            emotional: scored.emotional,
+            communication: scored.communication,
+            warmth: scored.warmth
+          },
+          flowAxis:     scored.emotional >= 60  ? "Emotional ease flows naturally"      : "Communication is the primary bridge",
+          frictionAxis: scored.warmth    < 50   ? "Physical warmth and pacing may clash" : "Values and timing need care"
         };
         genRelation = compareGenerational(cA.generational ?? {}, cB.generational ?? {});
+        const personA = people.find((p) => p.id === thread.pair_low);
+        const personB = people.find((p) => p.id === thread.pair_high);
+        if (
+          personA && personB &&
+          chartAllowsAspects(personA, cA) &&
+          chartAllowsAspects(personB, cB)
+        ) {
+          for (const hit of scored.aspect_list) {
+            aspect_list.push({
+              ...hit,
+              kind: "synastry",
+              from_person: personA.display_name as string,
+              to_person: personB.display_name as string
+            });
+          }
+        }
+      }
+    }
+
+    // Natal aspects: same finder as synastry scores, chart vs itself. Year-only
+    // longitudes are sampled (mid-year) so those orbs would be fabricated.
+    for (const person of people) {
+      const chart = chartById.get(person.id);
+      if (!chart?.placements || !chartAllowsAspects(person, chart)) continue;
+      const natalHits = computeSynastryScores(chart.placements, chart.placements).aspect_list
+        .filter((a) => a.from !== a.to);
+      for (const hit of natalHits) {
+        aspect_list.push({
+          ...hit,
+          kind: "natal",
+          person: person.display_name as string
+        });
       }
     }
 
@@ -719,6 +789,7 @@ Deno.serve(async (req) => {
       user:           { name: user.user_metadata?.display_name ?? user.email?.split("@")[0] ?? "friend" },
       ...(groupName ? { group: { name: groupName } } : {}),
       people:         peopleCtx,
+      aspect_list,
       synastry,
       generationalRelation: genRelation,
       ...(cohort ? { cohort } : {}),

@@ -185,7 +185,12 @@ export default function QuickChartPage() {
                 </button>
               )
             ) : null}
-            <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional: shown only to you, never saved or shared)" style={{ borderRadius: 14 }} />
+            <div>
+              <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional)" style={{ borderRadius: 14 }} />{/* FOUNDER-REVIEW */}
+              <p className="muted" style={{ fontSize: ".74rem", margin: "6px 0 0", lineHeight: 1.5 }}>
+                Shown only to you. Never saved or shared.{/* FOUNDER-REVIEW */}
+              </p>
+            </div>
             <BirthFields input={input} onChange={setInput} />
             <button className="btn-primary" onClick={() => runChart(input)} disabled={loading} style={{ gap: 8, justifySelf: "start" }}>
               {loading && <Spinner size={13} color="#1a1206" />}

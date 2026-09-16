@@ -37,7 +37,7 @@ import { QuickChartShell } from "../../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
-import { RELATED_LINKS, CHART_MODE_SINGLE } from "../../../lib/nav-links";
+import { RELATED_LINKS, CHART_MODE_COMPARE, CHART_MODE_SINGLE } from "../../../lib/nav-links";
 import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
 import {
   QUICK_COMPARE_HELD_READING,
@@ -249,7 +249,17 @@ export default function QuickComparePage() {
   const blockRomanticMinorRender = pairHasMinor && isRomanticRelation(relationType);
 
   return (
-    <QuickChartShell eyebrow="Quick Compatibility" title={fromShareLink ? "A compatibility reading" : viewer.userId ? "Check your compatibility." : "Check your compatibility, free."} authed={!!viewer.userId}>
+    <QuickChartShell
+      eyebrow="Quick Synastry" // FOUNDER-REVIEW
+      title={
+        fromShareLink
+          ? "A shared synastry reading" /* FOUNDER-REVIEW */
+          : viewer.userId
+            ? "See where two charts flow and catch." /* FOUNDER-REVIEW */
+            : "See where two charts flow and catch, free." /* FOUNDER-REVIEW */
+      }
+      authed={!!viewer.userId}
+    >
       <p className="lede" style={{ marginBottom: 20 }}>
         Enter both birth dates for a real synastry reading: the aspects between you, where you flow, where you catch, and what each of you needs. Nothing is saved unless you choose to.
       </p>
@@ -265,7 +275,7 @@ export default function QuickComparePage() {
                 {CHART_MODE_SINGLE.label}
               </Link>
               <button type="button" className="pill-link" aria-pressed style={{ fontSize: ".82rem", padding: "8px 16px", borderColor: "rgba(230,174,108,.5)", color: "var(--gold)" }}>
-                Check compatibility
+                {CHART_MODE_COMPARE.label}
               </button>
             </div>
           </section>
@@ -314,7 +324,7 @@ export default function QuickComparePage() {
 
             <button className="btn-primary" onClick={() => runCompare(inputA, inputB)} disabled={loading || giftLoading} style={{ gap: 8, justifySelf: "start" }}>
               {loading && <Spinner size={13} color="#1a1206" />}
-              {loading ? "Comparing…" : giftLoading ? "Loading gifted chart…" : "See our compatibility"}
+              {loading ? "Comparing…" : giftLoading ? "Loading gifted chart…" : "Compare our charts" /* FOUNDER-REVIEW */}
             </button>
             {error ? <p className="error" style={{ fontSize: ".84rem" }}>{error}</p> : null}
           </section>
@@ -326,7 +336,7 @@ export default function QuickComparePage() {
               list) and GenerationalSection render outside the capture, matching
               the task's "not the full aspect list" boundary. */}
           <ChartImageExport
-            filename={chartExportFilename(`${personA!.display_name}-${personB!.display_name}`, "compatibility-chart.png")}
+            filename={chartExportFilename(`${personA!.display_name}-${personB!.display_name}`, "synastry-chart.png" /* FOUNDER-REVIEW */)}
             label="Share chart image"
             pairHasMinor={pairHasMinor}
           >

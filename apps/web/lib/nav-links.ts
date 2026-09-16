@@ -77,7 +77,7 @@ export const PRICING_FREE_CHART_CTA: NavLink = { href: "/chart", label: "Run a r
 export const RELATED_LINKS = {
   whyGalaxia: [
     { href: "/chart", label: "Try a free chart" },
-    { href: "/chart/compare", label: "Check your compatibility with someone" },
+    { href: "/chart/compare", label: "Compare your chart with someone's" }, // FOUNDER-REVIEW
     { href: "/generations", label: "See how it works across a whole family" },
   ],
   whyGalaxiaBlog: [
@@ -109,7 +109,7 @@ export const RELATED_LINKS = {
   ],
   chartCompare: [
     { href: SYNASTRY_CHART_MEANING_HREF, label: "What a synastry chart actually tells you" },
-    { href: "/generations", label: "See the generational layer behind your compatibility" },
+    { href: "/generations", label: "See the generational layer behind two charts" }, // FOUNDER-REVIEW
   ],
   forWork: [
     { href: "/chart", label: "Try a free chart" },
@@ -148,7 +148,7 @@ export const NOT_FOUND_LINKS: NavLink[] = [
 export const SHARE_NOT_FOUND_CTA: NavLink = { href: "/chart", label: "Try a free chart" };
 
 export const CHART_MODE_SINGLE: NavLink = { href: "/chart", label: "Single chart" };
-export const CHART_MODE_COMPARE: NavLink = { href: "/chart/compare", label: "Check compatibility" };
+export const CHART_MODE_COMPARE: NavLink = { href: "/chart/compare", label: "Compare two charts" }; // FOUNDER-REVIEW
 
 /**
  * Profile of one saved person. Dynamic `[id]` segment, so this is a builder

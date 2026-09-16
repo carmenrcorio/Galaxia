@@ -80,6 +80,25 @@ describe("trial-emails route — returns a JSON summary with real numeric counts
     expect(src).toMatch(/skipped\.noEmail \+= 1/);
     expect(src).toMatch(/skipped\.noResendKey \+= 1/);
     expect(src).toMatch(/skipped\.sendFailed \+= 1/);
+    expect(src).toMatch(/skipped\.optedOut \+= 1/);
+  });
+
+  it("skips trial_emails_opted_out before the kind picker and before send", () => {
+    const optedIdx = src.indexOf("profile.trial_emails_opted_out");
+    const pickIdx = src.indexOf("pickTrialEmailKind(");
+    const sendIdx = src.indexOf("sendEmail(");
+    expect(optedIdx).toBeGreaterThan(-1);
+    expect(pickIdx).toBeGreaterThan(-1);
+    expect(sendIdx).toBeGreaterThan(-1);
+    expect(optedIdx).toBeLessThan(pickIdx);
+    expect(optedIdx).toBeLessThan(sendIdx);
+  });
+
+  it("selects unsubscribe_token and trial_emails_opted_out, and passes the token into the email", () => {
+    expect(src).toMatch(/\.select\("[^"]*unsubscribe_token[^"]*trial_emails_opted_out[^"]*"\)/);
+    expect(src).toContain("unsubscribeToken: profile.unsubscribe_token");
+    expect(src).toContain("trialUnsubscribeUrl(siteUrl, profile.unsubscribe_token)");
+    expect(src).toContain("trialEmailHeaders(unsubscribeUrl)");
   });
 
   it("uses pickTrialEmailKind / trialEmailAlreadyKeys / trialAlreadyEnded from the pure lib, not a re-derived chain", () => {

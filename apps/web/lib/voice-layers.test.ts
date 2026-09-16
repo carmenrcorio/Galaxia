@@ -100,7 +100,8 @@ describe("layer one: lead with outcome, never an astrology app", () => {
       threadsCount: 1,
       groupsCount: 1,
       trialEndDate: "24 July",
-      siteUrl: "https://galaxiamea.com"
+      siteUrl: "https://galaxiamea.com",
+      unsubscribeToken: "abc-123"
     };
     const subjects = [
       day1Email(base).subject,

@@ -5,7 +5,7 @@ import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
 import { cronBearerMatches } from "../../../../lib/cron-auth";
 import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary";
-import { renderTrialEmail, sendEmail, type TrialEmailData } from "../../../../lib/emails";
+import { renderTrialEmail, sendEmail, trialEmailHeaders, trialUnsubscribeUrl, type TrialEmailData } from "../../../../lib/emails";
 import {
   emptyTrialEmailSkipped,
   pickTrialEmailKind,
@@ -64,7 +64,7 @@ async function handle(req: Request) {
     fetchPage: async (lastId, pageSize) => {
       let query = supabase
         .from("profiles")
-        .select("id, display_name, subscription_status, trial_ends_at, created_at")
+        .select("id, display_name, subscription_status, trial_ends_at, created_at, unsubscribe_token, trial_emails_opted_out")
         .eq("subscription_status", "trialing")
         .order("id", { ascending: true })
         .limit(pageSize);
@@ -77,6 +77,8 @@ async function handle(req: Request) {
         subscription_status: string;
         trial_ends_at: string | null;
         created_at: string | null;
+        unsubscribe_token: string;
+        trial_emails_opted_out: boolean;
       }[];
     },
     visit: async (profile) => {
@@ -84,6 +86,9 @@ async function handle(req: Request) {
       const trialEndsAt = profile.trial_ends_at ? new Date(profile.trial_ends_at).getTime() : null;
       const ageDays = (now - createdAt) / DAY;
       const daysToEnd = trialEndsAt ? (trialEndsAt - now) / DAY : null;
+
+      // CAN-SPAM: honor the no-login opt-out before anything else.
+      if (profile.trial_emails_opted_out) { skipped.optedOut += 1; return; }
 
       // Permanent rule, before the kind picker: never email a trial that has
       // already ended. Protects against a backlog of day14s if the Resend key
@@ -130,7 +135,8 @@ async function handle(req: Request) {
         personName: (recentPerson?.display_name as string | null) ?? undefined,
         peopleCount, notesCount, threadsCount, groupsCount,
         trialEndDate: trialEndsAt ? new Date(trialEndsAt).toLocaleDateString("en-GB", { day: "numeric", month: "long" }) : "soon",
-        siteUrl
+        siteUrl,
+        unsubscribeToken: profile.unsubscribe_token
       };
 
       // Claim the unique (user_id, kind) slot BEFORE sending so a crash
@@ -149,7 +155,8 @@ async function handle(req: Request) {
         return;
       }
 
-      const ok = await sendEmail(to, renderTrialEmail(kind, data));
+      const unsubscribeUrl = trialUnsubscribeUrl(siteUrl, profile.unsubscribe_token);
+      const ok = await sendEmail(to, renderTrialEmail(kind, data), trialEmailHeaders(unsubscribeUrl));
       if (!ok) {
         console.error("trial-emails: send failed; leaving ledger row to prevent retry storm", {
           userId: profile.id,

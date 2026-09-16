@@ -8,6 +8,7 @@ import type { TrialEmailKind } from "./emails";
 
 export type TrialEmailSkipReason =
   | "trialAlreadyEnded"
+  | "optedOut"
   | "notDue"
   | "alreadySent"
   | "noEmail"
@@ -17,7 +18,7 @@ export type TrialEmailSkipReason =
 export type TrialEmailSkipped = Record<TrialEmailSkipReason, number>;
 
 export function emptyTrialEmailSkipped(): TrialEmailSkipped {
-  return { trialAlreadyEnded: 0, noEmail: 0, notDue: 0, alreadySent: 0, noResendKey: 0, sendFailed: 0 };
+  return { trialAlreadyEnded: 0, optedOut: 0, noEmail: 0, notDue: 0, alreadySent: 0, noResendKey: 0, sendFailed: 0 };
 }
 
 /**
@@ -64,6 +65,7 @@ export type TrialEmailRowFacts = {
   hasEmail: boolean;
   hasResendKey: boolean;
   sendSucceeded: boolean;
+  optedOut: boolean;
 };
 
 export type TrialEmailOutcome =
@@ -75,6 +77,9 @@ export type TrialEmailOutcome =
  * only consulted when the row would otherwise send.
  */
 export function classifyTrialEmailRow(facts: TrialEmailRowFacts): TrialEmailOutcome {
+  if (facts.optedOut) {
+    return { sent: false, skip: "optedOut" };
+  }
   // daysToEnd < 0 ⇔ trialEndsAt < now. Applied before the kind picker so an
   // ended trial never becomes a day14 send, even if the Resend key was unset
   // for a stretch and a backlog piled up.

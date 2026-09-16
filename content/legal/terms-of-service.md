@@ -45,7 +45,7 @@ You are responsible for the information you provide, for maintaining the confide
 
 **Plans.** Access to paid features requires a subscription. We offer a monthly plan at the price shown in the Service at the time you subscribe. We may change prices prospectively; changes will not affect the term you have already paid for.
 
-**Free trial.** We may offer a free trial. If you start a trial and do not cancel before it ends, your subscription will begin automatically and the payment method you provided will be charged the applicable price. The length of the trial and the date it converts are shown to you at signup.
+**Free trial.** We may offer a free trial. A trial does not require a payment method, and it does not convert into a paid subscription on its own. A subscription begins only when you actively choose to upgrade. The length of the trial is shown to you at signup.
 
 **Automatic renewal.** Subscriptions renew automatically at the end of each monthly billing period at the then-current price, using your payment method on file, until you cancel. By subscribing, you authorize us and our payment providers to charge your payment method on a recurring basis.
 

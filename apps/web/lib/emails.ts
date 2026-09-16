@@ -32,6 +32,8 @@ export interface TrialEmailData {
   groupsCount: number;
   trialEndDate: string; // already formatted, e.g. "24 July"
   siteUrl: string;
+  /** `profiles.unsubscribe_token` — the no-login /api/unsubscribe token. */
+  unsubscribeToken: string;
 }
 
 export interface RenderedEmail {
@@ -83,8 +85,8 @@ function p(text: string): string {
  * GoTrue templates, not through this module, so there is nothing to add it
  * to here. `unsubscribeUrl` is caller-provided so each email kind can point
  * at whichever opt-out mechanism actually governs it (the nudge email's own
- * no-login token route for `skyTodayEmail`; the account notification
- * settings page for the trial emails, which have no separate consent flag).
+ * no-login token route for `skyTodayEmail`; `/api/unsubscribe` with the
+ * same `profiles.unsubscribe_token` for trial emails).
  */
 const LEGAL_ENTITY_ADDRESS_LINE = `Galaxia Mea LLC · 1 Shadowrock Ct, Simpsonville, SC 29680 · ${GALAXIA_HELP_EMAIL}`;
 
@@ -100,13 +102,12 @@ function complianceFooterText(unsubscribeUrl: string): string {
 }
 
 /**
- * Trial emails have no per-category consent flag of their own (unlike the
- * nudge email's `daily_nudge_emails_enabled` + token route), so their
- * opt-out link points at the account notification settings page rather
- * than a token that would resolve to the wrong toggle.
+ * No-login trial-email opt-out. Reuses `profiles.unsubscribe_token` (same
+ * unguessable per-user token as the daily sky email) but the route flips
+ * only `trial_emails_opted_out`, never the other consent columns.
  */
-function trialUnsubscribeUrl(siteUrl: string): string {
-  return `${siteUrl}${EMAIL_PATHS.notifications}`;
+export function trialUnsubscribeUrl(siteUrl: string, token: string): string {
+  return `${siteUrl}/api/unsubscribe?token=${token}`;
 }
 
 export function ownerGreeting(firstName: string | null | undefined): string {
@@ -133,7 +134,7 @@ export function day1Email(d: TrialEmailData): RenderedEmail {
   const subject = person ? `${person} is in your circle now` : "Someone is in your circle now";
   const preview = "Add one more person. A year is enough.";
   const greeting = ownerGreeting(d.firstName);
-  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
+  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl, d.unsubscribeToken);
   const addedLine = person ? `You've added ${person}.` : "You've added someone.";
   const nextLine = "Add one more person. A date is enough. A year is enough.";
   const trialLine = `Your trial runs through ${d.trialEndDate}. Nothing will be charged before then.`;
@@ -156,7 +157,7 @@ export function day4MultiEmail(d: TrialEmailData): RenderedEmail {
   const subject = person ? `What ${person} needs from you` : "What they need from you";
   const preview = "Open Compare. It's built from their charts.";
   const greeting = ownerGreeting(d.firstName);
-  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
+  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl, d.unsubscribeToken);
   const mappedLine = `You've mapped ${d.peopleCount} people.`;
   const actionLine = `Open <strong style="color:${CREAM}">Compare</strong>, choose two of them, and read what they need from you. It's built from their actual placements.`;
   const actionText = "Open Compare, choose two of them, and read what they need from you. It's built from their actual placements.";
@@ -178,7 +179,7 @@ export function day4OneEmail(d: TrialEmailData): RenderedEmail {
   const subject = "Add one more person";
   const preview = "A date works. A year works.";
   const greeting = ownerGreeting(d.firstName);
-  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
+  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl, d.unsubscribeToken);
   const factLine = person
     ? `You've added ${person}. Almost nothing here works with one person.`
     : "Almost nothing here works with one person.";
@@ -200,7 +201,7 @@ export function day11Email(d: TrialEmailData): RenderedEmail {
   const subject = `Your trial ends ${d.trialEndDate}`;
   const preview = "Nothing will be charged. Everything stays saved.";
   const greeting = ownerGreeting(d.firstName);
-  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
+  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl, d.unsubscribeToken);
   const endsLine = `Your trial ends on ${d.trialEndDate}. We never asked for a card, so nothing will be charged. When it ends, access pauses until you choose to continue.`;
   const listHtml = `<ul style="color:${MIST};margin:0 0 14px;padding-left:18px">
     <li><strong style="color:${CREAM}">${d.peopleCount}</strong> people</li>
@@ -228,7 +229,7 @@ export function day14Email(d: TrialEmailData): RenderedEmail {
   const subject = "Your people are still here";
   const preview = "Nothing was deleted. Come back whenever.";
   const greeting = ownerGreeting(d.firstName);
-  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl);
+  const unsubscribeUrl = trialUnsubscribeUrl(d.siteUrl, d.unsubscribeToken);
   const endedLine = "Your trial has ended. We haven't charged you.";
   const savedLine = `Everything you built is saved. ${d.peopleCount} people, your notes, your charts. Nothing has been deleted.`;
   const feedbackLine = `If it wasn't right, one line to ${GALAXIA_HELP_EMAIL} is enough. It goes to the person who built this.`;
@@ -256,10 +257,10 @@ export function renderTrialEmail(kind: TrialEmailKind, d: TrialEmailData): Rende
 }
 
 /**
- * Optional custom headers for a send — currently only used for the nudge
- * email's RFC 8058 one-click List-Unsubscribe pair (see `nudgeEmailHeaders`).
- * Kept generic rather than a fixed shape so a future sender doesn't need a
- * new sendEmail overload.
+ * Optional custom headers for a send — used for RFC 8058 one-click
+ * List-Unsubscribe pairs on commercial emails (nudge, trial, letter,
+ * chart reading). Kept generic rather than a fixed shape so a future
+ * sender doesn't need a new sendEmail overload.
  */
 export type EmailHeaders = Record<string, string>;
 
@@ -414,6 +415,18 @@ export function skyTodayEmail(d: SkyTodayEmailData): RenderedEmail {
  * confirmation page) and a human GET (confirmation page) at that one URL.
  */
 export function nudgeEmailHeaders(unsubscribeUrl: string): EmailHeaders {
+  return {
+    "List-Unsubscribe": `<${unsubscribeUrl}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+  };
+}
+
+/**
+ * RFC 8058 one-click List-Unsubscribe headers for trial emails. Same URL as
+ * the visible footer link (`trialUnsubscribeUrl`) — `/api/unsubscribe`
+ * handles both a mail-client POST (blank 200) and a human GET.
+ */
+export function trialEmailHeaders(unsubscribeUrl: string): EmailHeaders {
   return {
     "List-Unsubscribe": `<${unsubscribeUrl}>`,
     "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"

@@ -12,4 +12,4 @@
 
 `[ADDED]` **`scripts/vela-aspect-eval.mjs`** and **`.github/workflows/vela-aspect-eval.yml`** (`workflow_dispatch` only). Ten fixed relational questions against two fixture pairs. Passes only if at least 9/10 name an in-list aspect and 0/10 name an aspect not in the list. Requires the `ANTHROPIC_API_KEY` Actions secret.
 
-`[CHANGED]` **FOUNDER-REVIEW tags removed** after the two new prompt sentences were approved. Copy is unchanged.
+`[CHANGED]` **FOUNDER-REVIEW tags removed** after the two new prompt sentences were approved. Copy is unchanged. #323 had already merged with the tags still on; this is the follow-up that takes them off.

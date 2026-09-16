@@ -54,4 +54,29 @@ describe("readLegalMarkdown", () => {
     expect(markdown).not.toMatch(/\[COUNTY\/STATE\]/);
     expect(markdown).not.toMatch(/\[CONFIRM /);
   });
+
+  it("Privacy section 11 is the reviewed 18+ / adult-added-minors copy, with no counsel bracket or em dash", () => {
+    const markdown = readLegalMarkdown("privacy-policy.md");
+    const start = markdown.indexOf("Children's and minors' privacy");
+    const end = markdown.indexOf("Your rights and choices");
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const section11 = markdown.slice(start, end);
+
+    expect(section11).toContain("### 11.1 No direct account creation by minors");
+    expect(section11).toContain("### 11.2 Profiles concerning minors");
+    expect(section11).toContain("### 11.3 Representations concerning minor data");
+    expect(section11).toContain("at least 18 years old");
+    expect(section11).toContain("safety limits in Section 5");
+    expect(section11).toContain("does not create an account for that minor");
+    expect(section11).toContain("parent or legal guardian");
+    expect(section11).toContain("defend, indemnify, and hold harmless Galaxia");
+    expect(section11).toContain(GALAXIA_HELP_EMAIL);
+
+    expect(section11).not.toContain("\u2014");
+    expect(section11).not.toContain("should be reviewed by counsel");
+    expect(section11).not.toContain("under 13");
+    expect(section11).not.toContain("FOUNDER-REVIEW");
+    expect(section11).not.toMatch(/\[This area/);
+  });
 });

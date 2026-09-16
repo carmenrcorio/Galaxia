@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Last updated: 8/19/2026**
+**Last updated: 9/16/2026**
 
 These Terms of Service ("Terms") are a binding agreement between you and Galaxia governing your use of the Galaxia application and the website at galaxiamea.com (together, the "Service").
 
@@ -158,7 +158,7 @@ You may stop using the Service and delete your account at any time. We may suspe
 
 These Terms are governed by the laws of the State of South Carolina, without regard to its conflict-of-laws rules.
 
-Subject to the above, you agree that the state and federal courts located in Greenville County, South Carolina will have exclusive jurisdiction over any dispute not subject to arbitration, and you consent to personal jurisdiction there.
+You agree that the state and federal courts located in Greenville County, South Carolina have exclusive jurisdiction over any dispute arising out of or relating to these Terms or the Service, and you consent to personal jurisdiction there.
 
 ---
 

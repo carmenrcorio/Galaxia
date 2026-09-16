@@ -3,7 +3,7 @@ export function WhySection() {
   return (
     <section className="shift container" id="shift">
       <span className="eyebrow reveal">The shift</span>
-      <h2 className="reveal">Astrology forgot understand the people in your life.</h2>{/* FOUNDER-REVIEW */}
+      <h2 className="reveal">Astrology was built to understand the people in your life.</h2>{/* FOUNDER-REVIEW */}
       <p className="body reveal">
                 The night sky belongs to everyone. <em>Yours</em> doesn't.
       </p>

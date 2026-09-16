@@ -32,7 +32,7 @@ export function ForWorkSection() {
         <li className="reveal">
           <strong>Same product. No special tier.</strong>{" "}
           <span>
-            One honest plan, the same tools you would use for understand the people in your life. Start with 14 {/* FOUNDER-REVIEW */}
+            One honest plan, the same tools you would use to understand the people in your life. Start with 14 {/* FOUNDER-REVIEW */}
             days free. No per-person fees, no per-question charges.
           </span>
         </li>

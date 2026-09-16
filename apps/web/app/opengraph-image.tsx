@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { HOMEPAGE_TAGLINE } from "../lib/homepage-seo";
 
-export const alt = "Galaxia: astrology for understand the people in your life"; // FOUNDER-REVIEW
+export const alt = "Galaxia: astrology to understand the people in your life"; // FOUNDER-REVIEW
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

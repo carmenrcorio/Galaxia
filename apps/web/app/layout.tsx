@@ -18,7 +18,7 @@ const SITE_DESCRIPTION = "Astrologically-driven relationship intelligence";
  * Reddit launch post) unfurl with a branded image instead of a gray link
  * with no preview.
  */
-const DEFAULT_OG_IMAGE = { url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for understand the people in your life" }; // FOUNDER-REVIEW
+const DEFAULT_OG_IMAGE = { url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology to understand the people in your life" }; // FOUNDER-REVIEW
 
 export const metadata: Metadata = {
   title: "Galaxia",

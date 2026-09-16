@@ -62,7 +62,7 @@ export const PUBLISHED_POSTS = [
   },
   {
     slug: "synastry-aspects-explained",
-    title: "7 Synastry Aspects That Predict How Relationships Feel"
+    title: "7 Synastry Aspects That Reveal How Relationships Feel"
   },
   {
     slug: "reading-chart-of-someone-who-died",

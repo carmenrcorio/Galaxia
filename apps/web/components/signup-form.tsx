@@ -1,12 +1,12 @@
 "use client";
 
 import { joinFullName } from "@galaxia/core";
+import type { Session, User } from "@supabase/supabase-js";
 import { track } from "@vercel/analytics/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { syncSignupNameToProfile } from "../lib/account-name";
-import { getSiteUrlFromRequestOrigin } from "../lib/env";
 import { loginWithNextHref } from "../lib/nav-links";
 import { PASSWORD_MIN_LENGTH, PASSWORD_RULE_HINT } from "../lib/password-rules";
 import { safeNextPath } from "../lib/safe-next-path";
@@ -40,34 +40,46 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
     event.preventDefault();
     setStatus("submitting");
     setError(null);
-    const siteUrl = getSiteUrlFromRequestOrigin(window.location.origin);
-    const redirectUrl = new URL(`${siteUrl}/auth/callback`);
-    // This `next` rides in the confirmation email Supabase sends, so it must
-    // be sanitized here too, not just on the immediate-session `destination`
-    // above: /auth/callback trusts whatever `next` arrives on that emailed
-    // link, so an unsanitized value here is what turns a genuine
-    // confirmation email into a same-origin-authenticated open redirect.
-    if (nextPath) redirectUrl.searchParams.set("next", safeNextPath(nextPath, "/welcome"));
+    // COPPA: age_confirmed is enforced on POST /api/auth/signup. The checkbox
+    // below is unchanged UX; the server rejects the request unless this is true.
     // The name rides in auth metadata because signUp can return without a
     // session (email confirmation), and `profiles` is not writable until there
     // is one. syncSignupNameToProfile copies it into profiles.display_name,
     // which is the only field anything reads for display.
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl.toString(),
-        data: {
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          full_name: joinFullName(firstName, lastName)
-        }
-      }
+    // `next` is sanitized on the server (safeNextPath) before it is embedded
+    // in emailRedirectTo, matching the previous client-side sanitization so
+    // /auth/callback cannot be turned into a same-origin open redirect.
+    const response = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        full_name: joinFullName(firstName, lastName),
+        age_confirmed: ageConfirmed,
+        next: nextPath
+      })
     });
-    if (signUpError) {
-      setError(signUpError.message.toLowerCase().includes("already") ? "That email is already registered. Log in instead." : signUpError.message);
+    let payload: { error?: string; user?: User | null; session?: Session | null } = {};
+    try {
+      payload = (await response.json()) as typeof payload;
+    } catch {
+      payload = { error: "Could not create account." };
+    }
+    if (!response.ok) {
+      const message = payload.error ?? "Could not create account.";
+      setError(message.toLowerCase().includes("already") ? "That email is already registered. Log in instead." : message);
       setStatus("idle");
       return;
+    }
+    const data = { user: payload.user ?? null, session: payload.session ?? null };
+    if (data.session?.access_token && data.session.refresh_token) {
+      await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token
+      });
     }
     // Account creation succeeded here regardless of which branch runs next
     // (immediate session vs. email-confirmation-required), so the
@@ -128,9 +140,9 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
         </label>
         <input id="signup-password" className="field" required minLength={PASSWORD_MIN_LENGTH} autoComplete="new-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
                 <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>{PASSWORD_RULE_HINT}</p>
-        {/* COPPA age gate: required on account creation, never on login. Purely
-            client-side (no birth-data column, no server enforcement) — the
-            submit button stays disabled until this is checked. */}
+        {/* COPPA age gate: required on account creation, never on login. The
+            submit button stays disabled until this is checked. The server also
+            rejects POST /api/auth/signup unless age_confirmed is true. */}
         <label className="muted" style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: ".85rem" }} htmlFor="signup-age-gate">
           <input
             id="signup-age-gate"

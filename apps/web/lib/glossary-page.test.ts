@@ -97,6 +97,14 @@ describe("glossary term list", () => {
     expect(GLOSSARY_TERMS.find((t) => t.id === "moon-sign")?.readMore?.slug).toBe(
       "mothers-moon-sign-apology",
     );
+    for (const item of GLOSSARY_TERMS) {
+      if (item.readMore?.slug === "synastry-aspects-explained") {
+        expect(item.readMore.title).toBe(
+          "7 Synastry Aspects That Reveal How Relationships Feel",
+        );
+        expect(item.readMore.title).not.toMatch(/predict/i);
+      }
+    }
   });
 
   it("renders each term as an h3 with id={term-slug} and a Read more line when present", () => {

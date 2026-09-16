@@ -40,7 +40,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "An aspect is the angle between two placements in one chart, or between two people's charts. Some angles move together easily; others produce friction that does not go away. Naming the aspect gives two people a shared word for a pattern they have already been living.",
     readMore: {
       slug: "synastry-aspects-explained",
-      title: "7 Synastry Aspects That Predict How Relationships Feel",
+      title: "7 Synastry Aspects That Reveal How Relationships Feel",
     },
   },
   {
@@ -84,7 +84,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "A conjunction is two placements sitting at or very near the same degree. They do not take turns; they move as one charge. In one person that fusion is hard to see from inside; between two people it reads as merged and amplified.",
     readMore: {
       slug: "synastry-aspects-explained",
-      title: "7 Synastry Aspects That Predict How Relationships Feel",
+      title: "7 Synastry Aspects That Reveal How Relationships Feel",
     },
   },
   {
@@ -158,7 +158,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "Mercury describes how a person thinks, talks, and takes in information. When two Mercuries sit close together, conversation often needs less translation. When they do not, the same sentence can land as two different conversations.",
     readMore: {
       slug: "synastry-aspects-explained",
-      title: "7 Synastry Aspects That Predict How Relationships Feel",
+      title: "7 Synastry Aspects That Reveal How Relationships Feel",
     },
   },
   {
@@ -180,7 +180,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "Moon conjunct Moon is both people's Moons at or near the same degree. Moods land the same way, comfort looks similar, and feelings do not need as much translation. It shows up in romance, family, and friendship the same way: an emotional shorthand other people notice first.",
     readMore: {
       slug: "synastry-aspects-explained",
-      title: "7 Synastry Aspects That Predict How Relationships Feel",
+      title: "7 Synastry Aspects That Reveal How Relationships Feel",
     },
   },
   {
@@ -235,7 +235,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "The North Node is a mathematical point, not a planet: a marker for the direction of growth this lifetime. When it sits on another person's Sun, Moon, or personal planet, people often describe an early sense of significance that is hard to explain from outside. It is a contact to name, not a verdict that the two people were supposed to stay.",
     readMore: {
       slug: "synastry-aspects-explained",
-      title: "7 Synastry Aspects That Predict How Relationships Feel",
+      title: "7 Synastry Aspects That Reveal How Relationships Feel",
     },
   },
   {
@@ -246,7 +246,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "An opposition is a 180-degree angle: two placements pulling in opposite directions. In one chart a person can swing between the poles and mistake one for the enemy. Between two people it often reads as a mirroring that needs integration, not victory.",
     readMore: {
       slug: "synastry-aspects-explained",
-      title: "7 Synastry Aspects That Predict How Relationships Feel",
+      title: "7 Synastry Aspects That Reveal How Relationships Feel",
     },
   },
   {
@@ -323,7 +323,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "A sextile is a 60-degree angle: an easy, available talent that works when someone reaches for it and sits idle when they do not. In synastry it is a door left unlocked between two people, not a guarantee they will walk through it.",
     readMore: {
       slug: "synastry-aspects-explained",
-      title: "7 Synastry Aspects That Predict How Relationships Feel",
+      title: "7 Synastry Aspects That Reveal How Relationships Feel",
     },
   },
   {
@@ -334,7 +334,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "A square is a 90-degree angle: two parts that do not easily cooperate. In a natal chart it is productive friction inside one person; in synastry it is two people's wiring meeting at that same awkward angle. It never fully resolves, and it is not supposed to.",
     readMore: {
       slug: "synastry-aspects-explained",
-      title: "7 Synastry Aspects That Predict How Relationships Feel",
+      title: "7 Synastry Aspects That Reveal How Relationships Feel",
     },
   },
   {
@@ -389,7 +389,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "A trine is a 120-degree angle: so easy the people involved often do not notice it. In a natal chart it is often a greatest gift and a least developed one. In synastry it is unforced ease, the kind of contact people undersell because it never demanded their attention.",
     readMore: {
       slug: "synastry-aspects-explained",
-      title: "7 Synastry Aspects That Predict How Relationships Feel",
+      title: "7 Synastry Aspects That Reveal How Relationships Feel",
     },
   },
   {

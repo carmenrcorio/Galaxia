@@ -1,0 +1,7 @@
+## Drop "Predict" from synastry-aspects title; server-side COPPA age attestation (branch `cursor/fix-predict-title-age-attestation-35d0`) — 2026-09-16
+
+**Trigger**: The synastry-aspects post title used the word "Predict", and the COPPA age gate on signup was checkbox-only, so a crafted request could create an account without attesting age.
+
+`[CHANGED]` **`synastry-aspects-explained` title** is now "7 Synastry Aspects That Reveal How Relationships Feel" (FOUNDER-REVIEW). New migration `supabase/migrations/20260916043000_synastry_aspects_title_drop_predict.sql` updates `public.posts` (never an edit to an applied file). Hardcoded copies of the title in `apps/web/lib/glossary-terms.ts`, `scripts/dev/generate-blog-hero-images.mjs`, and `scripts/dev/blog-hero-images/synastry-aspects-explained.svg` match. No body, dek, or other post copy changed.
+
+`[ADDED]` **Server-side age attestation on account creation.** `POST /api/auth/signup` requires `age_confirmed: true` on the JSON body; otherwise it returns 400 `"Age confirmation required"` before any `signUp` call. No database column. The signup form still uses the same checkbox (`data-testid="age-gate-checkbox"`); it now posts that boolean to this route instead of calling `supabase.auth.signUp` in the browser. Constellation-connect logged-out signup is the same `/signup?next=/connect/<token>` form, so it hits the same check. There is no separate OAuth signup route.

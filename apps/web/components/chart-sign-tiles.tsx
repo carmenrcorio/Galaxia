@@ -30,7 +30,11 @@ export function ChartSignTiles({ chart }: { chart: NatalChart }) {
   if (tiles.length === 0) return null;
 
   return (
-    <div className="chart-sign-tiles" data-testid="chart-sign-tiles">
+    <div
+      className="chart-sign-tiles"
+      data-testid="chart-sign-tiles"
+      style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}
+    >
       {tiles.map((tile) => {
         const isMoon = tile.key === "moon";
         return (

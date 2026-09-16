@@ -503,13 +503,16 @@ select.field--rect {
 
 /* Compact Sun/Moon/Rising row directly under the natal wheel (galaxia.jsx .kd-three). */
 .chart-sign-tiles {
-  display: flex;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
   margin-top: 14px;
   width: 100%;
+  min-width: 0;
 }
 .chart-sign-tiles .sign-chip {
   min-width: 0;
+  max-width: 100%;
   position: relative;
   overflow: hidden;
   /* Subtle star scatter, same recipe as glass cards sitting on the cosmic field. */

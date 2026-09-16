@@ -15,7 +15,7 @@ export function SiteFooter() {
       <div className="container site-footer-in">
         <div>
           <div className="site-footer-brand">Galaxia</div>
-          <p>The people you love, written in the stars. · © 2026 Galaxia</p>
+          <p>Understand the people in your life, written in the stars. · © 2026 Galaxia</p>{/* FOUNDER-REVIEW */}
         </div>
         <div className="site-footer-links">
           {SITE_FOOTER_LINKS.map((l) => (

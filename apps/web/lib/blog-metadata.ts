@@ -9,7 +9,7 @@ export const SITE_OG_IMAGE = {
   url: "/og-image.png",
   width: 1200,
   height: 630,
-  alt: "Galaxia: astrology for the people you love"
+  alt: "Galaxia: astrology for understand the people in your life" // FOUNDER-REVIEW
 } as const;
 
 export interface PostMetadataInput {
@@ -71,7 +71,7 @@ export function buildCategoryMetadata(category: CategoryMetadataInput): Metadata
       : {
           title: "Astrology Guides for Real Birth Charts | Galaxia Blog",
           description:
-            "Guides for reading natal charts, synastry, placements, aspects, and houses. What astrology can actually tell you about the people you love."
+            "Guides for reading natal charts, synastry, placements, aspects, and houses. What astrology can actually tell you about understand the people in your life." // FOUNDER-REVIEW
         };
   const { title, description } = copy;
 

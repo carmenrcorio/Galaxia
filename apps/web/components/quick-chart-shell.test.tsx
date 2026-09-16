@@ -16,7 +16,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => undefined }),
 }));
 
-vi.mock("./cosmic-background", () => ({
+vi.mock("./cosmic-background-lazy", () => ({
   CosmicBackground: () => <div data-testid="cosmic-background" />,
 }));
 

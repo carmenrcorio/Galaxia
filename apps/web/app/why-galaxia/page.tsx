@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CosmicBackground } from "../../components/cosmic-background";
+import { CosmicBackground } from "../../components/cosmic-background-lazy";
 import { CloseSection } from "../../components/marketing/close-section";
 import { FeaturesSection } from "../../components/marketing/features-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";

@@ -8,7 +8,7 @@ import {
   MARKETING_NAV_SIGNUP,
 } from "../lib/nav-links";
 import { AppNav } from "./app-nav";
-import { CosmicBackground } from "./cosmic-background";
+import { CosmicBackground } from "./cosmic-background-lazy";
 import { TimezoneSync } from "./timezone-sync";
 import { TrialBanner } from "./trial-banner";
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { joinFullName } from "@galaxia/core";
+import type { Session, User } from "@supabase/supabase-js";
 import { track } from "@vercel/analytics/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -61,7 +62,7 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
         next: nextPath
       })
     });
-    let payload: { error?: string; user?: { id: string; user_metadata?: Record<string, unknown> } | null; session?: { access_token: string; refresh_token: string } | null } = {};
+    let payload: { error?: string; user?: User | null; session?: Session | null } = {};
     try {
       payload = (await response.json()) as typeof payload;
     } catch {

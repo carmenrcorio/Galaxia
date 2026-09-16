@@ -27,20 +27,16 @@ export function Hero() {
     <header className="hero container">
       <div className="hero-grid">
         <div className="hero-text">
-          {/* FOUNDER-REVIEW: locked homepage tagline. Eyebrow CSS still uppercases it. */}
           <span className="eyebrow fade-in">Your Life. Your People. Your Galaxy.</span>
           <h1 className="hero-h1 fade-in fade-in-delay-1">
-            {/* FOUNDER-REVIEW: homepage hero headline. Gold italic on the terminal beat, matching close-h. */}
             Better understand the people <em className="hero-h1__accent">in your life</em>
           </h1>
           <div className="hero-copy fade-in fade-in-delay-2">
             <p className="lede">
-              {/* FOUNDER-REVIEW: homepage hero subheading. */}
               Build a real chart for everyone who matters: your loved ones, your colleagues, even the ones you've lost, and learn who they are at their core.
             </p>
             <p className="lede">
-              {/* FOUNDER-REVIEW: homepage hero value proposition. Same brightness as the lede above; no dimming class. */}
-              Yes, it's real astrology. We won't tell you to avoid Geminis, we'll help you actually understand one.
+              Yes, it's real astrology. We won't tell you to avoid Geminis. We'll help you actually understand one.
             </p>
           </div>
           <div className="hero-cta-stack fade-in fade-in-delay-3">

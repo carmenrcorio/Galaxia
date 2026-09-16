@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SITE_CLOSER } from "../../lib/brand-copy";
 import { SITE_FOOTER_LINKS } from "../../lib/nav-links";
 
 /**
@@ -15,7 +16,7 @@ export function SiteFooter() {
       <div className="container site-footer-in">
         <div>
           <div className="site-footer-brand">Galaxia</div>
-          <p>Understand the people in your life, written in the stars. · © 2026 Galaxia</p>{/* FOUNDER-REVIEW */}
+          <p>{SITE_CLOSER} · © 2026 Galaxia</p>
         </div>
         <div className="site-footer-links">
           {SITE_FOOTER_LINKS.map((l) => (

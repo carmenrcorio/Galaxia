@@ -104,10 +104,6 @@ const MOMENTS = [
     title: "Before giving hard feedback",
     body: "Hard feedback lands differently depending on how a person meets criticism, authority, and change. Know that before you choose the words, not after they go quiet.",
   },
-  {
-    title: "Onboarding a new hire",
-    body: "A new hire arrives with a way of working you cannot see from a resume. See the shape of their rhythm early, so you stop guessing why they move fast, go quiet, or need the plan in writing.",
-  },
 ] as const;
 
 function workRelationsPhrase(): string {
@@ -145,7 +141,7 @@ export function ForWorkHero() {
 export function ForWorkMoments() {
   return (
     <section className="container why-not" id="moments">
-            <span className="eyebrow reveal">Three moments</span>
+            <span className="eyebrow reveal">Two moments</span>
       <h2 className="reveal">The conversation is already on the calendar.</h2>
       <p className="body reveal">
                 These are the hours when knowing how someone is wired is not a nice extra. It is

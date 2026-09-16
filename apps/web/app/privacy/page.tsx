@@ -19,13 +19,13 @@ export const metadata: Metadata = {
     siteName: "Galaxia",
     type: "website",
     url: "/privacy",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for understand the people in your life" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology to understand the people in your life" }]
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology for understand the people in your life" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology to understand the people in your life" }]
   }
 };
 

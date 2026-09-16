@@ -32,4 +32,4 @@ astrology,natal chart,synastry,birth chart,horoscope,relationships,family,compat
 
 ## What's New (1.0)
 
-Galaxia is here. Add understand the people in your life. See how each bond is built. Show up with more intention.
+Galaxia is here. Add the people in your life. See how each bond is built. Show up with more intention.

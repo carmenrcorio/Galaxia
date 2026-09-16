@@ -10,7 +10,7 @@
 
 ## Headlines
 
-1. Show up for understand the people in your life
+1. Show up for the people in your life
 2. For the circle that already shapes your days
 3. Not a horoscope. Not for strangers.
 

@@ -15,10 +15,10 @@ describe("homepage outcome-led copy", () => {
     expect(HOMEPAGE_TAGLINE).toBe("Your Life. Your People. Your Galaxy.");
     expect(HOMEPAGE_TITLE).toBe("Your Life. Your People. Your Galaxy. | Galaxia");
     expect(HOMEPAGE_DESCRIPTION).toBe(
-      "Your Life. Your People. Your Galaxy. Galaxia computes the real birth chart of everyone in your life, your partner, your parents, your friends, the ones you have lost, and tells you what each of them needs from you. Real astrology, plain language, no horoscopes.",
+      "Your Life. Your People. Your Galaxy. Galaxia computes the real birth chart of everyone in your life (your partner, your parents, your friends, the ones you have lost) and tells you what each of them needs from you. Real astrology, plain language, no horoscopes.",
     );
     expect(HOMEPAGE_JSON_LD_DESCRIPTION).toBe(
-      "Galaxia computes the real birth chart of everyone in your life, your partner, your parents, your friends, the ones you have lost, and tells you what each of them needs from you. Real astrology, plain language, no horoscopes.",
+      "Galaxia computes the real birth chart of everyone in your life (your partner, your parents, your friends, the ones you have lost) and tells you what each of them needs from you. Real astrology, plain language, no horoscopes.",
     );
     expect(HOMEPAGE_TITLE.startsWith(HOMEPAGE_TAGLINE)).toBe(true);
     expect(HOMEPAGE_DESCRIPTION.startsWith(HOMEPAGE_TAGLINE)).toBe(true);
@@ -36,7 +36,7 @@ describe("homepage outcome-led copy", () => {
     expect(src).toContain('Better understand the people <em className="hero-h1__accent">in your life</em>');
     expect(src).not.toContain("Better understand the people in your life.");
     expect(src).toContain("Build a real chart for everyone who matters: your loved ones, your colleagues, even the ones you've lost, and learn who they are at their core.");
-    expect(src).toContain("Yes, it's real astrology. We won't tell you to avoid Geminis, we'll help you actually understand one.");
+    expect(src).toContain("Yes, it's real astrology. We won't tell you to avoid Geminis. We'll help you actually understand one.");
     expect(src).not.toContain("hero-copy-defense");
     expect(src).not.toContain("Build a real chart for your partner, your mother, your difficult colleague");
     expect(src).not.toContain("Yes, it uses astrology.");

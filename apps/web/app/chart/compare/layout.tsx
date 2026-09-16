@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { SITE_OG_ALT } from "../../../lib/brand-copy";
 
 /**
  * `app/chart/compare/page.tsx` is a client component ("use client"), so it
@@ -26,13 +27,13 @@ export const metadata: Metadata = {
     siteName: "Galaxia",
     type: "website",
     url: "/chart/compare",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia, astrology to understand the people in your life" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: SITE_OG_ALT }]
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia, astrology to understand the people in your life" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: SITE_OG_ALT }]
   }
 };
 

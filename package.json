@@ -8,7 +8,8 @@
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "founder-review:list": "node scripts/founder-review-list.mjs"
   },
   "devDependencies": {
     "turbo": "^2.0.14",

@@ -20,6 +20,8 @@ import {
   ownerNameMentionsInBody,
   sendEmail,
   skyTodayEmail,
+  trialEmailHeaders,
+  trialUnsubscribeUrl,
   type TrialEmailData
 } from "./emails";
 import { BODY_LABEL, buildChartReading } from "./chart-reading";
@@ -38,6 +40,7 @@ function trialBase(overrides: Partial<TrialEmailData> = {}): TrialEmailData {
     groupsCount: 1,
     trialEndDate: "24 July",
     siteUrl: "https://galaxiamea.com",
+    unsubscribeToken: "abc-123",
     ...overrides
   };
 }
@@ -273,10 +276,12 @@ describe("Trial emails — rewritten voice, preview, greeting, CAN-SPAM footer",
       const rendered = render(base);
       expect(rendered.html).toContain("Galaxia Mea LLC");
       expect(rendered.html).toContain("1 Shadowrock Ct, Simpsonville, SC 29680");
-      expect(rendered.html).toContain(`${base.siteUrl}/account/notifications`);
+      expect(rendered.html).toContain(`${base.siteUrl}/api/unsubscribe?token=abc-123`);
+      expect(rendered.html).not.toContain("/account/notifications");
       expect(rendered.text).toContain("Galaxia Mea LLC");
       expect(rendered.text).toContain("1 Shadowrock Ct, Simpsonville, SC 29680");
-      expect(rendered.text).toContain(`${base.siteUrl}/account/notifications`);
+      expect(rendered.text).toContain(`${base.siteUrl}/api/unsubscribe?token=abc-123`);
+      expect(rendered.text).not.toContain("/account/notifications");
     });
 
     it(`${name} states why the recipient is receiving the email`, () => {
@@ -357,7 +362,16 @@ describe("Trial emails — rewritten voice, preview, greeting, CAN-SPAM footer",
   it("compliance footer entity line is unchanged from the merged CAN-SPAM copy", () => {
     const rendered = day1Email(base);
     expect(rendered.html).toContain(FOOTER_ENTITY);
-    expect(rendered.html).toContain(`To unsubscribe, <a href="${base.siteUrl}/account/notifications"`);
+    expect(rendered.html).toContain(`To unsubscribe, <a href="${base.siteUrl}/api/unsubscribe?token=abc-123"`);
+  });
+
+  it("trialEmailHeaders are RFC 8058 one-click on the same URL as the footer", () => {
+    const url = trialUnsubscribeUrl(base.siteUrl, "abc-123");
+    expect(url).toBe("https://galaxiamea.com/api/unsubscribe?token=abc-123");
+    expect(trialEmailHeaders(url)).toEqual({
+      "List-Unsubscribe": `<${url}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+    });
   });
 });
 

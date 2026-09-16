@@ -30,7 +30,8 @@ const sendable = {
   alreadyCount: 0,
   hasEmail: true,
   hasResendKey: true,
-  sendSucceeded: true
+  sendSucceeded: true,
+  optedOut: false
 } as const;
 
 function row(partial: Partial<TrialEmailRowFacts> & Pick<TrialEmailRowFacts, "ageDays" | "daysToEnd" | "peopleCount">): TrialEmailRowFacts {
@@ -68,7 +69,9 @@ const EVERY_BRANCH: TrialEmailRowFacts[] = [
   // sent: day11
   row({ ageDays: 11, daysToEnd: 3, peopleCount: 0 }),
   // trialAlreadyEnded: would have been day14; never sends
-  row({ ageDays: 22, daysToEnd: -8, peopleCount: 15 })
+  row({ ageDays: 22, daysToEnd: -8, peopleCount: 15 }),
+  // optedOut: otherwise sendable day1
+  row({ ageDays: 1.56, daysToEnd: 12.44, peopleCount: 3, optedOut: true })
 ];
 
 describe("trialAlreadyEnded", () => {
@@ -131,6 +134,14 @@ describe("classifyTrialEmailRow — every skip and send branch", () => {
     expect(classifyTrialEmailRow(EVERY_BRANCH[10]!)).toEqual({ sent: true, kind: "day4_multi" });
     expect(classifyTrialEmailRow(EVERY_BRANCH[11]!)).toEqual({ sent: true, kind: "day11" });
     expect(classifyTrialEmailRow(EVERY_BRANCH[12]!)).toEqual({ sent: false, skip: "trialAlreadyEnded" });
+    expect(classifyTrialEmailRow(EVERY_BRANCH[13]!)).toEqual({ sent: false, skip: "optedOut" });
+  });
+
+  it("never sends an opted-out row, even when a kind is otherwise due", () => {
+    expect(
+      classifyTrialEmailRow(row({ ageDays: 1.5, daysToEnd: 12, peopleCount: 1, optedOut: true }))
+    ).toEqual({ sent: false, skip: "optedOut" });
+    expect(pickTrialEmailKind(1.5, 12, 1)).toBe("day1");
   });
 
   it("never sends day14: an ended trial is skipped before the kind picker, even with a key", () => {
@@ -145,10 +156,11 @@ describe("tallyTrialEmailRows — invariant holds across every branch", () => {
   it("increments exactly one counter per row and reconciles", () => {
     const summary = tallyTrialEmailRows(EVERY_BRANCH);
     expect(summary).toEqual({
-      evaluated: 13,
+      evaluated: 14,
       sent: 4,
       skipped: {
         trialAlreadyEnded: 1,
+        optedOut: 1,
         noEmail: 1,
         notDue: 4,
         alreadySent: 1,
@@ -158,6 +170,7 @@ describe("tallyTrialEmailRows — invariant holds across every branch", () => {
     });
     expect(emptyTrialEmailSkipped()).toEqual({
       trialAlreadyEnded: 0,
+      optedOut: 0,
       noEmail: 0,
       notDue: 0,
       alreadySent: 0,
@@ -186,6 +199,7 @@ describe("tallyTrialEmailRows — invariant holds across every branch", () => {
       sent: 0,
       skipped: {
         trialAlreadyEnded: 8,
+        optedOut: 0,
         noEmail: 0,
         notDue: 1,
         alreadySent: 0,
@@ -225,6 +239,6 @@ describe("tallyTrialEmailRows — invariant holds across every branch", () => {
     expect(isCronTallyMismatch(result.body)).toBe(true);
     if (!isCronTallyMismatch(result.body)) throw new Error("expected mismatch");
     expect(result.body.mismatch).toBe(summary.evaluated - 1);
-    expect(result.body.evaluated).toBe(13);
+    expect(result.body.evaluated).toBe(14);
   });
 });

@@ -477,7 +477,6 @@ describe("email hrefs resolve to App Router pages", () => {
     expect(src).toContain("EMAIL_PATHS.compare");
     expect(src).toContain("EMAIL_PATHS.subscribe");
     expect(src).toContain("EMAIL_PATHS.app");
-    expect(src).toContain("EMAIL_PATHS.notifications");
     expect(src).not.toMatch(/\$\{d\.siteUrl\}\/(welcome|app|subscribe|account)/);
     expect(EMAIL_PATHS).toEqual({
       welcome: "/welcome",

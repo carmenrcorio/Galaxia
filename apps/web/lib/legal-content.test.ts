@@ -30,6 +30,14 @@ describe("readLegalMarkdown", () => {
     expect(markdown).toContain("**Plans.** Access to paid features requires a subscription.");
   });
 
+  it("Terms §5 trial language does not claim a card is charged at trial end", () => {
+    const markdown = readLegalMarkdown("terms-of-service.md");
+    expect(markdown).toContain("A trial does not require a payment method");
+    expect(markdown).toContain("A subscription begins only when you actively choose to upgrade.");
+    expect(markdown).not.toContain("the payment method you provided will be charged");
+    expect(markdown).not.toContain("your subscription will begin automatically");
+  });
+
   it("substitutes the one Galaxia contact address and leaves no token behind", () => {
     for (const filename of ["privacy-policy.md", "terms-of-service.md"] as const) {
       const markdown = readLegalMarkdown(filename);

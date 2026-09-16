@@ -2,12 +2,12 @@
 export function WhySection() {
   return (
     <section className="shift container" id="shift">
-      <span className="eyebrow reveal">The shift</span>
-      <h2 className="reveal">Astrology is a language for understanding the people in your life.</h2>
-      <p className="body reveal">
+      <span className="eyebrow">The shift</span>
+      <h2>Astrology is a language for understanding the people in your life.</h2>
+      <p className="body">
                 The night sky belongs to everyone. <em>Yours</em> doesn't.
       </p>
-      <p className="body reveal">
+      <p className="body">
                 Every other app is built for you alone (your horoscope, your transits) or for swiping on
         strangers. But the relationships that actually shape your days are the ones already in your
         life: your partner, your kids, your mother, your siblings, the friends who became family, even

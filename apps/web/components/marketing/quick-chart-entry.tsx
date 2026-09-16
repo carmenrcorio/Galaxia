@@ -4,13 +4,25 @@
  * Slim Quick Chart entry on the marketing hero. Name + month/day/year only;
  * no BirthFields, no place search. Computes via POST /api/quick-chart and
  * reveals Sun/Moon inline — no navigation off the marketing page.
+ *
+ * NatalSignReveal (and @galaxia/astro with it) loads only after a successful
+ * submit. MONTHS is local so this module does not import birth-fields, which
+ * pulls the astro runtime into the homepage first-load graph.
  */
 
 import type { NatalChart } from "@galaxia/astro";
+import dynamic from "next/dynamic";
 import { useState, type FormEvent } from "react";
-import { MONTHS } from "../birth-fields";
-import { NatalSignReveal } from "../natal-sign-reveal";
 import { Spinner } from "../spinner";
+
+const NatalSignReveal = dynamic(() =>
+  import("../natal-sign-reveal").then((mod) => mod.NatalSignReveal)
+);
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
 
 type RevealResult = {
   chart: NatalChart;

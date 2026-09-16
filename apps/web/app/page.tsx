@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { JsonLd } from "../components/seo/json-ld";
-import { CosmicBackground } from "../components/cosmic-background";
+import { CosmicBackground } from "../components/cosmic-background-lazy";
 import { CloseSection } from "../components/marketing/close-section";
 import { FaqSection } from "../components/marketing/faq-section";
 import { FeatureTeasers } from "../components/marketing/feature-teasers";

@@ -34,7 +34,7 @@ vi.mock("../lib/use-viewer", () => ({
   useViewer: () => viewer,
 }));
 
-vi.mock("./cosmic-background", () => ({
+vi.mock("./cosmic-background-lazy", () => ({
   CosmicBackground: () => <div data-testid="cosmic-background" />,
 }));
 

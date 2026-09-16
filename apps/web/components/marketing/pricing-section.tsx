@@ -10,7 +10,7 @@ export function PricingSection() {
   return (
     <section className="container" id="pricing">
       <div className="price-wrap">
-        <div className="price-cards reveal">
+        <div className="price-cards">
           <div className="pcard glass-card">
                         <div className="pcard-name">Monthly</div>
                         <div className="pcard-price">
@@ -26,8 +26,8 @@ export function PricingSection() {
             </Link>
           </div>
         </div>
-                <p className="price-no-cap reveal">✦ No per-person cap: your grandmother shouldn't cost extra.</p>
-        <div className="incl glass-card reveal">
+                <p className="price-no-cap">✦ No per-person cap: your grandmother shouldn't cost extra.</p>
+        <div className="incl glass-card">
           <div className="incl-headline">
                         <h2>Vela is included. Never charged per message.</h2>
                         <p>The AI guide is part of this plan. There is no per-message fee, ever.</p>

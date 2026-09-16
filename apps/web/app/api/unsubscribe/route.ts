@@ -15,8 +15,7 @@ export const runtime = "nodejs";
  * `lib/emails.ts`).
  *
  * Flips ONLY `trial_emails_opted_out`. Independent of the daily sky
- * email (`daily_nudge_emails_enabled`) and the weekly constellation letter
- * (`weekly_constellation_letter_enabled`).
+ * email and the weekly constellation letter.
  *
  * GET: a human clicking the visible footer link. Sets
  * `trial_emails_opted_out` to true, then shows a small confirmation page

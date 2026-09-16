@@ -168,8 +168,7 @@ export const SHARE_GIFT_DISCLOSURE =
   "Anyone with this link can see the natal chart, the birth date, and the birth place if you entered one. They can add this person to their own constellation or compare without retyping those details. They cannot see notes. The URL never includes a name.";
 
 export const SHARE_COMPARE_DISCLOSURE =
-  "Anyone with this link can see this synastry reading and both charts. They cannot see notes. The URL never includes a name."; // FOUNDER-REVIEW
-
+  "Anyone with this link can see this synastry reading and both charts. They cannot see notes. The URL never includes a name.";
 export const SHARE_ANON_EXPIRY_NOTE =
   "Signed out: this link expires, and you cannot revoke it later. Sign in to pick no expiry, or to revoke from Settings.";
 
@@ -203,15 +202,14 @@ export const SHARE_PENDING_ERROR = "Could not load share links. Try again.";
 export const SHARE_PENDING_LOADING = "Loading your share links.";
 export const SHARE_REVOKE_LABEL = "Revoke";
 export const SHARE_REVOKING_LABEL = "Revoking…";
-export const SHARE_PENDING_COMPARE_LABEL = "Synastry reading"; // FOUNDER-REVIEW
+export const SHARE_PENDING_COMPARE_LABEL = "Synastry reading";
 export const SHARE_PENDING_NATAL_FALLBACK = "Natal chart";
 
 export const SHARE_GIFT_COMPARE_B_LOCKED = "Using the gifted chart. You only enter your own birth details.";
 export const SHARE_GIFT_COMPARE_MISSING =
   "This gift link is missing, expired, or no longer available, so the other person's chart cannot be loaded.";
 export const SHARE_GIFT_COMPARE_NOT_SINGLE =
-  "This link is a synastry reading, not a gifted natal chart, so it cannot be compared from here."; // FOUNDER-REVIEW
-
+  "This link is a synastry reading, not a gifted natal chart, so it cannot be compared from here.";
 export const QUICK_COMPARE_HELD_READING =
   "A minor is part of this comparison, so Galaxia won't produce a romantic reading here. Only a platonic reading is available for this pairing.";
 

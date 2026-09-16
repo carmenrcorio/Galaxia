@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE } from "./homepage-seo";
-import { FEATURE_TEASER_LINKS, HERO_PRIMARY_CTA, MARKETING_NAV_LOGIN } from "./nav-links";
+import { FEATURE_TEASER_LINKS, HERO_HOW_IT_WORKS, MARKETING_NAV_LOGIN, MARKETING_NAV_SIGNUP } from "./nav-links";
 
 const WEB_ROOT = join(__dirname, "..");
 
@@ -20,37 +20,57 @@ describe("homepage outcome-led copy", () => {
     expect(HOMEPAGE_DESCRIPTION.includes("\u2014")).toBe(false);
   });
 
-  it("renders the headline, unified value proposition, and free-chart CTA", () => {
+  it("renders the headline, unified value proposition, and how-it-works cue", () => {
     const src = read("components/marketing/hero.tsx");
     expect(src).toContain("Your life. Your people. Your galaxy.");
     expect(src).not.toContain("Galaxia · your inner circle");
     expect(src).not.toContain("YOUR INNER CIRCLE");
     expect(src).not.toContain("Your Inner Circle");
-    expect(src).toContain("Better understand the people in your life");
+    expect(src).toContain('Better understand the people <em className="hero-h1__accent">in your life</em>');
     expect(src).not.toContain("Better understand the people in your life.");
-    expect(src).toContain("Build a real chart for your partner, your mother, your difficult colleague, even the ones you have lost, and learn who they are at their core.");
-    expect(src).toContain("Yes, it uses astrology. We won't tell you to avoid Geminis, we'll tell you how to talk to one.");
-    expect(src).not.toContain("Yes, it uses astrology. No, it will not tell you to avoid Geminis.");
+    expect(src).toContain("Build a real chart for everyone who matters: your loved ones, your colleagues, even the ones you've lost, and learn who they are at their core.");
+    expect(src).toContain("Yes, it's real astrology. We won't tell you to avoid Geminis, we'll help you actually understand one.");
+    expect(src).not.toContain("hero-copy-defense");
+    expect(src).not.toContain("Build a real chart for your partner, your mother, your difficult colleague");
+    expect(src).not.toContain("Yes, it uses astrology.");
+    expect(src).not.toContain("we'll tell you how to talk to one.");
     expect(src).not.toContain("Galaxia builds a real chart for every person in your life, your partner,");
-    expect(src).toContain("No card required · Works with just a birth date");
+    expect(src).not.toContain("No card required · Works with just a birth date");
     expect(src).not.toContain("No card. Works with just a birth date.");
+    expect(src).not.toContain("HERO_PRIMARY_CTA");
+    expect(src).not.toContain("See someone's chart free");
+    expect(src).not.toContain("{MARKETING_NAV_LOGIN.label}");
+    expect(src).toContain("{HERO_HOW_IT_WORKS.label}");
+    expect(src).toContain("<QuickChartEntry />");
     expect(src).not.toContain("The sky has been used to explain ourselves for three thousand years.");
     expect(src).not.toContain("We pointed it at the people we love instead.");
     const withoutComments = src.replace(/\/\*[\s\S]*?\*\//g, "");
     expect(withoutComments).not.toContain("The night sky belongs to everyone.");
     expect(withoutComments).not.toContain("Every app like this is about you.");
-    const copyIdx = withoutComments.indexOf("Build a real chart for your partner");
-    const defenseIdx = withoutComments.indexOf("Yes, it uses astrology.");
-    const ctaIdx = withoutComments.indexOf("{HERO_PRIMARY_CTA.label}");
-    const noteIdx = withoutComments.indexOf("No card required · Works with just a birth date");
-    const loginIdx = withoutComments.indexOf("{MARKETING_NAV_LOGIN.label}");
+    const copyIdx = withoutComments.indexOf("Build a real chart for everyone who matters");
+    const defenseIdx = withoutComments.indexOf("Yes, it's real astrology.");
+    const cueIdx = withoutComments.indexOf("{HERO_HOW_IT_WORKS.label}");
+    const chartIdx = withoutComments.indexOf("<QuickChartEntry />");
     expect(copyIdx).toBeGreaterThan(-1);
     expect(defenseIdx).toBeGreaterThan(copyIdx);
-    expect(ctaIdx).toBeGreaterThan(defenseIdx);
-    expect(noteIdx).toBeGreaterThan(ctaIdx);
-    expect(loginIdx).toBeGreaterThan(noteIdx);
-    expect(HERO_PRIMARY_CTA).toEqual({ href: "/chart", label: "See someone's chart free" });
+    expect(cueIdx).toBeGreaterThan(defenseIdx);
+    expect(chartIdx).toBeGreaterThan(cueIdx);
+    expect(HERO_HOW_IT_WORKS).toEqual({ href: "/#how", label: "See how it works" });
     expect(MARKETING_NAV_LOGIN).toEqual({ href: "/login", label: "Log in" });
+    expect(MARKETING_NAV_SIGNUP.href).toBe("/signup");
+    const nav = read("components/marketing/marketing-nav.tsx");
+    expect(nav).toContain("{MARKETING_NAV_LOGIN.label}");
+    expect(nav).toContain("{MARKETING_NAV_SIGNUP.label}");
+    const css = read("app/globals.css");
+    expect(css).toMatch(
+      /\.marketing \.hero-h1 em\.hero-h1__accent\s*\{\s*color:\s*var\(--gold\);/,
+    );
+    expect(css).not.toContain(".lede.hero-copy-defense");
+    expect(css).not.toContain(".hero-cta-note");
+    expect(css).not.toContain(".hero-cta-primary");
+    expect(css).not.toContain(".hero-secondary");
+    expect(css).toMatch(/\.hero-scroll-cue\s*\{[^}]*color:\s*var\(--gold\)/);
+    expect(css).toMatch(/\.hero-scroll-cue:hover svg\s*\{\s*animation:\s*bob/);
   });
 
   it("keeps teaser destinations unchanged", () => {

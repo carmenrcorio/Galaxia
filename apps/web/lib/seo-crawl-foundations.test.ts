@@ -144,7 +144,7 @@ describe("homepage meta description", () => {
     const seo = readRoute("apps/web/lib/homepage-seo.ts");
     const match = seo.match(/export const HOMEPAGE_DESCRIPTION =\s*\n\s*"([^"]+)"/);
     expect(match?.[1]).toBe(
-      "Galaxia computes the real birth chart of everyone in your life, your partner, your parents, your friends, the ones you have lost, and tells you what each of them needs from you. Real astrology, plain language, no horoscopes.",
+      "Your Life. Your People. Your Galaxy. Galaxia computes the real birth chart of everyone in your life, your partner, your parents, your friends, the ones you have lost, and tells you what each of them needs from you. Real astrology, plain language, no horoscopes.",
     );
   });
 });

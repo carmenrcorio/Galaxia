@@ -27,7 +27,8 @@ export function Hero() {
     <header className="hero container">
       <div className="hero-grid">
         <div className="hero-text">
-          <span className="eyebrow fade-in">Your life. Your people. Your galaxy.</span>
+          {/* FOUNDER-REVIEW: locked homepage tagline. Eyebrow CSS still uppercases it. */}
+          <span className="eyebrow fade-in">Your Life. Your People. Your Galaxy.</span>
           <h1 className="hero-h1 fade-in fade-in-delay-1">
             {/* FOUNDER-REVIEW: homepage hero headline. Gold italic on the terminal beat, matching close-h. */}
             Better understand the people <em className="hero-h1__accent">in your life</em>

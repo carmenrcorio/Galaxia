@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { HOMEPAGE_DESCRIPTION } from "./homepage-seo";
+import { HOMEPAGE_DESCRIPTION, HOMEPAGE_JSON_LD_DESCRIPTION } from "./homepage-seo";
 import { SOFTWARE_APPLICATION_JSON_LD } from "./homepage-software-application-json-ld";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
@@ -29,14 +29,16 @@ describe("homepage SoftwareApplication JSON-LD", () => {
     expect(src).not.toMatch(/operatingSystem:\s*"iOS/);
   });
 
-  it("keeps SoftwareApplication shape and matches homepage metadata description", () => {
+  it("keeps SoftwareApplication shape and an accurate description without the tagline slogan", () => {
     expect(SOFTWARE_APPLICATION_JSON_LD["@type"]).toBe("SoftwareApplication");
     expect(SOFTWARE_APPLICATION_JSON_LD["@context"]).toBe("https://schema.org");
     expect(SOFTWARE_APPLICATION_JSON_LD.name).toBe("Galaxia");
     expect(SOFTWARE_APPLICATION_JSON_LD.applicationCategory).toBe("LifestyleApplication");
     expect(SOFTWARE_APPLICATION_JSON_LD.operatingSystem).toBe("Web");
     expect(SOFTWARE_APPLICATION_JSON_LD.url).toBe("https://galaxiamea.com");
-    expect(SOFTWARE_APPLICATION_JSON_LD.description).toBe(HOMEPAGE_DESCRIPTION);
+    expect(SOFTWARE_APPLICATION_JSON_LD.description).toBe(HOMEPAGE_JSON_LD_DESCRIPTION);
+    expect(SOFTWARE_APPLICATION_JSON_LD.description).not.toBe(HOMEPAGE_DESCRIPTION);
+    expect(String(SOFTWARE_APPLICATION_JSON_LD.description)).not.toContain("Your Life. Your People. Your Galaxy.");
     expect(SOFTWARE_APPLICATION_JSON_LD.offers).toMatchObject({
       "@type": "Offer",
       price: "9.99",

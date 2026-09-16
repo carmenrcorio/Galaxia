@@ -1,6 +1,6 @@
 import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import type { JsonLdObject } from "../components/seo/json-ld";
-import { HOMEPAGE_DESCRIPTION } from "./homepage-seo";
+import { HOMEPAGE_JSON_LD_DESCRIPTION } from "./homepage-seo";
 
 /**
  * Homepage SoftwareApplication JSON-LD. Galaxia ships on the web only;
@@ -13,7 +13,7 @@ export const SOFTWARE_APPLICATION_JSON_LD: JsonLdObject = {
   applicationCategory: "LifestyleApplication",
   operatingSystem: "Web",
   url: "https://galaxiamea.com",
-  description: HOMEPAGE_DESCRIPTION,
+  description: HOMEPAGE_JSON_LD_DESCRIPTION,
   offers: {
     "@type": "Offer",
     price: "9.99",

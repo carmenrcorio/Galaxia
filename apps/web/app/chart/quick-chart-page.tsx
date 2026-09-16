@@ -25,6 +25,7 @@ import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
 import { ChartImageExport, chartExportFilename } from "../../components/chart-image-export";
 import { ChartPdfExport } from "../../components/chart-pdf-export";
+import { ChartSignTiles } from "../../components/chart-sign-tiles";
 import { ChartWheel } from "../../components/chart-wheel";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { NatalSignReveal } from "../../components/natal-sign-reveal";
@@ -208,6 +209,7 @@ export default function QuickChartPage() {
             {result.chart.cusps ? (
               <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
                 <ChartWheel chart={result.chart} exportSafe />
+                <ChartSignTiles chart={result.chart} />
               </section>
             ) : null}
             <HousesUnavailableCard

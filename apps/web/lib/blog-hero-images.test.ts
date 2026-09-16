@@ -44,6 +44,9 @@ describe("blog hero SVG content tool", () => {
       expect(svg).toContain("galaxiamea.com");
       expect(svg).not.toContain("\u2014");
     }
+    const synastryHero = readFileSync(join(SVG_DIR, "synastry-aspects-explained.svg"), "utf8");
+    expect(synastryHero).toContain("7 Synastry Aspects That Reveal How Relationships Feel");
+    expect(synastryHero).not.toContain("Predict");
   });
 });
 

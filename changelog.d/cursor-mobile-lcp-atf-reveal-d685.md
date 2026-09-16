@@ -11,3 +11,5 @@
 `[CHANGED]` **`CosmicBackground` is code-split on the five public LCP routes** via `components/cosmic-background-lazy.tsx` (`next/dynamic`, SSR on so aura/milkyway/grain still emit in HTML). `prefers-reduced-motion` is unchanged inside `cosmic-background.tsx` (one static frame, no twinkle/parallax). Signed-in `/app/layout.tsx` still statically imports the canvas module.
 
 B3 (defer `AppNav` / `TrialBanner` / `TimezoneSync` on `/chart`) is not in this branch.
+
+Lab Lighthouse after this branch (local `next start`, mobile Slow 4G, 3-run median) reports the `/` LCP as `header.hero > div.hero-grid > div.hero-text > h1.hero-h1` and `/why-galaxia` as `section#shift > h2` (no `.reveal`). `/chart` and `/chart/compare` still LCP on the already-visible `p.lede`. CLS stays 0.000. Remaining LCP time is element render delay from JS/fonts, not opacity.

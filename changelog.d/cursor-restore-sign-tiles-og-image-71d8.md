@@ -4,4 +4,4 @@
 
 `[FIXED]` **Natal wheel glance tiles.** `SignGlanceTiles` renders a horizontal row of dark 12px-radius cards directly under `ChartWheel` on `/app/person/[id]`, `/chart`, and `/s` singles. Data is the same chart object the wheel uses: confident `sun`/`moon` placements and `chart.asc` for Rising. Uncertain or missing placements are omitted, never fabricated. Moon uses the crescent body glyph; Sun and Rising use a purple zodiac-sign badge. Labels are SUN / MOON / RISING. Big three readings, NatalSignReveal, and the header glance line are unchanged.
 
-`[FIXED]` **Site-wide `/opengraph-image`.** Copied the current branded 1200x630 card (`apps/web/public/og-image.png`) to `apps/web/app/opengraph-image.png` so the Next.js file convention serves `image/png` at `/opengraph-image`. `app/layout.tsx` still restates `openGraph.images` as `/og-image.png`.
+`[FIXED]` **Site-wide `/opengraph-image`.** Added `apps/web/app/opengraph-image.tsx`, a Next.js metadata route that returns a 1200x630 branded PNG (`#09091c` ground, gold `#d4a855`, violet bloom, Cormorant Garamond, locked homepage tagline). `app/layout.tsx` still restates `openGraph.images` as `/og-image.png`.

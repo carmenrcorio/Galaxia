@@ -52,6 +52,11 @@ export interface VelaContext {
    * Vela may only name aspects that appear here. Always serialized, even if empty.
    */
   aspect_list?: VelaAspectListEntry[];
+  /**
+   * Three tightest aspects of the thread's primary kind (synastry on pair
+   * threads, natal otherwise). Empty when aspect_list is empty.
+   */
+  lead_aspects?: VelaAspectListEntry[];
   synastry?: {
     scores: Record<string, number>;
     flowAxis: string;
@@ -86,17 +91,108 @@ export const VELA_ASPECT_LIST_GUARDRAIL =
   "You may only name aspects that appear in the aspect_list field of this payload. If you are not given an aspect, you cannot name it. Never invent or infer an aspect not in the list.";
 
 /** No always-on parenting rule — framing is injected per-request via `velaFramingBlock`. */
-export const VELA_SYSTEM_PROMPT = `You are Vela, the guide inside Galaxia: a warm, perceptive astrologer and practical relationship coach.
-You interpret computed astrology facts only and never invent positions.
-Blend chart meaning with concrete relationship moves in plain language.
-When you are reading an aspect, name it in the answer (for example Moon square Saturn). Never describe a dynamic while leaving the aspect unnamed.
-${VELA_ASPECT_LIST_GUARDRAIL}
-The sky describes how a person is built, not what will happen to them. Guidance, not fortune telling.
-In shared mode, stay neutral and never expose private notes.
-${VELA_REMEMBRANCE_GUARDRAIL}
-Note: the private notes digest is a short recent sample (at most five), not full recall of every reflection.
-If risk-of-harm language appears, deprioritize astrology and encourage immediate real-world support.
-Keep answers short, specific, and warm. End with optional follow-up support and up to three suggested prompts.`;
+// FOUNDER-REVIEW: "Blend chart meaning with concrete relationship advice in plain language. Aspect names are not jargon here: name the aspect first, then say in everyday words what it means for these two people."
+// FOUNDER-REVIEW: "When lead_aspects is not empty, name at least one of them by planet and aspect type (for example Venus sextile Jupiter) in your first two sentences. Capitalize planet names."
+export const VELA_SYSTEM_PROMPT = `You are Vela, the guide inside Galaxia: a warm, perceptive astrologer and practical relationship coach who helps someone understand and tend the people they love.
+
+HOW YOU THINK
+- You are given COMPUTED astrology facts (planets, signs, aspects, generational signatures). Treat them as ground truth; never invent a placement.
+- Blend chart meaning with concrete relationship advice in plain language. Aspect names are not jargon here: name the aspect first, then say in everyday words what it means for these two people.
+- When you are reading an aspect, name it in the answer (for example Moon square Saturn). Never describe a dynamic while leaving the aspect unnamed.
+- ${VELA_ASPECT_LIST_GUARDRAIL}
+- When lead_aspects is not empty, name at least one of them by planet and aspect type (for example Venus sextile Jupiter) in your first two sentences. Capitalize planet names.
+- The sky describes how a person is built, not what will happen to them. Guidance, not fortune telling.
+- In shared mode, stay neutral and never reference private notes.
+- ${VELA_REMEMBRANCE_GUARDRAIL}
+- The private notes digest is a short recent sample (at most five), not full recall of every reflection.
+
+SAFETY
+- If crisis, abuse, or self-harm language appears, deprioritize astrology and guide immediately toward real-world support.
+
+OUTPUT
+- 2–5 sentences, warm and specific.
+- End with up to 3 short suggested follow-up prompts, each on its own line, prefixed with "→ ".`;
+
+const VELA_CITATION_PLANETS = [
+  "sun",
+  "moon",
+  "mercury",
+  "venus",
+  "mars",
+  "jupiter",
+  "saturn",
+  "uranus",
+  "neptune",
+  "pluto"
+] as const;
+
+const VELA_CITATION_ASPECTS = [
+  "conjunction",
+  "sextile",
+  "square",
+  "trine",
+  "opposition"
+] as const;
+
+const VELA_CITATION_RE = new RegExp(
+  `\\b(${VELA_CITATION_PLANETS.join("|")})\\s+(${VELA_CITATION_ASPECTS.join("|")})\\s+(${VELA_CITATION_PLANETS.join("|")})\\b`,
+  "gi"
+);
+
+function aspectPairKey(from: string, type: string, to: string): string {
+  const a = from.toLowerCase();
+  const b = to.toLowerCase();
+  const t = type.toLowerCase();
+  return a < b ? `${a}|${t}|${b}` : `${b}|${t}|${a}`;
+}
+
+/** Synastry first, then natal; each group by orb ascending. Does not mutate. */
+export function sortVelaAspectList<T extends { kind: "synastry" | "natal"; orb: number }>(
+  list: T[]
+): T[] {
+  return [...list].sort((a, b) => {
+    if (a.kind !== b.kind) return a.kind === "synastry" ? -1 : 1;
+    return a.orb - b.orb;
+  });
+}
+
+/** Three tightest entries of the thread's primary kind from an already-sorted list. */
+export function selectLeadAspects<T extends { kind: "synastry" | "natal" }>(
+  sortedList: T[],
+  primaryKind: "synastry" | "natal"
+): T[] {
+  return sortedList.filter((entry) => entry.kind === primaryKind).slice(0, 3);
+}
+
+export interface VelaAspectCitationCounts {
+  list_size: number;
+  named_in_list: number;
+  named_not_in_list: number;
+}
+
+/**
+ * Count unique "<Planet> <aspect type> <Planet>" mentions in a reply.
+ * Planet order does not matter. Used by the edge log and the eval harness.
+ */
+export function countVelaAspectCitations(
+  reply: string,
+  aspectList: Array<{ from: string; to: string; type: string }>
+): VelaAspectCitationCounts {
+  VELA_CITATION_RE.lastIndex = 0;
+  const listKeys = new Set(aspectList.map((a) => aspectPairKey(a.from, a.type, a.to)));
+  const namedIn = new Set<string>();
+  const namedOut = new Set<string>();
+  for (const match of reply.matchAll(VELA_CITATION_RE)) {
+    const key = aspectPairKey(match[1], match[2], match[3]);
+    if (listKeys.has(key)) namedIn.add(key);
+    else namedOut.add(key);
+  }
+  return {
+    list_size: aspectList.length,
+    named_in_list: namedIn.size,
+    named_not_in_list: namedOut.size
+  };
+}
 
 export function buildVelaContext(input: BuildVelaContextInput): VelaContext {
   return {
@@ -117,6 +213,7 @@ export function buildVelaPrompt(context: VelaContext): string {
       group: context.group,
       people: context.people,
       aspect_list: context.aspect_list ?? [],
+      lead_aspects: context.lead_aspects ?? [],
       synastry: context.synastry,
       generationalRelation: context.generationalRelation,
       cohort: context.cohort,

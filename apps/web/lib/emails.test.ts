@@ -365,6 +365,12 @@ describe("Trial emails — rewritten voice, preview, greeting, CAN-SPAM footer",
     expect(rendered.html).toContain(`To unsubscribe, <a href="${base.siteUrl}/api/unsubscribe?token=abc-123"`);
   });
 
+  it("HTML shell closer is the approved site closer", () => {
+    const rendered = day1Email(base);
+    expect(rendered.html).toContain('<p style="color:#8076a6;font-size:12px;margin-top:32px">Better understand the people in your life.</p>');
+    expect(rendered.html).not.toContain("written in the stars");
+  });
+
   it("trialEmailHeaders are RFC 8058 one-click on the same URL as the footer", () => {
     const url = trialUnsubscribeUrl(base.siteUrl, "abc-123");
     expect(url).toBe("https://galaxiamea.com/api/unsubscribe?token=abc-123");

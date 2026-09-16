@@ -3,6 +3,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import type { ReactNode } from "react";
+import { SITE_OG_ALT } from "../lib/brand-copy";
 import { publicEnv } from "../lib/env";
 import "./globals.css";
 
@@ -18,7 +19,7 @@ const SITE_DESCRIPTION = "Astrologically-driven relationship intelligence";
  * Reddit launch post) unfurl with a branded image instead of a gray link
  * with no preview.
  */
-const DEFAULT_OG_IMAGE = { url: "/og-image.png", width: 1200, height: 630, alt: "Galaxia: astrology to understand the people in your life" }; // FOUNDER-REVIEW
+const DEFAULT_OG_IMAGE = { url: "/og-image.png", width: 1200, height: 630, alt: SITE_OG_ALT };
 
 export const metadata: Metadata = {
   title: "Galaxia",

@@ -1,0 +1,261 @@
+# Lab Web Vitals against production. There is deliberately no root
+# vercel.json (ENGINEERING.md §2), and Vercel Speed Insights is field
+# data that needs real traffic. This workflow is the on-demand / weekly
+# Lighthouse lab measurement — report only, never a score gate.
+#
+# Fail only if Lighthouse cannot collect reports. Slow LCP/CLS/TBT are
+# written to the job summary as numbers, not as a red X.
+name: Lighthouse production
+
+on:
+  schedule:
+    # Weekly, Monday 06:23 UTC. Off-peak hour + a non-zero minute —
+    # GitHub's scheduler queue is congested at the top of every hour,
+    # which delays/drops runs there. Distinct from the other workflows'
+    # cron minutes (17 4, 13 *, 42 5, 17 13, 41 13).
+    - cron: "23 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: lighthouse-production
+  cancel-in-progress: true
+
+jobs:
+  lab:
+    name: lab
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      # upload-artifact (used by treosh/lighthouse-ci-action) needs this
+      # once a job-level permissions: block is present — omitted keys
+      # default to none, unlike the cron workflows that never upload.
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write Lighthouse CI config (mobile, no assertions)
+        run: |
+          cat > "${RUNNER_TEMP}/lighthouserc.json" <<'EOF'
+          {
+            "ci": {
+              "collect": {
+                "settings": {
+                  "formFactor": "mobile",
+                  "screenEmulation": {
+                    "mobile": true,
+                    "width": 412,
+                    "height": 823,
+                    "deviceScaleFactor": 1.75,
+                    "disabled": false
+                  },
+                  "chromeFlags": "--no-sandbox --disable-dev-shm-usage"
+                }
+              }
+            }
+          }
+          EOF
+
+      - name: Audit production URLs (mobile, 3 runs)
+        id: lhci
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            https://galaxiamea.com/
+            https://galaxiamea.com/chart
+            https://galaxiamea.com/chart/compare
+            https://galaxiamea.com/why-galaxia
+            https://galaxiamea.com/pricing
+          runs: "3"
+          configPath: ${{ runner.temp }}/lighthouserc.json
+          uploadArtifacts: true
+          artifactName: lighthouse-production-html
+
+      - name: Write job summary (median lab numbers)
+        env:
+          LHCI_RESULTS: ${{ steps.lhci.outputs.resultsPath }}
+        run: |
+          node <<'EOF'
+          const fs = require("fs");
+          const path = require("path");
+
+          const ORDER = [
+            "https://galaxiamea.com/",
+            "https://galaxiamea.com/chart",
+            "https://galaxiamea.com/chart/compare",
+            "https://galaxiamea.com/why-galaxia",
+            "https://galaxiamea.com/pricing",
+          ];
+          const LCP_GOOD_MS = 2500;
+          const CLS_GOOD = 0.1;
+
+          const resultsDir = process.env.LHCI_RESULTS || path.resolve(".lighthouseci");
+          if (!fs.existsSync(resultsDir)) {
+            console.error(`::error::Lighthouse results folder not found: ${resultsDir}`);
+            process.exit(1);
+          }
+
+          function normalizeUrl(url) {
+            try {
+              const u = new URL(url);
+              const pathname = u.pathname === "/" ? "/" : u.pathname.replace(/\/+$/, "");
+              return `${u.origin}${pathname}`;
+            } catch {
+              return url;
+            }
+          }
+
+          function loadReports(dir) {
+            const reports = [];
+            const manifestPath = path.join(dir, "manifest.json");
+            if (fs.existsSync(manifestPath)) {
+              const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+              for (const entry of manifest) {
+                const jsonPath = entry.jsonPath
+                  ? (path.isAbsolute(entry.jsonPath) ? entry.jsonPath : path.join(dir, entry.jsonPath))
+                  : null;
+                if (jsonPath && fs.existsSync(jsonPath)) {
+                  reports.push(JSON.parse(fs.readFileSync(jsonPath, "utf8")));
+                }
+              }
+            }
+            if (reports.length > 0) return reports;
+            for (const name of fs.readdirSync(dir)) {
+              if (name.endsWith(".report.json") || /^lhr-.*\.json$/.test(name)) {
+                reports.push(JSON.parse(fs.readFileSync(path.join(dir, name), "utf8")));
+              }
+            }
+            return reports;
+          }
+
+          function numeric(lhr, id) {
+            const value = lhr.audits?.[id]?.numericValue;
+            if (typeof value !== "number" || Number.isNaN(value)) {
+              throw new Error(`Missing numeric audit ${id} on ${lhr.requestedUrl || lhr.finalUrl}`);
+            }
+            return value;
+          }
+
+          function opportunities(lhr) {
+            return Object.values(lhr.audits || {})
+              .filter((a) => a && a.details && a.details.type === "opportunity")
+              .map((a) => ({
+                title: a.title,
+                savingsMs: a.details.overallSavingsMs || 0,
+              }))
+              .filter((a) => a.savingsMs > 0)
+              .sort((a, b) => b.savingsMs - a.savingsMs)
+              .slice(0, 3);
+          }
+
+          function median(values) {
+            const sorted = [...values].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            if (sorted.length === 0) throw new Error("median of empty list");
+            if (sorted.length % 2 === 0) return (sorted[mid - 1] + sorted[mid]) / 2;
+            return sorted[mid];
+          }
+
+          function fmtScore(n) {
+            return String(Math.round(n));
+          }
+          function fmtSec(ms) {
+            return `${(ms / 1000).toFixed(2)}s`;
+          }
+          function fmtMs(ms) {
+            return `${Math.round(ms)}ms`;
+          }
+          function fmtCls(n) {
+            return n.toFixed(3);
+          }
+          function fmtSavings(ms) {
+            return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.round(ms)}ms`;
+          }
+
+          const reports = loadReports(resultsDir);
+          if (reports.length === 0) {
+            console.error(`::error::Lighthouse produced no JSON reports in ${resultsDir}`);
+            process.exit(1);
+          }
+
+          const byUrl = new Map();
+          for (const lhr of reports) {
+            const url = normalizeUrl(lhr.requestedUrl || lhr.finalUrl);
+            if (!byUrl.has(url)) byUrl.set(url, []);
+            byUrl.get(url).push(lhr);
+          }
+
+          const missing = ORDER.filter((url) => !byUrl.has(normalizeUrl(url)));
+          if (missing.length > 0) {
+            console.error(`::error::Lighthouse did not report every URL. Missing: ${missing.join(", ")}`);
+            process.exit(1);
+          }
+
+          const rows = [];
+          const slow = [];
+          for (const url of ORDER) {
+            const runs = byUrl.get(normalizeUrl(url));
+            const scores = runs.map((lhr) => (lhr.categories?.performance?.score ?? 0) * 100);
+            const lcps = runs.map((lhr) => numeric(lhr, "largest-contentful-paint"));
+            const clss = runs.map((lhr) => numeric(lhr, "cumulative-layout-shift"));
+            const tbts = runs.map((lhr) => numeric(lhr, "total-blocking-time"));
+            const fcps = runs.map((lhr) => numeric(lhr, "first-contentful-paint"));
+            const sis = runs.map((lhr) => numeric(lhr, "speed-index"));
+            const medLcp = median(lcps);
+            const medCls = median(clss);
+            const lcpRun = [...runs].sort(
+              (a, b) => numeric(a, "largest-contentful-paint") - numeric(b, "largest-contentful-paint")
+            )[Math.floor((runs.length - 1) / 2)];
+            const lcpCell = medLcp > LCP_GOOD_MS ? `${fmtSec(medLcp)} **over 2.5s**` : fmtSec(medLcp);
+            const clsCell = medCls > CLS_GOOD ? `${fmtCls(medCls)} **over 0.1**` : fmtCls(medCls);
+            rows.push({
+              url,
+              runs: runs.length,
+              performance: fmtScore(median(scores)),
+              lcp: lcpCell,
+              cls: clsCell,
+              tbt: fmtMs(median(tbts)),
+              fcp: fmtSec(median(fcps)),
+              si: fmtSec(median(sis)),
+            });
+            if (medLcp > LCP_GOOD_MS) {
+              slow.push({ url, lcp: fmtSec(medLcp), opportunities: opportunities(lcpRun) });
+            }
+          }
+
+          const header = [
+            "| URL | Performance | LCP | CLS | TBT | FCP | Speed Index |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+          ];
+          const body = rows.map(
+            (r) => `| ${r.url} | ${r.performance} | ${r.lcp} | ${r.cls} | ${r.tbt} | ${r.fcp} | ${r.si} |`
+          );
+          const table = [...header, ...body].join("\n");
+
+          const lines = [];
+          lines.push("## Lighthouse production (mobile lab, median of 3 runs)");
+          lines.push("");
+          lines.push(table);
+          lines.push("");
+          lines.push(`Preset: Lighthouse mobile. Runs per URL: ${rows[0]?.runs ?? 3}. Slow numbers are a report, not a failure.`);
+          if (slow.length > 0) {
+            lines.push("");
+            lines.push("### URLs with LCP over 2.5s (top 3 opportunities by estimated savings)");
+            for (const item of slow) {
+              lines.push("");
+              lines.push(`**${item.url}** (median LCP ${item.lcp})`);
+              if (item.opportunities.length === 0) {
+                lines.push("- Lighthouse listed no opportunity audits with estimated savings.");
+              } else {
+                for (const opp of item.opportunities) {
+                  lines.push(`- ${opp.title}: ${fmtSavings(opp.savingsMs)}`);
+                }
+              }
+            }
+          }
+
+          const markdown = lines.join("\n") + "\n";
+          const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+          if (summaryPath) fs.appendFileSync(summaryPath, markdown);
+          process.stdout.write(markdown);
+          EOF

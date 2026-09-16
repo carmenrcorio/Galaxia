@@ -185,7 +185,7 @@ The category's worst behavior lives here. Ours is the opposite, and we should sa
 > Nothing here is locked. This is the whole product.
 
 **The one-sentence pitch, for the paywall header, ads, and the App Store:**
-> Understand the people you love — through the sky you were born under.
+> Understand the people in your life — through the sky you were born under.
 
 **Alternate, sharper:**
 > Astrology, turned into something you can use — with the people already in your life.

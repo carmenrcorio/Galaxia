@@ -1,6 +1,6 @@
 ## Homepage tagline is the locked three-beat line (branch `cursor/homepage-tagline-galaxy-beea`) — 2026-09-16
 
-**Trigger**: F2 planted "Understand the people you love" as the homepage `<title>` and a close variant on metadata, store, and mobile. That line is retired. The founder locked `Your Life. Your People. Your Galaxy.`
+**Trigger**: F2 planted "Understand the people in your life" as the homepage `<title>` and a close variant on metadata, store, and mobile. That line is retired. The founder locked `Your Life. Your People. Your Galaxy.`
 
 `[CHANGED]` **Homepage `<title>`, Open Graph title, and Twitter title** (`apps/web/lib/homepage-seo.ts`, wired by `app/page.tsx`). Now `Your Life. Your People. Your Galaxy. | Galaxia`. FOUNDER-REVIEW.
 
@@ -18,6 +18,6 @@
 
 `[OPEN]` **iOS App Store subtitle** remains "Understand who you love" (`content/store/app-store.md`). The locked line is 37 characters and the subtitle cap is 30.
 
-`[OPEN]` **Paid social primary text**, OG/Twitter image alt ("Galaxia: astrology for the people you love"), footer/email closer ("The people you love, written in the stars."), Why Galaxia H2 ("Astrology forgot the people you love."), and `design/galaxia-pricing-copy.md` one-sentence pitch still use related phrasing, not the locked line.
+`[OPEN]` **Paid social primary text**, OG/Twitter image alt ("Galaxia: astrology for understand the people in your life"), footer/email closer ("Understand the people in your life, written in the stars."), Why Galaxia H2 ("Astrology forgot understand the people in your life."), and `design/galaxia-pricing-copy.md` one-sentence pitch still use related phrasing, not the locked line.
 
 No em dashes. Every new user-facing string tagged FOUNDER-REVIEW.

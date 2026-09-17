@@ -24,10 +24,11 @@ import {
   glowHaloMultiplier,
   resolveNodeColor,
   usesMemorialGlyph,
+  type CustomGalaxyPosition,
   type HonorEdge,
 } from "@galaxia/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet } from "react-native";
+import { StyleSheet, View, type GestureResponderEvent } from "react-native";
 import {
   applyEmaShed,
   ATM_BAKE_MS,
@@ -40,6 +41,9 @@ import {
   clampGalaxyLabelPosition,
   cohortRgba,
   coreRadius,
+  DRAG_ACTIVATE_PX,
+  DRAG_HOLD_MS,
+  dragSeatFromPointer,
   easeOutCubic,
   effectiveFor,
   elementStrokeColor,
@@ -55,6 +59,7 @@ import {
   labelPositions,
   linkProgress,
   MEMORIAL_FLARE_R,
+  modelWithPending,
   nodePos,
   quadraticPoint,
   REDUCED_FADE_MS,
@@ -70,6 +75,7 @@ import {
   type ConstellationModel,
   type ConstellationPerson,
   type EmaShed,
+  type PendingSeat,
   type SynastryLink,
 } from "../lib/constellation-paint";
 
@@ -88,6 +94,11 @@ export type ConstellationMapProps = {
   reduceMotion: boolean;
   showRings?: boolean;
   onSelectPerson: (personId: string) => void;
+  onCommitCustomPosition?: (
+    personId: string,
+    next: CustomGalaxyPosition,
+    previous: CustomGalaxyPosition | null,
+  ) => void;
 };
 
 function makeFill(color: string) {
@@ -604,6 +615,7 @@ function drawBody(
   globalFade: number,
   lowPerf: boolean,
   isActive: boolean,
+  isDragging: boolean,
   font: SkFont | null,
 ) {
   const p = model.people[i];
@@ -614,7 +626,7 @@ function drawBody(
   const memorialPattern = usesMemorialGlyph(p) ? getMemorialConstellation(p.memorial_constellation) : null;
   const ign = ignitionAt(model, p.id, elapsed, reduced, globalFade);
   if (ign.alpha <= 0.001) return;
-  const scale = reduced ? 1 : Math.max(0.001, ign.scale);
+  const scale = (reduced ? 1 : Math.max(0.001, ign.scale)) * (isDragging ? 1.3 : 1);
   const R = R0 * scale;
   const tw = twinkleAt(model.phases[i], t, reduced);
   const bodyAlpha = reduced ? globalFade : easeOutCubic(ign.raw);
@@ -776,9 +788,21 @@ function recordMotion(
   meteors: Meteor[],
   activeTransitIds: readonly string[],
   font: SkFont | null,
+  pending: PendingSeat | null,
+  dragging: boolean,
 ): SkPicture {
   const recorder = Skia.PictureRecorder();
   const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, model.width, model.height));
+
+  if (pending && dragging) {
+    const { cx, cy, radX, radY } = model.geom;
+    const rx = pending.radiusPct * radX;
+    const ry = pending.radiusPct * radY;
+    const oval = Skia.XYWHRect(cx - rx, cy - ry, rx * 2, ry * 2);
+    const guide = makeStroke("rgba(255,255,255,0.25)", 1);
+    guide.setPathEffect(Skia.PathEffect.MakeDash([4, 6], 0));
+    canvas.drawOval(oval, guide);
+  }
 
   const byId = new Map(model.people.map((p, i) => [p.id, positions[i]]));
   model.links.forEach((link, idx) => {
@@ -815,6 +839,7 @@ function recordMotion(
       globalFade,
       lowPerf,
       activeTransitIds.includes(model.people[i].id),
+      dragging && pending?.personId === model.people[i].id,
       font,
     );
   }
@@ -833,6 +858,7 @@ export function ConstellationMap({
   reduceMotion,
   showRings = true,
   onSelectPerson,
+  onCommitCustomPosition,
 }: ConstellationMapProps) {
   const font = useFont(INTER_REGULAR, LABEL_FONT_PX);
   const model = useMemo(
@@ -852,12 +878,24 @@ export function ConstellationMap({
     positions: people.map((p) => basePos(model, p, false)),
     lite: false,
   });
+  const pendingRef = useRef<PendingSeat | null>(null);
+  const dragRef = useRef<{
+    personId: string;
+    holdTimer: ReturnType<typeof setTimeout> | null;
+    active: boolean;
+    moved: boolean;
+    startX: number;
+    startY: number;
+    current: CustomGalaxyPosition | null;
+    previousCustom: CustomGalaxyPosition | null;
+  } | null>(null);
   const animRef = useRef({
     lastFrame: 0,
     entranceStart: 0 as number | null,
     entranceKey: "",
     lastAtmBake: 0,
     ringBakeKey: "",
+    restart: undefined as undefined | (() => void),
     ema: { emaFrameMs: 16.7, warmup: 0, meteorsOff: reduceMotion, lowPerf: false } as EmaShed,
     meteors: [] as Meteor[],
     nextMeteorAt: 0,
@@ -896,18 +934,21 @@ export function ConstellationMap({
         anim.ema = applyEmaShed(anim.ema, dt, reduceMotion);
       }
       const lite = anim.ema.lowPerf;
+      const pending = pendingRef.current;
+      const dragging = Boolean(dragRef.current?.active);
+      const live = modelWithPending(model, pending);
 
-      const positions = model.people.map((_, i) =>
-        nodePos(model, i, now, elapsed, reduceMotion, globalFade, lite),
+      const positions = live.people.map((_, i) =>
+        nodePos(live, i, now, elapsed, reduceMotion, globalFade, lite),
       );
-      hitRef.current = { model, positions, lite };
-      const labels = labelPositions(model, positions, lite);
+      hitRef.current = { model: live, positions, lite };
+      const labels = labelPositions(live, positions, lite);
 
       const nebFade = reduceMotion ? globalFade : clamp01((elapsed - 200) / 1200);
       const bakeEvery = nebFade < 0.999 ? 120 : ATM_BAKE_MS;
       if (anim.lastAtmBake === 0 || now - anim.lastAtmBake > bakeEvery) {
         setAtmPicture(
-          recordAtmosphere(model, positions, cohortByPerson, now, nebFade, reduceMotion, lite),
+          recordAtmosphere(live, positions, cohortByPerson, now, nebFade, reduceMotion, lite),
         );
         anim.lastAtmBake = now;
       }
@@ -950,7 +991,7 @@ export function ConstellationMap({
 
       setMotionPicture(
         recordMotion(
-          model,
+          live,
           positions,
           labels,
           now,
@@ -962,42 +1003,138 @@ export function ConstellationMap({
           anim.meteors,
           activeTransitIds,
           font,
+          pending,
+          dragging,
         ),
       );
 
       if (!reduceMotion) raf = requestAnimationFrame(draw);
-      else if (globalFade < 1) raf = requestAnimationFrame(draw);
+      else if (globalFade < 1 || dragging) raf = requestAnimationFrame(draw);
     };
 
     raf = requestAnimationFrame(draw);
+    anim.restart = () => {
+      if (cancelled) return;
+      raf = requestAnimationFrame(draw);
+    };
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      if (dragRef.current?.holdTimer) clearTimeout(dragRef.current.holdTimer);
     };
   }, [model, width, height, people, cohortByPerson, activeTransitIds, reduceMotion, font, showRings]);
 
-  const onPress = useCallback(
-    (event: { nativeEvent: { locationX: number; locationY: number } }) => {
-      const { locationX, locationY } = event.nativeEvent;
+  const location = (event: GestureResponderEvent) => ({
+    x: event.nativeEvent.locationX,
+    y: event.nativeEvent.locationY,
+  });
+
+  const onGrant = useCallback(
+    (event: GestureResponderEvent) => {
+      const { x, y } = location(event);
       const hit = hitTestAt(
         hitRef.current.model,
-        locationX,
-        locationY,
+        x,
+        y,
         hitRef.current.positions,
         hitRef.current.lite,
       );
-      if (hit) onSelectPerson(hit.id);
+      if (!hit || hit.is_self) {
+        dragRef.current = null;
+        pendingRef.current = null;
+        return;
+      }
+      dragRef.current = {
+        personId: hit.id,
+        holdTimer: setTimeout(() => {
+          if (dragRef.current && dragRef.current.personId === hit.id) {
+            dragRef.current.active = true;
+            animRef.current.restart?.();
+          }
+        }, DRAG_HOLD_MS),
+        active: false,
+        moved: false,
+        startX: x,
+        startY: y,
+        current: null,
+        previousCustom: hit.custom_position ?? null,
+      };
     },
-    [onSelectPerson],
+    [],
+  );
+
+  const onMove = useCallback((event: GestureResponderEvent) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const { x, y } = location(event);
+    const dist = Math.hypot(x - drag.startX, y - drag.startY);
+    if (!drag.active && dist >= DRAG_ACTIVATE_PX) {
+      drag.active = true;
+      if (drag.holdTimer) {
+        clearTimeout(drag.holdTimer);
+        drag.holdTimer = null;
+      }
+      animRef.current.restart?.();
+    }
+    if (!drag.active) return;
+    drag.moved = true;
+    const person = hitRef.current.model.people.find((p) => p.id === drag.personId);
+    if (!person) return;
+    const seat = dragSeatFromPointer(x, y, person, hitRef.current.lite, hitRef.current.model.geom);
+    drag.current = seat;
+    pendingRef.current = { personId: drag.personId, angle: seat.angle, radiusPct: seat.radius_pct };
+    animRef.current.restart?.();
+  }, []);
+
+  const onRelease = useCallback(
+    (event: GestureResponderEvent) => {
+      const drag = dragRef.current;
+      if (drag?.holdTimer) clearTimeout(drag.holdTimer);
+      dragRef.current = null;
+      if (!drag) {
+        const { x, y } = location(event);
+        const hit = hitTestAt(
+          hitRef.current.model,
+          x,
+          y,
+          hitRef.current.positions,
+          hitRef.current.lite,
+        );
+        if (hit) onSelectPerson(hit.id);
+        return;
+      }
+      if (!drag.active || !drag.moved || !drag.current) {
+        pendingRef.current = null;
+        const { x, y } = location(event);
+        const hit = hitTestAt(
+          hitRef.current.model,
+          x,
+          y,
+          hitRef.current.positions,
+          hitRef.current.lite,
+        );
+        if (hit) onSelectPerson(hit.id);
+        return;
+      }
+      const next = drag.current;
+      pendingRef.current = null;
+      onCommitCustomPosition?.(drag.personId, next, drag.previousCustom);
+    },
+    [onSelectPerson, onCommitCustomPosition],
   );
 
   if (width < 2 || height < 2) return null;
 
   return (
-    <Pressable
+    <View
       accessibilityRole="image"
-      accessibilityLabel="Constellation. Tap a star to open a profile."
-      onPress={onPress}
+      accessibilityLabel="Constellation. Tap a star to open a profile. Hold and drag to move a star."
+      onStartShouldSetResponder={() => true}
+      onMoveShouldSetResponder={() => true}
+      onResponderGrant={onGrant}
+      onResponderMove={onMove}
+      onResponderRelease={onRelease}
+      onResponderTerminate={onRelease}
       style={{ width, height }}
     >
       <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -1006,6 +1143,6 @@ export function ConstellationMap({
         {motionPicture ? <Picture picture={motionPicture} /> : null}
         {grainPicture ? <Picture picture={grainPicture} /> : null}
       </Canvas>
-    </Pressable>
+    </View>
   );
 }

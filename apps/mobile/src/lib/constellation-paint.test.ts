@@ -9,6 +9,8 @@ import {
   nodePos,
   quadraticPoint,
   bodyLayerPad,
+  overlayPerson,
+  dragSeatFromPointer,
   type ConstellationPerson,
 } from "./constellation-paint";
 
@@ -135,5 +137,17 @@ describe("constellation paint math", () => {
     });
     expect(bodyLayerPad(self, false)).toBeGreaterThan(80);
     expect(bodyLayerPad(memorial, false)).toBeGreaterThan(80);
+  });
+
+  it("overlays a pending custom seat and never lets self leave the core", () => {
+    const friend = person({ id: "ada", relation: "friend", display_name: "Ada" });
+    const self = person({ id: "self", is_self: true, relation: "self", display_name: "Me" });
+    const pending = { personId: "ada", angle: 0.4, radiusPct: 0.7 };
+    expect(overlayPerson(friend, pending).custom_position).toEqual({ angle: 0.4, radius_pct: 0.7 });
+    expect(overlayPerson(self, { personId: "self", angle: 1, radiusPct: 0.9 }).custom_position).toBeUndefined();
+    const geom = { cx: 195, cy: 210, radX: 140, radY: 150 };
+    const seat = dragSeatFromPointer(195 + 140, 210, friend, false, geom);
+    expect(seat.angle).toBeCloseTo(0, 5);
+    expect(seat.radius_pct).toBeGreaterThan(0.05);
   });
 });

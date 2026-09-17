@@ -8,6 +8,6 @@
 
 `[ADDED]` **Bi-wheel on Compare.** `orientSynastryWheel` so self owns the inner house frame. Houses gate uses `COMPARE_WHEEL_NEEDS_HOUSES`. Charts stay on the compare result (`chartA` / `chartB`).
 
-`[TESTED]` Core geometry vs the web layer table, web ChartWheel suite, mobile wheel-twin wiring, precision select update. Metro boot + typecheck. Device unverified (Cloud Agent cannot prove native UI).
+`[TESTED]` Core geometry vs the web layer table, web ChartWheel suite, mobile wheel-twin wiring, precision select update. Web wiring tests now read Expo tabs paths (`(tabs)/home` / `compare` / `vela` / `settings`) left behind by Phase 2. Metro boot + typecheck. Device unverified (Cloud Agent cannot prove native UI).
 
 `[OPEN]` Device unverified. Phase 4 is the living constellation.

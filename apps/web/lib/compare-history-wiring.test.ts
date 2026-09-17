@@ -30,7 +30,7 @@ describe("Compare history wiring", () => {
   });
 
   it("mobile Compare persists the same pair ledger and leads with the same copy", () => {
-    const src = read("apps/mobile/app/(app)/compare.tsx");
+    const src = read("apps/mobile/app/(app)/(tabs)/compare.tsx");
     expect(src).toContain('from("comparison_history")');
     expect(src).toContain("COMPARE_HISTORY_HEADING");
     expect(src).toContain("COMPARE_HISTORY_EMPTY");

@@ -7,7 +7,7 @@ const home = readFileSync(join(REPO_ROOT, "apps/web/app/app/page.tsx"), "utf8");
 const coreGeom = readFileSync(join(REPO_ROOT, "packages/core/src/galaxy-seat.ts"), "utf8");
 const coreVisual = readFileSync(join(REPO_ROOT, "packages/core/src/galaxy-visual.ts"), "utf8");
 const editPanel = readFileSync(join(REPO_ROOT, "apps/web/components/edit-person-panel.tsx"), "utf8");
-const mobileHome = readFileSync(join(REPO_ROOT, "apps/mobile/app/(app)/home.tsx"), "utf8");
+const mobileHome = readFileSync(join(REPO_ROOT, "apps/mobile/app/(app)/(tabs)/home.tsx"), "utf8");
 const migration = readFileSync(
   join(REPO_ROOT, "supabase/migrations/20260914270000_people_star_scale_and_free_seat.sql"),
   "utf8",

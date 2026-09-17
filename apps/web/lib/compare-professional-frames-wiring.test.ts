@@ -29,7 +29,7 @@ import {
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 const WEB_COMPARE = "apps/web/app/app/compare/page.tsx";
-const MOBILE_COMPARE = "apps/mobile/app/(app)/compare.tsx";
+const MOBILE_COMPARE = "apps/mobile/app/(app)/(tabs)/compare.tsx";
 const OG_ROUTE = "apps/web/app/s/[token]/opengraph-image.tsx";
 const read = (path: string) => readFileSync(join(REPO_ROOT, path), "utf8");
 

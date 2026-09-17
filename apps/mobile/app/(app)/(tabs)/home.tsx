@@ -126,6 +126,7 @@ export default function HomeScreen() {
   const [constellationFailed, setConstellationFailed] = useState(false);
   const [boxWidth, setBoxWidth] = useState(340);
   const [showRings, setShowRings] = useState(true);
+  const [draggingSeat, setDraggingSeat] = useState(false);
   const skeletonFade = useRef(new Animated.Value(1)).current;
   const liveFade = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
@@ -480,7 +481,12 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView ref={scrollRef} style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
+    <ScrollView
+      ref={scrollRef}
+      style={screenFill}
+      scrollEnabled={!draggingSeat}
+      contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}
+    >
       <Text style={{ color: tokens.colors.cream, fontSize: 33, fontFamily: fonts.frauncesSemi }}>Galaxia Mea</Text>
             <Text style={{ color: tokens.colors.mist, lineHeight: 21, fontFamily: fonts.inter }}>
         {welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."} Here’s your constellation.
@@ -579,6 +585,7 @@ export default function HomeScreen() {
                     activeTransitIds={activeTransitIds}
                     reduceMotion={reduceMotion}
                     showRings={showRings}
+                    onDragActiveChange={setDraggingSeat}
                     onSelectPerson={(personId) =>
                       router.push({ pathname: "/profile/[personId]", params: { personId } })
                     }

@@ -33,6 +33,8 @@ describe("Phase 4 constellation twin: Skia Home map from shared geometry", () =>
     expect(home).toContain("Hide orbital rings");
     expect(home).toContain("Tap a star to open · hold to move");
     expect(home).toContain("onCommitCustomPosition");
+    expect(home).toContain("onDragActiveChange");
+    expect(home).toContain("scrollEnabled={!draggingSeat}");
     expect(home).toContain('.eq("owner_id", owner)');
     expect(home).not.toContain("borderRadius: 16");
     expect(home).not.toContain("CONSTELLATION_BOX_HEIGHT");
@@ -66,6 +68,8 @@ describe("Phase 4 constellation twin: Skia Home map from shared geometry", () =>
     expect(map).toContain("DRAG_HOLD_MS");
     expect(map).toContain("if (!hit || hit.is_self)");
     expect(map).toContain("onCommitCustomPosition");
+    expect(map).toContain("onStartShouldSetResponder");
+    expect(map).toContain("return Boolean(hitAt(x, y))");
     expect(existsSync(resolve(mobileRoot, "assets/fonts/Inter-Regular.ttf"))).toBe(true);
   });
 

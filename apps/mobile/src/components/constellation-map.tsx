@@ -99,6 +99,7 @@ export type ConstellationMapProps = {
     next: CustomGalaxyPosition,
     previous: CustomGalaxyPosition | null,
   ) => void;
+  onDragActiveChange?: (active: boolean) => void;
 };
 
 function makeFill(color: string) {
@@ -859,6 +860,7 @@ export function ConstellationMap({
   showRings = true,
   onSelectPerson,
   onCommitCustomPosition,
+  onDragActiveChange,
 }: ConstellationMapProps) {
   const font = useFont(INTER_REGULAR, LABEL_FONT_PX);
   const model = useMemo(
@@ -1029,16 +1031,18 @@ export function ConstellationMap({
     y: event.nativeEvent.locationY,
   });
 
+  const hitAt = (x: number, y: number) =>
+    hitTestAt(hitRef.current.model, x, y, hitRef.current.positions, hitRef.current.lite);
+
+  const setDragActive = (active: boolean) => {
+    onDragActiveChange?.(active);
+    if (active) animRef.current.restart?.();
+  };
+
   const onGrant = useCallback(
     (event: GestureResponderEvent) => {
       const { x, y } = location(event);
-      const hit = hitTestAt(
-        hitRef.current.model,
-        x,
-        y,
-        hitRef.current.positions,
-        hitRef.current.lite,
-      );
+      const hit = hitAt(x, y);
       if (!hit || hit.is_self) {
         dragRef.current = null;
         pendingRef.current = null;
@@ -1049,7 +1053,7 @@ export function ConstellationMap({
         holdTimer: setTimeout(() => {
           if (dragRef.current && dragRef.current.personId === hit.id) {
             dragRef.current.active = true;
-            animRef.current.restart?.();
+            setDragActive(true);
           }
         }, DRAG_HOLD_MS),
         active: false,
@@ -1060,59 +1064,51 @@ export function ConstellationMap({
         previousCustom: hit.custom_position ?? null,
       };
     },
-    [],
+    [onDragActiveChange],
   );
 
-  const onMove = useCallback((event: GestureResponderEvent) => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    const { x, y } = location(event);
-    const dist = Math.hypot(x - drag.startX, y - drag.startY);
-    if (!drag.active && dist >= DRAG_ACTIVATE_PX) {
-      drag.active = true;
-      if (drag.holdTimer) {
-        clearTimeout(drag.holdTimer);
-        drag.holdTimer = null;
+  const onMove = useCallback(
+    (event: GestureResponderEvent) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const { x, y } = location(event);
+      const dist = Math.hypot(x - drag.startX, y - drag.startY);
+      if (!drag.active && dist >= DRAG_ACTIVATE_PX) {
+        drag.active = true;
+        if (drag.holdTimer) {
+          clearTimeout(drag.holdTimer);
+          drag.holdTimer = null;
+        }
+        setDragActive(true);
       }
+      if (!drag.active) return;
+      drag.moved = true;
+      const person = hitRef.current.model.people.find((p) => p.id === drag.personId);
+      if (!person) return;
+      const seat = dragSeatFromPointer(x, y, person, hitRef.current.lite, hitRef.current.model.geom);
+      drag.current = seat;
+      pendingRef.current = { personId: drag.personId, angle: seat.angle, radiusPct: seat.radius_pct };
       animRef.current.restart?.();
-    }
-    if (!drag.active) return;
-    drag.moved = true;
-    const person = hitRef.current.model.people.find((p) => p.id === drag.personId);
-    if (!person) return;
-    const seat = dragSeatFromPointer(x, y, person, hitRef.current.lite, hitRef.current.model.geom);
-    drag.current = seat;
-    pendingRef.current = { personId: drag.personId, angle: seat.angle, radiusPct: seat.radius_pct };
-    animRef.current.restart?.();
-  }, []);
+    },
+    [onDragActiveChange],
+  );
 
   const onRelease = useCallback(
     (event: GestureResponderEvent) => {
       const drag = dragRef.current;
       if (drag?.holdTimer) clearTimeout(drag.holdTimer);
       dragRef.current = null;
+      setDragActive(false);
       if (!drag) {
         const { x, y } = location(event);
-        const hit = hitTestAt(
-          hitRef.current.model,
-          x,
-          y,
-          hitRef.current.positions,
-          hitRef.current.lite,
-        );
+        const hit = hitAt(x, y);
         if (hit) onSelectPerson(hit.id);
         return;
       }
       if (!drag.active || !drag.moved || !drag.current) {
         pendingRef.current = null;
         const { x, y } = location(event);
-        const hit = hitTestAt(
-          hitRef.current.model,
-          x,
-          y,
-          hitRef.current.positions,
-          hitRef.current.lite,
-        );
+        const hit = hitAt(x, y);
         if (hit) onSelectPerson(hit.id);
         return;
       }
@@ -1120,7 +1116,7 @@ export function ConstellationMap({
       pendingRef.current = null;
       onCommitCustomPosition?.(drag.personId, next, drag.previousCustom);
     },
-    [onSelectPerson, onCommitCustomPosition],
+    [onSelectPerson, onCommitCustomPosition, onDragActiveChange],
   );
 
   if (width < 2 || height < 2) return null;
@@ -1129,8 +1125,11 @@ export function ConstellationMap({
     <View
       accessibilityRole="image"
       accessibilityLabel="Constellation. Tap a star to open a profile. Hold and drag to move a star."
-      onStartShouldSetResponder={() => true}
-      onMoveShouldSetResponder={() => true}
+      onStartShouldSetResponder={(event) => {
+        const { x, y } = location(event);
+        return Boolean(hitAt(x, y));
+      }}
+      onMoveShouldSetResponder={() => Boolean(dragRef.current?.active)}
       onResponderGrant={onGrant}
       onResponderMove={onMove}
       onResponderRelease={onRelease}

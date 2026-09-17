@@ -42,7 +42,9 @@ import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { InitialAvatar } from "../../../src/components/initial-avatar";
+import { screenFill } from "../../../src/lib/screen";
 import { supabase } from "../../../src/lib/supabase";
+import { fonts } from "../../../src/lib/typography";
 import { useAuth } from "../../../src/providers/auth-provider";
 
 interface PersonRow {
@@ -244,7 +246,7 @@ export default function PersonProfileScreen() {
 
   if (!person) {
     return (
-      <View style={{ flex: 1, backgroundColor: tokens.colors.ink, justifyContent: "center", alignItems: "center", padding: 20 }}>
+      <View style={{ flex: 1, backgroundColor: "transparent", justifyContent: "center", alignItems: "center", padding: 20 }}>
         <Text style={{ color: tokens.colors.cream, textAlign: "center" }}>
                     {status ?? "Loading this person."}
         </Text>
@@ -277,11 +279,11 @@ export default function PersonProfileScreen() {
   const sunSign = sunSignFromChart(chart);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink2 }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 90 }}>
+    <ScrollView style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 90 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
         <InitialAvatar name={person.display_name} size="lg" personId={person.id} sunSign={sunSign} memorial={isMemorial} />
         <View style={{ flex: 1 }}>
-          <Text style={{ color: tokens.colors.cream, fontSize: 31, fontWeight: "700" }}>{person.display_name}</Text>
+          <Text style={{ color: tokens.colors.cream, fontSize: 31, fontFamily: fonts.frauncesSemi }}>{person.display_name}</Text>
           <Text style={{ color: tokens.colors.mist }}>
             {person.relation}{isMemorial ? " · remembered" : ""}
           </Text>

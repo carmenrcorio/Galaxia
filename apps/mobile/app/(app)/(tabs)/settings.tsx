@@ -13,11 +13,13 @@ import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, Share, Text, TextInput, View } from "react-native";
-import { requestAccountDelete, requestAccountExport } from "../../src/lib/account-api";
-import { siteUrlFor } from "../../src/lib/env";
-import { supabase } from "../../src/lib/supabase";
-import { useAuth } from "../../src/providers/auth-provider";
-import { useEntitlement } from "../../src/providers/entitlement-provider";
+import { requestAccountDelete, requestAccountExport } from "../../../src/lib/account-api";
+import { siteUrlFor } from "../../../src/lib/env";
+import { screenFill } from "../../../src/lib/screen";
+import { supabase } from "../../../src/lib/supabase";
+import { fonts } from "../../../src/lib/typography";
+import { useAuth } from "../../../src/providers/auth-provider";
+import { useEntitlement } from "../../../src/providers/entitlement-provider";
 
 interface PersonLite {
   id: string;
@@ -284,8 +286,8 @@ export default function SettingsScreen() {
   const canDelete = isDeleteConfirmation(deleteTyped);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink2 }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
-      <Text style={{ color: tokens.colors.cream, fontSize: 30, fontWeight: "700" }}>Settings</Text>
+    <ScrollView style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
+      <Text style={{ color: tokens.colors.cream, fontSize: 30, fontFamily: fonts.frauncesSemi }}>Settings</Text>
 
       {prefsLoading ? (
         <View style={cardStyle}>
@@ -579,17 +581,17 @@ export default function SettingsScreen() {
 }
 
 const cardStyle = {
-  backgroundColor: tokens.colors.ink3,
+  backgroundColor: "rgba(255,255,255,0.035)",
   borderRadius: tokens.radii.lg,
   borderWidth: 1,
-  borderColor: tokens.colors.line,
+  borderColor: "rgba(230,174,108,0.13)",
   padding: 12,
   gap: 8
 } as const;
 
 const cardTitle = {
   color: tokens.colors.cream,
-  fontWeight: "700",
+  fontFamily: fonts.frauncesSemi,
   fontSize: 18
 } as const;
 

@@ -34,13 +34,16 @@ import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, Text, View } from "react-native";
-import { ThisWeekCard, type ThisWeekRow } from "../../src/components/this-week-card";
-import { InitialAvatar } from "../../src/components/initial-avatar";
-import { cacheGet, cacheSet } from "../../src/lib/cache";
-import { supabase } from "../../src/lib/supabase";
-import { backfillProfileTimezoneIfMissing } from "../../src/lib/timezone";
-import { useAccessibilitySettings } from "../../src/providers/accessibility-provider";
-import { useAuth } from "../../src/providers/auth-provider";
+import { Chip, GlassCard, Pill } from "../../../src/components/glass";
+import { InitialAvatar } from "../../../src/components/initial-avatar";
+import { ThisWeekCard, type ThisWeekRow } from "../../../src/components/this-week-card";
+import { cacheGet, cacheSet } from "../../../src/lib/cache";
+import { screenFill } from "../../../src/lib/screen";
+import { supabase } from "../../../src/lib/supabase";
+import { backfillProfileTimezoneIfMissing } from "../../../src/lib/timezone";
+import { fonts } from "../../../src/lib/typography";
+import { useAccessibilitySettings } from "../../../src/providers/accessibility-provider";
+import { useAuth } from "../../../src/providers/auth-provider";
 
 interface PersonRow {
   id: string;
@@ -104,7 +107,7 @@ const CONSTELLATION_LOAD_ERROR = "The constellation could not load.";
 const CONSTELLATION_RETRY = "Try again";
 
 export default function HomeScreen() {
-  const { session, signOut } = useAuth();
+  const { session } = useAuth();
   const { reduceMotion } = useAccessibilitySettings();
   // First name only, from the shared resolver, or null when no name has been
   // captured. Never the local part of an email address.
@@ -501,9 +504,9 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView ref={scrollRef} style={{ flex: 1, backgroundColor: tokens.colors.ink }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
-      <Text style={{ color: tokens.colors.cream, fontSize: 33, fontWeight: "700" }}>Galaxia Mea</Text>
-            <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
+    <ScrollView ref={scrollRef} style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
+      <Text style={{ color: tokens.colors.cream, fontSize: 33, fontFamily: fonts.frauncesSemi }}>Galaxia Mea</Text>
+            <Text style={{ color: tokens.colors.mist, lineHeight: 21, fontFamily: fonts.inter }}>
         {welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."} Here’s your constellation at a glance.
       </Text>
 
@@ -523,7 +526,7 @@ export default function HomeScreen() {
         )}
       />
 
-      <View style={cardStyle}>
+      <GlassCard padding={12}>
         <Text style={cardTitle}>Constellation</Text>
         <View
           style={{ height: CONSTELLATION_BOX_HEIGHT, borderRadius: 16, borderWidth: 1, borderColor: tokens.colors.line, backgroundColor: tokens.colors.ink, overflow: "hidden" }}
@@ -535,18 +538,16 @@ export default function HomeScreen() {
           {constellationFailed ? (
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 12 }}>
                             <Text style={[cardBody, { textAlign: "center" }]}>{CONSTELLATION_LOAD_ERROR}</Text>
-              <Pressable accessibilityRole="button" accessibilityLabel={CONSTELLATION_RETRY} onPress={() => void loadHome()} style={pillButton}>
-                <Text style={pillText}>{CONSTELLATION_RETRY}</Text>
-              </Pressable>
+              <Pill accessibilityLabel={CONSTELLATION_RETRY} onPress={() => void loadHome()}>
+                {CONSTELLATION_RETRY}
+              </Pill>
             </View>
           ) : null}
           {!homeLoading && !constellationFailed && people.length === 0 ? (
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 12 }}>
                             <Text style={[cardBody, { textAlign: "center" }]}>{CONSTELLATION_EMPTY}</Text>
               <Link href="/onboarding" asChild>
-                <Pressable accessibilityRole="button" accessibilityLabel={CONSTELLATION_EMPTY_ACTION} style={pillButton}>
-                  <Text style={pillText}>{CONSTELLATION_EMPTY_ACTION}</Text>
-                </Pressable>
+                <Pill accessibilityLabel={CONSTELLATION_EMPTY_ACTION}>{CONSTELLATION_EMPTY_ACTION}</Pill>
               </Link>
             </View>
           ) : null}
@@ -627,10 +628,10 @@ export default function HomeScreen() {
           ) : null}
         </View>
         <Text style={cardBody}>Links are weighted by composite compatibility score (gold flow / rose tension).</Text>
-      </View>
+      </GlassCard>
 
-      <View
-        style={cardStyle}
+      <GlassCard
+        padding={12}
         onLayout={(event) => {
           todayY.current = event.nativeEvent.layout.y;
         }}
@@ -687,9 +688,9 @@ export default function HomeScreen() {
         <Text style={{ color: tokens.colors.mist2, fontSize: 11 }}>
           Nodes shimmer when a person has an eligible daily sky note near an exact pass.
         </Text>
-      </View>
+      </GlassCard>
 
-      <View style={cardStyle}>
+      <GlassCard padding={12}>
         <Text style={cardTitle}>Jump back in</Text>
         {threadChips.length === 0 ? (
           <Text style={cardBody}>No active Vela threads yet.</Text>
@@ -697,97 +698,46 @@ export default function HomeScreen() {
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {threadChips.map((thread) => (
               <Link key={thread.id} href={{ pathname: "/vela", params: { threadId: thread.id } }} asChild>
-                <Pressable style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingHorizontal: 12, paddingVertical: 8, maxWidth: "100%", flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Chip>
                   {thread.people?.slice(0, 2).map((person) => (
                     <InitialAvatar key={person.id} name={person.name} size="sm" personId={person.id} sunSign={person.sunSign} memorial={person.memorial} />
                   ))}
                   <View style={{ flexShrink: 1 }}>
-                    <Text style={{ color: tokens.colors.goldSoft, fontSize: 12 }}>{thread.mode.toUpperCase()}</Text>
-                    <Text style={{ color: tokens.colors.cream }} numberOfLines={1}>
+                    <Text style={{ color: tokens.colors.goldSoft, fontSize: 12, fontFamily: fonts.interSemi }}>{thread.mode.toUpperCase()}</Text>
+                    <Text style={{ color: tokens.colors.cream, fontFamily: fonts.inter }} numberOfLines={1}>
                       {thread.preview}
                     </Text>
                   </View>
-                </Pressable>
+                </Chip>
               </Link>
             ))}
           </View>
         )}
-      </View>
+      </GlassCard>
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         <Link href="/moment" asChild>
-          <Pressable accessibilityRole="button" accessibilityLabel="Capture a moment" style={pillButton}>
-                        <Text style={pillText}>Capture a moment</Text>
-          </Pressable>
+          <Pill accessibilityLabel="Capture a moment">Capture a moment</Pill>
         </Link>
         <Link href="/onboarding" asChild>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open onboarding" style={pillButton}>
-            <Text style={pillText}>Onboarding</Text>
-          </Pressable>
+          <Pill accessibilityLabel="Open onboarding">Onboarding</Pill>
         </Link>
         <Link href="/profile/self" asChild>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open my profile" style={pillButton}>
-            <Text style={pillText}>My profile</Text>
-          </Pressable>
-        </Link>
-        <Link href="/compare" asChild>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open compare" style={pillButton}>
-            <Text style={pillText}>Compare</Text>
-          </Pressable>
-        </Link>
-        <Link href="/groups" asChild>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open groups" style={pillButton}>
-            <Text style={pillText}>Groups</Text>
-          </Pressable>
-        </Link>
-        <Link href="/vela" asChild>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open Vela" style={pillButton}>
-            <Text style={pillText}>Vela</Text>
-          </Pressable>
-        </Link>
-        <Link href="/settings" asChild>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open settings" style={pillButton}>
-            <Text style={pillText}>Settings</Text>
-          </Pressable>
+          <Pill accessibilityLabel="Open my profile">My profile</Pill>
         </Link>
       </View>
-
-      <Pressable onPress={signOut} style={{ borderWidth: 1, borderColor: tokens.colors.line, borderRadius: 999, paddingVertical: 12 }}>
-        <Text style={{ color: tokens.colors.cream, fontWeight: "700", textAlign: "center" }}>Sign out</Text>
-      </Pressable>
     </ScrollView>
   );
 }
 
-const cardStyle = {
-  backgroundColor: tokens.colors.ink3,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: tokens.colors.line,
-  padding: 12,
-  gap: 8
-} as const;
-
 const cardTitle = {
   color: tokens.colors.cream,
-  fontWeight: "700",
+  fontFamily: fonts.frauncesSemi,
   fontSize: 18
 } as const;
 
 const cardBody = {
   color: tokens.colors.mist,
+  fontFamily: fonts.inter,
   lineHeight: 20
-} as const;
-
-const pillButton = {
-  borderWidth: 1,
-  borderColor: tokens.colors.line,
-  borderRadius: 999,
-  paddingHorizontal: 12,
-  paddingVertical: 9
-} as const;
-
-const pillText = {
-  color: tokens.colors.cream,
-  fontWeight: "700"
 } as const;

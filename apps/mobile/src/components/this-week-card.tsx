@@ -8,6 +8,8 @@ import {
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { Pressable, Text, View } from "react-native";
+import { fonts } from "../lib/typography";
+import { GlassCard } from "./glass";
 import { InitialAvatar } from "./initial-avatar";
 
 export interface ThisWeekRow {
@@ -65,14 +67,24 @@ function toAffectedHits(row: ThisWeekRow): AffectedProfileHit[] {
   }));
 }
 
-const cardStyle = {
-  backgroundColor: tokens.colors.ink3,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: tokens.colors.line,
-  padding: 12,
-  gap: 8,
-} as const;
+const titleStyle = {
+  color: tokens.colors.cream,
+  fontFamily: fonts.frauncesSemi,
+  fontSize: 18,
+};
+
+const bodyStyle = {
+  color: tokens.colors.mist,
+  fontFamily: fonts.inter,
+  lineHeight: 20,
+  fontSize: 14,
+};
+
+const linkStyle = {
+  color: tokens.colors.goldSoft,
+  fontSize: 13,
+  fontFamily: fonts.interSemi,
+};
 
 export function ThisWeekCard({
   loading,
@@ -98,19 +110,20 @@ export function ThisWeekCard({
 }) {
   const shown = compact ? rows.slice(0, THIS_WEEK_HOME_LIMIT) : rows;
   const overflow = compact ? Math.max(0, rows.length - shown.length) : 0;
+  const pad = compact ? 10 : 12;
 
   if (loading) {
     return (
-      <View style={cardStyle} testID="this-week-card">
+      <GlassCard padding={pad} testID="this-week-card">
         <Text style={titleStyle}>This week</Text>
         <Text style={bodyStyle}>{RELATIONAL_TRANSIT_FEED_LOADING}</Text>
-      </View>
+      </GlassCard>
     );
   }
 
   if (error) {
     return (
-      <View style={cardStyle} testID="this-week-card">
+      <GlassCard padding={pad} testID="this-week-card">
         <Text style={titleStyle}>This week</Text>
         <Text style={bodyStyle}>{RELATIONAL_TRANSIT_FEED_ERROR}</Text>
         {onRetry ? (
@@ -118,13 +131,13 @@ export function ThisWeekCard({
             <Text style={linkStyle}>{RELATIONAL_TRANSIT_FEED_RETRY}</Text>
           </Pressable>
         ) : null}
-      </View>
+      </GlassCard>
     );
   }
 
   if (preference === "off") {
     return (
-      <View style={cardStyle} testID="this-week-card">
+      <GlassCard padding={pad} testID="this-week-card">
         <Text style={titleStyle}>This week</Text>
         <Text style={bodyStyle}>{RELATIONAL_TRANSIT_FEED_OFF}</Text>
         <Link href="/settings" asChild>
@@ -132,26 +145,26 @@ export function ThisWeekCard({
             <Text style={linkStyle}>Settings</Text>
           </Pressable>
         </Link>
-      </View>
+      </GlassCard>
     );
   }
 
   if (rows.length === 0) {
     return (
-      <View style={cardStyle} testID="this-week-card">
+      <GlassCard padding={pad} testID="this-week-card">
         <Text style={titleStyle}>This week</Text>
         <Text style={bodyStyle}>{relationalTransitFeedEmptyMessage(nextDateISO)}</Text>
         <Pressable accessibilityRole="link" accessibilityLabel={RELATIONAL_TRANSIT_FEED_EMPTY_TODAY} onPress={onSeeToday}>
           <Text style={linkStyle}>{RELATIONAL_TRANSIT_FEED_EMPTY_TODAY}</Text>
         </Pressable>
-      </View>
+      </GlassCard>
     );
   }
 
   return (
-    <View style={[cardStyle, compact ? { padding: 10, gap: 6 } : null]} testID="this-week-card">
+    <GlassCard padding={pad} testID="this-week-card">
       <Text style={titleStyle}>This week</Text>
-      <Text style={{ color: tokens.colors.mist2, fontSize: compact ? 12 : 13, lineHeight: 17 }}>
+      <Text style={{ color: tokens.colors.mist2, fontSize: compact ? 12 : 13, lineHeight: 17, fontFamily: fonts.inter }}>
         {compact ? RELATIONAL_TRANSIT_FEED_COMPACT_INTRO : "Transits moving across more than one person in your constellation at once."}
       </Text>
       {shown.map((row) => {
@@ -186,12 +199,12 @@ export function ThisWeekCard({
                     sunSign={personChip?.[p.personId]?.sunSign}
                     memorial={personChip?.[p.personId]?.memorial}
                   />
-                  <Text style={{ color: tokens.colors.cream, fontWeight: "700", fontSize: compact ? 13 : 14 }}>{p.personName}</Text>
+                  <Text style={{ color: tokens.colors.cream, fontFamily: fonts.interSemi, fontSize: compact ? 13 : 14 }}>{p.personName}</Text>
                 </View>
               ))}
             </View>
-            <Text style={{ color: tokens.colors.mist, fontSize: compact ? 12 : 13, lineHeight: 17 }}>{dynamicLead}</Text>
-            <Text style={{ color: tokens.colors.goldSoft, fontSize: 11 }}>{planetNote}</Text>
+            <Text style={{ color: tokens.colors.mist, fontSize: compact ? 12 : 13, lineHeight: 17, fontFamily: fonts.inter }}>{dynamicLead}</Text>
+            <Text style={{ color: tokens.colors.goldSoft, fontSize: 11, fontFamily: fonts.inter }}>{planetNote}</Text>
           </View>
         );
       })}
@@ -204,24 +217,6 @@ export function ThisWeekCard({
           </Pressable>
         </Link>
       ) : null}
-    </View>
+    </GlassCard>
   );
 }
-
-const titleStyle = {
-  color: tokens.colors.cream,
-  fontWeight: "700" as const,
-  fontSize: 18,
-};
-
-const bodyStyle = {
-  color: tokens.colors.mist,
-  lineHeight: 20,
-  fontSize: 14,
-};
-
-const linkStyle = {
-  color: tokens.colors.goldSoft,
-  fontSize: 13,
-  fontWeight: "600" as const,
-};

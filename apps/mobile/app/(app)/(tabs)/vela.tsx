@@ -3,10 +3,12 @@ import { tokens } from "@galaxia/ui";
 import { Link, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { InitialAvatar } from "../../src/components/initial-avatar";
-import { cacheGet, cacheSet } from "../../src/lib/cache";
-import { supabase } from "../../src/lib/supabase";
-import { useAuth } from "../../src/providers/auth-provider";
+import { InitialAvatar } from "../../../src/components/initial-avatar";
+import { cacheGet, cacheSet } from "../../../src/lib/cache";
+import { screenFill } from "../../../src/lib/screen";
+import { supabase } from "../../../src/lib/supabase";
+import { fonts } from "../../../src/lib/typography";
+import { useAuth } from "../../../src/providers/auth-provider";
 
 type VelaMode = "ask" | "shared";
 type Scope = "person" | "pair" | "group";
@@ -313,9 +315,9 @@ export default function VelaScreen() {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink2 }} contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 12 }}>
-      <Text style={{ color: tokens.colors.cream, fontSize: 30, fontWeight: "700" }}>Vela</Text>
-      <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
+    <ScrollView style={screenFill} contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 12 }}>
+      <Text style={{ color: tokens.colors.cream, fontSize: 30, fontFamily: fonts.frauncesSemi }}>Vela</Text>
+      <Text style={{ color: tokens.colors.mist, lineHeight: 21, fontFamily: fonts.inter }}>
         Warm astrologer + practical coach, grounded in computed facts only.
       </Text>
 
@@ -513,17 +515,17 @@ function chip(active: boolean) {
 }
 
 const cardStyle = {
-  backgroundColor: tokens.colors.ink3,
-  borderRadius: 12,
+  backgroundColor: "rgba(255,255,255,0.035)",
+  borderRadius: tokens.radii.lg,
   borderWidth: 1,
-  borderColor: tokens.colors.line,
+  borderColor: "rgba(230,174,108,0.13)",
   padding: 12,
   gap: 8
 } as const;
 
 const cardTitle = {
   color: tokens.colors.cream,
-  fontWeight: "700",
+  fontFamily: fonts.frauncesSemi,
   fontSize: 18
 } as const;
 

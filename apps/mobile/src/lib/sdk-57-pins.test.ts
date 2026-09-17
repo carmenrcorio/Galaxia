@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const mobileRoot = resolve(__dirname, "../..");
 const repoRoot = resolve(mobileRoot, "../..");
 
-describe("Expo SDK 57 pins (Phase 0 complete, no Skia yet)", () => {
+describe("Expo SDK 57 pins (Phase 0 complete; Phase 2 uses bundled Skia 2.6.2)", () => {
   it("locks Expo 57 / RN 0.86 / Router 57 / React 19.2, not a later SDK", () => {
     const pkg = JSON.parse(readFileSync(resolve(mobileRoot, "package.json"), "utf8")) as {
       dependencies: Record<string, string>;
@@ -23,7 +23,9 @@ describe("Expo SDK 57 pins (Phase 0 complete, no Skia yet)", () => {
     expect(deps["react-native-worklets"]).toBe("0.10.1");
     expect(deps["expo-splash-screen"]).toMatch(/^~57\./);
     expect(deps["query-string"]).toMatch(/^7\./);
-    expect(deps["@shopify/react-native-skia"]).toBeUndefined();
+    expect(deps["@shopify/react-native-skia"]).toBe("2.6.2");
+    expect(deps["expo-font"]).toMatch(/^~57\./);
+    expect(deps["expo-blur"]).toMatch(/^~57\./);
   });
 
   it("does not opt out of New Architecture (required from SDK 55; Skia uses it)", () => {

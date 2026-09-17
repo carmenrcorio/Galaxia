@@ -36,10 +36,12 @@ import { DEFAULT_FETCH_TIMEOUT_MS, isMinorForSafety, orderPair, shouldShowLiveTr
 import { tokens } from "@galaxia/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { GenerationalSection } from "../../src/components/generational-section";
-import { InitialAvatar } from "../../src/components/initial-avatar";
-import { supabase } from "../../src/lib/supabase";
-import { useAuth } from "../../src/providers/auth-provider";
+import { GenerationalSection } from "../../../src/components/generational-section";
+import { InitialAvatar } from "../../../src/components/initial-avatar";
+import { screenFill } from "../../../src/lib/screen";
+import { supabase } from "../../../src/lib/supabase";
+import { fonts } from "../../../src/lib/typography";
+import { useAuth } from "../../../src/providers/auth-provider";
 
 interface PersonLite {
   id: string;
@@ -306,9 +308,9 @@ export default function CompareScreen() {
   const blockRomanticMinorRender = pairHasMinor && isRomanticRelation(relationType);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink2 }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
-      <Text style={{ color: tokens.colors.cream, fontSize: 30, fontWeight: "700" }}>Compare</Text>
-      <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
+    <ScrollView style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
+      <Text style={{ color: tokens.colors.cream, fontSize: 30, fontFamily: fonts.frauncesSemi }}>Compare</Text>
+      <Text style={{ color: tokens.colors.mist, lineHeight: 21, fontFamily: fonts.inter }}>
         Choose any two people to see your dynamic, the astrology underneath, and the generational call-out.
       </Text>
 
@@ -594,17 +596,17 @@ function formatAspect(aspect?: ReturnType<typeof computeSynastry>["aspects"][num
 }
 
 const cardStyle = {
-  backgroundColor: tokens.colors.ink3,
-  borderRadius: 12,
+  backgroundColor: "rgba(255,255,255,0.035)",
+  borderRadius: tokens.radii.lg,
   borderWidth: 1,
-  borderColor: tokens.colors.line,
+  borderColor: "rgba(230,174,108,0.13)",
   padding: 12,
   gap: 8
 } as const;
 
 const cardTitle = {
   color: tokens.colors.cream,
-  fontWeight: "700",
+  fontFamily: fonts.frauncesSemi,
   fontSize: 18
 } as const;
 

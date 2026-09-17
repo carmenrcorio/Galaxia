@@ -74,7 +74,7 @@ describe("mobile generational call-out model", () => {
 });
 
 describe("mobile Compare wiring", () => {
-  const compareSrc = readFileSync(resolve(__dirname, "../../app/(app)/compare.tsx"), "utf8");
+  const compareSrc = readFileSync(resolve(__dirname, "../../app/(app)/(tabs)/compare.tsx"), "utf8");
   const sectionSrc = readFileSync(
     resolve(__dirname, "../components/generational-section.tsx"),
     "utf8"
@@ -82,7 +82,7 @@ describe("mobile Compare wiring", () => {
 
   it("renders GenerationalSection and does not keep the compact ancestralHeadline block", () => {
     expect(compareSrc).toContain("GenerationalSection");
-    expect(compareSrc).toContain('from "../../src/components/generational-section"');
+    expect(compareSrc).toContain('from "../../../src/components/generational-section"');
     expect(compareSrc).not.toContain("ancestralHeadline");
     expect(compareSrc).not.toContain(ANCESTRAL_DUP);
     expect(compareSrc).not.toMatch(/Generational fault lines:/);

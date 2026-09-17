@@ -49,6 +49,10 @@ describe("galaxy interaction — rings toggle + custom_position", () => {
   it("mobile home selects and applies custom_position", () => {
     expect(mobileHome).toContain("custom_position");
     expect(mobilePaint).toContain("effectiveSeat");
+    expect(mobileHome).toContain("onCommitCustomPosition");
+    expect(mobileHome).toContain('.eq("owner_id", owner)');
+    expect(mobilePaint).toContain("DRAG_HOLD_MS = 180");
+    expect(mobilePaint).toContain("DRAG_ACTIVATE_PX = 8");
   });
 
   it("skips self for drag and freezes drift on custom seats", () => {

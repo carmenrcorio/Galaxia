@@ -582,6 +582,26 @@ export default function HomeScreen() {
                     onSelectPerson={(personId) =>
                       router.push({ pathname: "/profile/[personId]", params: { personId } })
                     }
+                    onCommitCustomPosition={(personId, next, previous) => {
+                      setPeople((prev) =>
+                        prev.map((person) => (person.id === personId ? { ...person, custom_position: next } : person)),
+                      );
+                      const owner = session?.user.id;
+                      if (!owner) return;
+                      void supabase
+                        .from("people")
+                        .update({ custom_position: next })
+                        .eq("id", personId)
+                        .eq("owner_id", owner)
+                        .then(({ error }) => {
+                          if (!error) return;
+                          setPeople((prev) =>
+                            prev.map((person) =>
+                              person.id === personId ? { ...person, custom_position: previous } : person,
+                            ),
+                          );
+                        });
+                    }}
                   />
                 ) : null}
               </Animated.View>
@@ -665,7 +685,7 @@ export default function HomeScreen() {
               </View>
             ))}
             <Text style={{ marginLeft: "auto", fontSize: 11, color: tokens.colors.mist2, fontFamily: fonts.inter }}>
-              Tap a star to open
+              Tap a star to open · hold to move
             </Text>
           </View>
         ) : null}

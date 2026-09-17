@@ -24,6 +24,11 @@ interface PersonLite {
 }
 
 /** Single source of truth (ENGINEERING.md §9) — never read person.is_minor directly. */
+function firstParam(value?: string | string[]): string | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
 function minorOf(person: PersonLite | null | undefined): boolean {
   if (!person) return false;
   return isMinorForSafety({ isMinor: person.is_minor, birthDate: person.birth_date, birthPrecision: person.birth_precision });
@@ -50,7 +55,12 @@ const VELA_CONSENT_ERROR = "Consent could not be saved. Try again.";
 const VELA_THREAD_ERROR = "This thread could not be restored. Try again.";
 
 export default function VelaScreen() {
-  const params = useLocalSearchParams<{ threadId?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    threadId?: string | string[];
+    subject?: string | string[];
+    q?: string | string[];
+    scope?: string | string[];
+  }>();
   const { session } = useAuth();
   const [mode, setMode] = useState<VelaMode>("ask");
   const [scope, setScope] = useState<Scope>("person");
@@ -72,11 +82,10 @@ export default function VelaScreen() {
   ]);
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const initialThreadId = useMemo(() => {
-    const value = params.threadId;
-    if (Array.isArray(value)) return value[0] ?? null;
-    return value ?? null;
-  }, [params.threadId]);
+  const initialThreadId = useMemo(() => firstParam(params.threadId), [params.threadId]);
+  const incomingSubject = useMemo(() => firstParam(params.subject), [params.subject]);
+  const incomingQuery = useMemo(() => firstParam(params.q), [params.q]);
+  const incomingScope = useMemo(() => firstParam(params.scope), [params.scope]);
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -88,6 +97,10 @@ export default function VelaScreen() {
     setThreadId(initialThreadId);
     void loadThreadHistory(initialThreadId);
   }, [initialThreadId, session?.user.id]);
+
+  useEffect(() => {
+    if (incomingQuery) setMessage(incomingQuery);
+  }, [incomingQuery]);
 
   const selectedSubject = useMemo(() => people.find((person) => person.id === subjectPersonId) ?? null, [people, subjectPersonId]);
   const selectedPair = useMemo(() => people.find((person) => person.id === pairPersonId) ?? null, [people, pairPersonId]);
@@ -127,7 +140,12 @@ export default function VelaScreen() {
     }
     setPeople(allPeople);
     setGroups((groupData ?? []) as GroupLite[]);
-    if (!subjectPersonId && allPeople[0]) setSubjectPersonId(allPeople[0].id);
+    if (incomingScope === "person" || incomingScope === "pair" || incomingScope === "group") {
+      setScope(incomingScope);
+    }
+    if (incomingSubject && allPeople.some((person) => person.id === incomingSubject)) {
+      setSubjectPersonId(incomingSubject);
+    } else if (!subjectPersonId && allPeople[0]) setSubjectPersonId(allPeople[0].id);
     if (!pairPersonId && allPeople[1]) setPairPersonId(allPeople[1].id);
     if (!groupId && groupData?.[0]) setGroupId(groupData[0].id as string);
       })(), DEFAULT_FETCH_TIMEOUT_MS);

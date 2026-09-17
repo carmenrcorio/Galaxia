@@ -32,7 +32,7 @@ export default function AuthedTabsLayout() {
         tabBarActiveTintColor: tokens.colors.gold,
         tabBarInactiveTintColor: tokens.colors.mist2,
         tabBarLabelStyle: { fontFamily: fonts.interSemi, fontSize: 11, letterSpacing: 0.2 },
-        tabBarIcon: ({ color }) => <TabMark color={color} />,
+        tabBarIcon: ({ color }) => <TabMark color={String(color)} />,
         tabBarBackground: () => <BlurView tint="dark" intensity={48} style={StyleSheet.absoluteFill} />,
         tabBarStyle: {
           position: "absolute",

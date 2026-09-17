@@ -24,7 +24,17 @@ export function GlassCard({ children, style, contentStyle, padding = tokens.spac
   return (
     <View testID={testID} onLayout={onLayout} style={[styles.card, style]}>
       <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-      <View pointerEvents="none" style={styles.wash} />
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            backgroundColor: "rgba(255,255,255,0.035)",
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: "rgba(255,255,255,0.06)"
+          }
+        ]}
+      />
       <View style={[{ padding, gap: 8 }, contentStyle]}>{children}</View>
     </View>
   );
@@ -78,12 +88,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.55,
     shadowRadius: 34,
     shadowOffset: { width: 0, height: 24 }
-  },
-  wash: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,255,255,0.035)",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255,255,255,0.06)"
   },
   pill: {
     borderWidth: 1,

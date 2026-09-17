@@ -1,8 +1,8 @@
 # Galaxia — Mobile as twin of the web app
 
-**Status: RESEARCH + PLAN. Not approved. No implementation in this document.**
+**Status: FOUNDER DECISIONS LOCKED (2026-09-17). Spec is the build order. No product code in this file.**
 
-This is the spec for finishing `apps/mobile` so it is the same product as the signed-in web app (`apps/web/app/app/**`), not a thinner companion. Per `ENGINEERING.md` §10: the spec is finalized before the build starts. **Stop after reading this.** Implementation starts only after Carmen confirms the founder decisions in §7.
+This is the spec for finishing `apps/mobile` so it is the same product as the signed-in web app (`apps/web/app/app/**`), not a thinner companion. Per `ENGINEERING.md` §10: the spec is finalized before the build starts. Carmen locked D1–D5 on 2026-09-17 (see §7). Implementation starts at **Phase 0: Expo upgrade to current SDK**, not at Skia on SDK 51.
 
 Cite this file and the named components. Do not describe the work in prose when a reference exists.
 
@@ -24,7 +24,7 @@ Cite this file and the named components. Do not describe the work in prose when 
 
 ## 1. What “twin” means
 
-Three layers. Only the first two are load-bearing for 1.0. The third is native, not a copy of CSS.
+Three layers. Product twin and visual twin are both load-bearing for 1.0. Native chrome (tabs, share, push) may differ. Brand tone, type, colour, and constellation fidelity may not.
 
 ### 1.1 Product twin (must)
 
@@ -32,9 +32,11 @@ Same account, same `profiles.id`, same people/charts/notes/threads. Same `@galax
 
 A chart computed on web and opened on mobile must be the same chart. A person added on mobile must appear on the web constellation, including `custom_position` if set.
 
-### 1.2 Visual twin (the remaining work)
+### 1.2 Visual twin (load-bearing)
 
-The web signed-in shell already has the landing’s atmosphere: `CosmicBackground` in `apps/web/app/app/layout.tsx`, glass cards, Fraunces + Inter, gold hairlines, natal `ChartWheel` (`apps/web/components/chart-wheel.tsx`, port of `design/reference/galaxia.jsx` `Wheel()`), living constellation canvas on `/app`.
+The web signed-in shell is the material source of truth: `CosmicBackground` in `apps/web/app/app/layout.tsx`, glass cards, Fraunces + Inter, gold hairlines, natal `ChartWheel` (`apps/web/components/chart-wheel.tsx`, port of `design/reference/galaxia.jsx` `Wheel()`), living constellation canvas on `/app`. Tokens live in `apps/web/app/globals.css` `:root`, copied from `design/reference/galaxia-landing-v2.html`.
+
+**Locked:** mobile ships the same faces (Fraunces, Inter), the same tokens, the same glass recipe, and the same brand tone/vibe as web. Forever. A “system font, close enough” mobile skin is a defect. `@galaxia/ui` must match web `:root`, not the other way around.
 
 Mobile today: `@galaxia/ui` tokens only, system fonts, no starfield, constellation as a glance `View` card, chart wheel is a labeled placeholder. Tokens themselves have drifted from the landing:
 
@@ -44,9 +46,11 @@ Mobile today: `@galaxia/ui` tokens only, system fonts, no starfield, constellati
 
 That mismatch is why mobile reads as a different night sky even before the missing canvas.
 
-### 1.3 Native-appropriate (must differ)
+### 1.3 Native-appropriate (chrome only)
 
-Bottom tabs, safe areas, system share sheet, push, permission prompts, App Store account-deletion rule, (later) IAP. Do not port the web top `AppNav` strip that also dumps Blog / Free chart into the product. Mobile nav is **Home, Compare, Groups, Vela, Settings**. Moment and add-person are actions on Home / person, not tabs.
+Bottom tabs, safe areas, system share sheet, push, permission prompts, App Store account-deletion rule. Do not port the web top `AppNav` strip that also dumps Blog / Free chart into the product. Mobile nav is **Home, Compare, Groups, Vela, Settings**. Moment and add-person are actions on Home / person, not tabs.
+
+These differences are input and platform. They are not a license to flatten the sky, drop parallax, or substitute Inter-only type.
 
 Public marketing, blog, glossary, admin, SEO `/chart` stay web. Mobile may deep-link out to the site for those.
 
@@ -145,11 +149,11 @@ These are HTML Canvas / DOM / CSS. Port the *behavior*, not the file:
 
 | Web | Native approach |
 | --- | --- |
-| `CosmicBackground` (`apps/web/components/cosmic-background.tsx`) | `react-native-skia` or a single RN `Canvas`. Same density cap, EMA degrade, `prefers-reduced-motion` = one static frame. Prove FPS on device, not in this VM. |
-| `/app` constellation `paintFrame` | Skia/canvas using `galaxyGeometry` / `effectiveSeat` / `custom_position` from `@galaxia/core`. Tap → `/profile/[id]`. Honor + relation lines. Drag later (web already writes `people.custom_position`). |
+| `CosmicBackground` (`apps/web/components/cosmic-background.tsx`) | Current `@shopify/react-native-skia` after the SDK 57 upgrade. Same three parallax layers, same density math, `prefers-reduced-motion` = one static frame. Prove FPS on device, not in this VM. |
+| `/app` constellation `paintFrame` | Skia using `galaxyGeometry` / `effectiveSeat` / `custom_position` from `@galaxia/core`. Tap → `/profile/[id]`. Honor + relation lines. Full visual fidelity — not a glance card, not a cheaper layer set as the product. Drag follows once playback is right (web already writes `people.custom_position`). |
 | `ChartWheel` | `react-native-svg`. Reference: `design/reference/galaxia.jsx` `Wheel()`, then the web component. Bi-wheel on Compare. |
-| Glass cards, pills, chips | RN `StyleSheet` from aligned tokens. No `backdrop-filter` on Android — approximate with translucent fill + hairline + inset highlight. |
-| Fraunces / Inter | `expo-font` + the same files web uses. System fonts are a visible twin-break. |
+| Glass cards, pills, chips | RN primitives from aligned tokens. Use Skia / `expo-blur` to get the landing blur, not a flat tinted rectangle. |
+| Fraunces / Inter | `expo-font` + the same files web uses. System fonts are a defect. |
 | Chart PNG/PDF export | Out of 1.0 unless cheap via Skia snapshot. Web keeps `html-to-image`. |
 
 **Do not introduce a shared React Native Web component library in the first slice.** `@galaxia/ui` is tokens. Building a cross-platform component kit while also porting the galaxy is how this product got three versions of one screen.
@@ -184,17 +188,27 @@ Guideline 5.1.1(v): in-app account deletion. Web has `/account/data`. Mobile has
 
 Any agent that reports “the constellation looks right” from this VM is fabricating. Require EAS preview + Carmen’s device for visual slices. Agent Definition of Done for mobile: typecheck + tests + Metro boot + **explicit “device unverified.”**
 
-### 4.4 Expo SDK 51 age
+### 4.4 Expo SDK 51 is a dead end for this constellation
 
-SDK 51 / RN 0.74 is behind current Expo. Visual work on an old Skia/SVG stack may need a mid-stream upgrade. Upgrading Expo is its own slice, not mixed with wheel geometry.
+Current `@shopify/react-native-skia` requires `react-native >= 0.79` and `react >= 19`. SDK 51 is RN 0.74 / React 18. The 51 path is old Skia `1.12.4`, which is the degraded galaxy we just ruled out. Expo’s current SDK (docs, 2026-09) is **57** (RN 0.86, React 19.2). SDK 51 is deprecated; Expo Go only tracks current.
+
+**Locked: upgrade to SDK 57 before any Skia work.** Do not spike Skia on 51. Building the galaxy on 51 and upgrading later means rewriting the paint path.
+
+This is a dedicated phase, not mixed with fonts or the wheel. See §8 Phase 0.
+
+### 4.4a Hoisted React 19 will touch web
+
+`.npmrc` `node-linker=hoisted` must not change (`ENGINEERING.md` §2). Mobile on SDK 53+ needs React 19. That hoist can pull `apps/web` off React 18.3. Next.js 16 already in the repo supports React 19 (Solito has run Next 16 + React 19 + Expo 54). The SDK 53 step therefore includes `apps/web` React 19 and a full `pnpm --filter @galaxia/web test` + typecheck gate. Do not touch `next.config.mjs` core config. If web breaks, fix the React bump — do not pin mobile to 18.
 
 ### 4.5 Metro / `@opentelemetry/api`
 
 `@supabase/supabase-js` lazy-imports OpenTelemetry. Next ignores it; Metro tries to resolve it. Expo web is already broken. Native builds may be fine; if a release bundle fails, pin or stub that import — do not “fix” by un-hoisting `.npmrc`.
 
-### 4.6 Constellation performance
+### 4.6 Constellation performance (fidelity is the product)
 
-Web already throttles layers and measures 375px FPS (`AGENTS.md` galaxy bar). A naive Skia port of the dual-canvas `/app` loop will jank on mid Android. Budget: degrade layers, never ship lag. Reduced-motion must freeze.
+Web already measures 375px FPS (`AGENTS.md` galaxy bar: this pass held ~50–60fps) and has an EMA frame-budget that can drop the far starfield layer. That emergency valve is crash-prevention, not a design.
+
+**Locked: the phone constellation is the same living map.** No glance-card product, no “Android gets fewer layers.” Hold smoothness by using current Skia + New Architecture (required from SDK 55+), not by shipping a cheaper sky. If a device cannot hold the full field, that is a bug to fix in the paint loop (batching, DPR cap, same density formula as web), not a product fork. `prefers-reduced-motion` still freezes to one static frame.
 
 ### 4.7 Twin-by-copy-paste
 
@@ -235,7 +249,7 @@ Ordered by “stops us being a twin or being allowed in the store,” not by vis
 
 **P2 — the moat**
 
-10. Living constellation: full-bleed, tappable, honor/relation lines, `custom_position` playback (drag can follow)
+10. Living constellation: full-bleed, tappable, honor/relation lines, `custom_position` playback (drag can follow). Same visual weight as web.
 11. Person Today group (Right now + Ask about them)
 12. Edit person (birth, relation, memorial fields) — today notes + delete only
 13. Remembrance space + memorial timeline + honor (reuse core care gates; port UI)
@@ -250,11 +264,10 @@ Ordered by “stops us being a twin or being allowed in the store,” not by vis
 
 **P4 — after 1.0**
 
-19. Native IAP if not chosen for 1.0
+19. Native IAP (D1 is web-manage for 1.0)
 20. Chart image export
-21. Expo SDK upgrade
-22. Device-verified push permissions UX
-23. Groups family-pattern share card visuals
+21. Device-verified push permissions UX
+22. Groups family-pattern share card visuals
 
 ---
 
@@ -265,37 +278,34 @@ Ordered by “stops us being a twin or being allowed in the store,” not by vis
 3. **Parity tests stay wiring tests** until we have a device farm: read the screen source and assert it calls the shared helper, same as `mobile-safety-parity.test.ts` and `mobile-precision-house-system-parity.test.ts`.
 4. **One vertical slice per PR.** First merged slice must be installable on a phone and obviously better, not a half-migrated nav.
 5. **Web is not frozen, but do not “improve” web under a mobile PR** unless a shared package requires it (glyph extraction).
-6. **Nothing internal ships** (`ENGINEERING.md` §7). The wheel placeholder text cannot survive a TestFlight build.
+6. **Brand is not a phase-optional.** Fraunces, Inter, web tokens, glass, voice layers. Every slice that renders UI uses them. No “we’ll match type later.”
+7. **Nothing internal ships** (`ENGINEERING.md` §7). The wheel placeholder text cannot survive a TestFlight build.
+8. **One account graph.** People, charts, notes, billing, purge. Mobile never grows a second delete/export path.
 
 ---
 
-## 7. Founder decisions (required before code)
+## 7. Founder decisions (locked 2026-09-17)
 
-Answer these in the PR that approves this spec. Implementation PRs that guess are out of order.
+Implementation PRs that contradict these are out of order.
 
-**D1. Billing for mobile 1.0**
+**D1. Billing for mobile 1.0 — manage on the web.** Reader-app. Sign in, use the product, “Manage billing on the web.” No in-app purchase button, no store-style web-checkout CTA. `/subscribe` is a short explanation plus a Safari handoff that does not look like an App Store paywall. Stay inside Apple 3.1.3. Native IAP is after 1.0. `hasAccess` and the RevenueCat webhook stay the only paid-status writer.
 
-- **A (recommended to ship faster):** Reader-app. Sign in, use content, “Manage billing on the web.” No in-app purchase button, no web-checkout CTA that looks like a store paywall. `/subscribe` becomes a short explanation + Safari only if we can stay inside 3.1.3. Highest chance of a clean review; weaker conversion in-app.
-- **B:** Native IAP via RevenueCat iOS/Android apps, same App User ID = `profiles.id`, webhook still the only paid-status writer. Longer; needs App Store / Play products and a second RC config.
+**D2. Constellation — full-bleed living map, no product degradation.** Same seats, honor/relation lines, parallax, visual weight as web `/app`. Not a glance card. Not a cheaper Android sky. Smoothness comes from current Skia + New Architecture, not from dropping layers as a feature. `prefers-reduced-motion` still freezes one frame.
 
-**D2. Constellation on phone**
+**D3. Type and vibe — Fraunces, Inter, web tokens, brand tone. Always.** `@galaxia/ui` matches `apps/web/app/globals.css` `:root`. System fonts are a defect.
 
-- **A (true twin):** Full-bleed living map as the Home tab, Skia/canvas, same seats as web.
-- **B:** Keep glance card through 1.0; invest first in wheel + person depth.
+**D4. Upgrade Expo first. Do not spike Skia on SDK 51.** Target current SDK **57** (RN 0.86, React 19.2 as of Expo’s docs). Current Skia requires `react-native >= 0.79` and `react >= 19`; SDK 51 cannot run it. Incremental, because 51→57 crosses expo-router 3→current, React 18→19, and New Architecture (required from SDK 55). Suggested cuts:
 
-Recommendation: **A**, but only after tokens + background + wheel. A janky galaxy is worse than a glance.
+1. **51 → 52** — expo-router 4 / React Navigation 7, still React 18. Isolates the router break.
+2. **52 → 53** — React 19, New Architecture default, RN 0.79. This is the Skia unlock. Because `.npmrc` is hoisted and must not change, this PR also bumps `apps/web` to React 19 and gates on `pnpm --filter @galaxia/web test` + typecheck. Do not touch `next.config.mjs` core config.
+3. **53 → 57** — once 53 is green. SDK 56 had a Hermes/reanimated memory regression; 57 is the documented fix. No Skia in these upgrade PRs.
 
-**D3. Fonts**
+**D5. Account delete/export — the existing APIs. One graph.** Mobile does not invent a second purge. It calls the same routes web already uses:
 
-Ship Fraunces + Inter via `expo-font` (twin) vs system (faster, obviously not twin). Recommendation: ship the faces.
+- Export: `GET /api/account/export` (`AccountDataPanel`)
+- Delete: `POST /api/account/delete` with `{ confirmation: "delete" }` (`apps/web/app/api/account/delete/route.ts`)
 
-**D4. Expo upgrade**
-
-Upgrade SDK before Skia, or pin 51 and port on current. Recommendation: spike Skia on 51 for one screen; upgrade only if the spike fails.
-
-**D5. Account deletion copy**
-
-In-app delete must be real (call existing purge), not a mailto. Confirm the web purge RPC is the one mobile should hit.
+That route is the canonical writer: typed confirmation, then `purge_own_account_data()` (SECURITY DEFINER, one transaction), then best-effort GoTrue `deleteUser`. Mobile authenticates with the user’s session against `EXPO_PUBLIC_SITE_URL`, uses the same `ACCOUNT_DELETE_COPY`, signs out locally after `{ ok: true }`. Direct client RPC to `purge_own_account_data` is not a parallel path.
 
 ---
 
@@ -303,48 +313,52 @@ In-app delete must be real (call existing purge), not a mailto. Confirm the web 
 
 Each phase is one or more PRs. Definition of done still includes branch, PR, merge, and **device verification by a human** for UI phases (`ENGINEERING.md` §3 cannot mean Vercel for Expo).
 
-### Phase 0 — Hygiene (no new native deps)
+### Phase 0 — Expo SDK 51 → 57 (blocking for Skia / atmosphere / constellation)
+
+See D4. Milestone: `pnpm --filter @galaxia/mobile typecheck` and test floor hold; `@galaxia/web` typecheck + tests hold after the React 19 step; Metro boots; `expo-doctor` clean for the new SDK. Still no Skia. Still no visual twin. Native runtime is current.
+
+### Phase 1 — Hygiene (no new native deps; can start once 52 is green, must not land Skia)
 
 - Remove `tier` / Galaxia+ / Free-limit UI; use `hasAccess` + trial copy matching web Settings
-- Settings: house system writer (port options from `HOUSE_SYSTEM_OPTIONS` in `@galaxia/astro`)
-- Daily nudge email + weekly letter prefs (same `profiles` columns web already writes)
-- Support ticket insert (web already writes `support_requests`)
-- Account export/delete screens calling existing APIs
+- Settings: house system writer (`HOUSE_SYSTEM_OPTIONS` from `@galaxia/astro`)
+- Daily nudge email + weekly letter prefs (same `profiles` columns)
+- Support ticket insert (`support_requests`)
+- Account export/delete via D5 routes
 - Align `@galaxia/ui` ink/gold/radii to web `:root`
 - Kill user-visible “Wheel placeholder”
 
-Milestone: a trial user on a phone can change house system and delete their account. Still ugly. No longer lying.
+Milestone: a trial user on a phone can change house system and delete their account through the same purge as web. Still ugly. No longer lying. One graph.
 
-### Phase 1 — Shell twin
+### Phase 2 — Shell twin
 
 - `expo-font` Fraunces + Inter
-- Authed `CosmicBackground`
-- Glass card / pill / chip primitives in `apps/mobile/src/components/` (mobile-only, token-driven)
+- Authed `CosmicBackground` (current Skia, after Phase 0)
+- Glass card / pill / chip primitives in `apps/mobile/src/components/` (token-driven; Skia/`expo-blur` for the landing blur)
 - Expo tabs: Home, Compare, Groups, Vela, Settings
 - Trial banner equivalent
 
 Milestone: open the app next to `/app` on a laptop; the night sky and type match.
 
-### Phase 2 — Wheel (first visual vertical slice of the chart)
+### Phase 3 — Wheel
 
 - Extract glyphs + geometry to a shared package
 - `react-native-svg` natal wheel on person
 - Bi-wheel on Compare
 - Precision honesty already on the profile stays
 
-Milestone: Carmen’s chart on device matches `/app/person/[id]` wheel to the eye (signs in the right place, no silent Equal-as-Placidus — labels from `chart.houseSystem`).
+Milestone: Carmen’s chart on device matches `/app/person/[id]` wheel to the eye (signs in the right place; labels from `chart.houseSystem`).
 
-### Phase 3 — Constellation
+### Phase 4 — Constellation (the moat)
 
 - Full-bleed Home map from `galaxyGeometry` / `effectiveSeat`
 - Tap node → profile
-- Honor + relation line treatments from web (facts of the record, never usage — `ENGINEERING.md` §13)
+- Honor + relation line treatments from web (`ENGINEERING.md` §13)
 - Playback of `custom_position`
-- Reduced-motion freeze; device FPS note in the PR (target: stay smooth, degrade layers)
+- Reduced-motion freeze; device FPS in the PR (target: hold ~50–60fps at 375-class without dropping the product’s layers)
 
 Milestone: the same galaxy on phone and laptop, seats stable across devices.
 
-### Phase 4 — Person depth
+### Phase 5 — Person depth
 
 - Today cards on profile
 - `EditPerson` port (not a new data model)
@@ -352,9 +366,9 @@ Milestone: the same galaxy on phone and laptop, seats stable across devices.
 - Relationship edges
 - Connect invite send + pending list (accept can remain web)
 
-### Phase 5 — Store
+### Phase 6 — Store
 
-- Implement D1
+- D1 subscribe copy (manage on the web)
 - Push response listener
 - Associated Domains when URLs exist
 - Rewrite `/download` and `/r/[slug]`
@@ -371,7 +385,8 @@ Milestone: the same galaxy on phone and laptop, seats stable across devices.
 | `pnpm --filter @galaxia/mobile test` | Cloud Agent; floor is the current suite, never fewer |
 | Metro boots | Cloud Agent; do not claim Expo web renders |
 | Shared package tests if glyphs/geometry moved | `@galaxia/astro` / `@galaxia/core` |
-| Device: wheel vs web, constellation seats, reduced-motion, house-system change, delete account | Carmen / TestFlight — **required** for Phases 1–3 |
+| Web test + typecheck on the React 19 hoist | Required at the 52→53 cut |
+| Device: wheel vs web, constellation seats, reduced-motion, house-system change, delete via `/api/account/delete` | Carmen / TestFlight — **required** for Phases 2–4 |
 | Galaxy FPS at 375-class phone | Device; the Playwright 375px recipe in `AGENTS.md` is web-only |
 
 Do not add a Playwright suite against Expo web until Metro’s bundle URL and `@opentelemetry/api` are actually fixed. That is a separate infra task, not a twin task.
@@ -386,12 +401,15 @@ Do not add a Playwright suite against Expo web until Metro’s bundle URL and `@
 - Ship debug entitlements
 - Treat `design/galaxia-constellation-connect-plan.md` header “unimplemented” as current — Connect **ships on web**; mobile is the laggard
 - Invent a second astrology engine for RN
-- Pixel-match Android `backdrop-filter` to Safari. Approximate.
+- Invent a second account purge
+- Flatten the sky or type to “feel native”
+
+Glass on Android is Skia / `expo-blur` in the landing’s recipe, not a flat tinted rectangle.
 
 ---
 
 ## 11. Immediate next three actions
 
-1. Carmen answers D1–D5 on this spec.
-2. Open the first implementation PR as **Phase 0 only** (copy + settings + delete). No Skia yet.
-3. On a phone, screenshot current `/home` and `/profile` next to web `/app` and `/app/person/[id]` so Phase 1 has a before. The Cloud Agent cannot take that screenshot.
+1. Phase 0 PR: Expo SDK 51 → 52 (router only, still React 18). No Skia.
+2. Hygiene (Phase 1) can follow once 52 is green: copy, house system, D5 delete/export.
+3. On a phone, screenshot current `/home` and `/profile` next to web `/app` and `/app/person/[id]` so the shell twin has a before. The Cloud Agent cannot take that screenshot.

@@ -55,7 +55,8 @@ describe("mobile connect invite gates match web", () => {
   });
 
   it("maps relation for the RPC and detects rate-limit copy", () => {
-    expect(connectRelationForPerson("best friend")).toBe("friend");
+    expect(connectRelationForPerson("friend")).toBe("friend");
+    expect(connectRelationForPerson("husband")).toBe("partner");
     expect(CONNECT_BLOCKED_RELATIONS).toEqual(["child", "grandchild"]);
     expect(isConnectRateLimitError("Too many open invitations.")).toBe(true);
     expect(CONNECT_INVITE_ACTION).toBe("Invite to connect");

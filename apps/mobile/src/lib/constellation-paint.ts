@@ -34,6 +34,30 @@ export const CONSTELLATION_STAGE_MIN_H = 380;
 export const CONSTELLATION_STAGE_MAX_H = 680;
 export const CONSTELLATION_STAGE_VH = 0.72;
 
+/**
+ * Atmosphere wash — same radial vignette as web `renderWash` in
+ * `apps/web/app/app/page.tsx` (center open, edges night). Not a linear fade.
+ */
+export const GALAXY_WASH_STOPS = [
+  { pos: 0, color: "rgba(22,16,46,0.34)" },
+  { pos: 0.6, color: "rgba(12,8,32,0.55)" },
+  { pos: 1, color: "rgba(6,4,18,0.82)" },
+] as const;
+export const GALAXY_WASH_RADIUS = 0.72;
+/** Web `ATM_BAKE_MS` — nebula drift re-raster ~4×/s once settled. */
+export const ATM_BAKE_MS = 240;
+/** Web `paintNebulaBand` glow `shadowBlur = band.width * 5`. */
+export const RING_GLOW_BLUR_MUL = 5;
+/** Web inner-band `shadowBlur = band.width * 2`. */
+export const RING_CORE_BLUR_MUL = 2;
+export const RING_GLOW_WIDTH_MUL = 1.8;
+export const RING_CORE_WIDTH_MUL = 0.7;
+/** Web constellation grain overlay: opacity 0.045, mix-blend overlay, 160 tile. */
+export const GALAXY_GRAIN_TILE = 160;
+export const GALAXY_GRAIN_OPACITY = 0.045;
+/** Web memorial ignition flare: `R0 * 2.2 * (1.1 + 0.5 * ign.flare)`. */
+export const MEMORIAL_FLARE_R = 2.2;
+
 export const LABEL_PAD_X = 36;
 export const LABEL_PAD_TOP = 22;
 export const LABEL_PAD_BOTTOM = 26;
@@ -238,6 +262,14 @@ export function coreRadius(person: ConstellationPerson, lite: boolean): number {
   if (usesMemorialGlyph(person)) return glyphRadiusPx(lite, scale);
   const form = formFromRelation(person.is_self, person.relation, person.passed_at);
   return starCoreRadius(form) * scale;
+}
+
+/** Half-extent of the Skia saveLayer so glows, flares, and labels are not clipped. */
+export function bodyLayerPad(person: ConstellationPerson, lite: boolean): number {
+  const R0 = coreRadius(person, lite);
+  const extent = personExtent(person, lite);
+  const flare = usesMemorialGlyph(person) ? R0 * MEMORIAL_FLARE_R * 1.6 : R0 * 8 * 1.8;
+  return Math.ceil(Math.max(160, extent, flare) + 56);
 }
 
 export function personPhases(people: readonly ConstellationPerson[]): PersonPhase[] {

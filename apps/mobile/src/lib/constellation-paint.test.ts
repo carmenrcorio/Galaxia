@@ -8,6 +8,7 @@ import {
   hexA,
   nodePos,
   quadraticPoint,
+  bodyLayerPad,
   type ConstellationPerson,
 } from "./constellation-paint";
 
@@ -121,5 +122,18 @@ describe("constellation paint math", () => {
 
   it("encodes hex alpha the way the web canvas does", () => {
     expect(hexA("#E6AE6C", 0.5)).toBe("rgba(230,174,108,0.5)");
+  });
+
+  it("sizes the body saveLayer past glow, flare, and memorial wash", () => {
+    const self = person({ id: "self", is_self: true, relation: "self", birth_precision: "exact" });
+    const memorial = person({
+      id: "abuelita",
+      relation: "grandparent",
+      passed_at: "2019-01-01",
+      memorial_constellation: "orion",
+      star_scale: 2,
+    });
+    expect(bodyLayerPad(self, false)).toBeGreaterThan(80);
+    expect(bodyLayerPad(memorial, false)).toBeGreaterThan(80);
   });
 });

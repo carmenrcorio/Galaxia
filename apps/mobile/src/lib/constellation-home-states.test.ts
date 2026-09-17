@@ -37,7 +37,7 @@ describe("source wiring — mobile constellation loading / empty / error", () =>
   it("puts the compact This Week card after the greeting and before the constellation", () => {
     const greeting = home.indexOf("Welcome back");
     const thisWeek = home.indexOf("<ThisWeekCard");
-    const canvas = home.indexOf(">Constellation</Text>");
+    const canvas = home.indexOf(">Your constellation</Text>");
     const today = home.indexOf(">Today in your sky</Text>");
     expect(greeting).toBeGreaterThan(0);
     expect(thisWeek).toBeGreaterThan(greeting);

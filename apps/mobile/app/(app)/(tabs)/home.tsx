@@ -13,11 +13,14 @@ import {
   type RelationalTransitPersonInput
 } from "@galaxia/astro";
 import {
+  ELEMENT_NODE_COLORS,
   galaxyGeometry,
   galaxySeatXY,
   constellationSkeletonSeats,
   DEFAULT_FETCH_TIMEOUT_MS,
   elementFromRelation,
+  HONOR_LINE_STYLE,
+  HONOR_RELATION_TYPE,
   honorEdgesFromDeclaredRows,
   isMinorForSafety,
   peopleForTodaySky,
@@ -40,6 +43,7 @@ import { screenFill } from "../../../src/lib/screen";
 import { supabase } from "../../../src/lib/supabase";
 import { backfillProfileTimezoneIfMissing } from "../../../src/lib/timezone";
 import { fonts } from "../../../src/lib/typography";
+import { readUiSetting, SETTING_SHOW_RINGS, writeUiSetting } from "../../../src/lib/ui-settings";
 import { useAccessibilitySettings } from "../../../src/providers/accessibility-provider";
 import { useAuth } from "../../../src/providers/auth-provider";
 
@@ -121,6 +125,7 @@ export default function HomeScreen() {
   const [homeLoading, setHomeLoading] = useState(true);
   const [constellationFailed, setConstellationFailed] = useState(false);
   const [boxWidth, setBoxWidth] = useState(340);
+  const [showRings, setShowRings] = useState(true);
   const skeletonFade = useRef(new Animated.Value(1)).current;
   const liveFade = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
@@ -130,6 +135,12 @@ export default function HomeScreen() {
     if (!session?.user.id) return;
     void loadHome();
   }, [session?.user.id]);
+
+  useEffect(() => {
+    void readUiSetting(SETTING_SHOW_RINGS).then((value) => {
+      if (value === "false") setShowRings(false);
+    });
+  }, []);
 
   useEffect(() => {
     if (homeLoading) {
@@ -491,21 +502,33 @@ export default function HomeScreen() {
         )}
       />
 
-      <Text style={cardTitle}>Constellation</Text>
-      <View
-        style={{
-          height: stageHeight,
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor: tokens.colors.line,
-          backgroundColor: tokens.colors.ink,
-          overflow: "hidden",
-        }}
-        onLayout={(event) => {
-          const w = event.nativeEvent.layout.width;
-          if (w > 0) setBoxWidth(w);
-        }}
-      >
+      <GlassCard padding={0}>
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingTop: 20,
+            paddingBottom: 14,
+            borderBottomWidth: 1,
+            borderBottomColor: "rgba(255,255,255,0.05)",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10
+          }}
+        >
+          <View style={{ width: 24, height: 1, backgroundColor: tokens.colors.gold, opacity: 0.85 }} />
+          <Text style={eyebrowGold}>Your constellation</Text>
+        </View>
+        <View
+          style={{
+            height: stageHeight,
+            backgroundColor: tokens.colors.ink,
+            overflow: "hidden"
+          }}
+          onLayout={(event) => {
+            const w = event.nativeEvent.layout.width;
+            if (w > 0) setBoxWidth(w);
+          }}
+        >
           {constellationFailed ? (
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 12 }}>
                             <Text style={[cardBody, { textAlign: "center" }]}>{CONSTELLATION_LOAD_ERROR}</Text>
@@ -555,16 +578,98 @@ export default function HomeScreen() {
                     cohortByPerson={cohortByPerson}
                     activeTransitIds={activeTransitIds}
                     reduceMotion={reduceMotion}
+                    showRings={showRings}
                     onSelectPerson={(personId) =>
                       router.push({ pathname: "/profile/[personId]", params: { personId } })
                     }
                   />
                 ) : null}
               </Animated.View>
+              {!homeLoading && people.length > 0 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: showRings }}
+                  accessibilityLabel={showRings ? "Hide orbital rings" : "Show orbital rings"}
+                  onPress={() => {
+                    setShowRings((current) => {
+                      const next = !current;
+                      void writeUiSetting(SETTING_SHOW_RINGS, next ? "true" : "false");
+                      return next;
+                    });
+                  }}
+                  style={{
+                    position: "absolute",
+                    bottom: 12,
+                    left: 12,
+                    zIndex: 10,
+                    backgroundColor: "rgba(255,255,255,0.07)",
+                    borderWidth: 1,
+                    borderColor: "rgba(255,255,255,0.15)",
+                    borderRadius: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: showRings ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.30)",
+                      fontSize: 12,
+                      letterSpacing: 1.2,
+                      fontFamily: fonts.interSemi
+                    }}
+                  >
+                    RINGS
+                  </Text>
+                </Pressable>
+              ) : null}
             </>
           ) : null}
-      </View>
-      <Text style={cardBody}>Tap a star to open a profile.</Text>
+        </View>
+        {!homeLoading && !constellationFailed && people.length > 0 ? (
+          <View
+            style={{
+              paddingHorizontal: 20,
+              paddingVertical: 14,
+              borderTopWidth: 1,
+              borderTopColor: "rgba(255,255,255,0.05)",
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 16,
+              alignItems: "center"
+            }}
+          >
+            {[
+              { label: "Partner / binary at core", color: ELEMENT_NODE_COLORS.air, honor: false },
+              { label: "Ring 1 · children", color: ELEMENT_NODE_COLORS.earth, honor: false },
+              { label: "Ring 2 · parents & siblings", color: ELEMENT_NODE_COLORS.water, honor: false },
+              { label: "Ring 3 · friends & relatives", color: ELEMENT_NODE_COLORS.fire, honor: false },
+              { label: "Ring 4 · colleagues", color: ELEMENT_NODE_COLORS.earth, honor: false },
+              { label: "Remembered / ancient light", color: "#DA8C8C", honor: false },
+              ...(honorEdges.some((edge) => edge.relationType === HONOR_RELATION_TYPE)
+                ? [{ label: "Honor / remembrance light", color: HONOR_LINE_STYLE.water, honor: true }]
+                : [])
+            ].map((item) => (
+              <View key={item.label} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <View
+                  style={{
+                    width: item.honor ? 14 : 8,
+                    height: item.honor ? 2 : 8,
+                    borderRadius: item.honor ? 1 : 999,
+                    backgroundColor: item.color,
+                    borderTopWidth: item.honor ? 1 : 0,
+                    borderStyle: item.honor ? "dashed" : "solid",
+                    borderTopColor: item.honor ? HONOR_LINE_STYLE.ancient : "transparent"
+                  }}
+                />
+                <Text style={{ fontSize: 11, color: tokens.colors.mist2, fontFamily: fonts.inter }}>{item.label}</Text>
+              </View>
+            ))}
+            <Text style={{ marginLeft: "auto", fontSize: 11, color: tokens.colors.mist2, fontFamily: fonts.inter }}>
+              Tap a star to open
+            </Text>
+          </View>
+        ) : null}
+      </GlassCard>
 
       <GlassCard
         padding={12}
@@ -670,6 +775,14 @@ const cardTitle = {
   color: tokens.colors.cream,
   fontFamily: fonts.frauncesSemi,
   fontSize: 18
+} as const;
+
+const eyebrowGold = {
+  color: tokens.colors.gold,
+  fontFamily: fonts.interSemi,
+  fontSize: 11,
+  letterSpacing: 3.1,
+  textTransform: "uppercase" as const
 } as const;
 
 const cardBody = {

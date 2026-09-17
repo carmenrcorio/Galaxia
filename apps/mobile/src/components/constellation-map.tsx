@@ -1,7 +1,9 @@
 import {
+  AlphaType,
   BlendMode,
   Canvas,
   ClipOp,
+  ColorType,
   PaintStyle,
   Picture,
   Skia,
@@ -28,9 +30,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet } from "react-native";
 import {
   applyEmaShed,
+  ATM_BAKE_MS,
   basePos,
   bezierCP,
   birthPrecisionSharpness,
+  bodyLayerPad,
   buildConstellationModel,
   clamp01,
   clampGalaxyLabelPosition,
@@ -39,17 +43,26 @@ import {
   easeOutCubic,
   effectiveFor,
   elementStrokeColor,
+  GALAXY_GRAIN_OPACITY,
+  GALAXY_GRAIN_TILE,
   GALAXY_GUIDE_RINGS,
+  GALAXY_WASH_RADIUS,
+  GALAXY_WASH_STOPS,
   hexA,
   hitTestAt,
   ignitionAt,
   LABEL_FONT_PX,
   labelPositions,
   linkProgress,
+  MEMORIAL_FLARE_R,
   nodePos,
   quadraticPoint,
   REDUCED_FADE_MS,
   RING_BAND_COLORS,
+  RING_CORE_BLUR_MUL,
+  RING_CORE_WIDTH_MUL,
+  RING_GLOW_BLUR_MUL,
+  RING_GLOW_WIDTH_MUL,
   ringBandRadius,
   ringStardustPrng,
   SIGN_INDEX,
@@ -73,6 +86,7 @@ export type ConstellationMapProps = {
   cohortByPerson: Record<string, string>;
   activeTransitIds: readonly string[];
   reduceMotion: boolean;
+  showRings?: boolean;
   onSelectPerson: (personId: string) => void;
 };
 
@@ -155,16 +169,13 @@ function quadPath(ax: number, ay: number, cpx: number, cpy: number, bx: number, 
 
 function paintWash(canvas: SkCanvas, width: number, height: number) {
   const paint = Skia.Paint();
+  const radius = Math.max(width, height) * GALAXY_WASH_RADIUS;
   paint.setShader(
-    Skia.Shader.MakeLinearGradient(
-      { x: width / 2, y: 0 },
-      { x: width / 2, y: height },
-      [
-        Skia.Color("rgba(22,16,46,0.34)"),
-        Skia.Color("rgba(12,8,32,0.55)"),
-        Skia.Color("rgba(6,4,18,0.82)"),
-      ],
-      [0, 0.45, 1],
+    Skia.Shader.MakeRadialGradient(
+      { x: width / 2, y: height / 2 },
+      radius,
+      GALAXY_WASH_STOPS.map((s) => Skia.Color(s.color)),
+      GALAXY_WASH_STOPS.map((s) => s.pos),
       TileMode.Clamp,
     ),
   );
@@ -253,13 +264,30 @@ function paintGuideRings(canvas: SkCanvas, model: ConstellationModel) {
     const ry = radY * rn;
     const oval = Skia.XYWHRect(cx - rx, cy - ry, rx * 2, ry * 2);
 
-    const glow = makeStroke(band.glow, band.width * 1.8);
+    /* Web `paintNebulaBand`: core stroke + glow-colored shadowBlur. */
+    const glow = makeStroke(band.core, band.width * RING_GLOW_WIDTH_MUL);
     glow.setAlphaf(band.opacity * 0.5);
-    glow.setImageFilter(Skia.ImageFilter.MakeBlur(band.width * 2.4, band.width * 2.4, TileMode.Clamp, null));
+    glow.setColor(Skia.Color(band.glow));
+    glow.setImageFilter(
+      Skia.ImageFilter.MakeBlur(
+        band.width * RING_GLOW_BLUR_MUL,
+        band.width * RING_GLOW_BLUR_MUL,
+        TileMode.Clamp,
+        null,
+      ),
+    );
     canvas.drawOval(oval, glow);
 
-    const core = makeStroke(band.core, band.width * 0.7);
+    const core = makeStroke(band.core, band.width * RING_CORE_WIDTH_MUL);
     core.setAlphaf(band.opacity);
+    core.setImageFilter(
+      Skia.ImageFilter.MakeBlur(
+        band.width * RING_CORE_BLUR_MUL,
+        band.width * RING_CORE_BLUR_MUL,
+        TileMode.Clamp,
+        null,
+      ),
+    );
     canvas.drawOval(oval, core);
 
     const count = Math.min(80, Math.max(20, Math.round((2 * Math.PI * rx) / 8)));
@@ -277,6 +305,48 @@ function paintGuideRings(canvas: SkCanvas, model: ConstellationModel) {
       canvas.drawCircle(px, py, size, dust);
     }
   }
+}
+
+function recordRings(model: ConstellationModel): SkPicture {
+  const recorder = Skia.PictureRecorder();
+  const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, model.width, model.height));
+  paintGuideRings(canvas, model);
+  return recorder.finishRecordingAsPicture();
+}
+
+function recordGrain(width: number, height: number): SkPicture | null {
+  const tile = GALAXY_GRAIN_TILE;
+  const pixels = new Uint8Array(tile * tile * 4);
+  for (let i = 0; i < tile * tile; i++) {
+    const n = Math.floor(ringStardustPrng(i, 17) * 255);
+    const o = i * 4;
+    pixels[o] = n;
+    pixels[o + 1] = n;
+    pixels[o + 2] = n;
+    pixels[o + 3] = 255;
+  }
+  const img = Skia.Image.MakeImage(
+    {
+      width: tile,
+      height: tile,
+      alphaType: AlphaType.Opaque,
+      colorType: ColorType.RGBA_8888,
+    },
+    Skia.Data.fromBytes(pixels),
+    tile * 4,
+  );
+  if (!img) return null;
+  const recorder = Skia.PictureRecorder();
+  const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, width, height));
+  const paint = Skia.Paint();
+  paint.setAlphaf(GALAXY_GRAIN_OPACITY);
+  paint.setBlendMode(BlendMode.Overlay);
+  for (let y = 0; y < height; y += tile) {
+    for (let x = 0; x < width; x += tile) {
+      canvas.drawImage(img, x, y, paint);
+    }
+  }
+  return recorder.finishRecordingAsPicture();
 }
 
 function drawSynastryLink(
@@ -549,12 +619,22 @@ function drawBody(
   const tw = twinkleAt(model.phases[i], t, reduced);
   const bodyAlpha = reduced ? globalFade : easeOutCubic(ign.raw);
   canvas.save();
-  /* Skia has no globalAlpha; fold it into paints via a layer. */
+  /* Skia has no globalAlpha; fold it into paints via a layer sized to the glow. */
   const layerPaint = Skia.Paint();
   layerPaint.setAlphaf(bodyAlpha);
-  canvas.saveLayer(layerPaint, Skia.XYWHRect(q.x - 80, q.y - 80, 160, 160));
+  const pad = bodyLayerPad(p, lowPerf);
+  canvas.saveLayer(layerPaint, Skia.XYWHRect(q.x - pad, q.y - pad, pad * 2, pad * 2));
 
   if (memorialPattern) {
+    if (ign.flare > 0 && !lowPerf) {
+      const fr = R0 * MEMORIAL_FLARE_R * (1.1 + 0.5 * ign.flare);
+      canvas.drawCircle(
+        q.x,
+        q.y,
+        fr,
+        radialPaint(q.x, q.y, fr, [hexA(col, 0.22 * ign.flare), hexA(col, 0)], [0, 1]),
+      );
+    }
     drawMemorialGlyph(canvas, q, col, memorialPattern, scale, tw, p.star_scale, lowPerf, reduced);
     if (isActive && !reduced) {
       canvas.drawCircle(
@@ -699,7 +779,6 @@ function recordMotion(
 ): SkPicture {
   const recorder = Skia.PictureRecorder();
   const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, model.width, model.height));
-  paintGuideRings(canvas, model);
 
   const byId = new Map(model.people.map((p, i) => [p.id, positions[i]]));
   model.links.forEach((link, idx) => {
@@ -752,6 +831,7 @@ export function ConstellationMap({
   cohortByPerson,
   activeTransitIds,
   reduceMotion,
+  showRings = true,
   onSelectPerson,
 }: ConstellationMapProps) {
   const font = useFont(INTER_REGULAR, LABEL_FONT_PX);
@@ -760,7 +840,12 @@ export function ConstellationMap({
     [people, links, honorEdges, width, height],
   );
   const [atmPicture, setAtmPicture] = useState<SkPicture | null>(null);
+  const [ringsPicture, setRingsPicture] = useState<SkPicture | null>(null);
   const [motionPicture, setMotionPicture] = useState<SkPicture | null>(null);
+  const grainPicture = useMemo(
+    () => (width >= 2 && height >= 2 ? recordGrain(width, height) : null),
+    [width, height],
+  );
 
   const hitRef = useRef<{ model: ConstellationModel; positions: { x: number; y: number }[]; lite: boolean }>({
     model,
@@ -772,6 +857,7 @@ export function ConstellationMap({
     entranceStart: 0 as number | null,
     entranceKey: "",
     lastAtmBake: 0,
+    ringBakeKey: "",
     ema: { emaFrameMs: 16.7, warmup: 0, meteorsOff: reduceMotion, lowPerf: false } as EmaShed,
     meteors: [] as Meteor[],
     nextMeteorAt: 0,
@@ -786,6 +872,7 @@ export function ConstellationMap({
       anim.entranceStart = null;
       anim.lastFrame = 0;
       anim.lastAtmBake = 0;
+      anim.ringBakeKey = "";
       anim.ema = { emaFrameMs: 16.7, warmup: 0, meteorsOff: reduceMotion, lowPerf: false };
       anim.meteors = [];
       anim.nextMeteorAt = 0;
@@ -817,12 +904,23 @@ export function ConstellationMap({
       const labels = labelPositions(model, positions, lite);
 
       const nebFade = reduceMotion ? globalFade : clamp01((elapsed - 200) / 1200);
-      const bakeEvery = nebFade < 0.999 ? 120 : 250;
+      const bakeEvery = nebFade < 0.999 ? 120 : ATM_BAKE_MS;
       if (anim.lastAtmBake === 0 || now - anim.lastAtmBake > bakeEvery) {
         setAtmPicture(
           recordAtmosphere(model, positions, cohortByPerson, now, nebFade, reduceMotion, lite),
         );
         anim.lastAtmBake = now;
+      }
+
+      const ringKey = `${model.width}x${model.height}:${showRings ? 1 : 0}`;
+      if (showRings) {
+        if (anim.ringBakeKey !== ringKey) {
+          setRingsPicture(recordRings(model));
+          anim.ringBakeKey = ringKey;
+        }
+      } else if (anim.ringBakeKey !== ringKey) {
+        setRingsPicture(null);
+        anim.ringBakeKey = ringKey;
       }
 
       if (!reduceMotion && !anim.ema.meteorsOff) {
@@ -876,7 +974,7 @@ export function ConstellationMap({
       cancelled = true;
       cancelAnimationFrame(raf);
     };
-  }, [model, width, height, people, cohortByPerson, activeTransitIds, reduceMotion, font]);
+  }, [model, width, height, people, cohortByPerson, activeTransitIds, reduceMotion, font, showRings]);
 
   const onPress = useCallback(
     (event: { nativeEvent: { locationX: number; locationY: number } }) => {
@@ -904,7 +1002,9 @@ export function ConstellationMap({
     >
       <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
         {atmPicture ? <Picture picture={atmPicture} /> : null}
+        {ringsPicture ? <Picture picture={ringsPicture} /> : null}
         {motionPicture ? <Picture picture={motionPicture} /> : null}
+        {grainPicture ? <Picture picture={grainPicture} /> : null}
       </Canvas>
     </Pressable>
   );

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ACCOUNT_EXPORT_COPY, type AccountExportPayload } from "../../../../lib/account-data";
-import { createSupabaseServerClient } from "../../../../lib/supabase/server";
+import { createSupabaseClientForRequest } from "../../../../lib/supabase/user-from-request";
 
 export const runtime = "nodejs";
 
@@ -9,11 +9,11 @@ export const runtime = "nodejs";
  * Ownership enforced by RLS + explicit owner_id / id filters.
  * Real stored rows only; never fabricates placeholders.
  */
-export async function GET() {
-  const supabase = await createSupabaseServerClient();
+export async function GET(req: Request) {
+  const { supabase, accessToken } = await createSupabaseClientForRequest(req);
   const {
     data: { user }
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser(accessToken ?? undefined);
   if (!user) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }

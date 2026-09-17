@@ -19,7 +19,6 @@ import { AskBirthData } from "../../src/components/ask-birth-data";
 import { persistPerson } from "../../src/lib/persist-person";
 import { supabase } from "../../src/lib/supabase";
 import { useAuth } from "../../src/providers/auth-provider";
-import { useEntitlement } from "../../src/providers/entitlement-provider";
 
 type Relation = GalaxyPickerRelation | "self";
 
@@ -78,7 +77,6 @@ function parseOptionalInt(value: string, min: number, max: number): number | und
 
 export default function OnboardingScreen() {
   const { session } = useAuth();
-  const { tier, canAddPerson, peopleLimit } = useEntitlement();
   const [selfName, setSelfName] = useState("");
   const [selfInput, setSelfInput] = useState<BirthFormInput>(baseInput);
   const [personName, setPersonName] = useState("");
@@ -180,10 +178,6 @@ export default function OnboardingScreen() {
         setStatus("Please sign in first.");
         return;
       }
-      if (!canAddPerson(people.length)) {
-        setStatus(`Free tier limit reached (${peopleLimit} people). Upgrade in settings for unlimited people.`);
-        return;
-      }
       const deferred = personInput.precision === "none";
       const savedName = personName.trim();
       const created = await persistPerson(supabase, {
@@ -240,9 +234,6 @@ export default function OnboardingScreen() {
         <>
           <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>
                         Galaxia helps you show up for the people already in your life. We start with you, then add the rest of your circle. A birth date is enough. A time sharpens the picture.
-          </Text>
-          <Text style={{ color: tokens.colors.goldSoft }}>
-            Plan: {tier === "plus" ? "Galaxia+" : "Free"} · {tier === "plus" ? "unlimited people" : `${peopleLimit} people max`}
           </Text>
           <TextInput
             value={selfName}

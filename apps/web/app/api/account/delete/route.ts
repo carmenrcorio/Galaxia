@@ -6,7 +6,7 @@ import {
 } from "../../../../lib/account-data";
 import { missingEnvMessage, publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
-import { createSupabaseServerClient } from "../../../../lib/supabase/server";
+import { createSupabaseClientForRequest } from "../../../../lib/supabase/user-from-request";
 
 export const runtime = "nodejs";
 
@@ -31,10 +31,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: missingEnvMessage("SUPABASE_SERVICE_ROLE_KEY") }, { status: 503 });
   }
 
-  const supabase = await createSupabaseServerClient();
+  const { supabase, accessToken } = await createSupabaseClientForRequest(req);
   const {
     data: { user }
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser(accessToken ?? undefined);
   if (!user) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }

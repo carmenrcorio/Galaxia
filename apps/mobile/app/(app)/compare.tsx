@@ -40,7 +40,6 @@ import { GenerationalSection } from "../../src/components/generational-section";
 import { InitialAvatar } from "../../src/components/initial-avatar";
 import { supabase } from "../../src/lib/supabase";
 import { useAuth } from "../../src/providers/auth-provider";
-import { useEntitlement } from "../../src/providers/entitlement-provider";
 
 interface PersonLite {
   id: string;
@@ -70,7 +69,6 @@ function minorOf(p: PersonLite | null): boolean {
 
 export default function CompareScreen() {
   const { session } = useAuth();
-  const { tier } = useEntitlement();
   const [people, setPeople] = useState<PersonLite[]>([]);
   const [rosterLoading, setRosterLoading] = useState(true);
   const [rosterError, setRosterError] = useState(false);
@@ -313,9 +311,6 @@ export default function CompareScreen() {
       <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
         Choose any two people to see your dynamic, the astrology underneath, and the generational call-out.
       </Text>
-      <Text style={{ color: tokens.colors.goldSoft }}>
-        {tier === "plus" ? "Galaxia+ unlocked: full directional reads." : "Free plan: directional reads are abbreviated."}
-      </Text>
 
       <View style={cardStyle}>
                 <Text style={cardTitle}>{COMPARE_HISTORY_HEADING}</Text>
@@ -536,28 +531,22 @@ export default function CompareScreen() {
 
           <View style={cardStyle}>
             <Text style={cardTitle}>Understand each other</Text>
-            {tier === "plus" ? (
-              <>
-                <View style={directionalCard}>
-                  <Text style={directionalTitle}>{result.personA.display_name} may need:</Text>
-                  <Text style={cardBody}>
-                    {result.synastry.scores.communication < 50
-                      ? "slower, explicit check-ins and less assumption."
-                      : "clear communication plus emotional follow-through."}
-                  </Text>
-                </View>
-                <View style={directionalCard}>
-                  <Text style={directionalTitle}>{result.personB.display_name} may need:</Text>
-                  <Text style={cardBody}>
-                    {result.synastry.scores.warmth < 50
-                      ? "more visible affection and reassurance."
-                      : "respect for autonomy with consistent appreciation."}
-                  </Text>
-                </View>
-              </>
-            ) : (
-              <Text style={cardBody}>Directional detail unlocks on Galaxia+.</Text>
-            )}
+            <View style={directionalCard}>
+              <Text style={directionalTitle}>{result.personA.display_name} may need:</Text>
+              <Text style={cardBody}>
+                {result.synastry.scores.communication < 50
+                  ? "slower, explicit check-ins and less assumption."
+                  : "clear communication plus emotional follow-through."}
+              </Text>
+            </View>
+            <View style={directionalCard}>
+              <Text style={directionalTitle}>{result.personB.display_name} may need:</Text>
+              <Text style={cardBody}>
+                {result.synastry.scores.warmth < 50
+                  ? "more visible affection and reassurance."
+                  : "respect for autonomy with consistent appreciation."}
+              </Text>
+            </View>
           </View>
 
           <View style={cardStyle}>

@@ -41,7 +41,6 @@ import { supabase } from "../../src/lib/supabase";
 import { backfillProfileTimezoneIfMissing } from "../../src/lib/timezone";
 import { useAccessibilitySettings } from "../../src/providers/accessibility-provider";
 import { useAuth } from "../../src/providers/auth-provider";
-import { useEntitlement } from "../../src/providers/entitlement-provider";
 
 interface PersonRow {
   id: string;
@@ -106,7 +105,6 @@ const CONSTELLATION_RETRY = "Try again";
 
 export default function HomeScreen() {
   const { session, signOut } = useAuth();
-  const { tier } = useEntitlement();
   const { reduceMotion } = useAccessibilitySettings();
   // First name only, from the shared resolver, or null when no name has been
   // captured. Never the local part of an email address.
@@ -508,7 +506,6 @@ export default function HomeScreen() {
             <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
         {welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."} Here’s your constellation at a glance.
       </Text>
-      <Text style={{ color: tokens.colors.goldSoft }}>Plan: {tier === "plus" ? "Galaxia+" : "Free"}</Text>
 
       {homeStatus ? <Text style={{ color: tokens.colors.gold }}>{homeStatus}</Text> : null}
 

@@ -28,7 +28,7 @@ describe("Expo SDK 57 pins (Phase 0 complete, no Skia yet)", () => {
 
   it("does not opt out of New Architecture (required from SDK 55; Skia uses it)", () => {
     const app = JSON.parse(readFileSync(resolve(mobileRoot, "app.json"), "utf8")) as {
-      expo: { newArchEnabled?: boolean };
+      expo: { newArchEnabled?: boolean; plugins?: unknown };
     };
     expect(app.expo.newArchEnabled).toBeUndefined();
     expect(JSON.stringify(app.expo.plugins)).toContain("expo-splash-screen");

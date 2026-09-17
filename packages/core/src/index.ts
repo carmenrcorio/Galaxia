@@ -90,6 +90,8 @@ export * from "./cohort-reading";
 
 export * from "./account-name";
 
+export * from "./account-data";
+
 export * from "./contact";
 
 export * from "./timezone";

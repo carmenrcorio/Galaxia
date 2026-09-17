@@ -15,29 +15,27 @@ import {
 import {
   galaxyGeometry,
   galaxySeatXY,
-  galaxySeatsResolved,
-  effectiveSeat,
   constellationSkeletonSeats,
   DEFAULT_FETCH_TIMEOUT_MS,
-  formFromRelation,
+  elementFromRelation,
+  honorEdgesFromDeclaredRows,
   isMinorForSafety,
-  nodeDrawnExtent,
-  normalizeStarScale,
   peopleForTodaySky,
   resolveAccountName,
-  ringIndex,
   sunSignFromChart,
-  usesMemorialGlyph,
   withTimeout,
+  type HonorEdge,
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Pressable, ScrollView, Text, View } from "react-native";
+import { Animated, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
+import { ConstellationMap } from "../../../src/components/constellation-map";
 import { Chip, GlassCard, Pill } from "../../../src/components/glass";
 import { InitialAvatar } from "../../../src/components/initial-avatar";
 import { ThisWeekCard, type ThisWeekRow } from "../../../src/components/this-week-card";
 import { cacheGet, cacheSet } from "../../../src/lib/cache";
+import { constellationStageHeight, type SynastryLink } from "../../../src/lib/constellation-paint";
 import { screenFill } from "../../../src/lib/screen";
 import { supabase } from "../../../src/lib/supabase";
 import { backfillProfileTimezoneIfMissing } from "../../../src/lib/timezone";
@@ -58,14 +56,11 @@ interface PersonRow {
   custom_position?: { angle: number; radius_pct: number } | null;
   star_scale?: number | null;
   memorial_constellation?: string | null;
+  star_color?: string | null;
   sunSign?: string | null;
 }
 
-interface LinkRow {
-  fromId: string;
-  toId: string;
-  score: number;
-}
+type LinkRow = SynastryLink;
 
 interface ThreadChipPerson {
   id: string;
@@ -97,7 +92,6 @@ interface PersonSky {
    apps/web/components/relational-transit-feed.tsx). Read-only here. */
 type RelationalTransitRow = ThisWeekRow;
 
-const CONSTELLATION_BOX_HEIGHT = 340;
 const SKELETON_SEATS = constellationSkeletonSeats();
 const CONSTELLATION_CROSSFADE_MS = 250;
 
@@ -109,11 +103,15 @@ const CONSTELLATION_RETRY = "Try again";
 export default function HomeScreen() {
   const { session } = useAuth();
   const { reduceMotion } = useAccessibilitySettings();
+  const router = useRouter();
+  const { height: viewportHeight } = useWindowDimensions();
   // First name only, from the shared resolver, or null when no name has been
   // captured. Never the local part of an email address.
   const [welcomeName, setWelcomeName] = useState<string | null>(null);
   const [people, setPeople] = useState<PersonRow[]>([]);
   const [links, setLinks] = useState<LinkRow[]>([]);
+  const [honorEdges, setHonorEdges] = useState<HonorEdge[]>([]);
+  const [cohortByPerson, setCohortByPerson] = useState<Record<string, string>>({});
   const [personSkies, setPersonSkies] = useState<PersonSky[]>([]);
   const [relationalTransits, setRelationalTransits] = useState<RelationalTransitRow[]>([]);
   const [relationalPref, setRelationalPref] = useState<"all" | "major_only" | "off">("all");
@@ -123,7 +121,6 @@ export default function HomeScreen() {
   const [homeLoading, setHomeLoading] = useState(true);
   const [constellationFailed, setConstellationFailed] = useState(false);
   const [boxWidth, setBoxWidth] = useState(340);
-  const shimmer = useRef(new Animated.Value(0.45)).current;
   const skeletonFade = useRef(new Animated.Value(1)).current;
   const liveFade = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
@@ -133,21 +130,6 @@ export default function HomeScreen() {
     if (!session?.user.id) return;
     void loadHome();
   }, [session?.user.id]);
-
-  useEffect(() => {
-    if (reduceMotion) {
-      shimmer.setValue(1);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 1200, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0.45, duration: 1200, useNativeDriver: true })
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [reduceMotion, shimmer]);
 
   useEffect(() => {
     if (homeLoading) {
@@ -182,50 +164,10 @@ export default function HomeScreen() {
     ]).start();
   }, [homeLoading, constellationFailed, people.length, reduceMotion, skeletonFade, liveFade]);
 
+  const stageHeight = constellationStageHeight(boxWidth, viewportHeight);
   const constellationGeom = useMemo(
-    () => galaxyGeometry(boxWidth, CONSTELLATION_BOX_HEIGHT),
-    [boxWidth],
-  );
-
-  /* Same learnable seats as web `/app`: f(id, own ring) via galaxySeatsResolved
-     (near-collision nudge on the ring by stable id order). galaxyGeometry is
-     the only source — same ellipse as the web canvas, sized to this glance card. */
-  const constellationPositions = useMemo(() => {
-    const geom = constellationGeom;
-    const seats = galaxySeatsResolved(
-      people.map((person) => ({
-        id: person.id,
-        isSelf: person.is_self,
-        ring: ringIndex(person.is_self, person.relation, person.passed_at),
-      })),
-    );
-    return people.map((person) => {
-      const seat = seats.get(person.id) ?? { nx: 0, ny: 0, angle: 0, rn: 0 };
-      const { x, y } = effectiveSeat(
-        person,
-        seat.angle,
-        seat.rn,
-        geom,
-        {
-          extent: nodeDrawnExtent({
-            form: formFromRelation(person.is_self, person.relation, person.passed_at),
-            memorial: usesMemorialGlyph(person),
-            lite: true,
-            precision: person.birth_precision,
-            starScale: person.star_scale,
-          }),
-        },
-      );
-      return { personId: person.id, x, y };
-    });
-  }, [people, constellationGeom]);
-
-  const positionMap = useMemo(
-    () =>
-      new Map(
-        constellationPositions.map((position) => [position.personId, { x: position.x, y: position.y }])
-      ),
-    [constellationPositions]
+    () => galaxyGeometry(boxWidth, stageHeight),
+    [boxWidth, stageHeight],
   );
 
   /* Nodes shimmer when that person has a real eligible nudge today. */
@@ -254,9 +196,9 @@ export default function HomeScreen() {
       ).map((row) => row.id as string);
       const localDate = ownerLocalDate();
       const nowISO = new Date().toISOString();
-      const [{ data: profile }, { data: peopleRows, error: peopleError }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: transitRows }, { data: upcomingRows }] = await Promise.all([
+      const [{ data: profile }, { data: peopleRows, error: peopleError }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: transitRows }, { data: upcomingRows }, { data: relRows }] = await Promise.all([
       supabase.from("profiles").select("display_name, pinned_sky_person_id, timezone, relational_transit_alerts").eq("id", session.user.id).single(),
-      supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, custom_position, star_scale, memorial_constellation").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
+      supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
       personIds.length
         ? supabase.from("charts").select("person_id, data").in("person_id", personIds)
         : Promise.resolve({ data: [] as { person_id: string; data: NatalChart }[] }),
@@ -282,6 +224,7 @@ export default function HomeScreen() {
         .gt("active_from", nowISO)
         .order("active_from", { ascending: true })
         .limit(8),
+      supabase.from("relationships").select("person_a, person_b, relation_type").eq("owner_id", session.user.id),
       ]);
       if (peopleError) throw peopleError;
 
@@ -352,20 +295,34 @@ export default function HomeScreen() {
         person.sunSign = sunSignFromChart(chartById.get(person.id));
       }
       setPeople([...castPeople]);
+      const cohortMap: Record<string, string> = {};
+      for (const person of castPeople) {
+        const plutoSign = chartById.get(person.id)?.generational?.pluto?.sign;
+        if (plutoSign) cohortMap[person.id] = plutoSign;
+      }
+      setCohortByPerson(cohortMap);
       const calculatedLinks: LinkRow[] = [];
       for (let i = 0; i < castPeople.length; i += 1) {
         for (let j = i + 1; j < castPeople.length; j += 1) {
-          const a = castPeople[i];
-          const b = castPeople[j];
-          const chartA = chartById.get(a.id);
-          const chartB = chartById.get(b.id);
-          if (!chartA || !chartB) continue;
-          const synastry = computeSynastry(chartA, chartB);
-          calculatedLinks.push({ fromId: a.id, toId: b.id, score: synastry.scores.overall });
+          const chartA = chartById.get(castPeople[i].id);
+          const chartB = chartById.get(castPeople[j].id);
+          const score = chartA && chartB ? computeSynastry(chartA, chartB).scores.overall : 50;
+          calculatedLinks.push({
+            fromId: castPeople[i].id,
+            toId: castPeople[j].id,
+            scoreA: score,
+            elA: elementFromRelation(castPeople[i].relation, castPeople[i].passed_at),
+            elB: elementFromRelation(castPeople[j].relation, castPeople[j].passed_at),
+          });
         }
       }
-      const finalLinks = calculatedLinks.sort((a, b) => b.score - a.score).slice(0, 14);
+      const finalLinks = calculatedLinks.sort((a, b) => b.scoreA - a.scoreA).slice(0, 14);
       setLinks(finalLinks);
+      const nextHonorEdges = honorEdgesFromDeclaredRows(
+        (relRows ?? []) as Array<{ person_a: string; person_b: string; relation_type: string }>,
+        castPeople,
+      );
+      setHonorEdges(nextHonorEdges);
 
       // Durable daily nudges — living people only; frozen copy_resolved.
       // Passed people are excluded via peopleForTodaySky (same care hole as web).
@@ -434,7 +391,7 @@ export default function HomeScreen() {
       }>;
       if (threads.length === 0) {
         setThreadChips([]);
-        await cacheSet(cacheKey, { welcomeName: resolvedFirstName, people: castPeople, links: finalLinks, personSkies: skies, threadChips: [] });
+        await cacheSet(cacheKey, { welcomeName: resolvedFirstName, people: castPeople, links: finalLinks, honorEdges: nextHonorEdges, personSkies: skies, threadChips: [], cohortByPerson: cohortMap });
         return;
       }
       const { data: messages } = await supabase
@@ -471,8 +428,10 @@ export default function HomeScreen() {
         welcomeName: resolvedFirstName,
         people: castPeople,
         links: finalLinks,
+        honorEdges: nextHonorEdges,
         personSkies: skies,
-        threadChips: computedThreadChips
+        threadChips: computedThreadChips,
+        cohortByPerson: cohortMap,
       });
       })(), DEFAULT_FETCH_TIMEOUT_MS);
     } catch {
@@ -480,13 +439,17 @@ export default function HomeScreen() {
         welcomeName?: string | null;
         people: PersonRow[];
         links: LinkRow[];
+        honorEdges?: HonorEdge[];
         personSkies: PersonSky[];
         threadChips: ThreadChip[];
+        cohortByPerson?: Record<string, string>;
       }>(`home_state:${session.user.id}`);
       if (cached) {
         setWelcomeName(cached.welcomeName ?? welcomeName);
         setPeople(cached.people);
         setLinks(cached.links);
+        setHonorEdges(cached.honorEdges ?? []);
+        setCohortByPerson(cached.cohortByPerson ?? {});
         setPersonSkies(cached.personSkies ?? []);
         setThreadChips(cached.threadChips);
         setHomeStatus("Offline mode: showing cached home.");
@@ -494,6 +457,8 @@ export default function HomeScreen() {
       } else {
         setPeople([]);
         setLinks([]);
+        setHonorEdges([]);
+        setCohortByPerson({});
         setPersonSkies([]);
         setThreadChips([]);
         setConstellationFailed(true);
@@ -507,7 +472,7 @@ export default function HomeScreen() {
     <ScrollView ref={scrollRef} style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
       <Text style={{ color: tokens.colors.cream, fontSize: 33, fontFamily: fonts.frauncesSemi }}>Galaxia Mea</Text>
             <Text style={{ color: tokens.colors.mist, lineHeight: 21, fontFamily: fonts.inter }}>
-        {welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."} Here’s your constellation at a glance.
+        {welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."} Here’s your constellation.
       </Text>
 
       {homeStatus ? <Text style={{ color: tokens.colors.gold }}>{homeStatus}</Text> : null}
@@ -526,15 +491,21 @@ export default function HomeScreen() {
         )}
       />
 
-      <GlassCard padding={12}>
-        <Text style={cardTitle}>Constellation</Text>
-        <View
-          style={{ height: CONSTELLATION_BOX_HEIGHT, borderRadius: 16, borderWidth: 1, borderColor: tokens.colors.line, backgroundColor: tokens.colors.ink, overflow: "hidden" }}
-          onLayout={(event) => {
-            const w = event.nativeEvent.layout.width;
-            if (w > 0) setBoxWidth(w);
-          }}
-        >
+      <Text style={cardTitle}>Constellation</Text>
+      <View
+        style={{
+          height: stageHeight,
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: tokens.colors.line,
+          backgroundColor: tokens.colors.ink,
+          overflow: "hidden",
+        }}
+        onLayout={(event) => {
+          const w = event.nativeEvent.layout.width;
+          if (w > 0) setBoxWidth(w);
+        }}
+      >
           {constellationFailed ? (
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 12 }}>
                             <Text style={[cardBody, { textAlign: "center" }]}>{CONSTELLATION_LOAD_ERROR}</Text>
@@ -573,62 +544,27 @@ export default function HomeScreen() {
                   );
                 })}
               </Animated.View>
-              <Animated.View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: liveFade }}>
-          {links.map((link) => {
-            const from = positionMap.get(link.fromId);
-            const to = positionMap.get(link.toId);
-            if (!from || !to) return null;
-            const dx = to.x - from.x;
-            const dy = to.y - from.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-            const scoreColor = link.score >= 62 ? tokens.colors.gold : tokens.colors.rose;
-            return (
-              <View
-                key={`${link.fromId}-${link.toId}`}
-                style={{
-                  position: "absolute",
-                  left: from.x,
-                  top: from.y,
-                  width: distance,
-                  height: 2,
-                  backgroundColor: scoreColor,
-                  opacity: 0.65,
-                  transform: [{ rotate: `${angle}deg` }]
-                }}
-              />
-            );
-          })}
-          {constellationPositions.map((position) => {
-            const person = people.find((row) => row.id === position.personId);
-            if (!person) return null;
-            const isActive = activeTransitIds.includes(person.id);
-            const size = 20 * normalizeStarScale(person.star_scale);
-            return (
-              <View key={person.id} style={{ position: "absolute", left: position.x - 24, top: position.y - 24, alignItems: "center", width: 48 }}>
-                <Animated.View
-                  style={{
-                    width: size,
-                    height: size,
-                    borderRadius: 999,
-                    backgroundColor: person.is_self ? tokens.colors.gold : tokens.colors.teal,
-                    borderWidth: 1,
-                    borderColor: tokens.colors.cream,
-                    opacity: isActive ? shimmer : 0.85
-                  }}
-                />
-                <Text style={{ color: tokens.colors.cream, fontSize: 11, marginTop: 4 }} numberOfLines={1}>
-                  {person.display_name}
-                </Text>
-              </View>
-            );
-          })}
+              <Animated.View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: liveFade }} pointerEvents={homeLoading ? "none" : "auto"}>
+                {!homeLoading && people.length > 0 ? (
+                  <ConstellationMap
+                    width={boxWidth}
+                    height={stageHeight}
+                    people={people}
+                    links={links}
+                    honorEdges={honorEdges}
+                    cohortByPerson={cohortByPerson}
+                    activeTransitIds={activeTransitIds}
+                    reduceMotion={reduceMotion}
+                    onSelectPerson={(personId) =>
+                      router.push({ pathname: "/profile/[personId]", params: { personId } })
+                    }
+                  />
+                ) : null}
               </Animated.View>
             </>
           ) : null}
-        </View>
-        <Text style={cardBody}>Links are weighted by composite compatibility score (gold flow / rose tension).</Text>
-      </GlassCard>
+      </View>
+      <Text style={cardBody}>Tap a star to open a profile.</Text>
 
       <GlassCard
         padding={12}

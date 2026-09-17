@@ -10,6 +10,7 @@ import {
   RING_BAND_COLORS,
   birthPrecisionSharpness,
   clampGalaxyLabelPosition,
+  clampSeatRn,
   effectiveSeat,
   formFromRelation,
   galaxyGeometry,
@@ -20,6 +21,7 @@ import {
   hash01,
   nodeDrawnExtent,
   normalizeStarScale,
+  pointerToCustomPosition,
   ringBandRadius,
   ringIndex,
   starCoreRadius,
@@ -63,6 +65,10 @@ export const LABEL_PAD_TOP = 22;
 export const LABEL_PAD_BOTTOM = 26;
 export const LABEL_FONT_PX = 11;
 
+/** Web hold-to-drag: 180ms hold, or 8px move, then persist `custom_position`. */
+export const DRAG_HOLD_MS = 180;
+export const DRAG_ACTIVATE_PX = 8;
+
 export const REDUCED_FADE_MS = 900;
 export const SELF_DUR = 650;
 export const NODE_DUR = 520;
@@ -96,6 +102,12 @@ export const ZODIAC_SIGNS = [
 export const SIGN_INDEX: Record<string, number> = Object.fromEntries(
   ZODIAC_SIGNS.map((sign, i) => [sign, i]),
 );
+
+export type PendingSeat = {
+  personId: string;
+  angle: number;
+  radiusPct: number;
+};
 
 export type ConstellationPerson = {
   id: string;
@@ -343,6 +355,40 @@ export function buildConstellationModel(input: {
     totalDuration,
     phases: personPhases(people),
     selfId,
+  };
+}
+
+/** Live drag overlay. Self never takes a custom seat. Same as web `overlayPerson`. */
+export function overlayPerson(
+  person: ConstellationPerson,
+  pending: PendingSeat | null,
+): ConstellationPerson {
+  if (!pending || pending.personId !== person.id || person.is_self) return person;
+  return {
+    ...person,
+    custom_position: { angle: pending.angle, radius_pct: pending.radiusPct },
+  };
+}
+
+export function modelWithPending(model: ConstellationModel, pending: PendingSeat | null): ConstellationModel {
+  if (!pending) return model;
+  return {
+    ...model,
+    people: model.people.map((person) => overlayPerson(person, pending)),
+  };
+}
+
+export function dragSeatFromPointer(
+  px: number,
+  py: number,
+  person: ConstellationPerson,
+  lite: boolean,
+  geom: GalaxyGeometry,
+): CustomGalaxyPosition {
+  const polar = pointerToCustomPosition(px, py, geom);
+  return {
+    angle: polar.angle,
+    radius_pct: clampSeatRn(polar.angle, polar.radius_pct, geom, personExtent(person, lite)),
   };
 }
 

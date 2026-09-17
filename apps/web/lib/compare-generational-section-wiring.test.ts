@@ -34,14 +34,14 @@ describe("/app/compare mounts the shared GenerationalSection", () => {
 
 describe("mobile Compare mounts its native GenerationalSection", () => {
   it("no longer constructs or renders the duplicate era headline", () => {
-    const src = read("apps/mobile/app/(app)/compare.tsx");
+    const src = read("apps/mobile/app/(app)/(tabs)/compare.tsx");
     expect(src).not.toContain("ancestralHeadline");
     expect(src).not.toContain(DUPLICATE_HEADLINE);
   });
 
   it("mounts the native GenerationalSection, wired to the shared curated lookup", () => {
-    const src = read("apps/mobile/app/(app)/compare.tsx");
-    expect(src).toContain('from "../../src/components/generational-section"');
+    const src = read("apps/mobile/app/(app)/(tabs)/compare.tsx");
+    expect(src).toContain('from "../../../src/components/generational-section"');
     expect(src).toContain("<GenerationalSection");
     expect(src).toContain("professional={isProfessionalRelation(relationType)}");
 

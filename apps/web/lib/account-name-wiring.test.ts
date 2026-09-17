@@ -36,7 +36,7 @@ const NAME_SURFACES = [
   "apps/web/app/api/cron/trial-emails/route.ts",
   "apps/web/app/api/cron/nudge-send/route.ts",
   "apps/web/app/api/cron/constellation-letter/route.ts",
-  "apps/mobile/app/(app)/home.tsx",
+  "apps/mobile/app/(app)/(tabs)/home.tsx",
   "apps/mobile/app/index.tsx"
 ];
 
@@ -51,7 +51,7 @@ describe("no surface derives a display name from an email address", () => {
 });
 
 describe("the greeting surfaces read the shared resolver", () => {
-  for (const surface of ["apps/web/app/app/page.tsx", "apps/mobile/app/(app)/home.tsx", "apps/web/app/account/page.tsx"]) {
+  for (const surface of ["apps/web/app/app/page.tsx", "apps/mobile/app/(app)/(tabs)/home.tsx", "apps/web/app/account/page.tsx"]) {
     it(`${surface} calls resolveAccountName`, () => {
       expect(read(surface)).toContain("resolveAccountName(");
     });

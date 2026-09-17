@@ -128,7 +128,7 @@ describe("mobile can save a person with no birth data (web precision parity)", (
   });
 
   it("wiring: the profile screen renders a person who has no chart row", () => {
-    expect(profileSrc).toContain('supabase.from("charts").select("data").eq("person_id", actualPersonId).maybeSingle()');
+    expect(profileSrc).toContain('supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualPersonId).maybeSingle()');
     expect(profileSrc).not.toContain("Unable to load chart.");
     expect(profileSrc).not.toContain("if (!person || !chart)");
     expect(profileSrc).toContain("CHART_PRECISION_NONE_FACT");

@@ -54,7 +54,7 @@ describe("signup piggyback is bonus-only, gated on an immediate session", () => 
 
 describe("mobile parity — home.tsx backfills using the profile row it already fetched", () => {
   it("selects timezone alongside the existing profile columns instead of a second query", () => {
-    const src = read("apps/mobile/app/(app)/home.tsx");
+    const src = read("apps/mobile/app/(app)/(tabs)/home.tsx");
     // Broadened from an exact-string match so later additions to this same
     // select (e.g. Generations Feature 3's relational_transit_alerts) don't
     // fail this guard as long as display_name/pinned_sky_person_id/timezone

@@ -1,31 +1,11 @@
 /**
  * Design utilities
- * Glyph maps ported from design/reference/galaxia.jsx (SIGN, PLANET, ASPGLY).
- * Person chip color lives in `@galaxia/core` `personChipColor` — do not hash
- * a name into `.av-*` classes here.
+ * Glyph maps live in `@galaxia/core` (SIGN / PLANET / ASPGLY from
+ * design/reference/galaxia.jsx). Person chip color lives in
+ * `personChipColor` — do not hash a name into `.av-*` classes here.
  */
 
-/* Sign glyphs — from galaxia.jsx SIGN object (unicode codepoints) */
-export const SIGN_GLYPH: Record<string, string> = {
-  Aries: "\u2648", Taurus: "\u2649", Gemini: "\u264A", Cancer: "\u264B",
-  Leo: "\u264C", Virgo: "\u264D", Libra: "\u264E", Scorpio: "\u264F",
-  Sagittarius: "\u2650", Capricorn: "\u2651", Aquarius: "\u2652", Pisces: "\u2653"
-};
-
-/* Planet glyphs — from galaxia.jsx PLANET object */
-export const BODY_GLYPH: Record<string, string> = {
-  Sun: "\u2609", Moon: "\u263D", Mercury: "\u263F", Venus: "\u2640", Mars: "\u2642",
-  Jupiter: "\u2643", Saturn: "\u2644", Uranus: "\u2645", Neptune: "\u2646", Pluto: "\u2647",
-  // lower-case variants for engine output
-  sun: "\u2609", moon: "\u263D", mercury: "\u263F", venus: "\u2640", mars: "\u2642",
-  jupiter: "\u2643", saturn: "\u2644", uranus: "\u2645", neptune: "\u2646", pluto: "\u2647",
-};
-
-/* Aspect glyphs — from galaxia.jsx ASPGLY */
-export const ASPECT_GLYPH: Record<string, string> = {
-  conjunction: "\u260C", sextile: "\u26B9", square: "\u25A1",
-  trine: "\u25B3", opposition: "\u260D"
-};
+export { ASPECT_GLYPH, BODY_GLYPH, SIGN_GLYPH, signElement } from "@galaxia/core";
 
 /* Aspect one-liners — from galaxia.jsx ASPLINE */
 export const ASPECT_LINE: Record<string, string> = {
@@ -35,14 +15,6 @@ export const ASPECT_LINE: Record<string, string> = {
   trine:        "natural, effortless gift",
   opposition:   "a balancing act, pulled two ways",
 };
-
-/* Element for a sign */
-export function signElement(sign: string): "fire" | "earth" | "air" | "water" {
-  if (["Aries","Leo","Sagittarius"].includes(sign)) return "fire";
-  if (["Taurus","Virgo","Capricorn"].includes(sign)) return "earth";
-  if (["Gemini","Libra","Aquarius"].includes(sign)) return "air";
-  return "water";
-}
 
 /**
  * Qualitative label for a synastry score.

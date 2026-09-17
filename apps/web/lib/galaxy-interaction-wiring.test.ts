@@ -10,7 +10,7 @@ const migration = readFileSync(
   "utf8",
 );
 const editPanel = readFileSync(join(REPO_ROOT, "apps/web/components/edit-person-panel.tsx"), "utf8");
-const mobileHome = readFileSync(join(REPO_ROOT, "apps/mobile/app/(app)/home.tsx"), "utf8");
+const mobileHome = readFileSync(join(REPO_ROOT, "apps/mobile/app/(app)/(tabs)/home.tsx"), "utf8");
 
 describe("galaxy interaction — rings toggle + custom_position", () => {
   it("persists the rings pref through ui-settings, not a new hook", () => {

@@ -98,6 +98,10 @@ export * from "./timezone";
 export * from "./memorial-timeline";
 export * from "./chart-precision";
 
+export * from "./glyphs";
+
+export * from "./chart-wheel-geometry";
+
 export * from "./create-person";
 
 export * from "./birth-data-invite";

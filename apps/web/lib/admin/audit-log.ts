@@ -22,7 +22,12 @@ export const ADMIN_AUDIT_ACTIONS = [
   "revoke_comp",
   "create_post",
   "update_post",
-  "delete_post"
+  "delete_post",
+  "update_email_template",
+  "create_email_campaign",
+  "update_email_campaign",
+  "send_email_campaign",
+  "send_email_test"
 ] as const;
 
 export type AdminAuditAction = (typeof ADMIN_AUDIT_ACTIONS)[number];
@@ -40,7 +45,12 @@ const ADMIN_AUDIT_ACTION_LABELS: Record<AdminAuditAction, string> = {
   revoke_comp: "Revoked comp access",
   create_post: "Created blog post",
   update_post: "Updated blog post",
-  delete_post: "Deleted blog post"
+  delete_post: "Deleted blog post",
+  update_email_template: "Updated email",
+  create_email_campaign: "Created email campaign",
+  update_email_campaign: "Updated email campaign",
+  send_email_campaign: "Sent email campaign",
+  send_email_test: "Sent test email"
 };
 
 /**

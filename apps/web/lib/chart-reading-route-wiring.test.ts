@@ -20,7 +20,10 @@ describe("blog chart-reading capture route wiring", () => {
     expect(route).toContain('.from("blog_email_captures")');
     expect(route).toContain("dispatchEmail");
     expect(route).toContain("addToBlogChartReadingsAudience");
-    expect(route).toContain("chartReadingEmail");
+    expect(route).toContain("loadAutomationCopy");
+    expect(route).toContain("recordEmailSend");
+    expect(route).toContain("emailOpenPixelUrl");
+    expect(route).toContain("chart.reading");
     expect(route).toContain("has_birth_data");
   });
 
@@ -44,6 +47,7 @@ describe("blog chart-reading capture route wiring", () => {
   it("unsubscribe verifies the HMAC token and marks the Resend contact unsubscribed", () => {
     expect(unsub).toContain("emailFromChartReadingUnsubscribeToken");
     expect(unsub).toContain("unsubscribeBlogChartReading");
+    expect(unsub).toContain("unsubscribed_at");
     expect(unsub).toContain("CHART_READING_UNSUBSCRIBED");
   });
 });

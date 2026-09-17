@@ -107,6 +107,9 @@ describe("isSensitiveRequestPath", () => {
     expect(isSensitiveRequestPath("/api/constellation-letter/unsubscribe")).toBe(true);
     expect(isSensitiveRequestPath("/api/constellation-letter/open")).toBe(true);
     expect(isSensitiveRequestPath("/api/constellation-letter/go")).toBe(true);
+    expect(isSensitiveRequestPath("/api/email/open")).toBe(true);
+    expect(isSensitiveRequestPath("/api/email/open?t=abc")).toBe(true);
+    expect(isSensitiveRequestPath("/api/campaign-email/unsubscribe")).toBe(true);
     expect(isSensitiveRequestPath("/api/blog/chart-reading-capture")).toBe(true);
     expect(isSensitiveRequestPath("/api/blog/chart-reading-unsubscribe")).toBe(true);
   });

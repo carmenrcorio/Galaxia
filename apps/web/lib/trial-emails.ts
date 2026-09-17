@@ -13,12 +13,13 @@ export type TrialEmailSkipReason =
   | "alreadySent"
   | "noEmail"
   | "noResendKey"
-  | "sendFailed";
+  | "sendFailed"
+  | "paused";
 
 export type TrialEmailSkipped = Record<TrialEmailSkipReason, number>;
 
 export function emptyTrialEmailSkipped(): TrialEmailSkipped {
-  return { trialAlreadyEnded: 0, optedOut: 0, noEmail: 0, notDue: 0, alreadySent: 0, noResendKey: 0, sendFailed: 0 };
+  return { trialAlreadyEnded: 0, optedOut: 0, noEmail: 0, notDue: 0, alreadySent: 0, noResendKey: 0, sendFailed: 0, paused: 0 };
 }
 
 /**

@@ -19,9 +19,13 @@ import {
   placementLabel
 } from "./chart-reading-copy";
 import { BODY_LABEL, type ChartReading } from "./chart-reading";
+import type { EmailCopy } from "./email-copy";
+import { emphasizeParagraphHtml, fillTemplate, trialTemplateVars } from "./email-copy";
+import { emailCtaHref, type EmailCtaPathKey, type TrialEmailKind } from "./email-kinds";
+import { trackingPixelHtml } from "./email-tracking";
 import { EMAIL_PATHS } from "./nav-links";
 
-export type TrialEmailKind = "day1" | "day4_one" | "day4_multi" | "day11" | "day14";
+export type { TrialEmailKind } from "./email-kinds";
 
 export interface TrialEmailData {
   /** From resolveAccountName(...).firstName. Null when no name was captured. Never an email fragment. */
@@ -35,6 +39,8 @@ export interface TrialEmailData {
   siteUrl: string;
   /** `profiles.unsubscribe_token` — the no-login /api/unsubscribe token. */
   unsubscribeToken: string;
+  /** First-party open pixel. Omit in unit tests that assert the shipped HTML. */
+  trackingUrl?: string;
 }
 
 export interface RenderedEmail {
@@ -59,13 +65,15 @@ function preheader(preview: string): string {
   return `<div style="display:none;font-size:1px;color:${INK};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden">${preview}${pad}</div>`;
 }
 
-function shell(bodyHtml: string, preview: string): string {
+function shell(bodyHtml: string, preview: string, trackingUrl?: string): string {
+  const pixel = trackingUrl ? trackingPixelHtml(trackingUrl) : "";
   return `<!doctype html><html><body style="margin:0;background:${INK};color:${CREAM};font-family:-apple-system,Segoe UI,Inter,sans-serif;line-height:1.65">
     ${preheader(preview)}
     <div style="max-width:520px;margin:0 auto;padding:32px 24px">
       <div style="font-family:Georgia,serif;font-size:22px;color:${GOLD};margin-bottom:24px">Galaxia</div>
       ${bodyHtml}
       <p style="color:#8076a6;font-size:12px;margin-top:32px">${SITE_CLOSER}</p>
+      ${pixel}
     </div>
   </body></html>`;
 }
@@ -146,7 +154,8 @@ export function day1Email(d: TrialEmailData): RenderedEmail {
       button("Add someone else →", `${d.siteUrl}${EMAIL_PATHS.welcome}`) +
       p(trialLine) +
       complianceFooterHtml(unsubscribeUrl),
-    preview
+    preview,
+    d.trackingUrl
   );
   const text = `${greeting}\n\n${addedLine}\n\n${nextLine}\n\nAdd someone else: ${d.siteUrl}${EMAIL_PATHS.welcome}\n\n${trialLine}\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, preview, html, text };
@@ -168,7 +177,8 @@ export function day4MultiEmail(d: TrialEmailData): RenderedEmail {
       p(actionLine) +
       button("Compare two people →", `${d.siteUrl}${EMAIL_PATHS.compare}`) +
       complianceFooterHtml(unsubscribeUrl),
-    preview
+    preview,
+    d.trackingUrl
   );
   const text = `${greeting}\n\n${mappedLine}\n\n${actionText}\n\nCompare two people: ${d.siteUrl}${EMAIL_PATHS.compare}\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, preview, html, text };
@@ -191,7 +201,8 @@ export function day4OneEmail(d: TrialEmailData): RenderedEmail {
       p(nextLine) +
       button("Add someone →", `${d.siteUrl}${EMAIL_PATHS.welcome}`) +
       complianceFooterHtml(unsubscribeUrl),
-    preview
+    preview,
+    d.trackingUrl
   );
   const text = `${greeting}\n\n${factLine}\n\n${nextLine}\n\nAdd someone: ${d.siteUrl}${EMAIL_PATHS.welcome}\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, preview, html, text };
@@ -219,7 +230,8 @@ export function day11Email(d: TrialEmailData): RenderedEmail {
       p(stayLine) +
       button("Continue with Galaxia →", `${d.siteUrl}${EMAIL_PATHS.subscribe}`) +
       complianceFooterHtml(unsubscribeUrl),
-    preview
+    preview,
+    d.trackingUrl
   );
   const text = `${greeting}\n\n${endsLine}\n\nHere's what you've built:\n- ${d.peopleCount} people\n- ${d.notesCount} private notes, visible only to you\n- ${d.threadsCount} conversations with Vela\n- ${d.groupsCount} constellations you named\n\n${stayLine}\n\nContinue with Galaxia: ${d.siteUrl}${EMAIL_PATHS.subscribe}\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, preview, html, text };
@@ -241,13 +253,20 @@ export function day14Email(d: TrialEmailData): RenderedEmail {
       button("Pick up where you left off →", `${d.siteUrl}${EMAIL_PATHS.app}`) +
       p(feedbackLine) +
       complianceFooterHtml(unsubscribeUrl),
-    preview
+    preview,
+    d.trackingUrl
   );
   const text = `${greeting}\n\n${endedLine}\n\n${savedLine}\n\nPick up where you left off: ${d.siteUrl}${EMAIL_PATHS.app}\n\n${feedbackLine}\n\n${complianceFooterText(unsubscribeUrl)}`;
   return { subject, preview, html, text };
 }
 
-export function renderTrialEmail(kind: TrialEmailKind, d: TrialEmailData): RenderedEmail {
+export function renderTrialEmail(kind: TrialEmailKind, d: TrialEmailData, copy?: EmailCopy): RenderedEmail {
+  if (copy) return renderCopiedEmail(copy, trialTemplateVars(d), {
+    siteUrl: d.siteUrl,
+    unsubscribeUrl: trialUnsubscribeUrl(d.siteUrl, d.unsubscribeToken),
+    trackingUrl: d.trackingUrl,
+    greeting: ownerGreeting(d.firstName)
+  });
   switch (kind) {
     case "day1": return day1Email(d);
     case "day4_one": return day4OneEmail(d);
@@ -255,6 +274,56 @@ export function renderTrialEmail(kind: TrialEmailKind, d: TrialEmailData): Rende
     case "day11": return day11Email(d);
     case "day14": return day14Email(d);
   }
+}
+
+export interface CopiedEmailOptions {
+  siteUrl: string;
+  unsubscribeUrl: string;
+  trackingUrl?: string;
+  greeting: string;
+}
+
+/**
+ * Renders admin-edited (or shipped-default) copy through the same ink/cream
+ * shell, CAN-SPAM footer, and CTA button as the hardcoded trial emails.
+ * Greeting is always prepended and is not stored in the template.
+ */
+export function renderCopiedEmail(
+  copy: EmailCopy,
+  vars: Record<string, string>,
+  opts: CopiedEmailOptions
+): RenderedEmail {
+  const withGreeting = { ...vars, greeting: opts.greeting };
+  const subject = fillTemplate(copy.subject, withGreeting, "text").trim();
+  const preview = fillTemplate(copy.preview, withGreeting, "text").trim();
+  let htmlBody = p(escapeHtml(opts.greeting));
+  const textParts: string[] = [opts.greeting, ""];
+  for (const paragraph of copy.paragraphs) {
+    if (!paragraph.trim()) continue;
+    const textFilled = fillTemplate(paragraph.replaceAll("{{builtList}}", vars.builtListText ?? ""), withGreeting, "text");
+    if (paragraph.includes("{{builtList}}")) {
+      htmlBody += fillTemplate(paragraph, withGreeting, "html");
+      textParts.push(textFilled, "");
+    } else {
+      htmlBody += p(emphasizeParagraphHtml(paragraph, withGreeting));
+      textParts.push(textFilled, "");
+    }
+  }
+  const ctaLabel = copy.ctaLabel?.trim() ?? "";
+  const ctaKey = copy.ctaPathKey;
+  if (ctaLabel && ctaKey) {
+    const href = emailCtaHref(opts.siteUrl, ctaKey);
+    htmlBody += button(ctaLabel, href);
+    textParts.push(`${ctaLabel.replace(/ →$/, "")}: ${href}`, "");
+  }
+  htmlBody += complianceFooterHtml(opts.unsubscribeUrl);
+  textParts.push(complianceFooterText(opts.unsubscribeUrl));
+  return {
+    subject,
+    preview,
+    html: shell(htmlBody, preview, opts.trackingUrl),
+    text: textParts.filter((line, i, arr) => !(line === "" && arr[i - 1] === "")).join("\n")
+  };
 }
 
 /**
@@ -358,6 +427,9 @@ export interface SkyTodayEmailData {
    * arrived, on top of (not instead of) the unsubscribe link every email has.
    */
   isFirstEmail?: boolean;
+  trackingUrl?: string;
+  /** Admin overlay. Subject stays name-only and is never taken from here. */
+  chrome?: Pick<EmailCopy, "preview" | "ctaLabel" | "firstEmailLine">;
 }
 
 /**
@@ -375,22 +447,25 @@ export function nudgeEmailPreview(): string {
 
 export function skyTodayEmail(d: SkyTodayEmailData): RenderedEmail {
   const subject = nudgeEmailSubject(d.subjectPersonName);
-  const preview = nudgeEmailPreview();
+  const preview = d.chrome?.preview?.trim() || nudgeEmailPreview();
   const greeting = ownerGreeting(d.ownerFirstName);
   const firstEmailLine = d.isFirstEmail
-    ? "You're getting this because you're a Galaxia member. Turn it off any time from the link below."
+    ? (d.chrome?.firstEmailLine?.trim() ||
+      "You're getting this because you're a Galaxia member. Turn it off any time from the link below.")
     : null;
   const leadLineHtml = `For <strong style="color:${CREAM}">${d.subjectPersonName}</strong> today:`;
   const leadLineText = `For ${d.subjectPersonName} today:`;
+  const ctaLabel = d.chrome?.ctaLabel?.trim() || "Open Galaxia →";
 
   const html = shell(
     p(greeting) +
       p(leadLineHtml) +
       p(d.copyResolved) +
       (firstEmailLine ? p(firstEmailLine) : "") +
-      button("Open Galaxia →", `${d.siteUrl}${EMAIL_PATHS.app}`) +
+      button(ctaLabel, `${d.siteUrl}${EMAIL_PATHS.app}`) +
       complianceFooterHtml(d.unsubscribeUrl),
-    preview
+    preview,
+    d.trackingUrl
   );
 
   const text = [
@@ -401,7 +476,7 @@ export function skyTodayEmail(d: SkyTodayEmailData): RenderedEmail {
     d.copyResolved,
     firstEmailLine ? `\n${firstEmailLine}` : "",
     "",
-    `Open Galaxia: ${d.siteUrl}${EMAIL_PATHS.app}`,
+    `${ctaLabel.replace(/ →$/, "")}: ${d.siteUrl}${EMAIL_PATHS.app}`,
     "",
     complianceFooterText(d.unsubscribeUrl)
   ].filter((line) => line !== "").join("\n");
@@ -448,6 +523,7 @@ export interface ConstellationLetterEmailData {
   unsubscribeUrl: string;
   openPixelUrl: string;
   clickUrl: string;
+  chrome?: Pick<EmailCopy, "preview" | "ctaLabel">;
 }
 
 
@@ -470,10 +546,11 @@ export function constellationLetterPreview(): string {
 
 export function constellationLetterEmail(d: ConstellationLetterEmailData): RenderedEmail {
   const subject = constellationLetterSubject(d.personNames);
-  const preview = constellationLetterPreview();
+  const preview = d.chrome?.preview?.trim() || constellationLetterPreview();
   const greeting = ownerGreeting(d.ownerFirstName);
-  const ctaHtml = `If you want the same sky on the screen, <a href="${d.clickUrl}" style="color:${GOLD};text-decoration:underline">open this week in Galaxia</a>.`;
-  const ctaText = `If you want the same sky on the screen, open this week in Galaxia: ${d.clickUrl}`;
+  const ctaLabel = d.chrome?.ctaLabel?.trim() || "open this week in Galaxia";
+  const ctaHtml = `If you want the same sky on the screen, <a href="${d.clickUrl}" style="color:${GOLD};text-decoration:underline">${ctaLabel}</a>.`;
+  const ctaText = `If you want the same sky on the screen, ${ctaLabel}: ${d.clickUrl}`;
   const portraitHtml = d.portraits
     .map((portrait) => p(portrait.dynamicSentence) + p(portrait.intentionSentence))
     .join("");
@@ -529,7 +606,8 @@ function goldRule(): string {
   return `<div style="height:1px;background:${GOLD};opacity:.45;margin:22px 0;line-height:1;font-size:1px">&nbsp;</div>`;
 }
 
-function chartReadingShell(bodyHtml: string, preview: string): string {
+function chartReadingShell(bodyHtml: string, preview: string, trackingUrl?: string): string {
+  const pixel = trackingUrl ? trackingPixelHtml(trackingUrl) : "";
   return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=DM+Sans:wght@400;500&display=swap');</style>
     </head>
@@ -537,6 +615,7 @@ function chartReadingShell(bodyHtml: string, preview: string): string {
     ${preheader(preview)}
     <div style="max-width:520px;margin:0 auto;padding:32px 24px">
       ${bodyHtml}
+      ${pixel}
     </div>
   </body></html>`;
 }
@@ -552,11 +631,13 @@ function readingP(label: string, text: string): string {
 export interface ChartReadingEmailData {
   reading: ChartReading;
   unsubscribeUrl: string;
+  trackingUrl?: string;
+  chrome?: Pick<EmailCopy, "preview">;
 }
 
 export function chartReadingEmail(d: ChartReadingEmailData): RenderedEmail {
   const subject = chartReadingEmailSubject(d.reading.moonSign);
-  const preview = chartReadingEmailPreview();
+  const preview = d.chrome?.preview?.trim() || chartReadingEmailPreview();
   const opening = chartReadingOpeningLine({
     personName: d.reading.personName,
     sample: d.reading.sample,
@@ -592,7 +673,7 @@ export function chartReadingEmail(d: ChartReadingEmailData): RenderedEmail {
   return {
     subject,
     preview,
-    html: chartReadingShell(htmlParts.join(""), preview),
+    html: chartReadingShell(htmlParts.join(""), preview, d.trackingUrl),
     text: textParts.join("\n")
   };
 }

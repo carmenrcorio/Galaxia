@@ -28,7 +28,12 @@ describe("ADMIN_AUDIT_ACTIONS / isAdminAuditAction", () => {
         "revoke_comp",
         "create_post",
         "update_post",
-        "delete_post"
+        "delete_post",
+        "update_email_template",
+        "create_email_campaign",
+        "update_email_campaign",
+        "send_email_campaign",
+        "send_email_test"
       ].sort()
     );
   });

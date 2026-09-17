@@ -1,6 +1,8 @@
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { CHART_READING_UNSUBSCRIBED } from "../../../../lib/chart-reading-copy";
 import { emailFromChartReadingUnsubscribeToken } from "../../../../lib/chart-reading-unsubscribe";
+import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
 import { unsubscribeBlogChartReading } from "../../../../lib/resend-blog-audience";
 
@@ -19,6 +21,16 @@ async function unsubscribeByToken(token: string | null): Promise<void> {
   if (!token || !secret) return;
   const email = emailFromChartReadingUnsubscribeToken(token, secret);
   if (!email) return;
+  if (publicEnv.supabaseUrl && privateEnv.serviceRole) {
+    const supabase = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, {
+      auth: { persistSession: false }
+    });
+    await supabase
+      .from("blog_email_captures")
+      .update({ unsubscribed_at: new Date().toISOString() })
+      .eq("email", email)
+      .is("unsubscribed_at", null);
+  }
   await unsubscribeBlogChartReading(email);
 }
 

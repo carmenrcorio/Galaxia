@@ -5,13 +5,16 @@ import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
 import { cronBearerMatches } from "../../../../lib/cron-auth";
 import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary";
-import { renderTrialEmail, sendEmail, trialEmailHeaders, trialUnsubscribeUrl, type TrialEmailData } from "../../../../lib/emails";
+import { renderTrialEmail, dispatchEmail, trialEmailHeaders, trialUnsubscribeUrl, type TrialEmailData } from "../../../../lib/emails";
 import {
   emptyTrialEmailSkipped,
   pickTrialEmailKind,
   trialAlreadyEnded,
   trialEmailAlreadyKeys
 } from "../../../../lib/trial-emails";
+import { loadAutomationCopy, loadEnabledMap } from "../../../../lib/email-templates";
+import { trialKindToEmailKind } from "../../../../lib/email-kinds";
+import { emailOpenPixelUrl, newEmailTrackingId, recordEmailSend } from "../../../../lib/email-tracking";
 
 /**
  * Daily trial-email cron. Evaluates every trialing user and sends whichever
@@ -56,6 +59,7 @@ async function handle(req: Request) {
   const supabase = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, { auth: { persistSession: false } });
   const siteUrl = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
   const now = Date.now();
+  const enabledByKind = await loadEnabledMap(supabase);
 
   let sent = 0;
   const skipped = emptyTrialEmailSkipped();
@@ -106,6 +110,9 @@ async function handle(req: Request) {
       const kind = pickTrialEmailKind(ageDays, daysToEnd, peopleCount);
       if (!kind) { skipped.notDue += 1; return; }
 
+      const emailKind = trialKindToEmailKind(kind);
+      if (enabledByKind && enabledByKind.get(emailKind) === false) { skipped.paused += 1; return; }
+
       // Idempotency: day4 has two variants — never send both.
       const alreadyKeys = trialEmailAlreadyKeys(kind);
       const { data: already } = await supabase.from("trial_emails").select("kind").eq("user_id", profile.id).in("kind", alreadyKeys);
@@ -155,9 +162,16 @@ async function handle(req: Request) {
         return;
       }
 
+      const trackingId = newEmailTrackingId();
       const unsubscribeUrl = trialUnsubscribeUrl(siteUrl, profile.unsubscribe_token);
-      const ok = await sendEmail(to, renderTrialEmail(kind, data), trialEmailHeaders(unsubscribeUrl));
-      if (!ok) {
+      const { copy } = await loadAutomationCopy(supabase, emailKind);
+      const rendered = renderTrialEmail(kind, { ...data, trackingUrl: emailOpenPixelUrl(siteUrl, trackingId) }, copy);
+      const okResult = await dispatchEmail(to, rendered, {
+        headers: trialEmailHeaders(unsubscribeUrl),
+        tags: [{ name: "kind", value: emailKind }],
+        idempotencyKey: `trial/${profile.id}/${kind}`
+      });
+      if (!okResult.sent) {
         console.error("trial-emails: send failed; leaving ledger row to prevent retry storm", {
           userId: profile.id,
           kind
@@ -165,6 +179,15 @@ async function handle(req: Request) {
         skipped.sendFailed += 1;
         return;
       }
+      await recordEmailSend(supabase, {
+        id: trackingId,
+        kind: emailKind,
+        ownerId: profile.id,
+        recipientEmail: to,
+        resendId: okResult.id,
+        subject: rendered.subject,
+        isTest: false
+      });
 
       sent += 1;
     }

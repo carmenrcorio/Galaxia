@@ -165,7 +165,8 @@ describe("tallyTrialEmailRows — invariant holds across every branch", () => {
         notDue: 4,
         alreadySent: 1,
         noResendKey: 1,
-        sendFailed: 1
+        sendFailed: 1,
+        paused: 0
       }
     });
     expect(emptyTrialEmailSkipped()).toEqual({
@@ -175,7 +176,8 @@ describe("tallyTrialEmailRows — invariant holds across every branch", () => {
       notDue: 0,
       alreadySent: 0,
       noResendKey: 0,
-      sendFailed: 0
+      sendFailed: 0,
+      paused: 0
     });
     const result = cronSummaryResponse(summary);
     expect(result.status).toBe(200);
@@ -204,7 +206,8 @@ describe("tallyTrialEmailRows — invariant holds across every branch", () => {
         notDue: 1,
         alreadySent: 0,
         noResendKey: 6,
-        sendFailed: 0
+        sendFailed: 0,
+        paused: 0
       }
     });
     const result = cronSummaryResponse(summary);

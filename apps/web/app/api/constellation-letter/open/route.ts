@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
 import { isLetterTrackingId } from "../../../../lib/constellation-letter-send";
+import { recordEmailOpenByTrackingId } from "../../../../lib/email-tracking";
 
 export const runtime = "nodejs";
 
@@ -43,6 +44,7 @@ export async function GET(req: Request) {
       .from("constellation_letters")
       .update({ opened_at: openedAt, open_count: (data.open_count ?? 0) + 1 })
       .eq("id", id);
+    await recordEmailOpenByTrackingId(supabase, id);
   }
   return pixelResponse();
 }

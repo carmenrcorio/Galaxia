@@ -59,7 +59,7 @@ describe("trial-emails route — returns a JSON summary with real numeric counts
   });
 
   it("claims the trial_emails ledger row BEFORE sendEmail, and leaves it on send failure", () => {
-    const sendIdx = src.indexOf("sendEmail(");
+    const sendIdx = src.indexOf("dispatchEmail(");
     const insertIdx = src.indexOf('.from("trial_emails").insert');
     expect(sendIdx).toBeGreaterThan(-1);
     expect(insertIdx).toBeGreaterThan(-1);
@@ -81,12 +81,13 @@ describe("trial-emails route — returns a JSON summary with real numeric counts
     expect(src).toMatch(/skipped\.noResendKey \+= 1/);
     expect(src).toMatch(/skipped\.sendFailed \+= 1/);
     expect(src).toMatch(/skipped\.optedOut \+= 1/);
+    expect(src).toMatch(/skipped\.paused \+= 1/);
   });
 
   it("skips trial_emails_opted_out before the kind picker and before send", () => {
     const optedIdx = src.indexOf("profile.trial_emails_opted_out");
     const pickIdx = src.indexOf("pickTrialEmailKind(");
-    const sendIdx = src.indexOf("sendEmail(");
+    const sendIdx = src.indexOf("dispatchEmail(");
     expect(optedIdx).toBeGreaterThan(-1);
     expect(pickIdx).toBeGreaterThan(-1);
     expect(sendIdx).toBeGreaterThan(-1);

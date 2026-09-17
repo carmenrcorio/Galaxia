@@ -52,3 +52,26 @@ export function compPillInfo(comped: boolean): PillInfo {
 export function postStatusPillInfo(status: "draft" | "published"): PillInfo {
   return status === "published" ? { label: "Published", variant: "success" } : { label: "Draft", variant: "warning" };
 }
+
+/** Maps an automation's `enabled` flag: sending vs paused. */
+export function emailEnabledPillInfo(enabled: boolean): PillInfo {
+  return enabled ? { label: "Sending", variant: "success" } : { label: "Paused", variant: "warning" };
+}
+
+/** Maps `email_campaigns.status` for /admin/emails/campaigns. */
+export function campaignStatusPillInfo(status: string): PillInfo {
+  switch (status) {
+    case "draft":
+      return { label: "Draft", variant: "warning" };
+    case "sending":
+      return { label: "Sending", variant: "accent" };
+    case "sent":
+      return { label: "Sent", variant: "success" };
+    case "canceled":
+      return { label: "Canceled", variant: "muted" };
+    case "failed":
+      return { label: "Failed", variant: "danger" };
+    default:
+      return { label: status, variant: "muted" };
+  }
+}

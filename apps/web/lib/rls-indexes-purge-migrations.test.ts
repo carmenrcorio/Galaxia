@@ -405,6 +405,7 @@ describe("the latest purge_own_account_data definition keeps the FK-gap fix", ()
     expect(body).toContain(
       "update public.admin_audit_log set target_user_id = null where target_user_id = uid;"
     );
+    expect(body).toContain("delete from email_sends where owner_id = uid;");
     expect(body).toContain("delete from auth.users where id = uid;");
     expect(body).toContain("delete from thread_participants where user_id = uid;");
     expect(body.indexOf("delete from auth.users where id = uid;")).toBeGreaterThan(

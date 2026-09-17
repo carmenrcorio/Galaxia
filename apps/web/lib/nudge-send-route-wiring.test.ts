@@ -45,6 +45,8 @@ describe("nudge-send route — separate from B1 compute, read-only against perso
   it("touches only the expected tables — profiles, person_daily_nudges, people, daily_nudge_emails", () => {
     const tableCalls = [...src.matchAll(/\.from\("([a-z_]+)"\)/g)].map((m) => m[1]);
     expect(new Set(tableCalls)).toEqual(new Set(["profiles", "daily_nudge_emails", "person_daily_nudges", "people"]));
+    expect(src).toContain("loadAutomationCopy");
+    expect(src).toContain("recordEmailSend");
   });
 
   it("only ever .select()s person_daily_nudges — every write call chained off it is disqualified", () => {
@@ -132,13 +134,13 @@ describe("nudge-send route — one email per owner per day, ledger idempotency",
     expect(src).toMatch(/\.eq\("date",\s*localDate\)/);
   });
 
-  it("claims the ledger row BEFORE sendEmail, and leaves it on send failure (no delete)", () => {
-    const sendIdx = src.indexOf("sendEmail(");
+  it("claims the ledger row BEFORE dispatchEmail, and leaves it on send failure (no delete)", () => {
+    const sendIdx = src.indexOf("dispatchEmail(");
     const claimIdx = src.lastIndexOf('.from("daily_nudge_emails")', sendIdx);
     expect(sendIdx).toBeGreaterThan(-1);
     expect(claimIdx).toBeGreaterThan(-1);
     expect(claimIdx).toBeLessThan(sendIdx);
-    expect(src).toMatch(/if\s*\(\s*!ok\s*\)\s*\{[\s\S]{0,200}sendFailed[\s\S]{0,80}return;/);
+    expect(src).toMatch(/if\s*\(\s*!result\.sent\s*\)\s*\{[\s\S]{0,200}sendFailed[\s\S]{0,80}return;/);
     expect(src).not.toMatch(/\.from\("daily_nudge_emails"\)[\s\S]{0,120}\.delete\(/);
   });
 });
@@ -183,7 +185,7 @@ describe("nudge-send route — returns a JSON summary with real numeric counts, 
   });
 
   it("skipped is a real per-owner/per-gate breakdown, not a placeholder", () => {
-    expect(src).toMatch(/const skipped = \{\s*nullTimezone: 0,\s*notDueThisHour: 0,\s*noRowsToday: 0,\s*noEligibleAfterMinorExclusion: 0,\s*noLeadContent: 0,\s*alreadySentToday: 0,\s*noEmail: 0,\s*noResendKey: 0,\s*sendFailed: 0\s*\};/);
+    expect(src).toMatch(/const skipped = \{\s*nullTimezone: 0,\s*notDueThisHour: 0,\s*noRowsToday: 0,\s*noEligibleAfterMinorExclusion: 0,\s*noLeadContent: 0,\s*alreadySentToday: 0,\s*noEmail: 0,\s*noResendKey: 0,\s*sendFailed: 0,\s*paused: 0\s*\};/);
   });
 });
 

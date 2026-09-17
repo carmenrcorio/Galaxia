@@ -1,0 +1,40 @@
+import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
+import { publicEnv } from "../../../../lib/env";
+import { privateEnv } from "../../../../lib/env.server";
+
+export const runtime = "nodejs";
+
+/**
+ * No-login unsubscribe for admin-composed campaigns to members.
+ * Flips ONLY campaign_emails_opted_out. Independent of trial / sky / letter.
+ */
+
+async function unsubscribeByToken(token: string | null): Promise<void> {
+  if (!token || !publicEnv.supabaseUrl || !privateEnv.serviceRole) return;
+  const supabase = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, { auth: { persistSession: false } });
+  await supabase.from("profiles").update({ campaign_emails_opted_out: true }).eq("unsubscribe_token", token);
+}
+
+const CONFIRMATION_HTML = `<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Unsubscribed. Galaxia</title></head>
+<body style="margin:0;background:#0a0717;color:#F4ECDB;font-family:-apple-system,Segoe UI,Inter,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh">
+  <div style="max-width:420px;padding:32px;text-align:center">
+    <div style="font-family:Georgia,serif;font-size:22px;color:#E6AE6C;margin-bottom:16px">Galaxia</div>
+    <p style="color:#b9aede;line-height:1.6">You're unsubscribed from Galaxia campaign emails. Your other emails are unchanged.</p>
+  </div>
+</body></html>`;
+
+export async function GET(req: Request) {
+  const token = new URL(req.url).searchParams.get("token");
+  await unsubscribeByToken(token);
+  return new NextResponse(CONFIRMATION_HTML, {
+    status: 200,
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  });
+}
+
+export async function POST(req: Request) {
+  const token = new URL(req.url).searchParams.get("token");
+  await unsubscribeByToken(token);
+  return new NextResponse(null, { status: 200 });
+}

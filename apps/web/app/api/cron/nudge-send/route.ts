@@ -13,7 +13,9 @@ import {
   pickLeadNudgeRow,
   type SendableNudgeRow
 } from "../../../../lib/nudge-send";
-import { nudgeEmailHeaders, sendEmail, skyTodayEmail } from "../../../../lib/emails";
+import { nudgeEmailHeaders, dispatchEmail, skyTodayEmail } from "../../../../lib/emails";
+import { loadAutomationCopy, chromeFromCopy } from "../../../../lib/email-templates";
+import { emailOpenPixelUrl, newEmailTrackingId, recordEmailSend } from "../../../../lib/email-tracking";
 
 // Uses the service-role Supabase client, so it must run on the Node runtime.
 export const runtime = "nodejs";
@@ -140,7 +142,8 @@ async function handle(req: Request) {
     alreadySentToday: 0,
     noEmail: 0,
     noResendKey: 0,
-    sendFailed: 0
+    sendFailed: 0,
+    paused: 0
   };
   let usersProcessed = 0;
   let sent = 0;
@@ -267,6 +270,12 @@ async function handle(req: Request) {
 
     const unsubscribeUrl = `${siteUrl}/api/nudge-email/unsubscribe?token=${profile.unsubscribe_token}`;
     const subjectPersonName = peopleById.get(lead.person_id)?.display_name ?? "them";
+    const { enabled, copy } = await loadAutomationCopy(supabase, "nudge.sky_today");
+    if (!enabled) {
+      skipped.paused += 1;
+      return;
+    }
+    const trackingId = newEmailTrackingId();
 
     const rendered = skyTodayEmail({
       ownerFirstName: firstName,
@@ -274,7 +283,9 @@ async function handle(req: Request) {
       copyResolved: lead.copy_resolved,
       siteUrl,
       unsubscribeUrl,
-      isFirstEmail
+      isFirstEmail,
+      trackingUrl: emailOpenPixelUrl(siteUrl, trackingId),
+      chrome: chromeFromCopy(copy)
     });
 
     if (!process.env.RESEND_API_KEY) {
@@ -305,8 +316,12 @@ async function handle(req: Request) {
       return;
     }
 
-    const ok = await sendEmail(to, rendered, nudgeEmailHeaders(unsubscribeUrl));
-    if (!ok) {
+    const result = await dispatchEmail(to, rendered, {
+      headers: nudgeEmailHeaders(unsubscribeUrl),
+      tags: [{ name: "kind", value: "nudge.sky_today" }],
+      idempotencyKey: `nudge/${profile.id}/${localDate}`
+    });
+    if (!result.sent) {
       console.error("nudge-send: send failed; leaving ledger row to prevent retry storm", {
         ownerId: profile.id,
         date: localDate
@@ -314,6 +329,15 @@ async function handle(req: Request) {
       skipped.sendFailed += 1;
       return;
     }
+    await recordEmailSend(supabase, {
+      id: trackingId,
+      kind: "nudge.sky_today",
+      ownerId: profile.id,
+      recipientEmail: to,
+      resendId: result.id,
+      subject: rendered.subject,
+      isTest: false
+    });
 
     sent += 1;
     usersProcessed += 1;

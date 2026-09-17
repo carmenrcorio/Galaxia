@@ -21,15 +21,17 @@ describe("Expo SDK 57 pins (Phase 0 complete, no Skia yet)", () => {
     expect(deps["react-native-gesture-handler"]).toBeDefined();
     expect(deps["react-native-reanimated"]).toBe("4.5.1");
     expect(deps["react-native-worklets"]).toBe("0.10.1");
+    expect(deps["expo-splash-screen"]).toMatch(/^~57\./);
     expect(deps["query-string"]).toMatch(/^7\./);
     expect(deps["@shopify/react-native-skia"]).toBeUndefined();
   });
 
-  it("keeps New Architecture on (required from SDK 55; Skia uses it)", () => {
+  it("does not opt out of New Architecture (required from SDK 55; Skia uses it)", () => {
     const app = JSON.parse(readFileSync(resolve(mobileRoot, "app.json"), "utf8")) as {
       expo: { newArchEnabled?: boolean };
     };
-    expect(app.expo.newArchEnabled).not.toBe(false);
+    expect(app.expo.newArchEnabled).toBeUndefined();
+    expect(JSON.stringify(app.expo.plugins)).toContain("expo-splash-screen");
   });
 
   it("hoists React 19.2 for the whole workspace so web and mobile share one copy", () => {

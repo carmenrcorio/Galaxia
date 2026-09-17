@@ -7,9 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "backgroundColor": "#191331"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.galaxia.app"
@@ -22,9 +19,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#191331"
+        }
+      ]
     ],
-    "newArchEnabled": true,
     "experiments": {
       "typedRoutes": true
     },

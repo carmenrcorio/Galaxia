@@ -24,6 +24,7 @@
       "expo-router",
       "expo-notifications"
     ],
+    "newArchEnabled": false,
     "experiments": {
       "typedRoutes": true
     },

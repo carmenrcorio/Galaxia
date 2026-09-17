@@ -14,7 +14,7 @@
     "android": {
       "package": "com.galaxia.app",
       "adaptiveIcon": {
-        "backgroundColor": "#191331"
+        "backgroundColor": "#0a0717"
       }
     },
     "plugins": [
@@ -23,7 +23,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#191331"
+          "backgroundColor": "#0a0717"
         }
       ]
     ],

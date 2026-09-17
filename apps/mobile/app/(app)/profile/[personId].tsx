@@ -352,9 +352,14 @@ export default function PersonProfileScreen() {
                 {chart.precision === "exact" ? PERSON_TAB_VOCAB["chart-wheel"] : "Sign strip"}
               </Text>
               {chart.precision === "exact" ? (
-                <View style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.gold, width: 220, height: 220, alignSelf: "center", alignItems: "center", justifyContent: "center" }}>
-                  <Text style={{ color: tokens.colors.gold }}>Wheel placeholder</Text>
-                  <Text style={{ color: tokens.colors.mist, fontSize: 12, marginTop: 4 }}>SVG wheel component next slice</Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {chart.placements.map((placement) => (
+                    <View key={placement.body} style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 6, paddingHorizontal: 10 }}>
+                      <Text style={{ color: tokens.colors.cream, textTransform: "capitalize" }}>
+                        {placement.body}: {placement.sign}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
               ) : (
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>

@@ -9,8 +9,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * web Settings. Mirrors apps/web/lib/house-system.ts: Placidus is only the
  * fallback for a profile with no stored preference, never an override of one.
  *
- * The preference itself is set in web Settings; mobile has no picker yet.
- * Constants / labels / CHART_ENGINE_VERSION live in `@galaxia/astro`.
+ * The preference is written from Settings on both web and mobile
+ * (`profiles.house_system`). This helper is the shared read so persist never
+ * hardcodes Placidus over a stored choice.
  */
 export async function getPreferredHouseSystem(
   supabase: SupabaseClient,

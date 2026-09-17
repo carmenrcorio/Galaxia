@@ -5,22 +5,14 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "./auth-provider";
 
 /**
- * Entitlement is now the shared card-optional trial model (packages/core
- * `hasAccess`), not a free/plus tier. There is ONE product; nothing is gated on
- * the number of people or messages. Access = comped | active | lifetime | live trial.
+ * Entitlement is the shared card-optional trial model (`packages/core`
+ * `hasAccess`). There is one product. Access = comped | active | lifetime |
+ * live trial. Billing status is set by signup (trial) and by the RevenueCat
+ * webhook; `comped` is service-role only.
  *
- * The previous `setTier` debug switch — which let a user grant themselves a paid
- * plan by writing `subscription_tier` — is REMOVED (ENGINEERING.md §7 revenue
- * bug). Billing status is set by signup (trial) and by the RevenueCat webhook;
- * `comped` is service-role only and never touched by billing sync.
- *
- * The `@deprecated` fields below are non-gating compatibility shims so existing
- * mobile screens keep compiling during the trial-model rollout. They no longer
- * impose any limit; a follow-up mobile pass will delete them and the remaining
- * "Galaxia+" display copy (mobile is not yet store-deployed).
- *
- * NOTE: `canAddPerson` / `peopleLimit` remain dead shims (always allow /
- * Infinity). Left in place — not part of the route-lockout scope.
+ * Feature gates belong on `hasAccess` (the authed route lockout already
+ * sends anyone without access to `/subscribe`). There is no people cap and
+ * no daily Vela cap.
  */
 interface EntitlementContextValue {
   status: SubscriptionStatus;
@@ -32,27 +24,6 @@ interface EntitlementContextValue {
   loading: boolean;
   trialDaysLeft: number;
   refresh: () => Promise<void>;
-
-  /** @deprecated non-gating shim — derived from hasAccess, not settable. */
-  tier: "free" | "plus";
-  /** @deprecated no people cap exists. */
-  peopleLimit: number;
-  /** @deprecated no daily message cap exists. */
-  dailyVelaLimit: number;
-  /** @deprecated always 0; no per-day counting. */
-  velaUsedToday: number;
-  /** @deprecated use hasAccess. */
-  canUseGroups: boolean;
-  /** @deprecated use hasAccess. */
-  canUseSharedSpaces: boolean;
-  /** @deprecated use hasAccess. */
-  canUseWebAccess: boolean;
-  /** @deprecated no people cap. */
-  canAddPerson: (currentPeopleCount: number) => boolean;
-  /** @deprecated use hasAccess. */
-  canSendVelaMessage: () => boolean;
-  /** @deprecated no-op; no per-day counting. */
-  recordVelaMessageSent: () => Promise<void>;
 }
 
 const EntitlementContext = createContext<EntitlementContextValue | null>(null);
@@ -107,18 +78,7 @@ export function EntitlementProvider({ children }: PropsWithChildren) {
       hasAccess: access,
       loading,
       trialDaysLeft: trialDaysRemaining(trialEndsAt),
-      refresh,
-      // deprecated shims — non-gating
-      tier: access ? "plus" : "free",
-      peopleLimit: Number.POSITIVE_INFINITY,
-      dailyVelaLimit: Number.POSITIVE_INFINITY,
-      velaUsedToday: 0,
-      canUseGroups: access,
-      canUseSharedSpaces: access,
-      canUseWebAccess: access,
-      canAddPerson: () => true,
-      canSendVelaMessage: () => access,
-      recordVelaMessageSent: async () => {}
+      refresh
     };
   }, [status, trialEndsAt, comped, loading, session?.user.id]);
 

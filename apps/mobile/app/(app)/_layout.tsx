@@ -10,8 +10,8 @@ import { useEntitlement } from "../../src/providers/entitlement-provider";
 
 /**
  * Structural lockout for the whole authed tree. Session + hasAccess are decided
- * here once — not by per-screen render hiding. Soft feature banners (e.g.
- * canUseGroups) stay on individual screens.
+ * here once — not by per-screen render hiding. There is one product; screens
+ * do not re-gate on a plan name.
  */
 export default function AuthedLayout() {
   const { session, loading: authLoading } = useAuth();

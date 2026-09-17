@@ -132,8 +132,23 @@ const VELA_CITATION_ASPECTS = [
   "opposition"
 ] as const;
 
+/** At most one of these may sit between a planet and the aspect word. */
+const VELA_CITATION_CONNECTORS = [
+  "is",
+  "to",
+  "your",
+  "their",
+  "his",
+  "her",
+  "its",
+  "my",
+  "our"
+] as const;
+
+// Keep this pattern in sync with supabase/functions/vela-chat/index.ts
+// (packages/vela/test/citation-detector-parity.test.ts).
 const VELA_CITATION_RE = new RegExp(
-  `\\b(${VELA_CITATION_PLANETS.join("|")})\\s+(${VELA_CITATION_ASPECTS.join("|")})\\s+(${VELA_CITATION_PLANETS.join("|")})\\b`,
+  `\\b(${VELA_CITATION_PLANETS.join("|")})(?:\\s+(?:${VELA_CITATION_CONNECTORS.join("|")}))?\\s+(${VELA_CITATION_ASPECTS.join("|")})(?:\\s+(?:${VELA_CITATION_CONNECTORS.join("|")}))?\\s+(${VELA_CITATION_PLANETS.join("|")})\\b`,
   "gi"
 );
 
@@ -170,7 +185,8 @@ export interface VelaAspectCitationCounts {
 
 /**
  * Count unique "<Planet> <aspect type> <Planet>" mentions in a reply.
- * Planet order does not matter. Used by the edge log and the eval harness.
+ * One small connector (your, their, is, ...) may sit on either side of the
+ * aspect word. Planet order does not matter. Used by the edge log and the eval harness.
  */
 export function countVelaAspectCitations(
   reply: string,

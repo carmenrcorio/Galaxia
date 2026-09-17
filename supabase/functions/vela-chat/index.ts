@@ -67,8 +67,14 @@ const VELA_CITATION_PLANETS = [
 const VELA_CITATION_ASPECTS = [
   "conjunction", "sextile", "square", "trine", "opposition"
 ] as const;
+/** At most one of these may sit between a planet and the aspect word. */
+const VELA_CITATION_CONNECTORS = [
+  "is", "to", "your", "their", "his", "her", "its", "my", "our"
+] as const;
+// Keep this pattern in sync with packages/vela/src/index.ts
+// (packages/vela/test/citation-detector-parity.test.ts).
 const VELA_CITATION_RE = new RegExp(
-  `\\b(${VELA_CITATION_PLANETS.join("|")})\\s+(${VELA_CITATION_ASPECTS.join("|")})\\s+(${VELA_CITATION_PLANETS.join("|")})\\b`,
+  `\\b(${VELA_CITATION_PLANETS.join("|")})(?:\\s+(?:${VELA_CITATION_CONNECTORS.join("|")}))?\\s+(${VELA_CITATION_ASPECTS.join("|")})(?:\\s+(?:${VELA_CITATION_CONNECTORS.join("|")}))?\\s+(${VELA_CITATION_PLANETS.join("|")})\\b`,
   "gi"
 );
 

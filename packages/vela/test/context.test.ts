@@ -230,6 +230,49 @@ describe("countVelaAspectCitations", () => {
       named_not_in_list: 1
     });
   });
+
+  const venusSquareMars = [{ from: "venus", to: "mars", type: "square" }];
+
+  it("counts Venus square Mars with optional warmth connectors", () => {
+    const hits = [
+      "Venus square Mars means you two spark fast and clash just as fast.",
+      "Venus square your Mars means you two spark fast and clash just as fast.",
+      "Their Venus square your Mars means you two spark fast and clash just as fast.",
+      "With Venus square Mars in the mix, expect some heat.",
+      "Venus is square Mars between you two."
+    ];
+    for (const reply of hits) {
+      expect(countVelaAspectCitations(reply, venusSquareMars)).toEqual({
+        list_size: 1,
+        named_in_list: 1,
+        named_not_in_list: 0
+      });
+    }
+  });
+
+  it("does not count a wrong pairing or planets with no aspect word between them", () => {
+    expect(
+      countVelaAspectCitations("Mercury trine Jupiter is the ease between you.", venusSquareMars)
+    ).toEqual({
+      list_size: 1,
+      named_in_list: 0,
+      named_not_in_list: 1
+    });
+    expect(
+      countVelaAspectCitations("Venus and Mars sit between you two.", venusSquareMars)
+    ).toEqual({
+      list_size: 1,
+      named_in_list: 0,
+      named_not_in_list: 0
+    });
+    expect(
+      countVelaAspectCitations("Venus is your square Mars means heat.", venusSquareMars)
+    ).toEqual({
+      list_size: 1,
+      named_in_list: 0,
+      named_not_in_list: 0
+    });
+  });
 });
 
 describe("crisis language detection", () => {

@@ -5,11 +5,13 @@ import { describe, expect, it } from "vitest";
 const home = readFileSync(resolve(__dirname, "../../app/(app)/(tabs)/home.tsx"), "utf8");
 
 describe("source wiring — mobile constellation loading / empty / error", () => {
-  it("uses the shared skeleton seats on the same glance geometry as live nodes", () => {
+  it("uses the shared skeleton seats on the same full-bleed geometry as live nodes", () => {
     expect(home).toContain("constellationSkeletonSeats");
     expect(home).toContain("galaxyGeometry");
     expect(home).toContain("SKELETON_SEATS");
-    expect(home).toContain("CONSTELLATION_BOX_HEIGHT");
+    expect(home).toContain("constellationStageHeight");
+    expect(home).toContain("ConstellationMap");
+    expect(home).not.toContain("CONSTELLATION_BOX_HEIGHT");
     expect(home).not.toContain("CONSTELLATION_GEOM");
   });
 
@@ -28,6 +30,7 @@ describe("source wiring — mobile constellation loading / empty / error", () =>
     expect(home).toContain("CONSTELLATION_CROSSFADE_MS = 250");
     expect(home).toContain("if (reduceMotion)");
     expect(home).toContain("skeletonFade.setValue(0.28)");
+    expect(home).toContain("reduceMotion={reduceMotion}");
     expect(home).not.toMatch(/framer-motion|lottie|react-native-reanimated/i);
   });
 

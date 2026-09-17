@@ -11,6 +11,7 @@ const migration = readFileSync(
 );
 const editPanel = readFileSync(join(REPO_ROOT, "apps/web/components/edit-person-panel.tsx"), "utf8");
 const mobileHome = readFileSync(join(REPO_ROOT, "apps/mobile/app/(app)/(tabs)/home.tsx"), "utf8");
+const mobilePaint = readFileSync(join(REPO_ROOT, "apps/mobile/src/lib/constellation-paint.ts"), "utf8");
 
 describe("galaxy interaction — rings toggle + custom_position", () => {
   it("persists the rings pref through ui-settings, not a new hook", () => {
@@ -47,7 +48,7 @@ describe("galaxy interaction — rings toggle + custom_position", () => {
 
   it("mobile home selects and applies custom_position", () => {
     expect(mobileHome).toContain("custom_position");
-    expect(mobileHome).toContain("effectiveSeat");
+    expect(mobilePaint).toContain("effectiveSeat");
   });
 
   it("skips self for drag and freezes drift on custom seats", () => {

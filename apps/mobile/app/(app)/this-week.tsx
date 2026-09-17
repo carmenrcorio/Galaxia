@@ -11,7 +11,9 @@ import { Link } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text } from "react-native";
 import { ThisWeekCard, type ThisWeekRow } from "../../src/components/this-week-card";
+import { screenFill } from "../../src/lib/screen";
 import { supabase } from "../../src/lib/supabase";
+import { fonts } from "../../src/lib/typography";
 import { useAuth } from "../../src/providers/auth-provider";
 
 export default function ThisWeekScreen() {
@@ -124,9 +126,9 @@ export default function ThisWeekScreen() {
   }, [session?.user.id, reload]);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
-            <Text style={{ color: tokens.colors.cream, fontSize: 28, fontWeight: "700" }}>Shared transits</Text>
-            <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>
+    <ScrollView style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
+            <Text style={{ color: tokens.colors.cream, fontSize: 28, fontFamily: fonts.frauncesSemi }}>Shared transits</Text>
+            <Text style={{ color: tokens.colors.mist, lineHeight: 21, fontFamily: fonts.inter }}>
         Every slow-moving transit currently pulling on two or more people in your circle at once.
       </Text>
       <ThisWeekCard

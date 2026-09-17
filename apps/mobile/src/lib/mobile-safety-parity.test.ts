@@ -55,7 +55,7 @@ describe("BUG 1 — mobile Compare blocks romantic framing when either person is
   });
 
   it("wiring: compare.tsx imports shared safety helpers and loads is_minor", () => {
-    const src = readFileSync(resolve(__dirname, "../../app/(app)/compare.tsx"), "utf8");
+    const src = readFileSync(resolve(__dirname, "../../app/(app)/(tabs)/compare.tsx"), "utf8");
     expect(src).toContain('from "@galaxia/core"');
     expect(src).toContain("isMinorForSafety");
     expect(src).toContain("availableCompareRelationTypes");
@@ -92,7 +92,7 @@ describe("BUG 1 — mobile Compare blocks romantic framing when either person is
 
 describe("1B parity — mobile Compare shares web's relType-keyed compareHeadline() helper", () => {
   it("compare.tsx calls the shared compareHeadline helper, not its own inline score ternary", () => {
-    const src = readFileSync(resolve(__dirname, "../../app/(app)/compare.tsx"), "utf8");
+    const src = readFileSync(resolve(__dirname, "../../app/(app)/(tabs)/compare.tsx"), "utf8");
     expect(src).toContain("compareHeadline");
     expect(src).toContain("compareHeadline(relationType, result.synastry.scores.overall)");
     // The old mobile-only score-band wording must be gone — both surfaces now
@@ -129,7 +129,7 @@ describe("BUG 2 — passed person excluded from mobile Today in your sky", () =>
   });
 
   it("wiring: home imports shared peopleForTodaySky + durable daily nudges and loads passed_at", () => {
-    const src = readFileSync(resolve(__dirname, "../../app/(app)/home.tsx"), "utf8");
+    const src = readFileSync(resolve(__dirname, "../../app/(app)/(tabs)/home.tsx"), "utf8");
     expect(src).toContain("peopleForTodaySky");
     expect(src).toContain("planDailyNudgeWrites");
     expect(src).toContain("person_daily_nudges");
@@ -235,7 +235,7 @@ describe("BUG 3 — exact birth refuses without timezone; low-precision still sa
 
 describe("mobile Compare does not duplicate generational.theme", () => {
   it("does not construct or render ancestralHeadline", () => {
-    const src = readFileSync(resolve(__dirname, "../../app/(app)/compare.tsx"), "utf8");
+    const src = readFileSync(resolve(__dirname, "../../app/(app)/(tabs)/compare.tsx"), "utf8");
     expect(src).not.toContain("ancestralHeadline");
     expect(src).not.toContain("This connection spans different eras. The generational layer is the headline.");
   });

@@ -14,11 +14,11 @@ describe("mobile InitialAvatar uses the shared helper", () => {
 
   it("compare / groups / profile / home / vela / this-week import InitialAvatar", () => {
     const files = [
-      "../../app/(app)/compare.tsx",
-      "../../app/(app)/groups.tsx",
+      "../../app/(app)/(tabs)/compare.tsx",
+      "../../app/(app)/(tabs)/groups.tsx",
       "../../app/(app)/profile/[personId].tsx",
-      "../../app/(app)/home.tsx",
-      "../../app/(app)/vela.tsx",
+      "../../app/(app)/(tabs)/home.tsx",
+      "../../app/(app)/(tabs)/vela.tsx",
       "../components/this-week-card.tsx",
     ];
     for (const rel of files) {

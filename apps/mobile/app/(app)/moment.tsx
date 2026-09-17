@@ -19,6 +19,8 @@ import { useLocalSearchParams, useRouter, Link } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { supabase } from "../../src/lib/supabase";
+import { screenFill } from "../../src/lib/screen";
+import { fonts } from "../../src/lib/typography";
 import { useAuth } from "../../src/providers/auth-provider";
 
 interface PersonLite {
@@ -180,10 +182,10 @@ export default function MomentScreen() {
   const picker = self ? [self, ...people.filter((p) => !p.is_self)] : people;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: tokens.colors.ink }} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 80 }}>
+    <ScrollView style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 80 }}>
       <Text style={{ color: tokens.colors.goldSoft, letterSpacing: 1.2, fontSize: 12 }}>{COPY.eyebrow}</Text>
-      <Text style={{ color: tokens.colors.cream, fontSize: 28, fontWeight: "700" }}>{COPY.title}</Text>
-      <Text style={{ color: tokens.colors.mist, lineHeight: 21 }}>{COPY.dek}</Text>
+      <Text style={{ color: tokens.colors.cream, fontSize: 28, fontFamily: fonts.frauncesSemi }}>{COPY.title}</Text>
+      <Text style={{ color: tokens.colors.mist, lineHeight: 21, fontFamily: fonts.inter }}>{COPY.dek}</Text>
 
       {loading ? (
         <View style={{ minHeight: 220, justifyContent: "center" }}>

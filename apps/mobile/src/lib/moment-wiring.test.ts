@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 
 describe("mobile The Moment wiring", () => {
   it("home and person profile enter /moment, and the screen stores a snapshot", () => {
-    const home = readFileSync(resolve(__dirname, "../../app/(app)/home.tsx"), "utf8");
+    const home = readFileSync(resolve(__dirname, "../../app/(app)/(tabs)/home.tsx"), "utf8");
     const profile = readFileSync(resolve(__dirname, "../../app/(app)/profile/[personId].tsx"), "utf8");
     const moment = readFileSync(resolve(__dirname, "../../app/(app)/moment.tsx"), "utf8");
     expect(home).toContain('href="/moment"');

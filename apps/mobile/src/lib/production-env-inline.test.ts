@@ -28,7 +28,7 @@ declare module "@babel/core" {
  */
 
 const SUPABASE_PATH = resolve(__dirname, "./supabase.ts");
-const VELA_PATH = resolve(__dirname, "../../app/(app)/vela.tsx");
+const VELA_PATH = resolve(__dirname, "../../app/(app)/(tabs)/vela.tsx");
 
 function stripComments(code: string): string {
   return code.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");

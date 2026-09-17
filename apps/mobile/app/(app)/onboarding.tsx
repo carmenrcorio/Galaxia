@@ -17,7 +17,9 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
 import { AskBirthData } from "../../src/components/ask-birth-data";
 import { persistPerson } from "../../src/lib/persist-person";
+import { screenFill } from "../../src/lib/screen";
 import { supabase } from "../../src/lib/supabase";
+import { fonts } from "../../src/lib/typography";
 import { useAuth } from "../../src/providers/auth-provider";
 
 type Relation = GalaxyPickerRelation | "self";
@@ -213,12 +215,10 @@ export default function OnboardingScreen() {
 
   return (
     <ScrollView
-      style={{
-        backgroundColor: tokens.colors.ink2
-      }}
+      style={screenFill}
       contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 60, paddingBottom: 80, gap: 18 }}
     >
-      <Text style={{ color: tokens.colors.cream, fontSize: 28, fontWeight: "700" }}>You first</Text>
+      <Text style={{ color: tokens.colors.cream, fontSize: 28, fontFamily: fonts.frauncesSemi }}>You first</Text>
       {selfPerson ? (
         <>
           <Text style={{ color: tokens.colors.mist, fontSize: 15, lineHeight: 21 }}>

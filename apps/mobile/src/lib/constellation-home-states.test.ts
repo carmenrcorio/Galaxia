@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const home = readFileSync(resolve(__dirname, "../../app/(app)/home.tsx"), "utf8");
+const home = readFileSync(resolve(__dirname, "../../app/(app)/(tabs)/home.tsx"), "utf8");
 
 describe("source wiring — mobile constellation loading / empty / error", () => {
   it("uses the shared skeleton seats on the same glance geometry as live nodes", () => {

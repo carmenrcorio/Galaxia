@@ -12,12 +12,12 @@ function readFromMobile(relativePath: string): string {
 
 function screenSources(): string[] {
   return [
-    readFromMobile("app/(app)/home.tsx"),
+    readFromMobile("app/(app)/(tabs)/home.tsx"),
     readFromMobile("app/(app)/onboarding.tsx"),
-    readFromMobile("app/(app)/compare.tsx"),
-    readFromMobile("app/(app)/groups.tsx"),
-    readFromMobile("app/(app)/vela.tsx"),
-    readFromMobile("app/(app)/settings.tsx"),
+    readFromMobile("app/(app)/(tabs)/compare.tsx"),
+    readFromMobile("app/(app)/(tabs)/groups.tsx"),
+    readFromMobile("app/(app)/(tabs)/vela.tsx"),
+    readFromMobile("app/(app)/(tabs)/settings.tsx"),
     readFromMobile("app/(app)/profile/[personId].tsx"),
     readFromMobile("app/subscribe.tsx"),
     readFromMobile("src/providers/entitlement-provider.tsx")
@@ -48,7 +48,7 @@ describe("Phase 1 hygiene: one product, one graph, web tokens", () => {
   });
 
   it("Settings writes house system, email prefs, and support the same way web does", () => {
-    const src = readFromMobile("app/(app)/settings.tsx");
+    const src = readFromMobile("app/(app)/(tabs)/settings.tsx");
     expect(src).toContain("HOUSE_SYSTEM_OPTIONS");
     expect(src).toContain("isHouseSystem");
     expect(src).toMatch(/\.select\("[^"]*house_system[^"]*daily_nudge_emails_enabled[^"]*weekly_constellation_letter_enabled[^"]*"\)/);
@@ -62,7 +62,7 @@ describe("Phase 1 hygiene: one product, one graph, web tokens", () => {
   });
 
   it("Settings delete/export go through the web APIs, not a second purge", () => {
-    const settings = readFromMobile("app/(app)/settings.tsx");
+    const settings = readFromMobile("app/(app)/(tabs)/settings.tsx");
     const api = readFromMobile("src/lib/account-api.ts");
     expect(settings).toContain("requestAccountExport");
     expect(settings).toContain("requestAccountDelete");

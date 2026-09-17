@@ -12,6 +12,6 @@
 
 `[UNCHANGED]` **`hasAccess`, consent columns, and GoTrue templates.** Pause skips the next cron; it does not rewrite who is eligible. Sign-in mail is still edited in the Auth dashboard and resent from `/admin/users`.
 
-`[OPEN]` **Apply `20260917035202_email_admin_templates_campaigns_sends.sql` to production after merge.** This branch does not apply it (ENGINEERING.md §16). Until it lands, `/admin/emails` cannot load and crons keep using shipped copy.
+`[DONE]` **`20260917035202_email_admin_templates_campaigns_sends.sql` is on production.** Ledger identity matches the file (`version=20260917035202`, `name=email_admin_templates_campaigns_sends`). `npx supabase db push --dry-run --linked` reports up to date. `email_templates` has 11 seeded kinds. Applied via CLI so the version prefix matches the filename; MCP `apply_migration` is not used (ENGINEERING.md §16).
 
 `[ADDED]` **`changelog.d/cursor-admin-email-campaigns-1081.md`** (this file).

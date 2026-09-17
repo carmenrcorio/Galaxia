@@ -5,42 +5,44 @@ import { describe, expect, it } from "vitest";
 const mobileRoot = resolve(__dirname, "../..");
 const repoRoot = resolve(mobileRoot, "../..");
 
-describe("Expo SDK 53 pins (Phase 0, no Skia)", () => {
-  it("locks Expo 53 / RN 0.79 / Router 5 / React 19, not a later SDK", () => {
+describe("Expo SDK 57 pins (Phase 0 complete, no Skia yet)", () => {
+  it("locks Expo 57 / RN 0.86 / Router 57 / React 19.2, not a later SDK", () => {
     const pkg = JSON.parse(readFileSync(resolve(mobileRoot, "package.json"), "utf8")) as {
       dependencies: Record<string, string>;
     };
     const deps = pkg.dependencies;
-    expect(deps.expo).toMatch(/^~53\./);
-    expect(deps["expo-router"]).toMatch(/^~5\./);
-    expect(deps["react-native"]).toBe("0.79.6");
-    expect(deps.react).toBe("19.0.0");
-    expect(deps["react-dom"]).toBe("19.0.0");
-    expect(deps["expo-linking"]).toMatch(/^~7\./);
+    expect(deps.expo).toMatch(/^~57\./);
+    expect(deps["expo-router"]).toMatch(/^~57\./);
+    expect(deps["react-native"]).toBe("0.86.3");
+    expect(deps.react).toBe("19.2.3");
+    expect(deps["react-dom"]).toBe("19.2.3");
+    expect(deps["expo-linking"]).toMatch(/^~57\./);
     expect(deps["react-native-screens"]).toMatch(/^~4\./);
     expect(deps["react-native-gesture-handler"]).toBeDefined();
+    expect(deps["react-native-reanimated"]).toBe("4.5.1");
+    expect(deps["react-native-worklets"]).toBe("0.10.1");
     expect(deps["query-string"]).toMatch(/^7\./);
     expect(deps["@shopify/react-native-skia"]).toBeUndefined();
   });
 
-  it("turns New Architecture on (SDK 53 default; required for later Skia)", () => {
+  it("keeps New Architecture on (required from SDK 55; Skia uses it)", () => {
     const app = JSON.parse(readFileSync(resolve(mobileRoot, "app.json"), "utf8")) as {
       expo: { newArchEnabled?: boolean };
     };
-    expect(app.expo.newArchEnabled).toBe(true);
+    expect(app.expo.newArchEnabled).not.toBe(false);
   });
 
-  it("hoists React 19 for the whole workspace so web and mobile share one copy", () => {
+  it("hoists React 19.2 for the whole workspace so web and mobile share one copy", () => {
     const root = JSON.parse(readFileSync(resolve(repoRoot, "package.json"), "utf8")) as {
       pnpm: { overrides: Record<string, string> };
     };
     const web = JSON.parse(readFileSync(resolve(repoRoot, "apps/web/package.json"), "utf8")) as {
       dependencies: Record<string, string>;
     };
-    expect(root.pnpm.overrides.react).toBe("19.0.0");
-    expect(root.pnpm.overrides["react-dom"]).toBe("19.0.0");
-    expect(web.dependencies.react).toBe("19.0.0");
-    expect(web.dependencies["react-dom"]).toBe("19.0.0");
+    expect(root.pnpm.overrides.react).toBe("19.2.3");
+    expect(root.pnpm.overrides["react-dom"]).toBe("19.2.3");
+    expect(web.dependencies.react).toBe("19.2.3");
+    expect(web.dependencies["react-dom"]).toBe("19.2.3");
   });
 
   it("uses SDK 52+ auto Metro monorepo config, not the SDK 51 manual watchFolders block", () => {

@@ -33,7 +33,7 @@ Node 22 and `pnpm@9.15.9` (via corepack) are already present on the VM, and `pnp
 ### Running & testing (standard commands live in root `package.json` / `README.md`)
 
 - `pnpm dev` runs every app's dev server in parallel (turbo). To run just one: `pnpm --filter @galaxia/web dev` (Next.js on `:3000`) or `pnpm --filter @galaxia/mobile dev` (Expo/Metro on `:8081`).
-- `pnpm test`, `pnpm typecheck`, `pnpm build` fan out through turbo. Real automated coverage is `@galaxia/web` (917 tests), `@galaxia/astro` (308 tests), `@galaxia/core` (177 tests), `@galaxia/mobile` (95 tests), and `@galaxia/vela` (28 tests); `@galaxia/ui` still has a placeholder test script. `@galaxia/astro` tests make live calls to the Open-Meteo geocoding API, so they need network egress.
+- `pnpm test`, `pnpm typecheck`, `pnpm build` fan out through turbo. Real automated coverage is `@galaxia/web` (917 tests), `@galaxia/astro` (308 tests), `@galaxia/core` (177 tests), `@galaxia/mobile` (96 tests), and `@galaxia/vela` (28 tests); `@galaxia/ui` still has a placeholder test script. `@galaxia/astro` tests make live calls to the Open-Meteo geocoding API, so they need network egress.
 - These counts are a floor. A run that reports materially fewer tests should be treated as a signal that something was removed rather than as a pass.
 
 ### Non-obvious caveats

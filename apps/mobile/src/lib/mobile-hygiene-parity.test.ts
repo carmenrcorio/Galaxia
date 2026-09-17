@@ -90,9 +90,14 @@ describe("Phase 1 hygiene: one product, one graph, web tokens", () => {
     expect(css).toContain("--ink:  #0a0717;");
     expect(css).toContain("border-radius: 22px;");
     const app = JSON.parse(readFromMobile("app.json")) as {
-      expo: { android: { adaptiveIcon: { backgroundColor: string } }; plugins: unknown };
+      expo: {
+        android: { adaptiveIcon: { backgroundColor: string; foregroundImage: string } };
+        plugins: unknown;
+      };
     };
     expect(app.expo.android.adaptiveIcon.backgroundColor).toBe("#0a0717");
+    expect(app.expo.android.adaptiveIcon.foregroundImage).toBe("./assets/icon.png");
     expect(JSON.stringify(app.expo.plugins)).toContain("#0a0717");
+    expect(JSON.stringify(app.expo.plugins)).toContain("./assets/icon.png");
   });
 });

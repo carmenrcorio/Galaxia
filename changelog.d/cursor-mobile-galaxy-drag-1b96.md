@@ -6,4 +6,6 @@
 
 `[CHANGED]` **Empty sky still scrolls.** Responder claims only a star hit; Home `scrollEnabled` turns off while a seat is moving so the page does not steal the drag.
 
+`[FIXED]` **Android preview APK splash logo.** SDK 57 `expo-splash-screen` always links `@drawable/splashscreen_logo`. The plugin had only `backgroundColor`, so EAS `preview` died in `:app:processReleaseResources`. Splash image and adaptive-icon foreground are `assets/icon.png`.
+
 `[TESTED]` Overlay / `dragSeatFromPointer` math, twin wiring, web `galaxy-interaction-wiring`. Typecheck. Device unverified.

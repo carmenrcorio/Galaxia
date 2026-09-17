@@ -58,6 +58,10 @@ describe("constellation-letter cron — consent, Sunday, compose, ledger", () =>
 
   it("returns the summary through cronSummaryResponse", () => {
     expect(src).toContain("cronSummaryResponse({");
+    expect(src).toContain("loadAutomationCopy");
+    expect(src).toContain("skipped.paused");
+    expect(src).toContain("recordEmailSend");
+    expect(src).toContain('kind: "letter.weekly"');
     expect(src).toMatch(/evaluated:\s*walk\.evaluated/);
     expect(src).toMatch(/pages:\s*walk\.pages/);
     expect(src).toMatch(/truncated:\s*walk\.truncated/);

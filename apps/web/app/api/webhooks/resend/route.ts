@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { missingEnvMessage, publicEnv } from "../../../../lib/env";
 import { privateEnv, resendEnv } from "../../../../lib/env.server";
+import { recordEmailOpenByResendId } from "../../../../lib/email-tracking";
 import { resendEmailIdFromEvent, verifyResendWebhookSignature, type ResendWebhookEvent } from "../../../../lib/resend-webhook";
 
 export const runtime = "nodejs";
@@ -51,13 +52,18 @@ export async function POST(req: Request) {
   }
 
   const supabase = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, { auth: { persistSession: false } });
+
+  if (event.type === "email.opened") {
+    await recordEmailOpenByResendId(supabase, emailId);
+  }
+
   const { data } = await supabase
     .from("constellation_letters")
     .select("id, opened_at, clicked_at, open_count, click_count")
     .eq("resend_id", emailId)
     .maybeSingle();
   if (!data?.id) {
-    return NextResponse.json({ ok: true, ignored: true, reason: "unknown_email" });
+    return NextResponse.json({ ok: true });
   }
 
   const now = new Date().toISOString();

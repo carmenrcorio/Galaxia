@@ -77,11 +77,12 @@ describe("constellation letter measurement", () => {
     expect(go).toContain("THIS_WEEK_HREF");
   });
 
-  it("Resend webhook fails closed and only updates constellation_letters", () => {
+  it("Resend webhook fails closed and records email_sends plus constellation_letters", () => {
     expect(webhook).toContain('missingEnvMessage("RESEND_WEBHOOK_SECRET")');
     expect(webhook).toContain("verifyResendWebhookSignature");
     expect(webhook).toContain("email.opened");
     expect(webhook).toContain("email.clicked");
+    expect(webhook).toContain("recordEmailOpenByResendId");
     expect(webhook).toContain('.from("constellation_letters")');
   });
 });

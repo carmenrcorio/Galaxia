@@ -9,6 +9,8 @@ import {
 } from "../../../../lib/chart-reading-copy";
 import { chartReadingUnsubscribeUrl } from "../../../../lib/chart-reading-unsubscribe";
 import { chartReadingEmail, chartReadingEmailHeaders, dispatchEmail } from "../../../../lib/emails";
+import { chromeFromCopy, loadAutomationCopy } from "../../../../lib/email-templates";
+import { emailOpenPixelUrl, newEmailTrackingId, recordEmailSend } from "../../../../lib/email-tracking";
 import { missingEnvMessage, publicEnv, getSiteUrlFromRequestOrigin } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
 import { addToBlogChartReadingsAudience } from "../../../../lib/resend-blog-audience";
@@ -104,15 +106,42 @@ export async function POST(req: Request) {
   const origin = new URL(req.url).origin;
   const siteUrl = getSiteUrlFromRequestOrigin(origin) || origin;
   const unsubscribeUrl = chartReadingUnsubscribeUrl(siteUrl, email, resendKey);
-  const emailPayload = chartReadingEmail({ reading, unsubscribeUrl });
+
+  const { enabled, copy } = await loadAutomationCopy(supabase, "chart.reading");
+  if (!enabled) {
+    try {
+      await addToBlogChartReadingsAudience(email, name ?? null);
+    } catch {
+      // Audience write is best-effort; the capture row is already stored.
+    }
+    return NextResponse.json({ ok: true, message: CHART_READING_CONFIRMATION });
+  }
+
+  const trackingId = newEmailTrackingId();
+  const emailPayload = chartReadingEmail({
+    reading,
+    unsubscribeUrl,
+    trackingUrl: emailOpenPixelUrl(siteUrl, trackingId),
+    chrome: chromeFromCopy(copy)
+  });
   const result = await dispatchEmail(email, emailPayload, {
     headers: chartReadingEmailHeaders(unsubscribeUrl),
+    tags: [{ name: "kind", value: "chart.reading" }],
     idempotencyKey: `blog-chart-reading/${email}/${new Date().toISOString().slice(0, 13)}`
   });
 
   if (!result.sent) {
     return NextResponse.json({ error: CHART_READING_NOT_SENT }, { status: 503 });
   }
+
+  await recordEmailSend(supabase, {
+    id: trackingId,
+    kind: "chart.reading",
+    recipientEmail: email,
+    resendId: result.id,
+    subject: emailPayload.subject,
+    isTest: false
+  });
 
   try {
     await addToBlogChartReadingsAudience(email, name ?? null);

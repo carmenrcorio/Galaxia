@@ -116,6 +116,8 @@ const SENSITIVE_PATH_PREFIXES = [
   "/api/unsubscribe",
   "/api/constellation-letter/open",
   "/api/constellation-letter/go",
+  "/api/email/open",
+  "/api/campaign-email/unsubscribe",
   "/api/blog/chart-reading-capture",
   "/api/blog/chart-reading-unsubscribe",
   "/s",

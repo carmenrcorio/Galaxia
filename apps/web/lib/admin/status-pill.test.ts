@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compPillInfo, statusPillInfo } from "./status-pill";
+import { campaignStatusPillInfo, compPillInfo, emailEnabledPillInfo, statusPillInfo } from "./status-pill";
 
 describe("statusPillInfo", () => {
   it("maps active and lifetime to success", () => {
@@ -30,5 +30,15 @@ describe("compPillInfo", () => {
 
   it("maps false to a muted No pill", () => {
     expect(compPillInfo(false)).toEqual({ label: "No", variant: "muted" });
+  });
+});
+
+describe("emailEnabledPillInfo / campaignStatusPillInfo", () => {
+  it("maps campaign and email pause states", () => {
+    expect(campaignStatusPillInfo("draft")).toEqual({ label: "Draft", variant: "warning" });
+    expect(campaignStatusPillInfo("sent")).toEqual({ label: "Sent", variant: "success" });
+    expect(campaignStatusPillInfo("failed")).toEqual({ label: "Failed", variant: "danger" });
+    expect(emailEnabledPillInfo(true)).toEqual({ label: "Sending", variant: "success" });
+    expect(emailEnabledPillInfo(false)).toEqual({ label: "Paused", variant: "warning" });
   });
 });

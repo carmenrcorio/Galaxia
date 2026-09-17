@@ -21,6 +21,8 @@ import {
   constellationLetterHeaders,
   dispatchEmail
 } from "../../../../lib/emails";
+import { chromeFromCopy, loadAutomationCopy } from "../../../../lib/email-templates";
+import { recordEmailSend } from "../../../../lib/email-tracking";
 
 export const runtime = "nodejs";
 export const maxDuration = 800;
@@ -99,9 +101,23 @@ async function handle(req: Request) {
     alreadySentThisWeek: 0,
     noEmail: 0,
     noResendKey: 0,
-    sendFailed: 0
+    sendFailed: 0,
+    paused: 0
   };
   let sent = 0;
+
+  const { enabled: letterEnabled, copy: letterCopy } = await loadAutomationCopy(supabase, "letter.weekly");
+  if (!letterEnabled) {
+    skipped.paused = 1;
+    const { body, status } = cronSummaryResponse({
+      evaluated: 1,
+      sent: 0,
+      skipped,
+      pages: 0,
+      truncated: false
+    });
+    return NextResponse.json(body, { status });
+  }
 
   const walk = await walkCronPages({
     fetchPage: async (lastId, pageSize) => {
@@ -239,13 +255,14 @@ async function handle(req: Request) {
         siteUrl,
         unsubscribeUrl,
         openPixelUrl,
-        clickUrl
+        clickUrl,
+        chrome: chromeFromCopy(letterCopy)
       });
 
       const result = await dispatchEmail(to, rendered, {
         headers: constellationLetterHeaders(unsubscribeUrl),
         tags: [
-          { name: "kind", value: "constellation-letter" },
+          { name: "kind", value: "letter.weekly" },
           { name: "letter_id", value: letterId }
         ],
         idempotencyKey: `constellation-letter/${profile.id}/${weekOf}`
@@ -261,6 +278,16 @@ async function handle(req: Request) {
       if (result.id) {
         await supabase.from("constellation_letters").update({ resend_id: result.id }).eq("id", letterId);
       }
+
+      await recordEmailSend(supabase, {
+        id: letterId,
+        kind: "letter.weekly",
+        ownerId: profile.id,
+        recipientEmail: to,
+        resendId: result.id,
+        subject: rendered.subject,
+        isTest: false
+      });
 
       sent += 1;
     }

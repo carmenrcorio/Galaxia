@@ -189,6 +189,26 @@ describe("nudgeEmailHeaders — RFC 8058 one-click List-Unsubscribe pair", () =>
   });
 });
 
+describe("first-party open pixel", () => {
+  it("embeds in trial HTML only when trackingUrl is passed", () => {
+    const pixel = "https://galaxiamea.com/api/email/open?t=11111111-aaaa-4aaa-8aaa-000000000001";
+    expect(day1Email(trialBase()).html).not.toContain("/api/email/open");
+    expect(day1Email(trialBase({ trackingUrl: pixel })).html).toContain(pixel);
+    expect(day1Email(trialBase({ trackingUrl: pixel })).html).toContain('width="1"');
+  });
+
+  it("embeds in the chart-reading shell when trackingUrl is passed", () => {
+    const pixel = "https://galaxiamea.com/api/email/open?t=11111111-aaaa-4aaa-8aaa-000000000001";
+    const reading = buildChartReading({ name: "Riley", month: 7, day: 15, year: 1987, birthPlace: "Austin" });
+    const rendered = chartReadingEmail({
+      reading,
+      unsubscribeUrl: "https://galaxiamea.com/api/blog/chart-reading-unsubscribe",
+      trackingUrl: pixel
+    });
+    expect(rendered.html).toContain(pixel);
+  });
+});
+
 describe("sendEmail — passes custom headers through to the Resend request body", () => {
   afterEach(() => {
     vi.unstubAllGlobals();

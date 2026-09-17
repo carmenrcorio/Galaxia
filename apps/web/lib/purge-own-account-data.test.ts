@@ -57,7 +57,8 @@ export const PURGED_USER_TABLES = [
   "admin_users",
   "early_access",
   "comparison_history",
-  "constellation_letters"
+  "constellation_letters",
+  "email_sends"
 ] as const;
 
 /**
@@ -70,7 +71,7 @@ export const RETAINED_NON_USER_TABLES = ["posts", "galaxy_relations", "blog_emai
  * Rows stay, identifiers pointing at the caller are cleared.
  * Update this list when you add an audit/history table that must survive.
  */
-export const ANONYMIZED_TABLES = ["admin_audit_log"] as const;
+export const ANONYMIZED_TABLES = ["admin_audit_log", "email_templates", "email_campaigns"] as const;
 
 const CLASSIFIED = new Set<string>([
   ...PURGED_USER_TABLES,
@@ -217,6 +218,29 @@ values ('${DEPARTING}', '2026-09-14', '11111111-aaaa-4aaa-8aaa-000000000001');
 insert into constellation_letters (owner_id, week_of, person_ids, transit_fingerprint)
 values ('${DEPARTING}', '2026-09-13', ARRAY['11111111-aaaa-4aaa-8aaa-000000000001'::uuid], 'purge-replay-letter');
 
+insert into email_sends (id, kind, owner_id, recipient_email, subject)
+values (
+  '55555555-aaaa-4aaa-8aaa-000000000001',
+  'trial.day1',
+  '${DEPARTING}',
+  '${DEPARTING_EMAIL}',
+  'Riley is in your circle now'
+);
+
+update email_templates set updated_by = '${DEPARTING}' where kind = 'trial.day1';
+
+insert into email_campaigns (id, name, status, audience, subject, preview, paragraphs, created_by)
+values (
+  '66666666-aaaa-4aaa-8aaa-000000000001',
+  'purge-replay-campaign',
+  'draft',
+  'members_trial',
+  'Hello',
+  'A note.',
+  '["Hi there."]'::jsonb,
+  '${DEPARTING}'
+);
+
 insert into memorial_milestones (profile_id, user_id, date, title, note)
 values ('11111111-aaaa-4aaa-8aaa-000000000002', '${DEPARTING}', '2020-01-01', 'A milestone', 'note');
 
@@ -305,6 +329,9 @@ describe("purge table inventory (update these lists when adding a table)", () =>
     expect(body).toContain("delete from early_access");
     expect(body).toContain("delete from comparison_history where owner_id = uid;");
     expect(body).toContain("delete from constellation_letters where owner_id = uid;");
+    expect(body).toContain("delete from email_sends where owner_id = uid;");
+    expect(body).toContain("update email_templates set updated_by = null where updated_by = uid;");
+    expect(body).toContain("update email_campaigns set created_by = null where created_by = uid;");
     expect(body).not.toMatch(/delete from admin_audit_log/i);
     expect(body).not.toMatch(/\bcommit\b/i);
     expect(body).not.toMatch(/\brollback\b/i);
@@ -354,6 +381,7 @@ select jsonb_build_object(
   'vela_rate_limits', (select count(*) from vela_rate_limits where user_id = '${DEPARTING}'),
   'daily_nudge_emails', (select count(*) from daily_nudge_emails where owner_id = '${DEPARTING}'),
   'constellation_letters', (select count(*) from constellation_letters where owner_id = '${DEPARTING}'),
+  'email_sends', (select count(*) from email_sends where owner_id = '${DEPARTING}'),
   'memorial_milestones', (select count(*) from memorial_milestones where user_id = '${DEPARTING}'),
   'relational_transits', (select count(*) from relational_transits where owner_id = '${DEPARTING}'),
   'push_tokens', (select count(*) from push_tokens where owner_id = '${DEPARTING}'),
@@ -394,6 +422,7 @@ select jsonb_build_object(
           vela_rate_limits: "vela_rate_limits",
           daily_nudge_emails: "daily_nudge_emails",
           constellation_letters: "constellation_letters",
+          email_sends: "email_sends",
           memorial_milestones: "memorial_milestones",
           relational_transits: "relational_transits",
           push_tokens: "push_tokens",
@@ -429,6 +458,15 @@ select jsonb_build_object(
   'posts', (select count(*) from posts where slug = 'purge-replay-post'),
   'galaxy_relations', (select count(*) from galaxy_relations),
   'blog_email_captures', (select count(*) from blog_email_captures where email = 'purge-replay-capture@example.com'),
+  'email_templates_still_point', (
+    select count(*) from email_templates where updated_by = '${DEPARTING}'
+  ),
+  'email_campaigns_kept', (
+    select count(*) from email_campaigns where id = '66666666-aaaa-4aaa-8aaa-000000000001'
+  ),
+  'email_campaigns_still_point', (
+    select count(*) from email_campaigns where created_by = '${DEPARTING}'
+  ),
   'other_thread', (select count(*) from threads where id = '33333333-bbbb-4bbb-8bbb-000000000001'),
   'bare_star', (
     select count(*) from people
@@ -456,6 +494,9 @@ select jsonb_build_object(
         expect(audit.founder_admin).toBe(1);
         expect(audit.posts).toBe(1);
         expect(audit.blog_email_captures).toBe(1);
+        expect(audit.email_templates_still_point).toBe(0);
+        expect(audit.email_campaigns_kept).toBe(1);
+        expect(audit.email_campaigns_still_point).toBe(0);
         // The point of this row is that a retained lookup table survives the
         // purge untouched, not that the canonical relation list is any
         // particular length. Deriving the count from the TypeScript source

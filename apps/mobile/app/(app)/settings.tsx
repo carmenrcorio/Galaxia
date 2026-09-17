@@ -31,7 +31,7 @@ interface GroupLite {
   kind: string;
 }
 
-/** Generations Feature 3 preference — mirrors the `profiles.relational_transit_alerts` check constraint (web parity: apps/web/app/app/settings/page.tsx). */
+/** Generations Feature 3 preference. Mirrors the `profiles.relational_transit_alerts` check constraint (web parity: apps/web/app/app/settings/page.tsx). */
 type RelationalTransitAlertsPref = "all" | "major_only" | "off";
 const RELATIONAL_TRANSIT_ALERTS_OPTIONS: { value: RelationalTransitAlertsPref; label: string; description: string }[] = [
   { value: "all", label: "All transits", description: "Jupiter, Saturn, Uranus, Neptune, and Pluto." },

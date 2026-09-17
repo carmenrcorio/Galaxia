@@ -33,10 +33,10 @@ describe("mobile account export/delete call the web routes (D5)", () => {
       filename: "galaxia-export-abcd1234.json"
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://galaxiamea.com/api/account/export");
-    expect(init.method).toBe("GET");
-    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer user-jwt");
+    expect(fetchMock).toHaveBeenCalledWith("https://galaxiamea.com/api/account/export", {
+      method: "GET",
+      headers: { Authorization: "Bearer user-jwt" }
+    });
   });
 
   it("delete POSTs { confirmation } to /api/account/delete with the session Bearer", async () => {
@@ -46,11 +46,11 @@ describe("mobile account export/delete call the web routes (D5)", () => {
 
     const result = await requestAccountDelete("user-jwt", " DELETE ");
     expect(result).toEqual({ ok: true });
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://galaxiamea.com/api/account/delete");
-    expect(init.method).toBe("POST");
-    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer user-jwt");
-    expect(init.body).toBe(JSON.stringify({ confirmation: "delete" }));
+    expect(fetchMock).toHaveBeenCalledWith("https://galaxiamea.com/api/account/delete", {
+      method: "POST",
+      headers: { Authorization: "Bearer user-jwt", "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmation: "delete" })
+    });
   });
 
   it("refuses a wrong confirmation word without calling the network", async () => {

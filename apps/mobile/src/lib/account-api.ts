@@ -1,7 +1,7 @@
 /**
  * Mobile calls the existing web account routes (D5). One graph: typed
- * confirmation, then `purge_own_account_data`, then GoTrue deleteUser.
- * The app never RPCs purge itself.
+ * confirmation, then the web delete route (which runs the shared purge),
+ * then a local sign-out. The app never RPCs purge itself.
  */
 import {
   ACCOUNT_DELETE_COPY,

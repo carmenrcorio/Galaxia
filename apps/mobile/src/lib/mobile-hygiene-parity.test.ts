@@ -74,8 +74,9 @@ describe("Phase 1 hygiene: one product, one graph, web tokens", () => {
     expect(api).toContain('siteUrlFor("api/account/delete")');
     expect(api).toContain("Authorization");
     expect(api).toContain("Bearer");
-    expect(api).not.toContain("purge_own_account_data");
-    expect(settings).not.toContain("purge_own_account_data");
+    expect(api).not.toContain('.rpc("purge_own_account_data")');
+    expect(settings).not.toContain('.rpc("purge_own_account_data")');
+    expect(settings).not.toContain("\u2014");
   });
 
   it("aligns @galaxia/ui ink, hairline, and glass radius to web :root", () => {

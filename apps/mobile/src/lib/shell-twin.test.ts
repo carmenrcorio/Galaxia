@@ -22,7 +22,7 @@ describe("Phase 2 shell twin: fonts, Skia sky, glass, tabs, trial banner", () =>
 
   it("loads the same Fraunces and Inter TTFs web uses for OG, under OFL", () => {
     const fontsDir = resolve(mobileRoot, "assets/fonts");
-    for (const name of ["Fraunces-Regular.ttf", "Fraunces-SemiBold.ttf", "Inter-Regular.ttf", "Inter-SemiBold.ttf", "OFL.txt", "NOTICE.md"]) {
+    for (const name of ["Fraunces-Regular.ttf", "Fraunces-SemiBold.ttf", "Inter-Regular.ttf", "Inter-SemiBold.ttf", "ZodiacGlyphs-Regular.ttf", "OFL.txt", "NOTICE.md"]) {
       expect(existsSync(resolve(fontsDir, name)), name).toBe(true);
     }
     const root = readMobile("app/_layout.tsx");
@@ -34,6 +34,7 @@ describe("Phase 2 shell twin: fonts, Skia sky, glass, tabs, trial banner", () =>
     expect(map).toContain("Fraunces-SemiBold");
     expect(map).toContain("Inter-Regular");
     expect(map).toContain("Inter-SemiBold");
+    expect(map).toContain("ZodiacGlyphs-Regular");
     expect(map).toContain("assets/fonts/Fraunces-Regular.ttf");
   });
 

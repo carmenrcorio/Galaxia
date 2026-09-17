@@ -1,14 +1,18 @@
 import {
+  CHART_ENGINE_VERSION,
   ERA_READING_HEADING,
   ERA_READING_LABELS,
   WORK_VIEW_HEADING,
   WORK_VIEW_LABELS,
+  computeSynastry,
   formatMomentSkyContext,
   getPlutoEraReading,
   getPlutoWorkView,
+  houseSystemLabelForChart,
   isProfessionalPersonRelation,
   parseMomentTransitSnapshot,
   plutoSourceLine,
+  selectNatalAspectGeometry,
   type NatalChart,
   type SignKey
 } from "@galaxia/astro";
@@ -32,6 +36,7 @@ import {
   PERSON_GROUP_LABEL,
   PERSON_TAB_LABEL,
   PERSON_TAB_VOCAB,
+  signElement,
   sunSignFromChart,
   type PersonGroupKey,
   DEFAULT_FETCH_TIMEOUT_MS,
@@ -41,6 +46,7 @@ import { tokens } from "@galaxia/ui";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ChartWheel } from "../../../src/components/chart-wheel";
 import { InitialAvatar } from "../../../src/components/initial-avatar";
 import { screenFill } from "../../../src/lib/screen";
 import { supabase } from "../../../src/lib/supabase";
@@ -65,19 +71,13 @@ interface NoteRow {
   transit_snapshot?: unknown;
 }
 
-function elementForSign(sign: string): "fire" | "earth" | "air" | "water" {
-  if (["Aries", "Leo", "Sagittarius"].includes(sign)) return "fire";
-  if (["Taurus", "Virgo", "Capricorn"].includes(sign)) return "earth";
-  if (["Gemini", "Libra", "Aquarius"].includes(sign)) return "air";
-  return "water";
-}
-
 export default function PersonProfileScreen() {
   const { personId } = useLocalSearchParams<{ personId: string }>();
   const { session } = useAuth();
   const router = useRouter();
   const [person, setPerson] = useState<PersonRow | null>(null);
   const [chart, setChart] = useState<NatalChart | null>(null);
+  const [engineVersion, setEngineVersion] = useState<number>(CHART_ENGINE_VERSION);
   /** Set only when the chart read itself failed, never when a person simply has no chart. */
   const [chartLoadError, setChartLoadError] = useState<string | null>(null);
   const [notes, setNotes] = useState<NoteRow[]>([]);
@@ -118,7 +118,7 @@ export default function PersonProfileScreen() {
     try {
     const [{ data: personData, error: personError }, { data: chartData, error: chartError }, { data: noteData, error: noteError }] = await withTimeout(Promise.all([
       supabase.from("people").select("id, display_name, relation, birth_precision, is_self, passed_at").eq("id", actualPersonId).single(),
-      supabase.from("charts").select("data").eq("person_id", actualPersonId).maybeSingle(),
+      supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualPersonId).maybeSingle(),
       supabase.from("notes").select("id, body, created_at, kind, tags, transit_snapshot").eq("about_person", actualPersonId).order("created_at", { ascending: false }).limit(20)
     ]), DEFAULT_FETCH_TIMEOUT_MS);
 
@@ -138,6 +138,7 @@ export default function PersonProfileScreen() {
 
     setPerson(personData);
     setChart((chartData?.data as NatalChart | undefined) ?? null);
+    setEngineVersion((chartData?.engine_version as number | null) ?? 1);
     setChartLoadError(chartError?.message ?? null);
     setNotes(noteData ?? []);
     } catch {
@@ -233,11 +234,16 @@ export default function PersonProfileScreen() {
     ]);
   };
 
+  const natalAspects = useMemo(() => {
+    if (!chart || chart.precision === "year") return [];
+    return selectNatalAspectGeometry(computeSynastry(chart, chart).aspects);
+  }, [chart]);
+
   const elementBalance = useMemo(() => {
     if (!chart) return null;
     return chart.placements.reduce(
       (acc, placement) => {
-        acc[elementForSign(placement.sign)] += 1;
+        acc[signElement(placement.sign)] += 1;
         return acc;
       },
       { fire: 0, earth: 0, air: 0, water: 0 }
@@ -349,31 +355,32 @@ export default function PersonProfileScreen() {
             </View>
 
             <View style={cardStyle}>
-                            <Text style={cardTitle}>{PERSON_TAB_LABEL["chart-wheel"]}</Text>
+              <Text style={cardTitle}>{PERSON_TAB_LABEL["chart-wheel"]}</Text>
               <Text style={vocabSubhead}>
-                {chart.precision === "exact" ? PERSON_TAB_VOCAB["chart-wheel"] : "Sign strip"}
+                {chart.precision === "exact" && chart.asc
+                  ? `Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`
+                  : "Zodiac wheel"}
               </Text>
-              {chart.precision === "exact" ? (
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {chart.placements.map((placement) => (
-                    <View key={placement.body} style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 6, paddingHorizontal: 10 }}>
-                      <Text style={{ color: tokens.colors.cream, textTransform: "capitalize" }}>
-                        {placement.body}: {placement.sign}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {chart.placements.map((placement) => (
-                    <View key={placement.body} style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 6, paddingHorizontal: 10 }}>
-                      <Text style={{ color: tokens.colors.cream, textTransform: "capitalize" }}>
-                        {placement.body}: {placement.sign}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
+              <Text
+                style={{
+                  color: tokens.colors.cream,
+                  fontFamily: fonts.fraunces,
+                  fontSize: 17,
+                  textAlign: "center",
+                  marginBottom: 4
+                }}
+              >
+                {person.display_name}
+              </Text>
+              <ChartWheel chart={chart} aspects={natalAspects} />
+              {chart.houseSystemFallbackReason ? (
+                <Text style={cardBody}>{chart.houseSystemFallbackReason}</Text>
+              ) : null}
+              {chart.precision !== "exact" || !chart.asc ? (
+                <Text style={cardBody}>
+                  Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+                </Text>
+              ) : null}
             </View>
 
             <View style={cardStyle}>

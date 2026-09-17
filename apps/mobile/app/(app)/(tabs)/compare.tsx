@@ -32,10 +32,20 @@ import {
   type PairTransitHit,
   type RelationType
 } from "@galaxia/astro";
-import { DEFAULT_FETCH_TIMEOUT_MS, isMinorForSafety, orderPair, shouldShowLiveTransits, sunSignFromChart, withTimeout } from "@galaxia/core";
+import {
+  COMPARE_WHEEL_NEEDS_HOUSES,
+  DEFAULT_FETCH_TIMEOUT_MS,
+  isMinorForSafety,
+  orderPair,
+  orientSynastryWheel,
+  shouldShowLiveTransits,
+  sunSignFromChart,
+  withTimeout
+} from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ChartWheel } from "../../../src/components/chart-wheel";
 import { GenerationalSection } from "../../../src/components/generational-section";
 import { InitialAvatar } from "../../../src/components/initial-avatar";
 import { screenFill } from "../../../src/lib/screen";
@@ -84,6 +94,8 @@ export default function CompareScreen() {
     personB: PersonLite;
     synastry: ReturnType<typeof computeSynastry>;
     generational: ReturnType<typeof compareGenerational>;
+    chartA: NatalChart;
+    chartB: NatalChart;
   } | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
@@ -265,7 +277,7 @@ export default function CompareScreen() {
       }
     }
 
-    setResult({ personA: selectedA, personB: selectedB, synastry, generational });
+    setResult({ personA: selectedA, personB: selectedB, synastry, generational, chartA: natalA, chartB: natalB });
     setStatus(null);
     if (ownerId) {
       await supabase.from("comparison_history").upsert(
@@ -306,6 +318,15 @@ export default function CompareScreen() {
   // Defense in depth: refuse to render a romantically framed reading about a minor.
   const pairHasMinor = minorOf(result?.personA ?? null) || minorOf(result?.personB ?? null);
   const blockRomanticMinorRender = pairHasMinor && isRomanticRelation(relationType);
+  const wheel = result
+    ? orientSynastryWheel(
+        result.personA,
+        result.personB,
+        result.chartA,
+        result.chartB,
+        result.synastry.aspects
+      )
+    : null;
 
   return (
     <ScrollView style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
@@ -512,6 +533,17 @@ export default function CompareScreen() {
             <Text style={headlineStyle}>
               {compareHeadline(relationType, result.synastry.scores.overall)}
             </Text>
+            {wheel ? (
+              wheel.chart.cusps ? (
+                <ChartWheel
+                  chart={wheel.chart}
+                  overlayChart={wheel.overlayChart}
+                  aspects={wheel.aspects}
+                />
+              ) : (
+                <Text style={cardBody}>{COMPARE_WHEEL_NEEDS_HOUSES}</Text>
+              )
+            ) : null}
             <Text style={cardBody}>
               Your dynamic: overall {result.synastry.scores.overall} · emotional {result.synastry.scores.emotional} · communication{" "}
               {result.synastry.scores.communication} · warmth {result.synastry.scores.warmth}

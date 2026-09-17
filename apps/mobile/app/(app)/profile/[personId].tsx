@@ -4,20 +4,24 @@ import {
   ERA_READING_LABELS,
   WORK_VIEW_HEADING,
   WORK_VIEW_LABELS,
+  buildPersonDailyNudge,
+  coerceDailyNudgeRow,
   computeSynastry,
   formatMomentSkyContext,
   getPlutoEraReading,
   getPlutoWorkView,
   houseSystemLabelForChart,
   isProfessionalPersonRelation,
+  ownerLocalDate,
   parseMomentTransitSnapshot,
   plutoSourceLine,
   selectNatalAspectGeometry,
+  whenUTCForOwnerLocalDate,
   type NatalChart,
+  type PersonDailyNudgeRecord,
   type SignKey
 } from "@galaxia/astro";
 import {
-  OWNED_DELETE_COPY,
   ASPECTS_UNAVAILABLE_YEAR_BODY,
   ASPECTS_UNAVAILABLE_YEAR_FOLLOW_UP,
   CHART_PRECISION_DOES_NOT_HEADING,
@@ -29,15 +33,19 @@ import {
   chartPrecisionExplanation,
   chartPrecisionFact,
   describeGenerationalArchetype,
-  formatPersonDeleteConfirmation,
-  groupsCollapsedByMemberRemoval,
   hasPassed,
   housesUnavailableCopy,
+  isMinorForSafety,
   PERSON_GROUP_LABEL,
   PERSON_TAB_LABEL,
   PERSON_TAB_VOCAB,
+  shouldShowLiveTransits,
+  shouldShowMemorialTimeline,
+  shouldShowRemembranceSpace,
   signElement,
   sunSignFromChart,
+  usesAncientLight,
+  type ChartPrecision,
   type PersonGroupKey,
   DEFAULT_FETCH_TIMEOUT_MS,
   withTimeout
@@ -45,22 +53,24 @@ import {
 import { tokens } from "@galaxia/ui";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ChartWheel } from "../../../src/components/chart-wheel";
+import { ConnectInviteButton } from "../../../src/components/connect-invite-button";
+import { EditPersonPanel } from "../../../src/components/edit-person-panel";
+import { HonorDeclarationBox } from "../../../src/components/honor-declaration";
 import { InitialAvatar } from "../../../src/components/initial-avatar";
+import { MemorialTimeline } from "../../../src/components/memorial-timeline";
+import { PersonTodayCards, type VelaPinRow } from "../../../src/components/person-today-cards";
+import { RelationshipEdgesBox } from "../../../src/components/relationship-edges";
+import { RemembranceSpace } from "../../../src/components/remembrance-space";
+import { Pill } from "../../../src/components/glass";
+import { PERSON_DEPTH_SELECT, type PersonDepthRow } from "../../../src/lib/person-row";
 import { screenFill } from "../../../src/lib/screen";
 import { supabase } from "../../../src/lib/supabase";
 import { fonts } from "../../../src/lib/typography";
 import { useAuth } from "../../../src/providers/auth-provider";
 
-interface PersonRow {
-  id: string;
-  display_name: string;
-  relation: string;
-  birth_precision: "exact" | "date" | "year" | "none";
-  is_self?: boolean;
-  passed_at?: string | null;
-}
+type PersonRow = PersonDepthRow;
 
 interface NoteRow {
   id: string;
@@ -83,8 +93,12 @@ export default function PersonProfileScreen() {
   const [notes, setNotes] = useState<NoteRow[]>([]);
   const [noteDraft, setNoteDraft] = useState("");
   const [status, setStatus] = useState<string | null>(null);
-  /** Mobile has no daily-nudge / Vela Now group. Default Them. */
+  /** Today cards sit above the tab strip; they are never a selected group. Default Them. */
   const [activeGroup, setActiveGroup] = useState<PersonGroupKey>("them");
+  const [dailyNudge, setDailyNudge] = useState<PersonDailyNudgeRecord | null>(null);
+  const [velaPins, setVelaPins] = useState<VelaPinRow[]>([]);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editUpgradeTo, setEditUpgradeTo] = useState<Exclude<ChartPrecision, "none"> | null>(null);
 
   const resolvedPersonId = useMemo(() => (Array.isArray(personId) ? personId[0] : personId), [personId]);
 
@@ -117,7 +131,7 @@ export default function PersonProfileScreen() {
 
     try {
     const [{ data: personData, error: personError }, { data: chartData, error: chartError }, { data: noteData, error: noteError }] = await withTimeout(Promise.all([
-      supabase.from("people").select("id, display_name, relation, birth_precision, is_self, passed_at").eq("id", actualPersonId).single(),
+      supabase.from("people").select(PERSON_DEPTH_SELECT).eq("id", actualPersonId).single(),
       supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualPersonId).maybeSingle(),
       supabase.from("notes").select("id, body, created_at, kind, tags, transit_snapshot").eq("about_person", actualPersonId).order("created_at", { ascending: false }).limit(20)
     ]), DEFAULT_FETCH_TIMEOUT_MS);
@@ -136,15 +150,92 @@ export default function PersonProfileScreen() {
       setStatus(noteError.message);
     }
 
-    setPerson(personData);
-    setChart((chartData?.data as NatalChart | undefined) ?? null);
+    const personRow = personData as PersonRow;
+    setPerson(personRow);
+    const natal = (chartData?.data as NatalChart | undefined) ?? null;
+    setChart(natal);
     setEngineVersion((chartData?.engine_version as number | null) ?? 1);
     setChartLoadError(chartError?.message ?? null);
     setNotes(noteData ?? []);
+
+    void acknowledgeConnectIfNeeded(session.user.id, personRow);
+
+    if (shouldShowLiveTransits(personRow)) {
+      const localDate = ownerLocalDate();
+      const { data: existingNudge } = await supabase
+        .from("person_daily_nudges")
+        .select("*")
+        .eq("owner_id", session.user.id)
+        .eq("person_id", actualPersonId)
+        .eq("date", localDate)
+        .maybeSingle();
+      if (existingNudge) {
+        setDailyNudge(coerceDailyNudgeRow(existingNudge as Record<string, unknown>));
+      } else {
+        const { data: recent } = await supabase
+          .from("person_daily_nudges")
+          .select("pass_id")
+          .eq("person_id", actualPersonId)
+          .not("pass_id", "is", null)
+          .gte("date", new Date(Date.now() - 45 * 86400000).toISOString().slice(0, 10))
+          .neq("date", localDate);
+        const recentPassIds = new Set(
+          (recent ?? []).map((r) => r.pass_id as string).filter(Boolean)
+        );
+        const row = buildPersonDailyNudge({
+          ownerId: session.user.id,
+          personId: actualPersonId,
+          date: localDate,
+          whenUTC: whenUTCForOwnerLocalDate(localDate),
+          chart: natal,
+          birthPrecision: personRow.birth_precision,
+          birthDate: personRow.birth_date,
+          relation: personRow.relation,
+          isSelf: Boolean(personRow.is_self),
+          minorSafe: isMinorForSafety({
+            isMinor: personRow.is_minor,
+            birthDate: personRow.birth_date,
+            birthPrecision: personRow.birth_precision
+          }),
+          recentPassIds
+        });
+        await supabase.from("person_daily_nudges").upsert(row, { onConflict: "person_id,date", ignoreDuplicates: true });
+        setDailyNudge(row);
+      }
+    } else {
+      setDailyNudge(null);
+    }
+
+    const { data: pinRows } = await supabase
+      .from("notes")
+      .select("id, body, created_at")
+      .eq("owner_id", session.user.id)
+      .eq("kind", "vela_pin")
+      .or(`about_person.eq.${actualPersonId},pair_low.eq.${actualPersonId},pair_high.eq.${actualPersonId}`)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    setVelaPins((pinRows ?? []) as VelaPinRow[]);
     } catch {
       setStatus("This person could not load. Try again.");
     }
   };
+
+  async function acknowledgeConnectIfNeeded(uid: string, row: PersonRow) {
+    if (row.is_self) return;
+    const { data } = await supabase
+      .from("invites")
+      .select("id, person_id, accepted_by")
+      .eq("from_user", uid)
+      .eq("kind", "constellation_connect")
+      .eq("status", "accepted")
+      .is("sender_ack_at", null);
+    const match = (data ?? []).find((invite) =>
+      invite.person_id === row.id || (Boolean(row.linked_user_id) && invite.accepted_by === row.linked_user_id)
+    );
+    if (match) {
+      await supabase.rpc("acknowledge_connect_accept", { p_invite_id: match.id });
+    }
+  }
 
   const saveNote = async () => {
     if (!session?.user.id || !person?.id || !noteDraft.trim()) return;
@@ -159,79 +250,6 @@ export default function PersonProfileScreen() {
     }
     setNoteDraft("");
     await loadProfile();
-  };
-
-  const deletePerson = async () => {
-    if (!session?.user.id || !person?.id || person.is_self) return;
-
-    const { data: memberships, error: memErr } = await supabase
-      .from("group_members")
-      .select("group_id")
-      .eq("person_id", person.id);
-    if (memErr) {
-      setStatus(memErr.message);
-      return;
-    }
-
-    const groupIds = [...new Set((memberships ?? []).map((row) => row.group_id as string))];
-    const memberCounts: Array<{ groupId: string; name: string; memberCount: number }> = [];
-    for (const gid of groupIds) {
-      const [{ data: gRow }, { count }] = await Promise.all([
-        supabase.from("groups").select("id, name").eq("id", gid).eq("owner_id", session.user.id).maybeSingle(),
-        supabase.from("group_members").select("person_id", { count: "exact", head: true }).eq("group_id", gid)
-      ]);
-      if (gRow) {
-        memberCounts.push({
-          groupId: gid,
-          name: gRow.name as string,
-          memberCount: count ?? 0
-        });
-      }
-    }
-    const collapsing = groupsCollapsedByMemberRemoval(memberCounts);
-
-    const { count: personThreadCount } = await supabase
-      .from("threads")
-      .select("id", { count: "exact", head: true })
-      .eq("owner_id", session.user.id)
-      .or(`subject_person.eq.${person.id},pair_low.eq.${person.id},pair_high.eq.${person.id}`);
-
-    const collapsingGroups = [];
-    for (const g of collapsing) {
-      const { count: groupThreadCount } = await supabase
-        .from("threads")
-        .select("id", { count: "exact", head: true })
-        .eq("group_id", g.groupId);
-      collapsingGroups.push({
-        groupId: g.groupId,
-        name: g.name,
-        conversationCount: groupThreadCount ?? 0
-      });
-    }
-
-    const warning = formatPersonDeleteConfirmation({
-      personName: person.display_name,
-      collapsingGroups,
-      personConversationCount: personThreadCount ?? 0
-    });
-
-    Alert.alert("Delete person", warning, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: OWNED_DELETE_COPY.personConfirmButton,
-        style: "destructive",
-        onPress: () => {
-          void (async () => {
-            const { error } = await supabase.rpc("delete_own_person", { p_person_id: person.id });
-            if (error) {
-              setStatus(error.message || OWNED_DELETE_COPY.personErrorGeneric);
-              return;
-            }
-            router.replace("/home");
-          })();
-        }
-      }
-    ]);
   };
 
   const natalAspects = useMemo(() => {
@@ -283,6 +301,15 @@ export default function PersonProfileScreen() {
   const secondGroup: PersonGroupKey = isMemorial ? "remembrance" : "yours";
   const groupKeys: PersonGroupKey[] = ["them", secondGroup];
   const sunSign = sunSignFromChart(chart);
+  const personIsMinor = isMinorForSafety({
+    isMinor: person.is_minor,
+    birthDate: person.birth_date,
+    birthPrecision: person.birth_precision
+  });
+  const showRemembrance = shouldShowRemembranceSpace(person);
+  const showHonorBox = showRemembrance && Boolean(session?.user.id);
+  const showTimeline = shouldShowMemorialTimeline(person, chart);
+  const hasBirthPlace = Boolean(person.birth_place && person.birth_lat != null && person.birth_lng != null);
 
   return (
     <ScrollView style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 90 }}>
@@ -295,15 +322,69 @@ export default function PersonProfileScreen() {
           </Text>
           <ChartPrecisionFacts
             precision={person.birth_precision}
-            hasBirthPlace={Boolean(chart?.asc)}
+            hasBirthPlace={hasBirthPlace || Boolean(chart?.asc)}
           />
+          {isMemorial ? (
+            <Text style={{ color: tokens.colors.mist, fontSize: 14, lineHeight: 20, marginTop: 6, borderLeftWidth: 2, borderLeftColor: "rgba(230,174,108,0.4)", paddingLeft: 10 }}>
+              Remembered: their chart stays with you. Their light softens into ancient light on your galaxy.
+            </Text>
+          ) : null}
         </View>
       </View>
-      <Link href="/compare" asChild>
-        <Pressable style={{ borderRadius: 999, borderWidth: 1, borderColor: tokens.colors.line, paddingVertical: 10, paddingHorizontal: 14 }}>
-          <Text style={{ color: tokens.colors.cream, fontWeight: "700" }}>Compare with someone</Text>
-        </Pressable>
-      </Link>
+
+      {session?.user.id ? (
+        <RelationshipEdgesBox
+          person={person}
+          userId={session.user.id}
+          subjectIsMinor={personIsMinor}
+          showRemembranceNote={showHonorBox}
+        />
+      ) : null}
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+        <Link href="/compare" asChild>
+          <Pill accessibilityLabel="Compare with someone">Compare</Pill>
+        </Link>
+        {session?.user.id && !usesAncientLight(person) ? <ConnectInviteButton person={person} compact /> : null}
+        {!showRemembrance ? (
+          <Link href={{ pathname: "/vela", params: { subject: person.id } }} asChild>
+            <Pill accessibilityLabel="Ask Vela">Ask Vela</Pill>
+          </Link>
+        ) : null}
+        {showHonorBox ? (
+          <Pill
+            accessibilityLabel="Who carries their light"
+            onPress={() => setActiveGroup("remembrance")}
+          >
+            Who carries their light ↓
+          </Pill>
+        ) : null}
+      </View>
+      {session?.user.id ? (
+        <EditPersonPanel
+          person={person}
+          userId={session.user.id}
+          onSaved={() => void loadProfile()}
+          onDeleted={() => router.replace("/home")}
+          open={editOpen}
+          onOpenChange={(next) => {
+            setEditOpen(next);
+            if (!next) setEditUpgradeTo(null);
+          }}
+          upgradeTo={editUpgradeTo}
+        />
+      ) : null}
+
+      <PersonTodayCards
+        person={person}
+        dailyNudge={dailyNudge}
+        velaPins={velaPins}
+        showRemembrance={showRemembrance}
+        onUpgrade={() => {
+          setEditUpgradeTo("date");
+          setEditOpen(true);
+        }}
+      />
 
       <View accessibilityRole="tablist" style={{ flexDirection: "row", gap: 6 }}>
         {groupKeys.map((key) => {
@@ -505,6 +586,32 @@ export default function PersonProfileScreen() {
       ) : null}
 
       {activeGroup === secondGroup ? (
+        <>
+          {showRemembrance && session?.user.id ? (
+            <RemembranceSpace
+              person={person}
+              userId={session.user.id}
+              chart={chart}
+              subjectIsMinor={personIsMinor}
+              onSaved={() => void loadProfile()}
+            />
+          ) : null}
+          {showTimeline && session?.user.id ? (
+            <MemorialTimeline
+              person={person}
+              userId={session.user.id}
+              chart={chart}
+              onDiedOnSaved={() => void loadProfile()}
+            />
+          ) : null}
+          {showHonorBox && session?.user.id ? (
+            <HonorDeclarationBox
+              person={person}
+              userId={session.user.id}
+              subjectIsMinor={personIsMinor}
+              onSaved={() => void loadProfile()}
+            />
+          ) : null}
         <View style={cardStyle}>
           <Text style={cardTitle}>Private notes</Text>
           <Pressable
@@ -557,23 +664,7 @@ export default function PersonProfileScreen() {
             })
           )}
         </View>
-      ) : null}
-
-      {!person.is_self ? (
-        <Pressable
-          onPress={() => void deletePerson()}
-          style={{
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: "rgba(218,140,140,.55)",
-            paddingVertical: 12,
-            paddingHorizontal: 14
-          }}
-        >
-          <Text style={{ color: "#da8c8c", fontWeight: "700", textAlign: "center" }}>
-            {OWNED_DELETE_COPY.personConfirmButton}
-          </Text>
-        </Pressable>
+        </>
       ) : null}
 
       {status ? <Text style={{ color: tokens.colors.gold }}>{status}</Text> : null}

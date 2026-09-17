@@ -13,6 +13,7 @@ import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, Share, Text, TextInput, View } from "react-native";
+import { PendingConnectInvites } from "../../../src/components/pending-connect-invites";
 import { requestAccountDelete, requestAccountExport } from "../../../src/lib/account-api";
 import { siteUrlFor } from "../../../src/lib/env";
 import { screenFill } from "../../../src/lib/screen";
@@ -305,6 +306,8 @@ export default function SettingsScreen() {
         <Text style={cardTitle}>Subscription</Text>
         <Text style={cardBody}>{subscriptionBody}</Text>
       </View>
+
+      <PendingConnectInvites />
 
       <View style={cardStyle}>
         <Text style={cardTitle}>House system</Text>

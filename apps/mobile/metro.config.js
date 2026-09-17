@@ -1,12 +1,7 @@
-const { getDefaultConfig } = require('expo/metro-config');
-const path = require('path');
-const projectRoot = __dirname;
-const workspaceRoot = path.resolve(projectRoot, '../..');
-const config = getDefaultConfig(projectRoot);
-config.watchFolders = [workspaceRoot];
-config.resolver.nodeModulesPaths = [
-  path.resolve(projectRoot, 'node_modules'),
-  path.resolve(workspaceRoot, 'node_modules'),
-];
-config.resolver.unstable_enableSymlinks = true;
-module.exports = config;
+const { getDefaultConfig } = require("expo/metro-config");
+
+/**
+ * SDK 52+ Metro already detects pnpm workspaces (Expo "Work with monorepos").
+ * Do not restore the SDK 51 manual resolver block — it fights the default.
+ */
+module.exports = getDefaultConfig(__dirname);

@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "../src/providers/auth-provider";
 import { AccessibilityProvider, useAccessibilitySettings } from "../src/providers/accessibility-provider";
@@ -18,14 +19,16 @@ function AppNavigator() {
 
 export default function RootLayout() {
   return (
-    <AccessibilityProvider>
-      <AuthProvider>
-        <EntitlementProvider>
-          <SafeAreaProvider>
-            <AppNavigator />
-          </SafeAreaProvider>
-        </EntitlementProvider>
-      </AuthProvider>
-    </AccessibilityProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AccessibilityProvider>
+        <AuthProvider>
+          <EntitlementProvider>
+            <SafeAreaProvider>
+              <AppNavigator />
+            </SafeAreaProvider>
+          </EntitlementProvider>
+        </AuthProvider>
+      </AccessibilityProvider>
+    </GestureHandlerRootView>
   );
 }

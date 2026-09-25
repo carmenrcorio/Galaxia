@@ -93,6 +93,13 @@ textarea:focus-visible {
 .relationship-edges {
   min-width: 0;
 }
+.relationship-edges--embedded {
+  margin-top: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+}
 .honor-declare-summary,
 .relationship-edges-summary {
   list-style: none;
@@ -501,32 +508,94 @@ select.field--rect {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
 
-/* Compact Sun/Moon/Rising row directly under the natal wheel (galaxia.jsx .kd-three). */
-.chart-sign-tiles {
+.flip-sign-cards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 9px;
-  margin-top: 14px;
   width: 100%;
   min-width: 0;
 }
-.chart-sign-tiles .sign-chip {
-  min-width: 0;
-  max-width: 100%;
-  position: relative;
+.flip-sign-card {
+  display: block;
+  cursor: pointer;
+  min-height: 188px;
+  padding: 0;
   overflow: hidden;
-  /* Subtle star scatter, same recipe as glass cards sitting on the cosmic field. */
-  background:
-    radial-gradient(1px 1px at 18% 24%, rgba(255,255,255,.38), transparent 100%),
-    radial-gradient(1px 1px at 72% 18%, rgba(255,255,255,.28), transparent 100%),
-    radial-gradient(1.5px 1px at 42% 78%, rgba(255,255,255,.22), transparent 100%),
-    radial-gradient(1px 1px at 86% 62%, rgba(255,255,255,.2), transparent 100%),
-    rgba(10, 7, 24, .55);
+  border: 1px solid rgba(230,174,108,.18);
+  background: rgba(255,255,255,.035);
+  color: inherit;
+  font: inherit;
+  perspective: 900px;
+  -webkit-tap-highlight-color: transparent;
 }
-.chart-sign-tiles__moon {
-  font-size: 1.45rem;
-  line-height: 1;
+.flip-sign-card.is-static {
+  cursor: default;
+}
+.flip-sign-card__inner {
+  display: block;
+  position: relative;
+  min-height: 188px;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform .45s ease;
+}
+.flip-sign-card.is-flipped .flip-sign-card__inner {
+  transform: rotateY(180deg);
+}
+@media (hover: hover) and (pointer: fine) {
+  .flip-sign-card:hover:not(.is-static) .flip-sign-card__inner,
+  .flip-sign-card:focus-visible:not(.is-static) .flip-sign-card__inner {
+    transform: rotateY(180deg);
+  }
+}
+.flip-sign-card__face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 10px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-sign-card__front {
+  min-height: 188px;
+  padding: 16px 12px;
+}
+.flip-sign-card__back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  text-align: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.flip-sign-card__long {
+  font-size: .74rem;
   color: var(--mist);
+  line-height: 1.45;
+  margin-top: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flip-sign-card__inner {
+    transition: none;
+    transform: none !important;
+  }
+  .flip-sign-card__back {
+    position: relative;
+    inset: auto;
+    transform: none;
+    display: none;
+  }
+  .flip-sign-card.is-flipped .flip-sign-card__front,
+  .flip-sign-card:hover:not(.is-static) .flip-sign-card__front,
+  .flip-sign-card:focus-visible:not(.is-static) .flip-sign-card__front {
+    display: none;
+  }
+  .flip-sign-card.is-flipped .flip-sign-card__back,
+  .flip-sign-card:hover:not(.is-static) .flip-sign-card__back,
+  .flip-sign-card:focus-visible:not(.is-static) .flip-sign-card__back {
+    display: flex;
+  }
 }
 .sign-chip__glyph { font-size: 1.2rem; display: block; }
 .sign-chip__label { font-size: 0.8125rem; color: var(--mist2); text-transform: uppercase; letter-spacing: .12em; }

@@ -76,7 +76,7 @@ import { AskBirthData } from "../../../../components/ask-birth-data";
 import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../../components/chart-precision-indicator";
 import { ConnectInviteButton } from "../../../../components/connect-invite-button";
 import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
-import { ChartSignTiles } from "../../../../components/chart-sign-tiles";
+import { FlipSignCards } from "../../../../components/flip-sign-cards";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { GenerationalEraSurface } from "../../../../components/generational-era-surface";
@@ -86,7 +86,6 @@ import { HousesUnavailableCard } from "../../../../components/houses-unavailable
 import { AspectsUnavailableCard } from "../../../../components/aspects-unavailable-card";
 import { MemorialTimeline } from "../../../../components/memorial-timeline";
 import { HonorDeclarationBox, HONOR_LIGHT_ANCHOR_ID } from "../../../../components/honor-declaration";
-import { RelationshipEdgesBox } from "../../../../components/relationship-edges";
 import { RemembranceSpace } from "../../../../components/remembrance-space";
 import { PersonRecordTimeline } from "../../../../components/person-record-timeline";
 import { VelaPinsPanel } from "../../../../components/vela-pins-panel";
@@ -115,6 +114,7 @@ interface PersonRow {
   linked_user_id?: string | null;
   custom_position?: { angle: number; radius_pct: number } | null;
   star_scale?: number | null;
+  exclude_from_dailies?: boolean | null;
 }
 /* ─── Normalise engine output to library key conventions ─────────────────── */
 function normaliseBody(b: string): BodyKey { return b.toLowerCase() as BodyKey; }
@@ -394,7 +394,6 @@ export default function PersonProfilePage() {
   const [aspectsAllOpen, setAspectsAllOpen]       = useState(false);
   const [housesAllOpen, setHousesAllOpen]         = useState(false);
   const [activeGroup, setActiveGroup] = useState<PersonGroupKey>("them");
-  const [wheelOpen, setWheelOpen] = useState(true);
   const [wheelMounted, setWheelMounted] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editUpgradeTo, setEditUpgradeTo] = useState<Exclude<ChartPrecision, "none"> | null>(null);
@@ -405,10 +404,9 @@ export default function PersonProfilePage() {
   }, []);
 
   useEffect(() => {
-    if (!wheelOpen) return;
     const frame = window.requestAnimationFrame(() => setWheelMounted(true));
     return () => window.cancelAnimationFrame(frame);
-  }, [wheelOpen]);
+  }, []);
 
   const openPrecisionUpgrade = useCallback((target: Exclude<ChartPrecision, "none">) => {
     setEditUpgradeTo(target);
@@ -575,7 +573,7 @@ export default function PersonProfilePage() {
     let cErr: { message: string } | null = null;
     try {
       const fetched = await withTimeout(Promise.all([
-        supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, died_on, star_color, memorial_constellation, custom_position, star_scale, linked_user_id").eq("id", actualId).single(),
+        supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, died_on, star_color, memorial_constellation, custom_position, star_scale, linked_user_id, exclude_from_dailies").eq("id", actualId).single(),
         supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualId).single()
       ]), DEFAULT_FETCH_TIMEOUT_MS);
       pData = fetched[0].data as typeof pData;
@@ -923,15 +921,6 @@ export default function PersonProfilePage() {
         </div>
       </div>
 
-      {userId ? (
-        <RelationshipEdgesBox
-          person={person}
-          userId={userId}
-          subjectIsMinor={personIsMinor}
-          showRemembranceNote={showHonorBox}
-        />
-      ) : null}
-
       {showHonorBox ? (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <a href={`#${HONOR_LIGHT_ANCHOR_ID}`} className="pill-link" style={{ fontSize: ".82rem" }}>
@@ -1164,24 +1153,15 @@ export default function PersonProfilePage() {
               Remembered: their chart stays with you. Their light softens into ancient light on your galaxy.
             </p>
           ) : null}
-          {sun ? (
+          {sun?.confident === false ? (
             <p className="muted" style={{ fontSize: ".88rem", margin: 0 }}>
-              {sun.confident !== false ? `${SIGN_GLYPH[sun.sign]} ${sun.sign} Sun` : "Sun sign uncertain (year-only birth data)"}
-              {moon && moon.confident !== false ? ` · ${SIGN_GLYPH[moon.sign]} ${moon.sign} Moon` : ""}
-              {chart.asc ? ` · ${SIGN_GLYPH[chart.asc]} ${chart.asc} Rising` : ""}
+              Sun sign uncertain (year-only birth data)
             </p>
           ) : null}
         </div>
       </div>
 
-      {userId ? (
-        <RelationshipEdgesBox
-          person={person}
-          userId={userId}
-          subjectIsMinor={personIsMinor}
-          showRemembranceNote={showHonorBox}
-        />
-      ) : null}
+      <FlipSignCards chart={chart} minorSafe={personIsMinor} />
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
@@ -1226,6 +1206,34 @@ export default function PersonProfilePage() {
           </p>
         </div>
       ) : null}
+
+      <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
+        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1 person-chart-hero">
+          <p className="muted" style={{ fontSize: ".72rem", margin: "0 0 14px" }}>
+            {chart.precision === "exact" && chart.asc
+              ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
+              : enduringEyebrow("Zodiac wheel")}
+          </p>
+          <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", textAlign: "center", marginBottom: 12 }}>
+            {person.display_name}
+          </p>
+          {wheelMounted ? (
+            <ChartWheel chart={chart} aspects={natalAspects} exportSafe />
+          ) : (
+            <div aria-hidden style={{ width: 300, height: 300, margin: "0 auto" }} />
+          )}
+          {chart.houseSystemFallbackReason ? (
+            <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
+              {chart.houseSystemFallbackReason}
+            </p>
+          ) : null}
+          {(chart.precision !== "exact" || !chart.asc) ? (
+            <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "48ch", margin: "10px auto 0" }}>
+              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+            </p>
+          ) : null}
+        </section>
+      </ChartImageExport>
 
       <div
         id="person-today"
@@ -1284,31 +1292,6 @@ export default function PersonProfilePage() {
               onUpgrade={openPrecisionUpgrade}
             />
           </div>
-        </section>
-      ) : null}
-
-      {/* ── Vela has said this about them (B2) ──
-          Remembrance pages already expose one Ask Vela entry in RemembranceSpace.
-          Do not mount the empty "Vela on {name}" card there: it reads as a second
-          entry point even without a CTA. Pins / reopen still render when present. */}
-      {showVelaOnThem ? (
-        <section id="vela-on-them" className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)" }}>
-          {sectionHead("vela-on-them")}
-          {velaPins.length > 0 ? (
-            <div style={{ display: "grid", gap: 8 }}>
-              <VelaPinsPanel pins={velaPins} onThemeChange={savePinTheme} onSearchChange={widenVelaPinSearch} />
-              {!showRemembrance ? (
-                <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".78rem", width: "fit-content", marginTop: 2 }}>Ask Vela more</Link>
-              ) : null}
-            </div>
-          ) : (
-            <div>
-              <p className="muted" style={{ fontSize: ".82rem", marginBottom: 10 }}>
-                Nothing pinned yet. Ask Vela about {person.display_name}, then pin any insight worth keeping: it will live here.
-              </p>
-              <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".8rem" }}>Ask Vela about {person.display_name}</Link>
-            </div>
-          )}
         </section>
       ) : null}
       </div>
@@ -1434,52 +1417,6 @@ export default function PersonProfilePage() {
           <p className="muted" style={{ fontSize: ".74rem", marginTop: 10 }}>Rising sign needs a birth city: edit this profile to add one.</p>
         ) : null}
       </section>
-
-      {/* ── Chart Wheel (collapsible, open by default; SVG mounts after first paint) ── */}
-            <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
-        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1">
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8, gap: 8 }}>
-            <div>{sectionHead("chart-wheel")}</div>
-            <button
-              type="button"
-              className="pill-link"
-              style={{ fontSize: ".7rem", padding: "3px 10px" }}
-              onClick={() => setWheelOpen((open) => !open)}
-              aria-expanded={wheelOpen}
-            >
-              {wheelOpen ? "Hide wheel" : "Show wheel"}
-            </button>
-          </div>
-          {wheelOpen ? (
-            <>
-              <p className="muted" style={{ fontSize: ".72rem", margin: "0 0 14px" }}>
-                {chart.precision === "exact" && chart.asc
-                  ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
-                  : enduringEyebrow("Zodiac wheel")}
-              </p>
-              <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", textAlign: "center", marginBottom: 12 }}>
-                {person.display_name}
-              </p>
-              {wheelMounted ? (
-                <ChartWheel chart={chart} aspects={natalAspects} exportSafe />
-              ) : (
-                <div aria-hidden style={{ width: 300, height: 300, margin: "0 auto" }} />
-              )}
-              <ChartSignTiles chart={chart} />
-              {chart.houseSystemFallbackReason ? (
-                <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
-                  {chart.houseSystemFallbackReason}
-                </p>
-              ) : null}
-              {(chart.precision !== "exact" || !chart.asc) ? (
-                <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "48ch", margin: "10px auto 0" }}>
-                  Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
-                </p>
-              ) : null}
-            </>
-          ) : null}
-        </section>
-      </ChartImageExport>
 
       {/* ── Placements ── */}
       <section id="placements" className="glass-card fade-in fade-in-delay-1">
@@ -1812,6 +1749,30 @@ export default function PersonProfilePage() {
         </section>
       ) : null}
       </div>
+
+      {/* Ask Vela already lives in the header bubbles. This card is last so
+          the hero and Right now stay first. Remembrance keeps a single Ask
+          Vela entry in RemembranceSpace unless pins exist. */}
+      {showVelaOnThem ? (
+        <section id="vela-on-them" className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)" }}>
+          {sectionHead("vela-on-them")}
+          {velaPins.length > 0 ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              <VelaPinsPanel pins={velaPins} onThemeChange={savePinTheme} onSearchChange={widenVelaPinSearch} />
+              {!showRemembrance ? (
+                <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".78rem", width: "fit-content", marginTop: 2 }}>Ask Vela more</Link>
+              ) : null}
+            </div>
+          ) : (
+            <div>
+              <p className="muted" style={{ fontSize: ".82rem", marginBottom: 10 }}>
+                Nothing pinned yet. Ask Vela about {person.display_name}, then pin any insight worth keeping: it will live here.
+              </p>
+              <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".8rem" }}>Ask Vela about {person.display_name}</Link>
+            </div>
+          )}
+        </section>
+      ) : null}
 
       {status ? <p className="error">{status}</p> : null}
     </main>

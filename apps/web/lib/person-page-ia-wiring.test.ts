@@ -16,12 +16,13 @@ describe("person page information architecture", () => {
     expect(page).toContain("Archived Vela threads about");
   });
 
-  it("keeps Sun/Moon/Rising as header glance, Big three, and shareable tiles below the wheel", () => {
+  it("keeps flip cards under the name and the wheel as the hero, no under-wheel tiles", () => {
     expect(page).toContain("Sun sign uncertain (year-only birth data)");
     expect(page).toContain('sectionHead("big-three")');
-    expect(page).toContain("<ChartSignTiles chart={chart} />");
-    expect(page.indexOf("<ChartWheel")).toBeLessThan(page.indexOf("<ChartSignTiles chart={chart} />"));
-    expect(page.indexOf("<ChartSignTiles chart={chart} />")).toBeLessThan(page.indexOf("</ChartImageExport>"));
+    expect(page).toContain("<FlipSignCards chart={chart} minorSafe={personIsMinor} />");
+    expect(page).not.toContain("ChartSignTiles");
+    expect(page.indexOf("<FlipSignCards chart={chart} minorSafe={personIsMinor} />")).toBeLessThan(page.indexOf("href={`/app/compare"));
+    expect(page.indexOf("<ChartWheel")).toBeLessThan(page.indexOf("</ChartImageExport>"));
     expect(page).toContain('p.body !== "sun" && p.body !== "moon"');
   });
 
@@ -61,21 +62,23 @@ describe("person page information architecture", () => {
     expect(page).toContain("PersonProfileNav");
     expect(page).not.toContain("onJump=");
     expect(page).toContain('id="person-today"');
+    expect(page.indexOf('id="chart-wheel"')).toBeLessThan(page.indexOf('id="person-today"'));
     expect(page.indexOf('id="person-today"')).toBeLessThan(page.indexOf("<PersonProfileNav"));
+    expect(page.indexOf("<PersonProfileNav")).toBeLessThan(page.indexOf('id="big-three"'));
+    expect(page.indexOf('id="person-group-panel-them"')).toBeLessThan(page.indexOf('id="vela-on-them"'));
     expect(css).toMatch(/\.person-group-tab[\s\S]*?text-transform:\s*none/);
   });
 
-  it("lazy-mounts the chart wheel after first paint and keeps it collapsible", () => {
+  it("lazy-mounts the chart wheel after first paint as the always-visible hero", () => {
     expect(page).toContain("wheelMounted");
     expect(page).toContain("requestAnimationFrame");
-    expect(page).toContain("Hide wheel");
+    expect(page).toContain("person-chart-hero");
+    expect(page).not.toContain("Hide wheel");
     expect(page).toContain("{wheelMounted ? (");
   });
 
-  it("places G7 relationship connections in the header before Compare", () => {
-    const picker = page.lastIndexOf("<RelationshipEdgesBox");
-    const compare = page.indexOf("href={`/app/compare");
-    expect(picker).toBeGreaterThan(0);
-    expect(compare).toBeGreaterThan(picker);
+  it("keeps constellation lines inside Edit, not as a top bar", () => {
+    expect(page).not.toContain("<RelationshipEdgesBox");
+    expect(page).toContain("<EditPersonPanel");
   });
 });

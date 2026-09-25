@@ -58,6 +58,16 @@ describe("peopleForTodaySky — home care hole", () => {
       ])
     ).toEqual([]);
   });
+
+  it("leaves out living people the owner marked exclude_from_dailies", () => {
+    const sky = peopleForTodaySky([
+      { id: "self", passed_at: null, exclude_from_dailies: false },
+      { id: "hubs", passed_at: null, exclude_from_dailies: false },
+      { id: "colleague", passed_at: null, exclude_from_dailies: true },
+      { id: "remembered", passed_at: "2024-11-02T00:00:00.000Z", exclude_from_dailies: false },
+    ]);
+    expect(sky.map((p) => p.id)).toEqual(["self", "hubs"]);
+  });
 });
 
 describe("peopleForThisWeek — same living-only care hole as Today", () => {
@@ -71,8 +81,18 @@ describe("peopleForThisWeek — same living-only care hole as Today", () => {
     expect(peopleForThisWeek(people).map((p) => p.id)).toEqual(["self", "living"]);
   });
 
-  it("is the same filter as peopleForTodaySky", () => {
+  it("matches peopleForTodaySky when nobody is daily-excluded", () => {
     expect(peopleForThisWeek(people)).toEqual(peopleForTodaySky(people));
+  });
+
+  it("keeps living people marked exclude_from_dailies (Today-only flag)", () => {
+    const mixed = [
+      { id: "self", passed_at: null, exclude_from_dailies: false },
+      { id: "colleague", passed_at: null, exclude_from_dailies: true },
+      { id: "gone", passed_at: "2024-11-02T00:00:00.000Z", exclude_from_dailies: false },
+    ];
+    expect(peopleForThisWeek(mixed).map((p) => p.id)).toEqual(["self", "colleague"]);
+    expect(peopleForTodaySky(mixed).map((p) => p.id)).toEqual(["self"]);
   });
 
   it("passedPersonIds is only the memorial set", () => {

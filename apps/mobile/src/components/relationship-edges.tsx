@@ -58,12 +58,14 @@ export function RelationshipEdgesBox({
   person,
   userId,
   subjectIsMinor,
-  showRemembranceNote
+  showRemembranceNote,
+  embedded = false
 }: {
   person: RelationshipPersonInput;
   userId: string;
   subjectIsMinor: boolean;
   showRemembranceNote?: boolean;
+  embedded?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [people, setPeople] = useState<HonorPerson[]>([]);
@@ -208,7 +210,10 @@ export function RelationshipEdgesBox({
   }
 
   return (
-    <GlassCard testID={RELATIONSHIP_EDGES_ANCHOR_ID}>
+    <GlassCard
+      testID={RELATIONSHIP_EDGES_ANCHOR_ID}
+      style={embedded ? { backgroundColor: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.08)" } : undefined}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}

@@ -8,7 +8,7 @@
 
 import { hasPassed } from "./galaxy-orbit";
 
-/** Live transit / "Active today" / "Today in your sky" — living people only. */
+/** Live transit / "Active today" on a person page — living people only. */
 export function shouldShowLiveTransits(
   person: { passed_at?: string | null } | null | undefined
 ): boolean {
@@ -17,20 +17,30 @@ export function shouldShowLiveTransits(
 }
 
 /**
- * Home "Today in your sky" rows — exclude anyone with passed_at set.
- * Same care hole as the person-page Active today banner.
+ * Home "Today in your sky" and the morning daily note.
+ * Drops anyone with passed_at set, and anyone the owner marked
+ * exclude_from_dailies. This Week / Sunday letter stay on their own gate.
  */
-export function peopleForTodaySky<T extends { passed_at?: string | null }>(people: T[]): T[] {
-  return people.filter((p) => shouldShowLiveTransits(p));
+export function peopleForTodaySky<
+  T extends { passed_at?: string | null; exclude_from_dailies?: boolean | null },
+>(people: T[]): T[] {
+  return people.filter((p) => shouldShowLiveTransits(p) && p.exclude_from_dailies !== true);
 }
+
+/** FOUNDER-REVIEW — edit-person toggle under name / relation / minor. */
+export const EXCLUDE_FROM_DAILIES_LABEL = "Leave out of Today and the daily note";
+/** FOUNDER-REVIEW */
+export const EXCLUDE_FROM_DAILIES_HELP =
+  "They stay on your constellation. This only skips the daily sky and the morning note.";
 
 /**
  * This Week / relational-transit alerts — living people only.
- * Same care hole as peopleForTodaySky. A passed person is never
- * "what's pulling on two people in your circle at once."
+ * Does not apply exclude_from_dailies. That flag is Today and the
+ * morning note only. A passed person is never "what's pulling on
+ * two people in your circle at once."
  */
 export function peopleForThisWeek<T extends { passed_at?: string | null }>(people: T[]): T[] {
-  return peopleForTodaySky(people);
+  return people.filter((p) => shouldShowLiveTransits(p));
 }
 
 /** Owner-scoped people whose `passed_at` is set. Used to strip stored This Week rows. */

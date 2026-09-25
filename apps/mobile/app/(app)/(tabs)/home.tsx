@@ -64,6 +64,7 @@ interface PersonRow {
   star_scale?: number | null;
   memorial_constellation?: string | null;
   star_color?: string | null;
+  exclude_from_dailies?: boolean | null;
   sunSign?: string | null;
 }
 
@@ -213,7 +214,7 @@ export default function HomeScreen() {
       const nowISO = new Date().toISOString();
       const [{ data: profile }, { data: peopleRows, error: peopleError }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: transitRows }, { data: upcomingRows }, { data: relRows }] = await Promise.all([
       supabase.from("profiles").select("display_name, pinned_sky_person_id, timezone, relational_transit_alerts").eq("id", session.user.id).single(),
-      supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
+      supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale, exclude_from_dailies").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
       personIds.length
         ? supabase.from("charts").select("person_id, data").in("person_id", personIds)
         : Promise.resolve({ data: [] as { person_id: string; data: NatalChart }[] }),

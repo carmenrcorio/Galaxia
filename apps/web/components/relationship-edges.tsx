@@ -67,12 +67,15 @@ export function RelationshipEdgesBox({
   userId,
   subjectIsMinor,
   showRemembranceNote,
+  embedded = false,
 }: {
   person: RelationshipPersonInput;
   userId: string;
   /** From isMinorForSafety, never raw is_minor. */
   subjectIsMinor: boolean;
   showRemembranceNote?: boolean;
+  /** Sit inside Edit profile instead of a top-of-page glass bar. */
+  embedded?: boolean;
 }) {
   const [supabase] = useState(() => createSupabaseBrowserClient());
   const [people, setPeople] = useState<HonorPerson[]>([]);
@@ -236,7 +239,11 @@ export function RelationshipEdgesBox({
     <details
       id={RELATIONSHIP_EDGES_ANCHOR_ID}
       aria-label={`Constellation lines for ${person.display_name}`}
-      className="glass-card fade-in relationship-edges"
+      className={
+        embedded
+          ? "relationship-edges relationship-edges--embedded"
+          : "glass-card fade-in relationship-edges"
+      }
       style={{ minWidth: 0, scrollMarginTop: 92 }}
     >
       <summary className="relationship-edges-summary">

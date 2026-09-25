@@ -22,10 +22,18 @@ describe("Phase 5 person depth: Today, EditPerson, remembrance, edges, connect",
     expect(src).toContain('groupKeys: PersonGroupKey[] = ["them", secondGroup]');
     expect(src).not.toContain("PERSON_GROUP_LABEL.now");
     expect(src).not.toContain('setActiveGroup("now")');
+    const flipIdx = src.indexOf("<FlipSignCards");
+    const wheelIdx = src.indexOf("<ChartWheel");
     const todayIdx = src.indexOf("<PersonTodayCards");
     const tabIdx = src.indexOf('accessibilityRole="tablist"');
-    expect(todayIdx).toBeGreaterThan(0);
+    expect(flipIdx).toBeGreaterThan(0);
+    expect(wheelIdx).toBeGreaterThan(flipIdx);
+    expect(todayIdx).toBeGreaterThan(wheelIdx);
+    expect(src).not.toContain("ChartSignTiles");
     expect(tabIdx).toBeGreaterThan(todayIdx);
+    expect(src).toContain("includeVela={false}");
+    expect(src).toContain("includeRightNow={false}");
+    expect(src).not.toContain("<RelationshipEdgesBox");
   });
 
   it("EditPerson writes existing columns, searchPlaces pick-required, passed_at separate from chart", () => {
@@ -36,6 +44,9 @@ describe("Phase 5 person depth: Today, EditPerson, remembrance, edges, connect",
     expect(edit).toContain("getPreferredHouseSystem");
     expect(edit).toContain("normalizeStarColorForWrite");
     expect(edit).toContain("normalizeStarScale");
+    expect(edit).toContain("exclude_from_dailies");
+    expect(edit).toContain("EXCLUDE_FROM_DAILIES_LABEL");
+    expect(edit).toContain("<RelationshipEdgesBox");
     expect(edit).toContain("custom_position: null");
     expect(edit).toContain("rpc(\"delete_own_person\"");
     expect(edit).toContain("update({ passed_at: value })");

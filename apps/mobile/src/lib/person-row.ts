@@ -18,7 +18,8 @@ export type PersonDepthRow = {
   custom_position?: { angle: number; radius_pct: number } | null;
   star_scale?: number | null;
   linked_user_id?: string | null;
+  exclude_from_dailies?: boolean | null;
 };
 
 export const PERSON_DEPTH_SELECT =
-  "id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, died_on, star_color, memorial_constellation, custom_position, star_scale, linked_user_id";
+  "id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, died_on, star_color, memorial_constellation, custom_position, star_scale, linked_user_id, exclude_from_dailies";

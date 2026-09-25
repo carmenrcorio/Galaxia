@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 const page = readFileSync(join(REPO_ROOT, "apps/web/app/app/person/[id]/page.tsx"), "utf8");
+const edit = readFileSync(join(REPO_ROOT, "apps/web/components/edit-person-panel.tsx"), "utf8");
 const picker = readFileSync(
   join(REPO_ROOT, "apps/web/components/relationship-edges.tsx"),
   "utf8"
@@ -14,10 +15,12 @@ const honor = readFileSync(
 );
 
 describe("relationship picker Phase 3 wiring", () => {
-  it("mounts the picker on charted and no-chart person pages, and keeps honor declaration", () => {
-    expect(page).toContain("RelationshipEdgesBox");
+  it("mounts the picker inside Edit on charted and no-chart person pages, and keeps honor declaration", () => {
+    expect(page).not.toContain("<RelationshipEdgesBox");
+    expect(edit).toContain("<RelationshipEdgesBox");
+    expect(edit).toContain("embedded");
     expect(page).toContain("HonorDeclarationBox");
-    expect((page.match(/<RelationshipEdgesBox/g) ?? []).length).toBe(2);
+    expect((edit.match(/<RelationshipEdgesBox/g) ?? []).length).toBe(1);
     expect((page.match(/<HonorDeclarationBox/g) ?? []).length).toBe(2);
   });
 

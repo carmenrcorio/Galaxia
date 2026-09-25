@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { interpretRelationalTransitHeadline, MAJOR_RELATIONAL_TRANSIT_BODIES, type AffectedProfileHit, type AspectType, type RelationalTransitBody } from "@galaxia/astro";
+import { livingAffectedForThisWeek, passedPersonIds } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
 import { cronBearerMatches } from "../../../../lib/cron-auth";
@@ -75,7 +76,7 @@ async function handle(req: Request) {
   const supabase = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, { auth: { persistSession: false } });
 
   const now = Date.now();
-  const skipped = { noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0, pushFailed: 0 };
+  const skipped = { noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0, memorialFiltered: 0, pushFailed: 0 };
   let pushed = 0;
 
   const walk = await walkCronPages({
@@ -112,6 +113,23 @@ async function handle(req: Request) {
       return;
     }
 
+    const { data: peopleRows } = await supabase
+      .from("people")
+      .select("id, passed_at")
+      .eq("owner_id", event.owner_id);
+    const livingProfiles = livingAffectedForThisWeek(
+      event.affected_profiles,
+      passedPersonIds((peopleRows ?? []) as Array<{ id: string; passed_at: string | null }>)
+    );
+    if (!livingProfiles) {
+      skipped.memorialFiltered += 1;
+      // Same as major_only: this stored row will never qualify while the
+      // memorial people stay marked. Mark sent so we do not re-check it
+      // every run. Reversing passed_at creates a new living-only scan row.
+      await supabase.from("relational_transits").update({ push_sent_at: new Date().toISOString() }).eq("id", event.id);
+      return;
+    }
+
     const { data: tokenRows } = await supabase.from("push_tokens").select("expo_push_token").eq("owner_id", event.owner_id);
     const tokens = (tokenRows ?? []).map((r) => r.expo_push_token as string);
     if (!tokens.length) {
@@ -119,7 +137,7 @@ async function handle(req: Request) {
       return;
     }
 
-    const affected: AffectedProfileHit[] = event.affected_profiles.map((a) => ({
+    const affected: AffectedProfileHit[] = livingProfiles.map((a) => ({
       personId: a.profile_id,
       personName: a.profile_name,
       natalBody: a.natal_body as AffectedProfileHit["natalBody"],

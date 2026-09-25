@@ -5,7 +5,7 @@ import {
   type Precision,
   type RelationalTransitPersonInput,
 } from "@galaxia/astro";
-import { DEFAULT_FETCH_TIMEOUT_MS, sunSignFromChart, withTimeout } from "@galaxia/core";
+import { DEFAULT_FETCH_TIMEOUT_MS, peopleForThisWeek, passedPersonIds, sunSignFromChart, thisWeekRowsFromStored, withTimeout } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useState } from "react";
@@ -49,7 +49,7 @@ export default function ThisWeekScreen() {
         supabase.from("people").select("id, display_name, birth_date, birth_precision, is_self, passed_at").eq("owner_id", ownerId),
         supabase
           .from("relational_transits")
-          .select("active_from, transit_body")
+          .select("active_from, transit_body, affected_profiles")
           .eq("owner_id", ownerId)
           .gt("active_from", nowISO)
           .order("active_from", { ascending: true })
@@ -57,15 +57,6 @@ export default function ThisWeekScreen() {
       ]);
       const pref = ((profile as { relational_transit_alerts?: string | null } | null)?.relational_transit_alerts ?? "all") as "all" | "major_only" | "off";
       setPreference(pref === "major_only" || pref === "off" ? pref : "all");
-      const allTransits = (transitRows ?? []) as ThisWeekRow[];
-      const visible =
-        pref === "off"
-          ? []
-          : pref === "major_only"
-            ? allTransits.filter((row) => MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body))
-            : allTransits;
-      setRows(visible);
-
       const peopleList = (peopleRows ?? []) as Array<{
         id: string;
         display_name: string;
@@ -74,7 +65,18 @@ export default function ThisWeekScreen() {
         birth_precision: Precision | "none" | null;
         passed_at?: string | null;
       }>;
-      const ids = peopleList.map((p) => p.id);
+      const memorialIds = passedPersonIds(peopleList);
+      const livingTransits = thisWeekRowsFromStored((transitRows ?? []) as ThisWeekRow[], memorialIds);
+      const visible =
+        pref === "off"
+          ? []
+          : pref === "major_only"
+            ? livingTransits.filter((row) => MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body))
+            : livingTransits;
+      setRows(visible);
+
+      const livingPeople = peopleForThisWeek(peopleList);
+      const ids = livingPeople.map((p) => p.id);
       const chip: Record<string, { sunSign?: string | null; memorial?: boolean }> = {};
       for (const p of peopleList) chip[p.id] = { memorial: Boolean(p.passed_at) };
       let chartById = new Map<string, NatalChart>();
@@ -87,14 +89,17 @@ export default function ThisWeekScreen() {
       }
       setPersonChip(chip);
 
-      const upcoming = ((upcomingRows ?? []) as Array<{ active_from: string; transit_body: ThisWeekRow["transit_body"] }>).filter((row) =>
+      const upcoming = thisWeekRowsFromStored(
+        (upcomingRows ?? []) as Array<{ active_from: string; transit_body: ThisWeekRow["transit_body"]; affected_profiles: ThisWeekRow["affected_profiles"] }>,
+        memorialIds
+      ).filter((row) =>
         pref === "off" ? false : pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body) : true
       );
       let nextISO: string | null = upcoming[0]?.active_from ?? null;
       if (!nextISO && visible.length === 0 && pref !== "off") {
         if (ids.length >= 2) {
           const inputs: RelationalTransitPersonInput[] = [];
-          for (const raw of peopleList) {
+          for (const raw of livingPeople) {
             const chart = chartById.get(raw.id);
             if (!chart) continue;
             inputs.push({

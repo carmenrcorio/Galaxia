@@ -36,6 +36,17 @@ describe("constellation-letter cron — consent, Sunday, compose, ledger", () =>
     expect(src).not.toMatch(/\.eq\("relational_transit_alerts"/);
   });
 
+  it("excludes memorial people via peopleForThisWeek before the week scan", () => {
+    expect(src).toContain("peopleForThisWeek");
+    expect(src).toMatch(/from\s*"@galaxia\/core"/);
+    expect(src).toMatch(/\.select\("[^"]*passed_at[^"]*"\)/);
+    expect(src).toMatch(/peopleForThisWeek\(\(peopleRows/);
+    const filterIdx = src.indexOf("peopleForThisWeek(");
+    const scanIdx = src.indexOf("scanRelationalTransitsForWeek(");
+    expect(filterIdx).toBeGreaterThan(-1);
+    expect(scanIdx).toBeGreaterThan(filterIdx);
+  });
+
   it("checks local Sunday before scanning, and skips a quiet week instead of sending filler", () => {
     const dueIdx = src.indexOf("isDueForConstellationLetter(");
     const scanIdx = src.indexOf("scanRelationalTransitsForWeek(");

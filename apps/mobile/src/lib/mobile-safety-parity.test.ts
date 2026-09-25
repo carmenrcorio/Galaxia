@@ -128,6 +128,18 @@ describe("BUG 2 — passed person excluded from mobile Today in your sky", () =>
     expect(sky.some((p) => p.id === "remembered")).toBe(false);
   });
 
+  it("This Week strips memorial people through thisWeekRowsFromStored on home and the full feed", () => {
+    const home = readFileSync(resolve(__dirname, "../../app/(app)/(tabs)/home.tsx"), "utf8");
+    const feed = readFileSync(resolve(__dirname, "../../app/(app)/this-week.tsx"), "utf8");
+    for (const src of [home, feed]) {
+      expect(src).toContain("thisWeekRowsFromStored");
+      expect(src).toContain("peopleForThisWeek");
+      expect(src).toContain("passedPersonIds");
+      expect(src).toMatch(/thisWeekRowsFromStored\(/);
+      expect(src).toMatch(/peopleForThisWeek\(/);
+    }
+  });
+
   it("wiring: home imports shared peopleForTodaySky + durable daily nudges and loads passed_at", () => {
     const src = readFileSync(resolve(__dirname, "../../app/(app)/(tabs)/home.tsx"), "utf8");
     expect(src).toContain("peopleForTodaySky");

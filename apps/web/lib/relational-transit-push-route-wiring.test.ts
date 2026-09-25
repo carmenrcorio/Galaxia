@@ -72,8 +72,23 @@ describe("relational-transit-push route — returns a JSON summary with real num
     expect(markIdx).toBeGreaterThan(okIdx);
   });
 
-  it("skipped is a real per-event breakdown (noTokens/preferenceOff/majorOnlyFiltered/pushFailed), not a placeholder", () => {
-    expect(src).toMatch(/const skipped = \{ noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0, pushFailed: 0 \};/);
+  it("skipped is a real per-event breakdown (noTokens/preferenceOff/majorOnlyFiltered/memorialFiltered/pushFailed), not a placeholder", () => {
+    expect(src).toMatch(/const skipped = \{ noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0, memorialFiltered: 0, pushFailed: 0 \};/);
     expect(src).toMatch(/skipped\.pushFailed \+= 1/);
+    expect(src).toMatch(/skipped\.memorialFiltered \+= 1/);
+  });
+});
+
+describe("relational-transit-push route — never names a memorial person", () => {
+  const src = readRoute();
+
+  it("filters stored affected_profiles through livingAffectedForThisWeek before composing the headline", () => {
+    expect(src).toContain("livingAffectedForThisWeek");
+    expect(src).toContain("passedPersonIds");
+    expect(src).toMatch(/\.select\("id, passed_at"\)/);
+    const filterIdx = src.indexOf("livingAffectedForThisWeek");
+    const headlineIdx = src.indexOf("interpretRelationalTransitHeadline");
+    expect(filterIdx).toBeGreaterThan(-1);
+    expect(headlineIdx).toBeGreaterThan(filterIdx);
   });
 });

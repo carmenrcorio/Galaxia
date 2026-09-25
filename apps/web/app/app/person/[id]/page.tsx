@@ -1154,11 +1154,9 @@ export default function PersonProfilePage() {
               Remembered: their chart stays with you. Their light softens into ancient light on your galaxy.
             </p>
           ) : null}
-          {sun ? (
+          {sun?.confident === false ? (
             <p className="muted" style={{ fontSize: ".88rem", margin: 0 }}>
-              {sun.confident !== false ? `${SIGN_GLYPH[sun.sign]} ${sun.sign} Sun` : "Sun sign uncertain (year-only birth data)"}
-              {moon && moon.confident !== false ? ` · ${SIGN_GLYPH[moon.sign]} ${moon.sign} Moon` : ""}
-              {chart.asc ? ` · ${SIGN_GLYPH[chart.asc]} ${chart.asc} Rising` : ""}
+              Sun sign uncertain (year-only birth data)
             </p>
           ) : null}
         </div>

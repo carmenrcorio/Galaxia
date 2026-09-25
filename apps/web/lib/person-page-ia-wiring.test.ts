@@ -16,7 +16,7 @@ describe("person page information architecture", () => {
     expect(page).toContain("Archived Vela threads about");
   });
 
-  it("keeps Sun/Moon/Rising as header glance, Big three, and shareable tiles below the wheel", () => {
+  it("keeps flip cards under the name, Big three, and shareable tiles below the wheel", () => {
     expect(page).toContain("Sun sign uncertain (year-only birth data)");
     expect(page).toContain('sectionHead("big-three")');
     expect(page).toContain("<FlipSignCards chart={chart} minorSafe={personIsMinor} />");

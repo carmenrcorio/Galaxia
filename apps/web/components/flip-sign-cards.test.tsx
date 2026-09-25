@@ -28,9 +28,10 @@ function chart(overrides: Partial<NatalChart> = {}): NatalChart {
 }
 
 describe("FlipSignCards", () => {
-  it("flips a top card and shows the curated placement summary", () => {
+  it("shows the short on the front and flips to the curated long", () => {
     render(<FlipSignCards chart={chart()} minorSafe={false} />);
     const expected = interpretPlacement("sun", "Cancer", { minorSafe: false });
+    expect(screen.getByText(expected.short)).toBeTruthy();
     const sun = screen.getByRole("button", { name: /Sun in Cancer\. Flip/i });
     expect(sun.getAttribute("aria-pressed")).toBe("false");
     fireEvent.click(sun);

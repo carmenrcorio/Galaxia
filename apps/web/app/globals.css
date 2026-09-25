@@ -539,11 +539,11 @@ select.field--rect {
 .flip-sign-card {
   display: block;
   cursor: pointer;
-  min-height: 168px;
+  min-height: 188px;
   padding: 0;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,.06);
-  background: transparent;
+  border: 1px solid rgba(230,174,108,.18);
+  background: rgba(255,255,255,.035);
   color: inherit;
   font: inherit;
   perspective: 900px;
@@ -555,7 +555,7 @@ select.field--rect {
 .flip-sign-card__inner {
   display: block;
   position: relative;
-  min-height: 168px;
+  min-height: 188px;
   height: 100%;
   transform-style: preserve-3d;
   transition: transform .45s ease;
@@ -580,7 +580,8 @@ select.field--rect {
   -webkit-backface-visibility: hidden;
 }
 .flip-sign-card__front {
-  min-height: 168px;
+  min-height: 188px;
+  padding: 16px 12px;
 }
 .flip-sign-card__back {
   position: absolute;

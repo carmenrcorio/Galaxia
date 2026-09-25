@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * Sun / Moon / Rising cards that sit at the top of a chart surface.
- * Front is the placement. Hover, focus, or tap flips to the curated
- * interpretPlacement / interpretRising summary. The tiles under the
- * wheel stay a static graphic (`ChartSignTiles`).
+ * Sun / Moon / Rising reading cards at the top of a chart surface.
+ * Front is the original reveal chip: glyph, label, sign, and the
+ * curated short. Hover, focus, or tap flips to the long. The tiles
+ * under the wheel stay a static share graphic (`ChartSignTiles`).
  */
 
 import {
@@ -135,6 +135,9 @@ function FlipSignCard({
           </span>
           <span className="sign-chip__label">{tile.label}</span>
           <span className="sign-chip__value">{tile.confident ? tile.sign : "Uncertain"}</span>
+          {tile.short ? (
+            <span className="sign-chip__vibe">{tile.short}</span>
+          ) : null}
         </span>
         {canFlip ? (
           <span className="flip-sign-card__face flip-sign-card__back">

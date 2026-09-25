@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Natal sign reveal — Sun / Moon / Rising chips with short readings.
+ * Natal sign reveal — Sun / Moon / Rising cards at the top of a chart
+ * surface. Front shows the short; the cards flip to the long.
  *
  * Shared by the landing mini-form, public Quick Chart (/chart), and single
  * share snapshots (/s). Labels only placements the chart actually has; an

@@ -65,11 +65,11 @@ function MobileFlipCard({
       onPress={() => setFlipped((prev) => !prev)}
       style={{
         flex: 1,
-        minHeight: 132,
+        minHeight: 156,
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.08)",
-        backgroundColor: "rgba(10,7,24,0.55)",
+        borderColor: "rgba(230,174,108,0.18)",
+        backgroundColor: "rgba(255,255,255,0.035)",
         paddingHorizontal: 8,
         paddingVertical: 12,
         justifyContent: "center"
@@ -92,6 +92,11 @@ function MobileFlipCard({
           <Text style={{ color: tokens.colors.cream, fontFamily: fonts.fraunces, fontSize: 16 }}>
             {tile.sign}
           </Text>
+          {tile.short ? (
+            <Text style={{ color: tokens.colors.mist2, fontSize: 12, fontStyle: "italic", textAlign: "center", lineHeight: 16 }}>
+              {tile.short}
+            </Text>
+          ) : null}
         </View>
       )}
     </Pressable>

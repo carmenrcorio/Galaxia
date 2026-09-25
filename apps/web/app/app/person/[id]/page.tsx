@@ -77,6 +77,7 @@ import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../.
 import { ConnectInviteButton } from "../../../../components/connect-invite-button";
 import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
 import { ChartSignTiles } from "../../../../components/chart-sign-tiles";
+import { FlipSignCards } from "../../../../components/flip-sign-cards";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { GenerationalEraSurface } from "../../../../components/generational-era-surface";
@@ -1163,6 +1164,8 @@ export default function PersonProfilePage() {
         </div>
       </div>
 
+      <FlipSignCards chart={chart} minorSafe={personIsMinor} />
+
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
         {userId && !usesAncientLight(person) ? <ConnectInviteButton person={person} compact /> : null}
@@ -1222,7 +1225,7 @@ export default function PersonProfilePage() {
           ) : (
             <div aria-hidden style={{ width: 300, height: 300, margin: "0 auto" }} />
           )}
-          <ChartSignTiles chart={chart} minorSafe={personIsMinor} />
+          <ChartSignTiles chart={chart} />
           {chart.houseSystemFallbackReason ? (
             <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
               {chart.houseSystemFallbackReason}

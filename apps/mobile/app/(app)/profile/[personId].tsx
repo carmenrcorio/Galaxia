@@ -55,6 +55,7 @@ import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ChartSignTiles } from "../../../src/components/chart-sign-tiles";
+import { FlipSignCards } from "../../../src/components/flip-sign-cards";
 import { ChartWheel } from "../../../src/components/chart-wheel";
 import { ConnectInviteButton } from "../../../src/components/connect-invite-button";
 import { EditPersonPanel } from "../../../src/components/edit-person-panel";
@@ -332,6 +333,8 @@ export default function PersonProfileScreen() {
         </View>
       </View>
 
+      {chart ? <FlipSignCards chart={chart} minorSafe={personIsMinor} /> : null}
+
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
         <Link href="/compare" asChild>
           <Pill accessibilityLabel="Compare with someone">Compare</Pill>
@@ -385,7 +388,7 @@ export default function PersonProfileScreen() {
             {person.display_name}
           </Text>
           <ChartWheel chart={chart} aspects={natalAspects} />
-          <ChartSignTiles chart={chart} minorSafe={personIsMinor} />
+          <ChartSignTiles chart={chart} />
           {chart.houseSystemFallbackReason ? (
             <Text style={cardBody}>{chart.houseSystemFallbackReason}</Text>
           ) : null}

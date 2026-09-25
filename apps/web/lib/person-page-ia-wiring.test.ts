@@ -19,9 +19,11 @@ describe("person page information architecture", () => {
   it("keeps Sun/Moon/Rising as header glance, Big three, and shareable tiles below the wheel", () => {
     expect(page).toContain("Sun sign uncertain (year-only birth data)");
     expect(page).toContain('sectionHead("big-three")');
-    expect(page).toContain("<ChartSignTiles chart={chart} minorSafe={personIsMinor} />");
-    expect(page.indexOf("<ChartWheel")).toBeLessThan(page.indexOf("<ChartSignTiles chart={chart} minorSafe={personIsMinor} />"));
-    expect(page.indexOf("<ChartSignTiles chart={chart} minorSafe={personIsMinor} />")).toBeLessThan(page.indexOf("</ChartImageExport>"));
+    expect(page).toContain("<FlipSignCards chart={chart} minorSafe={personIsMinor} />");
+    expect(page).toContain("<ChartSignTiles chart={chart} />");
+    expect(page.indexOf("<FlipSignCards chart={chart} minorSafe={personIsMinor} />")).toBeLessThan(page.indexOf("href={`/app/compare"));
+    expect(page.indexOf("<ChartWheel")).toBeLessThan(page.indexOf("<ChartSignTiles chart={chart} />"));
+    expect(page.indexOf("<ChartSignTiles chart={chart} />")).toBeLessThan(page.indexOf("</ChartImageExport>"));
     expect(page).toContain('p.body !== "sun" && p.body !== "moon"');
   });
 

@@ -15,18 +15,12 @@
  * Do not persist a minor flag on single shares.
  */
 
-import {
-  interpretPlacement,
-  interpretRising,
-  type BodyKey,
-  type NatalChart,
-  type SignKey,
-} from "@galaxia/astro";
+import { type NatalChart } from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import type { Route } from "next";
 import type { CSSProperties } from "react";
-import { SIGN_GLYPH, signElement } from "../lib/design";
+import { FlipSignCards } from "./flip-sign-cards";
 
 export type NatalSignRevealProps = {
   chart: NatalChart;
@@ -46,12 +40,6 @@ export type NatalSignRevealProps = {
   signupHref?: string;
   className?: string;
   style?: CSSProperties;
-};
-
-type Chip = {
-  label: string;
-  sign: string;
-  reading: string;
 };
 
 export function NatalSignReveal({
@@ -78,33 +66,7 @@ export function NatalSignReveal({
       })
     : true;
 
-  const sun = chart.placements.find((p) => p.body === "sun");
-  const moon = chart.placements.find((p) => p.body === "moon");
   const rising = chart.asc;
-
-  const chips: Chip[] = [];
-  if (sun?.sign) {
-    chips.push({
-      label: "Sun",
-      sign: sun.sign,
-      reading: interpretPlacement(sun.body as BodyKey, sun.sign as SignKey, { minorSafe }).short,
-    });
-  }
-  if (moon?.sign) {
-    chips.push({
-      label: "Moon",
-      sign: moon.sign,
-      reading: interpretPlacement(moon.body as BodyKey, moon.sign as SignKey, { minorSafe }).short,
-    });
-  }
-  if (rising) {
-    chips.push({
-      label: "Rising",
-      sign: rising,
-      reading: interpretRising(rising as SignKey).short,
-    });
-  }
-
   const label = name?.trim() ? name.trim() : "This chart";
 
   return (
@@ -117,36 +79,9 @@ export function NatalSignReveal({
         {birthPlace ? ` · ${birthPlace}` : ""}
       </p>
 
-      {chips.length > 0 ? (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 16,
-            flexWrap: "wrap",
-            margin: "14px 0",
-          }}
-        >
-          {chips.map((chip) => (
-            <div key={chip.label} className="sign-chip">
-              <span
-                className="sign-chip__glyph"
-                style={{ color: `var(--${signElement(chip.sign)})` }}
-              >
-                {SIGN_GLYPH[chip.sign]}
-              </span>
-              <span className="sign-chip__label">{chip.label}</span>
-              <span className="sign-chip__value">{chip.sign}</span>
-              <span
-                className="muted"
-                style={{ fontSize: ".7rem", fontStyle: "italic", display: "block", marginTop: 3 }}
-              >
-                {chip.reading}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : null}
+      <div style={{ margin: "14px 0" }}>
+        <FlipSignCards chart={chart} minorSafe={minorSafe} />
+      </div>
 
       {signupHref ? (
         <div className="natal-sign-reveal__signup" style={{ marginTop: 4, marginBottom: rising ? 0 : 10 }}>

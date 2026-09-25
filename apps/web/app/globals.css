@@ -530,7 +530,13 @@ select.field--rect {
     radial-gradient(1px 1px at 86% 62%, rgba(255,255,255,.2), transparent 100%),
     rgba(10, 7, 24, .55);
 }
-.chart-sign-tile {
+.flip-sign-cards {
+  display: grid;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+}
+.flip-sign-card {
   display: block;
   cursor: pointer;
   min-height: 168px;
@@ -543,10 +549,10 @@ select.field--rect {
   perspective: 900px;
   -webkit-tap-highlight-color: transparent;
 }
-.chart-sign-tile.is-static {
+.flip-sign-card.is-static {
   cursor: default;
 }
-.chart-sign-tile__inner {
+.flip-sign-card__inner {
   display: block;
   position: relative;
   min-height: 168px;
@@ -554,16 +560,16 @@ select.field--rect {
   transform-style: preserve-3d;
   transition: transform .45s ease;
 }
-.chart-sign-tile.is-flipped .chart-sign-tile__inner {
+.flip-sign-card.is-flipped .flip-sign-card__inner {
   transform: rotateY(180deg);
 }
 @media (hover: hover) and (pointer: fine) {
-  .chart-sign-tile:hover:not(.is-static) .chart-sign-tile__inner,
-  .chart-sign-tile:focus-visible:not(.is-static) .chart-sign-tile__inner {
+  .flip-sign-card:hover:not(.is-static) .flip-sign-card__inner,
+  .flip-sign-card:focus-visible:not(.is-static) .flip-sign-card__inner {
     transform: rotateY(180deg);
   }
 }
-.chart-sign-tile__face {
+.flip-sign-card__face {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -573,10 +579,10 @@ select.field--rect {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
-.chart-sign-tile__front {
+.flip-sign-card__front {
   min-height: 168px;
 }
-.chart-sign-tile__back {
+.flip-sign-card__back {
   position: absolute;
   inset: 0;
   transform: rotateY(180deg);
@@ -584,31 +590,31 @@ select.field--rect {
   justify-content: center;
   overflow: hidden;
 }
-.chart-sign-tile__long {
+.flip-sign-card__long {
   font-size: .74rem;
   color: var(--mist);
   line-height: 1.45;
   margin-top: 4px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .chart-sign-tile__inner {
+  .flip-sign-card__inner {
     transition: none;
     transform: none !important;
   }
-  .chart-sign-tile__back {
+  .flip-sign-card__back {
     position: relative;
     inset: auto;
     transform: none;
     display: none;
   }
-  .chart-sign-tile.is-flipped .chart-sign-tile__front,
-  .chart-sign-tile:hover:not(.is-static) .chart-sign-tile__front,
-  .chart-sign-tile:focus-visible:not(.is-static) .chart-sign-tile__front {
+  .flip-sign-card.is-flipped .flip-sign-card__front,
+  .flip-sign-card:hover:not(.is-static) .flip-sign-card__front,
+  .flip-sign-card:focus-visible:not(.is-static) .flip-sign-card__front {
     display: none;
   }
-  .chart-sign-tile.is-flipped .chart-sign-tile__back,
-  .chart-sign-tile:hover:not(.is-static) .chart-sign-tile__back,
-  .chart-sign-tile:focus-visible:not(.is-static) .chart-sign-tile__back {
+  .flip-sign-card.is-flipped .flip-sign-card__back,
+  .flip-sign-card:hover:not(.is-static) .flip-sign-card__back,
+  .flip-sign-card:focus-visible:not(.is-static) .flip-sign-card__back {
     display: flex;
   }
 }

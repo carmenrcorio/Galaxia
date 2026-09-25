@@ -8,4 +8,4 @@
 
 `[CHANGED]` **Person page hero.** Natal wheel + Sun / Moon / Rising tiles sit under Compare / Invite / Ask Vela / Edit. Right now stays under the hero. Ask about them moves to the end of the page (Ask Vela is already a header bubble). Lines on the constellation live inside Edit, not a top bar.
 
-`[ADDED]` **Sign tiles flip.** Hover, focus, or tap shows the curated `interpretPlacement` / `interpretRising` short and long for that placement. `prefers-reduced-motion` swaps faces without a 3D rotate.
+`[ADDED]` **Top sign cards flip.** The Sun / Moon / Rising cards under the name (and at the top of Quick Chart) flip on hover, focus, or tap to the curated `interpretPlacement` / `interpretRising` reading. The tiles under the wheel stay a static shareable graphic. `prefers-reduced-motion` swaps faces without a 3D rotate.

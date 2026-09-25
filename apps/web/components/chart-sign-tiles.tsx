@@ -5,85 +5,28 @@
  * Restored from the person-page snapshot row removed in #291 (the
  * `sign-chip` row that lived inside ChartImageExport with the wheel).
  *
- * Front: glyph, uppercase label, serif sign name.
- * Back: curated interpretPlacement / interpretRising summary for that
- * placement in this chart. Hover, focus, or tap flips the tile.
- * prefers-reduced-motion swaps faces without a 3D rotate.
- *
+ * Visual: three equal cards, glyph on top, uppercase label, serif sign name.
  * Sun and Rising use the shared purple `glyph-sq` badge + SIGN_GLYPH.
  * Moon uses the standalone crescent (`BODY_GLYPH.moon`) instead of a badge.
  * Signs come from the same chart object the wheel already has — never hardcoded.
+ * These tiles do not flip. The header cards (`FlipSignCards`) carry the reading.
  */
 
-import {
-  interpretPlacement,
-  interpretRising,
-  type BodyKey,
-  type NatalChart,
-  type SignKey,
-} from "@galaxia/astro";
-import { useState } from "react";
+import type { NatalChart } from "@galaxia/astro";
 import { BODY_GLYPH, SIGN_GLYPH, signElement } from "../lib/design";
 
-export function ChartSignTiles({
-  chart,
-  minorSafe = true,
-}: {
-  chart: NatalChart;
-  /** Same fail-safe as NatalSignReveal when the caller has no birth date. */
-  minorSafe?: boolean;
-}) {
+export function ChartSignTiles({ chart }: { chart: NatalChart }) {
   const sun = chart.placements.find((p) => p.body === "sun");
   const moon = chart.placements.find((p) => p.body === "moon");
 
-  const tiles: {
-    key: "sun" | "moon" | "rising";
-    label: string;
-    sign: string;
-    confident: boolean;
-    short: string;
-    long: string;
-  }[] = [];
+  const sunSign = sun?.sign;
+  const moonSign = moon?.sign;
+  const risingSign = chart.asc;
 
-  if (sun?.sign) {
-    const reading =
-      sun.confident === false
-        ? { short: "", long: "" }
-        : interpretPlacement("sun" as BodyKey, sun.sign as SignKey, { minorSafe });
-    tiles.push({
-      key: "sun",
-      label: "Sun",
-      sign: sun.sign,
-      confident: sun.confident !== false,
-      short: reading.short,
-      long: reading.long,
-    });
-  }
-  if (moon?.sign) {
-    const reading =
-      moon.confident === false
-        ? { short: "", long: "" }
-        : interpretPlacement("moon" as BodyKey, moon.sign as SignKey, { minorSafe });
-    tiles.push({
-      key: "moon",
-      label: "Moon",
-      sign: moon.sign,
-      confident: moon.confident !== false,
-      short: reading.short,
-      long: reading.long,
-    });
-  }
-  if (chart.asc) {
-    const reading = interpretRising(chart.asc as SignKey);
-    tiles.push({
-      key: "rising",
-      label: "Rising",
-      sign: chart.asc,
-      confident: true,
-      short: reading.short,
-      long: reading.long,
-    });
-  }
+  const tiles: { key: "sun" | "moon" | "rising"; label: string; sign: string }[] = [];
+  if (sunSign) tiles.push({ key: "sun", label: "Sun", sign: sunSign });
+  if (moonSign) tiles.push({ key: "moon", label: "Moon", sign: moonSign });
+  if (risingSign) tiles.push({ key: "rising", label: "Rising", sign: risingSign });
 
   if (tiles.length === 0) return null;
 
@@ -93,74 +36,28 @@ export function ChartSignTiles({
       data-testid="chart-sign-tiles"
       style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}
     >
-      {tiles.map((tile) => (
-        <SignTile key={tile.key} tile={tile} />
-      ))}
+      {tiles.map((tile) => {
+        const isMoon = tile.key === "moon";
+        return (
+          <div key={tile.key} className="sign-chip">
+            {isMoon ? (
+              <span className="sign-chip__glyph chart-sign-tiles__moon" aria-hidden="true">
+                {BODY_GLYPH.moon}
+              </span>
+            ) : (
+              <span
+                className="glyph-sq"
+                style={{ color: `var(--${signElement(tile.sign)})` }}
+                aria-hidden="true"
+              >
+                {SIGN_GLYPH[tile.sign]}
+              </span>
+            )}
+            <span className="sign-chip__label">{tile.label}</span>
+            <span className="sign-chip__value">{tile.sign}</span>
+          </div>
+        );
+      })}
     </div>
-  );
-}
-
-function SignTile({
-  tile,
-}: {
-  tile: {
-    key: "sun" | "moon" | "rising";
-    label: string;
-    sign: string;
-    confident: boolean;
-    short: string;
-    long: string;
-  };
-}) {
-  const [flipped, setFlipped] = useState(false);
-  const isMoon = tile.key === "moon";
-  const summary = tile.long || tile.short;
-  const canFlip = tile.confident && Boolean(summary);
-
-  return (
-    <button
-      type="button"
-      className={`sign-chip chart-sign-tile${flipped ? " is-flipped" : ""}${canFlip ? "" : " is-static"}`}
-      aria-pressed={canFlip ? flipped : undefined}
-      aria-label={
-        canFlip
-          ? flipped
-            ? `${tile.label} in ${tile.sign}. ${summary}`
-            : `${tile.label} in ${tile.sign}. Flip for what this means in the chart.`
-          : `${tile.label} sign uncertain`
-      }
-      disabled={!canFlip}
-      onClick={() => {
-        if (canFlip) setFlipped((prev) => !prev);
-      }}
-    >
-      <span className="chart-sign-tile__inner">
-        <span className="chart-sign-tile__face chart-sign-tile__front">
-          {isMoon ? (
-            <span className="sign-chip__glyph chart-sign-tiles__moon" aria-hidden="true">
-              {BODY_GLYPH.moon}
-            </span>
-          ) : (
-            <span
-              className="glyph-sq"
-              style={{ color: `var(--${signElement(tile.sign)})` }}
-              aria-hidden="true"
-            >
-              {SIGN_GLYPH[tile.sign]}
-            </span>
-          )}
-          <span className="sign-chip__label">{tile.label}</span>
-          <span className="sign-chip__value">{tile.confident ? tile.sign : "Uncertain"}</span>
-        </span>
-        {canFlip ? (
-          <span className="chart-sign-tile__face chart-sign-tile__back">
-            <span className="sign-chip__label">
-              {tile.label} in {tile.sign}
-            </span>
-            <span className="chart-sign-tile__long">{summary}</span>
-          </span>
-        ) : null}
-      </span>
-    </button>
   );
 }

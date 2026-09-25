@@ -22,10 +22,12 @@ describe("Phase 5 person depth: Today, EditPerson, remembrance, edges, connect",
     expect(src).toContain('groupKeys: PersonGroupKey[] = ["them", secondGroup]');
     expect(src).not.toContain("PERSON_GROUP_LABEL.now");
     expect(src).not.toContain('setActiveGroup("now")');
+    const flipIdx = src.indexOf("<FlipSignCards");
     const heroIdx = src.indexOf("<ChartSignTiles");
     const todayIdx = src.indexOf("<PersonTodayCards");
     const tabIdx = src.indexOf('accessibilityRole="tablist"');
-    expect(heroIdx).toBeGreaterThan(0);
+    expect(flipIdx).toBeGreaterThan(0);
+    expect(heroIdx).toBeGreaterThan(flipIdx);
     expect(todayIdx).toBeGreaterThan(heroIdx);
     expect(tabIdx).toBeGreaterThan(todayIdx);
     expect(src).toContain("includeVela={false}");

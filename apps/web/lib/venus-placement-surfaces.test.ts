@@ -76,9 +76,11 @@ describe("inventory surfaces — Venus never rendered without minorSafe", () => 
   });
 
   it("NatalSignReveal passes required minorSafe into interpretPlacement", () => {
-    const src = read("../components/natal-sign-reveal.tsx");
-    expect(src).toContain("interpretPlacement(sun.body as BodyKey, sun.sign as SignKey, { minorSafe })");
-    expect(src).toContain("interpretPlacement(moon.body as BodyKey, moon.sign as SignKey, { minorSafe })");
+    const reveal = read("../components/natal-sign-reveal.tsx");
+    const cards = read("../components/flip-sign-cards.tsx");
+    expect(reveal).toContain("<FlipSignCards chart={chart} minorSafe={minorSafe} />");
+    expect(cards).toContain("interpretPlacement(sun.body as BodyKey, sun.sign as SignKey, { minorSafe })");
+    expect(cards).toContain("interpretPlacement(moon.body as BodyKey, moon.sign as SignKey, { minorSafe })");
   });
 });
 

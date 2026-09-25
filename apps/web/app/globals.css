@@ -533,9 +533,9 @@ select.field--rect {
 .chart-sign-tile {
   display: block;
   cursor: pointer;
-  min-height: 148px;
+  min-height: 168px;
   padding: 0;
-  overflow: visible;
+  overflow: hidden;
   border: 1px solid rgba(255,255,255,.06);
   background: transparent;
   color: inherit;
@@ -549,7 +549,8 @@ select.field--rect {
 .chart-sign-tile__inner {
   display: block;
   position: relative;
-  min-height: 148px;
+  min-height: 168px;
+  height: 100%;
   transform-style: preserve-3d;
   transition: transform .45s ease;
 }
@@ -573,25 +574,18 @@ select.field--rect {
   -webkit-backface-visibility: hidden;
 }
 .chart-sign-tile__front {
-  min-height: 148px;
+  min-height: 168px;
 }
 .chart-sign-tile__back {
   position: absolute;
   inset: 0;
   transform: rotateY(180deg);
   text-align: center;
-  justify-content: flex-start;
-  overflow: auto;
-}
-.chart-sign-tile__short {
-  font-family: var(--serif);
-  font-size: .82rem;
-  color: var(--cream);
-  font-style: italic;
-  line-height: 1.35;
+  justify-content: center;
+  overflow: hidden;
 }
 .chart-sign-tile__long {
-  font-size: .72rem;
+  font-size: .74rem;
   color: var(--mist);
   line-height: 1.45;
   margin-top: 4px;

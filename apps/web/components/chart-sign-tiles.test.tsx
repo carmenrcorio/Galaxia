@@ -69,7 +69,6 @@ describe("ChartSignTiles", () => {
     fireEvent.click(sun);
     expect(sun.getAttribute("aria-pressed")).toBe("true");
     expect(sun.getAttribute("aria-label")).toContain(expected.long);
-    expect(screen.getByText(expected.short)).toBeTruthy();
     expect(screen.getByText(expected.long)).toBeTruthy();
     const rising = interpretRising("Cancer");
     fireEvent.click(screen.getByRole("button", { name: /Rising in Cancer\. Flip/i }));

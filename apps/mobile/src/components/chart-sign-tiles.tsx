@@ -80,16 +80,9 @@ function MobileSignTile({
           <Text style={{ color: tokens.colors.mist2, fontSize: 11, letterSpacing: 1.1, textTransform: "uppercase", textAlign: "center" }}>
             {tile.label} in {tile.sign}
           </Text>
-          {tile.short ? (
-            <Text style={{ color: tokens.colors.cream, fontFamily: fonts.fraunces, fontSize: 13, fontStyle: "italic", textAlign: "center" }}>
-              {tile.short}
-            </Text>
-          ) : null}
-          {tile.long ? (
-            <Text style={{ color: tokens.colors.mist, fontSize: 12, lineHeight: 17, textAlign: "center" }}>
-              {tile.long}
-            </Text>
-          ) : null}
+          <Text style={{ color: tokens.colors.mist, fontSize: 12, lineHeight: 17, textAlign: "center" }}>
+            {summary}
+          </Text>
         </View>
       ) : (
         <View style={{ alignItems: "center", gap: 4 }}>

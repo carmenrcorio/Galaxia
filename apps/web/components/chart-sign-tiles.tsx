@@ -157,8 +157,7 @@ function SignTile({
             <span className="sign-chip__label">
               {tile.label} in {tile.sign}
             </span>
-            {tile.short ? <span className="chart-sign-tile__short">{tile.short}</span> : null}
-            {tile.long ? <span className="chart-sign-tile__long">{tile.long}</span> : null}
+            <span className="chart-sign-tile__long">{summary}</span>
           </span>
         ) : null}
       </span>

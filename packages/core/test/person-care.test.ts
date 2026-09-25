@@ -114,6 +114,15 @@ describe("livingAffectedForThisWeek / thisWeekRowsFromStored — stored row care
     expect(visible[0]?.affected_profiles.map((a) => a.profile_name)).toEqual(["Jasmine", "Carmen"]);
     expect(visible.some((r) => r.affected_profiles.some((a) => a.profile_id === "gone"))).toBe(false);
   });
+
+  it("drops a remembered sibling from a three-person This Week card", () => {
+    const daddy = { profile_id: "daddy", profile_name: "Daddy" };
+    const stevie = { profile_id: "stevie", profile_name: "Stevie" };
+    const gabriel = { profile_id: "gabriel", profile_name: "Gabriel" };
+    const living = livingAffectedForThisWeek([daddy, stevie, gabriel], new Set(["stevie"]));
+    expect(living?.map((a) => a.profile_name)).toEqual(["Daddy", "Gabriel"]);
+    expect(living?.some((a) => a.profile_id === "stevie")).toBe(false);
+  });
 });
 
 describe("buildPersonPageNavSections — nav syncs with rendered sections", () => {

@@ -9,3 +9,5 @@
 `[CHANGED]` **Relational-transit scan no longer includes memorial people.** The earlier comment that "Saturn is crossing where your grandfather's Sun was" belongs on the memorial timeline, not in This Week. Minors stay in: family information, not romantic content.
 
 `[DECISION]` **Read-time filter, not a table wipe.** Existing `relational_transits` rows that name a memorial person stay in the table. The next scan writes living-only keys; the UI already hides the mixed rows. Reversing `passed_at` is still possible; a later living-only scan can surface that person again.
+
+`[TESTED]` **A three-person card that includes a remembered sibling drops that name and keeps the two living people.** This is the Daddy / Stevie / Gabriel shape: Stevie is already marked remembered (`passed_at` set). They must never remain in This Week after the filter.

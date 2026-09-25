@@ -31,7 +31,7 @@ import {
   type RelationalTransitBody,
   type RelationalTransitPersonInput,
 } from "@galaxia/astro";
-import { getMemorialConstellation, sunSignFromChart, usesMemorialGlyph, DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
+import { getMemorialConstellation, peopleForThisWeek, passedPersonIds, sunSignFromChart, thisWeekRowsFromStored, usesMemorialGlyph, DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { InitialAvatar } from "./initial-avatar";
@@ -212,7 +212,7 @@ export function RelationalTransitFeed({
         supabase.from("people").select("id, display_name, passed_at, memorial_constellation, is_self, birth_date, birth_precision").eq("owner_id", ownerId),
         supabase
           .from("relational_transits")
-          .select("active_from, transit_body")
+          .select("active_from, transit_body, affected_profiles")
           .eq("owner_id", ownerId)
           .gt("active_from", nowISO)
           .order("active_from", { ascending: true })
@@ -220,8 +220,10 @@ export function RelationalTransitFeed({
       ]);
       const pref = (profileRow?.relational_transit_alerts as "all" | "major_only" | "off" | undefined) ?? "all";
       setPreference(pref);
-      setRows((transitRows ?? []) as RelationalTransitRow[]);
-      const peopleIds = (peopleRows ?? []).map((p) => p.id as string);
+      const peopleList = (peopleRows ?? []) as Array<{ id: string } & PersonMemorialInfo>;
+      const memorialIds = passedPersonIds(peopleList);
+      setRows(thisWeekRowsFromStored((transitRows ?? []) as RelationalTransitRow[], memorialIds));
+      const peopleIds = peopleList.map((p) => p.id);
       const sunById = new Map<string, string>();
       if (peopleIds.length) {
         const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", peopleIds);
@@ -232,27 +234,25 @@ export function RelationalTransitFeed({
       }
       setPeopleById(new Map((peopleRows ?? []).map((p) => [p.id as string, { ...(p as PersonMemorialInfo), sunSign: sunById.get(p.id as string) ?? null }])));
 
-      const upcoming = ((upcomingRows ?? []) as Array<{ active_from: string; transit_body: RelationalTransitBody }>)
-        .filter((row) => pref === "off" ? false : pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body) : true);
+      const upcoming = thisWeekRowsFromStored(
+        (upcomingRows ?? []) as Array<{ active_from: string; transit_body: RelationalTransitBody; affected_profiles: RelationalTransitRow["affected_profiles"] }>,
+        memorialIds
+      ).filter((row) => pref === "off" ? false : pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body) : true);
       let nextISO: string | null = upcoming[0]?.active_from ?? null;
 
-      const activeCount = ((transitRows ?? []) as RelationalTransitRow[]).filter((row) =>
+      const livingRows = thisWeekRowsFromStored((transitRows ?? []) as RelationalTransitRow[], memorialIds);
+      const activeCount = livingRows.filter((row) =>
         pref === "off" ? false : pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body) : true
       ).length;
 
       if (!nextISO && activeCount === 0 && pref !== "off") {
-        const ids = ((peopleRows ?? []) as Array<{ id: string }>).map((p) => p.id);
+        const livingPeople = peopleForThisWeek(peopleList);
+        const ids = livingPeople.map((p) => p.id);
         if (ids.length >= 2) {
           const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
           const chartById = new Map<string, NatalChart>((chartRows ?? []).map((r) => [r.person_id as string, r.data as NatalChart]));
           const inputs: RelationalTransitPersonInput[] = [];
-          for (const raw of (peopleRows ?? []) as Array<{
-            id: string;
-            display_name: string;
-            is_self: boolean;
-            birth_date: string | null;
-            birth_precision: Precision | "none" | null;
-          }>) {
+          for (const raw of livingPeople) {
             const chart = chartById.get(raw.id);
             if (!chart) continue;
             inputs.push({

@@ -7,6 +7,7 @@ import {
   type Precision,
   type RelationalTransitPersonInput,
 } from "@galaxia/astro";
+import { peopleForThisWeek } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
 import { cronBearerMatches } from "../../../../lib/cron-auth";
@@ -22,11 +23,12 @@ import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary
  * the engine's own `relationalTransitDedupKey`, so re-running this job on
  * consecutive days re-affirms the same row instead of duplicating it.
  *
- * Deliberately includes PASSED (memorial) people and minors: relational
- * transits are generic astrological/family information, not romantic
- * content — "Saturn is crossing where your grandfather's Sun was" is
- * exactly the spec's example, and minors' charts already surface elsewhere
- * in the app (compare, groups, home).
+ * Living people only. Reuses `peopleForThisWeek` (@galaxia/core) — the
+ * same care hole as Today in your sky. A passed (memorial) person is
+ * never "what's pulling on two people in your circle at once." Minors
+ * stay in: relational transits are family information, not romantic
+ * content, and minors' charts already surface elsewhere (compare,
+ * groups, home).
  *
  * `profiles.relational_transit_alerts` ('all' | 'major_only' | 'off') gates
  * the in-app feed and any future push send, NOT this compute step — the
@@ -48,6 +50,7 @@ interface ScanPersonRow {
   birth_precision: "exact" | "date" | "year" | "none";
   birth_date: string | null;
   is_self: boolean;
+  passed_at: string | null;
 }
 
 export async function GET(req: Request) {
@@ -91,10 +94,10 @@ async function handle(req: Request) {
 
     const { data: peopleRows } = await supabase
       .from("people")
-      .select("id, display_name, relation, birth_precision, birth_date, is_self")
+      .select("id, display_name, relation, birth_precision, birth_date, is_self, passed_at")
       .eq("owner_id", ownerId);
 
-    const people = (peopleRows ?? []) as ScanPersonRow[];
+    const people = peopleForThisWeek((peopleRows ?? []) as ScanPersonRow[]);
     if (people.length < 2) {
       skipped.noPeople += people.length === 0 ? 1 : 0;
       skipped.singlePerson += people.length === 1 ? 1 : 0;

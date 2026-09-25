@@ -10,8 +10,12 @@ import {
   isTodaySection,
   type PersonGroupKey,
   isMinorForSafety,
+  livingAffectedForThisWeek,
+  passedPersonIds,
+  peopleForThisWeek,
   peopleForTodaySky,
   shouldShowLiveTransits,
+  thisWeekRowsFromStored,
 } from "../src/index";
 
 const NOW = new Date("2026-07-12T00:00:00.000Z");
@@ -53,6 +57,71 @@ describe("peopleForTodaySky — home care hole", () => {
         { id: "b", passed_at: "2021-01-01T00:00:00.000Z" },
       ])
     ).toEqual([]);
+  });
+});
+
+describe("peopleForThisWeek — same living-only care hole as Today", () => {
+  const people = [
+    { id: "self", display_name: "Carmen", passed_at: null },
+    { id: "living", display_name: "Jasmine", passed_at: null },
+    { id: "gone", display_name: "Hubbs", passed_at: "2024-11-02T00:00:00.000Z" },
+  ];
+
+  it("excludes passed people and leaves living (incl. self)", () => {
+    expect(peopleForThisWeek(people).map((p) => p.id)).toEqual(["self", "living"]);
+  });
+
+  it("is the same filter as peopleForTodaySky", () => {
+    expect(peopleForThisWeek(people)).toEqual(peopleForTodaySky(people));
+  });
+
+  it("passedPersonIds is only the memorial set", () => {
+    expect([...passedPersonIds(people)]).toEqual(["gone"]);
+    expect(passedPersonIds([{ id: "a", passed_at: null }]).size).toBe(0);
+  });
+});
+
+describe("livingAffectedForThisWeek / thisWeekRowsFromStored — stored row care gate", () => {
+  const jasmine = { profile_id: "living", profile_name: "Jasmine", natal_body: "saturn" };
+  const carmen = { profile_id: "self", profile_name: "Carmen", natal_body: "venus" };
+  const hubbs = { profile_id: "gone", profile_name: "Hubbs", natal_body: "saturn" };
+  const passed = new Set(["gone"]);
+
+  it("keeps a three-person event and drops the memorial name", () => {
+    const living = livingAffectedForThisWeek([jasmine, carmen, hubbs], passed);
+    expect(living?.map((a) => a.profile_id)).toEqual(["living", "self"]);
+  });
+
+  it("drops an event that is no longer relational after memorial exclusion", () => {
+    expect(livingAffectedForThisWeek([jasmine, hubbs], passed)).toBeNull();
+    expect(livingAffectedForThisWeek([hubbs], passed)).toBeNull();
+    expect(livingAffectedForThisWeek([], passed)).toBeNull();
+  });
+
+  it("keeps a living-only pair unchanged", () => {
+    const living = livingAffectedForThisWeek([jasmine, carmen], passed);
+    expect(living).toEqual([jasmine, carmen]);
+  });
+
+  it("thisWeekRowsFromStored rewrites affected_profiles and drops collapsed events", () => {
+    const rows = [
+      { id: "keep", affected_profiles: [jasmine, carmen, hubbs] },
+      { id: "drop", affected_profiles: [jasmine, hubbs] },
+      { id: "living", affected_profiles: [jasmine, carmen] },
+    ];
+    const visible = thisWeekRowsFromStored(rows, passed);
+    expect(visible.map((r) => r.id)).toEqual(["keep", "living"]);
+    expect(visible[0]?.affected_profiles.map((a) => a.profile_name)).toEqual(["Jasmine", "Carmen"]);
+    expect(visible.some((r) => r.affected_profiles.some((a) => a.profile_id === "gone"))).toBe(false);
+  });
+
+  it("drops a remembered sibling from a three-person This Week card", () => {
+    const daddy = { profile_id: "daddy", profile_name: "Daddy" };
+    const stevie = { profile_id: "stevie", profile_name: "Stevie" };
+    const gabriel = { profile_id: "gabriel", profile_name: "Gabriel" };
+    const living = livingAffectedForThisWeek([daddy, stevie, gabriel], new Set(["stevie"]));
+    expect(living?.map((a) => a.profile_name)).toEqual(["Daddy", "Gabriel"]);
+    expect(living?.some((a) => a.profile_id === "stevie")).toBe(false);
   });
 });
 

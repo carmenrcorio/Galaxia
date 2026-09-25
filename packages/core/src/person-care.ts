@@ -2,8 +2,8 @@
  * Care gates for living vs remembrance surfaces on person/home.
  *
  * Thesis: a passed person shows their ENDURING chart — never live
- * current-day / transit / "Active today" content. Hide cleanly; do not
- * invent a replacement "sky" widget under pressure.
+ * current-day / transit / "Active today" / "This week" content. Hide
+ * cleanly; do not invent a replacement "sky" widget under pressure.
  */
 
 import { hasPassed } from "./galaxy-orbit";
@@ -22,6 +22,55 @@ export function shouldShowLiveTransits(
  */
 export function peopleForTodaySky<T extends { passed_at?: string | null }>(people: T[]): T[] {
   return people.filter((p) => shouldShowLiveTransits(p));
+}
+
+/**
+ * This Week / relational-transit alerts — living people only.
+ * Same care hole as peopleForTodaySky. A passed person is never
+ * "what's pulling on two people in your circle at once."
+ */
+export function peopleForThisWeek<T extends { passed_at?: string | null }>(people: T[]): T[] {
+  return peopleForTodaySky(people);
+}
+
+/** Owner-scoped people whose `passed_at` is set. Used to strip stored This Week rows. */
+export function passedPersonIds(
+  people: Array<{ id: string; passed_at?: string | null }>
+): Set<string> {
+  return new Set(people.filter((p) => !shouldShowLiveTransits(p)).map((p) => p.id));
+}
+
+/**
+ * Strip memorial people from a stored relational-transit affected list.
+ * Returns null when fewer than 2 living people remain — the event is no
+ * longer relational and must not appear in This Week.
+ */
+export function livingAffectedForThisWeek<T extends { profile_id: string }>(
+  affected: T[],
+  passedIds: Iterable<string>
+): T[] | null {
+  const passed = passedIds instanceof Set ? passedIds : new Set(passedIds);
+  const living = affected.filter((a) => !passed.has(a.profile_id));
+  return living.length >= 2 ? living : null;
+}
+
+/**
+ * Stored `relational_transits` rows for This Week. Drops memorial people
+ * from `affected_profiles` and drops the row when fewer than two living
+ * people remain. Existing scan rows stay in the table; this is the
+ * read-time care gate so a newly marked remembrance hides immediately.
+ */
+export function thisWeekRowsFromStored<T extends { affected_profiles: Array<{ profile_id: string }> }>(
+  rows: T[],
+  passedIds: Iterable<string>
+): T[] {
+  const out: T[] = [];
+  for (const row of rows) {
+    const living = livingAffectedForThisWeek(row.affected_profiles, passedIds);
+    if (!living) continue;
+    out.push({ ...row, affected_profiles: living });
+  }
+  return out;
 }
 
 export type PersonNavSectionId =

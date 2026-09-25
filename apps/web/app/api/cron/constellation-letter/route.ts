@@ -10,7 +10,7 @@ import {
   type Precision,
   type RelationalTransitPersonInput,
 } from "@galaxia/astro";
-import { isMinorForSafety, resolveAccountName } from "@galaxia/core";
+import { isMinorForSafety, peopleForThisWeek, resolveAccountName } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
 import { cronBearerMatches } from "../../../../lib/cron-auth";
@@ -42,9 +42,11 @@ export const maxDuration = 800;
  *      daily sky email and of `relational_transit_alerts`).
  *   2. Stored timezone required (never fabricate a Sunday).
  *   3. Local Sunday check.
- *   4. Compose from a real week-ahead scan of the constellation. Quiet
- *      week, one person, or no eligible adults after minor exclusion: skip
- *      (a quiet week is not a reason to write an empty letter).
+ *   4. Compose from a real week-ahead scan of the living constellation
+ *      (`peopleForThisWeek` — same memorial care hole as This Week in the
+ *      app). Quiet week, one person, or no eligible adults after minor
+ *      and memorial exclusion: skip (a quiet week is not a reason to
+ *      write an empty letter).
  *   5. Ledger claim on (owner_id, week_of) before send.
  *
  * Copy is composed in `@galaxia/astro` `composeConstellationLetter`: every
@@ -67,6 +69,7 @@ interface ScanPersonRow {
   birth_date: string | null;
   is_self: boolean;
   is_minor: boolean | null;
+  passed_at: string | null;
 }
 
 export async function GET(req: Request) {
@@ -149,10 +152,10 @@ async function handle(req: Request) {
 
       const { data: peopleRows } = await supabase
         .from("people")
-        .select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor")
+        .select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at")
         .eq("owner_id", profile.id);
 
-      const people = (peopleRows ?? []) as ScanPersonRow[];
+      const people = peopleForThisWeek((peopleRows ?? []) as ScanPersonRow[]);
       if (people.length < 2) {
         skipped.noPeople += people.length === 0 ? 1 : 0;
         skipped.singlePerson += people.length === 1 ? 1 : 0;

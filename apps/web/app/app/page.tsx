@@ -118,6 +118,8 @@ interface PersonRow {
   /** Visual size multiplier. NULL = 1.0. Does not affect seat position. */
   star_scale?: number | null;
   linked_user_id?: string | null;
+  /** When true, left out of Today in your sky and the morning daily note. */
+  exclude_from_dailies?: boolean | null;
   sunSign?: string | null;
 }
 interface LinkRow { fromId: string; toId: string; scoreA: number; elA: string; elB: string; }
@@ -1670,7 +1672,7 @@ export default function AppHomePage() {
       const localDate = ownerLocalDate();
       const [profileRes, peopleRes, chartRes, threadRes, relRes, nudgeRes, recentRes] = await Promise.all([
         supabase.from("profiles").select("display_name, pinned_sky_person_id, onboarding_step, onboarding_completed_at").eq("id", uid).single(),
-        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale, linked_user_id").eq("owner_id", uid).order("created_at", { ascending: true }),
+        supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale, linked_user_id, exclude_from_dailies").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode, subject_person, pair_low, pair_high").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6),
         supabase.from("relationships").select("person_a, person_b, relation_type").eq("owner_id", uid),

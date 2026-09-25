@@ -138,6 +138,7 @@ describe("BUG 2 — passed person excluded from mobile Today in your sky", () =>
     expect(src).toMatch(/peopleForTodaySky\(castPeople\)/);
     expect(src).toMatch(/\.select\([^)]*passed_at/);
     expect(src).toMatch(/\.select\([^)]*is_minor/);
+    expect(src).toContain("exclude_from_dailies");
     expect(src).toContain("birth_date");
     expect(src).toContain("birth_precision");
     expect(src).toContain("minorSafe");

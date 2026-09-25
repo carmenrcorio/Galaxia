@@ -30,20 +30,26 @@ export function PersonTodayCards({
   dailyNudge,
   velaPins,
   showRemembrance,
-  onUpgrade
+  onUpgrade,
+  includeRightNow = true,
+  includeVela = true
 }: {
   person: PersonDepthRow;
   dailyNudge: PersonDailyNudgeRecord | null;
   velaPins: VelaPinRow[];
   showRemembrance: boolean;
   onUpgrade?: () => void;
+  includeRightNow?: boolean;
+  includeVela?: boolean;
 }) {
   const showActiveTodayNote =
+    includeRightNow &&
     shouldShowLiveTransits(person) &&
     Boolean(dailyNudge && dailyNudge.copy_tier !== "empty_hedge" && dailyNudge.transit_body);
   const showActiveTodayPrecisionEmpty =
+    includeRightNow &&
     shouldShowLiveTransits(person) && person.birth_precision === "year" && !showActiveTodayNote;
-  const showVelaOnThem = !showRemembrance || velaPins.length > 0;
+  const showVelaOnThem = includeVela && (!showRemembrance || velaPins.length > 0);
 
   if (!showActiveTodayNote && !showActiveTodayPrecisionEmpty && !showVelaOnThem) {
     return null;

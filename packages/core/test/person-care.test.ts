@@ -54,6 +54,16 @@ describe("peopleForTodaySky — home care hole", () => {
       ])
     ).toEqual([]);
   });
+
+  it("leaves out living people the owner marked exclude_from_dailies", () => {
+    const sky = peopleForTodaySky([
+      { id: "self", passed_at: null, exclude_from_dailies: false },
+      { id: "hubs", passed_at: null, exclude_from_dailies: false },
+      { id: "colleague", passed_at: null, exclude_from_dailies: true },
+      { id: "remembered", passed_at: "2024-11-02T00:00:00.000Z", exclude_from_dailies: false },
+    ]);
+    expect(sky.map((p) => p.id)).toEqual(["self", "hubs"]);
+  });
 });
 
 describe("buildPersonPageNavSections — nav syncs with rendered sections", () => {

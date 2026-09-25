@@ -27,8 +27,9 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     expect(src).not.toContain("person-group-panel-now");
     expect(src).toContain("person-group-panel-them");
     expect(src).toContain('person-group-panel-remembrance" : "person-group-panel-yours"');
-    expect(src.indexOf('id="big-three"')).toBeLessThan(src.indexOf('id="chart-wheel"'));
-    expect(src.indexOf('id="chart-wheel"')).toBeLessThan(src.indexOf('id="placements"'));
+    expect(src.indexOf('id="chart-wheel"')).toBeLessThan(src.indexOf('id="person-today"'));
+    expect(src.indexOf('id="person-today"')).toBeLessThan(src.indexOf('id="big-three"'));
+    expect(src.indexOf('id="big-three"')).toBeLessThan(src.indexOf('id="placements"'));
     expect(src.indexOf('id="placements"')).toBeLessThan(src.indexOf('id="generational"'));
     expect(src.indexOf('id="generational"')).toBeLessThan(src.indexOf('id="aspects"'));
     expect(src.indexOf('id="aspects"')).toBeLessThan(src.indexOf('id="houses"'));
@@ -49,6 +50,7 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     const src = readFileSync(resolve(__dirname, "../app/app/page.tsx"), "utf8");
     expect(src).toContain("peopleForTodaySky");
     expect(src).toMatch(/peopleForTodaySky\(castPeople\)/);
+    expect(src).toContain("exclude_from_dailies");
     expect(src).toContain("planDailyNudgeWrites");
     expect(src).toContain("person_daily_nudges");
     expect(src).toContain("CARE: passed people excluded");

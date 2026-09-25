@@ -8,12 +8,15 @@ import {
   CHART_ENGINE_VERSION
 } from "@galaxia/astro";
 import {
+  EXCLUDE_FROM_DAILIES_HELP,
+  EXCLUDE_FROM_DAILIES_LABEL,
   OWNED_DELETE_COPY,
   STAR_COLOR_PALETTE,
   STAR_SCALE_MAX,
   STAR_SCALE_MIN,
   formatPersonDeleteConfirmation,
   groupsCollapsedByMemberRemoval,
+  hasPassed,
   isMinorForSafety,
   normalizeStarColorForWrite,
   normalizeStarScale,
@@ -31,6 +34,7 @@ import { fonts } from "../lib/typography";
 import { AskBirthData } from "./ask-birth-data";
 import { ConnectInviteButton } from "./connect-invite-button";
 import { GlassCard, Pill } from "./glass";
+import { RelationshipEdgesBox } from "./relationship-edges";
 
 const MONTHS = [
   "January",
@@ -87,6 +91,7 @@ export function EditPersonPanel({
   const [starColor, setStarColor] = useState<string | null>(normalizeStarColorForWrite(person.star_color));
   const [customPosition, setCustomPosition] = useState(person.custom_position ?? null);
   const [starScale, setStarScale] = useState(() => normalizeStarScale(person.star_scale));
+  const [excludeFromDailies, setExcludeFromDailies] = useState(person.exclude_from_dailies === true);
   const [resettingPosition, setResettingPosition] = useState(false);
   const [input, setInput] = useState<BirthFormInput>(() => birthFormFromPerson(person));
   const [cityQuery, setCityQuery] = useState(person.birth_place ?? "");
@@ -105,6 +110,7 @@ export function EditPersonPanel({
     setStarColor(normalizeStarColorForWrite(person.star_color));
     setCustomPosition(person.custom_position ?? null);
     setStarScale(normalizeStarScale(person.star_scale));
+    setExcludeFromDailies(person.exclude_from_dailies === true);
     setCityQuery(person.birth_place ?? "");
     setCandidates([]);
     setSearchError(null);
@@ -185,7 +191,8 @@ export function EditPersonPanel({
           birth_lng: built.birth.lng ?? null,
           tz_offset_min: built.tzOffsetMin ?? null,
           star_color: normalizeStarColorForWrite(starColor),
-          star_scale: normalizeStarScale(starScale)
+          star_scale: normalizeStarScale(starScale),
+          exclude_from_dailies: hasPassed({ passed_at: passedAt }) ? false : excludeFromDailies
         })
         .eq("id", person.id)
         .eq("owner_id", userId);
@@ -370,6 +377,44 @@ export function EditPersonPanel({
         <Text style={{ color: tokens.colors.mist2, fontSize: 12, lineHeight: 18 }}>
           Anyone whose birth date shows they&apos;re under 18 is automatically protected regardless of this box.
         </Text>
+        {!hasPassed({ passed_at: passedAt }) ? (
+          <>
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: excludeFromDailies }}
+              onPress={() => setExcludeFromDailies((prev) => !prev)}
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+            >
+              <View
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 4,
+                  borderWidth: 1,
+                  borderColor: tokens.colors.gold,
+                  backgroundColor: excludeFromDailies ? tokens.colors.gold : "transparent"
+                }}
+              />
+              <Text style={{ color: tokens.colors.cream, flex: 1 }}>{EXCLUDE_FROM_DAILIES_LABEL}</Text>
+            </Pressable>
+            <Text style={{ color: tokens.colors.mist2, fontSize: 12, lineHeight: 18 }}>
+              {EXCLUDE_FROM_DAILIES_HELP}
+            </Text>
+          </>
+        ) : null}
+        {userId ? (
+          <RelationshipEdgesBox
+            person={person}
+            userId={userId}
+            subjectIsMinor={isMinorForSafety({
+              isMinor,
+              birthDate: person.birth_date,
+              birthPrecision: person.birth_precision
+            })}
+            showRemembranceNote={hasPassed({ passed_at: passedAt }) && !person.is_self}
+            embedded
+          />
+        ) : null}
 
         <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>Star color</Text>
         <Text style={{ color: tokens.colors.mist, fontSize: 12, lineHeight: 18 }}>

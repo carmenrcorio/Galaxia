@@ -61,6 +61,7 @@ interface NudgePersonRow {
   is_self: boolean;
   is_minor: boolean;
   passed_at: string | null;
+  exclude_from_dailies?: boolean | null;
 }
 
 export async function GET(req: Request) {
@@ -129,7 +130,7 @@ async function handle(req: Request) {
       await Promise.all([
         supabase
           .from("people")
-          .select("id, relation, birth_precision, birth_date, is_self, is_minor, passed_at")
+          .select("id, relation, birth_precision, birth_date, is_self, is_minor, passed_at, exclude_from_dailies")
           .in("id", personIds),
         supabase.from("charts").select("person_id, data").in("person_id", personIds),
         supabase

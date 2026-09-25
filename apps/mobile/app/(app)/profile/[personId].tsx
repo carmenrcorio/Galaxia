@@ -54,6 +54,7 @@ import { tokens } from "@galaxia/ui";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ChartSignTiles } from "../../../src/components/chart-sign-tiles";
 import { ChartWheel } from "../../../src/components/chart-wheel";
 import { ConnectInviteButton } from "../../../src/components/connect-invite-button";
 import { EditPersonPanel } from "../../../src/components/edit-person-panel";
@@ -61,7 +62,6 @@ import { HonorDeclarationBox } from "../../../src/components/honor-declaration";
 import { InitialAvatar } from "../../../src/components/initial-avatar";
 import { MemorialTimeline } from "../../../src/components/memorial-timeline";
 import { PersonTodayCards, type VelaPinRow } from "../../../src/components/person-today-cards";
-import { RelationshipEdgesBox } from "../../../src/components/relationship-edges";
 import { RemembranceSpace } from "../../../src/components/remembrance-space";
 import { Pill } from "../../../src/components/glass";
 import { PERSON_DEPTH_SELECT, type PersonDepthRow } from "../../../src/lib/person-row";
@@ -332,15 +332,6 @@ export default function PersonProfileScreen() {
         </View>
       </View>
 
-      {session?.user.id ? (
-        <RelationshipEdgesBox
-          person={person}
-          userId={session.user.id}
-          subjectIsMinor={personIsMinor}
-          showRemembranceNote={showHonorBox}
-        />
-      ) : null}
-
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
         <Link href="/compare" asChild>
           <Pill accessibilityLabel="Compare with someone">Compare</Pill>
@@ -375,11 +366,43 @@ export default function PersonProfileScreen() {
         />
       ) : null}
 
+      {chart ? (
+        <View style={cardStyle}>
+          <Text style={vocabSubhead}>
+            {chart.precision === "exact" && chart.asc
+              ? `Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`
+              : "Zodiac wheel"}
+          </Text>
+          <Text
+            style={{
+              color: tokens.colors.cream,
+              fontFamily: fonts.fraunces,
+              fontSize: 17,
+              textAlign: "center",
+              marginBottom: 4
+            }}
+          >
+            {person.display_name}
+          </Text>
+          <ChartWheel chart={chart} aspects={natalAspects} />
+          <ChartSignTiles chart={chart} minorSafe={personIsMinor} />
+          {chart.houseSystemFallbackReason ? (
+            <Text style={cardBody}>{chart.houseSystemFallbackReason}</Text>
+          ) : null}
+          {chart.precision !== "exact" || !chart.asc ? (
+            <Text style={cardBody}>
+              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
       <PersonTodayCards
         person={person}
         dailyNudge={dailyNudge}
         velaPins={velaPins}
         showRemembrance={showRemembrance}
+        includeVela={false}
         onUpgrade={() => {
           setEditUpgradeTo("date");
           setEditOpen(true);
@@ -433,35 +456,6 @@ export default function PersonProfileScreen() {
               <Text style={cardBody}>
                 Rising: {rising ?? "Exact time and city needed"}
               </Text>
-            </View>
-
-            <View style={cardStyle}>
-              <Text style={cardTitle}>{PERSON_TAB_LABEL["chart-wheel"]}</Text>
-              <Text style={vocabSubhead}>
-                {chart.precision === "exact" && chart.asc
-                  ? `Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`
-                  : "Zodiac wheel"}
-              </Text>
-              <Text
-                style={{
-                  color: tokens.colors.cream,
-                  fontFamily: fonts.fraunces,
-                  fontSize: 17,
-                  textAlign: "center",
-                  marginBottom: 4
-                }}
-              >
-                {person.display_name}
-              </Text>
-              <ChartWheel chart={chart} aspects={natalAspects} />
-              {chart.houseSystemFallbackReason ? (
-                <Text style={cardBody}>{chart.houseSystemFallbackReason}</Text>
-              ) : null}
-              {chart.precision !== "exact" || !chart.asc ? (
-                <Text style={cardBody}>
-                  Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
-                </Text>
-              ) : null}
             </View>
 
             <View style={cardStyle}>
@@ -666,6 +660,14 @@ export default function PersonProfileScreen() {
         </View>
         </>
       ) : null}
+
+      <PersonTodayCards
+        person={person}
+        dailyNudge={dailyNudge}
+        velaPins={velaPins}
+        showRemembrance={showRemembrance}
+        includeRightNow={false}
+      />
 
       {status ? <Text style={{ color: tokens.colors.gold }}>{status}</Text> : null}
     </ScrollView>

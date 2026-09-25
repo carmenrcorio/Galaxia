@@ -10,10 +10,13 @@ import {
   CHART_ENGINE_VERSION,
 } from "@galaxia/astro";
 import {
+  EXCLUDE_FROM_DAILIES_HELP,
+  EXCLUDE_FROM_DAILIES_LABEL,
   OWNED_DELETE_COPY,
   STAR_COLOR_PALETTE,
   formatPersonDeleteConfirmation,
   groupsCollapsedByMemberRemoval,
+  hasPassed,
   isMinorForSafety,
   normalizeStarColorForWrite,
   normalizeStarScale,
@@ -29,6 +32,7 @@ import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { AskBirthData } from "./ask-birth-data";
 import { ConnectInviteButton } from "./connect-invite-button";
 import { CustomCheck } from "./custom-check";
+import { RelationshipEdgesBox } from "./relationship-edges";
 import { Spinner } from "./spinner";
 
 const MONTHS = [
@@ -50,6 +54,7 @@ interface PersonRow {
   linked_user_id?: string | null;
   custom_position?: { angle: number; radius_pct: number } | null;
   star_scale?: number | null;
+  exclude_from_dailies?: boolean | null;
 }
 interface Props {
   person: PersonRow;
@@ -88,6 +93,7 @@ export function EditPersonPanel({
   );
   const [customPosition, setCustomPosition] = useState(person.custom_position ?? null);
   const [starScale, setStarScale] = useState(() => normalizeStarScale(person.star_scale));
+  const [excludeFromDailies, setExcludeFromDailies] = useState(person.exclude_from_dailies === true);
   const [resettingPosition, setResettingPosition] = useState(false);
 
   const [input, setInput] = useState<BirthFormInput>(() => birthFormFromPerson(person));
@@ -109,6 +115,7 @@ export function EditPersonPanel({
     setStarColor(normalizeStarColorForWrite(person.star_color));
     setCustomPosition(person.custom_position ?? null);
     setStarScale(normalizeStarScale(person.star_scale));
+    setExcludeFromDailies(person.exclude_from_dailies === true);
     setCityQuery(person.birth_place ?? "");
     setCandidates([]);
     setSearchError(null);
@@ -169,6 +176,7 @@ export function EditPersonPanel({
         tz_offset_min: built.tzOffsetMin ?? null,
         star_color: normalizeStarColorForWrite(starColor),
         star_scale: normalizeStarScale(starScale),
+        exclude_from_dailies: hasPassed({ passed_at: passedAt }) ? false : excludeFromDailies,
       }).eq("id", person.id).eq("owner_id", userId);
       if (pErr) throw new Error("This person's details could not be saved. Try again.");
       const { error: cErr } = await supabase.from("charts").upsert({ person_id: person.id, house_system: natal.houseSystem ?? null, data: natal, engine_version: CHART_ENGINE_VERSION });
@@ -299,6 +307,31 @@ export function EditPersonPanel({
         <p className="muted" style={{ fontSize: ".72rem", marginTop: -4 }}>
           Anyone whose birth date shows they're under 18 is automatically protected regardless of this box.
         </p>
+        {!hasPassed({ passed_at: passedAt }) ? (
+          <>
+            <CustomCheck
+              checked={excludeFromDailies}
+              onChange={setExcludeFromDailies}
+              label={EXCLUDE_FROM_DAILIES_LABEL}
+            />
+            <p className="muted" style={{ fontSize: ".72rem", marginTop: -4 }}>
+              {EXCLUDE_FROM_DAILIES_HELP}
+            </p>
+          </>
+        ) : null}
+        {userId ? (
+          <RelationshipEdgesBox
+            person={person}
+            userId={userId}
+            subjectIsMinor={isMinorForSafety({
+              isMinor,
+              birthDate: person.birth_date,
+              birthPrecision: person.birth_precision,
+            })}
+            showRemembranceNote={hasPassed({ passed_at: passedAt }) && !person.is_self}
+            embedded
+          />
+        ) : null}
 
         {/* Star color — curated palette only; Default clears to null (element-derived). */}
         <div>

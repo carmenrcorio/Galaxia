@@ -93,6 +93,13 @@ textarea:focus-visible {
 .relationship-edges {
   min-width: 0;
 }
+.relationship-edges--embedded {
+  margin-top: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+}
 .honor-declare-summary,
 .relationship-edges-summary {
   list-style: none;
@@ -522,6 +529,94 @@ select.field--rect {
     radial-gradient(1.5px 1px at 42% 78%, rgba(255,255,255,.22), transparent 100%),
     radial-gradient(1px 1px at 86% 62%, rgba(255,255,255,.2), transparent 100%),
     rgba(10, 7, 24, .55);
+}
+.chart-sign-tile {
+  display: block;
+  cursor: pointer;
+  min-height: 148px;
+  padding: 0;
+  overflow: visible;
+  border: 1px solid rgba(255,255,255,.06);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  perspective: 900px;
+  -webkit-tap-highlight-color: transparent;
+}
+.chart-sign-tile.is-static {
+  cursor: default;
+}
+.chart-sign-tile__inner {
+  display: block;
+  position: relative;
+  min-height: 148px;
+  transform-style: preserve-3d;
+  transition: transform .45s ease;
+}
+.chart-sign-tile.is-flipped .chart-sign-tile__inner {
+  transform: rotateY(180deg);
+}
+@media (hover: hover) and (pointer: fine) {
+  .chart-sign-tile:hover:not(.is-static) .chart-sign-tile__inner,
+  .chart-sign-tile:focus-visible:not(.is-static) .chart-sign-tile__inner {
+    transform: rotateY(180deg);
+  }
+}
+.chart-sign-tile__face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 10px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.chart-sign-tile__front {
+  min-height: 148px;
+}
+.chart-sign-tile__back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  text-align: center;
+  justify-content: flex-start;
+  overflow: auto;
+}
+.chart-sign-tile__short {
+  font-family: var(--serif);
+  font-size: .82rem;
+  color: var(--cream);
+  font-style: italic;
+  line-height: 1.35;
+}
+.chart-sign-tile__long {
+  font-size: .72rem;
+  color: var(--mist);
+  line-height: 1.45;
+  margin-top: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart-sign-tile__inner {
+    transition: none;
+    transform: none !important;
+  }
+  .chart-sign-tile__back {
+    position: relative;
+    inset: auto;
+    transform: none;
+    display: none;
+  }
+  .chart-sign-tile.is-flipped .chart-sign-tile__front,
+  .chart-sign-tile:hover:not(.is-static) .chart-sign-tile__front,
+  .chart-sign-tile:focus-visible:not(.is-static) .chart-sign-tile__front {
+    display: none;
+  }
+  .chart-sign-tile.is-flipped .chart-sign-tile__back,
+  .chart-sign-tile:hover:not(.is-static) .chart-sign-tile__back,
+  .chart-sign-tile:focus-visible:not(.is-static) .chart-sign-tile__back {
+    display: flex;
+  }
 }
 .chart-sign-tiles__moon {
   font-size: 1.45rem;

@@ -46,6 +46,18 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     expect(src).toContain("showWorkView={isProfessionalPersonRelation(person.relation)}");
   });
 
+  it("This Week feed strips memorial people via thisWeekRowsFromStored before render", () => {
+    const src = readFileSync(
+      resolve(__dirname, "../components/relational-transit-feed.tsx"),
+      "utf8"
+    );
+    expect(src).toContain("thisWeekRowsFromStored");
+    expect(src).toContain("peopleForThisWeek");
+    expect(src).toContain("passedPersonIds");
+    expect(src).toMatch(/thisWeekRowsFromStored\(\(transitRows/);
+    expect(src).toMatch(/peopleForThisWeek\(peopleList\)/);
+  });
+
   it("home Today in your sky filters with peopleForTodaySky before durable nudge plan", () => {
     const src = readFileSync(resolve(__dirname, "../app/app/page.tsx"), "utf8");
     expect(src).toContain("peopleForTodaySky");

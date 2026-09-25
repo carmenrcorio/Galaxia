@@ -68,3 +68,22 @@ describe("relational-transit-scan route — returns a JSON summary with real num
     expect(src).toMatch(/const skipped = \{ noPeople: 0, singlePerson: 0 \};/);
   });
 });
+
+describe("relational-transit-scan route — living people only", () => {
+  const src = readRoute();
+
+  it("filters the constellation through peopleForThisWeek before scanning", () => {
+    expect(src).toContain("peopleForThisWeek");
+    expect(src).toMatch(/from\s*"@galaxia\/core"/);
+    expect(src).toMatch(/\.select\("[^"]*passed_at[^"]*"\)/);
+    expect(src).toMatch(/peopleForThisWeek\(\(peopleRows/);
+    const filterIdx = src.indexOf("peopleForThisWeek(");
+    const scanIdx = src.indexOf("scanRelationalTransits(");
+    expect(filterIdx).toBeGreaterThan(-1);
+    expect(scanIdx).toBeGreaterThan(filterIdx);
+  });
+
+  it("does not re-derive passed filtering inline", () => {
+    expect(src).not.toMatch(/\.passed_at\s*(!=|==)=?\s*null/);
+  });
+});

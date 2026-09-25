@@ -23,8 +23,11 @@ import {
   HONOR_RELATION_TYPE,
   honorEdgesFromDeclaredRows,
   isMinorForSafety,
+  peopleForThisWeek,
   peopleForTodaySky,
+  passedPersonIds,
   resolveAccountName,
+  thisWeekRowsFromStored,
   sunSignFromChart,
   withTimeout,
   type HonorEdge,
@@ -232,7 +235,7 @@ export default function HomeScreen() {
         .limit(20),
       supabase
         .from("relational_transits")
-        .select("active_from, transit_body")
+        .select("active_from, transit_body, affected_profiles")
         .eq("owner_id", session.user.id)
         .gt("active_from", nowISO)
         .order("active_from", { ascending: true })
@@ -254,23 +257,27 @@ export default function HomeScreen() {
       const relationalPrefValue = (profile as { relational_transit_alerts?: string | null } | null)?.relational_transit_alerts ?? "all";
       const pref = relationalPrefValue === "major_only" || relationalPrefValue === "off" ? relationalPrefValue : "all";
       setRelationalPref(pref);
-      const allTransits = (transitRows ?? []) as RelationalTransitRow[];
+      const memorialIds = passedPersonIds(castPeople);
+      const livingTransits = thisWeekRowsFromStored((transitRows ?? []) as RelationalTransitRow[], memorialIds);
       const visibleTransits =
         pref === "off"
           ? []
           : pref === "major_only"
-            ? allTransits.filter((row) => MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body))
-            : allTransits;
+            ? livingTransits.filter((row) => MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body))
+            : livingTransits;
       setRelationalTransits(visibleTransits);
 
-      const upcoming = ((upcomingRows ?? []) as Array<{ active_from: string; transit_body: RelationalTransitRow["transit_body"] }>).filter((row) =>
+      const upcoming = thisWeekRowsFromStored(
+        (upcomingRows ?? []) as Array<{ active_from: string; transit_body: RelationalTransitRow["transit_body"]; affected_profiles: RelationalTransitRow["affected_profiles"] }>,
+        memorialIds
+      ).filter((row) =>
         pref === "off" ? false : pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body) : true
       );
       let nextISO: string | null = upcoming[0]?.active_from ?? null;
       if (!nextISO && visibleTransits.length === 0 && pref !== "off") {
         const chartByIdForNext = new Map<string, NatalChart>((chartRows ?? []).map((row) => [row.person_id as string, row.data as NatalChart]));
         const inputs: RelationalTransitPersonInput[] = [];
-        for (const person of castPeople) {
+        for (const person of peopleForThisWeek(castPeople)) {
           const chart = chartByIdForNext.get(person.id);
           if (!chart) continue;
           inputs.push({

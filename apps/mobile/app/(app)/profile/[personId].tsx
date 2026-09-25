@@ -54,7 +54,6 @@ import { tokens } from "@galaxia/ui";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { ChartSignTiles } from "../../../src/components/chart-sign-tiles";
 import { FlipSignCards } from "../../../src/components/flip-sign-cards";
 import { ChartWheel } from "../../../src/components/chart-wheel";
 import { ConnectInviteButton } from "../../../src/components/connect-invite-button";
@@ -388,7 +387,6 @@ export default function PersonProfileScreen() {
             {person.display_name}
           </Text>
           <ChartWheel chart={chart} aspects={natalAspects} />
-          <ChartSignTiles chart={chart} />
           {chart.houseSystemFallbackReason ? (
             <Text style={cardBody}>{chart.houseSystemFallbackReason}</Text>
           ) : null}

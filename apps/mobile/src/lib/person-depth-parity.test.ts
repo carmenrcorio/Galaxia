@@ -23,12 +23,13 @@ describe("Phase 5 person depth: Today, EditPerson, remembrance, edges, connect",
     expect(src).not.toContain("PERSON_GROUP_LABEL.now");
     expect(src).not.toContain('setActiveGroup("now")');
     const flipIdx = src.indexOf("<FlipSignCards");
-    const heroIdx = src.indexOf("<ChartSignTiles");
+    const wheelIdx = src.indexOf("<ChartWheel");
     const todayIdx = src.indexOf("<PersonTodayCards");
     const tabIdx = src.indexOf('accessibilityRole="tablist"');
     expect(flipIdx).toBeGreaterThan(0);
-    expect(heroIdx).toBeGreaterThan(flipIdx);
-    expect(todayIdx).toBeGreaterThan(heroIdx);
+    expect(wheelIdx).toBeGreaterThan(flipIdx);
+    expect(todayIdx).toBeGreaterThan(wheelIdx);
+    expect(src).not.toContain("ChartSignTiles");
     expect(tabIdx).toBeGreaterThan(todayIdx);
     expect(src).toContain("includeVela={false}");
     expect(src).toContain("includeRightNow={false}");

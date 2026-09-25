@@ -76,7 +76,6 @@ import { AskBirthData } from "../../../../components/ask-birth-data";
 import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../../components/chart-precision-indicator";
 import { ConnectInviteButton } from "../../../../components/connect-invite-button";
 import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
-import { ChartSignTiles } from "../../../../components/chart-sign-tiles";
 import { FlipSignCards } from "../../../../components/flip-sign-cards";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
@@ -1223,7 +1222,6 @@ export default function PersonProfilePage() {
           ) : (
             <div aria-hidden style={{ width: 300, height: 300, margin: "0 auto" }} />
           )}
-          <ChartSignTiles chart={chart} />
           {chart.houseSystemFallbackReason ? (
             <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
               {chart.houseSystemFallbackReason}

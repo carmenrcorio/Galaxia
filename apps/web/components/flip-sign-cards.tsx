@@ -3,8 +3,7 @@
 /**
  * Sun / Moon / Rising reading cards at the top of a chart surface.
  * Front is the original reveal chip: glyph, label, sign, and the
- * curated short. Hover, focus, or tap flips to the long. The tiles
- * under the wheel stay a static share graphic (`ChartSignTiles`).
+ * curated short. Hover, focus, or tap flips to the long.
  */
 
 import {

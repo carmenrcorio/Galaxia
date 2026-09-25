@@ -6,6 +6,6 @@
 
 `[CHANGED]` **`peopleForTodaySky`** now also drops `exclude_from_dailies === true`. Home (web + mobile) and `nudge-compute` already call this helper, so the filter is one place.
 
-`[CHANGED]` **Person page hero.** Natal wheel + Sun / Moon / Rising tiles sit under Compare / Invite / Ask Vela / Edit. Right now stays under the hero. Ask about them moves to the end of the page (Ask Vela is already a header bubble). Lines on the constellation live inside Edit, not a top bar.
+`[CHANGED]` **Person page hero.** Flip sign cards sit under the name. Compare / Invite / Ask Vela / Edit, then the natal wheel. Right now stays under the hero. Ask about them moves to the end of the page (Ask Vela is already a header bubble). Lines on the constellation live inside Edit, not a top bar.
 
-`[ADDED]` **Top sign cards flip.** The Sun / Moon / Rising cards under the name (and at the top of Quick Chart) are the reading cards: front shows the curated short, hover / focus / tap flips to the long. The tiles under the wheel stay a static shareable graphic, not a second flip row. `prefers-reduced-motion` swaps faces without a 3D rotate.
+`[ADDED]` **Top sign cards flip.** The Sun / Moon / Rising cards under the name (and at the top of Quick Chart) are the reading cards: front shows the curated short, hover / focus / tap flips to the long. The redundant tiles under the wheel are gone. `prefers-reduced-motion` swaps faces without a 3D rotate.

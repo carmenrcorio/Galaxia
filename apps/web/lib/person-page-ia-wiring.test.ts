@@ -16,14 +16,13 @@ describe("person page information architecture", () => {
     expect(page).toContain("Archived Vela threads about");
   });
 
-  it("keeps flip cards under the name, Big three, and shareable tiles below the wheel", () => {
+  it("keeps flip cards under the name and the wheel as the hero, no under-wheel tiles", () => {
     expect(page).toContain("Sun sign uncertain (year-only birth data)");
     expect(page).toContain('sectionHead("big-three")');
     expect(page).toContain("<FlipSignCards chart={chart} minorSafe={personIsMinor} />");
-    expect(page).toContain("<ChartSignTiles chart={chart} />");
+    expect(page).not.toContain("ChartSignTiles");
     expect(page.indexOf("<FlipSignCards chart={chart} minorSafe={personIsMinor} />")).toBeLessThan(page.indexOf("href={`/app/compare"));
-    expect(page.indexOf("<ChartWheel")).toBeLessThan(page.indexOf("<ChartSignTiles chart={chart} />"));
-    expect(page.indexOf("<ChartSignTiles chart={chart} />")).toBeLessThan(page.indexOf("</ChartImageExport>"));
+    expect(page.indexOf("<ChartWheel")).toBeLessThan(page.indexOf("</ChartImageExport>"));
     expect(page).toContain('p.body !== "sun" && p.body !== "moon"');
   });
 

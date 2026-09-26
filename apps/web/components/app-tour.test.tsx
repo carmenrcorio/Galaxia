@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { APP_TOUR_COPY } from "@galaxia/core";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -73,7 +75,7 @@ describe("AppTour", () => {
     render(<AppTour onSeen={onSeen} />);
     await screen.findByText(APP_TOUR_COPY.steps[0].title);
     fireEvent.click(screen.getByRole("button", { name: APP_TOUR_COPY.skip }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect((await screen.findByRole("alert")).textContent).toBe(
       APP_TOUR_COPY.saveError
     );
   });

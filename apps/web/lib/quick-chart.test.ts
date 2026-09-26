@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { describe, expect, it, afterEach } from "vitest";
 import type { BirthFormInput } from "@galaxia/astro";
 import { CHART_MODE_COMPARE } from "./nav-links";

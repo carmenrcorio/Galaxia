@@ -25,6 +25,7 @@ const SITE_URL = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
  * redirect.tsx) and is listed here like any other page. `/for-work` is a
  * new standalone professional-use page (not a former homepage anchor).
  * `/glossary` is a static public term list (no posts table read).
+ * `/methodology` publishes the chart engine method (ephemeris, houses, orbs).
  *
  * Post URLs (`/${slug}`) are read from the `posts` table at request time
  * (getPublishedPosts — published rows only, via lib/blog.ts) rather than
@@ -44,6 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/pricing",
     "/blog",
     "/glossary",
+    "/methodology",
     ...BLOG_CATEGORIES.map((c) => `/blog/${c.slug}`),
     "/privacy",
     "/terms",

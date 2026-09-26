@@ -2075,6 +2075,44 @@ section { padding-block: clamp(76px, 12vh, 140px); }
 }
 .glossary-read-more a:hover { color: var(--gold-bright); }
 
+/* ─── methodology (/methodology) ───────────────────────────────────────────
+   Long-form engine method on the marketing canvas. Reuses legal table
+   chrome; headings and body match glossary/legal measure. */
+.methodology-page {
+  padding-bottom: clamp(24px, 4vh, 40px);
+  max-width: 860px;
+}
+.methodology-h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -.012em;
+  color: var(--cream);
+  font-size: clamp(1.32rem, 2.6vw, 1.7rem);
+  line-height: 1.24;
+  margin: 40px 0 12px;
+  scroll-margin-top: 96px;
+}
+.methodology-page section:first-of-type .methodology-h2 { margin-top: 8px; }
+.methodology-p {
+  color: var(--mist);
+  font-weight: 300;
+  line-height: 1.75;
+  max-width: var(--measure);
+  margin: 0 0 16px;
+}
+.methodology-orb-table-wrap { margin-top: 4px; }
+.methodology-orb-table th:first-child,
+.methodology-orb-table td:first-child { width: 22%; }
+.methodology-table-caption {
+  caption-side: bottom;
+  text-align: left;
+  color: var(--mist2);
+  font-size: .86rem;
+  font-weight: 300;
+  line-height: 1.55;
+  padding: 12px 16px 14px;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    LEGAL PAGES (apps/web/app/terms, apps/web/app/privacy)
    Renders the reviewed markdown in content/legal/*.md verbatim via

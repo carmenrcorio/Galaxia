@@ -6,6 +6,7 @@ import {
   METHODOLOGY_ASPECT_TYPES,
   METHODOLOGY_DESCRIPTION,
   METHODOLOGY_H1,
+  METHODOLOGY_LEDE,
   METHODOLOGY_PATH,
   METHODOLOGY_SECTIONS,
   METHODOLOGY_TITLE,
@@ -35,7 +36,7 @@ describe("/methodology metadata", () => {
     expect(METHODOLOGY_PATH).toBe("/methodology");
     expect(src).toMatch(/alternates:\s*\{\s*canonical:\s*METHODOLOGY_PATH\s*\}/);
     expect(src).toContain("url: METHODOLOGY_PATH");
-    expect(src).toContain("canonical: https://galaxiamea.com/methodology");
+    expect(src).toContain("https://galaxiamea.com/methodology");
   });
 
   it("renders WebPage JSON-LD with the same title, description, and path", () => {

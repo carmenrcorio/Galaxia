@@ -19,7 +19,8 @@ import {
   whenUTCForOwnerLocalDate,
   type NatalChart,
   type PersonDailyNudgeRecord,
-  type SignKey
+  type SignKey,
+  bodyDisplayName
 } from "@galaxia/astro";
 import {
   ASPECTS_UNAVAILABLE_YEAR_BODY,
@@ -468,7 +469,7 @@ export default function PersonProfileScreen() {
                 .map((placement) => (
                 <View key={placement.body} style={{ flexDirection: "row", alignItems: "flex-start", flexWrap: "wrap" }}>
                   <Text style={cardBody}>
-                    {placement.body.toUpperCase()} {placement.sign} {placement.degree.toFixed(1)}°
+                    {bodyDisplayName(placement.body)} {placement.sign} {placement.degree.toFixed(1)}°
                   </Text>
                   <RetrogradeBadge retro={placement.retro} />
                   {placement.house ? <Text style={cardBody}>{` · House ${placement.house}`}</Text> : null}

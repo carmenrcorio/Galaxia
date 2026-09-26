@@ -18,6 +18,7 @@ import {
   interpretPlacement,
   type BodyKey,
   type SignKey,
+  bodyDisplayName,
 } from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
@@ -261,7 +262,7 @@ export default function QuickChartPage() {
                   if (p.confident === false) return (
                     <div key={p.body} style={{ display: "flex", gap: 10, alignItems: "center", opacity: .6, padding: "6px 0" }}>
                       <span style={{ width: 20, textAlign: "center" }}>{BODY_GLYPH[p.body] ?? p.body[0]}</span>
-                      <span className="muted" style={{ fontSize: ".82rem" }}>{p.body[0].toUpperCase() + p.body.slice(1)}: sign uncertain, add a birth date to settle it</span>
+                      <span className="muted" style={{ fontSize: ".82rem" }}>{bodyDisplayName(p.body)}: sign uncertain, add a birth date to settle it</span>
                     </div>
                   );
                   const reading = interpretPlacement(p.body as BodyKey, p.sign as SignKey, { minorSafe: chartMinorSafe });
@@ -271,7 +272,7 @@ export default function QuickChartPage() {
                       <div>
                         <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--mist2)" }}>{bodyDomain(p.body as BodyKey, { minorSafe: chartMinorSafe })}</div>
                         <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>
-                          {p.body[0].toUpperCase() + p.body.slice(1)} in {p.sign}
+                          {bodyDisplayName(p.body)} in {p.sign}
                           <RetrogradeBadge retro={p.retro} />
                         </div>
                         <div className="muted" style={{ fontSize: ".78rem", fontStyle: "italic" }}>{reading.short}</div>

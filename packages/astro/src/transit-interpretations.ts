@@ -87,6 +87,7 @@ const TRANSIT_FORCE: Record<BodyKey, string> = {
   uranus:  "sudden change",
   neptune: "a dreamy, softening haze",
   pluto:   "deep pressure to change",
+  north_node: "a pull toward the next stretch of growth",
 };
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -107,6 +108,7 @@ const NATAL_AREA: Record<BodyKey, string> = {
   uranus:  "need for freedom",
   neptune: "dreams and ideals",
   pluto:   "deeper self",
+  north_node: "direction of growth",
 };
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -125,6 +127,7 @@ const TRANSIT_GUIDANCE: Record<BodyKey, string> = {
   uranus:  "stay flexible; don't grip too hard",
   neptune: "rest, and don't force clarity today",
   pluto:   "let what's ending actually end",
+  north_node: "take the slightly harder honest step",
 };
 
 /** Uppercase the first letter (for the small "what helps" clause in `long`). */

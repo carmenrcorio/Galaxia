@@ -17,6 +17,7 @@ import {
   type BodyKey,
   type NatalChart,
   type SignKey,
+  bodyDisplayName,
 } from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
@@ -153,7 +154,7 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
                   <div key={p.body} style={{ display: "flex", gap: 10, alignItems: "center", opacity: 0.6, padding: "6px 0" }}>
                     <span style={{ width: 20, textAlign: "center" }}>{BODY_GLYPH[p.body] ?? p.body[0]}</span>
                     <span className="muted" style={{ fontSize: ".82rem" }}>
-                                            {p.body[0].toUpperCase() + p.body.slice(1)}: sign uncertain, add a birth date to settle it
+                                            {bodyDisplayName(p.body)}: sign uncertain, add a birth date to settle it
                     </span>
                   </div>
                 );
@@ -193,7 +194,7 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
                       {bodyDomain(p.body as BodyKey, { minorSafe })}
                     </div>
                     <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>
-                      {p.body[0].toUpperCase() + p.body.slice(1)} in {p.sign}
+                      {bodyDisplayName(p.body)} in {p.sign}
                       <RetrogradeBadge retro={p.retro} />
                     </div>
                     <div className="muted" style={{ fontSize: ".78rem", fontStyle: "italic" }}>

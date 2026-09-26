@@ -46,9 +46,9 @@ describe("interpretSynastryAspect", () => {
     expect(synSameBody.short).not.toBe(natalPlutoMoon!.short);
   });
 
-  it("PASS 1 covers 21 pairs and PASS 2 adds 24 outer pairs (45 x 5 = 225)", () => {
+  it("PASS 1 + PASS 2 + North Node pairs cover 55 pairs × 5 aspects", () => {
     const keys = Object.keys(SYNASTRY_PAIR);
-    expect(keys).toHaveLength(45);
+    expect(keys).toHaveLength(55);
     let count = 0;
     for (const key of keys) {
       for (const type of TYPES) {
@@ -57,7 +57,7 @@ describe("interpretSynastryAspect", () => {
         count += 1;
       }
     }
-    expect(count).toBe(225);
+    expect(count).toBe(275);
   });
 });
 
@@ -108,7 +108,7 @@ describe("PASS 2 outer-planet readings", () => {
         seen.set(short, `${pair} ${type}`);
       }
     }
-    expect(seen.size).toBe(225);
+    expect(seen.size).toBe(275);
   });
 
   it("PASS 2 shorts and longs contain no U+2014", () => {

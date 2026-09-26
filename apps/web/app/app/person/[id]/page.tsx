@@ -43,6 +43,7 @@ import {
   getFamilyBridge,
   isProfessionalPersonRelation,
   type PlutoSignExtended,
+  bodyDisplayName,
 } from "@galaxia/astro";
 import {
   buildPersonPageGroups,
@@ -1086,7 +1087,7 @@ export default function PersonProfilePage() {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{domain}</div>
-            <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{p.body.charAt(0).toUpperCase() + p.body.slice(1)}: sign uncertain</div>
+            <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{bodyDisplayName(p.body)}: sign uncertain</div>
           </div>
           <span style={{ fontSize: ".76rem", color: "var(--mist2)", fontStyle: "italic", textAlign: "right" }}>
             {p.possibleSigns?.length ? `Could be ${p.possibleSigns.join(" or ")}` : isGen ? "Changed sign that year" : "Needs a birth date"}
@@ -1115,7 +1116,7 @@ export default function PersonProfilePage() {
         key={p.body}
         open={openRows.has(rowKey)}
         onToggle={() => toggleRow(rowKey)}
-        label={`${p.body.charAt(0).toUpperCase() + p.body.slice(1)} in ${p.sign}${isGen ? " ✦" : ""}`}
+        label={`${bodyDisplayName(p.body)} in ${p.sign}${isGen ? " ✦" : ""}`}
         domain={domain}
         degree={toDMS(p.degree)}
         house={p.house}
@@ -1443,14 +1444,14 @@ export default function PersonProfilePage() {
               Stellium in {s.type === "house" ? `the ${s.label.toLowerCase()}` : s.label}
             </p>
             <p style={{ fontSize: ".78rem", color: "var(--cream)", margin: "0 0 3px" }}>
-              {s.bodies.map(b => b.charAt(0).toUpperCase() + b.slice(1)).join(" · ")}
+              {s.bodies.map((b) => bodyDisplayName(b)).join(" · ")}
             </p>
             <p style={{ fontSize: ".76rem", color: "var(--mist)", lineHeight: 1.55, margin: 0 }}>{STELLIUM_NOTE}</p>
           </div>
         ))}
 
         {chart.placements
-          .filter((p) => p.body !== "sun" && p.body !== "moon" && !GENERATIONAL.includes(normaliseBody(p.body)))
+          .filter((p) => p.body !== "sun" && p.body !== "moon" && p.body !== "north_node" && !GENERATIONAL.includes(normaliseBody(p.body)))
           .map((p) => renderPlacementRow(p))}
 
         <div id="generational">
@@ -1476,6 +1477,8 @@ export default function PersonProfilePage() {
             );
           })() : null}
         </div>
+
+        {chart.placements.filter((p) => p.body === "north_node").map((p) => renderPlacementRow(p))}
       </section>
 
       {/* ── Key aspects ── */}
@@ -1580,7 +1583,7 @@ export default function PersonProfilePage() {
                           return hr2.short ? (
                             <div key={p.body} style={{ display:"flex",alignItems:"baseline",gap:6 }}>
                               <span style={{ fontSize:".9rem",color:EL_SOLID[signElement(p.sign)]??"#b9aede",flexShrink:0 }}>{BODY_GLYPH[p.body]??p.body[0]}</span>
-                              <span style={{ fontSize:".78rem",color:"var(--cream)",fontWeight:600 }}>{p.body.charAt(0).toUpperCase()+p.body.slice(1)}</span>
+                              <span style={{ fontSize:".78rem",color:"var(--cream)",fontWeight:600 }}>{bodyDisplayName(p.body)}</span>
                               <span style={{ fontSize:".76rem",color:"var(--mist)",fontStyle:"italic" }}>{hr2.short}</span>
                             </div>
                           ) : null;

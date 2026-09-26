@@ -50,13 +50,15 @@ function stubChart(overrides: Partial<WheelChartLike> = {}): WheelChartLike {
 }
 
 describe("glyphs", () => {
-  it("covers the twelve signs and ten bodies (plus lower-case engine keys)", () => {
+  it("covers the twelve signs, ten bodies, and the North Node (plus lower-case engine keys)", () => {
     expect(Object.keys(SIGN_GLYPH)).toHaveLength(12);
     expect(SIGN_GLYPH.Aries).toBe("\u2648");
     expect(SIGN_GLYPH.Pisces).toBe("\u2653");
     expect(BODY_GLYPH.Sun).toBe("\u2609");
     expect(BODY_GLYPH.sun).toBe("\u2609");
     expect(BODY_GLYPH.pluto).toBe("\u2647");
+    expect(BODY_GLYPH.north_node).toBe("\u260A");
+    expect(BODY_GLYPH["North Node"]).toBe("\u260A");
     expect(ASPECT_GLYPH.trine).toBe("\u25B3");
     expect(signElement("Aries")).toBe("fire");
     expect(signElement("not-a-sign")).toBe("water");

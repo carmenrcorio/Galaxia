@@ -36,6 +36,7 @@ import {
   interpretRising,
   type BodyKey,
   type SignKey,
+  bodyDisplayName,
 } from "@galaxia/astro";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -128,7 +129,7 @@ function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion,
                 <div key={p.body} className="pdf-placement pdf-placement--uncertain">
                   <span className="pdf-placement-glyph">{BODY_GLYPH[p.body] ?? p.body[0]}</span>
                   <span className="pdf-placement-uncertain-text">
-                    {p.body[0].toUpperCase() + p.body.slice(1)}: sign uncertain; a birth date would settle it.
+                    {bodyDisplayName(p.body)}: sign uncertain; a birth date would settle it.
                   </span>
                 </div>
               );
@@ -140,7 +141,7 @@ function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion,
                 <div className="pdf-placement-body">
                   <div className="pdf-placement-domain">{bodyDomain(p.body as BodyKey, safety)}</div>
                   <div className="pdf-placement-name">
-                    {p.body[0].toUpperCase() + p.body.slice(1)} in {p.sign}
+                    {bodyDisplayName(p.body)} in {p.sign}
                     <RetrogradeBadge retro={p.retro} />
                   </div>
                   {reading.short ? <div className="pdf-placement-reading">{reading.short}</div> : null}

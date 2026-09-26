@@ -199,6 +199,15 @@
             "house": 5,
             "retro": false,
             "confident": true
+          },
+          {
+            "body": "north_node",
+            "lon": 102.49562230796928,
+            "sign": "Cancer",
+            "degree": 12.495622307969285,
+            "house": 12,
+            "retro": true,
+            "confident": true
           }
         ],
         "asc": "Leo",
@@ -332,6 +341,15 @@
             "sign": "Sagittarius",
             "degree": 17.517660518431626,
             "house": 1,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "north_node",
+            "lon": 51.2699487789974,
+            "sign": "Taurus",
+            "degree": 21.269948778997403,
+            "house": 6,
             "retro": false,
             "confident": true
           }
@@ -469,6 +487,15 @@
             "house": 3,
             "retro": true,
             "confident": true
+          },
+          {
+            "body": "north_node",
+            "lon": 222.44232875137553,
+            "sign": "Scorpio",
+            "degree": 12.442328751375527,
+            "house": 4,
+            "retro": true,
+            "confident": true
           }
         ],
         "asc": "Cancer",
@@ -602,6 +629,15 @@
             "sign": "Leo",
             "degree": 24.829313731434382,
             "house": 9,
+            "retro": false,
+            "confident": true
+          },
+          {
+            "body": "north_node",
+            "lon": 283.924920358461,
+            "sign": "Capricorn",
+            "degree": 13.924920358461009,
+            "house": 2,
             "retro": false,
             "confident": true
           }

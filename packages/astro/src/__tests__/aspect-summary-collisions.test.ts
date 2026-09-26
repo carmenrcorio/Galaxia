@@ -103,7 +103,7 @@ describe("aspectSummaryLens never collapses two pairs", () => {
     const start = src.indexOf("const ASPECT_SUMMARY_FRAME:");
     expect(start).toBeGreaterThan(0);
     const authored = new Set<string>();
-    const pairPattern = /PAIR_KEY\(\s*"([a-z]+)"\s*,\s*"([a-z]+)"\s*\)/g;
+    const pairPattern = /PAIR_KEY\(\s*"([a-z_]+)"\s*,\s*"([a-z_]+)"\s*\)/g;
     const table = src.slice(start, src.indexOf("export function aspectSummaryLens"));
     let m: RegExpExecArray | null;
     while ((m = pairPattern.exec(table))) {

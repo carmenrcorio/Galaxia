@@ -20,7 +20,8 @@
 
 export type BodyKey =
   | "sun" | "moon" | "mercury" | "venus" | "mars"
-  | "jupiter" | "saturn" | "uranus" | "neptune" | "pluto";
+  | "jupiter" | "saturn" | "uranus" | "neptune" | "pluto"
+  | "north_node";
 
 export type SignKey =
   | "Aries" | "Taurus" | "Gemini" | "Cancer" | "Leo" | "Virgo"
@@ -40,6 +41,8 @@ export const BODY_DOMAIN: Record<BodyKey, string> = {
   uranus:  "Where they break the rules",
   neptune: "Where they dream",
   pluto:   "Where they transform",
+  // FOUNDER-REVIEW: North Node card descriptor (domain line).
+  north_node: "Where growth asks you to go",
 };
 
 /**
@@ -225,6 +228,23 @@ export const PLANET_IN_SIGN: Record<BodyKey, Record<SignKey, Reading>> = {
     Capricorn:   { short: "a generation that dismantles the structure", long: "Their era's work is tearing down institutions that no longer hold, whether or not there's a plan." },
     Aquarius:    { short: "a generation remaking the collective", long: "Power moves to the network. Their upheaval is about who decides, and who is counted." },
     Pisces:      { short: "a generation dissolving the old certainties", long: "Their transformation happens through surrender, faith, and the loss of the solid ground." },
+  },
+
+  // ────────────────── NORTH NODE (True Node; mathematical point) ──────────────────
+  // FOUNDER-REVIEW: North Node in-sign descriptor lines.
+  north_node: {
+    Aries:       { short: "growth by going first", long: "The stretch is to start before they feel ready. Waiting for a guarantee keeps them in the familiar; the life they are building asks them to move, then correct." },
+    Taurus:      { short: "growth by staying with what lasts", long: "The stretch is to commit to the slow thing: a craft, a place, a person they choose on purpose. Speed was the old habit; steadiness is the work." },
+    Gemini:      { short: "growth through the exchange", long: "The stretch is to talk it through, ask the second question, and stay curious when they would rather decide alone. Dialogue is the path, not a delay." },
+    Cancer:      { short: "growth by making a home for feeling", long: "The stretch is to let care be visible and to need it back. Self-sufficiency was the old room; belonging is the one they are asked to furnish." },
+    Leo:         { short: "growth by being seen", long: "The stretch is to take up space without making themselves smaller first. Warmth given and named is how this life gets larger." },
+    Virgo:       { short: "growth through useful, exact care", long: "The stretch is to serve the real detail in front of them, not the perfect version they keep postponing. Usefulness is the humility that grows them." },
+    Libra:       { short: "growth inside the we", long: "The stretch is to stay in the relation and say what they actually want. Fairness is not vanishing; it is the second, honest answer." },
+    Scorpio:     { short: "growth by going all the way in", long: "The stretch is depth they cannot half-do: trust, truth, the conversation after the easy one. Surface was the old safety; this life asks for the whole thing." },
+    Sagittarius: { short: "growth toward a bigger frame", long: "The stretch is belief, distance, and a horizon that keeps them honest. A life that closes in is the thing to notice, then widen." },
+    Capricorn:   { short: "growth by building what will hold", long: "The stretch is to take responsibility they can stand on years from now. Ease was never the point; earned structure is." },
+    Aquarius:    { short: "growth with their people", long: "The stretch is the chosen we: friends, a cause, a future that includes more than them. Independence was the old script; belonging they pick is the new one." },
+    Pisces:      { short: "growth by letting the edge soften", long: "The stretch is compassion that does not lose them. They are asked to feel the room and still name what is theirs." },
   },
 };
 

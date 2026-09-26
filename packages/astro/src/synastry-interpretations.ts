@@ -1121,6 +1121,229 @@ export const SYNASTRY_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> 
       long: "One of you fades out of the hard thing, the other tunnels into it, and you lose each other in the method. Used well, one keeps the depth from becoming a disappearance, and the other keeps the softness from becoming a dodge.",
     },
   },
+
+  // FOUNDER-REVIEW: North Node synastry (True Node × each natal body).
+  // Family-safe: growth / becoming, never fate, romance, or "supposed to stay".
+  "north_node-sun": {
+    conjunction: {
+      short: "one self sits on the other's path of becoming",
+      long: "One of you is pointed at who the other is becoming. It can feel like early significance that is hard to explain from outside. Name the contact; do not treat it as a verdict that you were meant to stay.",
+    },
+    sextile: {
+      short: "identity opens a door to growth when you use it",
+      long: "Who one of you is can help the other take the next stretch, if you lean in. It will not carry the bond on its own. Ask what they are trying to grow toward, then back that, not a fantasy of them.",
+    },
+    square: {
+      short: "who they are scrapes against where growth is asking",
+      long: "One person's selfhood and the other's direction of growth pull at angles. The tension is real and useful if you say which job is whose. Do not make either person the project.",
+    },
+    trine: {
+      short: "selfhood and the growth path move easily together",
+      long: "Who one of you is tends to support where the other is headed. That ease is easy to take for granted. Name the stretch out loud so it does not stay an unspoken expectation.",
+    },
+    opposition: {
+      short: "being themselves and becoming pull opposite ways",
+      long: "One of you holds the present self; the other holds the next chapter. You can complete each other or talk past each other. Treat the gap as two jobs, not a correction.",
+    },
+  },
+  "moon-north_node": {
+    conjunction: {
+      short: "feeling and the growth path occupy the same room",
+      long: "One of you feels safest in the direction the other is being asked to grow. That can land as home or as pressure. Ask what they need today, not only where they are supposed to be headed.",
+    },
+    sextile: {
+      short: "care can point them toward the next stretch",
+      long: "Warmth and the growth path can work together if you reach for it. A check-in that names the feeling and the next step does more than a pep talk.",
+    },
+    square: {
+      short: "safety and growth ask for different things",
+      long: "One of you wants comfort; the other is being stretched. Both are true. Say which one this hour needs instead of making the stretch or the safety win.",
+    },
+    trine: {
+      short: "the mood and the path of becoming agree",
+      long: "Emotional weather and the growth direction tend to cooperate. Use that: the person who feels it can also say the next honest step without a fight.",
+    },
+    opposition: {
+      short: "comfort sits across from the life they are building",
+      long: "One of you holds the soft landing; the other holds the assignment. You need both. Do not make the comfortable one the brake, or the growing one the critic.",
+    },
+  },
+  "mercury-north_node": {
+    conjunction: {
+      short: "talk itself is the growth assignment",
+      long: "The way one of you thinks and speaks sits on the other's path. Conversation is how the stretch happens. Keep both voices in the room so one mind does not become the map.",
+    },
+    sextile: {
+      short: "conversation opens the next stretch when you take it",
+      long: "A plain exchange can aim someone at the next honest step. It rewards the pair who keeps talking rather than assuming the path is obvious.",
+    },
+    square: {
+      short: "the words and the path of becoming scrape",
+      long: "One of you explains; the other is being asked to grow, and the explanation can feel like a lecture. Check what was meant before you react to the advice.",
+    },
+    trine: {
+      short: "they can name the growth without forcing it",
+      long: "Words and the next stretch sit in easy reach. Use the channel to name the step, then leave room for them to take it.",
+    },
+    opposition: {
+      short: "how they think and where they are headed face off",
+      long: "One mind and one growth path sit across from each other. Used well, one spots the blind spot; used poorly, you talk past the actual assignment.",
+    },
+  },
+  "north_node-venus": {
+    conjunction: {
+      short: "what they value is the direction of growth",
+      long: "Care, taste, and the path of becoming occupy the same place. What one of you loves can feel like the other's assignment. Keep the warmth attached to the actual person, not a role.",
+    },
+    sextile: {
+      short: "care can aim them at the next honest stretch",
+      long: "Affection and growth are available to each other if you turn toward them. Name what you value in who they are becoming, specifically.",
+    },
+    square: {
+      short: "taste and the growth path pull apart",
+      long: "What one of you holds dear and where the other is asked to go can chafe. Respect the difference instead of converting it. The contact is real; it is not a rewrite.",
+    },
+    trine: {
+      short: "affection and becoming point the same way",
+      long: "Warmth tends to support the next stretch. Say it out loud. Easy liking is exactly what gets assumed and then missed.",
+    },
+    opposition: {
+      short: "what they treasure sits across from where they must go",
+      long: "One of you holds the valued thing; the other holds the assignment. Let each keep their own sense of what is good, and still name the stretch.",
+    },
+  },
+  "mars-north_node": {
+    conjunction: {
+      short: "drive and the growth path are the same motion",
+      long: "One of you pushes in the exact direction the other is being asked to grow. That can be fuel or a shove. Ask who is leading this step before the heat decides.",
+    },
+    sextile: {
+      short: "aimed effort opens the next stretch",
+      long: "A little deliberate action can move the growth path. Point the energy at one real step, not a contest over who is more ready.",
+    },
+    square: {
+      short: "the push and the path of becoming fight",
+      long: "Drive and the assigned stretch scrape. One of you wants to move now; the other is not on that clock. Name the aim before it turns into a fight about will.",
+    },
+    trine: {
+      short: "action and growth move without translation",
+      long: "Effort and the next chapter cooperate. Use it: do the thing together, then check that both people still wanted that thing.",
+    },
+    opposition: {
+      short: "the fight and the future face opposite ways",
+      long: "One of you brings heat; the other brings the assignment. You can aim the drive or spend it arguing about the path. Decide the target first.",
+    },
+  },
+  "jupiter-north_node": {
+    conjunction: {
+      short: "expansion and the growth path share a room",
+      long: "One of you enlarges the life the other is being asked to grow into. Generous, and easy to overdo. Check the scale before you both commit to a bigger version.",
+    },
+    sextile: {
+      short: "a little more room helps the next stretch land",
+      long: "Optimism can open the assigned path if you spend it on one real plan. The ease is there; it still wants a container.",
+    },
+    square: {
+      short: "bigger and truer pull different directions",
+      long: "One of you wants more; the other is being asked to grow in a specific way. More is not always the assignment. Agree how far this actually goes.",
+    },
+    trine: {
+      short: "optimism and becoming feed each other",
+      long: "Hope and the growth path tend to cooperate. Dream out loud, then pick one stretch that has a shape.",
+    },
+    opposition: {
+      short: "the big plan and the growth path sit across",
+      long: "One of you holds the larger life; the other holds the next honest step. Used well, you size it together. Used poorly, one inflates while the other feels left behind.",
+    },
+  },
+  "north_node-saturn": {
+    conjunction: {
+      short: "the limit and the growth path arrive together",
+      long: "One of you brings structure to the other's becoming. That can feel like a spine or a wall. Make the expectation visible, and leave dignity in it.",
+    },
+    sextile: {
+      short: "structure can hold the next stretch",
+      long: "A real container helps the assigned path. Name the limit and the reason. Steady backing is the kindness here, not a looser plan.",
+    },
+    square: {
+      short: "duty and becoming scrape against each other",
+      long: "One of you holds the rule; the other holds the stretch. The friction is the work. Say what must hold and what is allowed to change.",
+    },
+    trine: {
+      short: "endurance and the path of growth can talk",
+      long: "Discipline and the next chapter can actually cooperate. Pick one growth that has a container, not twenty that have none.",
+    },
+    opposition: {
+      short: "the wall and the future face each other",
+      long: "Duty sits across from the assignment. You can build a frame for the stretch, or you can stall in a standoff about who is the grown-up.",
+    },
+  },
+  "north_node-uranus": {
+    conjunction: {
+      short: "the break and the growth path arrive as one",
+      long: "One of you needs a different life in the exact place the other is being asked to grow. Sudden, and honest. Ask which change is the assignment and which is just an exit.",
+    },
+    sextile: {
+      short: "a different move can open the next stretch",
+      long: "An unconventional step can serve the growth path if you take it on purpose. Protect the room to be different without making difference the whole story.",
+    },
+    square: {
+      short: "freedom and the assigned path fight",
+      long: "One of you bolts; the other is being asked to grow in a named direction. Give the freedom a job so it does not erase the path.",
+    },
+    trine: {
+      short: "change and becoming cooperate",
+      long: "The appetite for a new pattern and the growth assignment can work together. Name the personal version: where they break a rule in order to grow, not only to leave.",
+    },
+    opposition: {
+      short: "the rupture and the path sit opposite",
+      long: "One of you holds the shake-up; the other holds the stretch. Used well, the break clears the way. Used poorly, you confuse leaving with growing.",
+    },
+  },
+  "neptune-north_node": {
+    conjunction: {
+      short: "the dream and the growth path blur into one",
+      long: "Ideal and becoming occupy the same place, which can inspire or dissolve the outline. Ask for the simple next step, even if it feels small next to the vision.",
+    },
+    sextile: {
+      short: "imagining together can open the next stretch",
+      long: "A shared picture can aim someone at growth if you keep it attached to a real day. Honor the ideal, then name one concrete move.",
+    },
+    square: {
+      short: "fog and the assigned path scrape",
+      long: "One of you softens the edges; the other is being asked to grow in a specific direction. Get specific where things blur. Confirm the step before you fill the gap with a story.",
+    },
+    trine: {
+      short: "ideal and becoming share a channel",
+      long: "Compassion and the growth path can talk. Help them tell which feeling is the assignment and which they borrowed from the room.",
+    },
+    opposition: {
+      short: "the dream and the path face opposite ways",
+      long: "One of you holds the vision; the other holds the stretch. Used well, the dream feeds the step. Used poorly, one dissolves the plan the other needed.",
+    },
+  },
+  "north_node-pluto": {
+    conjunction: {
+      short: "the overhaul and the growth path are the same work",
+      long: "One of you meets the other's becoming at full intensity. Stay with them in it rather than trying to turn the volume down, and do not make transformation the only personality.",
+    },
+    sextile: {
+      short: "depth can open the next stretch if you reach",
+      long: "Going all the way in can serve the assigned path when you choose it. Ask what they are allowing to end, not only what they are holding.",
+    },
+    square: {
+      short: "intensity and the assigned path fight",
+      long: "One of you wants a deep remake; the other is being asked to grow in a named way. Name the two jobs. Power is the recurring question; do not make the path a test.",
+    },
+    trine: {
+      short: "transformation and becoming can finish a change",
+      long: "Endurance and the growth assignment can actually complete something. Use it on one change that is allowed to end.",
+    },
+    opposition: {
+      short: "the deep remake and the path sit across",
+      long: "One of you holds the underworld work; the other holds the stretch. You can finish a real change together, or you can turn growth into a power struggle.",
+    },
+  },
 };
 
 /**

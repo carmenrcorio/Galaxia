@@ -21,6 +21,7 @@
  * aspects[] for these two actual charts.
  */
 
+import { bodyDisplayName } from "./bodies";
 import type { Aspect, BodyName, SynastryResult } from "./index";
 
 /* Sign vibe one-liners — from galaxia.jsx VIBE (was apps/web/lib/design.ts) */
@@ -383,16 +384,16 @@ export type PriorityBand = keyof typeof BODY_PRIORITY_BY_BAND;
 
 /** Compare-facing view of the shared map (RelationType keys only). */
 export const RELATION_BODY_PRIORITY: Record<RelationType, string[]> = {
-  romantic:       [...BODY_PRIORITY_BY_BAND.romantic],
-  partners:       [...BODY_PRIORITY_BY_BAND.partners],
-  platonic:       [...BODY_PRIORITY_BY_BAND.platonic],
-  friends:        [...BODY_PRIORITY_BY_BAND.friends],
-  siblings:       [...BODY_PRIORITY_BY_BAND.siblings],
-  "parent-child": [...BODY_PRIORITY_BY_BAND["parent-child"]],
+  romantic:       [...BODY_PRIORITY_BY_BAND.romantic, "north_node"],
+  partners:       [...BODY_PRIORITY_BY_BAND.partners, "north_node"],
+  platonic:       [...BODY_PRIORITY_BY_BAND.platonic, "north_node"],
+  friends:        [...BODY_PRIORITY_BY_BAND.friends, "north_node"],
+  siblings:       [...BODY_PRIORITY_BY_BAND.siblings, "north_node"],
+  "parent-child": [...BODY_PRIORITY_BY_BAND["parent-child"], "north_node"],
   ancestor:       [...BODY_PRIORITY_BY_BAND.ancestor],
   colleagues:     [...BODY_PRIORITY_BY_BAND.colleagues],
   "manager-report": [...BODY_PRIORITY_BY_BAND["manager-report"]],
-  "mentor-mentee": [...BODY_PRIORITY_BY_BAND["mentor-mentee"]],
+  "mentor-mentee": [...BODY_PRIORITY_BY_BAND["mentor-mentee"], "north_node"],
 };
 
 /** Bodies weighted for a priority band — shared Compare / nudge entry point. */
@@ -1094,7 +1095,7 @@ export function relationshipWatchLine(
 }
 
 function cap(s: string): string {
-  return s.length ? s[0].toUpperCase() + s.slice(1) : s;
+  return bodyDisplayName(s);
 }
 
 // ═════════════════════════════════════════════════════════════════════════
@@ -1634,6 +1635,52 @@ const ASPECT_ACTION: Record<string, { flows: string; catches: string }> = {
     catches: "when affection needs room and consistency at once, ask which one they need today; this pair loves in an unusual key, so give the warmth without demanding it look normal",
     flows:   "let the affection be as unconventional as it is; there's an electric, easy warmth here, so enjoy the spark without trying to make it settle",
   },
+
+  // FOUNDER-REVIEW: North Node pair tactics (True Node × each body, plus Node–Node).
+  [PAIR_KEY("north_node", "sun")]: {
+    catches: "when one of you treats the other as a project, stop and ask who they already are; the contact is significance, not a rewrite of their self",
+    flows:   "name the stretch you see in them and back the person they are today; becoming is easier when it is not a performance for you",
+  },
+  [PAIR_KEY("moon", "north_node")]: {
+    catches: "when comfort and the next chapter fight, ask which one this hour needs; do not make the soft landing the enemy of the assignment",
+    flows:   "use the feeling you already have on each other to name the next honest step; care can point at growth without turning into a pep talk",
+  },
+  [PAIR_KEY("mercury", "north_node")]: {
+    catches: "when advice about their path lands as a lecture, play it back in their words first; the map is not yours to assign",
+    flows:   "keep talking about the next stretch in plain language; this pair can name the step without making it a speech",
+  },
+  [PAIR_KEY("north_node", "venus")]: {
+    catches: "when what you value and where they are headed chafe, name the value under the preference; do not convert their path into your taste",
+    flows:   "say specifically what you value in who they are becoming; warmth aimed at the stretch is the kindness this pair already has",
+  },
+  [PAIR_KEY("mars", "north_node")]: {
+    catches: "when the push arrives before they asked for it, decide who is leading this step; heat is not the same as the assignment",
+    flows:   "aim the shared drive at one real next step; this is momentum for the path, not a contest over who is more ready",
+  },
+  [PAIR_KEY("jupiter", "north_node")]: {
+    catches: "when the bigger version crowds out the actual stretch, agree how far this goes; more is not always the assignment",
+    flows:   "spend the extra room on one growth that has a shape; optimism helps the path when it has a container",
+  },
+  [PAIR_KEY("north_node", "saturn")]: {
+    catches: "when the rule and the stretch lock, say what must hold and what is allowed to change; a wall is not automatically wisdom",
+    flows:   "let the container hold the next chapter; steady backing is the kindness, not a looser plan",
+  },
+  [PAIR_KEY("north_node", "uranus")]: {
+    catches: "when the exit and the assignment get confused, ask which change is the path and which is just leaving; difference is not the whole story",
+    flows:   "protect the unconventional step that actually serves the stretch; room to be different can be the growth, if you name it",
+  },
+  [PAIR_KEY("neptune", "north_node")]: {
+    catches: "when the vision goes foggy, ask for the simple next step; an ideal is not a substitute for the assignment",
+    flows:   "keep the shared picture attached to a real day; imagining together can open the path if it stays specific",
+  },
+  [PAIR_KEY("north_node", "pluto")]: {
+    catches: "when intensity turns the path into a test, name the fear instead of raising the bar; becoming is not a power struggle",
+    flows:   "use the capacity to finish a real change; go all the way in on one stretch, then let it end",
+  },
+  [PAIR_KEY("north_node", "north_node")]: {
+    catches: "when two growth paths compete, pick whose stretch this week is; two assignments at once will starve both",
+    flows:   "name the direction each of you is growing and protect both; two paths can sit side by side if neither has to win",
+  },
 };
 
 /**
@@ -1729,6 +1776,14 @@ const WORK_ASPECT_ACTION: Record<string, Partial<{ flows: string; catches: strin
     catches: "when they need room and consistency at once, ask which one this week actually needs; this pair counts things as good in an unusual key, so give the credit without requiring it look conventional",
     flows:   "let the working style stay as unconventional as it is; the regard here is easy and a little electric, so use it instead of standardizing it",
   },
+  [PAIR_KEY("moon", "north_node")]: {
+    catches: "when the mood and the next stretch fight, ask which one this hour of work needs; do not make the steadier read the enemy of the assignment",
+    flows:   "use the instinctive read you already have to name the next honest step; a check-in can point at growth without becoming a pep talk",
+  },
+  [PAIR_KEY("north_node", "venus")]: {
+    catches: "when what you rate and where they are headed chafe, name the standard under the preference; do not convert their path into your taste",
+    flows:   "say specifically what you rate in who they are becoming; credit aimed at the stretch is the kindness this pair already has",
+  },
 };
 
 /**
@@ -1737,8 +1792,8 @@ const WORK_ASPECT_ACTION: Record<string, Partial<{ flows: string; catches: strin
  * "communicate better"). `aspectActionLine` picks the more relationship-
  * relevant of the two bodies as the lead.
  *
- * Unreachable for a real engine aspect: `ASPECT_ACTION` covers all 55 pairs of
- * the 10 `BodyName`s (the Tier-1 coverage sprint), and
+ * Unreachable for a real engine aspect: `ASPECT_ACTION` covers every pair of
+ * bodies the natal pass places (ten planets plus True Node), and
  * `professional-frames.test.ts` asserts a non-empty pair tactic for every one
  * of them, so the working frames never fall through to these personal-register
  * lines (`venus` and `mercury` here would trip the gate).
@@ -1769,7 +1824,7 @@ const BODY_FLOW_ACTION: Record<string, string> = {
 };
 
 /** Global personal-relevance order, for choosing a lead body when neither is in the type priority. */
-const PERSONAL_RANK = ["moon", "venus", "mars", "mercury", "sun", "saturn", "jupiter", "pluto", "neptune", "uranus"];
+const PERSONAL_RANK = ["moon", "venus", "mars", "mercury", "sun", "saturn", "jupiter", "pluto", "neptune", "uranus", "north_node"];
 
 /** The more relationship-relevant of the aspect's two bodies (drives the fallback tactic). */
 function leadBody(a: { from: string; to: string }, relType: RelationType): string {
@@ -2070,6 +2125,52 @@ const ASPECT_SUMMARY_FRAME: Record<string, { flows: string; catches: string }> =
     catches: "is where affection needs room and consistency at once, so ask which one they need today instead of assuming.",
     flows: "is where the warmth is electric and unconventional, so enjoy the spark without trying to make it settle.",
   },
+
+  // FOUNDER-REVIEW: North Node pair summary lenses.
+  [PAIR_KEY("north_node", "sun")]: {
+    catches: "is where one self gets treated as a project, so significance turns into a rewrite they did not ask for.",
+    flows: "is where who they are and where they are headed can back each other, if you name the stretch without staging it.",
+  },
+  [PAIR_KEY("moon", "north_node")]: {
+    catches: "is where comfort and the next chapter fight, so the soft landing gets mistaken for a brake.",
+    flows: "is where feeling can point at the next honest step, and care does not have to become a pep talk.",
+  },
+  [PAIR_KEY("mercury", "north_node")]: {
+    catches: "is where advice about the path lands as a lecture, and one mind tries to become the map.",
+    flows: "is where you can name the next stretch in plain words without making it a speech.",
+  },
+  [PAIR_KEY("north_node", "venus")]: {
+    catches: "is where taste and the assigned path chafe, so one person's valued thing tries to convert the other.",
+    flows: "is where warmth can aim at who they are becoming, specifically, instead of a role.",
+  },
+  [PAIR_KEY("mars", "north_node")]: {
+    catches: "is where the push arrives before they asked, and heat gets mistaken for the assignment.",
+    flows: "is where aimed effort can move the next chapter, if you decide who is leading the step.",
+  },
+  [PAIR_KEY("jupiter", "north_node")]: {
+    catches: "is where the bigger version crowds the actual stretch, and more pretends to be the assignment.",
+    flows: "is where extra room helps the path land, if you spend it on one growth that has a shape.",
+  },
+  [PAIR_KEY("north_node", "saturn")]: {
+    catches: "is where the rule and the stretch lock, and a wall gets called wisdom before anyone names the fear.",
+    flows: "is where a real container can hold the next chapter, and steady backing is the kindness.",
+  },
+  [PAIR_KEY("north_node", "uranus")]: {
+    catches: "is where the exit and the assignment get confused, and leaving pretends to be growth.",
+    flows: "is where an unconventional step can serve the stretch, if you name the difference on purpose.",
+  },
+  [PAIR_KEY("neptune", "north_node")]: {
+    catches: "is where the vision goes foggy, and an ideal stands in for the next actual step.",
+    flows: "is where a shared picture can open the path, if it stays attached to a real day.",
+  },
+  [PAIR_KEY("north_node", "pluto")]: {
+    catches: "is where intensity turns the path into a test, and becoming becomes a hold.",
+    flows: "is where you can finish a real change together, then let that stretch actually end.",
+  },
+  [PAIR_KEY("north_node", "north_node")]: {
+    catches: "is where two growth paths compete, and both starve because neither week has a chosen lead.",
+    flows: "is where two directions of becoming can sit side by side, if neither has to win.",
+  },
 };
 
 /**
@@ -2151,6 +2252,14 @@ const WORK_ASPECT_SUMMARY_FRAME: Record<string, Partial<{ flows: string; catches
   [PAIR_KEY("uranus", "venus")]: {
     catches: "is where they need room and consistency at once, so ask which one this week needs instead of assuming.",
     flows: "is where the regard is easy and a little electric, so use the unconventional working style instead of standardizing it.",
+  },
+  [PAIR_KEY("moon", "north_node")]: {
+    catches: "is where the mood and the next stretch fight, so the steadier read gets mistaken for a brake on the work.",
+    flows: "is where the instinctive read can point at the next honest step, without turning into a pep talk.",
+  },
+  [PAIR_KEY("north_node", "venus")]: {
+    catches: "is where taste and the assigned path chafe, so one person's standard tries to convert the other.",
+    flows: "is where credit can aim at who they are becoming, specifically, instead of a role.",
   },
 };
 

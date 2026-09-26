@@ -1,9 +1,13 @@
-import { Body, GeoVector, Ecliptic, EclipticGeoMoon, SiderealTime, SunPosition } from "astronomy-engine";
+import { Body, GeoVector, Ecliptic, EclipticGeoMoon, GeoMoonState, RotateState, Rotation_EQJ_ECT, SiderealTime, SunPosition } from "astronomy-engine";
+import { isChartPoint } from "./bodies";
 
 export type Precision = "exact" | "date" | "year";
 export type HouseSystem = "placidus" | "whole" | "equal";
 export type Planet = "uranus" | "neptune" | "pluto";
-export type BodyName = "sun" | "moon" | "mercury" | "venus" | "mars" | "jupiter" | "saturn" | "uranus" | "neptune" | "pluto";
+export type PlanetName = "sun" | "moon" | "mercury" | "venus" | "mars" | "jupiter" | "saturn" | "uranus" | "neptune" | "pluto";
+/** Mathematical points computed with the natal pass. Not planets. */
+export type ChartPointName = "north_node";
+export type BodyName = PlanetName | ChartPointName;
 export type AspectType = "conjunction" | "sextile" | "square" | "trine" | "opposition";
 export type Sign =
   | "Aries"
@@ -154,8 +158,10 @@ export interface CohortOverlay {
 }
 
 const SIGNS: Sign[] = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
-const MAJOR_BODIES: BodyName[] = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto"];
-const BODY_MAP: Record<BodyName, Body> = {
+const PLANET_BODIES: PlanetName[] = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto"];
+/** Date/exact natal pass: ten planets, then True Node after Pluto. */
+const MAJOR_BODIES: BodyName[] = [...PLANET_BODIES, "north_node"];
+const BODY_MAP: Record<PlanetName, Body> = {
   sun: Body.Sun,
   moon: Body.Moon,
   mercury: Body.Mercury,
@@ -167,6 +173,8 @@ const BODY_MAP: Record<BodyName, Body> = {
   neptune: Body.Neptune,
   pluto: Body.Pluto
 };
+
+export { BODY_DISPLAY_NAME, bodyDisplayName, isChartPoint } from "./bodies";
 
 const ASPECT_DEFS: Record<AspectType, { angle: number; orb: number; harmony: number }> = {
   conjunction: { angle: 0, orb: 8, harmony: 0.6 },
@@ -202,7 +210,22 @@ export function longitudeToSign(lon: number): Sign {
   return SIGNS[Math.floor(normalized / 30)] ?? "Aries";
 }
 
+/**
+ * True (osculating) North Node: longitude of the Moon's ascending node
+ * from the geocentric Moon state in true ecliptic of date.
+ * astronomy-engine has no Body.Node; this is the formula-based True Node
+ * ENGINEERING.md §8 requires (Cafe Astrology / astro.com default).
+ */
+export function trueNodeLongitude(date: Date): number {
+  const ect = RotateState(Rotation_EQJ_ECT(date), GeoMoonState(date));
+  const hx = ect.y * ect.vz - ect.z * ect.vy;
+  const hy = ect.z * ect.vx - ect.x * ect.vz;
+  // Line of nodes n = ẑ × h = (−hy, hx, 0); Ω = atan2(ny, nx).
+  return normalizeZodiacLongitude(Math.atan2(hx, -hy) / DEG);
+}
+
 function bodyLongitude(body: BodyName, date: Date): number {
+  if (body === "north_node") return trueNodeLongitude(date);
   if (body === "sun") return normalizeZodiacLongitude(SunPosition(date).elon);
   if (body === "moon") return normalizeZodiacLongitude(EclipticGeoMoon(date).lon);
   return normalizeZodiacLongitude(Ecliptic(GeoVector(BODY_MAP[body], date, true)).elon);
@@ -434,6 +457,8 @@ export function modalityForSign(sign: Sign): "cardinal" | "fixed" | "mutable" {
 export function computeNatalChart(birth: Birth): NatalChart {
   const houseSystemRequested = birth.houseSystem ?? "placidus";
   const date = getWorkingDate(birth);
+  // Year-only: Node moves ~19°/year, so a year sample would be a guess.
+  // Same honesty bar as Mercury–Saturn: omit it until a date is known.
   const bodies = birth.precision === "year" ? (["sun", "uranus", "neptune", "pluto"] as BodyName[]) : MAJOR_BODIES;
 
   let ascLon: number | undefined;
@@ -529,6 +554,8 @@ export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
   const countElements = (placements: Placement[]): Record<"fire" | "earth" | "air" | "water", number> =>
     placements.reduce(
       (acc, placement) => {
+        // Chart points are not planets; keep element tallies planetary.
+        if (isChartPoint(placement.body)) return acc;
         acc[elementForSign(placement.sign)] += 1;
         return acc;
       },
@@ -548,12 +575,14 @@ export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
 
 export function computeTransits(natal: NatalChart, whenUTC: string): TransitHit[] {
   const date = toDate(whenUTC);
-  const transitBodies: BodyName[] = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto"];
+  const transitBodies: PlanetName[] = PLANET_BODIES;
   const hits: TransitHit[] = [];
 
   for (const transitBody of transitBodies) {
     const transitLon = bodyLongitude(transitBody, date);
     for (const natalPlacement of natal.placements) {
+      // Transits of/to the Node are a later pass. Keep existing planetary hits stable.
+      if (isChartPoint(natalPlacement.body)) continue;
       const angle = Math.abs(normalizeSignedAngle(transitLon - natalPlacement.lon));
       for (const [type, def] of Object.entries(ASPECT_DEFS) as [AspectType, (typeof ASPECT_DEFS)[AspectType]][]) {
         const maxOrb = transitBody === "moon" ? Math.min(def.orb, 3) : def.orb;

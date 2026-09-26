@@ -24,7 +24,7 @@ const COMPARE_COPY_FILES = [
   "packages/astro/src/compare-history-copy.ts",
   "apps/web/app/chart/compare/page.tsx",
   "apps/web/app/chart/compare/layout.tsx",
-  "apps/mobile/app/(app)/compare.tsx",
+  "apps/mobile/app/(app)/(tabs)/compare.tsx",
 ];
 
 /** Strip // and /* * / comments without touching string or template contents. */

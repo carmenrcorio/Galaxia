@@ -30,7 +30,8 @@ import {
   type ComparisonHistoryRow,
   type NatalChart,
   type PairTransitHit,
-  type RelationType
+  type RelationType,
+  bodyDisplayName
 } from "@galaxia/astro";
 import {
   COMPARE_WHEEL_NEEDS_HOUSES,
@@ -587,7 +588,7 @@ export default function CompareScreen() {
             <Text style={cardTitle}>The astrology underneath</Text>
             {result.synastry.aspects.slice(0, 10).map((aspect, idx) => (
               <Text key={`${aspect.from}-${aspect.to}-${idx}`} style={cardBody}>
-                {aspect.from.toUpperCase()} {aspect.type} {aspect.to.toUpperCase()} · orb {aspect.orb.toFixed(1)}°
+                {bodyDisplayName(aspect.from)} {aspect.type} {bodyDisplayName(aspect.to)} · orb {aspect.orb.toFixed(1)}°
               </Text>
             ))}
           </View>
@@ -624,7 +625,7 @@ function estimateYearGap(a: PersonLite, b: PersonLite): number | undefined {
 
 function formatAspect(aspect?: ReturnType<typeof computeSynastry>["aspects"][number]): string {
   if (!aspect) return "No major aspect detected yet.";
-  return `${aspect.from.toUpperCase()} ${aspect.type} ${aspect.to.toUpperCase()} (${aspect.orb.toFixed(1)}°)`;
+  return `${bodyDisplayName(aspect.from)} ${aspect.type} ${bodyDisplayName(aspect.to)} (${aspect.orb.toFixed(1)}°)`;
 }
 
 const cardStyle = {

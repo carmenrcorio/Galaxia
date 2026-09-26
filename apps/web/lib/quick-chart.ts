@@ -1,4 +1,5 @@
 import type { BirthFormInput } from "@galaxia/astro";
+import { CHART_MODE_COMPARE } from "./nav-links";
 
 /**
  * Encode/decode birth data into URL query params, for:
@@ -91,4 +92,42 @@ export function buildWelcomePrefillPath(input: BirthFormInput, name?: string): s
   const params = birthQueryToSearchParams(input);
   if (name?.trim()) params.set("name", name.trim());
   return `/welcome?${params.toString()}`;
+}
+
+/**
+ * Same-tab /chart → /chart/compare handoff. Birth data travels as `a_*`
+ * query params (the existing share-link encoding). The typed name is
+ * sessionStorage only: a name tied to birth data must never land in a
+ * public URL.
+ */
+export const COMPARE_PREFILL_NAME_KEY = "galaxia.quickCompare.nameA";
+
+export function buildComparePrefillHref(input: BirthFormInput): string {
+  const qs = birthQueryToSearchParams(input, "a_").toString();
+  return qs ? `${CHART_MODE_COMPARE.href}?${qs}` : CHART_MODE_COMPARE.href;
+}
+
+export function stashComparePrefillName(name?: string): void {
+  if (typeof sessionStorage === "undefined") return;
+  const trimmed = name?.trim();
+  if (trimmed) sessionStorage.setItem(COMPARE_PREFILL_NAME_KEY, trimmed);
+  else sessionStorage.removeItem(COMPARE_PREFILL_NAME_KEY);
+}
+
+export function takeComparePrefillName(): string | null {
+  if (typeof sessionStorage === "undefined") return null;
+  const value = sessionStorage.getItem(COMPARE_PREFILL_NAME_KEY);
+  if (value) sessionStorage.removeItem(COMPARE_PREFILL_NAME_KEY);
+  return value;
+}
+
+/** FOUNDER-REVIEW: post-generation compare CTA on /chart results. */
+export const CHART_COMPARE_CTA_LABEL = "Compare with someone";
+
+/** FOUNDER-REVIEW: post-generation compare CTA headline. */
+export function chartCompareCtaHeadline(name?: string): string {
+  const who = name?.trim();
+  return who
+    ? `Now see how ${who} connects with someone in your life`
+    : "Now see how this chart connects with someone in your life";
 }

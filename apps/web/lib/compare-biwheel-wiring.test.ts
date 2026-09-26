@@ -131,6 +131,25 @@ describe("source wiring — compare bi-wheel + shared flows/catches", () => {
     expect(app).toContain("orderedScoreEntries");
     expect(app).not.toContain("Object.entries(result.synastry.scores)");
   });
+
+  it("needs tip blocks render above the Your dynamic table on all three surfaces", () => {
+    const dyn = readFileSync(resolve(__dirname, "../components/dynamic-table-section.tsx"), "utf8");
+    const app = readFileSync(resolve(__dirname, "../app/app/compare/page.tsx"), "utf8");
+    const childrenIdx = dyn.indexOf("{children ? (");
+    const dynHeadingIdx = dyn.indexOf(">Your dynamic<");
+    expect(childrenIdx).toBeGreaterThan(-1);
+    expect(dynHeadingIdx).toBeGreaterThan(-1);
+    expect(childrenIdx).toBeLessThan(dynHeadingIdx);
+    expect(dynHeadingIdx).toBeLessThan(dyn.indexOf("{watchLine ? ("));
+
+    const needsIdx = app.indexOf("→ What {person.display_name} needs from you");
+    const appDynIdx = app.indexOf(">Your dynamic<");
+    const watchIdx = app.indexOf("relationshipWatchLine(result.synastry.scores, relationType, result.synastry)");
+    expect(needsIdx).toBeGreaterThan(-1);
+    expect(appDynIdx).toBeGreaterThan(-1);
+    expect(needsIdx).toBeLessThan(appDynIdx);
+    expect(appDynIdx).toBeLessThan(watchIdx);
+  });
 });
 
 describe("revival: relationshipAspectFraming() text-only inside FlowsAndCatchesSection", () => {

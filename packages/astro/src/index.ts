@@ -34,6 +34,11 @@ export interface Placement {
   sign: Sign;
   degree: number;
   house?: number;
+  /**
+   * True when the planet is retrograde at the birth moment: ecliptic
+   * longitude velocity is negative (tomorrow's longitude is behind today's).
+   * Surfaces render this as the natal "Rx" badge.
+   */
   retro: boolean;
   confident: boolean;
   possibleSigns?: Sign[];
@@ -450,6 +455,7 @@ export function computeNatalChart(birth: Birth): NatalChart {
   const placements: Placement[] = bodies.map((body) => {
     const lon = bodyLongitude(body, date);
     const tomorrowLon = bodyLongitude(body, new Date(date.getTime() + 24 * 60 * 60 * 1000));
+    // Negative ecliptic longitude velocity = retrograde (`Placement.retro`).
     const retro = normalizeSignedAngle(tomorrowLon - lon) < 0;
     const confidence = evaluateSignConfidence(body, date, birth.precision);
     return {

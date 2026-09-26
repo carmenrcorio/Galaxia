@@ -1,0 +1,11 @@
+## Drop year-band generation names; refresh historical figures (branch `cursor/generational-labels-figures-aed8`) — 2026-09-26
+
+**Trigger**: founder review of the generational layer. Pop-culture cohort labels (Millennials, Gen X, Baby Boomers, and the rest of the Strauss-Howe table) were still the person-page header, while the essays were already keyed to computed Pluto sign. Six figures were also ruled out; seven replacements were approved.
+
+`[DECISION]` **The user-visible generation label is the computed Pluto sign.** Person page header is `plutoGenerationLabel(sign)` ("Pluto in {sign} generation"), shown only when `chart.generational.pluto.confident` is true. Year-only births that straddle a sign change stay unlabeled (§12). `GENERATION_BY_YEAR` / `generationNameForYear` stay in `@galaxia/astro` as an internal year-band lookup and are not rendered. Engine `cohortLabel` is unchanged.
+
+`[CHANGED]` **Three inline placement rewrites in `PLUTO_SIGN_EXTENDED`.** Muhammad Ali `plutoBridge` now says "the Pluto in Leo who used the spotlight". Virgo `corruptionSignature` now says "systems the Pluto in Leo generation handed them". Vietnam War era event now says "Pluto in Virgo children watched the war". File header no longer names Lost / Greatest / Silent / Boomers / X / Millennials / Z / Alpha. FOUNDER-REVIEW.
+
+`[CHANGED]` **Historical figures: remove 6, add 7 (29 → 30).** Removed Anne Frank, Barack Obama, Michael Jackson, Ariana Grande, Harry Styles, Olivia Rodrigo. Added Malcolm X (Cancer), Angela Davis (Leo), Tupac Shakur and Jean-Michel Basquiat (Virgo), Lauryn Hill (Libra), Frank Ocean (Scorpio), Simone Biles (Sagittarius). Each new `born` date was checked with `computeGenerational`; natal Pluto matches the target sign and sits clear of a 1° cusp. Capricorn stays empty. New `knownFor` / `plutoBridge` strings tagged FOUNDER-REVIEW. No em dashes.
+
+`[CHANGED]` **`packages/astro/test/generational-layer.test.ts` and person-page wiring.** Figure count is 30. Cancer cohort years open at 1925 for Malcolm X. Tests that locked pop-culture generation names are gone. New assertions cover the roster, the three rewrites, and the absence of year-band labels in authored Pluto copy.

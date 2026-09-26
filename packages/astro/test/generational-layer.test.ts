@@ -14,6 +14,7 @@ import {
   getPlutoEraReading,
   getPlutoWorkView,
   isProfessionalPersonRelation,
+  plutoGenerationLabel,
   plutoSignsFromRelation,
   plutoSourceLine,
 } from "../src/generational-layer";
@@ -80,7 +81,7 @@ describe("historicalFigures natal Pluto matches the sign they are filed under", 
   // The birth-year range each list claims, so the prose and the data cannot
   // drift apart unnoticed.
   const COHORT_YEARS: Partial<Record<keyof typeof PLUTO_SIGN_EXTENDED, [number, number]>> = {
-    Cancer: [1926, 1935],
+    Cancer: [1925, 1935],
     Leo: [1938, 1957],
     // 1972 upper bound covers Biggie Smalls: born inside the same 1972
     // retrograde dip that makes Eminem's Libra entry a boundary case too.
@@ -92,7 +93,30 @@ describe("historicalFigures natal Pluto matches the sign they are filed under", 
   };
 
   it("covers every authored figure", () => {
-    expect(figures.length).toBe(29);
+    expect(figures.length).toBe(30);
+  });
+
+  it("keeps the founder-approved roster and drops the six removed figures", () => {
+    const names = figures.map(({ figure }) => figure.name);
+    expect(names).toEqual(expect.arrayContaining([
+      "Malcolm X",
+      "Angela Davis",
+      "Tupac Shakur",
+      "Jean-Michel Basquiat",
+      "Lauryn Hill",
+      "Frank Ocean",
+      "Simone Biles",
+    ]));
+    for (const removed of [
+      "Anne Frank",
+      "Barack Obama",
+      "Michael Jackson",
+      "Ariana Grande",
+      "Harry Styles",
+      "Olivia Rodrigo",
+    ]) {
+      expect(names, removed).not.toContain(removed);
+    }
   });
 
   it.each(figures.map(({ sign, figure }) => [`${figure.name} (${sign})`, sign, figure] as const))(
@@ -145,15 +169,46 @@ describe("GENERATION_BY_YEAR", () => {
     }
   });
 
-  it.each([
-    [1932, "The Silent Generation"],
-    [1955, "Baby Boomers"],
-    [1968, "Generation X"],
-    [1988, "Millennials"],
-    [2001, "Generation Z"],
-    [2018, "Generation Alpha"],
-  ] as const)("returns %s for year %s", (year, expectedName) => {
-    expect(generationNameForYear(year)?.name).toBe(expectedName);
+  it("stays available as an internal lookup, not the product label", () => {
+    expect(generationNameForYear(1988)).not.toBeNull();
+    expect(plutoGenerationLabel("Scorpio")).toBe("Pluto in Scorpio generation");
+    expect(plutoGenerationLabel("Leo")).toBe("Pluto in Leo generation");
+  });
+});
+
+describe("user-visible generational copy has no pop-culture cohort labels", () => {
+  const POP_CULTURE = /Millennial|Baby Boomer|Generation X|Generation Z|Generation Alpha|Lost Generation|Greatest Generation|Silent Generation|\bGen X\b|\bGen Z\b|\bBoomer\b/;
+
+  function collectCopy(): string[] {
+    const out: string[] = [];
+    for (const sign of AUTHORED_SIGNS) {
+      const entry = PLUTO_SIGN_EXTENDED[sign]!;
+      out.push(entry.corruptionSignature);
+      out.push(entry.eraReading.authority, entry.eraReading.institutions, entry.eraReading.change, entry.eraReading.trust);
+      out.push(entry.workView.respect, entry.workView.decisions, entry.workView.friction);
+      for (const figure of entry.historicalFigures) {
+        out.push(figure.knownFor, figure.plutoBridge);
+      }
+      for (const event of entry.eraEvents) {
+        out.push(event.label, event.detail);
+      }
+    }
+    out.push(plutoGenerationLabel("Scorpio"), plutoSourceLine("Scorpio"));
+    return out;
+  }
+
+  it("does not use year-band generation names in authored Pluto copy", () => {
+    for (const text of collectCopy()) {
+      expect(text, text).not.toMatch(POP_CULTURE);
+    }
+  });
+
+  it("uses the three founder-approved placement rewrites", () => {
+    const ali = PLUTO_SIGN_EXTENDED.Leo?.historicalFigures.find((figure) => figure.name === "Muhammad Ali");
+    expect(ali?.plutoBridge).toContain("the Pluto in Leo who used the spotlight");
+    expect(PLUTO_SIGN_EXTENDED.Virgo?.corruptionSignature).toContain("systems the Pluto in Leo generation handed them");
+    const vietnam = PLUTO_SIGN_EXTENDED.Virgo?.eraEvents.find((event) => event.label === "Vietnam War");
+    expect(vietnam?.detail).toContain("Pluto in Virgo children watched the war");
   });
 });
 

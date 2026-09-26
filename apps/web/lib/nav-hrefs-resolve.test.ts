@@ -379,7 +379,7 @@ describe("CTA hrefs resolve to App Router pages", () => {
     assertRendersFromConfig(readWeb("app/press/page.tsx"), ["RELATED_LINKS.press"], "press leftover literal");
     assertRendersFromConfig(readWeb("app/glossary/page.tsx"), ["RELATED_LINKS.glossary"], "glossary leftover literal");
     assertRendersFromConfig(readWeb("app/methodology/page.tsx"), ["RELATED_LINKS.methodology"], "methodology leftover literal");
-    assertRendersFromConfig(readWeb("app/chart/quick-chart-page.tsx"), ["RELATED_LINKS.chart", "CHART_MODE_COMPARE"], "quick-chart leftover literal");
+    assertRendersFromConfig(readWeb("app/chart/quick-chart-page.tsx"), ["RELATED_LINKS.chart", "CHART_MODE_COMPARE", "buildComparePrefillHref"], "quick-chart leftover literal");
     assertRendersFromConfig(readWeb("app/chart/compare/page.tsx"), ["RELATED_LINKS.chartCompare", "CHART_MODE_SINGLE"], "quick-compare leftover literal");
   });
 

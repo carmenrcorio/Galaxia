@@ -55,11 +55,11 @@ describe("natalAspectCoverage lock", () => {
     expect(coverage.authored + coverage.unauthored.length).toBe(coverage.possible);
   });
 
-  it("reports 38 authored of 225 after batch 1", () => {
+  it("reports 38 authored of 270 after adding quincunx (Option A: no authored quincunx cells)", () => {
     const coverage = natalAspectCoverage();
     expect(coverage.authored).toBe(38);
-    expect(coverage.possible).toBe(225);
-    expect(coverage.unauthored).toHaveLength(187);
+    expect(coverage.possible).toBe(270);
+    expect(coverage.unauthored).toHaveLength(232);
   });
 });
 

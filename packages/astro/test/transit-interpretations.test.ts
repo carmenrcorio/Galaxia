@@ -16,7 +16,7 @@ const ASPECTS: AspectType[] = ["conjunction", "sextile", "square", "trine", "opp
 
 /** Harmony sign mirrors the engine's ASPECT_DEFS so fixtures stay honest. */
 const HARMONY: Record<AspectType, number> = {
-  conjunction: 0.6, sextile: 1.3, square: -1.2, trine: 1.7, opposition: -1.1,
+  conjunction: 0.6, sextile: 1.3, square: -1.2, trine: 1.7, opposition: -1.1, quincunx: -0.3,
 };
 
 function hit(transitBody: BodyName, natalBody: BodyName, type: AspectType, orb = 0.5): TransitHit {

@@ -53,6 +53,7 @@ export const ASPECT_GLYPH: Record<string, string> = {
   square: "\u25A1",
   trine: "\u25B3",
   opposition: "\u260D",
+  quincunx: "\u26BB",
 };
 
 /**

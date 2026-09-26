@@ -9,7 +9,18 @@ export type PlanetName = "sun" | "moon" | "mercury" | "venus" | "mars" | "jupite
 /** Mathematical points / non-planet bodies computed with the natal pass. */
 export type ChartPointName = "north_node" | "chiron";
 export type BodyName = PlanetName | ChartPointName;
-export type AspectType = "conjunction" | "sextile" | "square" | "trine" | "opposition";
+export const MAJOR_ASPECT_TYPES = ["conjunction", "sextile", "square", "trine", "opposition"] as const;
+export type MajorAspectType = (typeof MAJOR_ASPECT_TYPES)[number];
+export type AspectType = MajorAspectType | "quincunx";
+export type AspectPhase = "applying" | "exact" | "separating";
+
+export function isQuincunx(type: string): boolean {
+  return type.toLowerCase() === "quincunx";
+}
+
+export function isMajorAspectType(type: string): type is MajorAspectType {
+  return (MAJOR_ASPECT_TYPES as readonly string[]).includes(type);
+}
 export type Sign =
   | "Aries"
   | "Taurus"
@@ -45,6 +56,11 @@ export interface Placement {
    * Surfaces render this as the natal "Rx" badge.
    */
   retro: boolean;
+  /**
+   * Ecliptic longitude velocity in degrees per day at the birth moment.
+   * Used for applying/separating. Optional on hand-built test fixtures.
+   */
+  lonSpeedDegPerDay?: number;
   confident: boolean;
   possibleSigns?: Sign[];
 }
@@ -70,6 +86,8 @@ export interface Aspect {
   type: AspectType;
   orb: number;
   harmony: number;
+  /** Present when both placements carry longitude speed. */
+  phase?: AspectPhase;
 }
 
 export interface SynastryResult {
@@ -182,8 +200,29 @@ const ASPECT_DEFS: Record<AspectType, { angle: number; orb: number; harmony: num
   sextile: { angle: 60, orb: 4, harmony: 1.3 },
   square: { angle: 90, orb: 6, harmony: -1.2 },
   trine: { angle: 120, orb: 6, harmony: 1.7 },
-  opposition: { angle: 180, orb: 8, harmony: -1.1 }
+  opposition: { angle: 180, orb: 8, harmony: -1.1 },
+  // Harmony is slightly negative but classification uses tone "adjust",
+  // never the catch branch (harmony < 0).
+  quincunx: { angle: 150, orb: 2.5, harmony: -0.3 }
 };
+
+const EXACT_ASPECT_ORB_DEG = 0.05;
+
+function aspectPhase(
+  pa: Placement,
+  pb: Placement,
+  exactAngle: number,
+  orb: number
+): AspectPhase | undefined {
+  if (typeof pa.lonSpeedDegPerDay !== "number" || typeof pb.lonSpeedDegPerDay !== "number") {
+    return undefined;
+  }
+  if (orb <= EXACT_ASPECT_ORB_DEG) return "exact";
+  const lonA2 = pa.lon + pa.lonSpeedDegPerDay;
+  const lonB2 = pb.lon + pb.lonSpeedDegPerDay;
+  const orb2 = Math.abs(Math.abs(normalizeSignedAngle(lonA2 - lonB2)) - exactAngle);
+  return orb2 < orb ? "applying" : "separating";
+}
 
 function toDate(input: string): Date {
   const date = new Date(input);
@@ -464,7 +503,9 @@ function placementFor(
 ): Placement {
   const lon = bodyLongitude(body, date);
   const tomorrowLon = bodyLongitude(body, new Date(date.getTime() + 24 * 60 * 60 * 1000));
-  const retro = normalizeSignedAngle(tomorrowLon - lon) < 0;
+  // Negative ecliptic longitude velocity = retrograde (`Placement.retro`).
+  const lonSpeedDegPerDay = Number(normalizeSignedAngle(tomorrowLon - lon).toFixed(6));
+  const retro = lonSpeedDegPerDay < 0;
   const confidence = evaluateSignConfidence(body, date, precision);
   return {
     body,
@@ -473,6 +514,7 @@ function placementFor(
     degree: lon % 30,
     house: cusps ? houseFromLongitude(lon, cusps) : undefined,
     retro,
+    lonSpeedDegPerDay,
     confident: confidence.confident,
     possibleSigns: confidence.possibleSigns
   };
@@ -549,15 +591,17 @@ export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
             to: pb.body,
             type,
             orb: Number(orb.toFixed(2)),
-            harmony: Number((def.harmony - orb / (def.orb * 2)).toFixed(2))
+            harmony: Number((def.harmony - orb / (def.orb * 2)).toFixed(2)),
+            phase: aspectPhase(pa, pb, def.angle, orb)
           });
         }
       }
     }
   }
 
+  const scoringAspects = aspects.filter((hit) => hit.type !== "quincunx");
   const sumDomain = (bodies: BodyName[]): number =>
-    aspects.filter((a1) => bodies.includes(a1.from) || bodies.includes(a1.to)).reduce((acc, hit) => acc + hit.harmony, 0);
+    scoringAspects.filter((a1) => bodies.includes(a1.from) || bodies.includes(a1.to)).reduce((acc, hit) => acc + hit.harmony, 0);
   const toScore = (base: number): number => Math.max(0, Math.min(100, Math.round(50 + base * 4)));
 
   const emotional = toScore(sumDomain(["moon"]));
@@ -600,7 +644,8 @@ export function computeTransits(natal: NatalChart, whenUTC: string): TransitHit[
       // Transits of/to the Node are a later pass. Keep existing planetary hits stable.
       if (isChartPoint(natalPlacement.body)) continue;
       const angle = Math.abs(normalizeSignedAngle(transitLon - natalPlacement.lon));
-      for (const [type, def] of Object.entries(ASPECT_DEFS) as [AspectType, (typeof ASPECT_DEFS)[AspectType]][]) {
+      for (const type of MAJOR_ASPECT_TYPES) {
+        const def = ASPECT_DEFS[type];
         const maxOrb = transitBody === "moon" ? Math.min(def.orb, 3) : def.orb;
         const orb = Math.abs(angle - def.angle);
         if (orb <= maxOrb) {

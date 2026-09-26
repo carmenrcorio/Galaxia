@@ -91,4 +91,14 @@ describe("person page information architecture", () => {
     expect(page).not.toContain("<RelationshipEdgesBox");
     expect(page).toContain("<EditPersonPanel");
   });
+
+  it("lists natal quincunxes as type and orb under Adjusts, not Key aspects", () => {
+    expect(page).toContain("natalQuincunxes");
+    expect(page).toContain('a.type === "quincunx"');
+    expect(page).toContain("ADJUST_BADGE");
+    expect(page).toContain("type and orb only");
+    expect(page).toContain("{a.from} {a.type} {a.to}");
+    expect(page).toContain("toDMS(a.orb)");
+    expect(page).toContain("var(--gold)");
+  });
 });

@@ -59,7 +59,7 @@ export function pronounSlotsFor(possessive: "your" | "their"): PronounSlots {
   return { subj: "they", poss: "their", obj: "them" };
 }
 
-/** The three aspect qualities, matching ASPECT_NATURE.tone in interpretations.ts. */
+/** The three transit aspect qualities. Quincunx is natal/synastry-only. */
 type Tone = "flow" | "friction" | "fusion";
 
 const ASPECT_TONE: Record<AspectKey, Tone> = {
@@ -68,6 +68,7 @@ const ASPECT_TONE: Record<AspectKey, Tone> = {
   trine: "flow",
   square: "friction",
   opposition: "friction",
+  quincunx: "friction",
 };
 
 // ─────────────────────────────────────────────────────────────────────────

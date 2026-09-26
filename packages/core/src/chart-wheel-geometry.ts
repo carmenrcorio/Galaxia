@@ -237,7 +237,8 @@ export function clusteredOffsets(
   return offsets;
 }
 
-export function harmonyStrokeToken(harmony: number): WheelColorToken {
+export function harmonyStrokeToken(harmony: number, type?: string): WheelColorToken {
+  if (type?.toLowerCase() === "quincunx") return "gold";
   if (harmony >= 1.2) return "teal";
   if (harmony < 0) return "rose";
   return "mist";
@@ -354,7 +355,7 @@ export function layoutChartWheel(input: LayoutChartWheelInput): ChartWheelLayout
             y0,
             x1,
             y1,
-            strokeToken: harmonyStrokeToken(a.harmony),
+            strokeToken: harmonyStrokeToken(a.harmony, a.type),
             alpha: aspectAlpha(a.orb, a.harmony),
           };
         })
@@ -373,7 +374,7 @@ export function layoutChartWheel(input: LayoutChartWheelInput): ChartWheelLayout
             y0,
             x1,
             y1,
-            strokeToken: harmonyStrokeToken(a.harmony),
+            strokeToken: harmonyStrokeToken(a.harmony, a.type),
             alpha: aspectAlpha(a.orb, a.harmony),
           };
         })

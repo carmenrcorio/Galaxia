@@ -26,6 +26,7 @@ import {
   ELEMENT_ABSENT,
   ELEMENT_DOMINANT,
   GENERATIONAL,
+  ADJUST_BADGE,
   interpretAspect,
   interpretPlacement,
   interpretRising,
@@ -461,18 +462,31 @@ export default function PersonProfilePage() {
     );
   }, [chart]);
 
-  const { natalAspects, natalAspectReadings } = useMemo(() => {
+  const { natalAspects, natalAspectReadings, natalQuincunxes } = useMemo(() => {
     // Aspects need real positions. Year-only charts have sampled longitudes
     // (mid-year), so aspect orbs computed from them would be fabricated.
     // Geometry list (wheel): tightest 14, authored or not. Reading list:
     // authored-only so ASPECT_NATURE never occupies a reading slot.
+    const empty = [] as ReturnType<typeof computeSynastry>["aspects"];
     if (!chart || chart.precision === "year") {
-      return { natalAspects: [] as ReturnType<typeof computeSynastry>["aspects"], natalAspectReadings: [] as ReturnType<typeof computeSynastry>["aspects"] };
+      return { natalAspects: empty, natalAspectReadings: empty, natalQuincunxes: empty };
     }
     const raw = computeSynastry(chart, chart).aspects;
+    const seen = new Set<string>();
+    const natalQuincunxes = raw
+      .filter((a) => a.type === "quincunx" && a.from !== a.to)
+      .slice()
+      .sort((a, b) => a.orb - b.orb)
+      .filter((a) => {
+        const key = `${[a.from, a.to].sort().join("-")}:${a.type}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     return {
       natalAspects: selectNatalAspectGeometry(raw),
       natalAspectReadings: selectNatalAspectReadings(raw),
+      natalQuincunxes,
     };
   }, [chart]);
 
@@ -1514,7 +1528,7 @@ export default function PersonProfilePage() {
             );
           })}
         </section>
-      ) : (
+      ) : natalQuincunxes.length === 0 ? (
         <AspectsUnavailableCard
           precision={chart.precision}
           title={enduringEyebrow(PERSON_TAB_LABEL.aspects)}
@@ -1527,7 +1541,33 @@ export default function PersonProfilePage() {
             />
           }
         />
-      )}
+      ) : null}
+
+      {natalQuincunxes.length > 0 ? (
+        <section className="glass-card fade-in fade-in-delay-2">
+          <p className="eyebrow" style={{ marginBottom: 6 }}>Adjusts</p>
+          <p className="muted" style={{ fontSize: ".72rem", marginBottom: 10 }}>
+            {ADJUST_BADGE} · type and orb only
+          </p>
+          {natalQuincunxes.map((a, idx) => (
+            <div
+              key={`qx-${a.from}-${a.to}-${idx}`}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}
+            >
+              <span style={{ fontSize: ".88rem", color: "var(--gold)", width: 56, textAlign: "center", letterSpacing: 2, flexShrink: 0 }}>
+                {BODY_GLYPH[a.from] ?? a.from[0]} {ASPECT_GLYPH[a.type] ?? "\u26BB"} {BODY_GLYPH[a.to] ?? a.to[0]}
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: ".82rem", color: "var(--cream)", fontWeight: 600 }}>
+                  {a.from} {a.type} {a.to}
+                </div>
+                <div style={{ fontSize: ".74rem", color: "var(--gold)", marginTop: 1 }}>{ADJUST_BADGE}{a.phase ? ` · ${a.phase}` : ""}</div>
+              </div>
+              <span style={{ fontSize: ".7rem", color: "var(--mist2)", flexShrink: 0 }}>{toDMS(a.orb)}</span>
+            </div>
+          ))}
+        </section>
+      ) : null}
 
       {/* ── Twelve Houses: occupancy list, or the shared unavailable card ── */}
       {hasHouses ? (

@@ -9,6 +9,8 @@
  */
 
 import {
+  ADJUST_BADGE,
+  ADJUST_TACTIC_PREFIX,
   aspectActionParts,
   interpretSynastryAspect,
   isRomanticRelation,
@@ -16,6 +18,7 @@ import {
   relationLensCaption,
   relationshipAspectFraming,
   selectCompareAspectRows,
+  type AspectGroup,
   type AspectKey,
   type BodyKey,
   type RelationType,
@@ -28,12 +31,16 @@ export type FlowsCatchesAspect = {
   type: string;
   orb: number;
   harmony: number;
+  phase?: string;
 };
 
 const INTRO_ROMANTIC = "The strongest currents between you two, strongest first.";
 const INTRO_PLATONIC = "What runs strongest between you two, strongest first.";
 const FLOWS_CATCHES_LEGEND =
   "Flows are what comes easily between you. Catches are where you two snag, and usually where the growth is.";
+/* FOUNDER-REVIEW */
+const ADJUSTS_LEGEND =
+  "Adjusts are a persistent mismatch. Name the gap, then change the angle of approach.";
 const SHOW_ASPECT_DETAIL = "▶ Show aspect detail";
 const HIDE_ASPECT_DETAIL = "▼ Hide aspect detail";
 
@@ -72,32 +79,42 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
     nameB
   );
 
-  // Keep aspect order identical. Show each register opener once at the top of
-  // its logical group (before the first flows row / first catches row); every
-  // subsequent row in that group renders only the tactic tail.
-  let seenFlowsOpener = false;
-  let seenCatchesOpener = false;
-  const rows = ordered.map((a, idx) => {
+  const GROUP_ORDER: AspectGroup[] = ["flows", "catches", "adjusts"];
+  const mapped = ordered.map((a, idx) => {
     const reading = interpretSynastryAspect(
       a.from.toLowerCase() as BodyKey,
       a.to.toLowerCase() as BodyKey,
       a.type.toLowerCase() as AspectKey
     );
-    const { flows, opener, tactic } = aspectActionParts(a, relationType);
-    const showOpener = flows ? !seenFlowsOpener : !seenCatchesOpener;
-    if (flows) seenFlowsOpener = true;
-    else seenCatchesOpener = true;
+    const { flows, adjusts, group, opener, tactic } = aspectActionParts(a, relationType);
     return {
       key: `${a.from}-${a.to}-${idx}`,
       a,
       readingShort: reading.short,
       flows,
+      adjusts,
+      group,
       opener,
       tactic,
-      showOpener,
       strength: orbStrength(a.orb),
     };
   });
+  const rows = GROUP_ORDER.flatMap((group) =>
+    mapped
+      .filter((row) => row.group === group)
+      .sort((x, y) => x.a.orb - y.a.orb)
+      .map((row, idx) => ({ ...row, showOpener: idx === 0 }))
+  );
+
+  function groupChrome(group: AspectGroup): { badge: string; color: string; prefix: string; prefixColor: string } {
+    if (group === "flows") {
+      return { badge: "↑ flows", color: "var(--teal)", prefix: "Nurture it: ", prefixColor: "var(--teal)" };
+    }
+    if (group === "catches") {
+      return { badge: "↓ catches", color: "var(--rose)", prefix: "Ease it: ", prefixColor: "var(--gold)" };
+    }
+    return { badge: ADJUST_BADGE, color: "var(--gold)", prefix: `${ADJUST_TACTIC_PREFIX} `, prefixColor: "var(--gold)" };
+  }
 
   return (
     <section className="glass-card fade-in fade-in-delay-2">
@@ -105,10 +122,15 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
       <p className="muted" style={{ fontSize: ".72rem", marginBottom: 6 }}>
         {intro}
       </p>
-      <p className="muted" style={{ fontSize: ".72rem", marginBottom: 10, lineHeight: 1.5 }}>
+      <p className="muted" style={{ fontSize: ".72rem", marginBottom: 6, lineHeight: 1.5 }}>
         {FLOWS_CATCHES_LEGEND}
       </p>
-      {rows.map((row, idx) => (
+      <p className="muted" style={{ fontSize: ".72rem", marginBottom: 10, lineHeight: 1.5 }}>
+        {ADJUSTS_LEGEND}
+      </p>
+      {rows.map((row, idx) => {
+        const chrome = groupChrome(row.group);
+        return (
         <div key={row.key}>
           {row.showOpener ? (
             <p
@@ -128,25 +150,26 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
               <span
                 style={{
                   fontSize: ".8rem",
-                  color: row.flows ? "var(--teal)" : "var(--rose)",
+                  color: chrome.color,
                   flexShrink: 0,
                 }}
               >
-                {row.flows ? "↑ flows" : "↓ catches"}
+                {chrome.badge}
               </span>
               <span className="muted" style={{ fontSize: ".74rem", fontStyle: "italic" }}>
                 {row.readingShort}
               </span>
             </div>
             <p style={{ fontSize: ".78rem", color: "var(--cream)", lineHeight: 1.55, margin: "5px 0 0" }}>
-              <span style={{ color: row.flows ? "var(--teal)" : "var(--gold)", fontWeight: 600 }}>
-                {row.flows ? "Nurture it: " : "Ease it: "}
+              <span style={{ color: chrome.prefixColor, fontWeight: 600 }}>
+                {chrome.prefix}
               </span>
               {row.tactic}.
             </p>
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {framing.length > 0 ? (
         <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
@@ -195,15 +218,16 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
                   <span
                     style={{
                       fontSize: ".8rem",
-                      color: row.flows ? "var(--teal)" : "var(--rose)",
+                      color: groupChrome(row.group).color,
                       flexShrink: 0,
                       minWidth: 60,
                     }}
                   >
-                    {row.flows ? "↑ flows" : "↓ catches"}
+                    {groupChrome(row.group).badge}
                   </span>
                   <span className="muted" style={{ fontSize: ".82rem" }}>
                     {row.a.from} {row.a.type} {row.a.to}
+                    {row.a.phase ? ` · ${row.a.phase}` : ""}
                   </span>
                   <span
                     style={{

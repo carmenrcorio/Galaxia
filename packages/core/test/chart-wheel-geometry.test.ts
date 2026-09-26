@@ -60,6 +60,7 @@ describe("glyphs", () => {
     expect(BODY_GLYPH.north_node).toBe("\u260A");
     expect(BODY_GLYPH["North Node"]).toBe("\u260A");
     expect(ASPECT_GLYPH.trine).toBe("\u25B3");
+    expect(ASPECT_GLYPH.quincunx).toBe("\u26BB");
     expect(signElement("Aries")).toBe("fire");
     expect(signElement("not-a-sign")).toBe("water");
   });
@@ -156,6 +157,20 @@ describe("layoutChartWheel", () => {
     expect(layout.houses).toHaveLength(12);
     expect(layout.ascLabel?.anchor).toBe("start");
     expect(layout.mcLabel).toBeTruthy();
+  });
+
+  it("paints quincunx lines gold, not rose", () => {
+    const inner = stubChart();
+    const outer = stubChart({
+      placements: [{ body: "moon", lon: 150, sign: "Virgo", confident: true }],
+    });
+    const layout = layoutChartWheel({
+      chart: inner,
+      overlayChart: outer,
+      aspects: [{ from: "sun", to: "moon", type: "quincunx", orb: 0.4, harmony: -0.3 }],
+    });
+    expect(layout.aspectLines).toHaveLength(1);
+    expect(layout.aspectLines[0]!.strokeToken).toBe("gold");
   });
 
   it("draws overlay A/B keys and lines from the 72 ring to the 96 ring", () => {

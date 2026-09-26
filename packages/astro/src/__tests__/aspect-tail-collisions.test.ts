@@ -275,13 +275,14 @@ beforeAll(() => {
     const byTactic = new Map<string, Map<string, PairEntry>>();
 
     for (const probe of PROBE_ASPECTS) {
+      if (probe.type === "quincunx") continue;
       TOTAL_COMBOS += 1;
       const pairKey = canonicalPairKey(probe.from, probe.to);
       const authored = AUTHORED_TIER1_PAIRS.has(pairKey);
       if (authored) TIER1_COMBOS += 1;
       else TIER2_COMBOS += 1;
 
-      const { tactic } = aspectActionParts({ from: probe.from, to: probe.to, harmony: probe.harmony }, relType);
+      const { tactic } = aspectActionParts({ from: probe.from, to: probe.to, type: probe.type, harmony: probe.harmony }, relType);
       if (!tactic) continue; // no line at all — not a collision, just absent
 
       let group = byTactic.get(tactic);
@@ -401,9 +402,10 @@ describe("aspectActionParts() collision domain", () => {
     for (const relType of RELATION_TYPES) {
       const byLine = new Map<string, Set<string>>();
       for (const probe of PROBE_ASPECTS) {
+        if (probe.type === "quincunx") continue;
         const pairKey = canonicalPairKey(probe.from, probe.to);
         const line = aspectActionLine(
-          { from: probe.from, to: probe.to, harmony: probe.harmony },
+          { from: probe.from, to: probe.to, type: probe.type, harmony: probe.harmony },
           relType
         );
         if (!line.trim()) continue;
@@ -432,22 +434,24 @@ function renderRowString(
     aspect.to.toLowerCase() as BodyName,
     type
   );
-  const { flows, tactic } = aspectActionParts(aspect, relType);
+  const { flows, adjusts, tactic } = aspectActionParts(aspect, relType);
   const line = aspectActionLine(aspect, relType);
   const nature = ASPECT_NATURE[type];
+  const prefix = adjusts ? "Adjust it: " : flows ? "Nurture it: " : "Ease it: ";
   return {
     short: reading.short,
-    full: `${reading.short}\n${flows ? "Nurture it: " : "Ease it: "}${tactic}.\n${line}`,
+    full: `${reading.short}\n${prefix}${tactic}.\n${line}`,
     fallback: Boolean(nature && reading.short === nature.short && reading.long === nature.long),
   };
 }
 
 describe("reading-layer collision domain", () => {
   const DISTINCT_PAIRS = PAIRS.filter((p) => p.a !== p.b);
+  const MAJOR_TYPES = ASPECT_TYPES.filter((type) => type !== "quincunx");
 
-  it("every distinct unordered pair x aspect type resolves to an authored reading, never ASPECT_NATURE", () => {
+  it("every distinct unordered pair x major aspect type resolves to an authored reading, never ASPECT_NATURE", () => {
     for (const { a, b } of DISTINCT_PAIRS) {
-      for (const type of ASPECT_TYPES) {
+      for (const type of MAJOR_TYPES) {
         const reading = interpretSynastryAspect(a, b, type);
         const nature = ASPECT_NATURE[type];
         expect(reading.short, `${a}-${b} ${type}`).not.toBe(nature.short);
@@ -459,14 +463,14 @@ describe("reading-layer collision domain", () => {
   it("no two distinct (pair, type) cells share a reading short", () => {
     const seen = new Map<string, string>();
     for (const { a, b, key } of DISTINCT_PAIRS) {
-      for (const type of ASPECT_TYPES) {
+      for (const type of MAJOR_TYPES) {
         const short = interpretSynastryAspect(a, b, type).short;
         const prior = seen.get(short);
         expect(prior, `duplicate short "${short}" at ${key} ${type} (first: ${prior})`).toBeUndefined();
         seen.set(short, `${key} ${type}`);
       }
     }
-    expect(seen.size).toBe(DISTINCT_PAIRS.length * ASPECT_TYPES.length);
+    expect(seen.size).toBe(DISTINCT_PAIRS.length * MAJOR_TYPES.length);
   });
 
   it("selectCompareAspectRows drops same-body and keeps the tighter orb of a directed reverse", () => {
@@ -545,6 +549,7 @@ describe("200-pair compare report simulation", () => {
       const shorts: string[] = [];
       const fulls: string[] = [];
       for (const row of rows) {
+        if (row.type === "quincunx") continue;
         displayed += 1;
         const rendered = renderRowString(row, relType);
         if (rendered.fallback) fallback += 1;

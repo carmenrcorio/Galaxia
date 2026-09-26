@@ -78,7 +78,7 @@ export const METHODOLOGY_SECTIONS = {
     paragraphs: [
       "Applying means the exact contact is still ahead. Separating means it has already passed. Exact means the angle is already there.",
       "Galaxia computes this for transits. We estimate the UTC instant of exact contact from the transiting body's motion, then compare that instant to now. Within 0.05° of exact, or about one hour of that instant, the phase is exact.",
-      "Natal and synastry aspects currently report the aspect type and the orb. They do not yet mark applying or separating.",
+      "Natal and synastry aspects also mark applying or separating from each planet's longitude speed at the birth moment. If that speed is missing, the phase is left blank rather than guessed.",
     ],
   },
   omissions: {
@@ -87,18 +87,17 @@ export const METHODOLOGY_SECTIONS = {
     heading: "What we do not compute",
     // FOUNDER-REVIEW
     intro:
-      "We compute the Sun through Pluto, plus the Ascendant and Midheaven when birth time and place are known. We use the five major aspects (conjunction, sextile, square, trine, opposition), tropical signs, and retrograde flags. We do not compute the rest of a professional ephemeris chart, and we do not pretend those points are present.",
+      "We compute the Sun through Pluto, plus the Ascendant and Midheaven when birth time and place are known. We use the five major aspects (conjunction, sextile, square, trine, opposition) and the quincunx on natal and synastry charts, tropical signs, and retrograde flags. Transits, daily notes, and Vela stay on the five majors. We do not compute the rest of a professional ephemeris chart, and we do not pretend those points are present.",
     // FOUNDER-REVIEW
     items: [
       "Chiron",
       "Lunar nodes (True Node or Mean Node)",
       "Black Moon Lilith",
       "Asteroids",
-      "Minor aspects (quincunx, semisextile, semisquare, sesquiquadrate)",
+      "Minor aspects other than the quincunx (semisextile, semisquare, sesquiquadrate)",
       "Arabic parts, including the Part of Fortune",
       "Vertex and midpoints",
       "Sidereal zodiac",
-      "Applying and separating on natal or synastry aspects",
     ],
   },
 } as const;
@@ -109,6 +108,7 @@ export const METHODOLOGY_ASPECT_TYPES: readonly AspectType[] = [
   "square",
   "trine",
   "opposition",
+  "quincunx",
 ];
 
 // FOUNDER-REVIEW
@@ -118,6 +118,7 @@ export const METHODOLOGY_ASPECT_LABELS: Record<AspectType, string> = {
   square: "Square",
   trine: "Trine",
   opposition: "Opposition",
+  quincunx: "Quincunx",
 };
 
 export function methodologyOrbDegrees(type: AspectType): number {

@@ -11,6 +11,7 @@ import {
   compareGenerational,
   compareHeadline,
   compareHistoryLastViewed,
+  ADJUST_BADGE,
   compareNatalAspectsConstant,
   compareNoTransitShift,
   compareRelationLabel,
@@ -553,10 +554,11 @@ export default function CompareScreen() {
 
           <View style={cardStyle}>
             <Text style={cardTitle}>Where it flows / catches</Text>
-            <Text style={cardBody}>Flow: {result.synastry.aspects.filter((aspect) => aspect.harmony > 0).length} supportive links.</Text>
-            <Text style={cardBody}>Catch: {result.synastry.aspects.filter((aspect) => aspect.harmony < 0).length} tension links.</Text>
-            <Text style={cardBody}>Top supportive aspect: {formatAspect(result.synastry.aspects.filter((a) => a.harmony > 0)[0])}</Text>
-            <Text style={cardBody}>Top tension aspect: {formatAspect(result.synastry.aspects.filter((a) => a.harmony < 0)[0])}</Text>
+            <Text style={cardBody}>Flow: {result.synastry.aspects.filter((aspect) => aspect.type !== "quincunx" && aspect.harmony > 0).length} supportive links.</Text>
+            <Text style={cardBody}>Catch: {result.synastry.aspects.filter((aspect) => aspect.type !== "quincunx" && aspect.harmony < 0).length} tension links.</Text>
+            <Text style={cardBody}>Adjust: {result.synastry.aspects.filter((aspect) => aspect.type === "quincunx").length} mismatch links.</Text>
+            <Text style={cardBody}>Top supportive aspect: {formatAspect(result.synastry.aspects.filter((a) => a.type !== "quincunx" && a.harmony > 0)[0])}</Text>
+            <Text style={cardBody}>Top tension aspect: {formatAspect(result.synastry.aspects.filter((a) => a.type !== "quincunx" && a.harmony < 0)[0])}</Text>
           </View>
 
           <GenerationalSection
@@ -587,8 +589,13 @@ export default function CompareScreen() {
           <View style={cardStyle}>
             <Text style={cardTitle}>The astrology underneath</Text>
             {result.synastry.aspects.slice(0, 10).map((aspect, idx) => (
-              <Text key={`${aspect.from}-${aspect.to}-${idx}`} style={cardBody}>
+              <Text
+                key={`${aspect.from}-${aspect.to}-${idx}`}
+                style={[cardBody, aspect.type === "quincunx" ? { color: tokens.colors.gold } : null]}
+              >
+                {aspect.type === "quincunx" ? `${ADJUST_BADGE} ` : ""}
                 {bodyDisplayName(aspect.from)} {aspect.type} {bodyDisplayName(aspect.to)} · orb {aspect.orb.toFixed(1)}°
+                {aspect.phase ? ` · ${aspect.phase}` : ""}
               </Text>
             ))}
           </View>

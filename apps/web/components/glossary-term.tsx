@@ -1,30 +1,48 @@
 "use client";
 
 /**
- * First reusable glossary popover in this codebase. No tooltip library.
+ * Reusable glossary popover. No tooltip library.
  * Keyboard-focusable trigger, Escape dismisses, aria-describedby wired so
  * the meaning is announced to screen readers on focus.
  *
- * The visible popover is portalled to document.body so overflow:auto
+ * Optional `glossarySlug` looks up GLOSSARY_TERMS, shows the first 1-2
+ * sentences, and links to /glossary#{slug}. Hover opens on fine pointers
+ * only; click/focus stay as they were.
+ *
+ * The visible popover is portaled to document.body so overflow:auto
  * ancestors (the generational map scroller) cannot clip it.
  */
 
+import Link from "next/link";
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode, type SyntheticEvent } from "react";
 import { createPortal } from "react-dom";
 import { planetMeaning, signMeaning } from "../lib/astro-glossary";
+import {
+  GLOSSARY_SEE_FULL_DEFINITION,
+  getGlossaryTerm,
+  glossaryPreview,
+} from "../lib/glossary-terms";
 
 function capitalizeWord(word: string): string {
   if (!word) return word;
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
+function finePointerHover(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
+
 interface GlossaryTermProps {
-  term: string;
-  meaning: string;
+  term?: string;
+  meaning?: string;
+  glossarySlug?: string;
   children?: ReactNode;
 }
 
 const POPOVER_WIDTH = 240;
+const HOVER_OPEN_MS = 200;
+const HOVER_CLOSE_MS = 300;
 
 function popoverStyle(trigger: HTMLElement): CSSProperties {
   const rect = trigger.getBoundingClientRect();
@@ -37,7 +55,12 @@ function popoverStyle(trigger: HTMLElement): CSSProperties {
   return { left, top: rect.bottom + 8, width: POPOVER_WIDTH };
 }
 
-export function GlossaryTerm({ term, meaning, children }: GlossaryTermProps) {
+export function GlossaryTerm({ term, meaning, glossarySlug, children }: GlossaryTermProps) {
+  const entry = glossarySlug ? getGlossaryTerm(glossarySlug) : undefined;
+  const resolvedTerm = entry?.term ?? term ?? "";
+  const resolvedMeaning = entry ? glossaryPreview(entry.definition) : meaning ?? "";
+  const showLink = Boolean(glossarySlug && entry);
+
   const reactId = useId();
   const descId = `glossary-desc-${reactId.replace(/:/g, "")}`;
   const [open, setOpen] = useState(false);
@@ -45,10 +68,20 @@ export function GlossaryTerm({ term, meaning, children }: GlossaryTermProps) {
   const [mounted, setMounted] = useState(false);
   const rootRef = useRef<HTMLSpanElement>(null);
   const triggerRef = useRef<HTMLSpanElement>(null);
+  const popoverRef = useRef<HTMLSpanElement>(null);
   const skipFocusOpen = useRef(false);
+  const openTimer = useRef<number | null>(null);
+  const closeTimer = useRef<number | null>(null);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (openTimer.current) window.clearTimeout(openTimer.current);
+      if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -80,10 +113,49 @@ export function GlossaryTerm({ term, meaning, children }: GlossaryTermProps) {
     };
   }, [open]);
 
+  function clearHoverTimers() {
+    if (openTimer.current) {
+      window.clearTimeout(openTimer.current);
+      openTimer.current = null;
+    }
+    if (closeTimer.current) {
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }
+
+  function scheduleHoverOpen() {
+    if (!finePointerHover()) return;
+    if (closeTimer.current) {
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    if (open) return;
+    openTimer.current = window.setTimeout(() => setOpen(true), HOVER_OPEN_MS);
+  }
+
+  function scheduleHoverClose() {
+    if (!finePointerHover()) return;
+    if (openTimer.current) {
+      window.clearTimeout(openTimer.current);
+      openTimer.current = null;
+    }
+    closeTimer.current = window.setTimeout(() => setOpen(false), HOVER_CLOSE_MS);
+  }
+
   function toggle(event: SyntheticEvent) {
     event.preventDefault();
     event.stopPropagation();
+    clearHoverTimers();
     setOpen((value) => !value);
+  }
+
+  if (glossarySlug && !entry) {
+    return <>{children ?? resolvedTerm}</>;
+  }
+
+  if (!resolvedMeaning) {
+    return <>{children ?? resolvedTerm}</>;
   }
 
   return (
@@ -96,6 +168,8 @@ export function GlossaryTerm({ term, meaning, children }: GlossaryTermProps) {
         aria-expanded={open}
         aria-describedby={descId}
         onClick={toggle}
+        onMouseEnter={scheduleHoverOpen}
+        onMouseLeave={scheduleHoverClose}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
             toggle(event);
@@ -115,20 +189,40 @@ export function GlossaryTerm({ term, meaning, children }: GlossaryTermProps) {
           setOpen(true);
         }}
         onBlur={(event) => {
-          if (!rootRef.current?.contains(event.relatedTarget as Node | null)) {
-            setOpen(false);
+          const next = event.relatedTarget as Node | null;
+          if (rootRef.current?.contains(next) || popoverRef.current?.contains(next)) {
+            return;
           }
+          setOpen(false);
         }}
       >
-        {children ?? term}
+        {children ?? resolvedTerm}
       </span>
       <span id={descId} role="tooltip" className="glossary-term__sr">
-        {meaning}
+        {resolvedMeaning}
       </span>
       {mounted && open
         ? createPortal(
-            <span className="glossary-term__floating" role="tooltip" aria-hidden="true" style={coords}>
-              {meaning}
+            <span
+              ref={popoverRef}
+              className="glossary-term__floating"
+              role="tooltip"
+              aria-hidden="true"
+              style={coords}
+              onMouseEnter={scheduleHoverOpen}
+              onMouseLeave={scheduleHoverClose}
+              onMouseDown={(event) => event.preventDefault()}
+            >
+              <span className="glossary-term__meaning">{resolvedMeaning}</span>
+              {showLink && glossarySlug ? (
+                <Link
+                  href={`/glossary#${glossarySlug}`}
+                  className="glossary-term__more"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  {GLOSSARY_SEE_FULL_DEFINITION}
+                </Link>
+              ) : null}
             </span>,
             document.body
           )

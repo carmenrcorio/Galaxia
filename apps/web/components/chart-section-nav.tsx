@@ -8,14 +8,25 @@
  */
 
 import type { PersonGroupKey, PersonNavSection, PersonPageGroup } from "@galaxia/core";
+import { GlossaryTerm } from "./glossary-term";
 
 /**
  * Quiet astrology-term line inside a renamed person-profile section.
  * The tab chip uses the plain-language label; this is the vocabulary
  * a reader who knows the chart terms is looking for.
  */
-export function ChartVocabSubhead({ term }: { term: string }) {
-  return <p className="chart-vocab-subhead">{term}</p>;
+export function ChartVocabSubhead({
+  term,
+  glossarySlug,
+}: {
+  term: string;
+  glossarySlug?: string;
+}) {
+  return (
+    <p className="chart-vocab-subhead">
+      {glossarySlug ? <GlossaryTerm glossarySlug={glossarySlug}>{term}</GlossaryTerm> : term}
+    </p>
+  );
 }
 
 export function ChartSectionNav({

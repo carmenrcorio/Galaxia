@@ -6,6 +6,8 @@ import {
   GLOSSARY_LEDE,
   GLOSSARY_TERMS,
   GLOSSARY_TITLE,
+  getGlossaryTerm,
+  glossaryPreview,
   groupGlossaryByLetter,
 } from "./glossary-terms";
 import { RELATED_LINKS } from "./nav-links";
@@ -58,6 +60,17 @@ describe("glossary term list", () => {
     for (const item of GLOSSARY_TERMS) {
       expect(item.id).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     }
+  });
+
+  it("includes the orb entry used by chart tooltips", () => {
+    const orb = getGlossaryTerm("orb");
+    expect(orb?.term).toBe("Orb");
+    expect(orb?.definition).toMatch(/distance in degrees/);
+    expect(orb?.definition).not.toContain("\u2014");
+    expect(glossaryPreview(orb!.definition)).toBe(
+      "The distance in degrees between an exact aspect. A tighter orb means a stronger connection.",
+    );
+    expect(GLOSSARY_TERMS).toHaveLength(36);
   });
 
   it("groups alphabetically by first letter for h2 sections", () => {

@@ -20,7 +20,9 @@ import {
   type BodyKey,
   type RelationType,
 } from "@galaxia/astro";
-import { useState } from "react";
+import { aspectGlossarySlug } from "@galaxia/core";
+import { useState, type ReactNode } from "react";
+import { GlossaryTerm } from "./glossary-term";
 
 export type FlowsCatchesAspect = {
   from: string;
@@ -77,6 +79,8 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
   // subsequent row in that group renders only the tactic tail.
   let seenFlowsOpener = false;
   let seenCatchesOpener = false;
+  let wrappedFirstCatch = false;
+  const seenDetailTypes = new Set<string>();
   const rows = ordered.map((a, idx) => {
     const reading = interpretSynastryAspect(
       a.from.toLowerCase() as BodyKey,
@@ -87,6 +91,8 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
     const showOpener = flows ? !seenFlowsOpener : !seenCatchesOpener;
     if (flows) seenFlowsOpener = true;
     else seenCatchesOpener = true;
+    const wrapCatch = !flows && !wrappedFirstCatch;
+    if (wrapCatch) wrappedFirstCatch = true;
     return {
       key: `${a.from}-${a.to}-${idx}`,
       a,
@@ -95,13 +101,16 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
       opener,
       tactic,
       showOpener,
+      wrapCatch,
       strength: orbStrength(a.orb),
     };
   });
 
   return (
     <section className="glass-card fade-in fade-in-delay-2">
-      <p className="eyebrow" style={{ marginBottom: 10 }}>Where it flows and catches</p>
+      <p className="eyebrow" style={{ marginBottom: 10 }}>
+        Where it <GlossaryTerm glossarySlug="flows-and-catches">flows</GlossaryTerm> and catches
+      </p>
       <p className="muted" style={{ fontSize: ".72rem", marginBottom: 6 }}>
         {intro}
       </p>
@@ -132,7 +141,11 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
                   flexShrink: 0,
                 }}
               >
-                {row.flows ? "↑ flows" : "↓ catches"}
+                {row.flows
+                  ? "↑ flows"
+                  : row.wrapCatch
+                    ? <>↓ <GlossaryTerm glossarySlug="flows-and-catches">catches</GlossaryTerm></>
+                    : "↓ catches"}
               </span>
               <span className="muted" style={{ fontSize: ".74rem", fontStyle: "italic" }}>
                 {row.readingShort}
@@ -181,7 +194,14 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
           </button>
           {showDetail ? (
             <div style={{ display: "grid", gap: 0 }}>
-              {rows.map((row) => (
+              {rows.map((row) => {
+                const typeSlug = aspectGlossarySlug(row.a.type);
+                let typeLabel: ReactNode = row.a.type;
+                if (typeSlug && !seenDetailTypes.has(typeSlug)) {
+                  seenDetailTypes.add(typeSlug);
+                  typeLabel = <GlossaryTerm glossarySlug={typeSlug}>{row.a.type}</GlossaryTerm>;
+                }
+                return (
                 <div
                   key={`detail-${row.key}`}
                   style={{
@@ -203,7 +223,7 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
                     {row.flows ? "↑ flows" : "↓ catches"}
                   </span>
                   <span className="muted" style={{ fontSize: ".82rem" }}>
-                    {row.a.from} {row.a.type} {row.a.to}
+                    {row.a.from} {typeLabel} {row.a.to}
                   </span>
                   <span
                     style={{
@@ -230,7 +250,8 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
                     </span>
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : null}
         </div>

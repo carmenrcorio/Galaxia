@@ -1,10 +1,33 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { glossaryPreview } from "../lib/glossary-terms";
 import { GlossaryTerm } from "./glossary-term";
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
+});
+
+function stubPointerHover(hoverable: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: (query: string) => ({
+      matches: hoverable && query.includes("hover: hover") && query.includes("pointer: fine"),
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
+beforeEach(() => {
+  stubPointerHover(false);
 });
 
 describe("GlossaryTerm", () => {
@@ -41,5 +64,55 @@ describe("GlossaryTerm", () => {
     expect(tooltip).toBeTruthy();
     expect(tooltip!.hidden).toBe(false);
     expect(tooltip!.textContent).toBe("Where someone meets power.");
+  });
+
+  it("looks up a glossary slug, previews the first sentences, and links to the hash", () => {
+    render(<GlossaryTerm glossarySlug="orb" />);
+    const trigger = screen.getByRole("button", { name: "Orb" });
+    fireEvent.focus(trigger);
+    const floating = document.querySelector(".glossary-term__floating");
+    expect(floating).toBeTruthy();
+    expect(floating!.textContent).toContain(glossaryPreview(
+      "The distance in degrees between an exact aspect. A tighter orb means a stronger connection. Galaxia uses fixed orb allowances per aspect type, listed on the methodology page.",
+    ));
+    expect(floating!.textContent).not.toContain("methodology page");
+    const link = floating!.querySelector("a");
+    expect(link).toBeTruthy();
+    expect(link!.getAttribute("href")).toBe("/glossary#orb");
+    expect(link!.textContent).toBe("See full definition");
+  });
+
+  it("renders unknown slugs as plain text", () => {
+    render(<GlossaryTerm glossarySlug="not-a-term">plain</GlossaryTerm>);
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByText("plain")).toBeTruthy();
+    expect(document.querySelector(".glossary-term__trigger")).toBeNull();
+  });
+
+  it("opens on hover after 200ms when the pointer can hover", () => {
+    stubPointerHover(true);
+    vi.useFakeTimers();
+    render(<GlossaryTerm term="Trine" meaning="Easy contact." />);
+    const trigger = screen.getByRole("button", { name: "Trine" });
+
+    fireEvent.mouseEnter(trigger);
+    expect(document.querySelector(".glossary-term__floating")).toBeNull();
+    vi.advanceTimersByTime(200);
+    expect(document.querySelector(".glossary-term__floating")).toBeTruthy();
+
+    fireEvent.mouseLeave(trigger);
+    vi.advanceTimersByTime(300);
+    expect(document.querySelector(".glossary-term__floating")).toBeNull();
+  });
+
+  it("does not open on hover when the pointer cannot hover", () => {
+    stubPointerHover(false);
+    vi.useFakeTimers();
+    render(<GlossaryTerm term="Square" meaning="Friction." />);
+    const trigger = screen.getByRole("button", { name: "Square" });
+
+    fireEvent.mouseEnter(trigger);
+    vi.advanceTimersByTime(200);
+    expect(document.querySelector(".glossary-term__floating")).toBeNull();
   });
 });

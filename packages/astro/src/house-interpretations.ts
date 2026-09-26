@@ -181,6 +181,21 @@ export const PLANET_IN_HOUSE: Record<BodyKey, Record<HouseKey, Reading>> = {
     11: { short: "changes the group",              long: "They transform the collectives they join, whether or not they meant to." },
     12: { short: "an underground power",           long: "Enormous force runs beneath, unexamined. When it surfaces, it surfaces all at once." },
   },
+  // FOUNDER-REVIEW: North Node in-house descriptor lines.
+  north_node: {
+    1:  { short: "growth at the door they come through", long: "The stretch is how they arrive and how they are first read. The life they are building starts with the self they show before they speak." },
+    2:  { short: "growth through what they hold",     long: "The stretch is worth, resources, and what they believe they deserve. Building something they will not sell is the work." },
+    3:  { short: "growth in the everyday mind",       long: "The stretch is siblings, streets, and saying the next true sentence. Small talk is not small on this path." },
+    4:  { short: "growth at the foundation",          long: "The stretch is home, roots, and the private self. What they furnish here quietly determines the rest." },
+    5:  { short: "growth through play and making",    long: "The stretch is delight, children, and things that did not exist until they made them. Joy is not a side project here." },
+    6:  { short: "growth in the daily grind",         long: "The stretch is routine, health, and the work nobody applauds. Devotion looks like a checklist they keep." },
+    7:  { short: "growth across from someone",        long: "The stretch is the close other: partner, collaborator, the one who shows them what they cannot see alone." },
+    8:  { short: "growth through what they share",    long: "The stretch is intimacy, shared resources, and being changed by another person. The surface will not grow them." },
+    9:  { short: "growth in the bigger frame",        long: "The stretch is belief, distance, and study. A life without a horizon shrinks the path they are on." },
+    10: { short: "growth in the public role",         long: "The stretch is the work they are known for and the reputation they earn. Ask who they are becoming out loud." },
+    11: { short: "growth among their people",         long: "The stretch is friends, chosen family, and a future they want to live in. Belonging they pick is the lesson." },
+    12: { short: "growth in the unwatched room",      long: "The stretch is solitude and what they hide even from themselves. Things here operate before they are noticed; naming them is the move." },
+  },
 };
 
 /**

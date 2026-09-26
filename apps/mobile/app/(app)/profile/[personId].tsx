@@ -19,7 +19,8 @@ import {
   whenUTCForOwnerLocalDate,
   type NatalChart,
   type PersonDailyNudgeRecord,
-  type SignKey
+  type SignKey,
+  bodyDisplayName
 } from "@galaxia/astro";
 import {
   ASPECTS_UNAVAILABLE_YEAR_BODY,
@@ -466,7 +467,7 @@ export default function PersonProfileScreen() {
                 .filter((placement) => placement.body !== "sun" && placement.body !== "moon")
                 .map((placement) => (
                 <Text key={placement.body} style={cardBody}>
-                  {placement.body.toUpperCase()} {placement.sign} {placement.degree.toFixed(1)}°{placement.house ? ` · House ${placement.house}` : ""}
+                  {bodyDisplayName(placement.body)} {placement.sign} {placement.degree.toFixed(1)}°{placement.house ? ` · House ${placement.house}` : ""}
                 </Text>
               ))}
             </View>

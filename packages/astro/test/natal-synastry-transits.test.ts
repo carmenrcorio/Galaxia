@@ -15,7 +15,11 @@ describe("computeNatalChart", () => {
     expect(chart.asc).toBeTruthy();
     expect(chart.mc).toBeTruthy();
     expect(chart.cusps?.length).toBe(12);
-    expect(chart.placements).toHaveLength(10);
+    expect(chart.placements).toHaveLength(11);
+    expect(chart.placements.map((p) => p.body)).toEqual([
+      "sun", "moon", "mercury", "venus", "mars",
+      "jupiter", "saturn", "uranus", "neptune", "pluto", "north_node"
+    ]);
     expect(chart.placements.every((placement) => placement.house !== undefined)).toBe(true);
     expect(chart.generational.cohortLabel).toContain("Pluto in");
   });

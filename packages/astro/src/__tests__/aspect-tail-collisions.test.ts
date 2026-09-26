@@ -195,7 +195,7 @@ function readAuthoredTier1Pairs(): Set<string> {
     throw new Error("aspect-tail-collisions.test.ts: could not find the end of the ASPECT_ACTION table.");
   }
   const block = source.slice(start, end);
-  const pairPattern = /PAIR_KEY\(\s*"([a-z]+)"\s*,\s*"([a-z]+)"\s*\)/g;
+  const pairPattern = /PAIR_KEY\(\s*"([a-z_]+)"\s*,\s*"([a-z_]+)"\s*\)/g;
   const authored = new Set<string>();
   let match: RegExpExecArray | null;
   while ((match = pairPattern.exec(block)) !== null) {

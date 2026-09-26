@@ -1,3 +1,4 @@
+import { bodyDisplayName } from "./bodies";
 import type { BodyName, NatalChart, Placement } from "./index";
 
 /**
@@ -57,8 +58,7 @@ export function bodiesWithMovedLongitudes(
 
 export function formatMovedBodies(bodies: BodyName[]): string {
   if (bodies.length === 0) return "";
-  const cap = (b: string) => b.charAt(0).toUpperCase() + b.slice(1);
-  return bodies.map(cap).join(", ");
+  return bodies.map(bodyDisplayName).join(", ");
 }
 
 /** True when two placement lists match on body→lon at fingerprint precision. */

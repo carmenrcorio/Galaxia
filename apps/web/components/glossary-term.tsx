@@ -70,6 +70,9 @@ export function GlossaryTerm({ term, meaning, glossarySlug, children }: Glossary
   const triggerRef = useRef<HTMLSpanElement>(null);
   const popoverRef = useRef<HTMLSpanElement>(null);
   const skipFocusOpen = useRef(false);
+  // A real click focuses first, then fires click. Toggle on mousedown so
+  // focus+click do not open and immediately close.
+  const pointerIntent = useRef(false);
   const openTimer = useRef<number | null>(null);
   const closeTimer = useRef<number | null>(null);
 
@@ -167,7 +170,20 @@ export function GlossaryTerm({ term, meaning, glossarySlug, children }: Glossary
         className="glossary-term__trigger"
         aria-expanded={open}
         aria-describedby={descId}
-        onClick={toggle}
+        onMouseDown={(event) => {
+          if (event.button !== 0) return;
+          pointerIntent.current = true;
+          toggle(event);
+        }}
+        onClick={(event) => {
+          if (pointerIntent.current) {
+            pointerIntent.current = false;
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+          toggle(event);
+        }}
         onMouseEnter={scheduleHoverOpen}
         onMouseLeave={scheduleHoverClose}
         onKeyDown={(event) => {
@@ -186,6 +202,7 @@ export function GlossaryTerm({ term, meaning, glossarySlug, children }: Glossary
             skipFocusOpen.current = false;
             return;
           }
+          if (pointerIntent.current) return;
           setOpen(true);
         }}
         onBlur={(event) => {

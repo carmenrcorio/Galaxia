@@ -2,7 +2,7 @@
 
 **Trigger**: natal and synastry surfaces name aspect types, flows, catches, houses, and orbs without a way to read what those words mean. The public `/glossary` list already exists; chart views did not use it.
 
-`[ADDED]` **`GlossaryTerm` accepts `glossarySlug`.** Lookup is the shared `GLOSSARY_TERMS` list in `@galaxia/core`. The popover shows the first 1–2 sentences and a FOUNDER-REVIEW "See full definition" link to `/glossary#{slug}`. Desktop fine-pointer hover opens after 200ms and closes after 300ms; click, focus, and Escape stay as they were. Touch pointers do not hover-open. `GlossaryPlanet` and `GlossarySign` are unchanged.
+`[ADDED]` **`GlossaryTerm` accepts `glossarySlug`.** Lookup is the shared `GLOSSARY_TERMS` list in `@galaxia/core`. The popover shows the first 1–2 sentences and a FOUNDER-REVIEW "See full definition" link to `/glossary#{slug}`. Desktop fine-pointer hover opens after 200ms and closes after 300ms; click, focus, and Escape stay as they were. A pointer click toggles on mousedown so the following focus event cannot immediately close the popover. Touch pointers do not hover-open. `GlossaryPlanet` and `GlossarySign` are unchanged.
 
 `[ADDED]` **`orb` glossary entry** (FOUNDER-REVIEW). "The distance in degrees between an exact aspect. A tighter orb means a stronger connection. Galaxia uses fixed orb allowances per aspect type, listed on the methodology page." Hash target `/glossary#orb`. Applying and separating stay out of the list this pass.
 

@@ -109,6 +109,18 @@ describe("GlossaryTerm", () => {
     expect(document.querySelector(".glossary-term__floating")).toBeNull();
   });
 
+  it("stays open after a pointer click so focus plus click do not cancel each other", () => {
+    render(<GlossaryTerm term="Sextile" meaning="A cooperative opening." />);
+    const trigger = screen.getByRole("button", { name: "Sextile" });
+
+    fireEvent.mouseDown(trigger);
+    fireEvent.focus(trigger);
+    fireEvent.click(trigger);
+
+    expect(document.querySelector(".glossary-term__floating")).toBeTruthy();
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+  });
+
   it("does not open on hover when the pointer cannot hover", () => {
     stubPointerHover(false);
     vi.useFakeTimers();

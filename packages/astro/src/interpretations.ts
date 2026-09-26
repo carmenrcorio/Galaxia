@@ -278,7 +278,6 @@ export const ASPECT_NATURE: Record<AspectKey, { tone: AspectTone; short: string;
   square:      { tone: "friction", short: "friction that makes them grow", long: "These two pull against each other, and the tension is productive. It never fully resolves, and it isn't supposed to." },
   trine:       { tone: "flow",     short: "so easy they don't notice it", long: "This comes naturally enough to be taken for granted. Often their greatest gift and their least developed one." },
   opposition:  { tone: "friction", short: "a balancing act, pulled two ways", long: "They swing between these poles and mistake one for the enemy. Integration, not victory, is the way through." },
-  // FOUNDER-REVIEW
   quincunx:    { tone: "adjust",   short: "a persistent mismatch that will not resolve by force", long: "These two operate on different frequencies. The friction is not a fight; it is two systems that never quite meet. Name the gap, then change the approach, not the person." },
 };
 

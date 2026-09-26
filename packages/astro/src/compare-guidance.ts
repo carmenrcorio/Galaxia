@@ -1844,13 +1844,9 @@ function leadBody(a: { from: string; to: string }, relType: RelationType): strin
 
 export type AspectGroup = "flows" | "catches" | "adjusts";
 
-/** FOUNDER-REVIEW */
 export const ADJUST_BADGE = "~ adjusts";
-/** FOUNDER-REVIEW */
 export const ADJUST_TACTIC_PREFIX = "Adjust it:";
-/** FOUNDER-REVIEW */
 export const ADJUST_OPENER = "This one asks for a different angle:";
-/** FOUNDER-REVIEW */
 export const ADJUST_TACTIC = "Name the gap, then change the angle of approach";
 
 export function aspectGroup(a: { type?: string; harmony: number }): AspectGroup {

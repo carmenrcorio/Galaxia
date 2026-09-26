@@ -38,7 +38,6 @@ const INTRO_ROMANTIC = "The strongest currents between you two, strongest first.
 const INTRO_PLATONIC = "What runs strongest between you two, strongest first.";
 const FLOWS_CATCHES_LEGEND =
   "Flows are what comes easily between you. Catches are where you two snag, and usually where the growth is.";
-/* FOUNDER-REVIEW */
 const ADJUSTS_LEGEND =
   "Adjusts are a persistent mismatch. Name the gap, then change the angle of approach.";
 const SHOW_ASPECT_DETAIL = "▶ Show aspect detail";

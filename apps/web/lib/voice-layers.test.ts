@@ -168,6 +168,15 @@ describe("layer two: astrology language stays where search and in-product intent
     expect(readRepo("apps/web/app/glossary/page.tsx")).toMatch(/canonical: "\/glossary"/);
   });
 
+  it("keeps chart vocabulary on /methodology metadata (layer two)", () => {
+    const copy = readRepo("apps/web/lib/methodology-copy.ts");
+    expect(copy).toMatch(/How Galaxia Computes Your Chart/);
+    expect(copy).toMatch(/ephemeris source/);
+    expect(copy).toMatch(/orb tables/);
+    expect(copy).toMatch(/house system/);
+    expect(readRepo("apps/web/app/methodology/page.tsx")).toMatch(/canonical: METHODOLOGY_PATH/);
+  });
+
   it("blog categories keep astrology in labels and metadata", () => {
     const blog = readRepo("apps/web/lib/blog.ts");
     expect(blog).toMatch(/label: "Astrology guides"/);

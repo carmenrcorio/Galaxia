@@ -97,6 +97,7 @@ export const RELATED_LINKS = {
   security: [
     { href: "/privacy", label: "Read our full privacy policy" },
     { href: "/pricing", label: "See pricing" },
+    { href: "/methodology", label: "How Galaxia computes a chart" },
   ],
   pricing: [
     PRICING_FREE_CHART_CTA,
@@ -127,6 +128,12 @@ export const RELATED_LINKS = {
     { href: "/blog", label: "Read the guides these terms come from" },
     { href: "/chart", label: "See a natal chart in this vocabulary" },
     { href: SYNASTRY_CHART_MEANING_HREF, label: "What a synastry chart actually tells you" },
+    { href: "/methodology", label: "How Galaxia computes a chart" },
+  ],
+  methodology: [
+    { href: "/glossary", label: "Read the glossary" },
+    { href: "/security", label: "How we handle birth data" },
+    { href: "/why-galaxia", label: "Why Galaxia reads real charts" },
   ],
 } as const satisfies Record<string, readonly NavLink[]>;
 

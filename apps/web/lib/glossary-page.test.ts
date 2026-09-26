@@ -117,11 +117,12 @@ describe("glossary term list", () => {
 });
 
 describe("/glossary related links and voice", () => {
-  it("points at blog, chart, and the synastry guide", () => {
+  it("points at blog, chart, the synastry guide, and methodology", () => {
     expect(RELATED_LINKS.glossary.map((l) => l.href)).toEqual([
       "/blog",
       "/chart",
       "/synastry-chart-meaning",
+      "/methodology",
     ]);
   });
 

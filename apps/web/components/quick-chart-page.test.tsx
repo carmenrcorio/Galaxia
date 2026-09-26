@@ -151,7 +151,9 @@ describe("QuickChartPage post-generation compare CTA", () => {
     await waitFor(() => {
       expect(screen.getByText(chartCompareCtaHeadline("Ada"))).toBeTruthy();
     });
-    const compare = screen.getByRole("link", { name: CHART_COMPARE_CTA_LABEL });
+    const compareLinks = screen.getAllByRole("link", { name: CHART_COMPARE_CTA_LABEL });
+    expect(compareLinks).toHaveLength(1);
+    const compare = compareLinks[0]!;
     expect(compare.getAttribute("href")).toMatch(/^\/chart\/compare\?/);
     expect(compare.getAttribute("href")).toContain("a_pr=date");
     expect(compare.getAttribute("href")).toContain("a_m=6");

@@ -178,7 +178,8 @@ describe("ShareSnapshotView compare order", () => {
     expect(precedes(needB, tableHeading)).toBe(true);
     expect(precedes(tableHeading, overall)).toBe(true);
     expect(precedes(overall, watch)).toBe(true);
-    expect(screen.getByText("Where it flows and catches")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "flows" })).toBeTruthy();
+    expect(screen.getByText(/and catches/)).toBeTruthy();
     expect(screen.getByText("Generational call-out")).toBeTruthy();
   });
 });

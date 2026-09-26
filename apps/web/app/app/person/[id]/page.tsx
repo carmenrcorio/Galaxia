@@ -38,7 +38,7 @@ import {
   interpretHouse,
   STELLIUM_NOTE,
   type HouseKey,
-  generationNameForYear,
+  plutoGenerationLabel,
   PLUTO_SIGN_EXTENDED,
   getFamilyBridge,
   isProfessionalPersonRelation,
@@ -78,6 +78,7 @@ import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../.
 import { ConnectInviteButton } from "../../../../components/connect-invite-button";
 import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
 import { FlipSignCards } from "../../../../components/flip-sign-cards";
+import { RetrogradeBadge } from "../../../../components/retrograde-badge";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { GenerationalEraSurface } from "../../../../components/generational-era-surface";
@@ -177,12 +178,12 @@ function HouseBadge({ house }: { house: number }) {
 
 /* ─── ExpandRow — the single expandable row used throughout ─────────────── */
 function ExpandRow({
-  open, onToggle, label, domain, degree, house, el, glyph, short, long,
+  open, onToggle, label, domain, degree, house, el, glyph, retro, short, long,
   houseReading, planetAspects, hasHouses, plutoExtended, plutoSign, showWorkView
 }: {
   open: boolean; onToggle: () => void;
   label: string; domain?: string; degree?: string; house?: number;
-  el: string; glyph: string; short: string; long: string;
+  el: string; glyph: string; retro?: boolean; short: string; long: string;
   /** House reading block — rendered in expanded state when present */
   houseReading?: { houseName: string; houseDomain: string; long: string } | null;
   /** Per-planet aspects — rendered in expanded state */
@@ -210,8 +211,11 @@ function ExpandRow({
         }}
         aria-expanded={open}
       >
-        <div className="glyph-sq" style={{ background: EL_GRAD[el] ?? "var(--ink2)", color: "#1a1206", flexShrink: 0 }}>
-          {glyph}
+        <div className="glyph-sq-wrap">
+          <div className="glyph-sq" style={{ background: EL_GRAD[el] ?? "var(--ink2)", color: "#1a1206", flexShrink: 0 }}>
+            {glyph}
+          </div>
+          <RetrogradeBadge retro={Boolean(retro)} corner />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           {domain ? (
@@ -1059,11 +1063,12 @@ export default function PersonProfilePage() {
     );
   };
 
-  // Generation name header (Generational layer). Birth year comes from the
-  // already-loaded birth_date (year-only precision stores it as YYYY-01-01,
-  // same convention rebuildDateUTC relies on above) — no new fetch needed.
-  const birthYear = person.birth_date ? parseInt(person.birth_date.slice(0, 4), 10) : null;
-  const generationInfo = birthYear !== null && !Number.isNaN(birthYear) ? generationNameForYear(birthYear) : null;
+  // Generation header is the computed Pluto sign, never a year-band name.
+  // Year-only births that straddle a sign change stay unlabeled (§12).
+  const plutoGeneration =
+    chart.generational.pluto.confident
+      ? plutoGenerationLabel(chart.generational.pluto.sign)
+      : null;
 
   const renderPlacementRow = (p: Placement) => {
     const bk  = normaliseBody(p.body);
@@ -1076,7 +1081,10 @@ export default function PersonProfilePage() {
     if (p.confident === false) {
       return (
         <div key={p.body} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65 }}>
-          <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{gly}</div>
+          <div className="glyph-sq-wrap">
+            <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{gly}</div>
+            <RetrogradeBadge retro={p.retro} corner />
+          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{domain}</div>
             <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{bodyDisplayName(p.body)}: sign uncertain</div>
@@ -1114,6 +1122,7 @@ export default function PersonProfilePage() {
         house={p.house}
         el={el}
         glyph={gly}
+        retro={p.retro}
         short={signR.short}
         long={signR.long}
         houseReading={houseR}
@@ -1446,9 +1455,9 @@ export default function PersonProfilePage() {
           .map((p) => renderPlacementRow(p))}
 
         <div id="generational">
-          {generationInfo ? (
+          {plutoGeneration ? (
             <p style={{ fontSize: ".78rem", color: "var(--cream)", fontWeight: 600, margin: "12px 0 2px" }}>
-              {generationInfo.name} · {generationInfo.span}
+              {plutoGeneration}
             </p>
           ) : null}
           <p className="muted" style={{ fontSize: ".8rem", marginBottom: 12 }}>{chart.generational.cohortLabel}</p>

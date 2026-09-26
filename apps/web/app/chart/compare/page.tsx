@@ -38,7 +38,7 @@ import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
 import { RELATED_LINKS, CHART_MODE_COMPARE, CHART_MODE_SINGLE } from "../../../lib/nav-links";
-import { birthQueryToSearchParams, decodeBirthQuery } from "../../../lib/quick-chart";
+import { birthQueryToSearchParams, decodeBirthQuery, takeComparePrefillName } from "../../../lib/quick-chart";
 import {
   QUICK_COMPARE_HELD_READING,
   QUICK_COMPARE_MINOR_NOTICE,
@@ -88,6 +88,7 @@ export default function QuickComparePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromShareLink, setFromShareLink] = useState(false);
+  const [fromChartHandoff, setFromChartHandoff] = useState(false);
   const [giftToken, setGiftToken] = useState<string | null>(null);
   const [giftLoading, setGiftLoading] = useState(false);
   // True when the visitor asked for Romantic and the API reported a minor —
@@ -132,13 +133,28 @@ export default function QuickComparePage() {
     if (a && b) {
       setInputA(a); setInputB(b); setFromShareLink(true);
       void runCompare(a, b, { updateUrl: false });
+      return;
+    }
+    // /chart results CTA: Person A birth data only. Do not auto-run.
+    if (a) {
+      setInputA(a);
+      setFromChartHandoff(true);
+      const handedName = takeComparePrefillName();
+      if (handedName) setNameA(handedName);
     }
   }, []);
 
   // Not a share link — prefill Person A from the logged-in user's own chart
   // once the viewer resolves (same data, now via the shared useViewer hook).
+  // A /chart handoff already filled Person A; do not overwrite it. Read the
+  // URL here too: this effect and the URL effect run in the same tick, so
+  // `fromChartHandoff` state is still false on the first pass.
   useEffect(() => {
-    if (fromShareLink || result) return;
+    if (fromShareLink || fromChartHandoff || result) return;
+    const params = new URLSearchParams(window.location.search);
+    const handedA = decodeBirthQuery(params, "a_");
+    const handedB = decodeBirthQuery(params, "b_");
+    if (handedA && !handedB) return;
     if (viewer.selfInput) {
       setInputA(viewer.selfInput);
       // Resolve the user's REAL saved name (grammar bug fix): the third-person
@@ -150,7 +166,7 @@ export default function QuickComparePage() {
       setNameA(viewer.selfName || "You");
       setUsingMyChart(true);
     }
-  }, [viewer.selfInput, viewer.selfName, fromShareLink, result]);
+  }, [viewer.selfInput, viewer.selfName, fromShareLink, fromChartHandoff, result]);
 
   // Mirror /app/compare: when a minor is in the pairing, never REST on a
   // romantic type. Force Platonic (this surface's only non-romantic lens).
@@ -331,9 +347,10 @@ export default function QuickComparePage() {
         </>
       ) : (
         <>
-                    {/* Capture is headline + wheel + reading-held notice (if any) + the
-              six-row dynamic table. FlowsAndCatchesSection (the full aspect
-              list) and GenerationalSection render outside the capture, matching
+                    {/* Capture is headline + wheel + reading-held notice (if any) +
+              the "What [name] needs from you" tip blocks + the six-row
+              dynamic table. FlowsAndCatchesSection (the full aspect list)
+              and GenerationalSection render outside the capture, matching
               the task's "not the full aspect list" boundary. */}
           <ChartImageExport
             filename={chartExportFilename(`${personA!.display_name}-${personB!.display_name}`, "synastry-chart.png")}

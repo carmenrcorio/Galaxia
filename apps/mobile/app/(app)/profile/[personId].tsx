@@ -56,6 +56,7 @@ import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { FlipSignCards } from "../../../src/components/flip-sign-cards";
+import { RetrogradeBadge } from "../../../src/components/retrograde-badge";
 import { ChartWheel } from "../../../src/components/chart-wheel";
 import { ConnectInviteButton } from "../../../src/components/connect-invite-button";
 import { EditPersonPanel } from "../../../src/components/edit-person-panel";
@@ -466,9 +467,13 @@ export default function PersonProfileScreen() {
               {chart.placements
                 .filter((placement) => placement.body !== "sun" && placement.body !== "moon")
                 .map((placement) => (
-                <Text key={placement.body} style={cardBody}>
-                  {bodyDisplayName(placement.body)} {placement.sign} {placement.degree.toFixed(1)}°{placement.house ? ` · House ${placement.house}` : ""}
-                </Text>
+                <View key={placement.body} style={{ flexDirection: "row", alignItems: "flex-start", flexWrap: "wrap" }}>
+                  <Text style={cardBody}>
+                    {bodyDisplayName(placement.body)} {placement.sign} {placement.degree.toFixed(1)}°
+                  </Text>
+                  <RetrogradeBadge retro={placement.retro} />
+                  {placement.house ? <Text style={cardBody}>{` · House ${placement.house}`}</Text> : null}
+                </View>
               ))}
             </View>
 

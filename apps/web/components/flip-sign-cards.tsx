@@ -15,6 +15,7 @@ import {
 } from "@galaxia/astro";
 import { useState } from "react";
 import { SIGN_GLYPH, signElement } from "../lib/design";
+import { RetrogradeBadge } from "./retrograde-badge";
 
 export function FlipSignCards({
   chart,
@@ -31,6 +32,7 @@ export function FlipSignCards({
     label: string;
     sign: string;
     confident: boolean;
+    retro: boolean;
     short: string;
     long: string;
   }[] = [];
@@ -45,6 +47,7 @@ export function FlipSignCards({
       label: "Sun",
       sign: sun.sign,
       confident: sun.confident !== false,
+      retro: sun.retro,
       short: reading.short,
       long: reading.long,
     });
@@ -59,6 +62,7 @@ export function FlipSignCards({
       label: "Moon",
       sign: moon.sign,
       confident: moon.confident !== false,
+      retro: moon.retro,
       short: reading.short,
       long: reading.long,
     });
@@ -70,6 +74,7 @@ export function FlipSignCards({
       label: "Rising",
       sign: chart.asc,
       confident: true,
+      retro: false,
       short: reading.short,
       long: reading.long,
     });
@@ -98,6 +103,7 @@ function FlipSignCard({
     label: string;
     sign: string;
     confident: boolean;
+    retro: boolean;
     short: string;
     long: string;
   };
@@ -112,10 +118,11 @@ function FlipSignCard({
       className={`sign-chip flip-sign-card${flipped ? " is-flipped" : ""}${canFlip ? "" : " is-static"}`}
       aria-pressed={canFlip ? flipped : undefined}
       aria-label={
+        // FOUNDER-REVIEW: "Rx" is included when the natal planet is retrograde.
         canFlip
           ? flipped
-            ? `${tile.label} in ${tile.sign}. ${summary}`
-            : `${tile.label} in ${tile.sign}. Flip for what this means in the chart.`
+            ? `${tile.label} in ${tile.sign}${tile.retro ? " Rx" : ""}. ${summary}`
+            : `${tile.label} in ${tile.sign}${tile.retro ? " Rx" : ""}. Flip for what this means in the chart.`
           : `${tile.label} sign uncertain`
       }
       disabled={!canFlip}
@@ -127,10 +134,10 @@ function FlipSignCard({
         <span className="flip-sign-card__face flip-sign-card__front">
           <span
             className="sign-chip__glyph"
-            style={{ color: `var(--${signElement(tile.sign)})` }}
-            aria-hidden="true"
+            style={{ position: "relative", color: `var(--${signElement(tile.sign)})` }}
           >
-            {SIGN_GLYPH[tile.sign]}
+            <span aria-hidden="true">{SIGN_GLYPH[tile.sign]}</span>
+            <RetrogradeBadge retro={tile.retro} corner />
           </span>
           <span className="sign-chip__label">{tile.label}</span>
           <span className="sign-chip__value">{tile.confident ? tile.sign : "Uncertain"}</span>

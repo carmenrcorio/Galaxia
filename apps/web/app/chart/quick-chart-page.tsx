@@ -33,10 +33,18 @@ import { HousesUnavailableCard } from "../../components/houses-unavailable-card"
 import { QuickChartShell } from "../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../components/share-link-button";
+import { RetrogradeBadge } from "../../components/retrograde-badge";
 import { Spinner } from "../../components/spinner";
 import { BODY_GLYPH, signElement } from "../../lib/design";
 import { RELATED_LINKS, CHART_MODE_COMPARE } from "../../lib/nav-links";
-import { birthQueryToSearchParams, decodeBirthQuery } from "../../lib/quick-chart";
+import {
+  birthQueryToSearchParams,
+  buildComparePrefillHref,
+  chartCompareCtaHeadline,
+  CHART_COMPARE_CTA_LABEL,
+  decodeBirthQuery,
+  stashComparePrefillName,
+} from "../../lib/quick-chart";
 import { useViewer } from "../../lib/use-viewer";
 
 interface QuickResult {
@@ -86,6 +94,11 @@ export default function QuickChartPage() {
     // updateUrl: true rewrites to birth params only (drops name from the bar).
     void runChart(decoded, { updateUrl: true });
   }, []);
+
+  // Same-tab handoff to /chart/compare. Name stays out of the URL.
+  useEffect(() => {
+    if (result) stashComparePrefillName(name);
+  }, [result, name]);
 
   async function runChart(birthInput: BirthFormInput, opts: { updateUrl: boolean } = { updateUrl: true }) {
     setLoading(true); setError(null);
@@ -224,6 +237,21 @@ export default function QuickChartPage() {
             />
           </ChartImageExport>
 
+          <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>
+            {/* FOUNDER-REVIEW: post-generation compare bridge. Save stays the primary gold CTA. */}
+            <p style={{ fontFamily: "var(--serif)", fontSize: "1.15rem", color: "var(--cream)", margin: 0, lineHeight: 1.4 }}>
+              {chartCompareCtaHeadline(name)}
+            </p>
+            <Link
+              href={buildComparePrefillHref(input) as never}
+              className="pill-link pill-link--teal"
+              style={{ fontSize: ".95rem", padding: "12px 24px", justifySelf: "center" }}
+              onClick={() => stashComparePrefillName(name)}
+            >
+              {CHART_COMPARE_CTA_LABEL}
+            </Link>
+          </section>
+
           <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
             <button className="pill-link" onClick={() => setExpanded((e) => !e)} style={{ fontSize: ".82rem", marginBottom: expanded ? 12 : 0 }}>
               {expanded ? "▼ Hide full chart" : "▶ See full chart"}
@@ -243,7 +271,10 @@ export default function QuickChartPage() {
                       <span style={{ width: 20, textAlign: "center", flexShrink: 0, color: `var(--${signElement(p.sign)})` }}>{BODY_GLYPH[p.body] ?? p.body[0]}</span>
                       <div>
                         <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--mist2)" }}>{bodyDomain(p.body as BodyKey, { minorSafe: chartMinorSafe })}</div>
-                        <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{bodyDisplayName(p.body)} in {p.sign}</div>
+                        <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>
+                          {bodyDisplayName(p.body)} in {p.sign}
+                          <RetrogradeBadge retro={p.retro} />
+                        </div>
                         <div className="muted" style={{ fontSize: ".78rem", fontStyle: "italic" }}>{reading.short}</div>
                       </div>
                     </div>

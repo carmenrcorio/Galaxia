@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { NatalChart } from "@galaxia/astro";
+import { compareGenerational, computeNatalChart, computeSynastry, relationshipWatchLine, type NatalChart } from "@galaxia/astro";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -130,5 +130,55 @@ describe("ShareSnapshotView gifted natal chart", () => {
     expect(screen.getByText(SHARE_NO_GIFT_BIRTH)).toBeTruthy();
     expect(screen.queryByRole("link", { name: SHARE_ADD_CTA })).toBeNull();
     expect(screen.queryByRole("link", { name: SHARE_COMPARE_CTA })).toBeNull();
+  });
+});
+
+function precedes(a: Element, b: Element): boolean {
+  return Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+}
+
+describe("ShareSnapshotView compare order", () => {
+  it("renders needs above the dynamic table and the watch line under the rows", () => {
+    const chartA = computeNatalChart({ dateUTC: "1990-06-15T12:00:00.000Z", precision: "date" });
+    const chartB = computeNatalChart({ dateUTC: "1987-12-29T12:00:00.000Z", precision: "date" });
+    const synastry = computeSynastry(chartA, chartB);
+    const generational = compareGenerational(chartA.generational, chartB.generational);
+    const scores = { ...synastry.scores, communication: 40 };
+    const shaped = { ...synastry, scores };
+    const watchLine = relationshipWatchLine(scores, "platonic", shaped);
+    expect(watchLine).toBeTruthy();
+
+    render(
+      <ShareSnapshotView
+        kind="compare"
+        token="cmp"
+        payload={{
+          nameA: "Alex",
+          nameB: "Sam",
+          relationType: "platonic",
+          pairHasMinor: false,
+          chartA,
+          chartB,
+          synastry: {
+            scores,
+            aspects: synastry.aspects,
+          },
+          generational,
+        }}
+      />,
+    );
+
+    const needA = screen.getByText("→ What Alex needs from you");
+    const needB = screen.getByText("→ What Sam needs from you");
+    const tableHeading = screen.getByText("Your dynamic");
+    const overall = screen.getByText("Overall");
+    const watch = screen.getByText(watchLine!);
+
+    expect(precedes(needA, needB)).toBe(true);
+    expect(precedes(needB, tableHeading)).toBe(true);
+    expect(precedes(tableHeading, overall)).toBe(true);
+    expect(precedes(overall, watch)).toBe(true);
+    expect(screen.getByText("Where it flows and catches")).toBeTruthy();
+    expect(screen.getByText("Generational call-out")).toBeTruthy();
   });
 });

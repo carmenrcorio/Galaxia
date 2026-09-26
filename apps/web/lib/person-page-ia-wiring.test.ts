@@ -31,8 +31,16 @@ describe("person page information architecture", () => {
   it("keeps outer planets once: diamond-marked rows, no standalone generation section", () => {
     expect(page).toContain('isGen ? " ✦" : ""');
     expect(page).not.toContain('sectionHead("generational")');
-    expect(page).toContain("generationInfo.name");
+    expect(page).not.toContain("generationInfo.name");
+    expect(page).not.toContain("generationNameForYear");
+    expect(page).toContain("plutoGenerationLabel");
+    expect(page).toContain("chart.generational.pluto.confident");
+    expect(page).toContain("chart.generational.pluto.sign");
     expect(page).toContain("chart.generational.cohortLabel");
+    expect(page).not.toContain("Millennials");
+    expect(page).not.toContain("Baby Boomers");
+    expect(page).not.toContain("Generation X");
+    expect(page).not.toContain("Generation Z");
     expect(page).toContain("getFamilyBridge");
     expect(page).toContain("PLUTO_SIGN_EXTENDED");
     expect(page).toContain("Changed sign that year");

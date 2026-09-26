@@ -11,6 +11,7 @@ import {
   compareGenerational,
   compareHeadline,
   compareHistoryLastViewed,
+  ADJUST_BADGE,
   compareNatalAspectsConstant,
   compareNoTransitShift,
   compareRelationLabel,
@@ -564,10 +565,11 @@ export default function CompareScreen() {
                 catches
               </GlossaryTooltip>
             </View>
-            <Text style={cardBody}>Flow: {result.synastry.aspects.filter((aspect) => aspect.harmony > 0).length} supportive links.</Text>
-            <Text style={cardBody}>Catch: {result.synastry.aspects.filter((aspect) => aspect.harmony < 0).length} tension links.</Text>
-            <Text style={cardBody}>Top supportive aspect: {formatAspect(result.synastry.aspects.filter((a) => a.harmony > 0)[0])}</Text>
-            <Text style={cardBody}>Top tension aspect: {formatAspect(result.synastry.aspects.filter((a) => a.harmony < 0)[0])}</Text>
+            <Text style={cardBody}>Flow: {result.synastry.aspects.filter((aspect) => aspect.type !== "quincunx" && aspect.harmony > 0).length} supportive links.</Text>
+            <Text style={cardBody}>Catch: {result.synastry.aspects.filter((aspect) => aspect.type !== "quincunx" && aspect.harmony < 0).length} tension links.</Text>
+            <Text style={cardBody}>Adjust: {result.synastry.aspects.filter((aspect) => aspect.type === "quincunx").length} mismatch links.</Text>
+            <Text style={cardBody}>Top supportive aspect: {formatAspect(result.synastry.aspects.filter((a) => a.type !== "quincunx" && a.harmony > 0)[0])}</Text>
+            <Text style={cardBody}>Top tension aspect: {formatAspect(result.synastry.aspects.filter((a) => a.type !== "quincunx" && a.harmony < 0)[0])}</Text>
           </View>
 
           <GenerationalSection
@@ -606,20 +608,24 @@ export default function CompareScreen() {
                 if (typeSlug && wrapType) seenTypes.add(typeSlug);
                 const wrapOrb = !wrappedOrb;
                 if (wrapOrb) wrappedOrb = true;
+                const adjustStyle = aspect.type === "quincunx" ? { color: tokens.colors.gold } : null;
                 return (
                   <View
                     key={`${aspect.from}-${aspect.to}-${idx}`}
                     style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "baseline" }}
                   >
-                    <Text style={cardBody}>{bodyDisplayName(aspect.from)} </Text>
+                    {aspect.type === "quincunx" ? (
+                      <Text style={[cardBody, adjustStyle]}>{`${ADJUST_BADGE} `}</Text>
+                    ) : null}
+                    <Text style={[cardBody, adjustStyle]}>{bodyDisplayName(aspect.from)} </Text>
                     {wrapType && typeSlug ? (
                       <GlossaryTooltip glossarySlug={typeSlug} style={cardBody}>
                         {aspect.type}
                       </GlossaryTooltip>
                     ) : (
-                      <Text style={cardBody}>{aspect.type}</Text>
+                      <Text style={[cardBody, adjustStyle]}>{aspect.type}</Text>
                     )}
-                    <Text style={cardBody}> {bodyDisplayName(aspect.to)} · </Text>
+                    <Text style={[cardBody, adjustStyle]}> {bodyDisplayName(aspect.to)} · </Text>
                     {wrapOrb ? (
                       <GlossaryTooltip glossarySlug="orb" style={cardBody}>
                         orb
@@ -627,7 +633,10 @@ export default function CompareScreen() {
                     ) : (
                       <Text style={cardBody}>orb</Text>
                     )}
-                    <Text style={cardBody}>{` ${aspect.orb.toFixed(1)}°`}</Text>
+                    <Text style={[cardBody, adjustStyle]}>
+                      {` ${aspect.orb.toFixed(1)}°`}
+                      {aspect.phase ? ` · ${aspect.phase}` : ""}
+                    </Text>
                   </View>
                 );
               });

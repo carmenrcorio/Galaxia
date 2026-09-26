@@ -36,7 +36,7 @@ const BODIES: BodyName[] = (() => {
     lat: 40.7,
     lng: -74.0,
   });
-  return [...new Set(chart.placements.map((p) => p.body))];
+  return [...new Set(chart.placements.map((p) => p.body).filter((b) => b !== "chiron"))];
 })();
 
 const RELATION_TYPES = Object.keys(RELATION_BODY_PRIORITY) as RelationType[];

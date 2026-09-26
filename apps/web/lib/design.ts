@@ -14,6 +14,7 @@ export const ASPECT_LINE: Record<string, string> = {
   square:       "inner friction that drives growth",
   trine:        "natural, effortless gift",
   opposition:   "a balancing act, pulled two ways",
+  quincunx:     "a persistent mismatch that will not resolve by force",
 };
 
 /**

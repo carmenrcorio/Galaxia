@@ -100,6 +100,8 @@ describe("1B parity — mobile Compare shares web's relType-keyed compareHeadlin
     expect(src).not.toContain("High flow dynamic with meaningful momentum.");
     expect(src).not.toContain("Balanced dynamic with both ease and growth edges.");
     expect(src).not.toContain("Growth-heavy dynamic: more intentional care will help.");
+    expect(src).toContain("ADJUST_BADGE");
+    expect(src).toContain("The astrology underneath");
   });
 
   it("renders the same relationship-framed headline text web does, for the same inputs", () => {

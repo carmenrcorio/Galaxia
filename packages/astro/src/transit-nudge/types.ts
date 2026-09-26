@@ -60,13 +60,19 @@ export interface PersonDailyNudgeRecord {
   selection_reason: Record<string, unknown> | null;
 }
 
-export const ASPECT_CLASS: Record<AspectType, AspectClass> = {
+export const ASPECT_CLASS: Record<AspectType, AspectClass | "adjust"> = {
   conjunction: "fusion",
   sextile: "flow",
   trine: "flow",
   square: "friction",
   opposition: "friction",
+  quincunx: "adjust",
 };
+
+export function majorAspectClass(type: AspectType): AspectClass {
+  const tone = ASPECT_CLASS[type];
+  return tone === "adjust" ? "friction" : tone;
+}
 
 export const TRANSIT_THEMES: readonly BodyName[] = [
   "sun",

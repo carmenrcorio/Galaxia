@@ -24,6 +24,10 @@
 import { bodyDisplayName } from "./bodies";
 import type { Aspect, BodyName, SynastryResult } from "./index";
 
+function isQuincunxType(type: string | undefined): boolean {
+  return (type ?? "").toLowerCase() === "quincunx";
+}
+
 /* Sign vibe one-liners — from galaxia.jsx VIBE (was apps/web/lib/design.ts) */
 export const SIGN_VIBE: Record<string, string> = {
   Aries:       "bold, fast, all-in",
@@ -384,16 +388,16 @@ export type PriorityBand = keyof typeof BODY_PRIORITY_BY_BAND;
 
 /** Compare-facing view of the shared map (RelationType keys only). */
 export const RELATION_BODY_PRIORITY: Record<RelationType, string[]> = {
-  romantic:       [...BODY_PRIORITY_BY_BAND.romantic, "north_node"],
-  partners:       [...BODY_PRIORITY_BY_BAND.partners, "north_node"],
-  platonic:       [...BODY_PRIORITY_BY_BAND.platonic, "north_node"],
-  friends:        [...BODY_PRIORITY_BY_BAND.friends, "north_node"],
-  siblings:       [...BODY_PRIORITY_BY_BAND.siblings, "north_node"],
-  "parent-child": [...BODY_PRIORITY_BY_BAND["parent-child"], "north_node"],
-  ancestor:       [...BODY_PRIORITY_BY_BAND.ancestor],
-  colleagues:     [...BODY_PRIORITY_BY_BAND.colleagues],
-  "manager-report": [...BODY_PRIORITY_BY_BAND["manager-report"]],
-  "mentor-mentee": [...BODY_PRIORITY_BY_BAND["mentor-mentee"], "north_node"],
+  romantic:       [...BODY_PRIORITY_BY_BAND.romantic, "north_node", "chiron"],
+  partners:       [...BODY_PRIORITY_BY_BAND.partners, "north_node", "chiron"],
+  platonic:       [...BODY_PRIORITY_BY_BAND.platonic, "north_node", "chiron"],
+  friends:        [...BODY_PRIORITY_BY_BAND.friends, "north_node", "chiron"],
+  siblings:       [...BODY_PRIORITY_BY_BAND.siblings, "north_node", "chiron"],
+  "parent-child": [...BODY_PRIORITY_BY_BAND["parent-child"], "north_node", "chiron"],
+  ancestor:       [...BODY_PRIORITY_BY_BAND.ancestor, "chiron"],
+  colleagues:     [...BODY_PRIORITY_BY_BAND.colleagues, "chiron"],
+  "manager-report": [...BODY_PRIORITY_BY_BAND["manager-report"], "chiron"],
+  "mentor-mentee": [...BODY_PRIORITY_BY_BAND["mentor-mentee"], "north_node", "chiron"],
 };
 
 /** Bodies weighted for a priority band — shared Compare / nudge entry point. */
@@ -468,7 +472,9 @@ export function selectCompareAspectRows<T extends { from: string; to: string; ty
     seen.add(key);
     unique.push(a);
   }
-  return sortAspectsForFocus(unique, relationType).slice(0, limit);
+  const majors = unique.filter((a) => !isQuincunxType(a.type));
+  const adjusts = unique.filter((a) => isQuincunxType(a.type));
+  return [...sortAspectsForFocus(majors, relationType).slice(0, limit), ...adjusts.slice(0, limit)];
 }
 
 export interface GuidancePerson {
@@ -1824,7 +1830,7 @@ const BODY_FLOW_ACTION: Record<string, string> = {
 };
 
 /** Global personal-relevance order, for choosing a lead body when neither is in the type priority. */
-const PERSONAL_RANK = ["moon", "venus", "mars", "mercury", "sun", "saturn", "jupiter", "pluto", "neptune", "uranus", "north_node"];
+const PERSONAL_RANK = ["moon", "venus", "mars", "mercury", "sun", "saturn", "jupiter", "pluto", "neptune", "uranus", "north_node", "chiron"];
 
 /** The more relationship-relevant of the aspect's two bodies (drives the fallback tactic). */
 function leadBody(a: { from: string; to: string }, relType: RelationType): string {
@@ -1836,6 +1842,18 @@ function leadBody(a: { from: string; to: string }, relType: RelationType): strin
   return score(a.from) <= score(a.to) ? a.from : a.to;
 }
 
+export type AspectGroup = "flows" | "catches" | "adjusts";
+
+export const ADJUST_BADGE = "~ adjusts";
+export const ADJUST_TACTIC_PREFIX = "Adjust it:";
+export const ADJUST_OPENER = "This one asks for a different angle:";
+export const ADJUST_TACTIC = "Name the gap, then change the angle of approach";
+
+export function aspectGroup(a: { type?: string; harmony: number }): AspectGroup {
+  if (isQuincunxType(a.type)) return "adjusts";
+  return a.harmony >= 0 ? "flows" : "catches";
+}
+
 /**
  * Split the actionable line into the shared register opener (same for every
  * flows row / every catches row of a relation type) and the body-pair tactic
@@ -1843,23 +1861,34 @@ function leadBody(a: { from: string; to: string }, relType: RelationType): strin
  * reworded. Used by FlowsAndCatchesSection so openers render once per group.
  */
 export function aspectActionParts(
-  a: { from: string; to: string; harmony: number },
+  a: { from: string; to: string; harmony: number; type?: string },
   relType: RelationType
-): { flows: boolean; opener: string; tactic: string } {
-  const flows = a.harmony >= 0;
+): { flows: boolean; adjusts: boolean; group: AspectGroup; opener: string; tactic: string } {
+  const group = aspectGroup(a);
+  const adjusts = group === "adjusts";
+  const flows = group === "flows";
+  if (adjusts) {
+    return { flows: false, adjusts: true, group, opener: ADJUST_OPENER, tactic: ADJUST_TACTIC };
+  }
   const half = flows ? "flows" : "catches";
   const key = PAIR_KEY(a.from, a.to);
   const pair = ASPECT_ACTION[key];
   // Working frames read the same pair, in the working register, wherever the
   // shared tactic is written in the personal one (see WORK_ASPECT_ACTION).
   const workTactic = isProfessionalRelation(relType) ? WORK_ASPECT_ACTION[key]?.[half] : undefined;
+  const involvesChiron =
+    a.from.toLowerCase() === "chiron" || a.to.toLowerCase() === "chiron";
+  // Chiron pair copy is a later batch. Do not invent a planet-keyed tactic
+  // (ENGINEERING.md §12) and do not leak personal-register fallbacks.
   const tactic = workTactic
     ?? (pair && pair[half])
-    ?? (flows ? BODY_FLOW_ACTION[leadBody(a, relType).toLowerCase()] : BODY_FRICTION_ACTION[leadBody(a, relType).toLowerCase()])
+    ?? (involvesChiron
+      ? ""
+      : (flows ? BODY_FLOW_ACTION[leadBody(a, relType).toLowerCase()] : BODY_FRICTION_ACTION[leadBody(a, relType).toLowerCase()]))
     ?? "";
   const pool = RELATION_ACTION_REGISTER[relType][flows ? "flows" : "catches"];
   const opener = pickOpener(pool, a.from, a.to);
-  return { flows, opener, tactic };
+  return { flows, adjusts: false, group, opener, tactic };
 }
 
 /**
@@ -1868,9 +1897,9 @@ export function aspectActionParts(
  * actual bodies and framed for the relationship type. Never fabricates — reads
  * only `from`/`to`/`harmony` off the engine's aspect.
  */
-export function aspectActionLine(a: { from: string; to: string; harmony: number }, relType: RelationType): string {
+export function aspectActionLine(a: { from: string; to: string; harmony: number; type?: string }, relType: RelationType): string {
   const { opener, tactic } = aspectActionParts(a, relType);
-  return `${opener} ${tactic}.`;
+  return tactic ? `${opener} ${tactic}.` : opener;
 }
 
 /**
@@ -2265,9 +2294,12 @@ const WORK_ASPECT_SUMMARY_FRAME: Record<string, Partial<{ flows: string; catches
 
 /** Pair-keyed summary lens, with RELATION_ASPECT_FRAME as last-resort fallback. */
 export function aspectSummaryLens(
-  a: { from: string; to: string; harmony: number },
+  a: { from: string; to: string; harmony: number; type?: string },
   relType: RelationType
 ): string {
+  if (aspectGroup(a) === "adjusts") {
+    return ADJUST_TACTIC;
+  }
   const flows = a.harmony >= 0;
   const half = flows ? "flows" : "catches";
   const key = PAIR_KEY(a.from, a.to);
@@ -2294,6 +2326,7 @@ export function relationshipAspectFraming(
 ): { text: string; action: string; flows: boolean; aspect: Aspect }[] {
   const priority = RELATION_BODY_PRIORITY[relType];
   const relevantAll = synastry.aspects
+    .filter((a) => !isQuincunxType(a.type))
     .filter((a) => priority.includes(a.from) || priority.includes(a.to))
     .slice()
     .sort((a, b) => a.orb - b.orb);
@@ -2301,8 +2334,8 @@ export function relationshipAspectFraming(
   // Surface up to 3, but guarantee at least one FLOW (nurture) and one CATCH
   // (minimize) when both exist — so the user always sees a way to reduce a
   // clash AND a way to use an ease, not three of one kind.
-  const flowsList = relevantAll.filter((a) => a.harmony >= 0);
-  const catchesList = relevantAll.filter((a) => a.harmony < 0);
+  const flowsList = relevantAll.filter((a) => aspectGroup(a) === "flows");
+  const catchesList = relevantAll.filter((a) => aspectGroup(a) === "catches");
   let picked: Aspect[];
   if (flowsList.length && catchesList.length) {
     const chosen: Aspect[] = [catchesList[0] as Aspect, flowsList[0] as Aspect];
@@ -2316,7 +2349,8 @@ export function relationshipAspectFraming(
   }
 
   return picked.map((a) => {
-    const flows = a.harmony >= 0;
+    const group = aspectGroup(a);
+    const flows = group === "flows";
     const lens = aspectSummaryLens(a, relType);
     const text = `${nameA}'s ${cap(a.from)} ${a.type} ${nameB}'s ${cap(a.to)} (${a.orb.toFixed(1)}°) ${lens}`;
     return { text, action: aspectActionLine(a, relType), flows, aspect: a as Aspect };

@@ -21,7 +21,10 @@
 export type BodyKey =
   | "sun" | "moon" | "mercury" | "venus" | "mars"
   | "jupiter" | "saturn" | "uranus" | "neptune" | "pluto"
-  | "north_node";
+  | "north_node" | "chiron";
+
+/** Bodies with authored sign / house / transit-copy tables. Chiron is compute-only this pass. */
+export type AuthoredBodyKey = Exclude<BodyKey, "chiron">;
 
 export type SignKey =
   | "Aries" | "Taurus" | "Gemini" | "Cancer" | "Leo" | "Virgo"
@@ -43,6 +46,8 @@ export const BODY_DOMAIN: Record<BodyKey, string> = {
   pluto:   "Where they transform",
   // FOUNDER-REVIEW: North Node card descriptor (domain line).
   north_node: "Where growth asks you to go",
+  // FOUNDER-REVIEW: Chiron card descriptor (domain line).
+  chiron: "Where healing and vulnerability meet",
 };
 
 /**
@@ -69,7 +74,7 @@ export function bodyDomain(body: BodyKey, opts: PlacementSafetyOpts): string {
 /** Outer planets move slowly — flag them as generational in the UI. */
 export const GENERATIONAL: BodyKey[] = ["uranus", "neptune", "pluto"];
 
-export const PLANET_IN_SIGN: Record<BodyKey, Record<SignKey, Reading>> = {
+export const PLANET_IN_SIGN: Record<AuthoredBodyKey, Record<SignKey, Reading>> = {
   // ─────────────────────────── SUN ───────────────────────────
   sun: {
     Aries:       { short: "burns bright, moves first", long: "They come alive by starting things, and they'd rather act and correct course than wait and be sure. Let them go first; they lose themselves in too much deliberation." },
@@ -265,24 +270,26 @@ export const RISING: Record<SignKey, Reading> = {
 };
 
 /** Aspect readings: what the geometry does to a bond. */
-export type AspectKey = "conjunction" | "sextile" | "square" | "trine" | "opposition";
+export type AspectKey = "conjunction" | "sextile" | "square" | "trine" | "opposition" | "quincunx";
+export type AspectTone = "flow" | "friction" | "fusion" | "adjust";
 
 /**
  * Per-type texture only. Never a stand-in for a missing pair reading.
  * Synastry same-body misses still consult this; natal reading slots do not.
  */
-export const ASPECT_NATURE: Record<AspectKey, { tone: "flow" | "friction" | "fusion"; short: string; long: string }> = {
+export const ASPECT_NATURE: Record<AspectKey, { tone: AspectTone; short: string; long: string }> = {
   conjunction: { tone: "fusion",   short: "fused into one charge", long: "These two forces don't take turns; they move as one. Powerful, and hard to see clearly from inside." },
   sextile:     { tone: "flow",     short: "an easy, available talent", long: "It works when they reach for it, and it sits idle when they don't. A door left unlocked." },
   square:      { tone: "friction", short: "friction that makes them grow", long: "These two pull against each other, and the tension is productive. It never fully resolves, and it isn't supposed to." },
   trine:       { tone: "flow",     short: "so easy they don't notice it", long: "This comes naturally enough to be taken for granted. Often their greatest gift and their least developed one." },
   opposition:  { tone: "friction", short: "a balancing act, pulled two ways", long: "They swing between these poles and mistake one for the enemy. Integration, not victory, is the way through." },
+  quincunx:    { tone: "adjust",   short: "a persistent mismatch that will not resolve by force", long: "These two operate on different frequencies. The friction is not a fight; it is two systems that never quite meet. Name the gap, then change the approach, not the person." },
 };
 
 /**
  * NATAL ASPECT COVERAGE (locked by natalAspectCoverage(); the test fails if
  * these numbers drift from the table below).
- * Coverage lock: authored=38 possible=225
+ * Coverage lock: authored=38 possible=270
  *
  * 18 cells shipped with the original table. Batch 1 adds 20 cells in
  * production-render frequency order,
@@ -293,7 +300,7 @@ export const NATAL_ASPECT_BODIES: BodyKey[] = [
   "jupiter", "saturn", "uranus", "neptune", "pluto",
 ];
 export const NATAL_ASPECT_TYPES: AspectKey[] = [
-  "conjunction", "sextile", "square", "trine", "opposition",
+  "conjunction", "sextile", "square", "trine", "opposition", "quincunx",
 ];
 
 /** Named readings for specific natal pairs. Unauthored cells are omitted, never filled. */
@@ -493,14 +500,17 @@ export const VENUS_IN_SIGN_MINOR: Record<SignKey, Reading> = {
 };
 
 /**
- * Resolve a placement reading. Never returns empty.
- * Venus uses VENUS_IN_SIGN_MINOR when opts.minorSafe — call sites pass the
+ * Resolve a placement reading. Authored bodies never return empty.
+ * Chiron is compute-only this pass, so its cell is empty until copy is authored
+ * (ENGINEERING.md section 12).
+ * Venus uses VENUS_IN_SIGN_MINOR when opts.minorSafe - call sites pass the
  * boolean; they do not choose the table.
  */
 export function interpretPlacement(body: BodyKey, sign: SignKey, opts: PlacementSafetyOpts): Reading {
   if (body === "venus" && opts.minorSafe) {
     return VENUS_IN_SIGN_MINOR[sign] ?? { short: "", long: "" };
   }
+  if (body === "chiron") return { short: "", long: "" };
   return PLANET_IN_SIGN[body]?.[sign] ?? { short: "", long: "" };
 }
 

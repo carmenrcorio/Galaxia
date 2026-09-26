@@ -30,7 +30,7 @@ const PROBE_BIRTH_CHART: NatalChart = computeNatalChart({
 });
 
 /** Real bodies the engine places — derived, not guessed (mirrors aspect-tail-collisions.test.ts). */
-const BODIES: BodyName[] = PROBE_BIRTH_CHART.placements.map((p) => p.body);
+const BODIES: BodyName[] = PROBE_BIRTH_CHART.placements.map((p) => p.body).filter((b) => b !== "chiron");
 
 const RELATION_TYPES: RelationType[] = Object.keys(RELATION_BODY_PRIORITY) as RelationType[];
 

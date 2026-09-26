@@ -62,6 +62,7 @@ describe("/methodology orb table matches the engine", () => {
       square: 6,
       trine: 6,
       opposition: 8,
+      quincunx: 2.5,
     };
     for (const type of METHODOLOGY_ASPECT_TYPES) {
       expect(methodologyOrbDegrees(type)).toBe(expected[type]);
@@ -74,6 +75,7 @@ describe("/methodology orb table matches the engine", () => {
       ["square", 6],
       ["trine", 6],
       ["opposition", 8],
+      ["quincunx", 2.5],
     ]);
   });
 
@@ -88,6 +90,7 @@ describe("/methodology orb table matches the engine", () => {
     expect(engine).toContain("square: { angle: 90, orb: 6");
     expect(engine).toContain("trine: { angle: 120, orb: 6");
     expect(engine).toContain("opposition: { angle: 180, orb: 8");
+    expect(engine).toContain("quincunx: { angle: 150, orb: 2.5");
   });
 
   it("states that the engine does not widen orbs by planet class", () => {
@@ -106,12 +109,12 @@ describe("/methodology content and voice", () => {
         "Chiron",
         "Lunar nodes (True Node or Mean Node)",
         "Black Moon Lilith",
-        "Minor aspects (quincunx, semisextile, semisquare, sesquiquadrate)",
+        "Minor aspects other than the quincunx (semisextile, semisquare, sesquiquadrate)",
         "Arabic parts, including the Part of Fortune",
       ]),
     );
     expect(METHODOLOGY_SECTIONS.applying.paragraphs[2]).toMatch(
-      /do not yet mark applying or separating/,
+      /Natal and synastry aspects also mark applying or separating/,
     );
   });
 

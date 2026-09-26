@@ -102,6 +102,10 @@ describe("source wiring — compare bi-wheel + shared flows/catches", () => {
     expect(src).toContain("GlossaryTerm");
     expect(src).toContain('glossarySlug="flows-and-catches"');
     expect(src).toContain("aspectGlossarySlug");
+    expect(src).toContain("ADJUST_BADGE");
+    expect(src).toContain("ADJUST_TACTIC_PREFIX");
+    expect(src).toContain('"adjusts"');
+    expect(src).toContain("var(--gold)");
   });
 
   it("/app/compare uses shared FlowsAndCatchesSection and bi-wheel (no inline aspect table)", () => {

@@ -26,6 +26,7 @@ import {
   ELEMENT_ABSENT,
   ELEMENT_DOMINANT,
   GENERATIONAL,
+  ADJUST_BADGE,
   interpretAspect,
   interpretPlacement,
   interpretRising,
@@ -44,6 +45,7 @@ import {
   isProfessionalPersonRelation,
   type PlutoSignExtended,
   bodyDisplayName,
+  isChartPoint,
 } from "@galaxia/astro";
 import {
   aspectGlossarySlug,
@@ -449,7 +451,7 @@ export default function PersonProfilePage() {
   // an uncertain (year-only) sign must not be tallied as if it were fact.
   const elementBalance = useMemo(() => {
     if (!chart || chart.precision === "year") return null;
-    return chart.placements.filter(p => p.confident !== false).reduce(
+    return chart.placements.filter(p => p.confident !== false && !isChartPoint(p.body)).reduce(
       (acc, p) => { acc[signElement(p.sign) as keyof typeof acc] += 1; return acc; },
       { fire: 0, earth: 0, air: 0, water: 0 }
     );
@@ -457,24 +459,37 @@ export default function PersonProfilePage() {
 
   const modalityBalance = useMemo(() => {
     if (!chart || chart.precision === "year") return null;
-    return chart.placements.filter(p => p.confident !== false).reduce(
+    return chart.placements.filter(p => p.confident !== false && !isChartPoint(p.body)).reduce(
       (acc, p) => { const m = SIGN_MODALITY[p.sign]; if (m) acc[m] += 1; return acc; },
       { cardinal: 0, fixed: 0, mutable: 0 }
     );
   }, [chart]);
 
-  const { natalAspects, natalAspectReadings } = useMemo(() => {
+  const { natalAspects, natalAspectReadings, natalQuincunxes } = useMemo(() => {
     // Aspects need real positions. Year-only charts have sampled longitudes
     // (mid-year), so aspect orbs computed from them would be fabricated.
     // Geometry list (wheel): tightest 14, authored or not. Reading list:
     // authored-only so ASPECT_NATURE never occupies a reading slot.
+    const empty = [] as ReturnType<typeof computeSynastry>["aspects"];
     if (!chart || chart.precision === "year") {
-      return { natalAspects: [] as ReturnType<typeof computeSynastry>["aspects"], natalAspectReadings: [] as ReturnType<typeof computeSynastry>["aspects"] };
+      return { natalAspects: empty, natalAspectReadings: empty, natalQuincunxes: empty };
     }
     const raw = computeSynastry(chart, chart).aspects;
+    const seen = new Set<string>();
+    const natalQuincunxes = raw
+      .filter((a) => a.type === "quincunx" && a.from !== a.to)
+      .slice()
+      .sort((a, b) => a.orb - b.orb)
+      .filter((a) => {
+        const key = `${[a.from, a.to].sort().join("-")}:${a.type}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     return {
       natalAspects: selectNatalAspectGeometry(raw),
       natalAspectReadings: selectNatalAspectReadings(raw),
+      natalQuincunxes,
     };
   }, [chart]);
 
@@ -1103,7 +1118,9 @@ export default function PersonProfilePage() {
       );
     }
     const signR = interpretPlacement(bk, sk, safety);
-    if (process.env.NODE_ENV !== "production" && !signR.short) console.warn(`[interpretations] missing: ${bk} in ${sk}`);
+    if (process.env.NODE_ENV !== "production" && !signR.short && !isChartPoint(p.body)) {
+      console.warn(`[interpretations] missing: ${bk} in ${sk}`);
+    }
     const houseR = (p.house && hasHouses)
       ? (() => { const hr = interpretHouse(bk, p.house as HouseKey, safety); const hm = houseMeaning(p.house as HouseKey); return hm && hr.long ? { houseName: hm.name, houseDomain: hm.domain, long: hr.long } : null; })()
       : null;
@@ -1458,7 +1475,7 @@ export default function PersonProfilePage() {
         ))}
 
         {chart.placements
-          .filter((p) => p.body !== "sun" && p.body !== "moon" && p.body !== "north_node" && !GENERATIONAL.includes(normaliseBody(p.body)))
+          .filter((p) => p.body !== "sun" && p.body !== "moon" && p.body !== "north_node" && p.body !== "chiron" && !GENERATIONAL.includes(normaliseBody(p.body)))
           .map((p) => renderPlacementRow(p))}
 
         <div id="generational">
@@ -1486,6 +1503,7 @@ export default function PersonProfilePage() {
         </div>
 
         {chart.placements.filter((p) => p.body === "north_node").map((p) => renderPlacementRow(p))}
+        {chart.placements.filter((p) => p.body === "chiron").map((p) => renderPlacementRow(p))}
       </section>
 
       {/* ── Key aspects ── */}
@@ -1530,7 +1548,7 @@ export default function PersonProfilePage() {
           });
           })()}
         </section>
-      ) : (
+      ) : natalQuincunxes.length === 0 ? (
         <AspectsUnavailableCard
           precision={chart.precision}
           title={enduringEyebrow(PERSON_TAB_LABEL.aspects)}
@@ -1543,7 +1561,33 @@ export default function PersonProfilePage() {
             />
           }
         />
-      )}
+      ) : null}
+
+      {natalQuincunxes.length > 0 ? (
+        <section className="glass-card fade-in fade-in-delay-2">
+          <p className="eyebrow" style={{ marginBottom: 6 }}>Adjusts</p>
+          <p className="muted" style={{ fontSize: ".72rem", marginBottom: 10 }}>
+            {ADJUST_BADGE} · type and orb only
+          </p>
+          {natalQuincunxes.map((a, idx) => (
+            <div
+              key={`qx-${a.from}-${a.to}-${idx}`}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}
+            >
+              <span style={{ fontSize: ".88rem", color: "var(--gold)", width: 56, textAlign: "center", letterSpacing: 2, flexShrink: 0 }}>
+                {BODY_GLYPH[a.from] ?? a.from[0]} {ASPECT_GLYPH[a.type] ?? "\u26BB"} {BODY_GLYPH[a.to] ?? a.to[0]}
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: ".82rem", color: "var(--cream)", fontWeight: 600 }}>
+                  {a.from} {a.type} {a.to}
+                </div>
+                <div style={{ fontSize: ".74rem", color: "var(--gold)", marginTop: 1 }}>{ADJUST_BADGE}{a.phase ? ` · ${a.phase}` : ""}</div>
+              </div>
+              <span style={{ fontSize: ".7rem", color: "var(--mist2)", flexShrink: 0 }}>{toDMS(a.orb)}</span>
+            </div>
+          ))}
+        </section>
+      ) : null}
 
       {/* ── Twelve Houses: occupancy list, or the shared unavailable card ── */}
       {hasHouses ? (

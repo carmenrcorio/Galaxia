@@ -4,7 +4,7 @@
  * week returns null so the send job can skip rather than write filler.
  */
 
-import { ASPECT_CLASS, type AspectClass } from "./transit-nudge/types";
+import { majorAspectClass, type AspectClass } from "./transit-nudge/types";
 import { whenUTCForOwnerLocalDate } from "./transit-nudge/dates";
 import {
   relationalTransitDedupKey,
@@ -40,6 +40,7 @@ const NATAL_BODY_LABEL: Record<string, string> = {
   neptune: "Neptune",
   pluto: "Pluto",
   north_node: "North Node",
+  chiron: "Chiron",
 };
 
 const ASPECT_VERB: Record<AspectType, string> = {
@@ -48,6 +49,7 @@ const ASPECT_VERB: Record<AspectType, string> = {
   square: "squaring",
   trine: "flowing with",
   opposition: "pulling against",
+  quincunx: "adjusting with",
 };
 
 /**
@@ -204,7 +206,7 @@ function dynamicSentence(
 }
 
 function intentionSentence(person: LetterPerson, event: RelationalTransitEvent): string {
-  const aspectClass = ASPECT_CLASS[event.aspectType];
+  const aspectClass = majorAspectClass(event.aspectType);
   const tryThis = INTENTION[event.transitBody][aspectClass];
   if (person.isSelf) return `One thing to try: ${tryThis}.`;
   return `One thing to try with ${person.personName}: ${tryThis}.`;

@@ -117,6 +117,7 @@
             "degree": 24.347040807963822,
             "house": 8,
             "retro": false,
+            "lonSpeedDegPerDay": 0.996135,
             "confident": true
           },
           {
@@ -126,6 +127,7 @@
             "degree": 1.5535136037856887,
             "house": 4,
             "retro": false,
+            "lonSpeedDegPerDay": 12.66586,
             "confident": true
           },
           {
@@ -135,6 +137,7 @@
             "degree": 27.181187371600515,
             "house": 7,
             "retro": false,
+            "lonSpeedDegPerDay": 1.164856,
             "confident": true
           },
           {
@@ -144,6 +147,7 @@
             "degree": 17.02229524562338,
             "house": 9,
             "retro": true,
+            "lonSpeedDegPerDay": -0.262526,
             "confident": true
           },
           {
@@ -153,6 +157,7 @@
             "degree": 13.69795315926126,
             "house": 5,
             "retro": false,
+            "lonSpeedDegPerDay": 0.443157,
             "confident": true
           },
           {
@@ -162,6 +167,7 @@
             "degree": 4.888067782577281,
             "house": 10,
             "retro": false,
+            "lonSpeedDegPerDay": 0.142998,
             "confident": true
           },
           {
@@ -171,6 +177,7 @@
             "degree": 26.19473459466132,
             "house": 10,
             "retro": false,
+            "lonSpeedDegPerDay": 0.083128,
             "confident": true
           },
           {
@@ -180,6 +187,7 @@
             "degree": 22.67616313092924,
             "house": 7,
             "retro": false,
+            "lonSpeedDegPerDay": 0.051208,
             "confident": true
           },
           {
@@ -189,6 +197,7 @@
             "degree": 7.921281701659495,
             "house": 6,
             "retro": false,
+            "lonSpeedDegPerDay": 0.028306,
             "confident": true
           },
           {
@@ -198,6 +207,7 @@
             "degree": 15.276345372165963,
             "house": 5,
             "retro": false,
+            "lonSpeedDegPerDay": 0.001542,
             "confident": true
           },
           {
@@ -207,6 +217,17 @@
             "degree": 12.495622307969285,
             "house": 12,
             "retro": true,
+            "lonSpeedDegPerDay": -0.037083,
+            "confident": true
+          },
+          {
+            "body": "chiron",
+            "lon": 268.4606590277796,
+            "sign": "Sagittarius",
+            "degree": 28.460659027779627,
+            "house": 5,
+            "retro": false,
+            "lonSpeedDegPerDay": 0.03406,
             "confident": true
           }
         ],
@@ -261,6 +282,7 @@
             "degree": 6.847952097102109,
             "house": 10,
             "retro": false,
+            "lonSpeedDegPerDay": 0.983004,
             "confident": true
           },
           {
@@ -270,6 +292,7 @@
             "degree": 5.661700494504828,
             "house": 1,
             "retro": false,
+            "lonSpeedDegPerDay": 14.326578,
             "confident": true
           },
           {
@@ -279,6 +302,7 @@
             "degree": 19.700761580410415,
             "house": 10,
             "retro": false,
+            "lonSpeedDegPerDay": 1.389782,
             "confident": true
           },
           {
@@ -288,6 +312,7 @@
             "degree": 18.358803450678266,
             "house": 11,
             "retro": false,
+            "lonSpeedDegPerDay": 1.243994,
             "confident": true
           },
           {
@@ -297,6 +322,7 @@
             "degree": 0.18478090996177343,
             "house": 3,
             "retro": false,
+            "lonSpeedDegPerDay": 0.048724,
             "confident": true
           },
           {
@@ -306,6 +332,7 @@
             "degree": 7.227390763668353,
             "house": 9,
             "retro": false,
+            "lonSpeedDegPerDay": 0.202177,
             "confident": true
           },
           {
@@ -315,6 +342,7 @@
             "degree": 12.639315729997676,
             "house": 8,
             "retro": false,
+            "lonSpeedDegPerDay": 0.045289,
             "confident": true
           },
           {
@@ -324,6 +352,7 @@
             "degree": 29.49726747089926,
             "house": 3,
             "retro": true,
+            "lonSpeedDegPerDay": -0.028708,
             "confident": true
           },
           {
@@ -333,6 +362,7 @@
             "degree": 10.54218403578193,
             "house": 3,
             "retro": true,
+            "lonSpeedDegPerDay": -0.011743,
             "confident": true
           },
           {
@@ -342,6 +372,7 @@
             "degree": 17.517660518431626,
             "house": 1,
             "retro": false,
+            "lonSpeedDegPerDay": 0.017554,
             "confident": true
           },
           {
@@ -351,6 +382,17 @@
             "degree": 21.269948778997403,
             "house": 6,
             "retro": false,
+            "lonSpeedDegPerDay": 0.020656,
+            "confident": true
+          },
+          {
+            "body": "chiron",
+            "lon": 282.4806465277767,
+            "sign": "Capricorn",
+            "degree": 12.480646527776685,
+            "house": 2,
+            "retro": false,
+            "lonSpeedDegPerDay": 0.01985,
             "confident": true
           }
         ],
@@ -405,6 +447,7 @@
             "degree": 27.767610926183934,
             "house": 11,
             "retro": false,
+            "lonSpeedDegPerDay": 0.96247,
             "confident": true
           },
           {
@@ -414,6 +457,7 @@
             "degree": 0.8958966689912131,
             "house": 7,
             "retro": false,
+            "lonSpeedDegPerDay": 12.99185,
             "confident": true
           },
           {
@@ -423,6 +467,7 @@
             "degree": 0.6745551607446885,
             "house": 11,
             "retro": true,
+            "lonSpeedDegPerDay": -0.562848,
             "confident": true
           },
           {
@@ -432,6 +477,7 @@
             "degree": 19.50430355658247,
             "house": 11,
             "retro": false,
+            "lonSpeedDegPerDay": 1.228517,
             "confident": true
           },
           {
@@ -441,6 +487,7 @@
             "degree": 1.199695544262454,
             "house": 1,
             "retro": false,
+            "lonSpeedDegPerDay": 0.560697,
             "confident": true
           },
           {
@@ -450,6 +497,7 @@
             "degree": 12.59567861777009,
             "house": 10,
             "retro": false,
+            "lonSpeedDegPerDay": 0.234316,
             "confident": true
           },
           {
@@ -459,6 +507,7 @@
             "degree": 28.33994597382653,
             "house": 1,
             "retro": false,
+            "lonSpeedDegPerDay": 0.084642,
             "confident": true
           },
           {
@@ -468,6 +517,7 @@
             "degree": 4.159868116255893,
             "house": 4,
             "retro": true,
+            "lonSpeedDegPerDay": -0.037554,
             "confident": true
           },
           {
@@ -477,6 +527,7 @@
             "degree": 13.006588490194076,
             "house": 5,
             "retro": true,
+            "lonSpeedDegPerDay": -0.025877,
             "confident": true
           },
           {
@@ -486,6 +537,7 @@
             "degree": 9.186362764233365,
             "house": 3,
             "retro": true,
+            "lonSpeedDegPerDay": -0.015816,
             "confident": true
           },
           {
@@ -495,6 +547,17 @@
             "degree": 12.442328751375527,
             "house": 4,
             "retro": true,
+            "lonSpeedDegPerDay": -0.021442,
+            "confident": true
+          },
+          {
+            "body": "chiron",
+            "lon": 29.473886111105273,
+            "sign": "Aries",
+            "degree": 29.473886111105273,
+            "house": 10,
+            "retro": false,
+            "lonSpeedDegPerDay": 0.05545,
             "confident": true
           }
         ],
@@ -549,6 +612,7 @@
             "degree": 29.112321878445215,
             "house": 9,
             "retro": false,
+            "lonSpeedDegPerDay": 0.964068,
             "confident": true
           },
           {
@@ -558,6 +622,7 @@
             "degree": 19.507882082123174,
             "house": 7,
             "retro": false,
+            "lonSpeedDegPerDay": 13.714776,
             "confident": true
           },
           {
@@ -567,6 +632,7 @@
             "degree": 0.06627482380920924,
             "house": 9,
             "retro": false,
+            "lonSpeedDegPerDay": 1.964879,
             "confident": true
           },
           {
@@ -576,6 +642,7 @@
             "degree": 14.70458087970377,
             "house": 10,
             "retro": false,
+            "lonSpeedDegPerDay": 1.041464,
             "confident": true
           },
           {
@@ -585,6 +652,7 @@
             "degree": 29.445633365637548,
             "house": 1,
             "retro": false,
+            "lonSpeedDegPerDay": 0.307015,
             "confident": true
           },
           {
@@ -594,6 +662,7 @@
             "degree": 19.904166362649505,
             "house": 8,
             "retro": false,
+            "lonSpeedDegPerDay": 0.197656,
             "confident": true
           },
           {
@@ -603,6 +672,7 @@
             "degree": 4.393082266804072,
             "house": 11,
             "retro": false,
+            "lonSpeedDegPerDay": 0.07181,
             "confident": true
           },
           {
@@ -612,6 +682,7 @@
             "degree": 25.53993911309506,
             "house": 8,
             "retro": false,
+            "lonSpeedDegPerDay": 0.053108,
             "confident": true
           },
           {
@@ -621,6 +692,7 @@
             "degree": 23.894206731383434,
             "house": 10,
             "retro": false,
+            "lonSpeedDegPerDay": 0.024481,
             "confident": true
           },
           {
@@ -630,6 +702,7 @@
             "degree": 24.829313731434382,
             "house": 9,
             "retro": false,
+            "lonSpeedDegPerDay": 0.031974,
             "confident": true
           },
           {
@@ -639,6 +712,17 @@
             "degree": 13.924920358461009,
             "house": 2,
             "retro": false,
+            "lonSpeedDegPerDay": 0.019181,
+            "confident": true
+          },
+          {
+            "body": "chiron",
+            "lon": 293.9863208333264,
+            "sign": "Capricorn",
+            "degree": 23.986320833326374,
+            "house": 2,
+            "retro": true,
+            "lonSpeedDegPerDay": -0.0446,
             "confident": true
           }
         ],

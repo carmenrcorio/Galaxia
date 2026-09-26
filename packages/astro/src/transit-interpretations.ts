@@ -59,7 +59,7 @@ export function pronounSlotsFor(possessive: "your" | "their"): PronounSlots {
   return { subj: "they", poss: "their", obj: "them" };
 }
 
-/** The three aspect qualities, matching ASPECT_NATURE.tone in interpretations.ts. */
+/** The three transit aspect qualities. Quincunx is natal/synastry-only. */
 type Tone = "flow" | "friction" | "fusion";
 
 const ASPECT_TONE: Record<AspectKey, Tone> = {
@@ -68,6 +68,7 @@ const ASPECT_TONE: Record<AspectKey, Tone> = {
   trine: "flow",
   square: "friction",
   opposition: "friction",
+  quincunx: "friction",
 };
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -76,7 +77,7 @@ const ASPECT_TONE: Record<AspectKey, Tone> = {
 // naturally as the OBJECT of "against" / "from" / "a dose of", so it never has
 // to agree with a verb. Keyed to the real transiting body the engine reported.
 // ─────────────────────────────────────────────────────────────────────────
-const TRANSIT_FORCE: Record<BodyKey, string> = {
+const TRANSIT_FORCE: Partial<Record<BodyKey, string>> = {
   sun:     "a push to be seen",
   moon:    "a passing shift in mood",
   mercury: "a busy rush of thoughts and talk",
@@ -97,7 +98,7 @@ const TRANSIT_FORCE: Record<BodyKey, string> = {
 // phrased for "what's being touched today". Venus is deliberately written in
 // care/values terms, never romance, so it is safe for a minor by default.
 // ─────────────────────────────────────────────────────────────────────────
-const NATAL_AREA: Record<BodyKey, string> = {
+const NATAL_AREA: Partial<Record<BodyKey, string>> = {
   sun:     "sense of self",
   moon:    "emotional footing",
   mercury: "way of thinking and talking",
@@ -116,7 +117,7 @@ const NATAL_AREA: Record<BodyKey, string> = {
 // (i.e. what genuinely helps when THIS planet is pressing). Specific to the
 // planet's function; never generic "stay positive" filler.
 // ─────────────────────────────────────────────────────────────────────────
-const TRANSIT_GUIDANCE: Record<BodyKey, string> = {
+const TRANSIT_GUIDANCE: Partial<Record<BodyKey, string>> = {
   sun:     "let it be acknowledged",
   moon:    "let the feeling move through and pass",
   mercury: "say the thing plainly",
@@ -342,9 +343,9 @@ export function interpretTransit(hit: TransitHit, opts: TransitInterpretOptions 
 
   const curated = TRANSIT_PAIR[PAIR(t, n)]?.[tone];
   if (curated && !(curated.adultOnly && opts.minorSafe)) {
-    const force = TRANSIT_FORCE[t];
-    const area = NATAL_AREA[n];
-    const guidance = TRANSIT_GUIDANCE[t];
+    const force = TRANSIT_FORCE[t] ?? "a passing influence";
+    const area = NATAL_AREA[n] ?? "inner life";
+    const guidance = TRANSIT_GUIDANCE[t] ?? "notice it, and let it pass";
     return {
       short: applyPronounSlots(curated.short, slots),
       long: curated.long

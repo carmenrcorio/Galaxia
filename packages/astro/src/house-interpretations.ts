@@ -13,7 +13,7 @@
  * traits; a chart with houses is a biography.
  */
 
-import type { BodyKey, PlacementSafetyOpts, Reading } from "./interpretations";
+import type { AuthoredBodyKey, BodyKey, PlacementSafetyOpts, Reading } from "./interpretations";
 
 export type HouseKey = 1|2|3|4|5|6|7|8|9|10|11|12;
 
@@ -40,7 +40,7 @@ export const HOUSE_MEANING: Record<HouseKey, HouseMeaning> = {
 };
 
 /** The house each planet occupies: where this force actually lives. */
-export const PLANET_IN_HOUSE: Record<BodyKey, Record<HouseKey, Reading>> = {
+export const PLANET_IN_HOUSE: Record<AuthoredBodyKey, Record<HouseKey, Reading>> = {
   sun: {
     1:  { short: "the self is the project",        long: "Identity is worn on the outside; they become themselves in the act of being seen. Rarely a mystery, and rarely still." },
     2:  { short: "worth is the question",          long: "Their sense of self is entangled with what they have and what they've made. Value them for something money can't measure." },
@@ -226,6 +226,7 @@ export function interpretHouse(body: BodyKey, house: HouseKey, opts: PlacementSa
   if (body === "venus" && opts.minorSafe) {
     return VENUS_IN_HOUSE_MINOR[house] ?? { short: "", long: "" };
   }
+  if (body === "chiron") return { short: "", long: "" };
   return PLANET_IN_HOUSE[body]?.[house] ?? { short: "", long: "" };
 }
 

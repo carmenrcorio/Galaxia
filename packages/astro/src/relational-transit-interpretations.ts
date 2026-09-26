@@ -9,7 +9,7 @@
  * sentence names the DYNAMIC, never just one person's private experience.
  */
 
-import { ASPECT_CLASS } from "./transit-nudge/types";
+import { majorAspectClass } from "./transit-nudge/types";
 import type { AffectedProfileHit, RelationalTransitBody, RelationalTransitEvent } from "./relational-transits";
 import type { AspectType } from "./index";
 
@@ -25,6 +25,7 @@ const NATAL_BODY_LABEL: Record<string, string> = {
   sun: "Sun", moon: "Moon", mercury: "Mercury", venus: "Venus", mars: "Mars",
   jupiter: "Jupiter", saturn: "Saturn", uranus: "Uranus", neptune: "Neptune", pluto: "Pluto",
   north_node: "North Node",
+  chiron: "Chiron",
 };
 
 /** "meeting" / "supporting" / "squaring" / "flowing with" / "opposing" — the planet-note verb. */
@@ -34,6 +35,7 @@ const ASPECT_VERB: Record<AspectType, string> = {
   square: "squaring",
   trine: "flowing with",
   opposition: "pulling against",
+  quincunx: "adjusting with",
 };
 
 const DYNAMIC_LEAD: Record<"flow" | "friction" | "fusion", string> = {
@@ -73,7 +75,7 @@ export function namedTargetsPhrase(affected: AffectedProfileHit[]): string {
 
 /** What the transit is doing between the people. Planet stays out of this line. */
 export function interpretRelationalTransitDynamicLead(event: Pick<RelationalTransitEvent, "aspectType">): string {
-  return DYNAMIC_LEAD[ASPECT_CLASS[event.aspectType]];
+  return DYNAMIC_LEAD[majorAspectClass(event.aspectType)];
 }
 
 /** e.g. "Ada and Cy: something is moving more easily between you right now" */
@@ -121,7 +123,7 @@ const RELATIONAL_BODY: Record<RelationalTransitBody, Record<"flow" | "friction" 
 
 /** 2-3 sentence relational body copy — the transit, then how it shows up between the affected people. */
 export function interpretRelationalTransitBody(event: Pick<RelationalTransitEvent, "transitBody" | "aspectType">): string {
-  const aspectClass = ASPECT_CLASS[event.aspectType];
+  const aspectClass = majorAspectClass(event.aspectType);
   return RELATIONAL_BODY[event.transitBody][aspectClass];
 }
 

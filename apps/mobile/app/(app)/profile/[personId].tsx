@@ -4,9 +4,11 @@ import {
   ERA_READING_LABELS,
   WORK_VIEW_HEADING,
   WORK_VIEW_LABELS,
+  aspectPatternCopy,
   buildPersonDailyNudge,
   coerceDailyNudgeRow,
   computeSynastry,
+  detectAspectPatterns,
   formatMomentSkyContext,
   getPlutoEraReading,
   getPlutoWorkView,
@@ -17,6 +19,7 @@ import {
   plutoSourceLine,
   selectNatalAspectGeometry,
   whenUTCForOwnerLocalDate,
+  type AspectPattern,
   type NatalChart,
   type PersonDailyNudgeRecord,
   type SignKey,
@@ -260,6 +263,12 @@ export default function PersonProfileScreen() {
     return selectNatalAspectGeometry(computeSynastry(chart, chart).aspects);
   }, [chart]);
 
+  const chartPatterns = useMemo(() => {
+    if (!chart || chart.precision === "year") return [];
+    if (Array.isArray(chart.patterns)) return chart.patterns;
+    return detectAspectPatterns(computeSynastry(chart, chart).aspects, chart.placements);
+  }, [chart]);
+
   const elementBalance = useMemo(() => {
     if (!chart) return null;
     return chart.placements.reduce(
@@ -478,6 +487,39 @@ export default function PersonProfileScreen() {
                 </View>
               ))}
             </View>
+
+            {chartPatterns.length > 0 ? (
+              <View style={cardStyle}>
+                {/* FOUNDER-REVIEW: Chart Patterns section labels and metadata. */}
+                <Text style={cardTitle}>Chart Patterns</Text>
+                {chartPatterns.map((pattern: AspectPattern, index) => {
+                  const copy = aspectPatternCopy(pattern);
+                  const title =
+                    pattern.type === "grand_trine"
+                      ? "Grand Trine"
+                      : pattern.type === "t_square"
+                        ? "T-Square"
+                        : `Stellium in ${pattern.sign}`;
+                  const detail =
+                    pattern.type === "grand_trine"
+                      ? `${pattern.element ? `${pattern.element[0]!.toUpperCase()}${pattern.element.slice(1)} · ` : ""}${pattern.planets.map(bodyDisplayName).join(" · ")}`
+                      : pattern.type === "t_square"
+                        ? `${pattern.focalPlanet ? `Focal: ${bodyDisplayName(pattern.focalPlanet)}` : ""}${pattern.modality ? ` · ${pattern.modality[0]!.toUpperCase()}${pattern.modality.slice(1)}` : ""}`
+                        : pattern.planets.map(bodyDisplayName).join(" · ");
+                  return (
+                    <View
+                      key={`${pattern.type}-${pattern.planets.join("-")}-${index}`}
+                      style={{ marginTop: 10, padding: 14, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.035)", borderWidth: 1, borderColor: "rgba(230,174,108,0.22)" }}
+                    >
+                      <Text style={[vocabSubhead, { color: tokens.colors.gold }]}>{title}</Text>
+                      <Text style={[cardBody, { color: tokens.colors.mist2 }]}>{detail}</Text>
+                      <Text style={[cardBody, { color: tokens.colors.cream, fontWeight: "700" }]}>{copy.short}</Text>
+                      <Text style={cardBody}>{copy.long}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
 
             {chart.precision === "year" ? (
               <View style={cardStyle}>

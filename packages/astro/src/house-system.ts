@@ -9,7 +9,7 @@ import type { HouseSystem, NatalChart } from "./index";
  *      date, honest year-precision sign confidence. `house_system` on the
  *      charts row is now always the system actually computed.
  */
-export const CHART_ENGINE_VERSION = 2;
+export const CHART_ENGINE_VERSION = 3;
 
 export const HOUSE_SYSTEM_LABEL: Record<HouseSystem, string> = {
   placidus: "Placidus",

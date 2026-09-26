@@ -33,6 +33,15 @@ describe("Phase 3 wheel twin: shared geometry, natal SVG, compare bi-wheel", () 
     expect(src).not.toContain("Sign strip");
   });
 
+  it("renders engine patterns below placements with a legacy-chart fallback", () => {
+    const src = readMobile("app/(app)/profile/[personId].tsx");
+    expect(src).toContain("chartPatterns");
+    expect(src).toContain("Array.isArray(chart.patterns)");
+    expect(src).toContain("detectAspectPatterns(computeSynastry(chart, chart).aspects, chart.placements)");
+    expect(src).toContain("Chart Patterns");
+    expect(src.indexOf("PERSON_TAB_LABEL.placements")).toBeLessThan(src.indexOf("Chart Patterns"));
+  });
+
   it("Compare orients self as inner A and gates the bi-wheel on houses", () => {
     const src = readMobile("app/(app)/(tabs)/compare.tsx");
     expect(src).toContain("orientSynastryWheel");

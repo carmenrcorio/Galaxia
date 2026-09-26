@@ -214,7 +214,15 @@ describe("QuickChartPage anonymous chart lead capture", () => {
     expect(fetchMock.mock.calls[1]?.[0]).toBe("/api/chart-lead");
     expect(JSON.parse(String(request.body))).toEqual({
       email: "SKY@example.com",
-      chartData: { precision: "date", month: 6, day: 15, year: 1990 },
+      chartData: {
+        precision: "date",
+        month: 6,
+        day: 15,
+        year: 1990,
+        birthPlace: "",
+        lat: "",
+        lng: "",
+      },
     });
   });
 

@@ -3,9 +3,11 @@ import { buildBirthInput, type BirthFormInput } from "@galaxia/astro";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL_LENGTH = 254;
 
-// FOUNDER-REVIEW: anonymous Quick Chart capture responses.
+// FOUNDER-REVIEW: "You are in. We will reach out when something moves."
 export const CHART_LEAD_CONFIRMATION = "You are in. We will reach out when something moves.";
+// FOUNDER-REVIEW: "Enter a valid email address."
 export const CHART_LEAD_INVALID_EMAIL = "Enter a valid email address.";
+// FOUNDER-REVIEW: "Too many requests. Try again in a minute."
 export const CHART_LEAD_RATE_LIMITED = "Too many requests. Try again in a minute.";
 
 export function normalizeChartLeadEmail(value: string): string {
@@ -33,11 +35,13 @@ function optionalString(value: unknown, maxLength: number): string | undefined {
  */
 export function parseChartLeadBirthInput(value: unknown): BirthFormInput {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
+    // FOUNDER-REVIEW: "Birth data is required."
     throw new Error("Birth data is required.");
   }
 
   const raw = value as Record<string, unknown>;
   if (raw.precision !== "year" && raw.precision !== "date" && raw.precision !== "exact") {
+    // FOUNDER-REVIEW: "Birth data is required."
     throw new Error("Birth data is required.");
   }
 
@@ -57,14 +61,17 @@ export function parseChartLeadBirthInput(value: unknown): BirthFormInput {
   };
 
   if (input.tzOffsetMin !== undefined && (input.tzOffsetMin < -840 || input.tzOffsetMin > 840)) {
+    // FOUNDER-REVIEW: "Invalid birth timezone."
     throw new Error("Invalid birth timezone.");
   }
   if (input.lat !== undefined) {
     const lat = Number(input.lat);
+    // FOUNDER-REVIEW: "Invalid birth latitude."
     if (!Number.isFinite(lat) || lat < -90 || lat > 90) throw new Error("Invalid birth latitude.");
   }
   if (input.lng !== undefined) {
     const lng = Number(input.lng);
+    // FOUNDER-REVIEW: "Invalid birth longitude."
     if (!Number.isFinite(lng) || lng < -180 || lng > 180) throw new Error("Invalid birth longitude.");
   }
 

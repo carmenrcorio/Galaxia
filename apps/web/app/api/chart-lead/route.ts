@@ -29,6 +29,7 @@ export async function POST(req: Request) {
   try {
     body = (await req.json()) as ChartLeadBody;
   } catch {
+    // FOUNDER-REVIEW: "Invalid request."
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
   );
 
   if (error) {
+    // FOUNDER-REVIEW: "Your alerts could not be saved. Try again."
     return NextResponse.json({ error: "Your alerts could not be saved. Try again." }, { status: 500 });
   }
 

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { glossaryPreview } from "../lib/glossary-terms";
 import { GlossaryTerm } from "./glossary-term";
@@ -97,11 +97,15 @@ describe("GlossaryTerm", () => {
 
     fireEvent.mouseEnter(trigger);
     expect(document.querySelector(".glossary-term__floating")).toBeNull();
-    vi.advanceTimersByTime(200);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
     expect(document.querySelector(".glossary-term__floating")).toBeTruthy();
 
     fireEvent.mouseLeave(trigger);
-    vi.advanceTimersByTime(300);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
     expect(document.querySelector(".glossary-term__floating")).toBeNull();
   });
 
@@ -112,7 +116,9 @@ describe("GlossaryTerm", () => {
     const trigger = screen.getByRole("button", { name: "Square" });
 
     fireEvent.mouseEnter(trigger);
-    vi.advanceTimersByTime(200);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
     expect(document.querySelector(".glossary-term__floating")).toBeNull();
   });
 });

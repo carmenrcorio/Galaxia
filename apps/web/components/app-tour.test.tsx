@@ -70,6 +70,25 @@ describe("AppTour", () => {
     expect(document.activeElement).toBe(next);
   });
 
+  it("keeps the tooltip below the viewport top for a tall chart target", async () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 20,
+      y: 20,
+      top: 20,
+      left: 20,
+      right: 900,
+      bottom: 700,
+      width: 880,
+      height: 680,
+      toJSON: () => ({}),
+    });
+    render(<AppTour onSeen={vi.fn()} />);
+    await screen.findByText(APP_TOUR_COPY.steps[0].title);
+    fireEvent.click(screen.getByRole("button", { name: APP_TOUR_COPY.next }));
+    const dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(dialog.style.top).toBe("72px"));
+  });
+
   it("keeps the tour open and explains a failed profile write", async () => {
     const onSeen = vi.fn().mockRejectedValue(new Error("offline"));
     render(<AppTour onSeen={onSeen} />);

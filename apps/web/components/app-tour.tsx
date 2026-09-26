@@ -19,6 +19,7 @@ type Rect = {
 };
 
 const VIEWPORT_MARGIN = 12;
+const TOOLTIP_TOP_MARGIN = 72;
 const SPOTLIGHT_PAD = 8;
 const CARD_WIDTH = 380;
 
@@ -65,8 +66,8 @@ function cardPosition(rect: Rect) {
   const below = rect.bottom + 16;
   const top =
     below + estimatedHeight <= window.innerHeight - VIEWPORT_MARGIN
-      ? below
-      : Math.max(VIEWPORT_MARGIN, rect.top - estimatedHeight - 16);
+      ? Math.max(TOOLTIP_TOP_MARGIN, below)
+      : Math.max(TOOLTIP_TOP_MARGIN, rect.top - estimatedHeight - 16);
   return { top, left, width };
 }
 
@@ -193,7 +194,7 @@ export function AppTour({
           top: card.top,
           left: card.left,
           width: card.width,
-          maxHeight: `calc(100vh - ${VIEWPORT_MARGIN * 2}px)`,
+          maxHeight: `calc(100vh - ${card.top + VIEWPORT_MARGIN}px)`,
           overflowY: "auto",
           pointerEvents: "auto",
           padding: 22,

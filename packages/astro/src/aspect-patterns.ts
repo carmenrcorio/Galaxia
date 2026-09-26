@@ -1,14 +1,14 @@
 import type { Aspect, BodyName, Placement, Sign } from "./index";
 
 export type AspectPatternType = "grand_trine" | "t_square" | "stellium";
-export type Element = "fire" | "earth" | "air" | "water";
-export type Modality = "cardinal" | "fixed" | "mutable";
+export type AspectPatternElement = "fire" | "earth" | "air" | "water";
+export type AspectPatternModality = "cardinal" | "fixed" | "mutable";
 
 export interface AspectPattern {
   type: AspectPatternType;
   planets: BodyName[];
-  element?: Element;
-  modality?: Modality;
+  element?: AspectPatternElement;
+  modality?: AspectPatternModality;
   focalPlanet?: BodyName;
   sign?: Sign;
   count?: number;
@@ -50,22 +50,22 @@ function hasPair(pairs: Set<string>, a: BodyName, b: BodyName): boolean {
   return pairs.has(pairKey(a, b));
 }
 
-function mostCommonElement(placements: Placement[]): Element {
-  const counts: Record<Element, number> = { fire: 0, earth: 0, air: 0, water: 0 };
+function mostCommonElement(placements: Placement[]): AspectPatternElement {
+  const counts: Record<AspectPatternElement, number> = { fire: 0, earth: 0, air: 0, water: 0 };
   for (const placement of placements) counts[elementForPatternSign(placement.sign)] += 1;
-  return (Object.entries(counts) as [Element, number][]).reduce(
+  return (Object.entries(counts) as [AspectPatternElement, number][]).reduce(
     (best, current) => (current[1] > best[1] ? current : best)
   )[0];
 }
 
-function elementForPatternSign(sign: Sign): Element {
+function elementForPatternSign(sign: Sign): AspectPatternElement {
   if (["Aries", "Leo", "Sagittarius"].includes(sign)) return "fire";
   if (["Taurus", "Virgo", "Capricorn"].includes(sign)) return "earth";
   if (["Gemini", "Libra", "Aquarius"].includes(sign)) return "air";
   return "water";
 }
 
-function modalityForPatternSign(sign: Sign): Modality {
+function modalityForPatternSign(sign: Sign): AspectPatternModality {
   if (["Aries", "Cancer", "Libra", "Capricorn"].includes(sign)) return "cardinal";
   if (["Taurus", "Leo", "Scorpio", "Aquarius"].includes(sign)) return "fixed";
   return "mutable";
@@ -162,7 +162,7 @@ export function detectAspectPatterns(
   return patterns;
 }
 
-const GRAND_TRINE_LONG: Record<Element, string> = {
+const GRAND_TRINE_LONG: Record<AspectPatternElement, string> = {
   // FOUNDER-REVIEW: Grand Trine interpretation copy.
   fire: "Creative confidence that feeds itself. Risk: coasting without being tested.",
   // FOUNDER-REVIEW: Grand Trine interpretation copy.

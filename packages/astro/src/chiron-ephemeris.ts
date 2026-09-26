@@ -32,8 +32,8 @@ export function isChironEphemerisCovered(jd: number): boolean {
 }
 
 /**
- * Geocentric apparent ecliptic longitude of Chiron (0–360, tropical).
- * Linear interpolation between 10-day samples. Throws outside 1900–2101.
+ * Geocentric apparent ecliptic longitude of Chiron (0-360, tropical).
+ * Linear interpolation between 10-day samples. Throws outside 1900-2101.
  */
 export function chironLongitude(jd: number): number {
   if (!Number.isFinite(jd) || jd < CHIRON_JD0 || jd > CHIRON_JD_LAST) {

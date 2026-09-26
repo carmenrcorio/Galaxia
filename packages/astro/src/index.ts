@@ -505,7 +505,7 @@ export function computeNatalChart(birth: Birth): NatalChart {
 
   // Chiron is a table lookup, not BODY_MAP. After North Node on date/exact
   // charts; after Pluto on year-only (the Node is omitted there). Out of
-  // the 1900–2100 table: omit, never guess.
+  // the 1900-2100 table: omit, never guess.
   const tomorrow = new Date(date.getTime() + 24 * 60 * 60 * 1000);
   if (isChironEphemerisCovered(julianDayUTC(date)) && isChironEphemerisCovered(julianDayUTC(tomorrow))) {
     placements.push(placementFor("chiron", date, birth.precision, cusps));

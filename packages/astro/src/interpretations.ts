@@ -498,8 +498,10 @@ export const VENUS_IN_SIGN_MINOR: Record<SignKey, Reading> = {
 };
 
 /**
- * Resolve a placement reading. Never returns empty.
- * Venus uses VENUS_IN_SIGN_MINOR when opts.minorSafe — call sites pass the
+ * Resolve a placement reading. Authored bodies never return empty.
+ * Chiron is compute-only this pass, so its cell is empty until copy is authored
+ * (ENGINEERING.md section 12).
+ * Venus uses VENUS_IN_SIGN_MINOR when opts.minorSafe - call sites pass the
  * boolean; they do not choose the table.
  */
 export function interpretPlacement(body: BodyKey, sign: SignKey, opts: PlacementSafetyOpts): Reading {

@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  BODY_DOMAIN,
   bodyDisplayName,
   chironLongitude,
   computeNatalChart,
   computeSynastry,
   computeTransits,
+  interpretAspect,
   interpretPlacement,
   isChartPoint,
   julianDayUTC,
@@ -88,9 +90,19 @@ describe("Chiron natal placement", () => {
   it("does not change planetary or Node longitudes on the Little Rock chart", () => {
     const chart = computeNatalChart(LITTLE_ROCK);
     const lon = (body: BodyName) => chart.placements.find((p) => p.body === body)!.lon;
-    expect(lon("sun")).toBeGreaterThan(270);
-    expect(lon("sun")).toBeLessThan(280);
-    expect(lon("north_node")).toBeGreaterThan(330);
+    // Locked from the same engine pass as the Cafe Astrology planet check.
+    // Chiron is table-lookup only; these must stay byte-identical.
+    expect(lon("sun")).toBeCloseTo(277.9281367968497, 10);
+    expect(lon("moon")).toBeCloseTo(41.891764011738616, 10);
+    expect(lon("mercury")).toBeCloseTo(281.91405755300934, 10);
+    expect(lon("venus")).toBeCloseTo(309.77662657903784, 10);
+    expect(lon("mars")).toBeCloseTo(233.72370796469932, 10);
+    expect(lon("jupiter")).toBeCloseTo(20.13867075667774, 10);
+    expect(lon("saturn")).toBeCloseTo(265.25511437349473, 10);
+    expect(lon("uranus")).toBeCloseTo(267.55274626583, 10);
+    expect(lon("neptune")).toBeCloseTo(277.71571603334246, 10);
+    expect(lon("pluto")).toBeCloseTo(221.95214184612976, 10);
+    expect(lon("north_node")).toBeCloseTo(356.9537530426238, 10);
     expect(chart.placements.filter((p) => !isChartPoint(p.body))).toHaveLength(10);
   });
 
@@ -145,9 +157,13 @@ describe("Chiron synastry and transits", () => {
 describe("Chiron card copy", () => {
   it("authors a domain line and no fabricated sign readings", () => {
     const reading = interpretPlacement("chiron", "Gemini", { minorSafe: false });
+    expect(BODY_DOMAIN.chiron).toBe("Where healing and vulnerability meet");
+    expect(BODY_DOMAIN.chiron).not.toContain("\u2014");
     expect(reading.short).toBe("");
     expect(reading.long).toBe("");
     expect(reading.short).not.toContain("\u2014");
     expect(reading.long).not.toContain("\u2014");
+    expect(interpretAspect("chiron", "sun", "conjunction")).toBeNull();
+    expect(interpretAspect("moon", "chiron", "trine")).toBeNull();
   });
 });

@@ -384,16 +384,16 @@ export type PriorityBand = keyof typeof BODY_PRIORITY_BY_BAND;
 
 /** Compare-facing view of the shared map (RelationType keys only). */
 export const RELATION_BODY_PRIORITY: Record<RelationType, string[]> = {
-  romantic:       [...BODY_PRIORITY_BY_BAND.romantic, "north_node"],
-  partners:       [...BODY_PRIORITY_BY_BAND.partners, "north_node"],
-  platonic:       [...BODY_PRIORITY_BY_BAND.platonic, "north_node"],
-  friends:        [...BODY_PRIORITY_BY_BAND.friends, "north_node"],
-  siblings:       [...BODY_PRIORITY_BY_BAND.siblings, "north_node"],
-  "parent-child": [...BODY_PRIORITY_BY_BAND["parent-child"], "north_node"],
-  ancestor:       [...BODY_PRIORITY_BY_BAND.ancestor],
-  colleagues:     [...BODY_PRIORITY_BY_BAND.colleagues],
-  "manager-report": [...BODY_PRIORITY_BY_BAND["manager-report"]],
-  "mentor-mentee": [...BODY_PRIORITY_BY_BAND["mentor-mentee"], "north_node"],
+  romantic:       [...BODY_PRIORITY_BY_BAND.romantic, "north_node", "chiron"],
+  partners:       [...BODY_PRIORITY_BY_BAND.partners, "north_node", "chiron"],
+  platonic:       [...BODY_PRIORITY_BY_BAND.platonic, "north_node", "chiron"],
+  friends:        [...BODY_PRIORITY_BY_BAND.friends, "north_node", "chiron"],
+  siblings:       [...BODY_PRIORITY_BY_BAND.siblings, "north_node", "chiron"],
+  "parent-child": [...BODY_PRIORITY_BY_BAND["parent-child"], "north_node", "chiron"],
+  ancestor:       [...BODY_PRIORITY_BY_BAND.ancestor, "chiron"],
+  colleagues:     [...BODY_PRIORITY_BY_BAND.colleagues, "chiron"],
+  "manager-report": [...BODY_PRIORITY_BY_BAND["manager-report"], "chiron"],
+  "mentor-mentee": [...BODY_PRIORITY_BY_BAND["mentor-mentee"], "north_node", "chiron"],
 };
 
 /** Bodies weighted for a priority band — shared Compare / nudge entry point. */
@@ -1824,7 +1824,7 @@ const BODY_FLOW_ACTION: Record<string, string> = {
 };
 
 /** Global personal-relevance order, for choosing a lead body when neither is in the type priority. */
-const PERSONAL_RANK = ["moon", "venus", "mars", "mercury", "sun", "saturn", "jupiter", "pluto", "neptune", "uranus", "north_node"];
+const PERSONAL_RANK = ["moon", "venus", "mars", "mercury", "sun", "saturn", "jupiter", "pluto", "neptune", "uranus", "north_node", "chiron"];
 
 /** The more relationship-relevant of the aspect's two bodies (drives the fallback tactic). */
 function leadBody(a: { from: string; to: string }, relType: RelationType): string {
@@ -1853,9 +1853,15 @@ export function aspectActionParts(
   // Working frames read the same pair, in the working register, wherever the
   // shared tactic is written in the personal one (see WORK_ASPECT_ACTION).
   const workTactic = isProfessionalRelation(relType) ? WORK_ASPECT_ACTION[key]?.[half] : undefined;
+  const involvesChiron =
+    a.from.toLowerCase() === "chiron" || a.to.toLowerCase() === "chiron";
+  // Chiron pair copy is a later batch. Do not invent a planet-keyed tactic
+  // (ENGINEERING.md §12) and do not leak personal-register fallbacks.
   const tactic = workTactic
     ?? (pair && pair[half])
-    ?? (flows ? BODY_FLOW_ACTION[leadBody(a, relType).toLowerCase()] : BODY_FRICTION_ACTION[leadBody(a, relType).toLowerCase()])
+    ?? (involvesChiron
+      ? ""
+      : (flows ? BODY_FLOW_ACTION[leadBody(a, relType).toLowerCase()] : BODY_FRICTION_ACTION[leadBody(a, relType).toLowerCase()]))
     ?? "";
   const pool = RELATION_ACTION_REGISTER[relType][flows ? "flows" : "catches"];
   const opener = pickOpener(pool, a.from, a.to);
@@ -1870,7 +1876,7 @@ export function aspectActionParts(
  */
 export function aspectActionLine(a: { from: string; to: string; harmony: number }, relType: RelationType): string {
   const { opener, tactic } = aspectActionParts(a, relType);
-  return `${opener} ${tactic}.`;
+  return tactic ? `${opener} ${tactic}.` : opener;
 }
 
 /**

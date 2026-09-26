@@ -138,12 +138,14 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
                 {row.readingShort}
               </span>
             </div>
+            {row.tactic ? (
             <p style={{ fontSize: ".78rem", color: "var(--cream)", lineHeight: 1.55, margin: "5px 0 0" }}>
               <span style={{ color: row.flows ? "var(--teal)" : "var(--gold)", fontWeight: 600 }}>
                 {row.flows ? "Nurture it: " : "Ease it: "}
               </span>
               {row.tactic}.
             </p>
+            ) : null}
           </div>
         </div>
       ))}

@@ -66,6 +66,8 @@ export * from "./galaxy-orbit";
 
 export * from "./first-run";
 
+export * from "./app-tour";
+
 export * from "./star-color";
 
 export * from "./person-chip-color";

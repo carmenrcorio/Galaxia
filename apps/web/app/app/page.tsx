@@ -69,6 +69,7 @@ import {
   resolveNodeColor,
   ringBandRadius,
   ringIndex,
+  shouldShowAppTour,
   shouldOfferFirstRunRestart,
   starCoreRadius,
   sunSignFromChart,
@@ -82,6 +83,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChartImageExportButton, ChartImageExportFrame, chartExportFilename } from "../../components/chart-image-export";
+import { AppTour } from "../../components/app-tour";
 import {
   CONSTELLATION_STAGE_STYLE,
   ConstellationEmptyState,
@@ -317,6 +319,7 @@ export default function AppHomePage() {
   /* True while first-run orientation has not been completed, so the way back
      into it stays visible instead of being lost after a skip. */
   const [offerFirstRun, setOfferFirstRun] = useState(false);
+  const [showAppTour, setShowAppTour] = useState(false);
   const [people, setPeople]           = useState<PersonRow[]>([]);
   const [links, setLinks]             = useState<LinkRow[]>([]);
   /* Declared relationship edges — relationships rows only.
@@ -1671,7 +1674,7 @@ export default function AppHomePage() {
          and gates via isMinorForSafety — never raw is_minor alone. */
       const localDate = ownerLocalDate();
       const [profileRes, peopleRes, chartRes, threadRes, relRes, nudgeRes, recentRes] = await Promise.all([
-        supabase.from("profiles").select("display_name, pinned_sky_person_id, onboarding_step, onboarding_completed_at").eq("id", uid).single(),
+        supabase.from("profiles").select("display_name, pinned_sky_person_id, onboarding_step, onboarding_completed_at, app_tour_seen_at").eq("id", uid).single(),
         supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale, linked_user_id, exclude_from_dailies").eq("owner_id", uid).order("created_at", { ascending: true }),
         personIds.length ? supabase.from("charts").select("person_id, data").in("person_id", personIds) : Promise.resolve({ data: [] as any[] }),
         supabase.from("threads").select("id, mode, subject_person, pair_low, pair_high").eq("owner_id", uid).eq("status", "active").order("created_at", { ascending: false }).limit(6),
@@ -1696,6 +1699,7 @@ export default function AppHomePage() {
       // a visible way back in. Withdrawn once they actually completed it, so a
       // finished account is not nagged by a door it already walked through.
       setOfferFirstRun(shouldOfferFirstRunRestart(profile ?? null));
+      setShowAppTour(shouldShowAppTour(profile ?? null));
 
       const castPeople = (peopleRows ?? []) as PersonRow[];
       const chartById = new Map<string, NatalChart>((chartRows ?? []).map(r => [r.person_id as string, r.data as NatalChart]));
@@ -1874,6 +1878,16 @@ export default function AppHomePage() {
     await setThreadStatus(supabase, threadId, "archived");
   }
 
+  async function markAppTourSeen() {
+    if (!ownerId) throw new Error("Missing signed-in owner");
+    const { error } = await supabase
+      .from("profiles")
+      .update({ app_tour_seen_at: new Date().toISOString() })
+      .eq("id", ownerId);
+    if (error) throw error;
+    setShowAppTour(false);
+  }
+
   // Deterministic: a unique index on people(owner_id) WHERE is_self makes
   // "more than one self" impossible at the database level, so `.find()`
   // here can never surface the wrong one among duplicates — there can be
@@ -1925,7 +1939,12 @@ export default function AppHomePage() {
               </Link>
             ) : null}
             {!loading && !loadError && people.length > 0 ? (
-              <Link href="/app/add-person" className="pill-link pill-link--gold" style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}>
+              <Link
+                href="/app/add-person"
+                className="pill-link pill-link--gold"
+                data-app-tour="add-person"
+                style={{ padding: "8px 16px", fontSize: ".82rem", textDecoration: "none", flexShrink: 0 }}
+              >
                 + Add person
               </Link>
             ) : null}
@@ -1950,6 +1969,7 @@ export default function AppHomePage() {
         <ChartImageExportFrame
           frameRef={galaxyFrameRef}
           className="constellation-stage"
+          tourTarget="see-chart"
           style={CONSTELLATION_STAGE_STYLE}
         >
           <ConstellationStarFieldSkeleton visible={loading} />
@@ -2141,6 +2161,7 @@ export default function AppHomePage() {
           </div>
         </div>
       ) : null}
+      {showAppTour ? <AppTour onSeen={markAppTourSeen} /> : null}
     </main>
   );
 }

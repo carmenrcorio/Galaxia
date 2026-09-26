@@ -52,15 +52,22 @@ export function ChartImageExportFrame({
   frameRef,
   style,
   className,
+  tourTarget,
   children,
 }: {
   frameRef: RefObject<HTMLDivElement | null>;
   style?: CSSProperties;
   className?: string;
+  tourTarget?: string;
   children: ReactNode;
 }) {
   return (
-    <div ref={frameRef} className={className} style={{ position: "relative", ...style }}>
+    <div
+      ref={frameRef}
+      className={className}
+      data-app-tour={tourTarget}
+      style={{ position: "relative", ...style }}
+    >
       {children}
       <ShareWatermark />
     </div>

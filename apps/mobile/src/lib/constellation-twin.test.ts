@@ -39,7 +39,7 @@ describe("Phase 4 constellation twin: Skia Home map from shared geometry", () =>
     expect(home).not.toContain("borderRadius: 16");
     expect(home).not.toContain("CONSTELLATION_BOX_HEIGHT");
     expect(home).not.toContain("at a glance");
-    expect(home).toContain('select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale")');
+    expect(home).toContain('select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale, exclude_from_dailies")');
     expect(home).toContain(
       'supabase.from("relationships").select("person_a, person_b, relation_type").eq("owner_id", session.user.id)',
     );

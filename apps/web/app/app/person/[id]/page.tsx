@@ -77,6 +77,7 @@ import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../.
 import { ConnectInviteButton } from "../../../../components/connect-invite-button";
 import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
 import { FlipSignCards } from "../../../../components/flip-sign-cards";
+import { RetrogradeBadge } from "../../../../components/retrograde-badge";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
 import { GenerationalEraSurface } from "../../../../components/generational-era-surface";
@@ -176,12 +177,12 @@ function HouseBadge({ house }: { house: number }) {
 
 /* ─── ExpandRow — the single expandable row used throughout ─────────────── */
 function ExpandRow({
-  open, onToggle, label, domain, degree, house, el, glyph, short, long,
+  open, onToggle, label, domain, degree, house, el, glyph, retro, short, long,
   houseReading, planetAspects, hasHouses, plutoExtended, plutoSign, showWorkView
 }: {
   open: boolean; onToggle: () => void;
   label: string; domain?: string; degree?: string; house?: number;
-  el: string; glyph: string; short: string; long: string;
+  el: string; glyph: string; retro?: boolean; short: string; long: string;
   /** House reading block — rendered in expanded state when present */
   houseReading?: { houseName: string; houseDomain: string; long: string } | null;
   /** Per-planet aspects — rendered in expanded state */
@@ -209,8 +210,11 @@ function ExpandRow({
         }}
         aria-expanded={open}
       >
-        <div className="glyph-sq" style={{ background: EL_GRAD[el] ?? "var(--ink2)", color: "#1a1206", flexShrink: 0 }}>
-          {glyph}
+        <div className="glyph-sq-wrap">
+          <div className="glyph-sq" style={{ background: EL_GRAD[el] ?? "var(--ink2)", color: "#1a1206", flexShrink: 0 }}>
+            {glyph}
+          </div>
+          <RetrogradeBadge retro={Boolean(retro)} corner />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           {domain ? (
@@ -1075,7 +1079,10 @@ export default function PersonProfilePage() {
     if (p.confident === false) {
       return (
         <div key={p.body} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65 }}>
-          <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{gly}</div>
+          <div className="glyph-sq-wrap">
+            <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{gly}</div>
+            <RetrogradeBadge retro={p.retro} corner />
+          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{domain}</div>
             <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{p.body.charAt(0).toUpperCase() + p.body.slice(1)}: sign uncertain</div>
@@ -1113,6 +1120,7 @@ export default function PersonProfilePage() {
         house={p.house}
         el={el}
         glyph={gly}
+        retro={p.retro}
         short={signR.short}
         long={signR.long}
         houseReading={houseR}

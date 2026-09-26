@@ -55,6 +55,7 @@ import { DynamicTableSection } from "./dynamic-table-section";
 import { FlowsAndCatchesSection } from "./flows-and-catches-section";
 import { GenerationalSection } from "./generational-section";
 import { NatalSignReveal } from "./natal-sign-reveal";
+import { RetrogradeBadge } from "./retrograde-badge";
 import { HousesUnavailableCard } from "./houses-unavailable-card";
 import { QuickChartShell } from "./quick-chart-shell";
 import { SaveToGalaxyButton } from "./save-to-galaxy-button";
@@ -193,6 +194,7 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
                     </div>
                     <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>
                       {p.body[0].toUpperCase() + p.body.slice(1)} in {p.sign}
+                      <RetrogradeBadge retro={p.retro} />
                     </div>
                     <div className="muted" style={{ fontSize: ".78rem", fontStyle: "italic" }}>
                       {reading.short}

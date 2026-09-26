@@ -32,6 +32,7 @@ import { HousesUnavailableCard } from "../../components/houses-unavailable-card"
 import { QuickChartShell } from "../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../components/share-link-button";
+import { RetrogradeBadge } from "../../components/retrograde-badge";
 import { Spinner } from "../../components/spinner";
 import { BODY_GLYPH, signElement } from "../../lib/design";
 import { RELATED_LINKS, CHART_MODE_COMPARE } from "../../lib/nav-links";
@@ -242,7 +243,10 @@ export default function QuickChartPage() {
                       <span style={{ width: 20, textAlign: "center", flexShrink: 0, color: `var(--${signElement(p.sign)})` }}>{BODY_GLYPH[p.body] ?? p.body[0]}</span>
                       <div>
                         <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--mist2)" }}>{bodyDomain(p.body as BodyKey, { minorSafe: chartMinorSafe })}</div>
-                        <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{p.body[0].toUpperCase() + p.body.slice(1)} in {p.sign}</div>
+                        <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>
+                          {p.body[0].toUpperCase() + p.body.slice(1)} in {p.sign}
+                          <RetrogradeBadge retro={p.retro} />
+                        </div>
                         <div className="muted" style={{ fontSize: ".78rem", fontStyle: "italic" }}>{reading.short}</div>
                       </div>
                     </div>

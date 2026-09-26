@@ -20,6 +20,8 @@ describe("person page information architecture", () => {
     expect(page).toContain("Sun sign uncertain (year-only birth data)");
     expect(page).toContain('sectionHead("big-three")');
     expect(page).toContain("<FlipSignCards chart={chart} minorSafe={personIsMinor} />");
+    expect(page).toContain("<RetrogradeBadge retro={Boolean(retro)} corner />");
+    expect(page).toContain("retro={p.retro}");
     expect(page).not.toContain("ChartSignTiles");
     expect(page.indexOf("<FlipSignCards chart={chart} minorSafe={personIsMinor} />")).toBeLessThan(page.indexOf("href={`/app/compare"));
     expect(page.indexOf("<ChartWheel")).toBeLessThan(page.indexOf("</ChartImageExport>"));

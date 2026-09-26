@@ -31,6 +31,8 @@ describe("Phase 5 person depth: Today, EditPerson, remembrance, edges, connect",
     expect(todayIdx).toBeGreaterThan(wheelIdx);
     expect(src).not.toContain("ChartSignTiles");
     expect(tabIdx).toBeGreaterThan(todayIdx);
+    expect(src).toContain("<RetrogradeBadge retro={placement.retro} />");
+    expect(readMobile("src/components/flip-sign-cards.tsx")).toContain("<RetrogradeBadge retro={tile.retro} />");
     expect(src).toContain("includeVela={false}");
     expect(src).toContain("includeRightNow={false}");
     expect(src).not.toContain("<RelationshipEdgesBox");

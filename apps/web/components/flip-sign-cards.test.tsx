@@ -42,4 +42,23 @@ describe("FlipSignCards", () => {
     fireEvent.click(screen.getByRole("button", { name: /Rising in Cancer\. Flip/i }));
     expect(screen.getByText(rising.long)).toBeTruthy();
   });
+
+  it("shows the Rx badge only on a retrograde placement", () => {
+    render(
+      <FlipSignCards
+        chart={chart({
+          placements: [
+            { body: "sun", lon: 12, sign: "Cancer", degree: 12, retro: false, confident: true },
+            { body: "moon", lon: 340, sign: "Pisces", degree: 20, retro: true, confident: true },
+          ],
+        })}
+        minorSafe={false}
+      />
+    );
+    const badges = screen.getAllByLabelText("Retrograde");
+    expect(badges).toHaveLength(1);
+    expect(badges[0]?.textContent).toBe("Rx");
+    expect(screen.getByRole("button", { name: /Moon in Pisces Rx/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Sun in Cancer/i }).textContent).not.toContain("Rx");
+  });
 });

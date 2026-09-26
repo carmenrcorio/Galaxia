@@ -41,6 +41,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { BODY_GLYPH, SIGN_GLYPH, signElement } from "../lib/design";
 import { ChartWheel } from "./chart-wheel";
+import { RetrogradeBadge } from "./retrograde-badge";
 
 interface ChartPdfExportProps {
   chart: NatalChart;
@@ -138,7 +139,10 @@ function ChartPdfDocument({ chart, name, displayDate, birthPlace, engineVersion,
                 <span className="pdf-placement-glyph" style={{ color: `var(--${signElement(p.sign)})` }}>{BODY_GLYPH[p.body] ?? p.body[0]}</span>
                 <div className="pdf-placement-body">
                   <div className="pdf-placement-domain">{bodyDomain(p.body as BodyKey, safety)}</div>
-                  <div className="pdf-placement-name">{p.body[0].toUpperCase() + p.body.slice(1)} in {p.sign}</div>
+                  <div className="pdf-placement-name">
+                    {p.body[0].toUpperCase() + p.body.slice(1)} in {p.sign}
+                    <RetrogradeBadge retro={p.retro} />
+                  </div>
                   {reading.short ? <div className="pdf-placement-reading">{reading.short}</div> : null}
                 </div>
               </div>

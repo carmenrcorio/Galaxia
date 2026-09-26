@@ -37,6 +37,9 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     expect(src).toContain("ChartVocabSubhead");
     expect(src).toContain("PERSON_TAB_LABEL");
     expect(src).toContain("PERSON_TAB_VOCAB");
+    expect(src).toContain("GlossaryTerm");
+    expect(src).toContain('glossarySlug={id === "aspects" ? "aspect" : id === "houses" ? "house" : undefined}');
+    expect(src).toContain("aspectGlossarySlug");
     expect(src).toContain('sectionHead("big-three")');
     expect(src).toContain('sectionHead("placements")');
     expect(src).toContain('sectionHead("aspects")');

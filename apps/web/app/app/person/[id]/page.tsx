@@ -48,6 +48,7 @@ import {
   isChartPoint,
 } from "@galaxia/astro";
 import {
+  aspectGlossarySlug,
   buildPersonPageGroups,
   groupForPersonSection,
   isTodaySection,
@@ -74,7 +75,8 @@ import {
 } from "@galaxia/core";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { GlossaryTerm } from "../../../../components/glossary-term";
 import { AskBirthData } from "../../../../components/ask-birth-data";
 import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../../components/chart-precision-indicator";
 import { ConnectInviteButton } from "../../../../components/connect-invite-button";
@@ -1073,7 +1075,12 @@ export default function PersonProfilePage() {
     return (
       <>
                 <p className="eyebrow" style={{ marginBottom: vocab ? 2 : 8 }}>{enduringEyebrow(PERSON_TAB_LABEL[id])}</p>
-        {vocab ? <ChartVocabSubhead term={vocab} /> : null}
+        {vocab ? (
+          <ChartVocabSubhead
+            term={vocab}
+            glossarySlug={id === "aspects" ? "aspect" : id === "houses" ? "house" : undefined}
+          />
+        ) : null}
       </>
     );
   };
@@ -1507,13 +1514,21 @@ export default function PersonProfilePage() {
             <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllAspects(!aspectsAllOpen)}>{aspectsAllOpen ? "Collapse all" : "Expand all"}</button>
           </div>
           <p className="muted" style={{ fontSize: ".72rem", marginBottom: 10 }}>Gold border = tight (&lt; 2°) · tightest first</p>
-          {natalAspectReadings.map((a, idx) => {
+          {(() => {
+            const seenAspectTypes = new Set<string>();
+            return natalAspectReadings.map((a, idx) => {
             const tight = a.orb < 2, mid = a.orb < 4;
             const cls = tight ? "aspect-tight" : mid ? "aspect-mid" : "aspect-loose";
             const aspGlyph = ASPECT_GLYPH[a.type] ?? a.type[0];
             const bkA = normaliseBody(a.from), bkB = normaliseBody(a.to), ak = normaliseAspect(a.type);
             const reading = interpretAspect(bkA, bkB, ak);
             if (!reading) return null;
+            const typeSlug = aspectGlossarySlug(a.type);
+            let typeLabel: ReactNode = a.type;
+            if (typeSlug && !seenAspectTypes.has(typeSlug)) {
+              seenAspectTypes.add(typeSlug);
+              typeLabel = <GlossaryTerm glossarySlug={typeSlug}>{a.type}</GlossaryTerm>;
+            }
             const rowKey = `asp-${a.from}-${a.to}-${idx}`;
             const isOpen = openRows.has(rowKey);
             return (
@@ -1521,7 +1536,7 @@ export default function PersonProfilePage() {
                 <button onClick={() => toggleRow(rowKey)} style={{ width:"100%",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,padding:"9px 0" }} aria-expanded={isOpen}>
                   <span style={{ fontSize:".88rem",color:"var(--mist2)",width:56,textAlign:"center",letterSpacing:2,flexShrink:0 }}>{BODY_GLYPH[a.from]??a.from[0]} {aspGlyph} {BODY_GLYPH[a.to]??a.to[0]}</span>
                   <div style={{ flex:1,textAlign:"left" }}>
-                    <div style={{ fontSize:".82rem",color:"var(--cream)",fontWeight:600 }}>{a.from} {a.type} {a.to}</div>
+                    <div style={{ fontSize:".82rem",color:"var(--cream)",fontWeight:600 }}>{a.from} {typeLabel} {a.to}</div>
                     <div style={{ fontSize:".74rem",color:"var(--mist)",marginTop:1,fontStyle:"italic" }}>{reading.short}</div>
                   </div>
                   <span style={{ fontSize:".7rem",color:"var(--mist2)",flexShrink:0 }}>{toDMS(a.orb)}</span>
@@ -1530,7 +1545,8 @@ export default function PersonProfilePage() {
                 {isOpen && reading.long ? <div style={{ paddingBottom:10,paddingLeft:64 }}><p style={{ fontSize:".82rem",color:"var(--mist)",lineHeight:1.62,margin:0 }}>{reading.long}</p></div> : null}
               </div>
             );
-          })}
+          });
+          })()}
         </section>
       ) : natalQuincunxes.length === 0 ? (
         <AspectsUnavailableCard

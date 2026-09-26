@@ -35,6 +35,7 @@ import {
   bodyDisplayName
 } from "@galaxia/astro";
 import {
+  aspectGlossarySlug,
   COMPARE_WHEEL_NEEDS_HOUSES,
   DEFAULT_FETCH_TIMEOUT_MS,
   isMinorForSafety,
@@ -49,6 +50,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ChartWheel } from "../../../src/components/chart-wheel";
 import { GenerationalSection } from "../../../src/components/generational-section";
+import { GlossaryTooltip } from "../../../src/components/glossary-tooltip";
 import { InitialAvatar } from "../../../src/components/initial-avatar";
 import { screenFill } from "../../../src/lib/screen";
 import { supabase } from "../../../src/lib/supabase";
@@ -553,7 +555,16 @@ export default function CompareScreen() {
           </View>
 
           <View style={cardStyle}>
-            <Text style={cardTitle}>Where it flows / catches</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "baseline" }}>
+              <Text style={cardTitle}>Where it </Text>
+              <GlossaryTooltip glossarySlug="flows-and-catches" style={cardTitle}>
+                flows
+              </GlossaryTooltip>
+              <Text style={cardTitle}> / </Text>
+              <GlossaryTooltip glossarySlug="flows-and-catches" style={cardTitle}>
+                catches
+              </GlossaryTooltip>
+            </View>
             <Text style={cardBody}>Flow: {result.synastry.aspects.filter((aspect) => aspect.type !== "quincunx" && aspect.harmony > 0).length} supportive links.</Text>
             <Text style={cardBody}>Catch: {result.synastry.aspects.filter((aspect) => aspect.type !== "quincunx" && aspect.harmony < 0).length} tension links.</Text>
             <Text style={cardBody}>Adjust: {result.synastry.aspects.filter((aspect) => aspect.type === "quincunx").length} mismatch links.</Text>
@@ -588,16 +599,48 @@ export default function CompareScreen() {
 
           <View style={cardStyle}>
             <Text style={cardTitle}>The astrology underneath</Text>
-            {result.synastry.aspects.slice(0, 10).map((aspect, idx) => (
-              <Text
-                key={`${aspect.from}-${aspect.to}-${idx}`}
-                style={[cardBody, aspect.type === "quincunx" ? { color: tokens.colors.gold } : null]}
-              >
-                {aspect.type === "quincunx" ? `${ADJUST_BADGE} ` : ""}
-                {bodyDisplayName(aspect.from)} {aspect.type} {bodyDisplayName(aspect.to)} · orb {aspect.orb.toFixed(1)}°
-                {aspect.phase ? ` · ${aspect.phase}` : ""}
-              </Text>
-            ))}
+            {(() => {
+              const seenTypes = new Set<string>();
+              let wrappedOrb = false;
+              return result.synastry.aspects.slice(0, 10).map((aspect, idx) => {
+                const typeSlug = aspectGlossarySlug(aspect.type);
+                const wrapType = Boolean(typeSlug && !seenTypes.has(typeSlug));
+                if (typeSlug && wrapType) seenTypes.add(typeSlug);
+                const wrapOrb = !wrappedOrb;
+                if (wrapOrb) wrappedOrb = true;
+                const adjustStyle = aspect.type === "quincunx" ? { color: tokens.colors.gold } : null;
+                return (
+                  <View
+                    key={`${aspect.from}-${aspect.to}-${idx}`}
+                    style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "baseline" }}
+                  >
+                    {aspect.type === "quincunx" ? (
+                      <Text style={[cardBody, adjustStyle]}>{`${ADJUST_BADGE} `}</Text>
+                    ) : null}
+                    <Text style={[cardBody, adjustStyle]}>{bodyDisplayName(aspect.from)} </Text>
+                    {wrapType && typeSlug ? (
+                      <GlossaryTooltip glossarySlug={typeSlug} style={cardBody}>
+                        {aspect.type}
+                      </GlossaryTooltip>
+                    ) : (
+                      <Text style={[cardBody, adjustStyle]}>{aspect.type}</Text>
+                    )}
+                    <Text style={[cardBody, adjustStyle]}> {bodyDisplayName(aspect.to)} · </Text>
+                    {wrapOrb ? (
+                      <GlossaryTooltip glossarySlug="orb" style={cardBody}>
+                        orb
+                      </GlossaryTooltip>
+                    ) : (
+                      <Text style={cardBody}>orb</Text>
+                    )}
+                    <Text style={[cardBody, adjustStyle]}>
+                      {` ${aspect.orb.toFixed(1)}°`}
+                      {aspect.phase ? ` · ${aspect.phase}` : ""}
+                    </Text>
+                  </View>
+                );
+              });
+            })()}
           </View>
 
           <View style={cardStyle}>

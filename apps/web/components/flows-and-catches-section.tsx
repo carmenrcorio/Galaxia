@@ -23,7 +23,9 @@ import {
   type BodyKey,
   type RelationType,
 } from "@galaxia/astro";
-import { useState } from "react";
+import { aspectGlossarySlug } from "@galaxia/core";
+import { useState, type ReactNode } from "react";
+import { GlossaryTerm } from "./glossary-term";
 
 export type FlowsCatchesAspect = {
   from: string;
@@ -78,6 +80,10 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
     nameB
   );
 
+  // Group order from main (flows / catches / adjusts). First-occurrence
+  // glossary wraps stay on the first catches badge and first of each
+  // known aspect type in the detail list.
+  const seenDetailTypes = new Set<string>();
   const GROUP_ORDER: AspectGroup[] = ["flows", "catches", "adjusts"];
   const mapped = ordered.map((a, idx) => {
     const reading = interpretSynastryAspect(
@@ -102,7 +108,11 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
     mapped
       .filter((row) => row.group === group)
       .sort((x, y) => x.a.orb - y.a.orb)
-      .map((row, idx) => ({ ...row, showOpener: idx === 0 }))
+      .map((row, idx) => ({
+        ...row,
+        showOpener: idx === 0,
+        wrapCatch: group === "catches" && idx === 0,
+      }))
   );
 
   function groupChrome(group: AspectGroup): { badge: string; color: string; prefix: string; prefixColor: string } {
@@ -117,7 +127,9 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
 
   return (
     <section className="glass-card fade-in fade-in-delay-2">
-      <p className="eyebrow" style={{ marginBottom: 10 }}>Where it flows and catches</p>
+      <p className="eyebrow" style={{ marginBottom: 10 }}>
+        Where it <GlossaryTerm glossarySlug="flows-and-catches">flows</GlossaryTerm> and catches
+      </p>
       <p className="muted" style={{ fontSize: ".72rem", marginBottom: 6 }}>
         {intro}
       </p>
@@ -153,7 +165,9 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
                   flexShrink: 0,
                 }}
               >
-                {chrome.badge}
+                {row.wrapCatch
+                  ? <>↓ <GlossaryTerm glossarySlug="flows-and-catches">catches</GlossaryTerm></>
+                  : chrome.badge}
               </span>
               <span className="muted" style={{ fontSize: ".74rem", fontStyle: "italic" }}>
                 {row.readingShort}
@@ -205,7 +219,14 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
           </button>
           {showDetail ? (
             <div style={{ display: "grid", gap: 0 }}>
-              {rows.map((row) => (
+              {rows.map((row) => {
+                const typeSlug = aspectGlossarySlug(row.a.type);
+                let typeLabel: ReactNode = row.a.type;
+                if (typeSlug && !seenDetailTypes.has(typeSlug)) {
+                  seenDetailTypes.add(typeSlug);
+                  typeLabel = <GlossaryTerm glossarySlug={typeSlug}>{row.a.type}</GlossaryTerm>;
+                }
+                return (
                 <div
                   key={`detail-${row.key}`}
                   style={{
@@ -227,7 +248,7 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
                     {groupChrome(row.group).badge}
                   </span>
                   <span className="muted" style={{ fontSize: ".82rem" }}>
-                    {row.a.from} {row.a.type} {row.a.to}
+                    {row.a.from} {typeLabel} {row.a.to}
                     {row.a.phase ? ` · ${row.a.phase}` : ""}
                   </span>
                   <span
@@ -255,7 +276,8 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
                     </span>
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : null}
         </div>

@@ -156,7 +156,8 @@ describe("QuickComparePage result order", () => {
     expect(capture.contains(tableHeading)).toBe(true);
     expect(precedes(needA, needB)).toBe(true);
     expect(precedes(needB, tableHeading)).toBe(true);
-    expect(screen.getByText("Where it flows and catches")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "flows" })).toBeTruthy();
+    expect(screen.getByText(/and catches/)).toBeTruthy();
     expect(screen.getByText("Generational call-out")).toBeTruthy();
   });
 });

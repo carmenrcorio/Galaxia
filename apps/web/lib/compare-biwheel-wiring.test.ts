@@ -99,6 +99,9 @@ describe("source wiring — compare bi-wheel + shared flows/catches", () => {
     // Full RelationType focus — not romantic/platonic-only.
     expect(src).toContain("selectCompareAspectRows");
     expect(src).toMatch(/selectCompareAspectRows\([\s\S]*relationType/);
+    expect(src).toContain("GlossaryTerm");
+    expect(src).toContain('glossarySlug="flows-and-catches"');
+    expect(src).toContain("aspectGlossarySlug");
     expect(src).toContain("ADJUST_BADGE");
     expect(src).toContain("ADJUST_TACTIC_PREFIX");
     expect(src).toContain('"adjusts"');

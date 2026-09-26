@@ -962,6 +962,22 @@ select.field--rect {
   text-transform: none;
   text-align: left;
 }
+.glossary-term__meaning {
+  display: block;
+}
+.glossary-term__more {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--mist);
+  font-size: .72rem;
+  line-height: 1.4;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.glossary-term__more:hover,
+.glossary-term__more:focus-visible {
+  color: var(--gold);
+}
 
 /* Manage-group accordion (same marker pattern as .honor-declare) */
 .manage-group-accordion > summary {

@@ -109,3 +109,5 @@ export * from "./birth-data-invite";
 export * from "./async-surface";
 
 export * from "./retrograde";
+
+export * from "./glossary-terms";

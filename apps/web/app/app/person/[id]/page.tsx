@@ -38,7 +38,7 @@ import {
   interpretHouse,
   STELLIUM_NOTE,
   type HouseKey,
-  generationNameForYear,
+  plutoGenerationLabel,
   PLUTO_SIGN_EXTENDED,
   getFamilyBridge,
   isProfessionalPersonRelation,
@@ -1062,11 +1062,12 @@ export default function PersonProfilePage() {
     );
   };
 
-  // Generation name header (Generational layer). Birth year comes from the
-  // already-loaded birth_date (year-only precision stores it as YYYY-01-01,
-  // same convention rebuildDateUTC relies on above) — no new fetch needed.
-  const birthYear = person.birth_date ? parseInt(person.birth_date.slice(0, 4), 10) : null;
-  const generationInfo = birthYear !== null && !Number.isNaN(birthYear) ? generationNameForYear(birthYear) : null;
+  // Generation header is the computed Pluto sign, never a year-band name.
+  // Year-only births that straddle a sign change stay unlabeled (§12).
+  const plutoGeneration =
+    chart.generational.pluto.confident
+      ? plutoGenerationLabel(chart.generational.pluto.sign)
+      : null;
 
   const renderPlacementRow = (p: Placement) => {
     const bk  = normaliseBody(p.body);
@@ -1453,9 +1454,9 @@ export default function PersonProfilePage() {
           .map((p) => renderPlacementRow(p))}
 
         <div id="generational">
-          {generationInfo ? (
+          {plutoGeneration ? (
             <p style={{ fontSize: ".78rem", color: "var(--cream)", fontWeight: 600, margin: "12px 0 2px" }}>
-              {generationInfo.name} · {generationInfo.span}
+              {plutoGeneration}
             </p>
           ) : null}
           <p className="muted" style={{ fontSize: ".8rem", marginBottom: 12 }}>{chart.generational.cohortLabel}</p>

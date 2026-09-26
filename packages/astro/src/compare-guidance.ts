@@ -22,6 +22,12 @@
  */
 
 import { bodyDisplayName } from "./bodies";
+import {
+  HOUSE_OVERLAY_DESCRIPTIONS,
+  type HouseNumber,
+  type HouseOverlayDescription,
+  type HouseOverlayLens,
+} from "./house-overlay-descriptions";
 import type { Aspect, BodyName, SynastryResult } from "./index";
 
 function isQuincunxType(type: string | undefined): boolean {
@@ -2397,26 +2403,64 @@ export function relationHouseOverlays(
   return { available, lines };
 }
 
+const HOUSE_OVERLAY_LENS_BY_RELATION: Record<RelationType, HouseOverlayLens> = {
+  partners: "partner",
+  romantic: "partner",
+  friends: "friend",
+  platonic: "friend",
+  siblings: "family",
+  "parent-child": "family",
+  ancestor: "family",
+  colleagues: "coworker",
+  "manager-report": "coworker",
+  "mentor-mentee": "coworker",
+};
+
+function isHouseNumber(house: number): house is HouseNumber {
+  return Number.isInteger(house) && house >= 1 && house <= 12;
+}
+
+/** Returns curated copy for a computed overlay and relationship frame. */
+export function houseOverlayDescription(
+  line: Pick<HouseOverlayLine, "house">,
+  relType: RelationType
+): HouseOverlayDescription | null {
+  if (!isHouseNumber(line.house)) return null;
+  return HOUSE_OVERLAY_DESCRIPTIONS[HOUSE_OVERLAY_LENS_BY_RELATION[relType]][line.house];
+}
+
+function renderHouseOverlayDetail(template: string, owner: string, planet: string): string {
+  return template.replaceAll("{name}", owner).replaceAll("{planet}", planet);
+}
+
 // Turns a real houseOverlay into a relationship-framed sentence. House number,
-// area, body, and owner are all real; the closing clause is the type lens.
+// area, body, and owner are all real; the interpretation comes from the
+// relationship-and-house copy matrix.
 export function narrateHouseOverlay(line: HouseOverlayLine, relType: RelationType, nameA: string, nameB: string): string {
   const owner = line.owner === "A" ? nameA : nameB;
   const host = line.owner === "A" ? nameB : nameA;
   const ordinal = ordinalHouse(line.house);
   const base = `${owner}'s ${cap(line.body)} lands in ${host}'s ${ordinal} house (${line.area})`;
-  const lens: Partial<Record<RelationType, string>> = {
-    partners:       "A natural pull toward each other's partnership territory.",
-    romantic:       "A natural pull toward each other's partnership territory.",
-    "parent-child": "It activates the home-and-authority axis the bond is built on.",
-    siblings:       "It lights up the everyday-communication sector siblings share.",
-    friends:        "It grounds the friendship in shared community and growth.",
-    platonic:       "It grounds the friendship in shared community and growth.",
-    colleagues:     "It puts the working day and the shared workload at the center of this one.",
-    "manager-report": "It runs the connection through standing, authority, and how the work gets judged.",
-    "mentor-mentee": "It sits on the teaching axis: what one of you has learned, and where the other practices it.",
-  };
-  const closer = lens[relType];
-  return closer ? `${base}. ${closer}` : base;
+  const description = houseOverlayDescription(line, relType);
+  return description ? `${base}. ${description.short}` : base;
+}
+
+/**
+ * Expands a computed overlay with the curated detail. The template's "you"
+ * means the owner of the receiving house, so the prefix makes that perspective
+ * explicit when comparing any two saved people.
+ */
+export function narrateHouseOverlayDetail(
+  line: HouseOverlayLine,
+  relType: RelationType,
+  nameA: string,
+  nameB: string
+): string | null {
+  const owner = line.owner === "A" ? nameA : nameB;
+  const host = line.owner === "A" ? nameB : nameA;
+  const description = houseOverlayDescription(line, relType);
+  if (!description) return null;
+  return `From ${host}'s perspective: ${renderHouseOverlayDetail(description.detail, owner, cap(line.body))}`;
 }
 
 function ordinalHouse(h: number): string {

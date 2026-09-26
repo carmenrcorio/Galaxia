@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NatalChart } from "@galaxia/astro";
 import QuickChartPage from "../app/chart/quick-chart-page";
@@ -173,5 +173,68 @@ describe("QuickChartPage post-generation compare CTA", () => {
       expect(screen.getByText(chartCompareCtaHeadline())).toBeTruthy();
     });
     expect(screen.getByRole("link", { name: CHART_COMPARE_CTA_LABEL })).toBeTruthy();
+  });
+});
+
+describe("QuickChartPage anonymous chart lead capture", () => {
+  const chartResponse = {
+    ok: true,
+    json: async () => ({
+      chart: RESULT_CHART,
+      displayDate: "June 15, 1990",
+      birthPlace: null,
+      birthDate: "1990-06-15",
+    }),
+  };
+
+  it("shows the capture after generation for an anonymous viewer and submits birth inputs only", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(chartResponse)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ message: "You are in. We will reach out when something moves." }),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+    window.history.replaceState(null, "", "/chart?pr=date&m=6&d=15&y=1990");
+
+    render(<QuickChartPage />);
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Get transit alerts for this chart" })).toBeTruthy();
+    });
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Email address" }), {
+      target: { value: "SKY@example.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send me alerts" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("status").textContent).toContain("You are in.");
+    });
+    const [, request] = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(fetchMock.mock.calls[1]?.[0]).toBe("/api/chart-lead");
+    expect(JSON.parse(String(request.body))).toEqual({
+      email: "SKY@example.com",
+      chartData: {
+        precision: "date",
+        month: 6,
+        day: 15,
+        year: 1990,
+        birthPlace: "",
+        lat: "",
+        lng: "",
+      },
+    });
+  });
+
+  it("does not show the capture to a signed-in viewer", async () => {
+    viewer = { ...ANON, userId: "user-1" };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(chartResponse));
+    window.history.replaceState(null, "", "/chart?pr=date&m=6&d=15&y=1990");
+
+    render(<QuickChartPage />);
+    await waitFor(() => {
+      expect(screen.getByText(chartCompareCtaHeadline())).toBeTruthy();
+    });
+    expect(screen.queryByRole("heading", { name: "Get transit alerts for this chart" })).toBeNull();
   });
 });

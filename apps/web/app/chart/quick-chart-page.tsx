@@ -24,6 +24,7 @@ import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
+import { ChartLeadCapture } from "../../components/chart-lead-capture";
 import { ChartImageExport, chartExportFilename } from "../../components/chart-image-export";
 import { ChartPdfExport } from "../../components/chart-pdf-export";
 import { ChartWheel } from "../../components/chart-wheel";
@@ -251,6 +252,8 @@ export default function QuickChartPage() {
               {CHART_COMPARE_CTA_LABEL}
             </Link>
           </section>
+
+          {!viewer.loading && !viewer.userId ? <ChartLeadCapture chartData={input} /> : null}
 
           <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
             <button className="pill-link" onClick={() => setExpanded((e) => !e)} style={{ fontSize: ".82rem", marginBottom: expanded ? 12 : 0 }}>

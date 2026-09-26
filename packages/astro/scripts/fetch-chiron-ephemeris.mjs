@@ -48,9 +48,11 @@ function parseHorizons(text) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     const parts = trimmed.split(",").map((p) => p.trim());
-    // CAL_FORMAT=JD → first col is JD, ObsEcLon is the longitude column.
+    // CAL_FORMAT=JD, QUANTITIES=31: JD, blanks, ObsEcLon, ObsEcLat.
+    // Do not use the last numeric column — that is latitude.
     const jd = Number(parts[0]);
-    const lon = Number(parts[parts.length - 2] || parts[3]);
+    const nums = parts.slice(1).filter((p) => p !== "").map(Number).filter((n) => Number.isFinite(n));
+    const lon = nums[0];
     if (!Number.isFinite(jd) || !Number.isFinite(lon)) {
       throw new Error(`Unparseable Horizons row: ${trimmed}`);
     }
@@ -96,6 +98,18 @@ for (let start = JD0; start <= JD_END; start += CHUNK_STEPS * STEP) {
 
 if (samples.length < 7000) {
   throw new Error(`Too few samples: ${samples.length}`);
+}
+const latsMistaken = samples.filter((s) => s.lon < 0 || s.lon > 360).length;
+if (latsMistaken > 0) {
+  throw new Error(`Parser stored ${latsMistaken} out-of-range longitudes (likely latitude).`);
+}
+const nonzero = samples.filter((s) => s.lon !== 0).length;
+if (nonzero < samples.length * 0.9) {
+  throw new Error(`Parser stored mostly zeros (${nonzero}/${samples.length} nonzero). Empty CSV fields were likely read as 0.`);
+}
+const probe = samples.find((s) => Math.abs(s.jd - 2447159.5) < 5);
+if (!probe || probe.lon < 80 || probe.lon > 90) {
+  throw new Error(`1987-12-30 probe expected ~85° Gemini, got ${JSON.stringify(probe)}`);
 }
 
 const lons = samples.map((s) => Number(s.lon.toFixed(4)));

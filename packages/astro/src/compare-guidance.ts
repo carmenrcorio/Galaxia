@@ -1853,9 +1853,15 @@ export function aspectActionParts(
   // Working frames read the same pair, in the working register, wherever the
   // shared tactic is written in the personal one (see WORK_ASPECT_ACTION).
   const workTactic = isProfessionalRelation(relType) ? WORK_ASPECT_ACTION[key]?.[half] : undefined;
+  const involvesChiron =
+    a.from.toLowerCase() === "chiron" || a.to.toLowerCase() === "chiron";
+  // Chiron pair copy is a later batch. Do not invent a planet-keyed tactic
+  // (ENGINEERING.md §12) and do not leak personal-register fallbacks.
   const tactic = workTactic
     ?? (pair && pair[half])
-    ?? (flows ? BODY_FLOW_ACTION[leadBody(a, relType).toLowerCase()] : BODY_FRICTION_ACTION[leadBody(a, relType).toLowerCase()])
+    ?? (involvesChiron
+      ? ""
+      : (flows ? BODY_FLOW_ACTION[leadBody(a, relType).toLowerCase()] : BODY_FRICTION_ACTION[leadBody(a, relType).toLowerCase()]))
     ?? "";
   const pool = RELATION_ACTION_REGISTER[relType][flows ? "flows" : "catches"];
   const opener = pickOpener(pool, a.from, a.to);
@@ -1870,7 +1876,7 @@ export function aspectActionParts(
  */
 export function aspectActionLine(a: { from: string; to: string; harmony: number }, relType: RelationType): string {
   const { opener, tactic } = aspectActionParts(a, relType);
-  return `${opener} ${tactic}.`;
+  return tactic ? `${opener} ${tactic}.` : opener;
 }
 
 /**

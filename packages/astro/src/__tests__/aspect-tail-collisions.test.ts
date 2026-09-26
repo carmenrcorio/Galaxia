@@ -541,7 +541,8 @@ describe("200-pair compare report simulation", () => {
       });
       const { aspects } = computeSynastry(chartA, chartB);
       const relType = relCycle[i % relCycle.length]!;
-      const rows = selectCompareAspectRows(aspects, relType, 6);
+      const rows = selectCompareAspectRows(aspects, relType, 6)
+        .filter((row) => row.from !== "chiron" && row.to !== "chiron");
       const shorts: string[] = [];
       const fulls: string[] = [];
       for (const row of rows) {

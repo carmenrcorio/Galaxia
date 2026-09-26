@@ -67,7 +67,11 @@ export function ConstellationEmptyState() {
   return (
     <div className="constellation-outcome">
             <p className="muted" style={{ margin: 0, maxWidth: "36ch" }}>{CONSTELLATION_EMPTY}</p>
-      <Link href={EMPTY_STATE_WELCOME_HREF as never} className="btn-primary">
+      <Link
+        href={EMPTY_STATE_WELCOME_HREF as never}
+        className="btn-primary"
+        data-app-tour="empty-constellation"
+      >
                 {CONSTELLATION_EMPTY_ACTION}
       </Link>
     </div>

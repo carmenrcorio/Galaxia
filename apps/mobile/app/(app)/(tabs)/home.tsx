@@ -27,6 +27,7 @@ import {
   peopleForTodaySky,
   passedPersonIds,
   resolveAccountName,
+  shouldShowAppTour,
   thisWeekRowsFromStored,
   sunSignFromChart,
   withTimeout,
@@ -37,6 +38,7 @@ import { Link, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import { ConstellationMap } from "../../../src/components/constellation-map";
+import { AppTour } from "../../../src/components/app-tour";
 import { Chip, GlassCard, Pill } from "../../../src/components/glass";
 import { InitialAvatar } from "../../../src/components/initial-avatar";
 import { ThisWeekCard, type ThisWeekRow } from "../../../src/components/this-week-card";
@@ -128,6 +130,7 @@ export default function HomeScreen() {
   const [homeStatus, setHomeStatus] = useState<string | null>(null);
   const [homeLoading, setHomeLoading] = useState(true);
   const [constellationFailed, setConstellationFailed] = useState(false);
+  const [showAppTour, setShowAppTour] = useState(false);
   const [boxWidth, setBoxWidth] = useState(340);
   const [showRings, setShowRings] = useState(true);
   const [draggingSeat, setDraggingSeat] = useState(false);
@@ -213,7 +216,7 @@ export default function HomeScreen() {
       const localDate = ownerLocalDate();
       const nowISO = new Date().toISOString();
       const [{ data: profile }, { data: peopleRows, error: peopleError }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: transitRows }, { data: upcomingRows }, { data: relRows }] = await Promise.all([
-      supabase.from("profiles").select("display_name, pinned_sky_person_id, timezone, relational_transit_alerts").eq("id", session.user.id).single(),
+      supabase.from("profiles").select("display_name, pinned_sky_person_id, timezone, relational_transit_alerts, onboarding_completed_at, app_tour_seen_at").eq("id", session.user.id).single(),
       supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale, exclude_from_dailies").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
       personIds.length
         ? supabase.from("charts").select("person_id, data").in("person_id", personIds)
@@ -253,6 +256,7 @@ export default function HomeScreen() {
         selfPersonName: castPeople.find((person) => person.is_self === true)?.display_name ?? null
       }).firstName;
       setWelcomeName(resolvedFirstName);
+      setShowAppTour(shouldShowAppTour(profile));
       setPeople(castPeople);
       const relationalPrefValue = (profile as { relational_transit_alerts?: string | null } | null)?.relational_transit_alerts ?? "all";
       const pref = relationalPrefValue === "major_only" || relationalPrefValue === "off" ? relationalPrefValue : "all";
@@ -488,13 +492,24 @@ export default function HomeScreen() {
     }
   };
 
+  const markAppTourSeen = async () => {
+    if (!session?.user.id) throw new Error("Missing signed-in owner");
+    const { error } = await supabase
+      .from("profiles")
+      .update({ app_tour_seen_at: new Date().toISOString() })
+      .eq("id", session.user.id);
+    if (error) throw error;
+    setShowAppTour(false);
+  };
+
   return (
-    <ScrollView
-      ref={scrollRef}
-      style={screenFill}
-      scrollEnabled={!draggingSeat}
-      contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}
-    >
+    <>
+      <ScrollView
+        ref={scrollRef}
+        style={screenFill}
+        scrollEnabled={!draggingSeat}
+        contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}
+      >
       <Text style={{ color: tokens.colors.cream, fontSize: 33, fontFamily: fonts.frauncesSemi }}>Galaxia Mea</Text>
             <Text style={{ color: tokens.colors.mist, lineHeight: 21, fontFamily: fonts.inter }}>
         {welcomeName ? `Welcome back, ${welcomeName}.` : "Welcome back."} Here’s your constellation.
@@ -802,7 +817,9 @@ export default function HomeScreen() {
           <Pill accessibilityLabel="Open my profile">My profile</Pill>
         </Link>
       </View>
-    </ScrollView>
+      </ScrollView>
+      <AppTour visible={showAppTour} onSeen={markAppTourSeen} />
+    </>
   );
 }
 

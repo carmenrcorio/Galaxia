@@ -78,7 +78,11 @@ export function AppNav() {
 
         {/* Desktop: unchanged inline row, hidden below the breakpoint (globals.css) */}
         <div className="app-nav-links">
-          {APP_NAV_LINKS.map((l) => <DesktopLink key={l.href} href={l.href}>{l.label}</DesktopLink>)}
+          {APP_NAV_LINKS.map((l) => (
+            <DesktopLink key={l.href} href={l.href} tourTarget={l.href === "/app/compare"}>
+              {l.label}
+            </DesktopLink>
+          ))}
           <Link href={APP_NAV_ACCOUNT.href as never} className="pill-link--gold" style={{ padding: "9px 18px", borderRadius: 100, background: "linear-gradient(180deg,var(--gold-bright),var(--gold))", color: "#1a1206", fontWeight: 600, fontSize: ".86rem", boxShadow: "0 6px 22px -8px rgba(230,174,108,.6)", textDecoration: "none" }}>
             {APP_NAV_ACCOUNT.label}
           </Link>
@@ -103,7 +107,13 @@ export function AppNav() {
       {open ? (
         <div className="container app-nav-drawer">
           {APP_NAV_LINKS.map((l) => (
-            <Link key={l.href} href={l.href as never} className="app-nav-drawer-link" onClick={() => setOpen(false)}>
+            <Link
+              key={l.href}
+              href={l.href as never}
+              className="app-nav-drawer-link"
+              data-app-tour={l.href === "/app/compare" ? "compare" : undefined}
+              onClick={() => setOpen(false)}
+            >
               {l.label}
             </Link>
           ))}
@@ -116,9 +126,21 @@ export function AppNav() {
   );
 }
 
-function DesktopLink({ href, children }: { href: string; children: ReactNode }) {
+function DesktopLink({
+  href,
+  children,
+  tourTarget = false,
+}: {
+  href: string;
+  children: ReactNode;
+  tourTarget?: boolean;
+}) {
   return (
-    <Link href={href as never} className="app-nav-link">
+    <Link
+      href={href as never}
+      className="app-nav-link"
+      data-app-tour={tourTarget ? "compare" : undefined}
+    >
       {children}
     </Link>
   );

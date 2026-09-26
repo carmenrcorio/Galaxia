@@ -270,24 +270,26 @@ export const RISING: Record<SignKey, Reading> = {
 };
 
 /** Aspect readings: what the geometry does to a bond. */
-export type AspectKey = "conjunction" | "sextile" | "square" | "trine" | "opposition";
+export type AspectKey = "conjunction" | "sextile" | "square" | "trine" | "opposition" | "quincunx";
+export type AspectTone = "flow" | "friction" | "fusion" | "adjust";
 
 /**
  * Per-type texture only. Never a stand-in for a missing pair reading.
  * Synastry same-body misses still consult this; natal reading slots do not.
  */
-export const ASPECT_NATURE: Record<AspectKey, { tone: "flow" | "friction" | "fusion"; short: string; long: string }> = {
+export const ASPECT_NATURE: Record<AspectKey, { tone: AspectTone; short: string; long: string }> = {
   conjunction: { tone: "fusion",   short: "fused into one charge", long: "These two forces don't take turns; they move as one. Powerful, and hard to see clearly from inside." },
   sextile:     { tone: "flow",     short: "an easy, available talent", long: "It works when they reach for it, and it sits idle when they don't. A door left unlocked." },
   square:      { tone: "friction", short: "friction that makes them grow", long: "These two pull against each other, and the tension is productive. It never fully resolves, and it isn't supposed to." },
   trine:       { tone: "flow",     short: "so easy they don't notice it", long: "This comes naturally enough to be taken for granted. Often their greatest gift and their least developed one." },
   opposition:  { tone: "friction", short: "a balancing act, pulled two ways", long: "They swing between these poles and mistake one for the enemy. Integration, not victory, is the way through." },
+  quincunx:    { tone: "adjust",   short: "a persistent mismatch that will not resolve by force", long: "These two operate on different frequencies. The friction is not a fight; it is two systems that never quite meet. Name the gap, then change the approach, not the person." },
 };
 
 /**
  * NATAL ASPECT COVERAGE (locked by natalAspectCoverage(); the test fails if
  * these numbers drift from the table below).
- * Coverage lock: authored=38 possible=225
+ * Coverage lock: authored=38 possible=270
  *
  * 18 cells shipped with the original table. Batch 1 adds 20 cells in
  * production-render frequency order,
@@ -298,7 +300,7 @@ export const NATAL_ASPECT_BODIES: BodyKey[] = [
   "jupiter", "saturn", "uranus", "neptune", "pluto",
 ];
 export const NATAL_ASPECT_TYPES: AspectKey[] = [
-  "conjunction", "sextile", "square", "trine", "opposition",
+  "conjunction", "sextile", "square", "trine", "opposition", "quincunx",
 ];
 
 /** Named readings for specific natal pairs. Unauthored cells are omitted, never filled. */

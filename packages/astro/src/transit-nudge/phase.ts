@@ -5,7 +5,7 @@ import {
   type AspectType,
   type BodyName,
 } from "../index";
-import { ASPECT_CLASS, type EnrichedTransitHit, type TransitPhase } from "./types";
+import { majorAspectClass, type EnrichedTransitHit, type TransitPhase } from "./types";
 
 const MS_PER_DAY = 86_400_000;
 const EXACT_ORB_DEG = 0.05;
@@ -135,7 +135,7 @@ export function enrichHit(
     transitBody,
     natalBody,
     type: aspectType,
-    aspectClass: ASPECT_CLASS[aspectType],
+    aspectClass: majorAspectClass(aspectType),
     orb: Number(orb.toFixed(4)),
     phase,
     exactAt: exactAt.toISOString(),

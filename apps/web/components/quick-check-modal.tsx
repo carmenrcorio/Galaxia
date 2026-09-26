@@ -239,7 +239,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
                     const reading = interpretSynastryAspect(a.from.toLowerCase() as BodyKey, a.to.toLowerCase() as BodyKey, a.type.toLowerCase() as AspectKey);
                     return (
                       <div key={`${a.from}-${a.to}-${idx}`} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
-                        <span style={{ fontSize: ".76rem", color: a.harmony >= 0 ? "var(--teal)" : "var(--rose)", flexShrink: 0 }}>{a.harmony >= 0 ? "↑" : "↓"}</span>
+                        <span style={{ fontSize: ".76rem", color: a.type === "quincunx" ? "var(--gold)" : a.harmony >= 0 ? "var(--teal)" : "var(--rose)", flexShrink: 0 }}>{a.type === "quincunx" ? "~" : a.harmony >= 0 ? "↑" : "↓"}</span>
                         <span className="muted" style={{ fontSize: ".78rem" }}>{a.from} {a.type} {a.to}</span>
                         <span className="muted" style={{ fontSize: ".72rem", fontStyle: "italic" }}>{reading.short}</span>
                       </div>

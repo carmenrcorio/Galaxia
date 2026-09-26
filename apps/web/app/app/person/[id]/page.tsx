@@ -44,6 +44,7 @@ import {
   isProfessionalPersonRelation,
   type PlutoSignExtended,
   bodyDisplayName,
+  isChartPoint,
 } from "@galaxia/astro";
 import {
   buildPersonPageGroups,
@@ -447,7 +448,7 @@ export default function PersonProfilePage() {
   // an uncertain (year-only) sign must not be tallied as if it were fact.
   const elementBalance = useMemo(() => {
     if (!chart || chart.precision === "year") return null;
-    return chart.placements.filter(p => p.confident !== false).reduce(
+    return chart.placements.filter(p => p.confident !== false && !isChartPoint(p.body)).reduce(
       (acc, p) => { acc[signElement(p.sign) as keyof typeof acc] += 1; return acc; },
       { fire: 0, earth: 0, air: 0, water: 0 }
     );
@@ -455,7 +456,7 @@ export default function PersonProfilePage() {
 
   const modalityBalance = useMemo(() => {
     if (!chart || chart.precision === "year") return null;
-    return chart.placements.filter(p => p.confident !== false).reduce(
+    return chart.placements.filter(p => p.confident !== false && !isChartPoint(p.body)).reduce(
       (acc, p) => { const m = SIGN_MODALITY[p.sign]; if (m) acc[m] += 1; return acc; },
       { cardinal: 0, fixed: 0, mutable: 0 }
     );
@@ -1096,7 +1097,9 @@ export default function PersonProfilePage() {
       );
     }
     const signR = interpretPlacement(bk, sk, safety);
-    if (process.env.NODE_ENV !== "production" && !signR.short) console.warn(`[interpretations] missing: ${bk} in ${sk}`);
+    if (process.env.NODE_ENV !== "production" && !signR.short && !isChartPoint(p.body)) {
+      console.warn(`[interpretations] missing: ${bk} in ${sk}`);
+    }
     const houseR = (p.house && hasHouses)
       ? (() => { const hr = interpretHouse(bk, p.house as HouseKey, safety); const hm = houseMeaning(p.house as HouseKey); return hm && hr.long ? { houseName: hm.name, houseDomain: hm.domain, long: hr.long } : null; })()
       : null;

@@ -1,8 +1,14 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { NatalChart } from "@galaxia/astro";
 import QuickChartPage from "../app/chart/quick-chart-page";
+import {
+  CHART_COMPARE_CTA_LABEL,
+  chartCompareCtaHeadline,
+  COMPARE_PREFILL_NAME_KEY,
+} from "../lib/quick-chart";
 import type { Viewer } from "../lib/use-viewer";
 
 const ANON: Viewer = {
@@ -46,9 +52,41 @@ vi.mock("./trial-banner", () => ({
   TrialBanner: () => null,
 }));
 
+vi.mock("./save-to-galaxy-button", () => ({
+  SaveToGalaxyButton: () => <a href="/signup">Save to your galaxy</a>,
+}));
+
+vi.mock("./share-link-button", () => ({
+  ShareLinkButton: () => <button type="button">Copy share link</button>,
+}));
+
+vi.mock("./chart-pdf-export", () => ({
+  ChartPdfExport: () => null,
+}));
+
+const RESULT_CHART = {
+  placements: [
+    { body: "sun", lon: 12, sign: "Aries", degree: 12, retro: false, confident: true },
+    { body: "moon", lon: 200, sign: "Scorpio", degree: 20, retro: false, confident: true },
+  ],
+  precision: "date",
+  generational: {
+    uranus: { sign: "Capricorn", confident: true },
+    neptune: { sign: "Capricorn", confident: true },
+    pluto: { sign: "Scorpio", confident: true },
+    cohortLabel: "test",
+  },
+} satisfies NatalChart;
+
+beforeEach(() => {
+  window.history.replaceState(null, "", "/chart");
+  sessionStorage.clear();
+});
+
 afterEach(() => {
   cleanup();
   viewer = ANON;
+  vi.unstubAllGlobals();
 });
 
 describe("QuickChartPage session chrome", () => {
@@ -79,5 +117,59 @@ describe("QuickChartPage session chrome", () => {
     expect(screen.getByRole("link", { name: "Home" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Log in" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Sign up to build your galaxy →" })).toBeNull();
+  });
+});
+
+describe("QuickChartPage post-generation compare CTA", () => {
+  function mockChartOk() {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          chart: RESULT_CHART,
+          displayDate: "June 15, 1990",
+          birthPlace: null,
+          birthDate: "1990-06-15",
+        }),
+      }),
+    );
+  }
+
+  it("does not show the compare CTA on the empty form", () => {
+    render(<QuickChartPage />);
+    expect(screen.queryByRole("link", { name: CHART_COMPARE_CTA_LABEL })).toBeNull();
+    expect(screen.queryByText(chartCompareCtaHeadline("Ada"))).toBeNull();
+    expect(screen.getByRole("link", { name: "Compare two charts" })).toBeTruthy();
+  });
+
+  it("shows a named compare CTA after a chart is generated from the URL", async () => {
+    mockChartOk();
+    window.history.replaceState(null, "", "/chart?pr=date&m=6&d=15&y=1990&name=Ada");
+    render(<QuickChartPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(chartCompareCtaHeadline("Ada"))).toBeTruthy();
+    });
+    const compare = screen.getByRole("link", { name: CHART_COMPARE_CTA_LABEL });
+    expect(compare.getAttribute("href")).toMatch(/^\/chart\/compare\?/);
+    expect(compare.getAttribute("href")).toContain("a_pr=date");
+    expect(compare.getAttribute("href")).toContain("a_m=6");
+    expect(compare.getAttribute("href")).not.toMatch(/name/i);
+    expect(sessionStorage.getItem(COMPARE_PREFILL_NAME_KEY)).toBe("Ada");
+    expect(screen.getByRole("link", { name: "Save to your galaxy" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Try another chart" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Compare two charts" })).toBeNull();
+  });
+
+  it("uses the nameless headline when no name was entered", async () => {
+    mockChartOk();
+    window.history.replaceState(null, "", "/chart?pr=date&m=6&d=15&y=1990");
+    render(<QuickChartPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(chartCompareCtaHeadline())).toBeTruthy();
+    });
+    expect(screen.getByRole("link", { name: CHART_COMPARE_CTA_LABEL })).toBeTruthy();
   });
 });

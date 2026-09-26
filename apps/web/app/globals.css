@@ -627,6 +627,28 @@ select.field--rect {
   flex-shrink: 0;
 }
 
+/* Natal retrograde badge. FOUNDER-REVIEW: Rx label + glyph-corner / inline. */
+.glyph-sq-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.retrograde-badge {
+  font-size: .58rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--mist2);
+  line-height: 1;
+  margin-left: 5px;
+  vertical-align: super;
+}
+.retrograde-badge--corner {
+  position: absolute;
+  top: -3px;
+  right: -5px;
+  margin-left: 0;
+  vertical-align: unset;
+}
+
 /* element tints */
 .el-fire  { color: var(--fire); }
 .el-earth { color: var(--earth); }

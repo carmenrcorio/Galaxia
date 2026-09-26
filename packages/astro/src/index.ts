@@ -90,16 +90,31 @@ export interface Aspect {
   phase?: AspectPhase;
 }
 
+export const CHART_ELEMENTS = ["fire", "earth", "air", "water"] as const;
+export type ChartElement = (typeof CHART_ELEMENTS)[number];
+export type ElementCounts = Record<ChartElement, number>;
+
+export interface PairElementBalance {
+  /** Sun through Pluto for person A. Chart points are excluded. */
+  a: ElementCounts;
+  /** Sun through Pluto for person B. Chart points are excluded. */
+  b: ElementCounts;
+  combined: ElementCounts;
+  /** Every element tied for the highest count, in canonical element order. */
+  dominantElements: ChartElement[];
+  /** Elements represented by zero or one planet across the pair. */
+  missingElements: ChartElement[];
+  /** No automatic gear: every represented element is within one count of the others. */
+  balanced: boolean;
+}
+
 export interface SynastryResult {
   aspects: Aspect[];
   houseOverlays: {
     aInB: { body: BodyName; house: number }[];
     bInA: { body: BodyName; house: number }[];
   };
-  elementBalance: {
-    a: Record<"fire" | "earth" | "air" | "water", number>;
-    b: Record<"fire" | "earth" | "air" | "water", number>;
-  };
+  elementBalance: PairElementBalance;
   scores: {
     overall: number;
     emotional: number;
@@ -578,6 +593,45 @@ export function computeNatalChart(birth: Birth): NatalChart {
   };
 }
 
+export function countPlanetElements(placements: Placement[]): ElementCounts {
+  return placements.reduce<ElementCounts>(
+    (counts, placement) => {
+      // Element balance is specifically Sun through Pluto. North Node,
+      // Chiron, and any future non-planet points do not change the tally.
+      if (!PLANET_BODIES.includes(placement.body as PlanetName)) return counts;
+      counts[elementForSign(placement.sign)] += 1;
+      return counts;
+    },
+    { fire: 0, earth: 0, air: 0, water: 0 }
+  );
+}
+
+export function summarizePairElementBalance(a: ElementCounts, b: ElementCounts): PairElementBalance {
+  const combined = CHART_ELEMENTS.reduce<ElementCounts>(
+    (counts, element) => {
+      counts[element] = a[element] + b[element];
+      return counts;
+    },
+    { fire: 0, earth: 0, air: 0, water: 0 }
+  );
+  const values = CHART_ELEMENTS.map((element) => combined[element]);
+  const total = values.reduce((sum, count) => sum + count, 0);
+  const highest = Math.max(...values);
+  const lowest = Math.min(...values);
+  const balanced = total > 0 && highest - lowest <= 1;
+
+  return {
+    a,
+    b,
+    combined,
+    dominantElements: total === 0 || balanced
+      ? []
+      : CHART_ELEMENTS.filter((element) => combined[element] === highest),
+    missingElements: CHART_ELEMENTS.filter((element) => combined[element] <= 1),
+    balanced,
+  };
+}
+
 export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
   const aspects: Aspect[] = [];
   for (const pa of a.placements) {
@@ -611,16 +665,10 @@ export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
   const stability = toScore(sumDomain(["saturn", "jupiter"]));
   const overall = Math.round((emotional + communication + warmth + values + stability) / 5);
 
-  const countElements = (placements: Placement[]): Record<"fire" | "earth" | "air" | "water", number> =>
-    placements.reduce(
-      (acc, placement) => {
-        // Chart points are not planets; keep element tallies planetary.
-        if (isChartPoint(placement.body)) return acc;
-        acc[elementForSign(placement.sign)] += 1;
-        return acc;
-      },
-      { fire: 0, earth: 0, air: 0, water: 0 }
-    );
+  const elementBalance = summarizePairElementBalance(
+    countPlanetElements(a.placements),
+    countPlanetElements(b.placements)
+  );
 
   return {
     aspects,
@@ -628,7 +676,7 @@ export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
       aInB: b.cusps ? a.placements.map((p) => ({ body: p.body, house: houseFromLongitude(p.lon, b.cusps!) })) : [],
       bInA: a.cusps ? b.placements.map((p) => ({ body: p.body, house: houseFromLongitude(p.lon, a.cusps!) })) : []
     },
-    elementBalance: { a: countElements(a.placements), b: countElements(b.placements) },
+    elementBalance,
     scores: { overall, emotional, communication, warmth, values, stability }
   };
 }

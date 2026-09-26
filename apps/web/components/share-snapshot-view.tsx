@@ -266,9 +266,10 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
 
   return (
     <>
-            {/* Capture is headline + wheel + reading-held notice (if any) + the
-          six-row dynamic table. FlowsAndCatchesSection (the full aspect
-          list) and GenerationalSection render outside the capture, matching
+            {/* Capture is headline + wheel + reading-held notice (if any) +
+          the "What [name] needs from you" tip blocks + the six-row
+          dynamic table. FlowsAndCatchesSection (the full aspect list)
+          and GenerationalSection render outside the capture, matching
           the task's "not the full aspect list" boundary. */}
       <ChartImageExport filename={exportFilename} label="Share chart image" pairHasMinor={payload.pairHasMinor}>
         <section className="glass-card fade-in" style={{ textAlign: "center" }}>

@@ -729,9 +729,10 @@ function ComparePageInner() {
         </section>
       ) : result && relationType ? (
         <>
-                    {/* Capture is the headline (avatars, names, wheel) plus the six-row
-              "Your dynamic" table and tip blocks. FlowsAndCatchesSection (the
-              full aspect list) and everything below render outside the
+                    {/* Capture is the headline (avatars, names, wheel), the
+              "What [name] needs from you" tip blocks, and the six-row
+              "Your dynamic" table. FlowsAndCatchesSection (the full
+              aspect list) and everything below render outside the
               capture, matching the task's "not the full aspect list" boundary. */}
           <ChartImageExport
             filename={chartExportFilename(`${result.personA.display_name}-${result.personB.display_name}`, "compatibility-chart.png")}
@@ -782,6 +783,24 @@ function ComparePageInner() {
               ) : null}
             </section>
 
+            {/* ── "What [name] needs from you" — the landing's .tip block ── */}
+            <section className="glass-card fade-in">
+              {[result.personA, result.personB].map((person: PersonLite) => (
+                <div key={person.id} style={{
+                  marginBottom: 10, padding: "13px 15px", borderRadius: 13,
+                  background: "linear-gradient(165deg, rgba(255,255,255,.025), rgba(255,255,255,.008))",
+                  border: "1px solid rgba(183,154,216,.12)",
+                }}>
+                  <p style={{ fontFamily: "var(--sans)", fontSize: ".7rem", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 6 }}>
+                    → What {person.display_name} needs from you
+                  </p>
+                  <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.62, fontStyle: "italic", margin: 0 }}>
+                    {whatTheyNeed(result.synastry.scores, person, relationType, result.synastry)}
+                  </p>
+                </div>
+              ))}
+            </section>
+
             {/* ── Compat labels (not scores) — from landing .dyn-row + galaxia.jsx sdesc() ── */}
             <section className="glass-card fade-in fade-in-delay-1">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -809,22 +828,6 @@ function ComparePageInner() {
                   );
                 })}
               </div>
-
-              {/* ── "What [name] needs from you" — the landing's .tip block, built for the first time ── */}
-              {[result.personA, result.personB].map((person: PersonLite) => (
-                <div key={person.id} style={{
-                  marginBottom: 10, padding: "13px 15px", borderRadius: 13,
-                  background: "linear-gradient(165deg, rgba(255,255,255,.025), rgba(255,255,255,.008))",
-                  border: "1px solid rgba(183,154,216,.12)",
-                }}>
-                  <p style={{ fontFamily: "var(--sans)", fontSize: ".7rem", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 6 }}>
-                    → What {person.display_name} needs from you
-                  </p>
-                  <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.62, fontStyle: "italic", margin: 0 }}>
-                    {whatTheyNeed(result.synastry.scores, person, relationType, result.synastry)}
-                  </p>
-                </div>
-              ))}
               {relationshipWatchLine(result.synastry.scores, relationType, result.synastry) ? (
                 <p
                   className="muted"

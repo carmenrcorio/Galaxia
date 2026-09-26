@@ -347,9 +347,10 @@ export default function QuickComparePage() {
         </>
       ) : (
         <>
-                    {/* Capture is headline + wheel + reading-held notice (if any) + the
-              six-row dynamic table. FlowsAndCatchesSection (the full aspect
-              list) and GenerationalSection render outside the capture, matching
+                    {/* Capture is headline + wheel + reading-held notice (if any) +
+              the "What [name] needs from you" tip blocks + the six-row
+              dynamic table. FlowsAndCatchesSection (the full aspect list)
+              and GenerationalSection render outside the capture, matching
               the task's "not the full aspect list" boundary. */}
           <ChartImageExport
             filename={chartExportFilename(`${personA!.display_name}-${personB!.display_name}`, "synastry-chart.png")}

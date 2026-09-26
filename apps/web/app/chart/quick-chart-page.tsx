@@ -235,6 +235,21 @@ export default function QuickChartPage() {
             />
           </ChartImageExport>
 
+          <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>
+            {/* FOUNDER-REVIEW: post-generation compare bridge. Save stays the primary gold CTA. */}
+            <p style={{ fontFamily: "var(--serif)", fontSize: "1.15rem", color: "var(--cream)", margin: 0, lineHeight: 1.4 }}>
+              {chartCompareCtaHeadline(name)}
+            </p>
+            <Link
+              href={buildComparePrefillHref(input) as never}
+              className="pill-link pill-link--teal"
+              style={{ fontSize: ".95rem", padding: "12px 24px", justifySelf: "center" }}
+              onClick={() => stashComparePrefillName(name)}
+            >
+              {CHART_COMPARE_CTA_LABEL}
+            </Link>
+          </section>
+
           <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
             <button className="pill-link" onClick={() => setExpanded((e) => !e)} style={{ fontSize: ".82rem", marginBottom: expanded ? 12 : 0 }}>
               {expanded ? "▼ Hide full chart" : "▶ See full chart"}
@@ -262,21 +277,6 @@ export default function QuickChartPage() {
                 })}
               </div>
             ) : null}
-          </section>
-
-          <section className="glass-card fade-in fade-in-delay-2" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>
-            {/* FOUNDER-REVIEW: post-generation compare bridge. Save stays the primary gold CTA. */}
-            <p style={{ fontFamily: "var(--serif)", fontSize: "1.15rem", color: "var(--cream)", margin: 0, lineHeight: 1.4 }}>
-              {chartCompareCtaHeadline(name)}
-            </p>
-            <Link
-              href={buildComparePrefillHref(input) as never}
-              className="pill-link pill-link--teal"
-              style={{ fontSize: ".95rem", padding: "12px 24px", justifySelf: "center" }}
-              onClick={() => stashComparePrefillName(name)}
-            >
-              {CHART_COMPARE_CTA_LABEL}
-            </Link>
           </section>
 
           <section className="glass-card fade-in fade-in-delay-2" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>

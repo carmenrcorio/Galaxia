@@ -767,6 +767,7 @@ export * from "./transit-interpretations";
 export * from "./generational-interpretations";
 export * from "./generational-layer";
 
+export * from "./house-overlay-descriptions";
 export * from "./compare-guidance";
 export * from "./single-chart-guidance";
 

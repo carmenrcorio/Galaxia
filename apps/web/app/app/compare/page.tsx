@@ -31,6 +31,7 @@ import {
   isRomanticRelation,
   suggestCompareRelationType,
   narrateHouseOverlay,
+  narrateHouseOverlayDetail,
   pairChartFingerprint,
   relationElementSignal,
   relationHasHouseLens,
@@ -869,11 +870,28 @@ function ComparePageInner() {
                 </p>
               ) : houseOverlay.lines.length > 0 ? (
                 <div style={{ display: "grid", gap: 8 }}>
-                  {houseOverlay.lines.slice(0, 4).map((line, idx) => (
-                    <p key={`ho-${idx}`} className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6, margin: 0 }}>
-                      {narrateHouseOverlay(line, relationType, result.personA.display_name, result.personB.display_name)}
-                    </p>
-                  ))}
+                  {houseOverlay.lines.slice(0, 4).map((line, idx) => {
+                    const detail = narrateHouseOverlayDetail(
+                      line,
+                      relationType,
+                      result.personA.display_name,
+                      result.personB.display_name
+                    );
+                    return (
+                      <div key={`ho-${idx}`}>
+                        <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6, margin: 0 }}>
+                          <strong style={{ color: "var(--cream)", fontWeight: 500 }}>
+                            {narrateHouseOverlay(line, relationType, result.personA.display_name, result.personB.display_name)}
+                          </strong>
+                        </p>
+                        {detail ? (
+                          <p className="muted" style={{ fontSize: ".78rem", lineHeight: 1.6, margin: "3px 0 0" }}>
+                            {detail}
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>

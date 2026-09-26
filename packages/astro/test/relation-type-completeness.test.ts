@@ -38,6 +38,10 @@ const synastry: SynastryResult = {
   elementBalance: {
     a: { fire: 0, earth: 0, air: 0, water: 0 },
     b: { fire: 0, earth: 0, air: 0, water: 0 },
+    combined: { fire: 0, earth: 0, air: 0, water: 0 },
+    dominantElements: [],
+    missingElements: ["fire", "earth", "air", "water"],
+    balanced: false,
   },
   scores,
 };

@@ -42,7 +42,7 @@ describe("True Node natal placement", () => {
     const exact = computeNatalChart(LITTLE_ROCK);
     expect(exact.placements.map((p) => p.body)).toEqual([
       "sun", "moon", "mercury", "venus", "mars",
-      "jupiter", "saturn", "uranus", "neptune", "pluto", "north_node"
+      "jupiter", "saturn", "uranus", "neptune", "pluto", "north_node", "chiron"
     ]);
 
     const dateOnly = computeNatalChart({
@@ -58,7 +58,8 @@ describe("True Node natal placement", () => {
       dateUTC: "1987-01-01T00:00:00.000Z",
       precision: "year"
     });
-    expect(year.placements.map((p) => p.body)).toEqual(["sun", "uranus", "neptune", "pluto"]);
+    expect(year.placements.map((p) => p.body)).toEqual(["sun", "uranus", "neptune", "pluto", "chiron"]);
+    expect(year.placements.some((p) => p.body === "north_node")).toBe(false);
   });
 
   it("labels the point North Node, not a planet", () => {
@@ -94,7 +95,7 @@ describe("True Node natal placement", () => {
     // Locked from the same engine pass that already matches Cafe Astrology planets.
     expect(lon("sun")).toBeGreaterThan(270);
     expect(lon("sun")).toBeLessThan(280);
-    expect(chart.placements.filter((p) => p.body !== "north_node")).toHaveLength(10);
+    expect(chart.placements.filter((p) => p.body !== "north_node" && p.body !== "chiron")).toHaveLength(10);
   });
 });
 

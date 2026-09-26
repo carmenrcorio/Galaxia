@@ -20,7 +20,8 @@ import {
   type NatalChart,
   type PersonDailyNudgeRecord,
   type SignKey,
-  bodyDisplayName
+  bodyDisplayName,
+  isChartPoint
 } from "@galaxia/astro";
 import {
   ASPECTS_UNAVAILABLE_YEAR_BODY,
@@ -263,6 +264,7 @@ export default function PersonProfileScreen() {
     if (!chart) return null;
     return chart.placements.reduce(
       (acc, placement) => {
+        if (isChartPoint(placement.body)) return acc;
         acc[signElement(placement.sign)] += 1;
         return acc;
       },

@@ -40,6 +40,7 @@ const NATAL_BODY_LABEL: Record<string, string> = {
   neptune: "Neptune",
   pluto: "Pluto",
   north_node: "North Node",
+  chiron: "Chiron",
 };
 
 const ASPECT_VERB: Record<AspectType, string> = {

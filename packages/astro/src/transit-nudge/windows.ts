@@ -18,6 +18,8 @@ export const EXACTNESS_WINDOW_DEG: Record<BodyName, number> = {
   pluto: 0.3,
   // Node is not a transit theme; value only satisfies the BodyName record.
   north_node: 0.25,
+  // Chiron is not a transit theme; value only satisfies the BodyName record.
+  chiron: 0.3,
 };
 
 export function exactnessWindowDeg(transitBody: BodyName): number {

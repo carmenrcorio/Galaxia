@@ -219,6 +219,16 @@
             "retro": true,
             "lonSpeedDegPerDay": -0.037083,
             "confident": true
+          },
+          {
+            "body": "chiron",
+            "lon": 268.4606590277796,
+            "sign": "Sagittarius",
+            "degree": 28.460659027779627,
+            "house": 5,
+            "retro": false,
+            "lonSpeedDegPerDay": 0.03406,
+            "confident": true
           }
         ],
         "asc": "Leo",
@@ -373,6 +383,16 @@
             "house": 6,
             "retro": false,
             "lonSpeedDegPerDay": 0.020656,
+            "confident": true
+          },
+          {
+            "body": "chiron",
+            "lon": 282.4806465277767,
+            "sign": "Capricorn",
+            "degree": 12.480646527776685,
+            "house": 2,
+            "retro": false,
+            "lonSpeedDegPerDay": 0.01985,
             "confident": true
           }
         ],
@@ -529,6 +549,16 @@
             "retro": true,
             "lonSpeedDegPerDay": -0.021442,
             "confident": true
+          },
+          {
+            "body": "chiron",
+            "lon": 29.473886111105273,
+            "sign": "Aries",
+            "degree": 29.473886111105273,
+            "house": 10,
+            "retro": false,
+            "lonSpeedDegPerDay": 0.05545,
+            "confident": true
           }
         ],
         "asc": "Cancer",
@@ -683,6 +713,16 @@
             "house": 2,
             "retro": false,
             "lonSpeedDegPerDay": 0.019181,
+            "confident": true
+          },
+          {
+            "body": "chiron",
+            "lon": 293.9863208333264,
+            "sign": "Capricorn",
+            "degree": 23.986320833326374,
+            "house": 2,
+            "retro": true,
+            "lonSpeedDegPerDay": -0.0446,
             "confident": true
           }
         ],

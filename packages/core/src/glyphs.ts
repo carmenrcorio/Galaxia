@@ -43,6 +43,8 @@ export const BODY_GLYPH: Record<string, string> = {
   pluto: "\u2647",
   "North Node": "\u260A",
   north_node: "\u260A",
+  Chiron: "\u26B7",
+  chiron: "\u26B7",
 };
 
 export const ASPECT_GLYPH: Record<string, string> = {

@@ -1,12 +1,13 @@
 import { Body, GeoVector, Ecliptic, EclipticGeoMoon, GeoMoonState, RotateState, Rotation_EQJ_ECT, SiderealTime, SunPosition } from "astronomy-engine";
 import { isChartPoint } from "./bodies";
+import { chironLongitudeAt, isChironEphemerisCovered, julianDayUTC } from "./chiron-ephemeris";
 
 export type Precision = "exact" | "date" | "year";
 export type HouseSystem = "placidus" | "whole" | "equal";
 export type Planet = "uranus" | "neptune" | "pluto";
 export type PlanetName = "sun" | "moon" | "mercury" | "venus" | "mars" | "jupiter" | "saturn" | "uranus" | "neptune" | "pluto";
-/** Mathematical points computed with the natal pass. Not planets. */
-export type ChartPointName = "north_node";
+/** Mathematical points / non-planet bodies computed with the natal pass. */
+export type ChartPointName = "north_node" | "chiron";
 export type BodyName = PlanetName | ChartPointName;
 export const MAJOR_ASPECT_TYPES = ["conjunction", "sextile", "square", "trine", "opposition"] as const;
 export type MajorAspectType = (typeof MAJOR_ASPECT_TYPES)[number];
@@ -177,7 +178,7 @@ export interface CohortOverlay {
 
 const SIGNS: Sign[] = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
 const PLANET_BODIES: PlanetName[] = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto"];
-/** Date/exact natal pass: ten planets, then True Node after Pluto. */
+/** Date/exact natal pass: ten planets, then True Node, then Chiron. */
 const MAJOR_BODIES: BodyName[] = [...PLANET_BODIES, "north_node"];
 const BODY_MAP: Record<PlanetName, Body> = {
   sun: Body.Sun,
@@ -264,6 +265,7 @@ export function trueNodeLongitude(date: Date): number {
 }
 
 function bodyLongitude(body: BodyName, date: Date): number {
+  if (body === "chiron") return chironLongitudeAt(date);
   if (body === "north_node") return trueNodeLongitude(date);
   if (body === "sun") return normalizeZodiacLongitude(SunPosition(date).elon);
   if (body === "moon") return normalizeZodiacLongitude(EclipticGeoMoon(date).lon);
@@ -493,6 +495,31 @@ export function modalityForSign(sign: Sign): "cardinal" | "fixed" | "mutable" {
   return "mutable";
 }
 
+function placementFor(
+  body: BodyName,
+  date: Date,
+  precision: Precision,
+  cusps: number[] | undefined
+): Placement {
+  const lon = bodyLongitude(body, date);
+  const tomorrowLon = bodyLongitude(body, new Date(date.getTime() + 24 * 60 * 60 * 1000));
+  // Negative ecliptic longitude velocity = retrograde (`Placement.retro`).
+  const lonSpeedDegPerDay = Number(normalizeSignedAngle(tomorrowLon - lon).toFixed(6));
+  const retro = lonSpeedDegPerDay < 0;
+  const confidence = evaluateSignConfidence(body, date, precision);
+  return {
+    body,
+    lon,
+    sign: longitudeToSign(lon),
+    degree: lon % 30,
+    house: cusps ? houseFromLongitude(lon, cusps) : undefined,
+    retro,
+    lonSpeedDegPerDay,
+    confident: confidence.confident,
+    possibleSigns: confidence.possibleSigns
+  };
+}
+
 export function computeNatalChart(birth: Birth): NatalChart {
   const houseSystemRequested = birth.houseSystem ?? "placidus";
   const date = getWorkingDate(birth);
@@ -516,25 +543,15 @@ export function computeNatalChart(birth: Birth): NatalChart {
     houseSystemFallbackReason = cuspResult.fallbackReason;
   }
 
-  const placements: Placement[] = bodies.map((body) => {
-    const lon = bodyLongitude(body, date);
-    const tomorrowLon = bodyLongitude(body, new Date(date.getTime() + 24 * 60 * 60 * 1000));
-    // Negative ecliptic longitude velocity = retrograde (`Placement.retro`).
-    const lonSpeedDegPerDay = Number(normalizeSignedAngle(tomorrowLon - lon).toFixed(6));
-    const retro = lonSpeedDegPerDay < 0;
-    const confidence = evaluateSignConfidence(body, date, birth.precision);
-    return {
-      body,
-      lon,
-      sign: longitudeToSign(lon),
-      degree: lon % 30,
-      house: cusps ? houseFromLongitude(lon, cusps) : undefined,
-      retro,
-      lonSpeedDegPerDay,
-      confident: confidence.confident,
-      possibleSigns: confidence.possibleSigns
-    };
-  });
+  const placements: Placement[] = bodies.map((body) => placementFor(body, date, birth.precision, cusps));
+
+  // Chiron is a table lookup, not BODY_MAP. After North Node on date/exact
+  // charts; after Pluto on year-only (the Node is omitted there). Out of
+  // the 1900-2100 table: omit, never guess.
+  const tomorrow = new Date(date.getTime() + 24 * 60 * 60 * 1000);
+  if (isChironEphemerisCovered(julianDayUTC(date)) && isChironEphemerisCovered(julianDayUTC(tomorrow))) {
+    placements.push(placementFor("chiron", date, birth.precision, cusps));
+  }
 
   const generational = computeGenerational(birth.dateUTC, birth.precision);
   if (cusps) {
@@ -727,6 +744,8 @@ export function cohortOverlay(people: { name: string; gen: GenSignature }[]): Co
           : COHORT_SHARED_SKY_LABELS.shared_0;
   return { sharedSky, faultLines, label };
 }
+
+export { chironIsRetrograde, chironLongitude, chironLongitudeAt, isChironEphemerisCovered, julianDayUTC } from "./chiron-ephemeris";
 
 export * from "./birth";
 export * from "./geocode";

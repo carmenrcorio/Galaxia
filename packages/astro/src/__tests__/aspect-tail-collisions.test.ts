@@ -99,8 +99,8 @@ const PROBE_BIRTH_CHART: NatalChart = computeNatalChart({
   lng: -74.006,
 });
 
-/** The real bodies the engine places — pulled from computeNatalChart(), not guessed. */
-const BODIES: BodyName[] = PROBE_BIRTH_CHART.placements.map((p) => p.body);
+/** Authored-copy domain. Chiron is computed this pass but has no ASPECT_ACTION cells yet. */
+const BODIES: BodyName[] = PROBE_BIRTH_CHART.placements.map((p) => p.body).filter((b) => b !== "chiron");
 
 /** Minimal synthetic chart: one placement, one controllable longitude. Only
  * `placements[].{body,lon}` and (unused here) `.cusps` are read by
@@ -545,7 +545,8 @@ describe("200-pair compare report simulation", () => {
       });
       const { aspects } = computeSynastry(chartA, chartB);
       const relType = relCycle[i % relCycle.length]!;
-      const rows = selectCompareAspectRows(aspects, relType, 6);
+      const rows = selectCompareAspectRows(aspects, relType, 6)
+        .filter((row) => row.from !== "chiron" && row.to !== "chiron");
       const shorts: string[] = [];
       const fulls: string[] = [];
       for (const row of rows) {

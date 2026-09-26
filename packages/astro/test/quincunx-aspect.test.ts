@@ -106,15 +106,18 @@ describe("quincunx engine", () => {
   });
 
   it("locks the 1993-1994 and Little Rock pair scores after adding quincunx", () => {
+    // These numbers include Chiron major aspects (now on main). Quincunx is
+    // still omitted from the sums; changing these without a Chiron-or-scoring
+    // change means quincunx leaked into scoring.
     const pairA = computeSynastry(
       computeNatalChart({ dateUTC: "1993-04-10T13:45:00.000Z", precision: "exact", lat: 40.7128, lng: -74.006 }),
       computeNatalChart({ dateUTC: "1994-11-20T09:15:00.000Z", precision: "exact", lat: 34.0522, lng: -118.2437 })
     );
     expect(pairA.scores).toEqual({
-      overall: 57,
-      emotional: 43,
-      communication: 70,
-      warmth: 56,
+      overall: 56,
+      emotional: 47,
+      communication: 60,
+      warmth: 61,
       values: 63,
       stability: 51,
     });
@@ -130,12 +133,12 @@ describe("quincunx engine", () => {
       computeNatalChart({ dateUTC: "1994-11-20T09:15:00.000Z", precision: "exact", lat: 34.0522, lng: -118.2437 })
     );
     expect(pairB.scores).toEqual({
-      overall: 50,
-      emotional: 38,
+      overall: 51,
+      emotional: 39,
       communication: 45,
-      warmth: 57,
+      warmth: 66,
       values: 44,
-      stability: 67,
+      stability: 62,
     });
   });
 

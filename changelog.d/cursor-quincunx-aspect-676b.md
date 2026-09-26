@@ -8,7 +8,7 @@
 
 `[ADDED]` **`ASPECT_NATURE.quincunx` only (Option A).** No authored `ASPECT_PAIR` or `SYNASTRY_PAIR` cells. Natal `interpretAspect()` returns null. Synastry falls back to the nature line. Coverage lock moves to authored=38 possible=270.
 
-`[FIXED]` **Score, transit, and Vela exclusions.** Quincunx is omitted from synastry score sums (1993–1994 and Little Rock pair scores unchanged). `computeTransits()` and the daily-nudge / relational-transit lists stay on the five majors. Vela citation allow-lists are unchanged.
+`[FIXED]` **Score, transit, and Vela exclusions.** Quincunx is omitted from synastry score sums. The 1993–1994 and Little Rock locks now include Chiron major aspects from main; quincunx still does not enter those sums. `computeTransits()` and the daily-nudge / relational-transit lists stay on the five majors. Vela citation allow-lists are unchanged.
 
 `[ADDED]` **Display.** FlowsAndCatchesSection (Compare, Quick Compare, share snapshots) renders a third group after flows and catches. Wheel lines use the gold token. Natal person page lists quincunx as type + orb (and phase) outside Key aspects. Mobile Compare shows `~ adjusts` in gold under The astrology underneath.
 

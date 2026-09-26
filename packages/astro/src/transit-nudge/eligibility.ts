@@ -1,3 +1,4 @@
+import { isChartPoint } from "../bodies";
 import {
   aspectDefinition,
   eclipticLongitude,
@@ -68,6 +69,7 @@ function rawHitsForChart(
   for (const transitBody of TRANSIT_THEMES) {
     const transitLon = eclipticLongitude(transitBody, when);
     for (const natal of chart.placements) {
+      if (isChartPoint(natal.body)) continue;
       const angle = Math.abs(signedAngleDelta(transitLon, natal.lon));
       for (const type of ["conjunction", "sextile", "square", "trine", "opposition"] as AspectType[]) {
         const def = aspectDefinition(type);

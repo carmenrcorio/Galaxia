@@ -1776,6 +1776,14 @@ const WORK_ASPECT_ACTION: Record<string, Partial<{ flows: string; catches: strin
     catches: "when they need room and consistency at once, ask which one this week actually needs; this pair counts things as good in an unusual key, so give the credit without requiring it look conventional",
     flows:   "let the working style stay as unconventional as it is; the regard here is easy and a little electric, so use it instead of standardizing it",
   },
+  [PAIR_KEY("moon", "north_node")]: {
+    catches: "when the mood and the next stretch fight, ask which one this hour of work needs; do not make the steadier read the enemy of the assignment",
+    flows:   "use the instinctive read you already have to name the next honest step; a check-in can point at growth without becoming a pep talk",
+  },
+  [PAIR_KEY("north_node", "venus")]: {
+    catches: "when what you rate and where they are headed chafe, name the standard under the preference; do not convert their path into your taste",
+    flows:   "say specifically what you rate in who they are becoming; credit aimed at the stretch is the kindness this pair already has",
+  },
 };
 
 /**
@@ -2244,6 +2252,14 @@ const WORK_ASPECT_SUMMARY_FRAME: Record<string, Partial<{ flows: string; catches
   [PAIR_KEY("uranus", "venus")]: {
     catches: "is where they need room and consistency at once, so ask which one this week needs instead of assuming.",
     flows: "is where the regard is easy and a little electric, so use the unconventional working style instead of standardizing it.",
+  },
+  [PAIR_KEY("moon", "north_node")]: {
+    catches: "is where the mood and the next stretch fight, so the steadier read gets mistaken for a brake on the work.",
+    flows: "is where the instinctive read can point at the next honest step, without turning into a pep talk.",
+  },
+  [PAIR_KEY("north_node", "venus")]: {
+    catches: "is where taste and the assigned path chafe, so one person's standard tries to convert the other.",
+    flows: "is where credit can aim at who they are becoming, specifically, instead of a role.",
   },
 };
 

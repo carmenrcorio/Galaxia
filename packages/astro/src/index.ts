@@ -1,4 +1,5 @@
 import { Body, GeoVector, Ecliptic, EclipticGeoMoon, GeoMoonState, RotateState, Rotation_EQJ_ECT, SiderealTime, SunPosition } from "astronomy-engine";
+import { detectAspectPatterns, type AspectPattern } from "./aspect-patterns";
 import { isChartPoint } from "./bodies";
 import { chironLongitudeAt, isChironEphemerisCovered, julianDayUTC } from "./chiron-ephemeris";
 
@@ -67,6 +68,8 @@ export interface Placement {
 
 export interface NatalChart {
   placements: Placement[];
+  /** Natal aspect structures. Optional only for persisted charts created before engine v3. */
+  patterns?: AspectPattern[];
   asc?: Sign;
   mc?: Sign;
   cusps?: number[];
@@ -535,6 +538,32 @@ function placementFor(
   };
 }
 
+function computePlacementAspects(
+  fromPlacements: Placement[],
+  toPlacements: Placement[]
+): Aspect[] {
+  const aspects: Aspect[] = [];
+  for (const pa of fromPlacements) {
+    for (const pb of toPlacements) {
+      const angle = Math.abs(normalizeSignedAngle(pa.lon - pb.lon));
+      for (const [type, def] of Object.entries(ASPECT_DEFS) as [AspectType, (typeof ASPECT_DEFS)[AspectType]][]) {
+        const orb = Math.abs(angle - def.angle);
+        if (orb <= def.orb) {
+          aspects.push({
+            from: pa.body,
+            to: pb.body,
+            type,
+            orb: Number(orb.toFixed(2)),
+            harmony: Number((def.harmony - orb / (def.orb * 2)).toFixed(2)),
+            phase: aspectPhase(pa, pb, def.angle, orb)
+          });
+        }
+      }
+    }
+  }
+  return aspects;
+}
+
 export function computeNatalChart(birth: Birth): NatalChart {
   const houseSystemRequested = birth.houseSystem ?? "placidus";
   const date = getWorkingDate(birth);
@@ -579,9 +608,12 @@ export function computeNatalChart(birth: Birth): NatalChart {
     if (neptune) generational.neptuneHouse = houseFromLongitude(neptune.lon, cusps);
     if (pluto) generational.plutoHouse = houseFromLongitude(pluto.lon, cusps);
   }
+  const natalAspects =
+    birth.precision === "year" ? [] : computePlacementAspects(placements, placements);
 
   return {
     placements,
+    patterns: detectAspectPatterns(natalAspects, placements),
     asc: ascLon === undefined ? undefined : longitudeToSign(ascLon),
     mc: mcLon === undefined ? undefined : longitudeToSign(mcLon),
     cusps,
@@ -633,25 +665,7 @@ export function summarizePairElementBalance(a: ElementCounts, b: ElementCounts):
 }
 
 export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
-  const aspects: Aspect[] = [];
-  for (const pa of a.placements) {
-    for (const pb of b.placements) {
-      const angle = Math.abs(normalizeSignedAngle(pa.lon - pb.lon));
-      for (const [type, def] of Object.entries(ASPECT_DEFS) as [AspectType, (typeof ASPECT_DEFS)[AspectType]][]) {
-        const orb = Math.abs(angle - def.angle);
-        if (orb <= def.orb) {
-          aspects.push({
-            from: pa.body,
-            to: pb.body,
-            type,
-            orb: Number(orb.toFixed(2)),
-            harmony: Number((def.harmony - orb / (def.orb * 2)).toFixed(2)),
-            phase: aspectPhase(pa, pb, def.angle, orb)
-          });
-        }
-      }
-    }
-  }
+  const aspects = computePlacementAspects(a.placements, b.placements);
 
   const scoringAspects = aspects.filter((hit) => hit.type !== "quincunx");
   const sumDomain = (bodies: BodyName[]): number =>
@@ -797,6 +811,7 @@ export { chironIsRetrograde, chironLongitude, chironLongitudeAt, isChironEphemer
 
 export * from "./birth";
 export * from "./geocode";
+export * from "./aspect-patterns";
 
 export * from "./house-system";
 

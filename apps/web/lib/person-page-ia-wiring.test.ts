@@ -56,7 +56,7 @@ describe("person page information architecture", () => {
       "ELEMENT_ABSENT",
       "MODALITY_DOMINANT",
       "MODALITY_ABSENT",
-      "STELLIUM_NOTE",
+      "aspectPatternCopy",
       "DAILY_SKY_UNAVAILABLE_YEAR_BODY",
       "DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP",
       "GenerationalEraSurface",
@@ -100,5 +100,13 @@ describe("person page information architecture", () => {
     expect(page).toContain("{a.from} {a.type} {a.to}");
     expect(page).toContain("toDMS(a.orb)");
     expect(page).toContain("var(--gold)");
+  });
+
+  it("renders engine-owned chart patterns above Key aspects", () => {
+    expect(page).toContain('id="chart-patterns"');
+    expect(page).toContain("chart.patterns");
+    expect(page).toContain("aspectPatternCopy");
+    expect(page).not.toContain("const stellia");
+    expect(page.indexOf('id="chart-patterns"')).toBeLessThan(page.indexOf('id="aspects"'));
   });
 });

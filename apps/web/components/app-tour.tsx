@@ -92,13 +92,15 @@ export function AppTour({
 
   useEffect(() => {
     const target = targetFor(stepIndex);
-    target?.scrollIntoView({ block: "center", behavior: "smooth" });
+    // Move before measuring so the tooltip never animates through a clipped
+    // intermediate position while a tall target scrolls into view.
+    target?.scrollIntoView({ block: "center", behavior: "auto" });
 
     function update() {
       setRect(spotlightRect(targetFor(stepIndex)));
     }
 
-    const timer = window.setTimeout(update, 180);
+    const timer = window.setTimeout(update, 0);
     update();
     window.addEventListener("resize", update);
     window.addEventListener("scroll", update, true);

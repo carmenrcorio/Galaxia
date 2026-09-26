@@ -59,6 +59,8 @@ describe("glyphs", () => {
     expect(BODY_GLYPH.pluto).toBe("\u2647");
     expect(BODY_GLYPH.north_node).toBe("\u260A");
     expect(BODY_GLYPH["North Node"]).toBe("\u260A");
+    expect(BODY_GLYPH.chiron).toBe("\u26B7");
+    expect(BODY_GLYPH.Chiron).toBe("\u26B7");
     expect(ASPECT_GLYPH.trine).toBe("\u25B3");
     expect(signElement("Aries")).toBe("fire");
     expect(signElement("not-a-sign")).toBe("water");

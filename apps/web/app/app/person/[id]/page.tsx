@@ -1451,7 +1451,7 @@ export default function PersonProfilePage() {
         ))}
 
         {chart.placements
-          .filter((p) => p.body !== "sun" && p.body !== "moon" && p.body !== "north_node" && !GENERATIONAL.includes(normaliseBody(p.body)))
+          .filter((p) => p.body !== "sun" && p.body !== "moon" && p.body !== "north_node" && p.body !== "chiron" && !GENERATIONAL.includes(normaliseBody(p.body)))
           .map((p) => renderPlacementRow(p))}
 
         <div id="generational">
@@ -1479,6 +1479,7 @@ export default function PersonProfilePage() {
         </div>
 
         {chart.placements.filter((p) => p.body === "north_node").map((p) => renderPlacementRow(p))}
+        {chart.placements.filter((p) => p.body === "chiron").map((p) => renderPlacementRow(p))}
       </section>
 
       {/* ── Key aspects ── */}

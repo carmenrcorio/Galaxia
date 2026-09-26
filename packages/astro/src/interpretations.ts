@@ -21,7 +21,10 @@
 export type BodyKey =
   | "sun" | "moon" | "mercury" | "venus" | "mars"
   | "jupiter" | "saturn" | "uranus" | "neptune" | "pluto"
-  | "north_node";
+  | "north_node" | "chiron";
+
+/** Bodies with authored sign / house / transit-copy tables. Chiron is compute-only this pass. */
+export type AuthoredBodyKey = Exclude<BodyKey, "chiron">;
 
 export type SignKey =
   | "Aries" | "Taurus" | "Gemini" | "Cancer" | "Leo" | "Virgo"
@@ -43,6 +46,8 @@ export const BODY_DOMAIN: Record<BodyKey, string> = {
   pluto:   "Where they transform",
   // FOUNDER-REVIEW: North Node card descriptor (domain line).
   north_node: "Where growth asks you to go",
+  // FOUNDER-REVIEW: Chiron card descriptor (domain line).
+  chiron: "Where healing and vulnerability meet",
 };
 
 /**
@@ -69,7 +74,7 @@ export function bodyDomain(body: BodyKey, opts: PlacementSafetyOpts): string {
 /** Outer planets move slowly — flag them as generational in the UI. */
 export const GENERATIONAL: BodyKey[] = ["uranus", "neptune", "pluto"];
 
-export const PLANET_IN_SIGN: Record<BodyKey, Record<SignKey, Reading>> = {
+export const PLANET_IN_SIGN: Record<AuthoredBodyKey, Record<SignKey, Reading>> = {
   // ─────────────────────────── SUN ───────────────────────────
   sun: {
     Aries:       { short: "burns bright, moves first", long: "They come alive by starting things, and they'd rather act and correct course than wait and be sure. Let them go first; they lose themselves in too much deliberation." },
@@ -501,6 +506,7 @@ export function interpretPlacement(body: BodyKey, sign: SignKey, opts: Placement
   if (body === "venus" && opts.minorSafe) {
     return VENUS_IN_SIGN_MINOR[sign] ?? { short: "", long: "" };
   }
+  if (body === "chiron") return { short: "", long: "" };
   return PLANET_IN_SIGN[body]?.[sign] ?? { short: "", long: "" };
 }
 

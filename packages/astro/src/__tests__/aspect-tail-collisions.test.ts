@@ -99,8 +99,8 @@ const PROBE_BIRTH_CHART: NatalChart = computeNatalChart({
   lng: -74.006,
 });
 
-/** The real bodies the engine places — pulled from computeNatalChart(), not guessed. */
-const BODIES: BodyName[] = PROBE_BIRTH_CHART.placements.map((p) => p.body);
+/** Authored-copy domain. Chiron is computed this pass but has no ASPECT_ACTION cells yet. */
+const BODIES: BodyName[] = PROBE_BIRTH_CHART.placements.map((p) => p.body).filter((b) => b !== "chiron");
 
 /** Minimal synthetic chart: one placement, one controllable longitude. Only
  * `placements[].{body,lon}` and (unused here) `.cusps` are read by

@@ -25,6 +25,7 @@ const NATAL_BODY_LABEL: Record<string, string> = {
   sun: "Sun", moon: "Moon", mercury: "Mercury", venus: "Venus", mars: "Mars",
   jupiter: "Jupiter", saturn: "Saturn", uranus: "Uranus", neptune: "Neptune", pluto: "Pluto",
   north_node: "North Node",
+  chiron: "Chiron",
 };
 
 /** "meeting" / "supporting" / "squaring" / "flowing with" / "opposing" — the planet-note verb. */

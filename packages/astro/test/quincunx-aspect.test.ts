@@ -202,8 +202,8 @@ describe("quincunx copy and grouping", () => {
   });
 
   it("does not add quincunx to Vela allowed types", () => {
-    const vela = readFileSync(resolve(__dirname, "../../packages/vela/src/index.ts"), "utf8");
-    const chat = readFileSync(resolve(__dirname, "../../supabase/functions/vela-chat/index.ts"), "utf8");
+    const vela = readFileSync(resolve(__dirname, "../../vela/src/index.ts"), "utf8");
+    const chat = readFileSync(resolve(__dirname, "../../../supabase/functions/vela-chat/index.ts"), "utf8");
     expect(vela).toContain('"conjunction"');
     expect(vela).toContain('"opposition"');
     expect(vela).not.toMatch(/VELA_CITATION_ASPECTS[\s\S]{0,200}quincunx/);

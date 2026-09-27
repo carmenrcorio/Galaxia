@@ -28,8 +28,21 @@ import {
   MARKETING_NAV_LOGIN,
   MARKETING_NAV_SIGNUP,
 } from "../../lib/nav-links";
+import { useSession } from "../../lib/use-session";
+import { AppNav } from "../app-nav";
 
 export function MarketingNav() {
+  const { userId } = useSession();
+
+  // Match the public Quick Chart shell: anonymous chrome is the server and
+  // initial-hydration default, then a verified browser session swaps in the
+  // authenticated product nav without making these pages dynamic.
+  if (userId) return <AppNav />;
+
+  return <AnonymousMarketingNav />;
+}
+
+function AnonymousMarketingNav() {
   const [open, setOpen] = useState(false);
 
   // Let Escape close the drawer.

@@ -96,6 +96,7 @@ function bestEligibleTarget(
   let best: { natalBody: BodyName; natalSign: Sign; natalLon: number; orb: number } | null = null;
 
   for (const natal of person.chart.placements) {
+    if (natal.body === "north_node" || natal.body === "chiron") continue;
     if (natal.confident === false) continue; // never claim a guessed placement is part of a relational transit
     const angle = Math.abs(signedAngleDelta(transitLon, natal.lon));
     const orb = Math.abs(angle - def.angle);

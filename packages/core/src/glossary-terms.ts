@@ -33,6 +33,15 @@ export interface GlossaryLetterGroup {
 // Titles of existing posts are quoted as published; definitions are new.
 
 export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
+  // FOUNDER-REVIEW: adjusts relationship-map glossary definition.
+  {
+    id: "adjusts",
+    term: "Adjusts",
+    postCount: 0,
+    definition:
+      "The third category in Galaxia's relationship map, alongside flows and catches. Adjusts aspects are quincunxes: persistent mismatches that ask for a different angle rather than more force.",
+    readMore: null,
+  },
   {
     id: "aspect",
     term: "Aspect",
@@ -321,6 +330,15 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       title: "The Colleague You Cannot Read",
     },
   },
+  // FOUNDER-REVIEW: quincunx aspect glossary definition.
+  {
+    id: "quincunx",
+    term: "Quincunx",
+    postCount: 0,
+    definition:
+      "An aspect of 150 degrees between two planets. It creates a persistent misalignment -- not a direct conflict, but two energies that never quite sync without conscious adjustment. Galaxia uses a 2.5-degree orb for quincunxes.",
+    readMore: null,
+  },
   {
     id: "rising-sign",
     term: "Rising sign",
@@ -473,6 +491,7 @@ export function groupGlossaryByLetter(
 export const ASPECT_GLOSSARY_SLUGS = [
   "conjunction",
   "opposition",
+  "quincunx",
   "sextile",
   "square",
   "trine",

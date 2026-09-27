@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeNatalChart } from "../src/index";
+import { computeNatalChart, eclipticLongitude, longitudeToSign, type NatalChart } from "../src/index";
 import { findNextRelationalTransitDate, isRelationalTransitActive, relationalTransitDedupKey, scanRelationalTransits } from "../src/relational-transits";
 import { interpretRelationalTransit, interpretRelationalTransitHeadline, interpretRelationalTransitPlanetNote, namedPeoplePhrase } from "../src/relational-transit-interpretations";
 
@@ -44,6 +44,42 @@ describe("scanRelationalTransits", () => {
     for (const event of events) {
       expect(allowed.has(event.transitBody)).toBe(true);
     }
+  });
+
+  it("excludes North Node and Chiron from natal targets", () => {
+    const when = new Date(KNOWN_HIT_DATE);
+    const nodeLon = eclipticLongitude("jupiter", when);
+    const chironLon = eclipticLongitude("saturn", when);
+    const excludedTargetsOnly: NatalChart = {
+      ...CHART_A,
+      placements: [
+        {
+          body: "north_node",
+          lon: nodeLon,
+          sign: longitudeToSign(nodeLon),
+          degree: nodeLon % 30,
+          retro: false,
+          confident: true,
+        },
+        {
+          body: "chiron",
+          lon: chironLon,
+          sign: longitudeToSign(chironLon),
+          degree: chironLon % 30,
+          retro: false,
+          confident: true,
+        },
+      ],
+    };
+    const events = scanRelationalTransits(
+      [
+        { id: "node-chiron-a", name: "One", chart: excludedTargetsOnly },
+        { id: "node-chiron-b", name: "Two", chart: excludedTargetsOnly },
+      ],
+      KNOWN_HIT_DATE
+    );
+
+    expect(events).toEqual([]);
   });
 
   it("derives a real active window bracketing both affected people's exact dates, not a hardcoded range", () => {

@@ -21,19 +21,33 @@ describe("shared glossary terms", () => {
     expect(GLOSSARY_SEE_FULL_DEFINITION).not.toContain("\u2014");
   });
 
-  it("maps the five major aspect types to glossary slugs", () => {
+  it("maps the supported aspect types to glossary slugs", () => {
     expect(ASPECT_GLOSSARY_SLUGS).toEqual([
       "conjunction",
       "opposition",
+      "quincunx",
       "sextile",
       "square",
       "trine",
     ]);
     expect(aspectGlossarySlug("Trine")).toBe("trine");
+    expect(aspectGlossarySlug("Quincunx")).toBe("quincunx");
     expect(aspectGlossarySlug("applying")).toBeUndefined();
-    expect(GLOSSARY_TERMS).toHaveLength(39);
+    expect(GLOSSARY_TERMS).toHaveLength(41);
+  });
+
+  it("defines the sign metadata terms", () => {
     expect(getGlossaryTerm("element")?.term).toBe("Element");
     expect(getGlossaryTerm("modality")?.term).toBe("Modality");
     expect(getGlossaryTerm("ruling-planet")?.term).toBe("Ruling planet");
+  });
+
+  it("defines the adjusts and quincunx relationship terms", () => {
+    expect(getGlossaryTerm("adjusts")?.definition).toContain(
+      "persistent mismatches that ask for a different angle",
+    );
+    expect(getGlossaryTerm("quincunx")?.definition).toContain(
+      "Galaxia uses a 2.5-degree orb",
+    );
   });
 });

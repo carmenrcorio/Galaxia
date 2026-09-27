@@ -32,6 +32,7 @@ import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES } from "../../../components/char
 import { DynamicTableSection } from "../../../components/dynamic-table-section";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { GenerationalSection } from "../../../components/generational-section";
+import { GlossaryTerm } from "../../../components/glossary-term";
 import { RelatedLinks } from "../../../components/marketing/related-links";
 import { QuickChartShell } from "../../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
@@ -277,7 +278,7 @@ export default function QuickComparePage() {
       authed={!!viewer.userId}
     >
       <p className="lede" style={{ marginBottom: 20 }}>
-        Enter both birth dates for a real synastry reading: the aspects between you, where you flow, where you catch, and what each of you needs. Nothing is saved unless you choose to.
+        Enter both birth dates for a real <GlossaryTerm glossarySlug="synastry">synastry</GlossaryTerm> reading: the aspects between you, where you flow, where you catch, and what each of you needs. Nothing is saved unless you choose to.
       </p>
 
       {!result ? (

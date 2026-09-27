@@ -1451,30 +1451,6 @@ export default function PersonProfilePage() {
           .filter((p) => p.body !== "sun" && p.body !== "moon" && p.body !== "north_node" && p.body !== "chiron" && !GENERATIONAL.includes(normaliseBody(p.body)))
           .map((p) => renderPlacementRow(p))}
 
-        <div id="generational">
-          {plutoGeneration ? (
-            <p style={{ fontSize: ".78rem", color: "var(--cream)", fontWeight: 600, margin: "12px 0 2px" }}>
-              {plutoGeneration}
-            </p>
-          ) : null}
-          <p className="muted" style={{ fontSize: ".8rem", marginBottom: 12 }}>{chart.generational.cohortLabel}</p>
-          {chart.placements
-            .filter((p) => GENERATIONAL.includes(normaliseBody(p.body)))
-            .map((p) => renderPlacementRow(p))}
-          {!person.is_self && viewerPlutoSign && chart.generational.pluto.confident ? (() => {
-            const bridge = getFamilyBridge(viewerPlutoSign, chart.generational.pluto.sign);
-            if (!bridge) return null;
-            return (
-              <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 12, border: "1px solid rgba(183,154,216,.22)", background: "rgba(255,255,255,.025)" }}>
-                <p className="eyebrow" style={{ marginBottom: 6 }}>
-                  You + {person.relation || person.display_name}
-                </p>
-                <p style={{ fontSize: ".84rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{bridge}</p>
-              </div>
-            );
-          })() : null}
-        </div>
-
         {chart.placements.filter((p) => p.body === "north_node").map((p) => renderPlacementRow(p))}
         {chart.placements.filter((p) => p.body === "chiron").map((p) => renderPlacementRow(p))}
       </section>
@@ -1513,6 +1489,32 @@ export default function PersonProfilePage() {
           </div>
         </section>
       ) : null}
+
+      <section id="generational" className="glass-card fade-in fade-in-delay-2">
+        <p className="eyebrow" style={{ marginBottom: 8 }}>Generational signature</p>
+        <ChartVocabSubhead term={PERSON_TAB_VOCAB.generational ?? "Generational"} />
+        {plutoGeneration ? (
+          <p style={{ fontSize: ".9rem", color: "var(--cream)", fontWeight: 600, margin: "8px 0 2px" }}>
+            {plutoGeneration}
+          </p>
+        ) : null}
+        <p className="muted" style={{ fontSize: ".8rem", marginBottom: 12 }}>{chart.generational.cohortLabel}</p>
+        {chart.placements
+          .filter((p) => GENERATIONAL.includes(normaliseBody(p.body)))
+          .map((p) => renderPlacementRow(p))}
+        {!person.is_self && viewerPlutoSign && chart.generational.pluto.confident ? (() => {
+          const bridge = getFamilyBridge(viewerPlutoSign, chart.generational.pluto.sign);
+          if (!bridge) return null;
+          return (
+            <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 12, border: "1px solid rgba(183,154,216,.22)", background: "rgba(255,255,255,.025)" }}>
+              <p className="eyebrow" style={{ marginBottom: 6 }}>
+                You + {person.relation || person.display_name}
+              </p>
+              <p style={{ fontSize: ".84rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{bridge}</p>
+            </div>
+          );
+        })() : null}
+      </section>
 
       {/* ── Key aspects ── */}
       {natalAspectReadings.length > 0 ? (

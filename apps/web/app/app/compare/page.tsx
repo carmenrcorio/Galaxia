@@ -380,7 +380,16 @@ function ComparePageInner() {
     if (natalA.precision === "year" || natalB.precision === "year") {
       const generationalOnly = compareGenerational(natalA.generational as GenSignature, natalB.generational as GenSignature, estimateYearGap(selectedA, selectedB));
       const blocked = natalA.precision === "year" ? selectedA : selectedB;
-      setResult(null);
+      setResult({
+        personA: selectedA,
+        personB: selectedB,
+        chartA: natalA,
+        chartB: natalB,
+        synastry: null,
+        generational: generationalOnly,
+        engineVersionA,
+        engineVersionB,
+      });
       setPrecisionGapPerson({ id: blocked.id, name: blocked.display_name });
       setTransitDelta(prior ? { newlyActive: [], movedOn: [], honest: false } : null);
       setStatus(
@@ -728,6 +737,8 @@ function ComparePageInner() {
                         A minor is part of this comparison, so Galaxia won&apos;t produce a romantic or partner reading here. Choose any of the other relationship types above to see the comparison.
           </p>
         </section>
+      ) : result && !result.synastry && relationType ? (
+        <GenerationalSection generational={result.generational} professional={isProfessionalRelation(relationType)} />
       ) : result && relationType ? (
         <>
                     {/* Capture is the headline (avatars, names, wheel), the

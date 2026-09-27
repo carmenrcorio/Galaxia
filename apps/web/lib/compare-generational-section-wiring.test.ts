@@ -30,6 +30,13 @@ describe("/app/compare mounts the shared GenerationalSection", () => {
     expect(src).not.toContain("Fault line:");
     expect(src).not.toContain("Shared sky:");
   });
+
+  it("keeps a year-only result so the generational section can render", () => {
+    const src = read("apps/web/app/app/compare/page.tsx");
+    expect(src).toContain("synastry: null");
+    expect(src).toContain("result && !result.synastry && relationType");
+    expect(src).not.toMatch(/setResult\(null\);\s*setPrecisionGapPerson/);
+  });
 });
 
 describe("mobile Compare mounts its native GenerationalSection", () => {

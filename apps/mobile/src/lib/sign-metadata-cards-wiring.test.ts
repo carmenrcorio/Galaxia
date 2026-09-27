@@ -9,22 +9,27 @@ function readMobile(rel: string): string {
 }
 
 describe("mobile sign metadata cards", () => {
-  it("renders between the compact Big Three and natal wheel", () => {
+  it("renders the compact Big Three and wheel together before metadata and actions", () => {
     const profile = readMobile("app/(app)/profile/[personId].tsx");
     const bigThree = profile.indexOf("<FlipSignCards");
-    const metadata = profile.indexOf("<SignMetadataCards");
     const wheel = profile.indexOf("<ChartWheel");
+    const metadata = profile.indexOf("<SignMetadataCards");
+    const actions = profile.indexOf('<Link href="/compare"');
 
     expect(bigThree).toBeGreaterThan(0);
-    expect(metadata).toBeGreaterThan(bigThree);
-    expect(wheel).toBeGreaterThan(metadata);
+    expect(wheel).toBeGreaterThan(bigThree);
+    expect(metadata).toBeGreaterThan(wheel);
+    expect(actions).toBeGreaterThan(metadata);
   });
 
-  it("uses the confident Sun gate, shared palette, expandable origin, and glossary entries", () => {
+  it("uses the confident Sun gate, shared palettes, glyphs, expandable origin, and glossary entries", () => {
     const component = readMobile("src/components/sign-metadata-cards.tsx");
 
     expect(component).toContain("sunSignFromChart(chart)");
     expect(component).toContain("ELEMENT_NODE_COLORS[metadata.element]");
+    expect(component).toContain("BIRTHSTONE_COLORS[sunSign]");
+    expect(component).toContain("SIGN_GLYPH[sunSign]");
+    expect(component).toContain("BODY_GLYPH[metadata.rulingPlanet]");
     expect(component).toContain("originOpen ? metadata.symbolOrigin : firstSentence(metadata.symbolOrigin)");
     expect(component).toContain('glossarySlug="element"');
     expect(component).toContain('glossarySlug="modality"');

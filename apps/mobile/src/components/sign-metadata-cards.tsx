@@ -1,5 +1,11 @@
 import { getSignMetadata, type NatalChart, type Sign } from "@galaxia/astro";
-import { ELEMENT_NODE_COLORS, sunSignFromChart } from "@galaxia/core";
+import {
+  BIRTHSTONE_COLORS,
+  BODY_GLYPH,
+  ELEMENT_NODE_COLORS,
+  SIGN_GLYPH,
+  sunSignFromChart,
+} from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -23,27 +29,48 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
 
   const metadata = getSignMetadata(sunSign as Sign);
   const elementColor = ELEMENT_NODE_COLORS[metadata.element];
+  const birthstoneColor = BIRTHSTONE_COLORS[sunSign];
+  const planetGlyph = BODY_GLYPH[metadata.rulingPlanet] ?? BODY_GLYPH[metadata.rulingPlanet.toLowerCase()];
 
   return (
     <View
       accessibilityLabel={`${sunSign} sign reference`}
       testID="sign-metadata-cards"
-      style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}
+      style={cardStyle}
     >
-      <View style={pillStyle}>
-        <GlossaryTooltip glossarySlug="element" style={labelStyle}>Element</GlossaryTooltip>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <View
-            accessibilityElementsHidden
-            style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: elementColor }}
-          />
-          <Text style={valueStyle}>{titleCase(metadata.element)}</Text>
-        </View>
-      </View>
+      <Text style={eyebrowStyle}>{sunSign}</Text>
 
-      <View style={pillStyle}>
-        <GlossaryTooltip glossarySlug="modality" style={labelStyle}>Modality</GlossaryTooltip>
-        <Text style={valueStyle}>{titleCase(metadata.modality)}</Text>
+      <Text
+        accessibilityElementsHidden
+        style={[zodiacStyle, { color: elementColor }]}
+      >
+        {SIGN_GLYPH[sunSign]}
+      </Text>
+
+      <View style={identityStyle}>
+        <View style={pillStyle}>
+          <GlossaryTooltip glossarySlug="element" style={labelStyle}>Element</GlossaryTooltip>
+          <View style={inlineValueStyle}>
+            <View
+              accessibilityElementsHidden
+              style={[dotStyle, { backgroundColor: elementColor }]}
+            />
+            <Text style={[pillValueStyle, { color: elementColor }]}>{titleCase(metadata.element)}</Text>
+          </View>
+        </View>
+
+        <View style={pillStyle}>
+          <GlossaryTooltip glossarySlug="modality" style={labelStyle}>Modality</GlossaryTooltip>
+          <Text style={[pillValueStyle, { color: tokens.colors.mist }]}>{titleCase(metadata.modality)}</Text>
+        </View>
+
+        <View style={pillStyle}>
+          <GlossaryTooltip glossarySlug="ruling-planet" style={labelStyle}>Ruling planet</GlossaryTooltip>
+          <View style={inlineValueStyle}>
+            <Text accessibilityElementsHidden style={planetStyle}>{planetGlyph}</Text>
+            <Text style={pillValueStyle}>{metadata.rulingPlanet}</Text>
+          </View>
+        </View>
       </View>
 
       <Pressable
@@ -52,66 +79,174 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
         // FOUNDER-REVIEW: accessible action label for the approved symbol explanation.
         accessibilityLabel={`${originOpen ? "Hide" : "Read"} why ${sunSign} uses the ${metadata.symbol}`}
         onPress={() => setOriginOpen((open) => !open)}
-        style={[pillStyle, { flexBasis: "100%" }]}
+        style={symbolStyle}
       >
-        {/* FOUNDER-REVIEW: compact symbol-card label. */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
-          <Text style={labelStyle}>Symbol · {metadata.symbol}</Text>
-          <Text accessibilityElementsHidden style={labelStyle}>{originOpen ? "▲" : "▼"}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {/* FOUNDER-REVIEW: symbol heading follows the approved design structure. */}
+          <Text style={symbolNameStyle}>The {metadata.symbol}</Text>
+          <Text accessibilityElementsHidden style={chevronStyle}>{originOpen ? "▲" : "▼"}</Text>
         </View>
-        <Text style={[originStyle, { color: originOpen ? tokens.colors.cream : tokens.colors.mist }]}>
+        <Text style={originStyle}>
           {originOpen ? metadata.symbolOrigin : firstSentence(metadata.symbolOrigin)}
         </Text>
       </Pressable>
 
-      <View style={pillStyle}>
-        <GlossaryTooltip glossarySlug="ruling-planet" style={labelStyle}>Ruling planet</GlossaryTooltip>
-        <Text style={valueStyle}>{metadata.rulingPlanet}</Text>
-      </View>
+      <View style={materialsStyle}>
+        <View style={materialStyle}>
+          <View accessibilityElementsHidden style={[dotStyle, { backgroundColor: tokens.colors.goldSoft }]} />
+          <View>
+            {/* FOUNDER-REVIEW: traditional material reference label. */}
+            <Text style={labelStyle}>Metal</Text>
+            <Text style={materialValueStyle}>{metadata.metal}</Text>
+          </View>
+        </View>
 
-      <View style={pillStyle}>
-        {/* FOUNDER-REVIEW: traditional material reference label. */}
-        <Text style={labelStyle}>Metal</Text>
-        <Text style={valueStyle}>{metadata.metal}</Text>
-      </View>
-
-      <View style={pillStyle}>
-        {/* FOUNDER-REVIEW: traditional stone reference label. */}
-        <Text style={labelStyle}>Birthstone</Text>
-        <Text style={valueStyle}>{metadata.birthstone}</Text>
+        <View style={materialStyle}>
+          <View accessibilityElementsHidden style={[stoneDotStyle, { backgroundColor: birthstoneColor }]} />
+          <View>
+            {/* FOUNDER-REVIEW: traditional stone reference label. */}
+            <Text style={labelStyle}>Birthstone</Text>
+            <Text style={materialValueStyle}>{metadata.birthstone}</Text>
+          </View>
+        </View>
       </View>
     </View>
   );
 }
 
-const pillStyle = {
-  minWidth: 104,
-  flexGrow: 1,
-  flexBasis: "30%",
-  borderRadius: 12,
+const cardStyle = {
+  position: "relative",
+  overflow: "hidden",
+  backgroundColor: tokens.colors.ink3,
+  borderRadius: 18,
   borderWidth: 1,
-  borderColor: "rgba(230,174,108,0.14)",
-  backgroundColor: "rgba(255,255,255,0.025)",
-  paddingHorizontal: 11,
-  paddingVertical: 9,
-  gap: 4,
+  borderColor: tokens.colors.line,
+  paddingHorizontal: 14,
+  paddingVertical: 13,
+  gap: 8,
+} as const;
+
+const eyebrowStyle = {
+  color: tokens.colors.gold,
+  fontFamily: fonts.interSemi,
+  fontSize: 10,
+  letterSpacing: 2.2,
+  textTransform: "uppercase",
+} as const;
+
+const zodiacStyle = {
+  position: "absolute",
+  right: 10,
+  top: 38,
+  fontFamily: fonts.zodiac,
+  fontSize: 64,
+  lineHeight: 68,
+  opacity: 0.1,
+} as const;
+
+const identityStyle = {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  gap: 6,
+  zIndex: 1,
+} as const;
+
+const pillStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  borderRadius: 999,
+  borderWidth: 1,
+  borderColor: "rgba(183,154,216,0.14)",
+  backgroundColor: "rgba(10,7,23,0.52)",
+  paddingHorizontal: 8,
+  paddingVertical: 5,
 } as const;
 
 const labelStyle = {
   color: tokens.colors.mist2,
-  fontSize: 9,
+  fontFamily: fonts.interSemi,
+  fontSize: 8,
   fontWeight: "700",
-  letterSpacing: 1,
+  letterSpacing: 0.8,
   textTransform: "uppercase",
 } as const;
 
-const valueStyle = {
+const inlineValueStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 4,
+} as const;
+
+const pillValueStyle = {
   color: tokens.colors.cream,
+  fontFamily: fonts.interSemi,
+  fontSize: 11,
+} as const;
+
+const dotStyle = {
+  width: 7,
+  height: 7,
+  borderRadius: 4,
+} as const;
+
+const planetStyle = {
+  color: tokens.colors.gold,
+  fontFamily: fonts.zodiac,
+  fontSize: 15,
+  lineHeight: 16,
+} as const;
+
+const symbolStyle = {
+  zIndex: 1,
+  gap: 3,
+  paddingRight: 46,
+} as const;
+
+const symbolNameStyle = {
+  color: tokens.colors.gold,
   fontFamily: fonts.fraunces,
-  fontSize: 14,
+  fontSize: 17,
+} as const;
+
+const chevronStyle = {
+  color: tokens.colors.goldSoft,
+  fontSize: 9,
 } as const;
 
 const originStyle = {
+  color: tokens.colors.mist,
+  fontFamily: fonts.inter,
   fontSize: 12,
-  lineHeight: 18,
+  lineHeight: 17,
+} as const;
+
+const materialsStyle = {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: 22,
+  paddingTop: 8,
+  borderTopWidth: 1,
+  borderTopColor: "rgba(183,154,216,0.14)",
+  zIndex: 1,
+} as const;
+
+const materialStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 7,
+} as const;
+
+const stoneDotStyle = {
+  width: 10,
+  height: 10,
+  borderRadius: 5,
+} as const;
+
+const materialValueStyle = {
+  color: tokens.colors.cream,
+  fontFamily: fonts.fraunces,
+  fontSize: 12,
+  marginTop: 1,
 } as const;

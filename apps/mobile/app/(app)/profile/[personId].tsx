@@ -373,7 +373,37 @@ export default function PersonProfileScreen() {
         </View>
       </View>
 
-      {chart ? <FlipSignCards chart={chart} minorSafe={personIsMinor} /> : null}
+      {chart ? (
+        <View style={[cardStyle, { gap: 0 }]}>
+          <Text style={vocabSubhead}>
+            {chart.precision === "exact" && chart.asc
+              ? `Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`
+              : "Zodiac wheel"}
+          </Text>
+          <Text
+            style={{
+              color: tokens.colors.cream,
+              fontFamily: fonts.fraunces,
+              fontSize: 17,
+              textAlign: "center",
+              marginBottom: 4
+            }}
+          >
+            {person.display_name}
+          </Text>
+          <FlipSignCards chart={chart} minorSafe={personIsMinor} />
+          <ChartWheel chart={chart} aspects={natalAspects} />
+          {chart.houseSystemFallbackReason ? (
+            <Text style={cardBody}>{chart.houseSystemFallbackReason}</Text>
+          ) : null}
+          {chart.precision !== "exact" || !chart.asc ? (
+            <Text style={cardBody}>
+              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
       {chart ? <SignMetadataCards chart={chart} /> : null}
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
@@ -408,36 +438,6 @@ export default function PersonProfileScreen() {
           }}
           upgradeTo={editUpgradeTo}
         />
-      ) : null}
-
-      {chart ? (
-        <View style={cardStyle}>
-          <Text style={vocabSubhead}>
-            {chart.precision === "exact" && chart.asc
-              ? `Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`
-              : "Zodiac wheel"}
-          </Text>
-          <Text
-            style={{
-              color: tokens.colors.cream,
-              fontFamily: fonts.fraunces,
-              fontSize: 17,
-              textAlign: "center",
-              marginBottom: 4
-            }}
-          >
-            {person.display_name}
-          </Text>
-          <ChartWheel chart={chart} aspects={natalAspects} />
-          {chart.houseSystemFallbackReason ? (
-            <Text style={cardBody}>{chart.houseSystemFallbackReason}</Text>
-          ) : null}
-          {chart.precision !== "exact" || !chart.asc ? (
-            <Text style={cardBody}>
-              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
-            </Text>
-          ) : null}
-        </View>
       ) : null}
 
       <PersonTodayCards

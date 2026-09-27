@@ -1182,8 +1182,37 @@ export default function PersonProfilePage() {
         </div>
       </div>
 
-      <FlipSignCards chart={chart} minorSafe={personIsMinor} />
-      <SignMetadataCards chart={chart} />
+      <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
+        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1 person-chart-hero chart-identity-unit">
+          <p className="muted" style={{ fontSize: ".72rem", margin: "0 0 6px" }}>
+            {chart.precision === "exact" && chart.asc
+              ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
+              : enduringEyebrow("Zodiac wheel")}
+          </p>
+          <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", textAlign: "center", marginBottom: 10 }}>
+            {person.display_name}
+          </p>
+          <FlipSignCards chart={chart} minorSafe={personIsMinor} />
+          <div className="chart-identity-unit__wheel">
+            {wheelMounted ? (
+              <ChartWheel chart={chart} aspects={natalAspects} exportSafe />
+            ) : (
+              <div aria-hidden style={{ width: 300, height: 300, margin: "0 auto" }} />
+            )}
+          </div>
+          {chart.houseSystemFallbackReason ? (
+            <p className="muted" style={{ fontSize: ".72rem", textAlign: "center", maxWidth: "52ch", margin: "0 auto" }}>
+              {chart.houseSystemFallbackReason}
+            </p>
+          ) : null}
+          {(chart.precision !== "exact" || !chart.asc) ? (
+            <p className="muted" style={{ fontSize: ".72rem", textAlign: "center", maxWidth: "48ch", margin: "0 auto" }}>
+              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+            </p>
+          ) : null}
+        </section>
+        <SignMetadataCards chart={chart} />
+      </ChartImageExport>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
@@ -1228,34 +1257,6 @@ export default function PersonProfilePage() {
           </p>
         </div>
       ) : null}
-
-      <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
-        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1 person-chart-hero">
-          <p className="muted" style={{ fontSize: ".72rem", margin: "0 0 14px" }}>
-            {chart.precision === "exact" && chart.asc
-              ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
-              : enduringEyebrow("Zodiac wheel")}
-          </p>
-          <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", textAlign: "center", marginBottom: 12 }}>
-            {person.display_name}
-          </p>
-          {wheelMounted ? (
-            <ChartWheel chart={chart} aspects={natalAspects} exportSafe />
-          ) : (
-            <div aria-hidden style={{ width: 300, height: 300, margin: "0 auto" }} />
-          )}
-          {chart.houseSystemFallbackReason ? (
-            <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
-              {chart.houseSystemFallbackReason}
-            </p>
-          ) : null}
-          {(chart.precision !== "exact" || !chart.asc) ? (
-            <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "48ch", margin: "10px auto 0" }}>
-              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
-            </p>
-          ) : null}
-        </section>
-      </ChartImageExport>
 
       <div
         id="person-today"

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import type { NatalChart } from "@galaxia/astro";
-import { ELEMENT_NODE_COLORS } from "@galaxia/core";
+import { BIRTHSTONE_COLORS, ELEMENT_NODE_COLORS } from "@galaxia/core";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { SignMetadataCards } from "./sign-metadata-cards";
@@ -29,10 +29,15 @@ describe("SignMetadataCards", () => {
     render(<SignMetadataCards chart={chart()} />);
 
     const section = screen.getByTestId("sign-metadata-cards");
+    expect(section.classList.contains("glass-card")).toBe(true);
     expect(section.dataset.element).toBe("earth");
     expect(section.dataset.elementColor).toBe(ELEMENT_NODE_COLORS.earth);
+    expect(section.dataset.birthstoneColor).toBe(BIRTHSTONE_COLORS.Capricorn);
     expect(screen.getByText("Cardinal")).toBeTruthy();
     expect(screen.getByText("Saturn")).toBeTruthy();
+    expect(screen.getByText("♄")).toBeTruthy();
+    expect(screen.getByText("♑")).toBeTruthy();
+    expect(screen.getByText("The Sea-Goat")).toBeTruthy();
     expect(screen.getByText("Lead")).toBeTruthy();
     expect(screen.getByText("Garnet")).toBeTruthy();
     expect(screen.getByText("Element").closest(".glossary-term")).toBeTruthy();

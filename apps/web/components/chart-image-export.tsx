@@ -23,7 +23,9 @@
  * hides the raster-image control.
  */
 
-import { useRef, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { useState, useRef, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { flushSync } from "react-dom";
+import { ChartImageCaptureProvider } from "./chart-image-capture";
 import { ShareImageButton } from "./share-image-button";
 import { ShareWatermark } from "./share-watermark";
 
@@ -86,6 +88,8 @@ export function ChartImageExportButton({
   label = "Share image",
   pairHasMinor = false,
   capture,
+  onBeforeCapture,
+  onAfterCapture,
 }: {
   frameRef: RefObject<HTMLElement | null>;
   filename: string;
@@ -96,9 +100,20 @@ export function ChartImageExportButton({
    * (iOS cannot read GPU-promoted on-screen canvases). Returns a PNG Blob.
    */
   capture?: () => Promise<string | Blob>;
+  onBeforeCapture?: () => void | Promise<void>;
+  onAfterCapture?: () => void | Promise<void>;
 }) {
   if (pairHasMinor) return null;
-  return <ShareImageButton targetRef={frameRef} filename={filename} label={label} capture={capture} />;
+  return (
+    <ShareImageButton
+      targetRef={frameRef}
+      filename={filename}
+      label={label}
+      capture={capture}
+      onBeforeCapture={onBeforeCapture}
+      onAfterCapture={onAfterCapture}
+    />
+  );
 }
 
 /**
@@ -124,6 +139,7 @@ export function ChartImageExport({
   children: ReactNode;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
+  const [capturing, setCapturing] = useState(false);
 
   // When gated, render the content untouched: no frame, no watermark, no
   // button. The chart or reading itself is not gated here; only the image
@@ -132,17 +148,28 @@ export function ChartImageExport({
 
   const button = (
     <div style={{ display: "flex", justifyContent: "center", margin: "12px 0" }}>
-      <ChartImageExportButton frameRef={frameRef} filename={filename} label={label} />
+      <ChartImageExportButton
+        frameRef={frameRef}
+        filename={filename}
+        label={label}
+        onBeforeCapture={() => {
+          // flushSync so the back faces unmount before html-to-image clones.
+          flushSync(() => setCapturing(true));
+        }}
+        onAfterCapture={() => {
+          flushSync(() => setCapturing(false));
+        }}
+      />
     </div>
   );
 
   return (
-    <>
+    <ChartImageCaptureProvider capturing={capturing}>
       {buttonPosition === "above" ? button : null}
       <ChartImageExportFrame frameRef={frameRef} style={frameStyle}>
         {children}
       </ChartImageExportFrame>
       {buttonPosition === "below" ? button : null}
-    </>
+    </ChartImageCaptureProvider>
   );
 }

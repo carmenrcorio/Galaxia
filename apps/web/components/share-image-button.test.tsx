@@ -125,6 +125,50 @@ describe("ShareImageButton label state machine", () => {
     expect(payload?.files?.[0]?.type).toBe("image/png");
   });
 
+  it("runs onBeforeCapture before the capture and restores afterward, including on failure", async () => {
+    const order: string[] = [];
+    const { rerender } = render(
+      <ShareImageButton
+        filename="sky.png"
+        label="Share"
+        onBeforeCapture={() => {
+          order.push("before");
+        }}
+        capture={async () => {
+          order.push("capture");
+          throw new Error(SHARE_IMAGE_FAIL);
+        }}
+        onAfterCapture={() => {
+          order.push("after");
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button"));
+    await waitFor(() => expect(screen.getByText(SHARE_IMAGE_FAIL)).toBeTruthy());
+    expect(order).toEqual(["before", "capture", "after"]);
+
+    order.length = 0;
+    stubShare(async () => {});
+    rerender(
+      <ShareImageButton
+        filename="sky.png"
+        label="Share"
+        onBeforeCapture={() => {
+          order.push("before");
+        }}
+        capture={async () => {
+          order.push("capture");
+          return pngDataUrl();
+        }}
+        onAfterCapture={() => {
+          order.push("after");
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button"));
+    await waitFor(() => expect(order).toEqual(["before", "capture", "after"]));
+  });
+
   it("does not say Shared when the capture blob is empty", async () => {
     stubShare(async () => {});
     render(

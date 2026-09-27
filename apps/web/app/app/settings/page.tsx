@@ -2,13 +2,14 @@
 
 import type { HouseSystem } from "@galaxia/astro";
 import { useEffect, useMemo, useState } from "react";
+import { SettingsAccountCredentials } from "../../../components/settings-account-credentials";
 import { SettingsAccountSection } from "../../../components/settings-account-section";
 import { SettingsSubscriptionPanel } from "../../../components/settings-subscription-panel";
 import { PendingConnectInvites } from "../../../components/pending-connect-invites";
 import { PendingShareLinks } from "../../../components/pending-share-links";
 import { Spinner } from "../../../components/spinner";
 import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "@galaxia/astro";
-import { DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
+import { DEFAULT_FETCH_TIMEOUT_MS, formatRelationshipLabel, withTimeout } from "@galaxia/core";
 import { EMPTY_STATE_WELCOME_HREF } from "../../../lib/nav-links";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
@@ -328,14 +329,12 @@ export default function SettingsPage() {
         {relationalPrefStatus ? <p className={relationalPrefStatus.startsWith("Saved") ? "success" : "error"} style={{ fontSize: ".78rem", marginTop: 8 }}>{relationalPrefStatus}</p> : null}
       </section>
 
+      <SettingsAccountCredentials accountEmail={accountEmail} />
+
       <section className="glass-card">
         <h2 className="card-title">Privacy</h2>
         <p className="muted">Your private notes are visible only to you: never shared with the person they're about and never included in shared-space Vela conversations.</p>
         <p className="muted">Shared spaces require consent from all participants and are blocked when any participant is a minor.</p>
-                <p className="muted" style={{ marginTop: 10 }}>
-          Change your password from{" "}
-          <a href="/account" style={{ color: "var(--gold)" }}>Account</a>.
-        </p>
       </section>
 
       <section className="glass-card">
@@ -389,7 +388,7 @@ export default function SettingsPage() {
           {people.map((person) => (
             <div key={person.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
               <span style={{ color: "var(--cream)" }}>{person.display_name}</span>
-              <span className="muted" style={{ fontSize: 13 }}>{person.relation}</span>
+              <span className="muted" style={{ fontSize: 13 }}>{formatRelationshipLabel(person.relation)}</span>
             </div>
           ))}
         </div>

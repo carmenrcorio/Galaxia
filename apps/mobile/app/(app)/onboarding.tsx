@@ -8,6 +8,7 @@ import {
 import {
   ASK_BIRTH_DATA_TOGGLE,
   CHART_PRECISION_NONE_TIER,
+  formatRelationshipLabel,
   GALAXY_RELATION_PICKER_OPTIONS,
   type GalaxyPickerRelation
 } from "@galaxia/core";
@@ -332,7 +333,7 @@ export default function OnboardingScreen() {
               >
                 <Text style={{ color: tokens.colors.cream, fontWeight: "700" }}>{person.display_name}</Text>
                 <Text style={{ color: tokens.colors.mist }}>
-                  {person.relation} · {person.birth_precision}
+                  {formatRelationshipLabel(person.relation)} · {person.birth_precision}
                 </Text>
               </Pressable>
             </Link>

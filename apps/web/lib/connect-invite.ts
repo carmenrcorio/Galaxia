@@ -1,4 +1,5 @@
 import {
+  formatRelationshipLabel,
   GALAXY_RELATION_PICKER_OPTIONS,
   isMinorForSafety,
   resolveGalaxyRelation,
@@ -237,7 +238,7 @@ export const CONNECT_GO_CONSTELLATION = "Go to your constellation";
 
 export function connectLandingHeadline(inviterName: string, relation: string): string {
   if (!relation) return `${inviterName} invited you to connect.`;
-  return `${inviterName} invited you to connect as their ${connectRelationLabel(relation).toLowerCase()}.`;
+  return `${inviterName} invited you to connect as their ${formatRelationshipLabel(connectRelationLabel(relation))}.`;
 }
 
 export const CONNECT_SHARE_TITLE = "Connect with me on Galaxia";

@@ -157,6 +157,24 @@ describe("source wiring — compare bi-wheel + shared flows/catches", () => {
     expect(needsIdx).toBeLessThan(appDynIdx);
     expect(appDynIdx).toBeLessThan(watchIdx);
   });
+
+  it("renders element balance inside every compare image export", () => {
+    const paths = [
+      "../app/app/compare/page.tsx",
+      "../app/chart/compare/page.tsx",
+      "../components/share-snapshot-view.tsx",
+    ];
+
+    for (const path of paths) {
+      const src = readFileSync(resolve(__dirname, path), "utf8");
+      const element = src.indexOf("<ElementBalanceSection");
+      const exportStart = src.lastIndexOf("<ChartImageExport", element);
+      const exportEnd = src.indexOf("</ChartImageExport>", exportStart);
+      expect(exportStart).toBeGreaterThan(-1);
+      expect(element).toBeGreaterThan(exportStart);
+      expect(element).toBeLessThan(exportEnd);
+    }
+  });
 });
 
 describe("revival: relationshipAspectFraming() text-only inside FlowsAndCatchesSection", () => {

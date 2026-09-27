@@ -2,16 +2,19 @@
 
 /**
  * Read-only renderer for /s/<token> snapshots.
- * Displays the stored computed reading only — never recomputes placements,
- * orbs, or confidence. Compare framing uses stored pairHasMinor; romantic+minor
- * is a render backstop only (persist refuses to create such rows).
+ * Displays the stored computed reading only. It never recomputes placements,
+ * orbs, or confidence; legacy element counts are tallied from the placements
+ * already stored in the snapshot. Compare framing uses stored pairHasMinor;
+ * romantic+minor is a render backstop only (persist refuses to create such rows).
  */
 
 import {
   bodyDomain,
+  countPlanetElements,
   interpretPlacement,
   isProfessionalRelation,
   relationshipWatchLine,
+  summarizePairElementBalance,
   singleChartNeed,
   whatTheyNeed,
   type BodyKey,
@@ -53,6 +56,7 @@ import { ChartImageExport, chartExportFilename } from "./chart-image-export";
 import { ChartPdfExport } from "./chart-pdf-export";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES } from "./chart-wheel";
 import { DynamicTableSection } from "./dynamic-table-section";
+import { ElementBalanceSection } from "./element-balance-section";
 import { FlowsAndCatchesSection } from "./flows-and-catches-section";
 import { GenerationalSection } from "./generational-section";
 import { NatalSignReveal } from "./natal-sign-reveal";
@@ -60,6 +64,7 @@ import { RetrogradeBadge } from "./retrograde-badge";
 import { HousesUnavailableCard } from "./houses-unavailable-card";
 import { QuickChartShell } from "./quick-chart-shell";
 import { SaveToGalaxyButton } from "./save-to-galaxy-button";
+import { SingleChartGenerationalSummary } from "./single-chart-generational-summary";
 
 function getSign(chart: NatalChart, body: string) {
   const p = chart.placements.find((pl) => pl.body === body);
@@ -208,6 +213,8 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
         ) : null}
       </section>
 
+      <SingleChartGenerationalSummary chart={payload.chart} />
+
       <section className="glass-card fade-in fade-in-delay-2" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>
         {giftBirth ? (
           <>
@@ -263,6 +270,10 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
   const exportFilename = chartExportFilename(
     `${personA.display_name}-${personB.display_name}`,
     "synastry-chart.png"
+  );
+  const elementBalance = payload.synastry?.elementBalance ?? summarizePairElementBalance(
+    countPlanetElements(payload.chartA.placements),
+    countPlanetElements(payload.chartB.placements)
   );
 
   return (
@@ -362,6 +373,13 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
             ))}
           </DynamicTableSection>
         )}
+        {!framing.blockRomanticMinorRender && payload.synastry ? (
+          <ElementBalanceSection
+            nameA={personA.display_name}
+            nameB={personB.display_name}
+            balance={elementBalance}
+          />
+        ) : null}
       </ChartImageExport>
 
       {framing.blockRomanticMinorRender || !payload.synastry ? null : (

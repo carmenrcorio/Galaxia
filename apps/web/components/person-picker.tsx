@@ -7,7 +7,7 @@
  * constellation size.
  */
 
-import { GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety } from "@galaxia/core";
+import { formatRelationshipLabel, GALAXY_RELATION_PICKER_OPTIONS, isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -41,7 +41,7 @@ const POPOVER_WIDTH = 320;
 function storedRelationLabel(relation: string): string {
   if (relation === "self") return COMPARE_PERSON_PICKER_COPY.selfRole;
   const option = GALAXY_RELATION_PICKER_OPTIONS.find((entry) => entry.value === relation);
-  return option?.label ?? relation;
+  return formatRelationshipLabel(option?.label ?? relation);
 }
 
 function displayNameForPicker(person: PersonPickerOption): string {

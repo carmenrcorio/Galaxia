@@ -80,6 +80,30 @@ describe("validateQuickSharePersistBody — romantic-minor structural guarantee"
     expect(result.ok).toBe(true);
   });
 
+  it("allowlists computed element balance for compare snapshots", () => {
+    const elementBalance = {
+      a: { fire: 4, earth: 3, air: 2, water: 1 },
+      b: { fire: 2, earth: 3, air: 2, water: 3 },
+      combined: { fire: 6, earth: 6, air: 4, water: 4 },
+      dominantElements: ["fire", "earth"],
+      missingElements: [],
+      balanced: false,
+    };
+    const result = validateQuickSharePersistBody({
+      kind: "compare",
+      payload: {
+        ...baseComparePayload,
+        pairHasMinor: false,
+        synastry: { ...baseComparePayload.synastry, elementBalance },
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok && result.kind === "compare") {
+      expect((result.payload as CompareSharePayload).synastry?.elementBalance).toEqual(elementBalance);
+    }
+  });
+
   it("refuses compare + pairHasMinor + partners (romantic-family beyond the old binary)", () => {
     const result = validateQuickSharePersistBody({
       kind: "compare",

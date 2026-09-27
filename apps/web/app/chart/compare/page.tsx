@@ -21,6 +21,7 @@ import {
   type BirthFormInput,
   isRomanticRelation,
   relationshipWatchLine,
+  summarizePairElementBalance,
   whatTheyNeed,
   type PairElementBalance,
   type RelationType,
@@ -194,11 +195,20 @@ export default function QuickComparePage() {
       const body = await res.json();
       if (!res.ok) { setError(body.error ?? "Could not compare those two."); return; }
       const minor = Boolean(body.pairHasMinor);
+      const synastry = body.synastry
+        ? {
+            ...body.synastry,
+            elementBalance: summarizePairElementBalance(
+              body.synastry.elementBalance.a,
+              body.synastry.elementBalance.b
+            ),
+          }
+        : null;
       setRomanticHeldNotice(minor && isRomanticRelation(relationType));
       setResult({
         chartA: body.chartA,
         chartB: body.chartB,
-        synastry: body.synastry,
+        synastry,
         generational: body.generational,
         pairHasMinor: minor,
       });

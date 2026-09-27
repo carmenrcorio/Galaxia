@@ -136,7 +136,19 @@ describe("QuickComparePage result order", () => {
 
     vi.stubGlobal("fetch", vi.fn(async () => ({
       ok: true,
-      json: async () => ({ chartA, chartB, synastry, generational, pairHasMinor: false }),
+      json: async () => ({
+        chartA,
+        chartB,
+        synastry: {
+          ...synastry,
+          elementBalance: {
+            a: synastry.elementBalance.a,
+            b: synastry.elementBalance.b,
+          },
+        },
+        generational,
+        pairHasMinor: false,
+      }),
     })));
 
     window.history.replaceState(null, "", "/chart/compare?a_pr=date&a_m=6&a_d=15&a_y=1990&b_pr=date&b_m=12&b_d=29&b_y=1987");

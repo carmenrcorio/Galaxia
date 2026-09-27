@@ -36,4 +36,21 @@ describe("mobile sign metadata cards", () => {
     expect(component).toContain('glossarySlug="ruling-planet"');
     expect(component).not.toContain("\u2014");
   });
+
+  it("shows every element, metal, and birthstone significance without a tap", () => {
+    const component = readMobile("src/components/sign-metadata-cards.tsx");
+
+    expect(component).toContain("{metadata.elementSignificance}");
+    expect(component).toContain("{metadata.metalSignificance}");
+    expect(component).toContain("{metadata.birthstoneSignificance}");
+    expect(component).not.toContain("significanceOpen");
+  });
+
+  it("separates the identity, symbol, and materials bands into their own rows", () => {
+    const component = readMobile("src/components/sign-metadata-cards.tsx");
+
+    expect(component.match(/style={rowStyle}/g)?.length).toBe(1);
+    expect(component.match(/style={\[rowStyle, dividedRowStyle/g)?.length).toBe(2);
+    expect(component).toContain("borderTopWidth: 1");
+  });
 });

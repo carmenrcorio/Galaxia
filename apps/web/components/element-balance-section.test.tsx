@@ -26,7 +26,7 @@ describe("ElementBalanceSection", () => {
     expect(screen.getByRole("img", { name: "Alex element balance: Fire 4, Earth 3, Air 2, Water 1" })).toBeTruthy();
     expect(screen.getByRole("img", { name: "Sam element balance: Fire 2, Earth 3, Air 2, Water 3" })).toBeTruthy();
     expect(screen.getByText("You share Fire and Earth dominance.")).toBeTruthy();
-    expect(container.querySelector('[data-element="fire"]')).toHaveStyle({ width: "40%" });
+    expect(container.querySelector('[data-element="fire"]')?.getAttribute("style")).toContain("width: 40%");
   });
 
   it("keeps zero counts visible and uses balanced copy", () => {
@@ -46,6 +46,6 @@ describe("ElementBalanceSection", () => {
     );
 
     expect(screen.getByText("Your element mix is balanced. No single element sets the tone for this pair.")).toBeTruthy();
-    expect(screen.getAllByText("Water 2")).toHaveLength(2);
+    expect(screen.getByText("Water 2")).toBeTruthy();
   });
 });

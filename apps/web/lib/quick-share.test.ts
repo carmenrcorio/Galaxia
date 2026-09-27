@@ -100,7 +100,7 @@ describe("validateQuickSharePersistBody — romantic-minor structural guarantee"
 
     expect(result.ok).toBe(true);
     if (result.ok && result.kind === "compare") {
-      expect(result.payload.synastry?.elementBalance).toEqual(elementBalance);
+      expect((result.payload as CompareSharePayload).synastry?.elementBalance).toEqual(elementBalance);
     }
   });
 

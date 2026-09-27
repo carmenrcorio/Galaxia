@@ -5,6 +5,12 @@ import {
   ACCOUNT_EXPORT_COPY,
   DEFAULT_FETCH_TIMEOUT_MS,
   DELETE_CONFIRMATION_WORD,
+  EMAIL_CHANGE_COPY,
+  PASSWORD_CHANGE_COPY,
+  PASSWORD_RULE_HINT,
+  checkEmailChange,
+  checkPasswordChange,
+  emailChangeSentMessage,
   isDeleteConfirmation,
   shouldWarnBillingOnDelete,
   withTimeout
@@ -58,6 +64,14 @@ const SETTINGS_PREFS_RETRY = "Try again";
 const SETTINGS_PEOPLE_EMPTY = "No people yet. Add someone to your constellation.";
 const SETTINGS_GROUPS_EMPTY = "No groups yet. Create one from Groups.";
 
+/**
+ * Password and email change feedback. The tone decides the colour only; the
+ * message is either a shared authored string from `@galaxia/core` or the auth
+ * service's own error, reported verbatim (web parity:
+ * apps/web/components/settings-account-credentials.tsx).
+ */
+type CredentialFeedback = { tone: "success" | "error"; message: string } | null;
+
 export default function SettingsScreen() {
   const { session, signOut } = useAuth();
   const { status: subStatus, trialDaysLeft, comped } = useEntitlement();
@@ -91,6 +105,15 @@ export default function SettingsScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const [prefsLoading, setPrefsLoading] = useState(true);
   const [prefsError, setPrefsError] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordFeedback, setPasswordFeedback] = useState<CredentialFeedback>(null);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [emailFeedback, setEmailFeedback] = useState<CredentialFeedback>(null);
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -214,6 +237,64 @@ export default function SettingsScreen() {
     setSupportSubject("");
     setSupportBody("");
     setSupportStatus("Sent. We'll follow up by email.");
+  };
+
+  /**
+   * Password change against the live session. The session is re-read at the
+   * moment of the write because this screen can sit open longer than the
+   * session lasts, and "sign in again" is the honest answer to that.
+   */
+  const submitPasswordChange = async () => {
+    setPasswordFeedback(null);
+    const check = checkPasswordChange(newPassword, confirmPassword);
+    if (!check.ok) {
+      setPasswordFeedback({ tone: "error", message: check.error });
+      return;
+    }
+    setSavingPassword(true);
+    const { data: { session: live } } = await supabase.auth.getSession();
+    if (!live) {
+      setSavingPassword(false);
+      setPasswordFeedback({ tone: "error", message: PASSWORD_CHANGE_COPY.sessionExpired });
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setSavingPassword(false);
+    if (error) {
+      // Verbatim. A password the service refuses says why on its own.
+      setPasswordFeedback({ tone: "error", message: error.message });
+      return;
+    }
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordFeedback({ tone: "success", message: PASSWORD_CHANGE_COPY.success });
+  };
+
+  const submitEmailChange = async () => {
+    setEmailFeedback(null);
+    const check = checkEmailChange(newEmail, accountEmail);
+    if (!check.ok) {
+      setEmailFeedback({ tone: "error", message: check.error });
+      return;
+    }
+    setSavingEmail(true);
+    const { data: { session: live } } = await supabase.auth.getSession();
+    if (!live) {
+      setSavingEmail(false);
+      setEmailFeedback({ tone: "error", message: EMAIL_CHANGE_COPY.sessionExpired });
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ email: check.email });
+    setSavingEmail(false);
+    if (error) {
+      setEmailFeedback({ tone: "error", message: error.message });
+      return;
+    }
+    setNewEmail("");
+    setEmailFeedback({
+      tone: "success",
+      message: emailChangeSentMessage(check.email, accountEmail)
+    });
   };
 
   const downloadExport = async () => {
@@ -466,6 +547,122 @@ export default function SettingsScreen() {
       </View>
 
       <View style={cardStyle}>
+        <Text style={cardTitle}>Account</Text>
+        <Text style={cardBody}>
+          {accountEmail
+            ? `You sign in with ${accountEmail}. Change that address or your password here.`
+            : "Change the address you sign in with, or your password, here."}
+        </Text>
+
+        <Pressable
+          onPress={() => setPasswordOpen((prev) => !prev)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: passwordOpen }}
+          style={disclosureStyle(passwordOpen)}
+        >
+          <Text style={{ color: passwordOpen ? tokens.colors.gold : tokens.colors.cream, fontWeight: "700", fontSize: 14 }}>
+            {PASSWORD_CHANGE_COPY.sectionLabel}
+          </Text>
+        </Pressable>
+        {passwordOpen ? (
+          <View style={{ gap: 8 }}>
+            <Text style={cardBody}>{PASSWORD_CHANGE_COPY.lead}</Text>
+            <TextInput
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder={PASSWORD_CHANGE_COPY.newLabel}
+              placeholderTextColor={tokens.colors.mist2}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="newPassword"
+              editable={!savingPassword}
+              style={fieldStyle}
+            />
+            <TextInput
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder={PASSWORD_CHANGE_COPY.confirmLabel}
+              placeholderTextColor={tokens.colors.mist2}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="newPassword"
+              editable={!savingPassword}
+              style={fieldStyle}
+            />
+            <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>{PASSWORD_RULE_HINT}</Text>
+            <Pressable
+              onPress={() => void submitPasswordChange()}
+              disabled={savingPassword || !newPassword || !confirmPassword}
+              style={[pillStyle, { opacity: savingPassword || !newPassword || !confirmPassword ? 0.5 : 1 }]}
+            >
+              <Text style={pillLabel}>
+                {savingPassword ? PASSWORD_CHANGE_COPY.submitting : PASSWORD_CHANGE_COPY.submit}
+              </Text>
+            </Pressable>
+            {passwordFeedback ? (
+              <Text
+                style={{
+                  color: passwordFeedback.tone === "success" ? tokens.colors.gold : tokens.colors.rose,
+                  fontSize: 13
+                }}
+              >
+                {passwordFeedback.message}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+
+        <Pressable
+          onPress={() => setEmailOpen((prev) => !prev)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: emailOpen }}
+          style={disclosureStyle(emailOpen)}
+        >
+          <Text style={{ color: emailOpen ? tokens.colors.gold : tokens.colors.cream, fontWeight: "700", fontSize: 14 }}>
+            {EMAIL_CHANGE_COPY.sectionLabel}
+          </Text>
+        </Pressable>
+        {emailOpen ? (
+          <View style={{ gap: 8 }}>
+            <Text style={cardBody}>{EMAIL_CHANGE_COPY.lead}</Text>
+            <TextInput
+              value={newEmail}
+              onChangeText={setNewEmail}
+              placeholder={EMAIL_CHANGE_COPY.newLabel}
+              placeholderTextColor={tokens.colors.mist2}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              editable={!savingEmail}
+              style={fieldStyle}
+            />
+            <Pressable
+              onPress={() => void submitEmailChange()}
+              disabled={savingEmail || !newEmail.trim()}
+              style={[pillStyle, { opacity: savingEmail || !newEmail.trim() ? 0.5 : 1 }]}
+            >
+              <Text style={pillLabel}>
+                {savingEmail ? EMAIL_CHANGE_COPY.submitting : EMAIL_CHANGE_COPY.submit}
+              </Text>
+            </Pressable>
+            {emailFeedback ? (
+              <Text
+                style={{
+                  color: emailFeedback.tone === "success" ? tokens.colors.gold : tokens.colors.rose,
+                  fontSize: 13
+                }}
+              >
+                {emailFeedback.message}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
+
+      <View style={cardStyle}>
         <Text style={cardTitle}>{ACCOUNT_EXPORT_COPY.title}</Text>
         <Text style={cardBody}>{ACCOUNT_EXPORT_COPY.lead}</Text>
         {accountEmail ? <Text style={{ color: tokens.colors.goldSoft, fontSize: 13 }}>Account: {accountEmail}</Text> : null}
@@ -633,3 +830,14 @@ const pillLabel = {
   color: tokens.colors.cream,
   fontWeight: "700"
 } as const;
+
+/** Expandable row header inside the Account card (web parity: DisclosureButton). */
+function disclosureStyle(open: boolean) {
+  return {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: open ? tokens.colors.gold : tokens.colors.line,
+    backgroundColor: open ? "rgba(230,174,108,0.09)" : "transparent",
+    padding: 10
+  } as const;
+}

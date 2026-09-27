@@ -94,6 +94,8 @@ export * from "./account-name";
 
 export * from "./account-data";
 
+export * from "./account-credentials";
+
 export * from "./contact";
 
 export * from "./timezone";

@@ -2,6 +2,7 @@
 
 import type { HouseSystem } from "@galaxia/astro";
 import { useEffect, useMemo, useState } from "react";
+import { SettingsAccountCredentials } from "../../../components/settings-account-credentials";
 import { SettingsSubscriptionPanel } from "../../../components/settings-subscription-panel";
 import { PendingConnectInvites } from "../../../components/pending-connect-invites";
 import { PendingShareLinks } from "../../../components/pending-share-links";
@@ -325,6 +326,8 @@ export default function SettingsPage() {
         {relationalPrefStatus ? <p className={relationalPrefStatus.startsWith("Saved") ? "success" : "error"} style={{ fontSize: ".78rem", marginTop: 8 }}>{relationalPrefStatus}</p> : null}
       </section>
 
+      <SettingsAccountCredentials accountEmail={accountEmail} />
+
       <section className="glass-card">
         <h2 className="card-title">Privacy</h2>
         <p className="muted">Your private notes are visible only to you: never shared with the person they're about and never included in shared-space Vela conversations.</p>
@@ -332,10 +335,6 @@ export default function SettingsPage() {
         <p className="muted" style={{ marginTop: 10 }}>
           Export your data or delete your account from{" "}
           <a href="/account/data" style={{ color: "var(--gold)" }}>Your data</a>.
-        </p>
-                <p className="muted" style={{ marginTop: 10 }}>
-          Change your password from{" "}
-          <a href="/account" style={{ color: "var(--gold)" }}>Account</a>.
         </p>
       </section>
 

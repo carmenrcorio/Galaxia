@@ -65,6 +65,7 @@ import {
   CHART_SAVED_DETAILS_NO_CHART_BODY,
   DAILY_SKY_UNAVAILABLE_YEAR_BODY,
   DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP,
+  placementAnchorId,
   type ChartPrecision,
   type PersonGroupKey,
   DEFAULT_FETCH_TIMEOUT_MS,
@@ -184,9 +185,11 @@ function HouseBadge({ house }: { house: number }) {
 /* ─── ExpandRow — the single expandable row used throughout ─────────────── */
 function ExpandRow({
   open, onToggle, label, domain, degree, house, el, glyph, retro, short, long,
-  houseReading, planetAspects, hasHouses, plutoExtended, plutoSign, showWorkView
+  houseReading, planetAspects, hasHouses, plutoExtended, plutoSign, showWorkView, anchorId
 }: {
   open: boolean; onToggle: () => void;
+  /** Scroll target for the wheel glyph card's "see full reading" link. */
+  anchorId?: string;
   label: string; domain?: string; degree?: string; house?: number;
   el: string; glyph: string; retro?: boolean; short: string; long: string;
   /** House reading block — rendered in expanded state when present */
@@ -206,7 +209,7 @@ function ExpandRow({
 }) {
   const [openEraEvent, setOpenEraEvent] = useState<string | null>(null);
   return (
-    <div style={{ borderBottom: "1px solid rgba(183,154,216,.08)" }}>
+    <div id={anchorId} style={{ borderBottom: "1px solid rgba(183,154,216,.08)", scrollMarginTop: 92 }}>
       <button
         onClick={onToggle}
         style={{
@@ -432,6 +435,22 @@ export default function PersonProfilePage() {
     setPlacementsAllOpen(open);
     setOpenRows(prev => { const next = new Set(prev); chart?.placements.forEach(p => open ? next.add(`pl-${p.body}`) : next.delete(`pl-${p.body}`)); return next; });
   }, [chart]);
+
+  /**
+   * Wheel glyph card link. Opens the body's card in the placement list (Sun
+   * and Moon live in Big Three, everything else in Placements), makes sure the
+   * Them panel is the visible tab, then scrolls the card into view. The panel
+   * switch has to land before the scroll, so the scroll runs a frame later
+   * against an element that is no longer `hidden`.
+   */
+  const revealPlacementCard = useCallback((body: string) => {
+    const rowKey = body === "sun" || body === "moon" ? body : `pl-${body}`;
+    setActiveGroup("them");
+    setOpenRows(prev => new Set(prev).add(rowKey));
+    window.setTimeout(() => {
+      document.getElementById(placementAnchorId(body))?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
+  }, []);
 
   const toggleAllHouses = useCallback((open: boolean) => {
     setHousesAllOpen(open);
@@ -1088,7 +1107,7 @@ export default function PersonProfilePage() {
     const isGen  = GENERATIONAL.includes(bk);
     if (p.confident === false) {
       return (
-        <div key={p.body} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65 }}>
+        <div key={p.body} id={placementAnchorId(p.body)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65, scrollMarginTop: 92 }}>
           <div className="glyph-sq-wrap">
             <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{gly}</div>
             <RetrogradeBadge retro={p.retro} corner />
@@ -1124,6 +1143,7 @@ export default function PersonProfilePage() {
     return (
       <ExpandRow
         key={p.body}
+        anchorId={placementAnchorId(p.body)}
         open={openRows.has(rowKey)}
         onToggle={() => toggleRow(rowKey)}
         label={`${bodyDisplayName(p.body)} in ${p.sign}${isGen ? " ✦" : ""}`}
@@ -1238,7 +1258,12 @@ export default function PersonProfilePage() {
             {person.display_name}
           </p>
           {wheelMounted ? (
-            <ChartWheel chart={chart} aspects={natalAspects} exportSafe />
+            <ChartWheel
+              chart={chart}
+              aspects={natalAspects}
+              exportSafe
+              planetTooltips={{ minorSafe: personIsMinor, onSeeFullReading: revealPlacementCard }}
+            />
           ) : (
             <div aria-hidden style={{ width: 300, height: 300, margin: "0 auto" }} />
           )}
@@ -1378,7 +1403,7 @@ export default function PersonProfilePage() {
             }).filter((row): row is NonNullable<typeof row> => row !== null) ?? []) : [];
             const isOpen = openRows.has(key);
             return (
-              <div key={key} style={{ borderRadius: 12, border: `1px solid ${isOpen ? "rgba(230,174,108,.22)" : "rgba(255,255,255,.06)"}`, background: "rgba(255,255,255,.025)", overflow: "hidden" }}>
+              <div key={key} id={body ? placementAnchorId(body) : undefined} style={{ borderRadius: 12, border: `1px solid ${isOpen ? "rgba(230,174,108,.22)" : "rgba(255,255,255,.06)"}`, background: "rgba(255,255,255,.025)", overflow: "hidden", scrollMarginTop: 92 }}>
                 <button onClick={() => toggleRow(key)} style={{ width: "100%", background: "none", border: "none", cursor: "pointer", padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }} aria-expanded={isOpen}>
                   <span style={{ fontSize: "1.3rem", color: `var(--${el})`, flexShrink: 0 }}>{SIGN_GLYPH[sign]}</span>
                   <div style={{ textAlign: "left", flex: 1 }}>

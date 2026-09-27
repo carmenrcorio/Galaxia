@@ -69,6 +69,16 @@ export type WheelPlacement = {
   lon: number;
   sign: string;
   confident?: boolean;
+  /**
+   * Degree within the sign, house number, and natal retrograde flag. Optional
+   * because hand-built geometry fixtures omit them; the engine always supplies
+   * them. Carried through to `WheelPlanetGlyph` so a renderer's glyph tooltip
+   * reads the same placement the glyph was positioned from, instead of
+   * re-finding it in a second list.
+   */
+  degree?: number;
+  house?: number;
+  retro?: boolean;
 };
 
 export type WheelChartLike = {
@@ -117,6 +127,11 @@ export type WheelPlanetGlyph = {
   strokeToken: WheelColorToken;
   gly: string;
   overlay: boolean;
+  /** Placement facts behind this glyph, for hover / tap detail cards. */
+  sign: string;
+  degree?: number;
+  house?: number;
+  retro?: boolean;
 };
 
 export type WheelAspectLine = {
@@ -296,6 +311,10 @@ function planetRing(
       strokeToken: overlay ? "teal" : signElement(p.sign),
       gly: BODY_GLYPH[p.body] ?? p.body[0]!.toUpperCase(),
       overlay,
+      sign: p.sign,
+      degree: p.degree,
+      house: p.house,
+      retro: p.retro,
     };
   });
 }

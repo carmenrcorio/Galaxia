@@ -979,6 +979,117 @@ select.field--rect {
   color: var(--gold);
 }
 
+/* ─── Wheel planet tooltip (hover card + touch sheet) ────────────────────── */
+/* Same glass recipe as .glossary-term__floating; portaled to body so the SVG
+   wheel and its overflow ancestors cannot clip it. */
+.wheel-tip {
+  position: fixed;
+  z-index: 80;
+  padding: 11px 13px;
+  border-radius: 14px;
+  background: linear-gradient(165deg, rgba(29, 22, 64, .97), rgba(10, 7, 23, .99));
+  border: 1px solid rgba(230, 174, 108, .22);
+  box-shadow: 0 16px 40px -16px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .05);
+  font-family: var(--sans);
+  text-align: left;
+}
+.wheel-tip__name {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  margin: 0;
+  font-family: var(--serif);
+  font-size: .95rem;
+  color: var(--cream);
+}
+.wheel-tip__sign {
+  margin: 3px 0 0;
+  font-size: .78rem;
+  font-weight: 600;
+}
+.wheel-tip__house {
+  margin-left: 7px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(230, 174, 108, .25);
+  background: rgba(230, 174, 108, .12);
+  color: var(--gold-soft);
+  font-size: .68rem;
+  font-weight: 500;
+}
+.wheel-tip__domain {
+  margin: 6px 0 0;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--mist2);
+}
+.wheel-tip__more {
+  margin-top: 9px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--mist);
+  font-family: var(--sans);
+  font-size: .72rem;
+  line-height: 1.4;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.wheel-tip__more:hover,
+.wheel-tip__more:focus-visible {
+  color: var(--gold);
+}
+.wheel-tip-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 79;
+}
+.wheel-tip-backdrop__dismiss {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: rgba(10, 7, 23, .55);
+  cursor: pointer;
+}
+.wheel-tip--sheet {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  width: auto;
+  padding: 10px 18px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0;
+  border-bottom: none;
+}
+.wheel-tip__grabber {
+  display: block;
+  width: 38px;
+  height: 4px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  background: rgba(230, 174, 108, .35);
+}
+.wheel-tip--sheet .wheel-tip__more {
+  margin-top: 12px;
+  font-size: .82rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .wheel-tip {
+    animation: wheel-tip-in .14s ease-out;
+  }
+}
+@keyframes wheel-tip-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* Manage-group accordion (same marker pattern as .honor-declare) */
 .manage-group-accordion > summary {
   list-style: none; cursor: pointer;

@@ -213,6 +213,22 @@ describe("layoutChartWheel", () => {
     expect(COMPARE_WHEEL_NEEDS_HOUSES).toMatch(/birth time and city/);
   });
 
+  it("carries the placement facts a glyph tooltip needs onto the glyph itself", () => {
+    const layout = layoutChartWheel({
+      chart: stubChart({
+        placements: [
+          { body: "venus", lon: 74.3, sign: "Gemini", degree: 14.3, house: 10, retro: true, confident: true },
+        ],
+      }),
+    });
+    const venus = layout.planets.find((p) => p.body === "venus");
+    expect(venus).toBeTruthy();
+    expect(venus!.sign).toBe("Gemini");
+    expect(venus!.degree).toBeCloseTo(14.3, 5);
+    expect(venus!.house).toBe(10);
+    expect(venus!.retro).toBe(true);
+  });
+
   it("person-page aspects are drawn exactly (no orb slice)", () => {
     const chart = stubChart({
       placements: [

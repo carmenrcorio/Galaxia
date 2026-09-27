@@ -20,9 +20,9 @@ import {
   type SignKey,
   bodyDisplayName,
 } from "@galaxia/astro";
-import { isMinorForSafety } from "@galaxia/core";
+import { isMinorForSafety, placementAnchorId } from "@galaxia/core";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
 import { ChartLeadCapture } from "../../components/chart-lead-capture";
 import { ChartImageExport, chartExportFilename } from "../../components/chart-image-export";
@@ -100,6 +100,15 @@ export default function QuickChartPage() {
   useEffect(() => {
     if (result) stashComparePrefillName(name);
   }, [result, name]);
+
+  // Wheel glyph card link. The full placement list is collapsed by default
+  // here, so the row has to be revealed before there is anything to scroll to.
+  const revealPlacementRow = useCallback((body: string) => {
+    setExpanded(true);
+    window.setTimeout(() => {
+      document.getElementById(placementAnchorId(body))?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
+  }, []);
 
   async function runChart(birthInput: BirthFormInput, opts: { updateUrl: boolean } = { updateUrl: true }) {
     setLoading(true); setError(null);
@@ -227,7 +236,11 @@ export default function QuickChartPage() {
 
             {result.chart.cusps ? (
               <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
-                <ChartWheel chart={result.chart} exportSafe />
+                <ChartWheel
+                  chart={result.chart}
+                  exportSafe
+                  planetTooltips={{ minorSafe: chartMinorSafe, onSeeFullReading: revealPlacementRow }}
+                />
               </section>
             ) : null}
             <HousesUnavailableCard
@@ -263,14 +276,14 @@ export default function QuickChartPage() {
               <div style={{ display: "grid", gap: 8 }}>
                 {result.chart.placements.map((p) => {
                   if (p.confident === false) return (
-                    <div key={p.body} style={{ display: "flex", gap: 10, alignItems: "center", opacity: .6, padding: "6px 0" }}>
+                    <div key={p.body} id={placementAnchorId(p.body)} style={{ display: "flex", gap: 10, alignItems: "center", opacity: .6, padding: "6px 0", scrollMarginTop: 92 }}>
                       <span style={{ width: 20, textAlign: "center" }}>{BODY_GLYPH[p.body] ?? p.body[0]}</span>
                       <span className="muted" style={{ fontSize: ".82rem" }}>{bodyDisplayName(p.body)}: sign uncertain, add a birth date to settle it</span>
                     </div>
                   );
                   const reading = interpretPlacement(p.body as BodyKey, p.sign as SignKey, { minorSafe: chartMinorSafe });
                   return (
-                    <div key={p.body} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "6px 0", borderBottom: "1px solid rgba(183,154,216,.08)" }}>
+                    <div key={p.body} id={placementAnchorId(p.body)} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "6px 0", borderBottom: "1px solid rgba(183,154,216,.08)", scrollMarginTop: 92 }}>
                       <span style={{ width: 20, textAlign: "center", flexShrink: 0, color: `var(--${signElement(p.sign)})` }}>{BODY_GLYPH[p.body] ?? p.body[0]}</span>
                       <div>
                         <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--mist2)" }}>{bodyDomain(p.body as BodyKey, { minorSafe: chartMinorSafe })}</div>

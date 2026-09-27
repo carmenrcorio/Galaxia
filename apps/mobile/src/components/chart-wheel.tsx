@@ -1,17 +1,22 @@
+import { bodyDisplayName, bodyDomain, type BodyKey } from "@galaxia/astro";
 import {
   OVERLAY_ASPECTS_MISSING_NOTE,
   YEAR_ASPECTS_NEED_DATE_NOTE,
   layoutChartWheel,
+  planetTooltipContent,
+  planetTooltipSummary,
   type WheelAspect,
   type WheelChartLike,
   type WheelChartOwner,
   type WheelColorToken,
+  type WheelPlanetGlyph,
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useRef, useState } from "react";
 import { Text, View } from "react-native";
 import Svg, { Circle, G, Line, Path, Text as SvgText } from "react-native-svg";
 import { fonts } from "../lib/typography";
+import { WheelPlanetSheet } from "./wheel-planet-sheet";
 
 export type { WheelAspect };
 
@@ -20,16 +25,47 @@ export type ChartWheelProps = {
   overlayChart?: WheelChartLike;
   aspects?: WheelAspect[];
   interactive?: boolean;
+  /**
+   * Opt in to the planet glyph detail sheet (natal wheels only; the Compare
+   * bi-wheel is too dense for per-planet sheets). Both fields are required:
+   * `minorSafe` so the Venus domain line can never render adult copy on a
+   * child's chart (ENGINEERING.md §9), and `onSeeFullReading` so the sheet's
+   * button always has a real placement to scroll to.
+   */
+  planetTooltips?: {
+    minorSafe: boolean;
+    onSeeFullReading: (body: string) => void;
+  };
 };
 
 function wheelColor(token: WheelColorToken): string {
   return tokens.colors[token];
 }
 
-export function ChartWheel({ chart, overlayChart, aspects, interactive = true }: ChartWheelProps) {
+export function ChartWheel({ chart, overlayChart, aspects, interactive = true, planetTooltips }: ChartWheelProps) {
   const layout = layoutChartWheel({ chart, overlayChart, aspects });
   const overlayWarnOnce = useRef(false);
   const [focus, setFocus] = useState<{ owner: WheelChartOwner; body: string } | null>(null);
+  const [sheetKey, setSheetKey] = useState<string | null>(null);
+
+  // Natal only: the bi-wheel packs two rings of glyphs into the same space,
+  // where a sheet would speak for whichever chart the reader did not tap.
+  const tooltipsOn = interactive && !layout.isOverlay && planetTooltips != null;
+
+  function tooltipFor(planet: WheelPlanetGlyph) {
+    if (!planetTooltips) return null;
+    return planetTooltipContent({
+      name: bodyDisplayName(planet.body),
+      domain: bodyDomain(planet.body.toLowerCase() as BodyKey, { minorSafe: planetTooltips.minorSafe }),
+      sign: planet.sign,
+      degree: planet.degree,
+      house: planet.house,
+      retro: planet.retro,
+      hasHouses: layout.hasHouses,
+    });
+  }
+
+  const sheetPlanet = sheetKey ? layout.planets.find((p) => p.key === sheetKey) ?? null : null;
 
   if (layout.overlayMissingAspects && !overlayWarnOnce.current) {
     overlayWarnOnce.current = true;
@@ -47,9 +83,12 @@ export function ChartWheel({ chart, overlayChart, aspects, interactive = true }:
     return focus.body !== from && focus.body !== to;
   }
 
-  function onPlanetPress(owner: WheelChartOwner, body: string) {
+  function onPlanetPress(owner: WheelChartOwner, body: string, key: string) {
     if (!interactive) return;
-    setFocus((prev) => (prev && prev.owner === owner && prev.body === body ? null : { owner, body }));
+    const sameGlyph = focus != null && focus.owner === owner && focus.body === body;
+    setFocus(sameGlyph ? null : { owner, body });
+    if (!tooltipsOn) return;
+    setSheetKey(sameGlyph ? null : key);
   }
 
   return (
@@ -154,15 +193,17 @@ export function ChartWheel({ chart, overlayChart, aspects, interactive = true }:
             </SvgText>
           </G>
         ))}
-        {layout.planets.map(({ key, owner, body, px, py, strokeToken, gly }) => {
+        {layout.planets.map((planet) => {
+          const { key, owner, body, px, py, strokeToken, gly } = planet;
           const isFocus = interactive && focus?.owner === owner && focus.body === body;
           const dimPlanet = interactive && focus != null && !isFocus;
+          const glyphContent = tooltipsOn ? tooltipFor(planet) : null;
           return (
             <G
               key={key}
-              onPress={() => onPlanetPress(owner, body)}
+              onPress={() => onPlanetPress(owner, body, key)}
               opacity={dimPlanet ? 0.35 : 1}
-              accessibilityLabel={`${body} glyph`}
+              accessibilityLabel={glyphContent ? planetTooltipSummary(glyphContent) : `${body} glyph`}
             >
               <Circle cx={px} cy={py} r={layout.glyphR + 9} fill="transparent" />
               <Circle
@@ -189,6 +230,21 @@ export function ChartWheel({ chart, overlayChart, aspects, interactive = true }:
         })}
       </Svg>
       </View>
+      {sheetPlanet && planetTooltips ? (
+        <WheelPlanetSheet
+          content={tooltipFor(sheetPlanet)}
+          sign={sheetPlanet.sign}
+          onClose={() => {
+            setSheetKey(null);
+            setFocus(null);
+          }}
+          onSeeFullReading={() => {
+            setSheetKey(null);
+            setFocus(null);
+            planetTooltips.onSeeFullReading(sheetPlanet.body);
+          }}
+        />
+      ) : null}
       {layout.showYearNote ? (
         <Text
           style={{

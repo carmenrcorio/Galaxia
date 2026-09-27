@@ -57,7 +57,7 @@ import {
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { FlipSignCards } from "../../../src/components/flip-sign-cards";
 import { RetrogradeBadge } from "../../../src/components/retrograde-badge";
@@ -107,6 +107,23 @@ export default function PersonProfileScreen() {
   const [editUpgradeTo, setEditUpgradeTo] = useState<Exclude<ChartPrecision, "none"> | null>(null);
 
   const resolvedPersonId = useMemo(() => (Array.isArray(personId) ? personId[0] : personId), [personId]);
+
+  // Wheel glyph sheet target. Sun and Moon are named in the Big Three card;
+  // every other body has a row in Placements. Both cards report their own
+  // offset inside the scroller on layout, so the jump lands on the real card
+  // rather than a guessed height.
+  const scrollRef = useRef<ScrollView>(null);
+  const bigThreeY = useRef<number | null>(null);
+  const placementsY = useRef<number | null>(null);
+
+  const revealPlacementCard = useCallback((body: string) => {
+    setActiveGroup("them");
+    const target = body === "sun" || body === "moon" ? bigThreeY.current : placementsY.current;
+    if (target == null) return;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, target - 12), animated: true });
+    });
+  }, []);
 
   useEffect(() => {
     if (!session?.user.id || !resolvedPersonId) return;
@@ -325,7 +342,7 @@ export default function PersonProfileScreen() {
   const hasBirthPlace = Boolean(person.birth_place && person.birth_lat != null && person.birth_lng != null);
 
   return (
-    <ScrollView style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 90 }}>
+    <ScrollView ref={scrollRef} style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 90 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
         <InitialAvatar name={person.display_name} size="lg" personId={person.id} sunSign={sunSign} memorial={isMemorial} />
         <View style={{ flex: 1 }}>
@@ -399,7 +416,11 @@ export default function PersonProfileScreen() {
           >
             {person.display_name}
           </Text>
-          <ChartWheel chart={chart} aspects={natalAspects} />
+          <ChartWheel
+            chart={chart}
+            aspects={natalAspects}
+            planetTooltips={{ minorSafe: personIsMinor, onSeeFullReading: revealPlacementCard }}
+          />
           {chart.houseSystemFallbackReason ? (
             <Text style={cardBody}>{chart.houseSystemFallbackReason}</Text>
           ) : null}
@@ -462,7 +483,12 @@ export default function PersonProfileScreen() {
       {activeGroup === "them" ? (
         chart ? (
           <>
-            <View style={cardStyle}>
+            <View
+              style={cardStyle}
+              onLayout={(event) => {
+                bigThreeY.current = event.nativeEvent.layout.y;
+              }}
+            >
                             <Text style={cardTitle}>{PERSON_TAB_LABEL["big-three"]}</Text>
               <Text style={vocabSubhead}>{PERSON_TAB_VOCAB["big-three"] ?? "Big three"}</Text>
                             <Text style={cardBody}>Sun: {sun?.confident === false ? "Uncertain (year-only birth data)" : sun?.sign ?? "·"}</Text>
@@ -472,7 +498,12 @@ export default function PersonProfileScreen() {
               </Text>
             </View>
 
-            <View style={cardStyle}>
+            <View
+              style={cardStyle}
+              onLayout={(event) => {
+                placementsY.current = event.nativeEvent.layout.y;
+              }}
+            >
                             <Text style={cardTitle}>{PERSON_TAB_LABEL.placements}</Text>
               <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.placements ?? "Placements"}</Text>
               {chart.placements

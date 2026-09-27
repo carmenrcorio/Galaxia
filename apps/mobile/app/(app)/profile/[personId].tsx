@@ -60,6 +60,7 @@ import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { FlipSignCards } from "../../../src/components/flip-sign-cards";
+import { SignMetadataCards } from "../../../src/components/sign-metadata-cards";
 import { RetrogradeBadge } from "../../../src/components/retrograde-badge";
 import { ChartWheel } from "../../../src/components/chart-wheel";
 import { ConnectInviteButton } from "../../../src/components/connect-invite-button";
@@ -346,6 +347,7 @@ export default function PersonProfileScreen() {
       </View>
 
       {chart ? <FlipSignCards chart={chart} minorSafe={personIsMinor} /> : null}
+      {chart ? <SignMetadataCards chart={chart} /> : null}
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
         <Link href="/compare" asChild>

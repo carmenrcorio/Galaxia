@@ -88,6 +88,15 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       title: "7 Synastry Aspects That Reveal How Relationships Feel",
     },
   },
+  // FOUNDER-REVIEW: element glossary definition.
+  {
+    id: "element",
+    term: "Element",
+    postCount: 0,
+    definition:
+      "An element groups signs by their basic mode of expression: fire initiates, earth builds, air connects, and water feels. Every natal chart contains all four through its placements, so a Sun sign's element is one reference point rather than a complete personality.",
+    readMore: null,
+  },
   {
     id: "flows-and-catches",
     term: "Flows and catches",
@@ -161,6 +170,15 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       slug: "synastry-aspects-explained",
       title: "7 Synastry Aspects That Reveal How Relationships Feel",
     },
+  },
+  // FOUNDER-REVIEW: modality glossary definition.
+  {
+    id: "modality",
+    term: "Modality",
+    postCount: 0,
+    definition:
+      "A modality describes how a sign moves: cardinal signs begin, fixed signs sustain, and mutable signs adapt. It names a pattern of action, not whether someone is flexible, stubborn, or decisive in every part of life.",
+    readMore: null,
   },
   {
     id: "moon",
@@ -313,6 +331,15 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       slug: "reading-chart-of-someone-who-died",
       title: "Reading the Chart of Someone Who Has Died",
     },
+  },
+  // FOUNDER-REVIEW: ruling-planet glossary definition.
+  {
+    id: "ruling-planet",
+    term: "Ruling planet",
+    postCount: 0,
+    definition:
+      "A ruling planet is the planet traditionally associated with a sign. It gives astrologers a second reference point for how that sign operates; it does not override the planet's actual placement in a natal chart.",
+    readMore: null,
   },
   {
     id: "saturn",

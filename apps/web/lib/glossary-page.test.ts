@@ -70,7 +70,13 @@ describe("glossary term list", () => {
     expect(glossaryPreview(orb!.definition)).toBe(
       "The distance in degrees between an exact aspect. A tighter orb means a stronger connection.",
     );
-    expect(GLOSSARY_TERMS).toHaveLength(36);
+    expect(GLOSSARY_TERMS).toHaveLength(39);
+  });
+
+  it("includes the sign metadata terms used by profile cards", () => {
+    expect(getGlossaryTerm("element")?.term).toBe("Element");
+    expect(getGlossaryTerm("modality")?.term).toBe("Modality");
+    expect(getGlossaryTerm("ruling-planet")?.term).toBe("Ruling planet");
   });
 
   it("groups alphabetically by first letter for h2 sections", () => {

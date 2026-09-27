@@ -105,6 +105,7 @@ describe("QuickComparePage /chart handoff", () => {
     expect(years[0]!.value).toBe("1990");
     expect(months[1]!.value).toBe("");
     expect(screen.getByRole("button", { name: "Compare our charts" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "synastry" })).toBeTruthy();
     expect(screen.queryByText("A shared synastry reading")).toBeNull();
     expect(sessionStorage.getItem(COMPARE_PREFILL_NAME_KEY)).toBeNull();
   });
@@ -157,7 +158,7 @@ describe("QuickComparePage result order", () => {
     expect(precedes(needA, needB)).toBe(true);
     expect(precedes(needB, tableHeading)).toBe(true);
     expect(screen.getByRole("button", { name: "flows" })).toBeTruthy();
-    expect(screen.getByText(/and catches/)).toBeTruthy();
+    expect(screen.getAllByText(/and catches/).length).toBeGreaterThan(0);
     expect(screen.getByText("Generational call-out")).toBeTruthy();
   });
 });

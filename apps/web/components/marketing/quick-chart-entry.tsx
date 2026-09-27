@@ -3,11 +3,11 @@
 /**
  * Slim Quick Chart entry on the marketing hero. Name + month/day/year only;
  * no BirthFields, no place search. Computes via POST /api/quick-chart and
- * reveals Sun/Moon inline — no navigation off the marketing page.
+ * reveals Sun/Moon inline, followed by compact next steps.
  *
- * NatalSignReveal (and @galaxia/astro with it) loads only after a successful
- * submit. MONTHS is local so this module does not import birth-fields, which
- * pulls the astro runtime into the homepage first-load graph.
+ * NatalSignReveal and the result actions load only after a successful submit.
+ * MONTHS is local so this module does not import birth-fields, which pulls the
+ * astro runtime into the homepage first-load graph.
  */
 
 import type { NatalChart } from "@galaxia/astro";
@@ -17,6 +17,9 @@ import { Spinner } from "../spinner";
 
 const NatalSignReveal = dynamic(() =>
   import("../natal-sign-reveal").then((mod) => mod.NatalSignReveal)
+);
+const QuickChartResultActions = dynamic(() =>
+  import("./quick-chart-result-actions").then((mod) => mod.QuickChartResultActions)
 );
 
 const MONTHS = [
@@ -107,9 +110,18 @@ export function QuickChartEntry() {
   }
 
   const trimmedName = name.trim();
-  const fullChartHref =
+  const chartData =
     result && month && day && year
-      ? fullChartHrefFor(Number(month), Number(day), Number(year), trimmedName)
+      ? {
+          precision: "date" as const,
+          month: Number(month),
+          day: Number(day),
+          year: Number(year),
+        }
+      : undefined;
+  const fullChartHref =
+    chartData
+      ? fullChartHrefFor(chartData.month, chartData.day, chartData.year, trimmedName)
       : undefined;
 
   return (
@@ -131,10 +143,16 @@ export function QuickChartEntry() {
             name={trimmedName || undefined}
             birthDate={result.birthDate}
             birthPrecision="date"
-            fullChartHref={fullChartHref}
             signupHref="/signup"
             className="quick-chart-entry-reveal"
           />
+          {chartData && fullChartHref ? (
+            <QuickChartResultActions
+              chartData={chartData}
+              name={trimmedName || undefined}
+              fullChartHref={fullChartHref}
+            />
+          ) : null}
           <button type="button" className="pill-link quick-chart-entry-again" onClick={tryAnother}>
                         Try another birthday
           </button>

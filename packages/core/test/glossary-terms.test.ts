@@ -31,6 +31,9 @@ describe("shared glossary terms", () => {
     ]);
     expect(aspectGlossarySlug("Trine")).toBe("trine");
     expect(aspectGlossarySlug("applying")).toBeUndefined();
-    expect(GLOSSARY_TERMS).toHaveLength(36);
+    expect(GLOSSARY_TERMS).toHaveLength(39);
+    expect(getGlossaryTerm("element")?.term).toBe("Element");
+    expect(getGlossaryTerm("modality")?.term).toBe("Modality");
+    expect(getGlossaryTerm("ruling-planet")?.term).toBe("Ruling planet");
   });
 });

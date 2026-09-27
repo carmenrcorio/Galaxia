@@ -5,6 +5,7 @@ import {
   ACCOUNT_EXPORT_COPY,
   DEFAULT_FETCH_TIMEOUT_MS,
   DELETE_CONFIRMATION_WORD,
+  formatRelationshipLabel,
   isDeleteConfirmation,
   shouldWarnBillingOnDelete,
   withTimeout
@@ -555,7 +556,7 @@ export default function SettingsScreen() {
           people.map((person) => (
             <View key={person.id} style={listItem}>
               <Text style={{ color: tokens.colors.cream, fontWeight: "700" }}>{person.display_name}</Text>
-              <Text style={{ color: tokens.colors.mist }}>{person.relation}</Text>
+              <Text style={{ color: tokens.colors.mist }}>{formatRelationshipLabel(person.relation)}</Text>
             </View>
           ))
         )}

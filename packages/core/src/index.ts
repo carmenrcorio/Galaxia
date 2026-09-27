@@ -114,3 +114,5 @@ export * from "./async-surface";
 export * from "./retrograde";
 
 export * from "./glossary-terms";
+
+export * from "./format-relationship-label";

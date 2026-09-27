@@ -88,6 +88,34 @@ describe("PersonPickerField", () => {
     expect(screen.getByText(COMPARE_PERSON_PICKER_COPY.selfRole)).toBeTruthy();
   });
 
+  it("renders stored relationship labels in lowercase", () => {
+    render(
+      <PersonPickerField
+        label="Person A"
+        people={[
+          person("d", "Dana", "Daughter"),
+          person("c", "Cara", "Cousin"),
+          person("p", "Pat", "partner"),
+          person("f", "Fran", "friend")
+        ]}
+        recentPeople={[]}
+        selectedId="d"
+        disabledId={null}
+        onSelect={() => undefined}
+        addPersonHref="/app/add-person"
+      />
+    );
+    expect(screen.getByText("daughter")).toBeTruthy();
+    expect(screen.queryByText("Daughter")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Dana/ }));
+    expect(screen.getByText("cousin")).toBeTruthy();
+    expect(screen.getByText("partner")).toBeTruthy();
+    expect(screen.getByText("friend")).toBeTruthy();
+    expect(screen.queryByText("Cousin")).toBeNull();
+    expect(screen.queryByText("Friend")).toBeNull();
+    expect(screen.queryByText("Partner")).toBeNull();
+  });
+
   it("filters by name and keeps a disabled counterpart visible", () => {
     render(
       <PersonPickerField

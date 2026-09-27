@@ -155,6 +155,8 @@ describe("founder-review copy", () => {
     expect(CONNECT_SHARING.includes("\u2014")).toBe(false);
     expect(CONNECT_WHAT_GALAXIA_IS).not.toMatch(/astrology\s+app/i);
     expect(connectLandingHeadline("Maya", "partner")).toBe("Maya invited you to connect as their partner.");
+    expect(connectLandingHeadline("Maya", "Daughter")).toBe("Maya invited you to connect as their daughter.");
+    expect(connectLandingHeadline("Maya", "Cousin")).toBe("Maya invited you to connect as their cousin.");
     expect(connectLandingHeadline("Maya", "")).toBe("Maya invited you to connect.");
   });
 

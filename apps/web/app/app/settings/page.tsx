@@ -7,7 +7,7 @@ import { PendingConnectInvites } from "../../../components/pending-connect-invit
 import { PendingShareLinks } from "../../../components/pending-share-links";
 import { Spinner } from "../../../components/spinner";
 import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "@galaxia/astro";
-import { DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
+import { DEFAULT_FETCH_TIMEOUT_MS, formatRelationshipLabel, withTimeout } from "@galaxia/core";
 import { EMPTY_STATE_WELCOME_HREF } from "../../../lib/nav-links";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
@@ -390,7 +390,7 @@ export default function SettingsPage() {
           {people.map((person) => (
             <div key={person.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
               <span style={{ color: "var(--cream)" }}>{person.display_name}</span>
-              <span className="muted" style={{ fontSize: 13 }}>{person.relation}</span>
+              <span className="muted" style={{ fontSize: 13 }}>{formatRelationshipLabel(person.relation)}</span>
             </div>
           ))}
         </div>

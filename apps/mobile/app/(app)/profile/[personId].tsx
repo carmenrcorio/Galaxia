@@ -41,6 +41,7 @@ import {
   chartPrecisionExplanation,
   chartPrecisionFact,
   describeGenerationalArchetype,
+  formatRelationshipLabel,
   hasPassed,
   housesUnavailableCopy,
   isMinorForSafety,
@@ -359,7 +360,7 @@ export default function PersonProfileScreen() {
         <View style={{ flex: 1 }}>
           <Text style={{ color: tokens.colors.cream, fontSize: 31, fontFamily: fonts.frauncesSemi }}>{person.display_name}</Text>
           <Text style={{ color: tokens.colors.mist }}>
-            {person.relation}{isMemorial ? " · remembered" : ""}
+            {formatRelationshipLabel(person.relation)}{isMemorial ? " · remembered" : ""}
           </Text>
           <ChartPrecisionFacts
             precision={person.birth_precision}
@@ -663,7 +664,7 @@ export default function PersonProfileScreen() {
                 if (!bridge) return null;
                 return (
                   <View style={nestedCallout}>
-                    <Text style={domainStyle}>You + {person.relation || person.display_name}</Text>
+                    <Text style={domainStyle}>You + {person.relation ? formatRelationshipLabel(person.relation) : person.display_name}</Text>
                     <Text style={cardBody}>{bridge}</Text>
                   </View>
                 );

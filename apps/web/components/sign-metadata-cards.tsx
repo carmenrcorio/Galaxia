@@ -71,7 +71,10 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
         }}
       >
         {/* FOUNDER-REVIEW: compact symbol-card label. */}
-        <span style={labelStyle}>Symbol · {metadata.symbol}</span>
+        <span style={{ ...labelStyle, display: "flex", justifyContent: "space-between", gap: 8 }}>
+          <span>Symbol · {metadata.symbol}</span>
+          <span aria-hidden="true">{originOpen ? "▲" : "▼"}</span>
+        </span>
         <span style={{ ...originStyle, color: originOpen ? "var(--cream)" : "var(--mist)" }}>
           {originOpen ? metadata.symbolOrigin : firstSentence(metadata.symbolOrigin)}
         </span>

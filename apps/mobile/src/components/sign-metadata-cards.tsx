@@ -55,7 +55,10 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
         style={[pillStyle, { flexBasis: "100%" }]}
       >
         {/* FOUNDER-REVIEW: compact symbol-card label. */}
-        <Text style={labelStyle}>Symbol · {metadata.symbol}</Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
+          <Text style={labelStyle}>Symbol · {metadata.symbol}</Text>
+          <Text accessibilityElementsHidden style={labelStyle}>{originOpen ? "▲" : "▼"}</Text>
+        </View>
         <Text style={[originStyle, { color: originOpen ? tokens.colors.cream : tokens.colors.mist }]}>
           {originOpen ? metadata.symbolOrigin : firstSentence(metadata.symbolOrigin)}
         </Text>

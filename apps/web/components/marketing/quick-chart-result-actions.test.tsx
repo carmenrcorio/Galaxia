@@ -17,7 +17,13 @@ vi.mock("next/link", () => ({
     children: unknown;
     onClick?: () => void;
   }) => (
-    <a href={href} onClick={onClick}>
+    <a
+      href={href}
+      onClick={(event) => {
+        event.preventDefault();
+        onClick?.();
+      }}
+    >
       {children as never}
     </a>
   ),

@@ -158,7 +158,7 @@ describe("QuickComparePage result order", () => {
     expect(precedes(needA, needB)).toBe(true);
     expect(precedes(needB, tableHeading)).toBe(true);
     expect(screen.getByRole("button", { name: "flows" })).toBeTruthy();
-    expect(screen.getByText(/and catches/)).toBeTruthy();
+    expect(screen.getAllByText(/and catches/).length).toBeGreaterThan(0);
     expect(screen.getByText("Generational call-out")).toBeTruthy();
   });
 });

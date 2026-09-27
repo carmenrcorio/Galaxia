@@ -708,7 +708,6 @@ select.field--rect {
   border: 0;
   background: transparent;
   color: inherit;
-  cursor: pointer;
   font: inherit;
   text-align: left;
 }
@@ -722,10 +721,6 @@ select.field--rect {
   font-family: var(--serif);
   font-size: 1.08rem;
   font-weight: 500;
-}
-.sign-metadata-card__chevron {
-  color: var(--gold-soft);
-  font-size: .58rem;
 }
 .sign-metadata-card__origin,
 .sign-metadata-card__significance {

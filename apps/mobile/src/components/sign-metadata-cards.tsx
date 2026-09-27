@@ -7,15 +7,9 @@ import {
   sunSignFromChart,
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { fonts } from "../lib/typography";
 import { GlossaryTooltip } from "./glossary-tooltip";
-
-function firstSentence(copy: string): string {
-  const end = copy.indexOf(".");
-  return end === -1 ? copy : copy.slice(0, end + 1);
-}
 
 function titleCase(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -23,7 +17,6 @@ function titleCase(value: string): string {
 
 export function SignMetadataCards({ chart }: { chart: NatalChart }) {
   const sunSign = sunSignFromChart(chart);
-  const [originOpen, setOriginOpen] = useState(false);
 
   if (!sunSign) return null;
 
@@ -81,23 +74,13 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
       </View>
 
       <View style={[rowStyle, dividedRowStyle]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ expanded: originOpen }}
-          // FOUNDER-REVIEW: accessible action label for the approved symbol explanation.
-          accessibilityLabel={`${originOpen ? "Hide" : "Read"} why ${sunSign} uses the ${metadata.symbol}`}
-          onPress={() => setOriginOpen((open) => !open)}
-          style={symbolStyle}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            {/* FOUNDER-REVIEW: symbol heading follows the approved design structure. */}
-            <Text style={symbolNameStyle}>The {metadata.symbol}</Text>
-            <Text accessibilityElementsHidden style={chevronStyle}>{originOpen ? "▲" : "▼"}</Text>
-          </View>
+        <View style={symbolStyle}>
+          {/* FOUNDER-REVIEW: symbol heading follows the approved design structure. */}
+          <Text style={symbolNameStyle}>The {metadata.symbol}</Text>
           <Text style={originStyle}>
-            {originOpen ? metadata.symbolOrigin : firstSentence(metadata.symbolOrigin)}
+            {metadata.symbolOrigin}
           </Text>
-        </Pressable>
+        </View>
       </View>
 
       <View style={[rowStyle, dividedRowStyle, materialsStyle]}>
@@ -242,11 +225,6 @@ const symbolNameStyle = {
   color: tokens.colors.gold,
   fontFamily: fonts.fraunces,
   fontSize: 17,
-} as const;
-
-const chevronStyle = {
-  color: tokens.colors.goldSoft,
-  fontSize: 9,
 } as const;
 
 const originStyle = {

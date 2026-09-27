@@ -8,13 +8,7 @@ import {
   SIGN_GLYPH,
   sunSignFromChart,
 } from "@galaxia/core";
-import { useState } from "react";
 import { GlossaryTerm } from "./glossary-term";
-
-function firstSentence(copy: string): string {
-  const end = copy.indexOf(".");
-  return end === -1 ? copy : copy.slice(0, end + 1);
-}
 
 function titleCase(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -22,7 +16,6 @@ function titleCase(value: string): string {
 
 export function SignMetadataCards({ chart }: { chart: NatalChart }) {
   const sunSign = sunSignFromChart(chart);
-  const [originOpen, setOriginOpen] = useState(false);
 
   if (!sunSign) return null;
 
@@ -93,25 +86,15 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
       </div>
 
       <div className="sign-metadata-card__row sign-metadata-card__row--symbol">
-        <button
-          type="button"
-          aria-expanded={originOpen}
-          className="sign-metadata-card__symbol"
-          // FOUNDER-REVIEW: accessible action label for the approved symbol explanation.
-          aria-label={`${originOpen ? "Hide" : "Read"} why ${sunSign} uses the ${metadata.symbol}`}
-          onClick={() => setOriginOpen((open) => !open)}
-        >
+        <div className="sign-metadata-card__symbol">
           <span className="sign-metadata-card__symbol-head">
             {/* FOUNDER-REVIEW: symbol heading follows the approved design structure. */}
             <span className="sign-metadata-card__symbol-name">The {metadata.symbol}</span>
-            <span aria-hidden="true" className="sign-metadata-card__chevron">
-              {originOpen ? "▲" : "▼"}
-            </span>
           </span>
           <span className="sign-metadata-card__origin">
-            {originOpen ? metadata.symbolOrigin : firstSentence(metadata.symbolOrigin)}
+            {metadata.symbolOrigin}
           </span>
-        </button>
+        </div>
       </div>
 
       <div className="sign-metadata-card__row sign-metadata-card__row--materials">

@@ -1,17 +1,17 @@
 // @vitest-environment jsdom
 
-import type { NatalChart } from "@galaxia/astro";
+import { getSignMetadata, type NatalChart, type Sign } from "@galaxia/astro";
 import { BIRTHSTONE_COLORS, ELEMENT_NODE_COLORS } from "@galaxia/core";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { SignMetadataCards } from "./sign-metadata-cards";
 
 afterEach(cleanup);
 
-function chart(sunConfident = true): NatalChart {
+function chart(sunConfident = true, sign: Sign = "Capricorn"): NatalChart {
   return {
     placements: [
-      { body: "sun", lon: 280, sign: "Capricorn", degree: 10, retro: false, confident: sunConfident },
+      { body: "sun", lon: 280, sign, degree: 10, retro: false, confident: sunConfident },
       { body: "moon", lon: 10, sign: "Aries", degree: 10, retro: false, confident: true },
     ],
     precision: sunConfident ? "exact" : "year",
@@ -69,15 +69,18 @@ describe("SignMetadataCards", () => {
     expect(rows[2].classList.contains("sign-metadata-card__row--materials")).toBe(true);
   });
 
-  it("expands the complete approved symbol origin", () => {
-    render(<SignMetadataCards chart={chart()} />);
+  it("shows the complete approved symbol origin without expanding", () => {
+    for (const sign of ["Aries", "Scorpio", "Pisces", "Capricorn"] as const) {
+      cleanup();
+      render(<SignMetadataCards chart={chart(true, sign)} />);
 
-    expect(screen.getByText("The sea-goat -- half goat, half fish -- is one of the oldest symbols in astrology.")).toBeTruthy();
-    const button = screen.getByRole("button", { name: "Read why Capricorn uses the Sea-Goat" });
-    fireEvent.click(button);
-
-    expect(button.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByText(/It climbs relentlessly but its tail remembers the depth it came from/)).toBeTruthy();
+      const origin = getSignMetadata(sign).symbolOrigin;
+      expect(screen.getByText(origin)).toBeTruthy();
+      expect(origin.split(".").filter((sentence) => sentence.trim()).length).toBeGreaterThan(1);
+      expect(screen.queryByRole("button", { name: new RegExp(`why ${sign} uses`) })).toBeNull();
+      expect(screen.queryByText("▼")).toBeNull();
+      expect(screen.queryByText("▲")).toBeNull();
+    }
   });
 
   it("does not render for an uncertain Sun", () => {

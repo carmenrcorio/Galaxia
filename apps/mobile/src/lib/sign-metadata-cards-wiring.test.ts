@@ -22,7 +22,7 @@ describe("mobile sign metadata cards", () => {
     expect(actions).toBeGreaterThan(metadata);
   });
 
-  it("uses the confident Sun gate, shared palettes, glyphs, expandable origin, and glossary entries", () => {
+  it("uses the confident Sun gate, shared palettes, glyphs, full origin, and glossary entries", () => {
     const component = readMobile("src/components/sign-metadata-cards.tsx");
 
     expect(component).toContain("sunSignFromChart(chart)");
@@ -30,7 +30,9 @@ describe("mobile sign metadata cards", () => {
     expect(component).toContain("BIRTHSTONE_COLORS[sunSign]");
     expect(component).toContain("SIGN_GLYPH[sunSign]");
     expect(component).toContain("BODY_GLYPH[metadata.rulingPlanet]");
-    expect(component).toContain("originOpen ? metadata.symbolOrigin : firstSentence(metadata.symbolOrigin)");
+    expect(component).toContain("{metadata.symbolOrigin}");
+    expect(component).not.toContain("firstSentence");
+    expect(component).not.toContain("originOpen");
     expect(component).toContain('glossarySlug="element"');
     expect(component).toContain('glossarySlug="modality"');
     expect(component).toContain('glossarySlug="ruling-planet"');

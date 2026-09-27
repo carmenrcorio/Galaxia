@@ -1,0 +1,42 @@
+name: Chart Lead Drip
+
+on:
+  schedule:
+    # Daily at an off-peak minute. The route decides which leads are due.
+    - cron: "26 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: chart-lead-drip-cron
+  cancel-in-progress: false
+
+jobs:
+  send:
+    name: send
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require GALAXIA_APP_URL and CRON_SECRET
+        run: |
+          if [ -z "${{ secrets.GALAXIA_APP_URL }}" ]; then
+            echo "::error::GALAXIA_APP_URL repo secret is not set. Add the deployed apps/web origin under repository Actions secrets."
+            exit 1
+          fi
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "::error::CRON_SECRET repo secret is not set. It must match the deployed apps/web CRON_SECRET."
+            exit 1
+          fi
+
+      - name: POST /api/cron/chart-lead-drip
+        run: |
+          set -o pipefail
+          HTTP_STATUS=$(curl --fail-with-body --silent --show-error --max-time 180 \
+            -o response.json -w "%{http_code}" \
+            -X POST "${{ secrets.GALAXIA_APP_URL }}/api/cron/chart-lead-drip" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          CURL_EXIT=$?
+          echo "HTTP status: ${HTTP_STATUS}"
+          echo "Response body:"
+          cat response.json 2>/dev/null || echo "(no response body)"
+          exit "${CURL_EXIT}"

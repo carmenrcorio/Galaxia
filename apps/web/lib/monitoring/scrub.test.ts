@@ -93,6 +93,8 @@ describe("isSensitiveRequestPath", () => {
     expect(isSensitiveRequestPath("/api/quick-chart?lat=1")).toBe(true);
     expect(isSensitiveRequestPath("/api/quick-compare")).toBe(true);
     expect(isSensitiveRequestPath("/api/quick-share")).toBe(true);
+    expect(isSensitiveRequestPath("/api/chart-lead")).toBe(true);
+    expect(isSensitiveRequestPath("/api/chart-lead/unsubscribe?token=abc")).toBe(true);
     expect(isSensitiveRequestPath("/s/abc123")).toBe(true);
     expect(isSensitiveRequestPath("/invite/c0ffee")).toBe(true);
     expect(isSensitiveRequestPath("/api/invite/birth-data")).toBe(true);

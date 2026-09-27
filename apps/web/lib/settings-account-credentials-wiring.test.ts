@@ -71,7 +71,7 @@ describe("the credentials card writes through the session, never a service key",
     expect(code).not.toContain("\u2014");
     // The module path is the one string allowed to say it. Nothing shows the
     // backend's name to the reader (ENGINEERING.md §7).
-    const literals = code.match(/"[^"\n]*"|'[^'\n]*'|`[^`]*`/g) ?? [];
+    const literals: string[] = code.match(/"[^"\n]*"|'[^'\n]*'|`[^`]*`/g) ?? [];
     const offenders = literals.filter(
       (literal) => literal.toLowerCase().includes("supabase") && !literal.includes("lib/supabase/client")
     );

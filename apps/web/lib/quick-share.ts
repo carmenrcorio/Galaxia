@@ -11,10 +11,13 @@
  */
 
 import {
+  CHART_ELEMENTS,
   COMPARE_RELATION_TYPES,
   isRomanticRelation,
   type BirthFormInput,
+  type ElementCounts,
   type NatalChart,
+  type PairElementBalance,
   type RelationType,
 } from "@galaxia/astro";
 
@@ -26,6 +29,8 @@ export type QuickShareKind = "single" | "compare";
 export type SynastryShareShape = {
   scores: Record<string, number>;
   aspects: Array<{ from: string; to: string; type: string; orb: number; harmony: number }>;
+  /** Optional for snapshots created before element balance was persisted. */
+  elementBalance?: PairElementBalance;
 };
 
 export type GenerationalShareShape = {
@@ -360,7 +365,43 @@ function sanitizeSynastry(raw: unknown): SynastryShareShape | null {
       harmony: item.harmony,
     });
   }
-  return { scores, aspects };
+  const elementBalance = sanitizePairElementBalance(raw.elementBalance);
+  return elementBalance ? { scores, aspects, elementBalance } : { scores, aspects };
+}
+
+function sanitizeElementCounts(raw: unknown): ElementCounts | null {
+  if (!isPlainObject(raw)) return null;
+  const counts = { fire: 0, earth: 0, air: 0, water: 0 };
+  for (const element of CHART_ELEMENTS) {
+    const count = raw[element];
+    if (typeof count !== "number" || !Number.isInteger(count) || count < 0) return null;
+    counts[element] = count;
+  }
+  return counts;
+}
+
+function sanitizePairElementBalance(raw: unknown): PairElementBalance | null {
+  if (!isPlainObject(raw)) return null;
+  const a = sanitizeElementCounts(raw.a);
+  const b = sanitizeElementCounts(raw.b);
+  const combined = sanitizeElementCounts(raw.combined);
+  if (!a || !b || !combined || typeof raw.balanced !== "boolean") return null;
+  const validElements = (value: unknown) =>
+    Array.isArray(value) &&
+    value.every(
+      (element) =>
+        typeof element === "string" &&
+        CHART_ELEMENTS.some((candidate) => candidate === element)
+    );
+  if (!validElements(raw.dominantElements) || !validElements(raw.missingElements)) return null;
+  return {
+    a,
+    b,
+    combined,
+    dominantElements: raw.dominantElements as PairElementBalance["dominantElements"],
+    missingElements: raw.missingElements as PairElementBalance["missingElements"],
+    balanced: raw.balanced,
+  };
 }
 
 function sanitizeGenerational(raw: unknown): GenerationalShareShape | null {

@@ -1,3 +1,4 @@
+import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import { describe, expect, it } from "vitest";
 import { chartLeadDripEmail, chartLeadEmailHeaders } from "./emails";
 import type { ChartLeadChartCopy, ChartLeadDripStep } from "./chart-lead-drip";
@@ -63,7 +64,7 @@ describe("chartLeadDripEmail", () => {
       const email = render(step);
       for (const body of [email.html, email.text]) {
         expect(body).toContain(FOOTER_ENTITY);
-        expect(body).toContain("help@galaxiamea.com");
+        expect(body).toContain(GALAXIA_HELP_EMAIL);
         expect(body).toContain(FOOTER_REASON);
         expect(body).toContain(UNSUBSCRIBE_URL);
         expect(body).not.toContain("\u2014");

@@ -110,6 +110,7 @@ const SENSITIVE_PATH_PREFIXES = [
   "/api/quick-chart",
   "/api/quick-compare",
   "/api/quick-share",
+  "/api/chart-lead",
   "/api/invite",
   "/api/nudge-email/unsubscribe",
   "/api/constellation-letter/unsubscribe",

@@ -9,6 +9,12 @@ export const CHART_LEAD_CONFIRMATION = "You are in. We will reach out when somet
 export const CHART_LEAD_INVALID_EMAIL = "Enter a valid email address.";
 // FOUNDER-REVIEW: "Too many requests. Try again in a minute."
 export const CHART_LEAD_RATE_LIMITED = "Too many requests. Try again in a minute.";
+// FOUNDER-REVIEW: "You are unsubscribed from transit alerts for this chart."
+export const CHART_LEAD_UNSUBSCRIBED = "You are unsubscribed from transit alerts for this chart.";
+
+export function chartLeadUnsubscribeUrl(siteUrl: string, token: string): string {
+  return `${siteUrl.replace(/\/$/, "")}/api/chart-lead/unsubscribe?token=${encodeURIComponent(token)}`;
+}
 
 export function normalizeChartLeadEmail(value: string): string {
   return value.trim().toLowerCase();

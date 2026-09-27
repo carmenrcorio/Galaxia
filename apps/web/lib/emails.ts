@@ -23,7 +23,8 @@ import type { EmailCopy } from "./email-copy";
 import { emphasizeParagraphHtml, fillTemplate, trialTemplateVars } from "./email-copy";
 import { emailCtaHref, type EmailCtaPathKey, type TrialEmailKind } from "./email-kinds";
 import { trackingPixelHtml } from "./email-tracking";
-import { EMAIL_PATHS } from "./nav-links";
+import { CHART_MODE_COMPARE, EMAIL_PATHS, MARKETING_NAV_SIGNUP } from "./nav-links";
+import type { ChartLeadChartCopy, ChartLeadDripStep } from "./chart-lead-drip";
 
 export type { TrialEmailKind } from "./email-kinds";
 
@@ -99,15 +100,21 @@ function p(text: string): string {
  */
 const LEGAL_ENTITY_ADDRESS_LINE = `Galaxia Mea LLC · 1 Shadowrock Ct, Simpsonville, SC 29680 · ${GALAXIA_HELP_EMAIL}`;
 
-function complianceFooterHtml(unsubscribeUrl: string): string {
+function complianceFooterHtml(
+  unsubscribeUrl: string,
+  reason = "You are receiving this email because you signed up for Galaxia Mea."
+): string {
   return `<p style="color:#8076a6;font-size:11px;margin-top:28px;line-height:1.6">
         ${LEGAL_ENTITY_ADDRESS_LINE}<br /><br />
-        You are receiving this email because you signed up for Galaxia Mea. To unsubscribe, <a href="${unsubscribeUrl}" style="color:#8076a6;text-decoration:underline">visit this link</a>.
+        ${reason} To unsubscribe, <a href="${unsubscribeUrl}" style="color:#8076a6;text-decoration:underline">visit this link</a>.
       </p>`;
 }
 
-function complianceFooterText(unsubscribeUrl: string): string {
-  return `${LEGAL_ENTITY_ADDRESS_LINE}\n\nYou are receiving this email because you signed up for Galaxia Mea. To unsubscribe, visit: ${unsubscribeUrl}`;
+function complianceFooterText(
+  unsubscribeUrl: string,
+  reason = "You are receiving this email because you signed up for Galaxia Mea."
+): string {
+  return `${LEGAL_ENTITY_ADDRESS_LINE}\n\n${reason} To unsubscribe, visit: ${unsubscribeUrl}`;
 }
 
 /**
@@ -503,6 +510,122 @@ export function nudgeEmailHeaders(unsubscribeUrl: string): EmailHeaders {
  * handles both a mail-client POST (blank 200) and a human GET.
  */
 export function trialEmailHeaders(unsubscribeUrl: string): EmailHeaders {
+  return {
+    "List-Unsubscribe": `<${unsubscribeUrl}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+  };
+}
+
+export interface ChartLeadDripEmailData {
+  step: ChartLeadDripStep;
+  chartCopy: ChartLeadChartCopy;
+  siteUrl: string;
+  unsubscribeUrl: string;
+}
+
+// FOUNDER-REVIEW: "You are receiving this email because you asked for transit alerts for a free chart."
+const CHART_LEAD_FOOTER_REASON =
+  "You are receiving this email because you asked for transit alerts for a free chart.";
+
+/**
+ * The chart facts passed here were recomputed by @galaxia/astro immediately
+ * before rendering. Unsettled placements carry explicit uncertainty copy.
+ */
+export function chartLeadDripEmail(d: ChartLeadDripEmailData): RenderedEmail {
+  if (d.step === 1) {
+    // FOUNDER-REVIEW: "What your Moon sign says about how you love"
+    const subject = "What your Moon sign says about how you love";
+    // FOUNDER-REVIEW: "The way care reaches this chart."
+    const preview = "The way care reaches this chart.";
+    // FOUNDER-REVIEW: "Hi there,"
+    // FOUNDER-REVIEW: "The Moon describes what helps care feel safe, familiar, and real. It is one piece of how this chart gives and receives closeness."
+    // FOUNDER-REVIEW: "Start 14 days free"
+    const body = p("Hi there,") +
+      p(d.chartCopy.moon.statement) +
+      p(d.chartCopy.moon.reading) +
+      p("The Moon describes what helps care feel safe, familiar, and real. It is one piece of how this chart gives and receives closeness.") +
+      button("Start 14 days free", `${d.siteUrl}${MARKETING_NAV_SIGNUP.href}`) +
+      complianceFooterHtml(d.unsubscribeUrl, CHART_LEAD_FOOTER_REASON);
+    const text = [
+      "Hi there,",
+      "",
+      d.chartCopy.moon.statement,
+      "",
+      d.chartCopy.moon.reading,
+      "",
+      "The Moon describes what helps care feel safe, familiar, and real. It is one piece of how this chart gives and receives closeness.",
+      "",
+      `Start 14 days free: ${d.siteUrl}${MARKETING_NAV_SIGNUP.href}`,
+      "",
+      complianceFooterText(d.unsubscribeUrl, CHART_LEAD_FOOTER_REASON),
+    ].join("\n");
+    return { subject, preview, html: shell(body, preview), text };
+  }
+
+  if (d.step === 2) {
+    // FOUNDER-REVIEW: "The part of your chart that explains your arguments"
+    const subject = "The part of your chart that explains your arguments";
+    // FOUNDER-REVIEW: "How this chart speaks, pushes, and repairs."
+    const preview = "How this chart speaks, pushes, and repairs.";
+    // FOUNDER-REVIEW: "Hi there,"
+    // FOUNDER-REVIEW: "Mercury describes how meaning gets expressed. Mars describes what happens when pressure rises. Put two charts together and the pattern becomes much easier to see."
+    // FOUNDER-REVIEW: "Compare two charts"
+    const body = p("Hi there,") +
+      p(d.chartCopy.mercury.statement) +
+      p(d.chartCopy.mercury.reading) +
+      p(d.chartCopy.mars.statement) +
+      p(d.chartCopy.mars.reading) +
+      p("Mercury describes how meaning gets expressed. Mars describes what happens when pressure rises. Put two charts together and the pattern becomes much easier to see.") +
+      button("Compare two charts", `${d.siteUrl}${CHART_MODE_COMPARE.href}`) +
+      complianceFooterHtml(d.unsubscribeUrl, CHART_LEAD_FOOTER_REASON);
+    const text = [
+      "Hi there,",
+      "",
+      d.chartCopy.mercury.statement,
+      "",
+      d.chartCopy.mercury.reading,
+      "",
+      d.chartCopy.mars.statement,
+      "",
+      d.chartCopy.mars.reading,
+      "",
+      "Mercury describes how meaning gets expressed. Mars describes what happens when pressure rises. Put two charts together and the pattern becomes much easier to see.",
+      "",
+      `Compare two charts: ${d.siteUrl}${CHART_MODE_COMPARE.href}`,
+      "",
+      complianceFooterText(d.unsubscribeUrl, CHART_LEAD_FOOTER_REASON),
+    ].join("\n");
+    return { subject, preview, html: shell(body, preview), text };
+  }
+
+  // FOUNDER-REVIEW: "One chart is interesting. Two is where it gets real."
+  const subject = "One chart is interesting. Two is where it gets real.";
+  // FOUNDER-REVIEW: "The relationship appears between the charts."
+  const preview = "The relationship appears between the charts.";
+  // FOUNDER-REVIEW: "Hi there,"
+  // FOUNDER-REVIEW: "A single chart can describe how one person is built. A relationship appears when two charts meet: where communication flows, where conflict catches, and what each person needs from the other."
+  // FOUNDER-REVIEW: "That is what Galaxia is built to show. Add the people who matter and compare the real charts between you."
+  // FOUNDER-REVIEW: "Start free"
+  const body = p("Hi there,") +
+    p("A single chart can describe how one person is built. A relationship appears when two charts meet: where communication flows, where conflict catches, and what each person needs from the other.") +
+    p("That is what Galaxia is built to show. Add the people who matter and compare the real charts between you.") +
+    button("Start free", `${d.siteUrl}${MARKETING_NAV_SIGNUP.href}`) +
+    complianceFooterHtml(d.unsubscribeUrl, CHART_LEAD_FOOTER_REASON);
+  const text = [
+    "Hi there,",
+    "",
+    "A single chart can describe how one person is built. A relationship appears when two charts meet: where communication flows, where conflict catches, and what each person needs from the other.",
+    "",
+    "That is what Galaxia is built to show. Add the people who matter and compare the real charts between you.",
+    "",
+    `Start free: ${d.siteUrl}${MARKETING_NAV_SIGNUP.href}`,
+    "",
+    complianceFooterText(d.unsubscribeUrl, CHART_LEAD_FOOTER_REASON),
+  ].join("\n");
+  return { subject, preview, html: shell(body, preview), text };
+}
+
+export function chartLeadEmailHeaders(unsubscribeUrl: string): EmailHeaders {
   return {
     "List-Unsubscribe": `<${unsubscribeUrl}>`,
     "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"

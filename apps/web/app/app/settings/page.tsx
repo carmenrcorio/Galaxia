@@ -2,6 +2,7 @@
 
 import type { HouseSystem } from "@galaxia/astro";
 import { useEffect, useMemo, useState } from "react";
+import { SettingsAccountSection } from "../../../components/settings-account-section";
 import { SettingsSubscriptionPanel } from "../../../components/settings-subscription-panel";
 import { PendingConnectInvites } from "../../../components/pending-connect-invites";
 import { PendingShareLinks } from "../../../components/pending-share-links";
@@ -58,6 +59,7 @@ export default function SettingsPage() {
   const [relationalPrefStatus, setRelationalPrefStatus] = useState<string | null>(null);
 
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [supportSubject, setSupportSubject] = useState("");
   const [supportBody, setSupportBody] = useState("");
   const [submittingSupport, setSubmittingSupport] = useState(false);
@@ -79,7 +81,7 @@ export default function SettingsPage() {
       const [{ data: profile }, { data: peopleRows }, { data: groupRows }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("house_system, daily_nudge_emails_enabled, weekly_constellation_letter_enabled, relational_transit_alerts")
+          .select("house_system, daily_nudge_emails_enabled, weekly_constellation_letter_enabled, relational_transit_alerts, subscription_status")
           .eq("id", user.id)
           .maybeSingle(),
         supabase.from("people").select("id, display_name, relation").eq("owner_id", user.id).order("display_name", { ascending: true }),
@@ -93,6 +95,7 @@ export default function SettingsPage() {
       // Column default is 'all'; treat any unrecognized/missing value as
       // 'all' too rather than fabricating a different preference.
       setRelationalTransitAlerts(isRelationalTransitAlertsPref(profile?.relational_transit_alerts) ? profile.relational_transit_alerts : "all");
+      setSubscriptionStatus((profile?.subscription_status as string | null) ?? null);
       setPeople((peopleRows ?? []) as PersonLite[]);
       setGroups((groupRows ?? []) as GroupLite[]);
         })(), DEFAULT_FETCH_TIMEOUT_MS);
@@ -329,10 +332,6 @@ export default function SettingsPage() {
         <h2 className="card-title">Privacy</h2>
         <p className="muted">Your private notes are visible only to you: never shared with the person they're about and never included in shared-space Vela conversations.</p>
         <p className="muted">Shared spaces require consent from all participants and are blocked when any participant is a minor.</p>
-        <p className="muted" style={{ marginTop: 10 }}>
-          Export your data or delete your account from{" "}
-          <a href="/account/data" style={{ color: "var(--gold)" }}>Your data</a>.
-        </p>
                 <p className="muted" style={{ marginTop: 10 }}>
           Change your password from{" "}
           <a href="/account" style={{ color: "var(--gold)" }}>Account</a>.
@@ -409,6 +408,8 @@ export default function SettingsPage() {
           </div>
         </section>
       ) : null}
+
+      <SettingsAccountSection subscriptionStatus={subscriptionStatus} />
 
       <button className="pill-link" onClick={signOut} disabled={signingOut} style={{ gap: 8 }}>
         {signingOut && <Spinner size={12} />}

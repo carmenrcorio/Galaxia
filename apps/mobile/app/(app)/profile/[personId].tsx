@@ -119,6 +119,7 @@ export default function PersonProfileScreen() {
 
   const loadProfile = async () => {
     if (!session?.user.id || !resolvedPersonId) return;
+    setViewerPlutoSign(null);
 
     // A unique index on people(owner_id) WHERE is_self guarantees at most
     // one row here — no ordering/limit tie-breaker needed.

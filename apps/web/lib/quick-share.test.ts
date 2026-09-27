@@ -33,7 +33,7 @@ const minimalChart = {
   },
 } satisfies NatalChart;
 
-const baseComparePayload = {
+const baseComparePayload: CompareSharePayload = {
   relationType: "platonic" as const,
   pairHasMinor: true,
   chartA: minimalChart,

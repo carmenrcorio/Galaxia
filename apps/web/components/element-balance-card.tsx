@@ -5,7 +5,13 @@ import {
   type ElementCounts,
   type PairElementBalance,
 } from "@galaxia/astro";
-import { tokens } from "@galaxia/ui";
+
+const ELEMENT_COLOR: Record<ChartElement, string> = {
+  fire: "#E8784F",
+  earth: "#7FA883",
+  air: "#D8B85A",
+  water: "#5F9FAF",
+};
 
 const ELEMENT_LABEL: Record<ChartElement, string> = {
   fire: "Fire",
@@ -56,7 +62,7 @@ function PersonElementBar({ name, counts }: { name: string; counts: ElementCount
                 display: "grid",
                 placeItems: "center",
                 color: "#0a0717",
-                background: tokens.elementBalance[element],
+                background: ELEMENT_COLOR[element],
                 fontSize: ".68rem",
                 fontWeight: 800,
                 letterSpacing: ".02em",
@@ -88,7 +94,7 @@ function PersonElementBar({ name, counts }: { name: string; counts: ElementCount
               textAlign: "center",
             }}
           >
-            <span style={{ color: tokens.elementBalance[element] }}>●</span>{" "}
+            <span style={{ color: ELEMENT_COLOR[element] }}>●</span>{" "}
             {ELEMENT_LABEL[element]} {counts[element]}
           </span>
         ))}

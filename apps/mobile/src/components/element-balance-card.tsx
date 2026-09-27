@@ -9,6 +9,7 @@ import { tokens } from "@galaxia/ui";
 import { Text, View } from "react-native";
 import { fonts } from "../lib/typography";
 
+// FOUNDER-REVIEW: Element balance labels.
 const ELEMENT_LABEL: Record<ChartElement, string> = {
   fire: "Fire",
   earth: "Earth",
@@ -72,6 +73,7 @@ export function ElementBalanceCard({
 }) {
   return (
     <View style={card}>
+      {/* FOUNDER-REVIEW: Element balance card heading and scope line. */}
       <Text style={eyebrow}>ELEMENT BALANCE</Text>
       <Text style={subtitle}>Sun through Pluto, ten planets each.</Text>
       <PersonElementBar name={nameA} counts={balance.a} />

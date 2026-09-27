@@ -13,6 +13,7 @@ const ELEMENT_COLOR: Record<ChartElement, string> = {
   water: "#5F9FAF",
 };
 
+// FOUNDER-REVIEW: Element balance labels.
 const ELEMENT_LABEL: Record<ChartElement, string> = {
   fire: "Fire",
   earth: "Earth",
@@ -115,6 +116,7 @@ export function ElementBalanceCard({
   const interpretations = interpretPairElementBalance(balance);
   return (
     <section className="glass-card fade-in fade-in-delay-2" data-testid="element-balance-card">
+      {/* FOUNDER-REVIEW: Element balance card heading and scope line. */}
       <p className="eyebrow" style={{ marginBottom: 5 }}>Element balance</p>
       <p className="muted" style={{ fontSize: ".76rem", margin: "0 0 14px", lineHeight: 1.5 }}>
         Sun through Pluto, ten planets each.

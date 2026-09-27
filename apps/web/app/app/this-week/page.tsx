@@ -1,15 +1,14 @@
 "use client";
 
 /**
- * Full This Week feed. The home screen shows a compact preview (max three
- * entries); this page is the unbounded list with read-more and Vela
- * deep-links. Same data as the compact card: stored relational_transits
- * rows, never fabricated.
+ * Full This Week feed. Same pairwise, synastry-gated cards as the home
+ * module, with read-more and Vela deep-links. Computed from living charts.
  */
 
 import { DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { SHARED_WEEK_PAGE_INTRO } from "@galaxia/astro";
 import {
   RELATIONAL_TRANSIT_FEED_ERROR,
   RELATIONAL_TRANSIT_FEED_LOADING,
@@ -50,7 +49,7 @@ export default function ThisWeekPage() {
       <div className="fade-in">
         <p className="eyebrow">This week</p>
                 <h1 className="page-title">Shared transits</h1>
-                <p className="muted">Every slow-moving transit currently pulling on two or more people in your circle at once.</p>
+                <p className="muted">{SHARED_WEEK_PAGE_INTRO}</p>
       </div>
       {!authReady ? (
         <section className="glass-card fade-in async-frame" style={{ padding: "14px 16px" }}>

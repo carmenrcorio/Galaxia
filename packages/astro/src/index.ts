@@ -844,4 +844,5 @@ export * from "./family-compare-interpretations";
 export * from "./family-pattern-card";
 export * from "./relational-transits";
 export * from "./relational-transit-interpretations";
+export * from "./shared-transit";
 export * from "./constellation-letter";

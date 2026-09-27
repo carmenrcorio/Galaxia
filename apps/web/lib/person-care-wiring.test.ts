@@ -49,7 +49,7 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     expect(src).toContain("showWorkView={isProfessionalPersonRelation(person.relation)}");
   });
 
-  it("This Week feed strips memorial people via thisWeekRowsFromStored before render", () => {
+  it("This Week feed builds from living people and still care-gates stored upcoming rows", () => {
     const src = readFileSync(
       resolve(__dirname, "../components/relational-transit-feed.tsx"),
       "utf8"
@@ -57,8 +57,11 @@ describe("source wiring — person page + home hide live sky for passed", () => 
     expect(src).toContain("thisWeekRowsFromStored");
     expect(src).toContain("peopleForThisWeek");
     expect(src).toContain("passedPersonIds");
-    expect(src).toMatch(/thisWeekRowsFromStored\(\(transitRows/);
+    expect(src).toContain("buildSharedWeekFeed");
     expect(src).toMatch(/peopleForThisWeek\(peopleList\)/);
+    const filterIdx = src.indexOf("peopleForThisWeek(peopleList)");
+    const buildIdx = src.indexOf("buildSharedWeekFeed(");
+    expect(buildIdx).toBeGreaterThan(filterIdx);
   });
 
   it("home Today in your sky filters with peopleForTodaySky before durable nudge plan", () => {

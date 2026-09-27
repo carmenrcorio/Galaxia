@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { interpretRelationalTransitHeadline, MAJOR_RELATIONAL_TRANSIT_BODIES, type AffectedProfileHit, type AspectType, type RelationalTransitBody } from "@galaxia/astro";
+import { MAJOR_RELATIONAL_TRANSIT_BODIES, renderSharedTransitCopy, sharedTransitEventFromStoredPair, type AspectType, type BodyName, type Sign } from "@galaxia/astro";
 import { livingAffectedForThisWeek, passedPersonIds } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
@@ -40,7 +40,7 @@ const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 interface RelationalTransitRow {
   id: string;
   owner_id: string;
-  transit_body: RelationalTransitBody;
+  transit_body: BodyName;
   aspect_type: AspectType;
   affected_profiles: Array<{
     profile_id: string;
@@ -105,7 +105,8 @@ async function handle(req: Request) {
       skipped.preferenceOff += 1;
       return;
     }
-    if (preference === "major_only" && !MAJOR_RELATIONAL_TRANSIT_BODIES.includes(event.transit_body)) {
+    const majorBodies: readonly string[] = MAJOR_RELATIONAL_TRANSIT_BODIES;
+    if (preference === "major_only" && !majorBodies.includes(event.transit_body)) {
       skipped.majorOnlyFiltered += 1;
       // Still mark sent — this event will never qualify under this
       // preference; re-checking it every run forever would be pointless.
@@ -137,16 +138,25 @@ async function handle(req: Request) {
       return;
     }
 
-    const affected: AffectedProfileHit[] = livingProfiles.map((a) => ({
-      personId: a.profile_id,
-      personName: a.profile_name,
-      natalBody: a.natal_body as AffectedProfileHit["natalBody"],
-      natalSign: a.natal_sign as AffectedProfileHit["natalSign"],
-      aspectType: event.aspect_type,
-      orbDeg: a.orb_deg,
-      exactAtUTC: a.exact_at,
-    }));
-    const headline = interpretRelationalTransitHeadline({ transitBody: event.transit_body, aspectType: event.aspect_type, affected });
+    const nowISO = new Date().toISOString();
+    const pair = sharedTransitEventFromStoredPair({
+      transiting: event.transit_body,
+      aspect: event.aspect_type,
+      whenUTC: nowISO,
+      members: livingProfiles.map((a) => ({
+        personId: a.profile_id,
+        personName: a.profile_name,
+        natalPoint: a.natal_body as BodyName,
+        natalSign: a.natal_sign as Sign,
+        orb: a.orb_deg,
+        exactAt: a.exact_at,
+      })),
+    });
+    if (!pair) {
+      await supabase.from("relational_transits").update({ push_sent_at: new Date().toISOString() }).eq("id", event.id);
+      return;
+    }
+    const headline = renderSharedTransitCopy(pair, nowISO).lead;
 
     const messages = tokens.map((to) => ({
       to,

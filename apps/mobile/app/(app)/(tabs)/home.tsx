@@ -1,16 +1,22 @@
 import {
+  buildSharedWeekFeed,
   coerceDailyNudgeRow,
   computeSynastry,
-  findNextRelationalTransitDate,
+  findNextSharedWeekDate,
   MAJOR_RELATIONAL_TRANSIT_BODIES,
   ownerLocalDate,
   orderSkyRowsForHome,
   planDailyNudgeWrites,
   whenUTCForOwnerLocalDate,
+  SHARED_WEEK_QUIET_REPEAT,
+  toSharedWeekCardModel,
+  WEEKLY_FEED_LIMIT,
   type NatalChart,
   type PersonDailyNudgeRecord,
   type Precision,
-  type RelationalTransitPersonInput
+  type RelationalTransitBody,
+  type SharedTransitPersonInput,
+  type SharedWeekCardModel,
 } from "@galaxia/astro";
 import {
   ELEMENT_NODE_COLORS,
@@ -41,8 +47,9 @@ import { ConstellationMap } from "../../../src/components/constellation-map";
 import { AppTour } from "../../../src/components/app-tour";
 import { Chip, GlassCard, Pill } from "../../../src/components/glass";
 import { InitialAvatar } from "../../../src/components/initial-avatar";
-import { ThisWeekCard, type ThisWeekRow } from "../../../src/components/this-week-card";
+import { ThisWeekCard } from "../../../src/components/this-week-card";
 import { cacheGet, cacheSet } from "../../../src/lib/cache";
+import { readShownSharedTransits, rememberShownSharedTransits } from "../../../src/lib/this-week-seen";
 import { constellationStageHeight, type SynastryLink } from "../../../src/lib/constellation-paint";
 import { screenFill } from "../../../src/lib/screen";
 import { supabase } from "../../../src/lib/supabase";
@@ -100,7 +107,11 @@ interface PersonSky {
 
 /* Generations Feature 3 — mirrors relational_transits columns (web parity,
    apps/web/components/relational-transit-feed.tsx). Read-only here. */
-type RelationalTransitRow = ThisWeekRow;
+type UpcomingTransitRow = {
+  active_from: string;
+  transit_body: RelationalTransitBody;
+  affected_profiles: Array<{ profile_id: string }>;
+};
 
 const SKELETON_SEATS = constellationSkeletonSeats();
 const CONSTELLATION_CROSSFADE_MS = 250;
@@ -123,9 +134,10 @@ export default function HomeScreen() {
   const [honorEdges, setHonorEdges] = useState<HonorEdge[]>([]);
   const [cohortByPerson, setCohortByPerson] = useState<Record<string, string>>({});
   const [personSkies, setPersonSkies] = useState<PersonSky[]>([]);
-  const [relationalTransits, setRelationalTransits] = useState<RelationalTransitRow[]>([]);
+  const [relationalCards, setRelationalCards] = useState<SharedWeekCardModel[]>([]);
   const [relationalPref, setRelationalPref] = useState<"all" | "major_only" | "off">("all");
   const [nextRelationalDateISO, setNextRelationalDateISO] = useState<string | null>(null);
+  const [quietWeekRepeat, setQuietWeekRepeat] = useState(false);
   const [threadChips, setThreadChips] = useState<ThreadChip[]>([]);
   const [homeStatus, setHomeStatus] = useState<string | null>(null);
   const [homeLoading, setHomeLoading] = useState(true);
@@ -215,7 +227,7 @@ export default function HomeScreen() {
       ).map((row) => row.id as string);
       const localDate = ownerLocalDate();
       const nowISO = new Date().toISOString();
-      const [{ data: profile }, { data: peopleRows, error: peopleError }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: transitRows }, { data: upcomingRows }, { data: relRows }] = await Promise.all([
+      const [{ data: profile }, { data: peopleRows, error: peopleError }, { data: chartRows }, { data: threadRows }, { data: nudgeRows }, { data: recentNudgeRows }, { data: upcomingRows }, { data: relRows }] = await Promise.all([
       supabase.from("profiles").select("display_name, pinned_sky_person_id, timezone, relational_transit_alerts, onboarding_completed_at, app_tour_seen_at").eq("id", session.user.id).single(),
       supabase.from("people").select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at, star_color, memorial_constellation, custom_position, star_scale, exclude_from_dailies").eq("owner_id", session.user.id).order("created_at", { ascending: true }),
       personIds.length
@@ -228,14 +240,6 @@ export default function HomeScreen() {
       personIds.length
         ? supabase.from("person_daily_nudges").select("person_id, pass_id").eq("owner_id", session.user.id).in("person_id", personIds).not("pass_id", "is", null).gte("date", new Date(Date.now() - 45 * 86400000).toISOString().slice(0, 10)).neq("date", localDate)
         : Promise.resolve({ data: [] as { person_id: string; pass_id: string | null }[] }),
-      supabase
-        .from("relational_transits")
-        .select("id, transit_body, aspect_type, affected_profiles")
-        .eq("owner_id", session.user.id)
-        .lte("active_from", nowISO)
-        .gte("active_to", nowISO)
-        .order("active_from", { ascending: true })
-        .limit(20),
       supabase
         .from("relational_transits")
         .select("active_from, transit_body, affected_profiles")
@@ -262,43 +266,49 @@ export default function HomeScreen() {
       const pref = relationalPrefValue === "major_only" || relationalPrefValue === "off" ? relationalPrefValue : "all";
       setRelationalPref(pref);
       const memorialIds = passedPersonIds(castPeople);
-      const livingTransits = thisWeekRowsFromStored((transitRows ?? []) as RelationalTransitRow[], memorialIds);
-      const visibleTransits =
-        pref === "off"
-          ? []
-          : pref === "major_only"
-            ? livingTransits.filter((row) => MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body))
-            : livingTransits;
-      setRelationalTransits(visibleTransits);
+      const chartByIdForWeek = new Map<string, NatalChart>((chartRows ?? []).map((row) => [row.person_id as string, row.data as NatalChart]));
+      const bodies = pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES : undefined;
+      const weekInputs: SharedTransitPersonInput[] = [];
+      for (const person of peopleForThisWeek(castPeople)) {
+        const chart = chartByIdForWeek.get(person.id);
+        if (!chart) continue;
+        weekInputs.push({
+          id: person.id,
+          name: person.display_name,
+          chart,
+          birthDate: person.birth_date,
+          birthPrecision: person.birth_precision as Precision | "none",
+          relation: person.relation,
+          isSelf: person.is_self,
+        });
+      }
+      const seenWeek = await readShownSharedTransits(session.user.id);
+      const weekFeed = pref === "off" || weekInputs.length < 2
+        ? null
+        : buildSharedWeekFeed(weekInputs, nowISO, {
+            bodies,
+            previouslyShown: seenWeek,
+            limit: WEEKLY_FEED_LIMIT,
+          });
+      const weeklyEvents = weekFeed?.weekly ?? [];
+      const repeating = weeklyEvents.length === 0 && (weekFeed?.relational.length ?? 0) > 0;
+      if (pref !== "off") await rememberShownSharedTransits(session.user.id, weeklyEvents, nowISO.slice(0, 10));
+      setRelationalCards(weeklyEvents.map((event) => toSharedWeekCardModel(event, nowISO)));
+      setQuietWeekRepeat(repeating);
 
       const upcoming = thisWeekRowsFromStored(
-        (upcomingRows ?? []) as Array<{ active_from: string; transit_body: RelationalTransitRow["transit_body"]; affected_profiles: RelationalTransitRow["affected_profiles"] }>,
+        (upcomingRows ?? []) as UpcomingTransitRow[],
         memorialIds
       ).filter((row) =>
         pref === "off" ? false : pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body) : true
       );
-      let nextISO: string | null = upcoming[0]?.active_from ?? null;
-      if (!nextISO && visibleTransits.length === 0 && pref !== "off") {
-        const chartByIdForNext = new Map<string, NatalChart>((chartRows ?? []).map((row) => [row.person_id as string, row.data as NatalChart]));
-        const inputs: RelationalTransitPersonInput[] = [];
-        for (const person of peopleForThisWeek(castPeople)) {
-          const chart = chartByIdForNext.get(person.id);
-          if (!chart) continue;
-          inputs.push({
-            id: person.id,
-            name: person.display_name,
-            chart,
-            birthDate: person.birth_date,
-            birthPrecision: person.birth_precision as Precision | "none",
-          });
-        }
-        if (inputs.length >= 2) {
-          nextISO = findNextRelationalTransitDate(inputs, nowISO, {
-            horizonDays: 56,
-            stepDays: 7,
-            bodies: pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES : undefined,
-          });
-        }
+      let nextISO: string | null = weeklyEvents.length > 0 || repeating ? null : upcoming[0]?.active_from ?? null;
+      if (!nextISO && weeklyEvents.length === 0 && !repeating && pref !== "off" && weekInputs.length >= 2) {
+        nextISO = findNextSharedWeekDate(weekInputs, nowISO, {
+          horizonDays: 28,
+          stepDays: 7,
+          bodies,
+        });
       }
       setNextRelationalDateISO(nextISO);
       const pinnedSkyPersonId = (profile as { pinned_sky_person_id?: string | null } | null)?.pinned_sky_person_id ?? null;
@@ -522,8 +532,9 @@ export default function HomeScreen() {
         error={constellationFailed}
         onRetry={() => void loadHome()}
         preference={relationalPref}
-        rows={relationalTransits}
+        cards={relationalCards}
         nextDateISO={nextRelationalDateISO}
+        emptyMessage={quietWeekRepeat ? SHARED_WEEK_QUIET_REPEAT : undefined}
         compact
         onSeeToday={() => scrollRef.current?.scrollTo({ y: todayY.current, animated: true })}
         personChip={Object.fromEntries(

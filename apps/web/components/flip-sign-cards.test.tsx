@@ -3,6 +3,7 @@
 import { interpretPlacement, interpretRising, type NatalChart } from "@galaxia/astro";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { ChartImageCaptureProvider } from "./chart-image-capture";
 import { FlipSignCards } from "./flip-sign-cards";
 
 afterEach(() => {
@@ -60,5 +61,40 @@ describe("FlipSignCards", () => {
     expect(badges[0]?.textContent).toBe("Rx");
     expect(screen.getByRole("button", { name: /Moon in Pisces Rx/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /Sun in Cancer/i }).textContent).not.toContain("Rx");
+  });
+
+  it("mounts the back face in the live DOM and omits it while a chart image is capturing", () => {
+    const expected = interpretPlacement("sun", "Cancer", { minorSafe: false });
+    const { rerender } = render(
+      <ChartImageCaptureProvider capturing={false}>
+        <FlipSignCards chart={chart()} minorSafe={false} />
+      </ChartImageCaptureProvider>,
+    );
+    expect(document.querySelector(".flip-sign-card__back")).toBeTruthy();
+    expect(document.querySelector(".flip-sign-card")?.classList.contains("is-export")).toBe(false);
+
+    fireEvent.click(screen.getByRole("button", { name: /Sun in Cancer\. Flip/i }));
+    expect(screen.getByText(expected.long)).toBeTruthy();
+    expect(document.querySelector(".flip-sign-card.is-flipped")).toBeTruthy();
+
+    rerender(
+      <ChartImageCaptureProvider capturing={true}>
+        <FlipSignCards chart={chart()} minorSafe={false} />
+      </ChartImageCaptureProvider>,
+    );
+    expect(document.querySelector(".flip-sign-card__back")).toBeNull();
+    expect(document.querySelectorAll(".flip-sign-card.is-export")).toHaveLength(3);
+    expect(document.querySelector(".flip-sign-card.is-flipped")).toBeNull();
+    expect(screen.getByText(expected.short)).toBeTruthy();
+    expect(screen.queryByText(expected.long)).toBeNull();
+
+    rerender(
+      <ChartImageCaptureProvider capturing={false}>
+        <FlipSignCards chart={chart()} minorSafe={false} />
+      </ChartImageCaptureProvider>,
+    );
+    expect(document.querySelector(".flip-sign-card__back")).toBeTruthy();
+    expect(document.querySelector(".flip-sign-card.is-flipped")).toBeTruthy();
+    expect(screen.getByText(expected.long)).toBeTruthy();
   });
 });

@@ -15,6 +15,7 @@ import {
 } from "@galaxia/astro";
 import { useState } from "react";
 import { SIGN_GLYPH, signElement } from "../lib/design";
+import { useChartImageCapturing } from "./chart-image-capture";
 import { RetrogradeBadge } from "./retrograde-badge";
 
 export function FlipSignCards({
@@ -109,25 +110,30 @@ function FlipSignCard({
   };
 }) {
   const [flipped, setFlipped] = useState(false);
+  const capturing = useChartImageCapturing();
   const summary = tile.long || tile.short;
   const canFlip = tile.confident && Boolean(summary);
+  // Capture clones this DOM. 3D backface-visibility does not survive that
+  // clone, so the export renders the front only and leaves flip state intact.
+  const visuallyFlipped = flipped && !capturing;
+  const showBack = canFlip && !capturing;
 
   return (
     <button
       type="button"
-      className={`sign-chip flip-sign-card${flipped ? " is-flipped" : ""}${canFlip ? "" : " is-static"}`}
-      aria-pressed={canFlip ? flipped : undefined}
+      className={`sign-chip flip-sign-card${visuallyFlipped ? " is-flipped" : ""}${canFlip ? "" : " is-static"}${capturing ? " is-export" : ""}`}
+      aria-pressed={canFlip ? visuallyFlipped : undefined}
       aria-label={
         // FOUNDER-REVIEW: "Rx" is included when the natal planet is retrograde.
         canFlip
-          ? flipped
+          ? visuallyFlipped
             ? `${tile.label} in ${tile.sign}${tile.retro ? " Rx" : ""}. ${summary}`
             : `${tile.label} in ${tile.sign}${tile.retro ? " Rx" : ""}. Flip for what this means in the chart.`
           : `${tile.label} sign uncertain`
       }
       disabled={!canFlip}
       onClick={() => {
-        if (canFlip) setFlipped((prev) => !prev);
+        if (canFlip && !capturing) setFlipped((prev) => !prev);
       }}
     >
       <span className="flip-sign-card__inner">
@@ -145,7 +151,7 @@ function FlipSignCard({
             <span className="sign-chip__vibe">{tile.short}</span>
           ) : null}
         </span>
-        {canFlip ? (
+        {showBack ? (
           <span className="flip-sign-card__face flip-sign-card__back">
             <span className="sign-chip__label">
               {tile.label} in {tile.sign}

@@ -2,9 +2,11 @@ import type { HouseSystem } from "@galaxia/astro";
 import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "@galaxia/astro";
 import {
   ACCOUNT_DELETE_COPY,
+  ACCOUNT_DELETE_MODAL_COPY,
   ACCOUNT_EXPORT_COPY,
+  ACCOUNT_SECTION_COPY,
   DEFAULT_FETCH_TIMEOUT_MS,
-  DELETE_CONFIRMATION_WORD,
+  DELETE_CONFIRMATION_DISPLAY_WORD,
   isDeleteConfirmation,
   shouldWarnBillingOnDelete,
   withTimeout
@@ -12,7 +14,7 @@ import {
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useState } from "react";
-import { Linking, Pressable, ScrollView, Share, Text, TextInput, View } from "react-native";
+import { Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, View } from "react-native";
 import { PendingConnectInvites } from "../../../src/components/pending-connect-invites";
 import { requestAccountDelete, requestAccountExport } from "../../../src/lib/account-api";
 import { siteUrlFor } from "../../../src/lib/env";
@@ -84,7 +86,7 @@ export default function SettingsScreen() {
   const [supportStatus, setSupportStatus] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-  const [deleteStep, setDeleteStep] = useState<"idle" | "confirm">("idle");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTyped, setDeleteTyped] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -466,84 +468,6 @@ export default function SettingsScreen() {
       </View>
 
       <View style={cardStyle}>
-        <Text style={cardTitle}>{ACCOUNT_EXPORT_COPY.title}</Text>
-        <Text style={cardBody}>{ACCOUNT_EXPORT_COPY.lead}</Text>
-        {accountEmail ? <Text style={{ color: tokens.colors.goldSoft, fontSize: 13 }}>Account: {accountEmail}</Text> : null}
-        <Pressable onPress={() => void downloadExport()} disabled={exporting} style={pillStyle}>
-          <Text style={pillLabel}>{exporting ? "Preparing…" : ACCOUNT_EXPORT_COPY.button}</Text>
-        </Pressable>
-        {exportError ? <Text style={{ color: tokens.colors.rose, fontSize: 13 }}>{exportError}</Text> : null}
-      </View>
-
-      <View style={cardStyle}>
-        <Text style={cardTitle}>{ACCOUNT_DELETE_COPY.title}</Text>
-        <Text style={cardBody}>{ACCOUNT_DELETE_COPY.lead}</Text>
-        <Text style={cardBody}>{ACCOUNT_DELETE_COPY.irreversible}</Text>
-        <Text style={cardBody}>{ACCOUNT_DELETE_COPY.shareHonesty}</Text>
-        {showBillingWarning ? (
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: "rgba(230,174,108,0.35)",
-              backgroundColor: "rgba(230,174,108,0.08)",
-              borderRadius: 12,
-              padding: 12,
-              gap: 8
-            }}
-          >
-            <Text style={{ color: tokens.colors.cream, lineHeight: 20 }}>{ACCOUNT_DELETE_COPY.billingWarning}</Text>
-            <Pressable onPress={openBillingOnWeb}>
-              <Text style={{ color: tokens.colors.gold, fontWeight: "700" }}>{ACCOUNT_DELETE_COPY.billingLinkLabel}</Text>
-            </Pressable>
-          </View>
-        ) : null}
-        {deleteStep === "idle" ? (
-          <Pressable
-            onPress={() => {
-              setDeleteStep("confirm");
-              setDeleteTyped("");
-              setDeleteError(null);
-            }}
-            style={pillStyle}
-          >
-            <Text style={pillLabel}>Continue to delete…</Text>
-          </Pressable>
-        ) : (
-          <View style={{ gap: 10 }}>
-            <Text style={cardBody}>{ACCOUNT_DELETE_COPY.typePrompt}</Text>
-            <TextInput
-              value={deleteTyped}
-              onChangeText={setDeleteTyped}
-              placeholder={DELETE_CONFIRMATION_WORD}
-              placeholderTextColor={tokens.colors.mist2}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!deleting}
-              style={fieldStyle}
-            />
-            <Pressable
-              onPress={() => void deleteAccount()}
-              disabled={!canDelete || deleting}
-              style={[pillStyle, { opacity: !canDelete || deleting ? 0.5 : 1 }]}
-            >
-              <Text style={pillLabel}>{deleting ? "Deleting…" : ACCOUNT_DELETE_COPY.confirmButton}</Text>
-            </Pressable>
-            <Pressable
-              disabled={deleting}
-              onPress={() => {
-                setDeleteStep("idle");
-                setDeleteTyped("");
-                setDeleteError(null);
-              }}
-            >
-              <Text style={{ color: tokens.colors.cream, fontWeight: "700" }}>Never mind</Text>
-            </Pressable>
-          </View>
-        )}
-        {deleteError ? <Text style={{ color: tokens.colors.rose, fontSize: 13 }}>{deleteError}</Text> : null}
-      </View>
-
-      <View style={cardStyle}>
         <Text style={cardTitle}>People</Text>
         {people.length === 0 ? (
           <Link href="/onboarding" asChild>
@@ -575,10 +499,118 @@ export default function SettingsScreen() {
         )}
       </View>
 
+      <View style={cardStyle}>
+        <Text style={cardTitle}>{ACCOUNT_SECTION_COPY.title}</Text>
+        <Text style={cardBody}>{ACCOUNT_SECTION_COPY.lead}</Text>
+        {accountEmail ? (
+          <Text style={{ color: tokens.colors.goldSoft, fontSize: 13 }}>Account: {accountEmail}</Text>
+        ) : null}
+
+        <Pressable onPress={() => void downloadExport()} disabled={exporting} style={pillStyle}>
+          <Text style={pillLabel}>
+            {exporting ? ACCOUNT_SECTION_COPY.exportBusy : ACCOUNT_SECTION_COPY.exportButton}
+          </Text>
+        </Pressable>
+        <Text style={{ color: tokens.colors.mist2, fontSize: 12, lineHeight: 18 }}>
+          {ACCOUNT_SECTION_COPY.exportHelp}
+        </Text>
+        {exportError ? <Text style={{ color: tokens.colors.rose, fontSize: 13 }}>{exportError}</Text> : null}
+
+        {showBillingWarning ? (
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: "rgba(230,174,108,0.35)",
+              backgroundColor: "rgba(230,174,108,0.08)",
+              borderRadius: 12,
+              padding: 12,
+              gap: 8
+            }}
+          >
+            <Text style={{ color: tokens.colors.cream, lineHeight: 20 }}>{ACCOUNT_DELETE_COPY.billingWarning}</Text>
+            <Pressable onPress={openBillingOnWeb}>
+              <Text style={{ color: tokens.colors.gold, fontWeight: "700" }}>{ACCOUNT_DELETE_COPY.billingLinkLabel}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            setDeleteTyped("");
+            setDeleteError(null);
+            setDeleteModalOpen(true);
+          }}
+          style={dangerPillStyle}
+        >
+          <Text style={dangerPillLabel}>{ACCOUNT_SECTION_COPY.deleteButton}</Text>
+        </Pressable>
+        {deleteError && !deleteModalOpen ? (
+          <Text style={{ color: tokens.colors.rose, fontSize: 13 }}>{deleteError}</Text>
+        ) : null}
+      </View>
+
       <Pressable onPress={() => void handleSignOut()} disabled={signingOut} style={pillStyle}>
         <Text style={pillLabel}>{signingOut ? "Signing out…" : "Sign out"}</Text>
       </Pressable>
       {status ? <Text style={{ color: tokens.colors.gold }}>{status}</Text> : null}
+
+      <Modal
+        visible={deleteModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!deleting) setDeleteModalOpen(false);
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(10,7,23,0.78)",
+            justifyContent: "center",
+            padding: 20
+          }}
+        >
+          <View style={[cardStyle, { backgroundColor: tokens.colors.ink2, borderColor: "rgba(218,140,140,0.4)", gap: 12 }]}>
+            <Text style={[cardTitle, { color: tokens.colors.rose }]}>{ACCOUNT_DELETE_MODAL_COPY.title}</Text>
+            <Text style={cardBody}>{ACCOUNT_DELETE_MODAL_COPY.body}</Text>
+            <Text style={cardBody}>{ACCOUNT_DELETE_MODAL_COPY.typePrompt}</Text>
+            <TextInput
+              value={deleteTyped}
+              onChangeText={setDeleteTyped}
+              placeholder={DELETE_CONFIRMATION_DISPLAY_WORD}
+              placeholderTextColor={tokens.colors.mist2}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              editable={!deleting}
+              style={fieldStyle}
+            />
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void deleteAccount()}
+              disabled={!canDelete || deleting}
+              style={[dangerPillStyle, { opacity: !canDelete || deleting ? 0.5 : 1 }]}
+            >
+              <Text style={dangerPillLabel}>
+                {deleting ? ACCOUNT_DELETE_MODAL_COPY.confirmBusy : ACCOUNT_DELETE_MODAL_COPY.confirmButton}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={deleting}
+              onPress={() => {
+                setDeleteModalOpen(false);
+                setDeleteTyped("");
+                setDeleteError(null);
+              }}
+              style={pillStyle}
+            >
+              <Text style={pillLabel}>{ACCOUNT_DELETE_MODAL_COPY.cancelButton}</Text>
+            </Pressable>
+            {deleteError ? <Text style={{ color: tokens.colors.rose, fontSize: 13 }}>{deleteError}</Text> : null}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -631,5 +663,20 @@ const pillStyle = {
 
 const pillLabel = {
   color: tokens.colors.cream,
+  fontWeight: "700"
+} as const;
+
+const dangerPillStyle = {
+  borderWidth: 1,
+  borderColor: "rgba(218,140,140,0.55)",
+  backgroundColor: "rgba(218,140,140,0.12)",
+  borderRadius: tokens.radii.pill,
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+  alignSelf: "flex-start"
+} as const;
+
+const dangerPillLabel = {
+  color: tokens.colors.rose,
   fontWeight: "700"
 } as const;

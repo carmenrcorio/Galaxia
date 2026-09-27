@@ -597,6 +597,17 @@ select.field--rect {
     display: flex;
   }
 }
+/* Export clone: no 3D. The back face is unmounted while this class is on. */
+.flip-sign-card.is-export {
+  perspective: none;
+}
+.flip-sign-card.is-export .flip-sign-card__inner,
+.flip-sign-card.is-export:hover .flip-sign-card__inner,
+.flip-sign-card.is-export:focus-visible .flip-sign-card__inner {
+  transform: none;
+  transform-style: flat;
+  transition: none;
+}
 .sign-chip__glyph { font-size: 1.2rem; display: block; }
 .sign-chip__label { font-size: 0.8125rem; color: var(--mist2); text-transform: uppercase; letter-spacing: .12em; }
 .sign-chip__value { font-family: var(--serif); font-size: .88rem; color: var(--cream); font-weight: 500; }

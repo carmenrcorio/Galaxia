@@ -84,12 +84,22 @@ export function ShareImageButton({
   filename,
   label = "Share",
   capture,
+  onBeforeCapture,
+  onAfterCapture,
 }: {
   targetRef?: RefObject<HTMLElement | null>;
   filename: string;
   label?: string;
   /** Galaxy: PNG Blob (or data URL) of the live sky. Other call sites omit this and capture `targetRef`. */
   capture?: () => Promise<string | Blob>;
+  /**
+   * Runs after the button commits and before the DOM is cloned. Chart image
+   * export uses this to drop flip-card back faces, which html-to-image would
+   * otherwise paint on top of the front.
+   */
+  onBeforeCapture?: () => void | Promise<void>;
+  /** Restores anything onBeforeCapture changed, including when capture throws. */
+  onAfterCapture?: () => void | Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -115,7 +125,14 @@ export function ShareImageButton({
     setBusy(true);
     setError(null);
     setStatus(null);
+    let restored = false;
+    const restore = async () => {
+      if (restored) return;
+      restored = true;
+      await onAfterCapture?.();
+    };
     try {
+      await onBeforeCapture?.();
       const captured = capture
         ? await capture()
         : await toPngWithoutBackdropFilterClip(targetRef!.current!, {
@@ -127,6 +144,9 @@ export function ShareImageButton({
         captured instanceof Blob
           ? captured
           : await (await fetch(captured)).blob();
+      // Put the live DOM back before the OS share sheet. The sheet can stay
+      // open for a while, and the cards should not sit on the front face.
+      await restore();
       try {
         const result = await deliverSharePng(blob, filename);
         setStatus(result === "shared" ? "Shared" : "Image saved");
@@ -139,6 +159,7 @@ export function ShareImageButton({
     } catch (err) {
       setError(err instanceof Error ? err.message : SHARE_IMAGE_FAIL);
     } finally {
+      await restore();
       setBusy(false);
     }
   }

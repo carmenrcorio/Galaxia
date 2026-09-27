@@ -33,7 +33,6 @@ import {
   narrateHouseOverlay,
   narrateHouseOverlayDetail,
   pairChartFingerprint,
-  relationElementSignal,
   relationHasHouseLens,
   relationHouseHint,
   relationHouseOverlays,
@@ -55,6 +54,7 @@ import {
 } from "../../../components/person-picker";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { GenerationalSection } from "../../../components/generational-section";
+import { ElementBalanceSection } from "../../../components/element-balance-section";
 import { InitialAvatar } from "../../../components/initial-avatar";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
@@ -561,6 +561,7 @@ function ComparePageInner() {
           synastry: {
             scores: result.synastry.scores,
             aspects: result.synastry.aspects,
+            elementBalance: result.synastry.elementBalance,
           },
           generational: result.generational,
         },
@@ -592,9 +593,8 @@ function ComparePageInner() {
 
   // ── Relationship-type-aware engine data (derived; recomputes on type switch) ──
   // Flows/catches sort + framing live in FlowsAndCatchesSection (shared path).
-  // House/element lines still read only real computed data here.
+  // House lines still read only real computed data here.
   const houseOverlay = result?.synastry && relationType ? relationHouseOverlays(result.synastry, relationType) : null;
-  const elementSignal = result?.synastry ? relationElementSignal(result.synastry, result.personA.display_name, result.personB.display_name) : null;
   // Self owns the inner house frame regardless of picker A/B order.
   const wheel = result?.synastry
     ? orientSynastryWheel(
@@ -856,6 +856,12 @@ function ComparePageInner() {
                 </p>
               ) : null}
             </section>
+
+            <ElementBalanceSection
+              nameA={result.personA.display_name}
+              nameB={result.personB.display_name}
+              balance={result.synastry.elementBalance}
+            />
           </ChartImageExport>
 
           {/* Flow / catches — shared path with /chart/compare and /s */}
@@ -865,12 +871,6 @@ function ComparePageInner() {
             nameA={result.personA.display_name}
             nameB={result.personB.display_name}
           />
-          {elementSignal ? (
-            <section className="glass-card fade-in fade-in-delay-2">
-              <p className="muted" style={{ fontSize: ".8rem", lineHeight: 1.6, margin: 0 }}>{elementSignal}</p>
-            </section>
-          ) : null}
-
           {/* House overlays — only where houses exist; hedges honestly otherwise (§12) */}
           {houseOverlay && relationHasHouseLens(relationType) ? (
             <section className="glass-card fade-in fade-in-delay-2">

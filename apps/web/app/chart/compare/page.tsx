@@ -19,6 +19,7 @@
 import {
   type NatalChart,
   type BirthFormInput,
+  type PairElementBalance,
   isRomanticRelation,
   relationshipWatchLine,
   whatTheyNeed,
@@ -30,6 +31,7 @@ import { BASE_BIRTH_INPUT, BirthFields } from "../../../components/birth-fields"
 import { ChartImageExport, chartExportFilename } from "../../../components/chart-image-export";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES } from "../../../components/chart-wheel";
 import { DynamicTableSection } from "../../../components/dynamic-table-section";
+import { ElementBalanceSection } from "../../../components/element-balance-section";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
 import { GenerationalSection } from "../../../components/generational-section";
 import { GlossaryTerm } from "../../../components/glossary-term";
@@ -51,7 +53,11 @@ import {
 import { useViewer } from "../../../lib/use-viewer";
 
 // Local shape matching @galaxia/astro's SynastryResult (avoids importing computeSynastry just for its type).
-type SynastryShape = { scores: Record<string, number>; aspects: Array<{ from: string; to: string; type: string; orb: number; harmony: number }> };
+type SynastryShape = {
+  scores: Record<string, number>;
+  aspects: Array<{ from: string; to: string; type: string; orb: number; harmony: number }>;
+  elementBalance: PairElementBalance;
+};
 
 interface CompareResult {
   chartA: NatalChart;
@@ -235,7 +241,11 @@ export default function QuickComparePage() {
           chartA: result.chartA,
           chartB: result.chartB,
           synastry: result.synastry
-            ? { scores: result.synastry.scores, aspects: result.synastry.aspects }
+            ? {
+                scores: result.synastry.scores,
+                aspects: result.synastry.aspects,
+                elementBalance: result.synastry.elementBalance,
+              }
             : null,
           generational: result.generational,
         },
@@ -439,6 +449,13 @@ export default function QuickComparePage() {
                 ))}
               </DynamicTableSection>
             )}
+            {!blockRomanticMinorRender && result.synastry ? (
+              <ElementBalanceSection
+                nameA={personA!.display_name}
+                nameB={personB!.display_name}
+                balance={result.synastry.elementBalance}
+              />
+            ) : null}
           </ChartImageExport>
 
           {blockRomanticMinorRender || !result.synastry ? null : (

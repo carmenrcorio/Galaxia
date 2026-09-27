@@ -217,28 +217,31 @@ export default function QuickChartPage() {
       ) : (
         <>
                     <ChartImageExport filename={chartExportFilename(name, "natal-chart.png")} label="Share chart image">
-            <NatalSignReveal
-              chart={result.chart}
-              displayDate={result.displayDate}
-              birthPlace={result.birthPlace}
-              name={name || undefined}
-              birthDate={result.birthDate}
-              birthPrecision={input.precision}
-            />
+            <section className="glass-card fade-in chart-identity-unit">
+              <NatalSignReveal
+                chart={result.chart}
+                displayDate={result.displayDate}
+                birthPlace={result.birthPlace}
+                name={name || undefined}
+                birthDate={result.birthDate}
+                birthPrecision={input.precision}
+                className="natal-sign-reveal--embedded"
+              />
+
+              {result.chart.cusps ? (
+                <div className="chart-identity-unit__wheel">
+                <ChartWheel chart={result.chart} exportSafe />
+                </div>
+              ) : null}
+              <HousesUnavailableCard
+                hasHouses={Boolean(result.chart.cusps && result.chart.cusps.length === 12)}
+                precision={result.chart.precision}
+                className="chart-identity-unit__empty"
+                style={{ padding: "12px 0 0", marginTop: 4 }}
+              />
+            </section>
 
             <SignMetadataCards chart={result.chart} />
-
-            {result.chart.cusps ? (
-              <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
-                <ChartWheel chart={result.chart} exportSafe />
-              </section>
-            ) : null}
-            <HousesUnavailableCard
-              hasHouses={Boolean(result.chart.cusps && result.chart.cusps.length === 12)}
-              precision={result.chart.precision}
-              className="glass-card fade-in"
-              style={{ marginTop: 16 }}
-            />
           </ChartImageExport>
 
           <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>

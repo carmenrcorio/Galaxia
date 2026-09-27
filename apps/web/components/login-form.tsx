@@ -51,33 +51,34 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
 
   return (
     <div className="glass-card" style={{ maxWidth: 460 }}>
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 10 }}>
-        <label className="muted" htmlFor="login-email">
-          Email
-        </label>
-        <input id="login-email" className="field" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-        <label className="muted" htmlFor="login-password">
-          Password
-        </label>
-        <input id="login-password" className="field" required type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-        {/* FOUNDER-REVIEW: "Forgot password?" */}
-        <button
-          type="button"
-          onClick={() => {
-            setShowReset(true);
-            setResetEmail(email);
-            setError(null);
-          }}
-          style={{ justifySelf: "start", border: 0, padding: 0, background: "transparent", color: "var(--gold)", cursor: "pointer" }}
-        >
-          Forgot password?
-        </button>
-        <button className="pill-link pill-link--gold" type="submit" disabled={status === "signing-in"}>
-          {status === "signing-in" ? "Signing in..." : "Sign in"}
-        </button>
-      </form>
-      {showReset ? (
-        <form onSubmit={forgotPassword} style={{ display: "grid", gap: 10, marginTop: 18 }}>
+      {!showReset ? (
+        <form onSubmit={onSubmit} style={{ display: "grid", gap: 10 }}>
+          <label className="muted" htmlFor="login-email">
+            Email
+          </label>
+          <input id="login-email" className="field" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+          <label className="muted" htmlFor="login-password">
+            Password
+          </label>
+          <input id="login-password" className="field" required type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+          {/* FOUNDER-REVIEW: "Forgot password?" */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowReset(true);
+              setResetEmail(email);
+              setError(null);
+            }}
+            style={{ justifySelf: "start", border: 0, padding: 0, background: "transparent", color: "var(--gold)", cursor: "pointer" }}
+          >
+            Forgot password?
+          </button>
+          <button className="pill-link pill-link--gold" type="submit" disabled={status === "signing-in"}>
+            {status === "signing-in" ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={forgotPassword} style={{ display: "grid", gap: 10 }}>
           {/* FOUNDER-REVIEW: "Email for password reset" */}
           <label className="muted" htmlFor="reset-email">
             Email for password reset
@@ -92,11 +93,23 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
             onChange={(event) => setResetEmail(event.target.value)}
           />
           {/* FOUNDER-REVIEW: "Send reset link" / "Sending..." */}
-          <button className="pill-link" type="submit" disabled={status === "reset-sending"}>
+          <button className="pill-link pill-link--gold" type="submit" disabled={status === "reset-sending"}>
             {status === "reset-sending" ? "Sending..." : "Send reset link"}
           </button>
+          {/* FOUNDER-REVIEW: "Back to sign in" */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowReset(false);
+              setStatus("idle");
+              setError(null);
+            }}
+            style={{ justifySelf: "start", border: 0, padding: 0, background: "transparent", color: "var(--gold)", cursor: "pointer" }}
+          >
+            Back to sign in
+          </button>
         </form>
-      ) : null}
+      )}
       {/* FOUNDER-REVIEW: "Check your email for a reset link." */}
       {status === "reset-sent" ? <p className="success">Check your email for a reset link.</p> : null}
       {error ? <p className="error">{error}</p> : null}

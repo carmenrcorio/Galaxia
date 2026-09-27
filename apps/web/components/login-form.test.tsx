@@ -30,6 +30,7 @@ describe("LoginForm password recovery", () => {
     expect(screen.queryByLabelText("Email for password reset")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Forgot password?" }));
 
+    expect(screen.queryByLabelText("Password")).toBeNull();
     fireEvent.change(screen.getByLabelText("Email for password reset"), {
       target: { value: "reader@example.com" }
     });

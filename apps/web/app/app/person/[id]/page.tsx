@@ -56,6 +56,7 @@ import {
   PERSON_TAB_LABEL,
   PERSON_TAB_VOCAB,
   resolvePersonPageEntry,
+  formatRelationshipLabel,
   hasPassed,
   isMinorForSafety,
   usesAncientLight,
@@ -908,7 +909,7 @@ export default function PersonProfilePage() {
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }} className="fade-in">
         <InitialAvatar name={person.display_name} size="lg" personId={person.id} memorial={personPassed} />
         <div>
-          <p className="eyebrow">{person.relation}{personPassed ? " · remembered" : ""}</p>
+          <p className="eyebrow">{formatRelationshipLabel(person.relation)}{personPassed ? " · remembered" : ""}</p>
           <h1 className="page-title">{person.display_name}</h1>
           <div style={{ marginTop: 6 }}>
             <ChartPrecisionIndicator
@@ -1159,7 +1160,7 @@ export default function PersonProfilePage() {
           memorial={personPassed}
         />
         <div>
-          <p className="eyebrow">{person.relation}{personPassed ? " · remembered" : ""}</p>
+          <p className="eyebrow">{formatRelationshipLabel(person.relation)}{personPassed ? " · remembered" : ""}</p>
           <h1 className="page-title">{person.display_name}</h1>
           <div style={{ marginTop: 6 }}>
             <ChartPrecisionIndicator
@@ -1511,7 +1512,7 @@ export default function PersonProfilePage() {
           return (
             <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 12, border: "1px solid rgba(183,154,216,.22)", background: "rgba(255,255,255,.025)" }}>
               <p className="eyebrow" style={{ marginBottom: 6 }}>
-                You + {person.relation || person.display_name}
+                You + {person.relation ? formatRelationshipLabel(person.relation) : person.display_name}
               </p>
               <p style={{ fontSize: ".84rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{bridge}</p>
             </div>

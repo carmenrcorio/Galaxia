@@ -1,11 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import {
-  relationalTransitDedupKey,
-  scanRelationalTransits,
+  buildSharedWeekFeed,
+  isSlowWeeklyBody,
+  sharedTransitActiveWindow,
+  sharedTransitSign,
+  sharedTransitStorageKey,
   type NatalChart,
   type Precision,
-  type RelationalTransitPersonInput,
+  type SharedTransitPersonInput,
 } from "@galaxia/astro";
 import { peopleForThisWeek } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
@@ -16,12 +19,10 @@ import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary
 /**
  * Server-side daily relational-transit scan job (Generations Feature 3).
  *
- * For every owner's constellation, scans all REAL natal charts for the 5
- * slow-moving outer bodies forming the SAME aspect to 2+ people at once
- * (`@galaxia/astro` `scanRelationalTransits`, unmodified/imported — never
- * re-derived inline) and upserts the results into `relational_transits` on
- * the engine's own `relationalTransitDedupKey`, so re-running this job on
- * consecutive days re-affirms the same row instead of duplicating it.
+ * For every owner's constellation, builds pairwise shared-transit events
+ * (`@galaxia/astro` `buildSharedWeekFeed`: synastry-gated, canonical id,
+ * salience-ranked). Only relational pairs are stored. Incidental
+ * co-transits are not written. Upserts on `sharedTransitStorageKey`.
  *
  * Living people only. Reuses `peopleForThisWeek` (@galaxia/core) — the
  * same care hole as Today in your sky. A passed (memorial) person is
@@ -108,7 +109,7 @@ async function handle(req: Request) {
     const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", personIds);
     const chartById = new Map<string, NatalChart>((chartRows ?? []).map((r) => [r.person_id as string, r.data as NatalChart]));
 
-    const inputs: RelationalTransitPersonInput[] = [];
+    const inputs: SharedTransitPersonInput[] = [];
     for (const p of people) {
       const chart = chartById.get(p.id);
       if (!chart) continue;
@@ -118,6 +119,8 @@ async function handle(req: Request) {
         chart,
         birthDate: p.birth_date,
         birthPrecision: p.birth_precision as Precision | "none",
+        relation: p.relation,
+        isSelf: p.is_self,
       });
     }
     if (inputs.length < 2) {
@@ -125,27 +128,32 @@ async function handle(req: Request) {
       return;
     }
 
-    const events = scanRelationalTransits(inputs, whenUTC);
+    // `relational_transits.transit_body` only allows the five slow bodies.
+    // Faster shared links are computed at read time for the weekly feed.
+    const events = buildSharedWeekFeed(inputs, whenUTC).relational.filter((event) => isSlowWeeklyBody(event.transiting));
     ownersScanned += 1;
     if (!events.length) return;
 
-    const rows = events.map((event) => ({
-      owner_id: ownerId,
-      transit_body: event.transitBody,
-      transit_sign: event.transitSign,
-      aspect_type: event.aspectType,
-      affected_profiles: event.affected.map((a) => ({
-        profile_id: a.personId,
-        profile_name: a.personName,
-        natal_body: a.natalBody,
-        natal_sign: a.natalSign,
-        orb_deg: a.orbDeg,
-        exact_at: a.exactAtUTC,
-      })),
-      active_from: event.activeFromUTC,
-      active_to: event.activeToUTC,
-      dedup_key: relationalTransitDedupKey(event),
-    }));
+    const rows = events.map((event) => {
+      const window = sharedTransitActiveWindow(event);
+      return {
+        owner_id: ownerId,
+        transit_body: event.transiting,
+        transit_sign: sharedTransitSign(event, whenUTC),
+        aspect_type: event.aspect,
+        affected_profiles: event.members.map((member) => ({
+          profile_id: member.personId,
+          profile_name: member.personName,
+          natal_body: member.natalPoint,
+          natal_sign: member.natalSign ?? "",
+          orb_deg: member.orb,
+          exact_at: member.exactAt,
+        })),
+        active_from: window.activeFromUTC,
+        active_to: window.activeToUTC,
+        dedup_key: sharedTransitStorageKey(event),
+      };
+    });
 
     const { error, data } = await supabase
       .from("relational_transits")

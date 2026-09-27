@@ -1,18 +1,26 @@
 import {
-  findNextRelationalTransitDate,
+  buildSharedWeekFeed,
+  findNextSharedWeekDate,
   MAJOR_RELATIONAL_TRANSIT_BODIES,
+  SHARED_WEEK_PAGE_INTRO,
+  SHARED_WEEK_QUIET_REPEAT,
+  WEEKLY_FEED_LIMIT,
+  toSharedWeekCardModel,
+  type RelationalTransitBody,
   type NatalChart,
   type Precision,
-  type RelationalTransitPersonInput,
+  type SharedTransitPersonInput,
+  type SharedWeekCardModel,
 } from "@galaxia/astro";
 import { DEFAULT_FETCH_TIMEOUT_MS, peopleForThisWeek, passedPersonIds, sunSignFromChart, thisWeekRowsFromStored, withTimeout } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text } from "react-native";
-import { ThisWeekCard, type ThisWeekRow } from "../../src/components/this-week-card";
+import { ThisWeekCard } from "../../src/components/this-week-card";
 import { screenFill } from "../../src/lib/screen";
 import { supabase } from "../../src/lib/supabase";
+import { readShownSharedTransits, rememberShownSharedTransits } from "../../src/lib/this-week-seen";
 import { fonts } from "../../src/lib/typography";
 import { useAuth } from "../../src/providers/auth-provider";
 
@@ -21,8 +29,9 @@ export default function ThisWeekScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [preference, setPreference] = useState<"all" | "major_only" | "off">("all");
-  const [rows, setRows] = useState<ThisWeekRow[]>([]);
+  const [cards, setCards] = useState<SharedWeekCardModel[]>([]);
   const [nextDateISO, setNextDateISO] = useState<string | null>(null);
+  const [quietRepeat, setQuietRepeat] = useState(false);
   const [personChip, setPersonChip] = useState<Record<string, { sunSign?: string | null; memorial?: boolean }>>({});
   const [reload, setReload] = useState(0);
 
@@ -36,17 +45,9 @@ export default function ThisWeekScreen() {
         await withTimeout((async () => {
       const ownerId = session.user.id;
       const nowISO = new Date().toISOString();
-      const [{ data: profile }, { data: transitRows }, { data: peopleRows }, { data: upcomingRows }] = await Promise.all([
+      const [{ data: profile }, { data: peopleRows }, { data: upcomingRows }] = await Promise.all([
         supabase.from("profiles").select("relational_transit_alerts").eq("id", ownerId).maybeSingle(),
-        supabase
-          .from("relational_transits")
-          .select("id, transit_body, aspect_type, affected_profiles")
-          .eq("owner_id", ownerId)
-          .lte("active_from", nowISO)
-          .gte("active_to", nowISO)
-          .order("active_from", { ascending: true })
-          .limit(20),
-        supabase.from("people").select("id, display_name, birth_date, birth_precision, is_self, passed_at").eq("owner_id", ownerId),
+        supabase.from("people").select("id, display_name, relation, birth_date, birth_precision, is_self, passed_at").eq("owner_id", ownerId),
         supabase
           .from("relational_transits")
           .select("active_from, transit_body, affected_profiles")
@@ -60,21 +61,13 @@ export default function ThisWeekScreen() {
       const peopleList = (peopleRows ?? []) as Array<{
         id: string;
         display_name: string;
+        relation?: string | null;
         is_self: boolean;
         birth_date: string | null;
         birth_precision: Precision | "none" | null;
         passed_at?: string | null;
       }>;
       const memorialIds = passedPersonIds(peopleList);
-      const livingTransits = thisWeekRowsFromStored((transitRows ?? []) as ThisWeekRow[], memorialIds);
-      const visible =
-        pref === "off"
-          ? []
-          : pref === "major_only"
-            ? livingTransits.filter((row) => MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body))
-            : livingTransits;
-      setRows(visible);
-
       const livingPeople = peopleForThisWeek(peopleList);
       const ids = livingPeople.map((p) => p.id);
       const chip: Record<string, { sunSign?: string | null; memorial?: boolean }> = {};
@@ -89,35 +82,40 @@ export default function ThisWeekScreen() {
       }
       setPersonChip(chip);
 
+      const bodies = pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES : undefined;
+      const inputs: SharedTransitPersonInput[] = [];
+      for (const raw of livingPeople) {
+        const chart = chartById.get(raw.id);
+        if (!chart) continue;
+        inputs.push({
+          id: raw.id,
+          name: raw.display_name ?? (raw.is_self ? "You" : "Someone"),
+          chart,
+          birthDate: raw.birth_date,
+          birthPrecision: raw.birth_precision,
+          relation: raw.relation,
+          isSelf: raw.is_self,
+        });
+      }
+      const seen = await readShownSharedTransits(ownerId);
+      const feed = pref === "off" || inputs.length < 2
+        ? null
+        : buildSharedWeekFeed(inputs, nowISO, { bodies, previouslyShown: seen, limit: WEEKLY_FEED_LIMIT });
+      const weekly = feed?.weekly ?? [];
+      const repeating = weekly.length === 0 && (feed?.relational.length ?? 0) > 0;
+      if (pref !== "off") await rememberShownSharedTransits(ownerId, weekly, nowISO.slice(0, 10));
+      setCards(weekly.map((event) => toSharedWeekCardModel(event, nowISO)));
+      setQuietRepeat(repeating);
+
       const upcoming = thisWeekRowsFromStored(
-        (upcomingRows ?? []) as Array<{ active_from: string; transit_body: ThisWeekRow["transit_body"]; affected_profiles: ThisWeekRow["affected_profiles"] }>,
+        (upcomingRows ?? []) as Array<{ active_from: string; transit_body: RelationalTransitBody; affected_profiles: Array<{ profile_id: string }> }>,
         memorialIds
       ).filter((row) =>
         pref === "off" ? false : pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES.includes(row.transit_body) : true
       );
-      let nextISO: string | null = upcoming[0]?.active_from ?? null;
-      if (!nextISO && visible.length === 0 && pref !== "off") {
-        if (ids.length >= 2) {
-          const inputs: RelationalTransitPersonInput[] = [];
-          for (const raw of livingPeople) {
-            const chart = chartById.get(raw.id);
-            if (!chart) continue;
-            inputs.push({
-              id: raw.id,
-              name: raw.display_name ?? (raw.is_self ? "You" : "Someone"),
-              chart,
-              birthDate: raw.birth_date,
-              birthPrecision: raw.birth_precision,
-            });
-          }
-          if (inputs.length >= 2) {
-            nextISO = findNextRelationalTransitDate(inputs, nowISO, {
-              horizonDays: 56,
-              stepDays: 7,
-              bodies: pref === "major_only" ? MAJOR_RELATIONAL_TRANSIT_BODIES : undefined,
-            });
-          }
-        }
+      let nextISO: string | null = weekly.length > 0 || repeating ? null : upcoming[0]?.active_from ?? null;
+      if (!nextISO && weekly.length === 0 && !repeating && pref !== "off" && inputs.length >= 2) {
+        nextISO = findNextSharedWeekDate(inputs, nowISO, { horizonDays: 28, stepDays: 7, bodies });
       }
       setNextDateISO(nextISO);
         })(), DEFAULT_FETCH_TIMEOUT_MS);
@@ -134,15 +132,16 @@ export default function ThisWeekScreen() {
     <ScrollView style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
             <Text style={{ color: tokens.colors.cream, fontSize: 28, fontFamily: fonts.frauncesSemi }}>Shared transits</Text>
             <Text style={{ color: tokens.colors.mist, lineHeight: 21, fontFamily: fonts.inter }}>
-        Every slow-moving transit currently pulling on two or more people in your circle at once.
+        {SHARED_WEEK_PAGE_INTRO}
       </Text>
       <ThisWeekCard
         loading={loading}
         error={loadError}
         onRetry={() => setReload((n) => n + 1)}
         preference={preference}
-        rows={rows}
+        cards={cards}
         nextDateISO={nextDateISO}
+        emptyMessage={quietRepeat ? SHARED_WEEK_QUIET_REPEAT : undefined}
         compact={false}
         personChip={personChip}
       />

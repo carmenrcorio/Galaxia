@@ -78,9 +78,10 @@ describe("relational-transit-scan route — living people only", () => {
     expect(src).toMatch(/\.select\("[^"]*passed_at[^"]*"\)/);
     expect(src).toMatch(/peopleForThisWeek\(\(peopleRows/);
     const filterIdx = src.indexOf("peopleForThisWeek(");
-    const scanIdx = src.indexOf("scanRelationalTransits(");
+    const scanIdx = src.indexOf("buildSharedWeekFeed(");
     expect(filterIdx).toBeGreaterThan(-1);
     expect(scanIdx).toBeGreaterThan(filterIdx);
+    expect(src).toContain("isSlowWeeklyBody");
   });
 
   it("does not re-derive passed filtering inline", () => {

@@ -1,5 +1,5 @@
 import type { HouseSystem } from "@galaxia/astro";
-import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "@galaxia/astro";
+import { HOUSE_SYSTEM_OPTIONS, isHouseSystem, SHARED_WEEK_PREF_ALL, SHARED_WEEK_SETTINGS_BLURB } from "@galaxia/astro";
 import {
   ACCOUNT_DELETE_COPY,
   ACCOUNT_DELETE_MODAL_COPY,
@@ -46,7 +46,7 @@ interface GroupLite {
 /** Generations Feature 3 preference. Mirrors the `profiles.relational_transit_alerts` check constraint (web parity: apps/web/app/app/settings/page.tsx). */
 type RelationalTransitAlertsPref = "all" | "major_only" | "off";
 const RELATIONAL_TRANSIT_ALERTS_OPTIONS: { value: RelationalTransitAlertsPref; label: string; description: string }[] = [
-  { value: "all", label: "All transits", description: "Jupiter, Saturn, Uranus, Neptune, and Pluto." },
+  { value: "all", label: "All transits", description: SHARED_WEEK_PREF_ALL },
   { value: "major_only", label: "Major only", description: "Just Saturn, Uranus, and Pluto." },
   { value: "off", label: "Off", description: "No relational transit alerts, in the app or by push." }
 ];
@@ -478,7 +478,7 @@ export default function SettingsScreen() {
 
       <View style={cardStyle}>
         <Text style={cardTitle}>Generational transit alerts</Text>
-        <Text style={cardBody}>Alerts when a slow-moving transit hits two or more people in your constellation at once.</Text>
+        <Text style={cardBody}>{SHARED_WEEK_SETTINGS_BLURB}</Text>
         <View style={{ gap: 8, marginTop: 4 }}>
           {RELATIONAL_TRANSIT_ALERTS_OPTIONS.map((option) => {
             const active = relationalTransitAlerts === option.value;

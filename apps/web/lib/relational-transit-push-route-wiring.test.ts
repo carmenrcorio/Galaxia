@@ -87,7 +87,7 @@ describe("relational-transit-push route — never names a memorial person", () =
     expect(src).toContain("passedPersonIds");
     expect(src).toMatch(/\.select\("id, passed_at"\)/);
     const filterIdx = src.indexOf("const livingProfiles = livingAffectedForThisWeek");
-    const headlineIdx = src.indexOf("interpretRelationalTransitHeadline({");
+    const headlineIdx = src.indexOf("renderSharedTransitCopy(");
     expect(filterIdx).toBeGreaterThan(-1);
     expect(headlineIdx).toBeGreaterThan(filterIdx);
     expect(src).toContain("livingProfiles.map(");

@@ -8,7 +8,7 @@ import { SettingsSubscriptionPanel } from "../../../components/settings-subscrip
 import { PendingConnectInvites } from "../../../components/pending-connect-invites";
 import { PendingShareLinks } from "../../../components/pending-share-links";
 import { Spinner } from "../../../components/spinner";
-import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "@galaxia/astro";
+import { HOUSE_SYSTEM_OPTIONS, isHouseSystem, SHARED_WEEK_PREF_ALL, SHARED_WEEK_SETTINGS_BLURB } from "@galaxia/astro";
 import { DEFAULT_FETCH_TIMEOUT_MS, formatRelationshipLabel, withTimeout } from "@galaxia/core";
 import { EMPTY_STATE_WELCOME_HREF } from "../../../lib/nav-links";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
@@ -28,7 +28,7 @@ interface GroupLite {
 /** Generations Feature 3 preference — mirrors the `profiles.relational_transit_alerts` check constraint. */
 type RelationalTransitAlertsPref = "all" | "major_only" | "off";
 const RELATIONAL_TRANSIT_ALERTS_OPTIONS: { value: RelationalTransitAlertsPref; label: string; description: string }[] = [
-  { value: "all", label: "All transits", description: "Jupiter, Saturn, Uranus, Neptune, and Pluto: every relational transit we find." },
+  { value: "all", label: "All transits", description: SHARED_WEEK_PREF_ALL },
   { value: "major_only", label: "Major only", description: "Just Saturn, Uranus, and Pluto. Skip the lighter Jupiter and Neptune windows." },
   { value: "off", label: "Off", description: "No relational transit alerts, in the app or by push." },
 ];
@@ -298,7 +298,7 @@ export default function SettingsPage() {
       <section className="glass-card">
         <h2 className="card-title">Generational transit alerts</h2>
         <p className="muted" style={{ marginBottom: 12 }}>
-          "This week" alerts when a slow-moving transit is hitting two or more people in your constellation at once: the sky's dynamic between you, not just what one of you is feeling alone.
+          {SHARED_WEEK_SETTINGS_BLURB}
         </p>
         <div style={{ display: "grid", gap: 8 }}>
           {RELATIONAL_TRANSIT_ALERTS_OPTIONS.map((option) => {

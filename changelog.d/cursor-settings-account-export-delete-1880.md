@@ -1,0 +1,19 @@
+## Settings gets an Account section: data export and account deletion (branch `cursor/settings-account-export-delete-1880`) — 2026-09-27
+
+**Trigger**: export and delete existed only on `/account/data`, a page reachable through one sentence in the Settings Privacy card. Both belong on Settings, and the export was shipping data the product does not intend to hand back.
+
+`[ADDED]` **Settings -> Account**, the last card on `/app/settings` and on the mobile Settings tab: "Download my data" over a red "Delete my account". `apps/web/components/settings-account-section.tsx` on web, an equivalent block in `apps/mobile/app/(app)/(tabs)/settings.tsx` on mobile. Both call the same two API routes; neither client RPCs the purge itself (D5).
+
+`[ADDED]` **One delete confirmation modal, shared by Settings and `/account/data`** (`account-delete-dialog.tsx` on web, a React Native `Modal` on mobile). Approved wording, verbatim: "This will permanently delete your account, your constellation, and everything in it. This cannot be undone." Confirming requires typing `DELETE`; the match stays case-insensitive so a lowercase "delete" still works and nobody is stuck on a shift key. On success the client signs out and lands on the homepage. On failure it shows the error and keeps the session, because a failed purge deleted nothing.
+
+`[CHANGED]` **`GET /api/account/export` now returns a file written for a person, not a table dump.** Profile (name, email, timezone, house system), people with birth data, memorial status and chart placements, notes, relationships, groups with members, and remembrance milestones. People are referenced by name: no uuid, no `owner_id`, no billing column, and no auth material reaches the file. Vela threads and messages are gone from the export entirely (conversations are not kept as part of the record). The shape is built by `@galaxia/core buildAccountExport`, so its contents are unit-tested rather than asserted only at the route. Filename is `galaxia-export-YYYY-MM-DD.json`, indented two spaces.
+
+`[ADDED]` **One export per hour per user.** `account_export_rate_limits` + `check_and_increment_account_export_rate(int, int)` in `20260927032000_account_export_rate_limit.sql`, copied statement for statement from the vela-chat limiter (per-user fixed window, single locking UPDATE, SECURITY DEFINER bound to `auth.uid()`). The counter has to live in Postgres: the route runs on serverless functions with no shared memory between invocations. Over the cap returns 429 with a `Retry-After`, never a silent empty file.
+
+`[CHANGED]` **`purge_own_account_data()` deletes the new rate-limit rows.** Additive `CREATE OR REPLACE` over the deployed `20260917035202` body with one statement added. The FK is `ON DELETE CASCADE`, but every other cascading table this function owns is deleted explicitly, and the function's guarantee should not depend on a foreign key firing.
+
+`[DECISION]` **The Sep 12 `thread_participants` FK bug is closed and stays closed by test, not by memory.** `delete from thread_participants where user_id = uid` has preceded the `auth.users` delete since `20260913030200`, and the deployed function confirms it. `apps/web/lib/purge-own-account-data.test.ts` replays every committed migration onto ephemeral local Postgres, seeds the departing user in all 29 purged tables, runs the purge, and asserts zero leftovers including `auth.users`. The new table is registered in that inventory, so the next table added without a purge statement fails the suite.
+
+`[CHANGED]` **The Settings Privacy card no longer links to "Your data".** The Account section below it is the entry point now; `/account/data` stays reachable from `/account` and keeps the longer-form share-link and billing copy.
+
+**FOUNDER-REVIEW**: `ACCOUNT_SECTION_COPY` and `ACCOUNT_DELETE_MODAL_COPY` in `packages/core/src/account-data.ts` are new user-visible strings awaiting Carmen's sign-off. The modal body is the requested sentence verbatim.

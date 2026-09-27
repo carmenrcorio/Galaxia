@@ -26,7 +26,15 @@ describe("account export/delete accept the mobile session JWT (D5)", () => {
     expect(panel).toContain('fetch("/api/account/delete"');
     expect(panel).not.toMatch(/Authorization/);
     expect(panel).toContain("ACCOUNT_DELETE_COPY");
-    expect(panel).toContain("confirmation: typed.trim().toLowerCase()");
+    expect(panel).toContain("JSON.stringify({ confirmation })");
+  });
+
+  it("the Settings Account section calls the same two routes on the cookie session", () => {
+    const section = read("apps/web/components/settings-account-section.tsx");
+    expect(section).toContain('fetch("/api/account/export"');
+    expect(section).toContain('fetch("/api/account/delete"');
+    expect(section).not.toMatch(/Authorization/);
+    expect(section).not.toContain('rpc("purge_own_account_data")');
   });
 
   it("the helper still falls back to the cookie server client", () => {

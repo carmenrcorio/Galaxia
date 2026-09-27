@@ -20,12 +20,15 @@ describe("Settings carries the password and email change sections", () => {
     expect(src).not.toContain("Change your password from");
   });
 
-  it("places the card above the data export and delete pointer", () => {
+  it("places the card above data export and delete", () => {
+    // Export and delete used to be a pointer to /account/data. They are now
+    // the Account section at the foot of the page, so the ordering this test
+    // has always guarded is measured against that section instead.
     const src = read("apps/web/app/app/settings/page.tsx");
     const card = src.indexOf("<SettingsAccountCredentials");
-    const dataPointer = src.indexOf("/account/data");
+    const exportAndDelete = src.indexOf("<SettingsAccountSection");
     expect(card).toBeGreaterThan(-1);
-    expect(dataPointer).toBeGreaterThan(card);
+    expect(exportAndDelete).toBeGreaterThan(card);
   });
 });
 

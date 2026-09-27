@@ -5,11 +5,11 @@ import { useMemo, useState } from "react";
 import {
   ACCOUNT_DELETE_COPY,
   ACCOUNT_EXPORT_COPY,
-  DELETE_CONFIRMATION_WORD,
-  isDeleteConfirmation,
+  ACCOUNT_SECTION_COPY,
   shouldWarnBillingOnDelete
 } from "../lib/account-data";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
+import { AccountDeleteDialog } from "./account-delete-dialog";
 import { Spinner } from "./spinner";
 
 export function AccountDataPanel({
@@ -25,12 +25,9 @@ export function AccountDataPanel({
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  const [step, setStep] = useState<"idle" | "confirm">("idle");
-  const [typed, setTyped] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  const canDelete = isDeleteConfirmation(typed);
 
   async function downloadExport() {
     setExporting(true);
@@ -61,15 +58,14 @@ export function AccountDataPanel({
     }
   }
 
-  async function deleteAccount() {
-    if (!canDelete) return;
+  async function deleteAccount(confirmation: string) {
     setDeleting(true);
     setDeleteError(null);
     try {
       const res = await fetch("/api/account/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmation: typed.trim().toLowerCase() })
+        body: JSON.stringify({ confirmation })
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -77,8 +73,9 @@ export function AccountDataPanel({
         setDeleting(false);
         return;
       }
-      await supabase.auth.signOut();
-      window.location.href = "/login?deleted=1";
+      // The login row is already gone, so this only clears the local session.
+      await supabase.auth.signOut().catch(() => undefined);
+      window.location.href = "/";
     } catch {
       setDeleteError(ACCOUNT_DELETE_COPY.errorGeneric);
       setDeleting(false);
@@ -134,62 +131,41 @@ export function AccountDataPanel({
           </div>
         ) : null}
 
-        {step === "idle" ? (
-          <button
-            type="button"
-            className="pill-link"
-            onClick={() => {
-              setStep("confirm");
-              setTyped("");
-              setDeleteError(null);
-            }}
-            style={{ width: "fit-content" }}
-          >
-            Continue to delete…
-          </button>
-        ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            <label htmlFor="delete-confirm" style={{ color: "var(--mist)", fontSize: 14 }}>
-              {ACCOUNT_DELETE_COPY.typePrompt}
-            </label>
-            <input
-              id="delete-confirm"
-              className="field"
-              value={typed}
-              onChange={(e) => setTyped(e.target.value)}
-              placeholder={DELETE_CONFIRMATION_WORD}
-              autoComplete="off"
-              spellCheck={false}
-              disabled={deleting}
-            />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => void deleteAccount()}
-                disabled={!canDelete || deleting}
-                style={{ gap: 8 }}
-              >
-                {deleting && <Spinner size={13} color="#1a1206" />}
-                {deleting ? "Deleting…" : ACCOUNT_DELETE_COPY.confirmButton}
-              </button>
-              <button
-                type="button"
-                className="pill-link"
-                disabled={deleting}
-                onClick={() => {
-                  setStep("idle");
-                  setTyped("");
-                  setDeleteError(null);
-                }}
-              >
-                Never mind
-              </button>
-            </div>
-          </div>
-        )}
-        {deleteError ? <p className="error" style={{ fontSize: 13 }}>{deleteError}</p> : null}
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          onClick={() => {
+            setDeleteError(null);
+            setDialogOpen(true);
+          }}
+          style={{
+            width: "fit-content",
+            cursor: "pointer",
+            borderRadius: 999,
+            padding: "10px 18px",
+            fontWeight: 600,
+            color: "var(--rose)",
+            background: "rgba(218,140,140,.12)",
+            border: "1px solid rgba(218,140,140,.55)"
+          }}
+        >
+          {ACCOUNT_SECTION_COPY.deleteButton}
+        </button>
+        {deleteError && !dialogOpen ? (
+          <p className="error" style={{ fontSize: 13 }}>{deleteError}</p>
+        ) : null}
       </section>
+
+      <AccountDeleteDialog
+        open={dialogOpen}
+        deleting={deleting}
+        error={deleteError}
+        onCancel={() => {
+          setDialogOpen(false);
+          setDeleteError(null);
+        }}
+        onConfirm={(confirmation) => void deleteAccount(confirmation)}
+      />
     </div>
   );
 }

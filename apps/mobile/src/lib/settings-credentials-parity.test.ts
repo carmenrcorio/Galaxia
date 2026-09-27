@@ -48,13 +48,14 @@ describe("mobile Settings carries the password and email change sections", () =>
     expect(settings).toContain("EMAIL_CHANGE_COPY.submitting");
   });
 
-  it("sits above the export and delete cards", () => {
+  it("sits above the export and delete section", () => {
+    // Export and delete used to be two separate cards. They are now the one
+    // Account section at the foot of the screen, so the ordering this test
+    // has always guarded is measured against that section instead.
     const account = settings.indexOf("<Text style={cardTitle}>Account</Text>");
-    const exportCard = settings.indexOf("ACCOUNT_EXPORT_COPY.title");
-    const deleteCard = settings.indexOf("ACCOUNT_DELETE_COPY.title");
+    const exportAndDelete = settings.indexOf("ACCOUNT_SECTION_COPY.title");
     expect(account).toBeGreaterThan(-1);
-    expect(exportCard).toBeGreaterThan(account);
-    expect(deleteCard).toBeGreaterThan(account);
+    expect(exportAndDelete).toBeGreaterThan(account);
   });
 });
 

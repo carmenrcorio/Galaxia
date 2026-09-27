@@ -112,6 +112,7 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
         ...row,
         showOpener: idx === 0,
         wrapCatch: group === "catches" && idx === 0,
+        wrapAdjust: group === "adjusts" && idx === 0,
       }))
   );
 
@@ -167,7 +168,9 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
               >
                 {row.wrapCatch
                   ? <>↓ <GlossaryTerm glossarySlug="flows-and-catches">catches</GlossaryTerm></>
-                  : chrome.badge}
+                  : row.wrapAdjust
+                    ? <GlossaryTerm glossarySlug="adjusts">{chrome.badge}</GlossaryTerm>
+                    : chrome.badge}
               </span>
               <span className="muted" style={{ fontSize: ".74rem", fontStyle: "italic" }}>
                 {row.readingShort}

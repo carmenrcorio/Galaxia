@@ -105,6 +105,7 @@ describe("QuickComparePage /chart handoff", () => {
     expect(years[0]!.value).toBe("1990");
     expect(months[1]!.value).toBe("");
     expect(screen.getByRole("button", { name: "Compare our charts" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "synastry" })).toBeTruthy();
     expect(screen.queryByText("A shared synastry reading")).toBeNull();
     expect(sessionStorage.getItem(COMPARE_PREFILL_NAME_KEY)).toBeNull();
   });

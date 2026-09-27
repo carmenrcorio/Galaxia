@@ -56,6 +56,7 @@ import {
   PERSON_TAB_LABEL,
   PERSON_TAB_VOCAB,
   resolvePersonPageEntry,
+  formatRelationshipLabel,
   hasPassed,
   isMinorForSafety,
   usesAncientLight,
@@ -84,6 +85,7 @@ import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../.
 import { ConnectInviteButton } from "../../../../components/connect-invite-button";
 import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
 import { FlipSignCards } from "../../../../components/flip-sign-cards";
+import { SignMetadataCards } from "../../../../components/sign-metadata-cards";
 import { RetrogradeBadge } from "../../../../components/retrograde-badge";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
@@ -926,7 +928,7 @@ export default function PersonProfilePage() {
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }} className="fade-in">
         <InitialAvatar name={person.display_name} size="lg" personId={person.id} memorial={personPassed} />
         <div>
-          <p className="eyebrow">{person.relation}{personPassed ? " · remembered" : ""}</p>
+          <p className="eyebrow">{formatRelationshipLabel(person.relation)}{personPassed ? " · remembered" : ""}</p>
           <h1 className="page-title">{person.display_name}</h1>
           <div style={{ marginTop: 6 }}>
             <ChartPrecisionIndicator
@@ -1178,7 +1180,7 @@ export default function PersonProfilePage() {
           memorial={personPassed}
         />
         <div>
-          <p className="eyebrow">{person.relation}{personPassed ? " · remembered" : ""}</p>
+          <p className="eyebrow">{formatRelationshipLabel(person.relation)}{personPassed ? " · remembered" : ""}</p>
           <h1 className="page-title">{person.display_name}</h1>
           <div style={{ marginTop: 6 }}>
             <ChartPrecisionIndicator
@@ -1201,7 +1203,42 @@ export default function PersonProfilePage() {
         </div>
       </div>
 
-      <FlipSignCards chart={chart} minorSafe={personIsMinor} />
+      <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
+        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1 person-chart-hero chart-identity-unit">
+          <p className="muted" style={{ fontSize: ".72rem", margin: "0 0 6px" }}>
+            {chart.precision === "exact" && chart.asc
+              ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
+              : enduringEyebrow("Zodiac wheel")}
+          </p>
+          <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", textAlign: "center", marginBottom: 10 }}>
+            {person.display_name}
+          </p>
+          <FlipSignCards chart={chart} minorSafe={personIsMinor} />
+          <div className="chart-identity-unit__wheel">
+            {wheelMounted ? (
+              <ChartWheel
+                chart={chart}
+                aspects={natalAspects}
+                exportSafe
+                planetTooltips={{ minorSafe: personIsMinor, onSeeFullReading: revealPlacementCard }}
+              />
+            ) : (
+              <div aria-hidden style={{ width: 300, height: 300, margin: "0 auto" }} />
+            )}
+          </div>
+          {chart.houseSystemFallbackReason ? (
+            <p className="muted" style={{ fontSize: ".72rem", textAlign: "center", maxWidth: "52ch", margin: "0 auto" }}>
+              {chart.houseSystemFallbackReason}
+            </p>
+          ) : null}
+          {(chart.precision !== "exact" || !chart.asc) ? (
+            <p className="muted" style={{ fontSize: ".72rem", textAlign: "center", maxWidth: "48ch", margin: "0 auto" }}>
+              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+            </p>
+          ) : null}
+        </section>
+        <SignMetadataCards chart={chart} />
+      </ChartImageExport>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
@@ -1246,39 +1283,6 @@ export default function PersonProfilePage() {
           </p>
         </div>
       ) : null}
-
-      <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
-        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1 person-chart-hero">
-          <p className="muted" style={{ fontSize: ".72rem", margin: "0 0 14px" }}>
-            {chart.precision === "exact" && chart.asc
-              ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
-              : enduringEyebrow("Zodiac wheel")}
-          </p>
-          <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", textAlign: "center", marginBottom: 12 }}>
-            {person.display_name}
-          </p>
-          {wheelMounted ? (
-            <ChartWheel
-              chart={chart}
-              aspects={natalAspects}
-              exportSafe
-              planetTooltips={{ minorSafe: personIsMinor, onSeeFullReading: revealPlacementCard }}
-            />
-          ) : (
-            <div aria-hidden style={{ width: 300, height: 300, margin: "0 auto" }} />
-          )}
-          {chart.houseSystemFallbackReason ? (
-            <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "52ch", margin: "10px auto 0" }}>
-              {chart.houseSystemFallbackReason}
-            </p>
-          ) : null}
-          {(chart.precision !== "exact" || !chart.asc) ? (
-            <p className="muted" style={{ fontSize: ".72rem", marginTop: 10, textAlign: "center", maxWidth: "48ch", margin: "10px auto 0" }}>
-              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
-            </p>
-          ) : null}
-        </section>
-      </ChartImageExport>
 
       <div
         id="person-today"
@@ -1476,30 +1480,6 @@ export default function PersonProfilePage() {
           .filter((p) => p.body !== "sun" && p.body !== "moon" && p.body !== "north_node" && p.body !== "chiron" && !GENERATIONAL.includes(normaliseBody(p.body)))
           .map((p) => renderPlacementRow(p))}
 
-        <div id="generational">
-          {plutoGeneration ? (
-            <p style={{ fontSize: ".78rem", color: "var(--cream)", fontWeight: 600, margin: "12px 0 2px" }}>
-              {plutoGeneration}
-            </p>
-          ) : null}
-          <p className="muted" style={{ fontSize: ".8rem", marginBottom: 12 }}>{chart.generational.cohortLabel}</p>
-          {chart.placements
-            .filter((p) => GENERATIONAL.includes(normaliseBody(p.body)))
-            .map((p) => renderPlacementRow(p))}
-          {!person.is_self && viewerPlutoSign && chart.generational.pluto.confident ? (() => {
-            const bridge = getFamilyBridge(viewerPlutoSign, chart.generational.pluto.sign);
-            if (!bridge) return null;
-            return (
-              <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 12, border: "1px solid rgba(183,154,216,.22)", background: "rgba(255,255,255,.025)" }}>
-                <p className="eyebrow" style={{ marginBottom: 6 }}>
-                  You + {person.relation || person.display_name}
-                </p>
-                <p style={{ fontSize: ".84rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{bridge}</p>
-              </div>
-            );
-          })() : null}
-        </div>
-
         {chart.placements.filter((p) => p.body === "north_node").map((p) => renderPlacementRow(p))}
         {chart.placements.filter((p) => p.body === "chiron").map((p) => renderPlacementRow(p))}
       </section>
@@ -1538,6 +1518,32 @@ export default function PersonProfilePage() {
           </div>
         </section>
       ) : null}
+
+      <section id="generational" className="glass-card fade-in fade-in-delay-2">
+        <p className="eyebrow" style={{ marginBottom: 8 }}>Generational signature</p>
+        <ChartVocabSubhead term={PERSON_TAB_VOCAB.generational ?? "Generational"} />
+        {plutoGeneration ? (
+          <p style={{ fontSize: ".9rem", color: "var(--cream)", fontWeight: 600, margin: "8px 0 2px" }}>
+            {plutoGeneration}
+          </p>
+        ) : null}
+        <p className="muted" style={{ fontSize: ".8rem", marginBottom: 12 }}>{chart.generational.cohortLabel}</p>
+        {chart.placements
+          .filter((p) => GENERATIONAL.includes(normaliseBody(p.body)))
+          .map((p) => renderPlacementRow(p))}
+        {!person.is_self && viewerPlutoSign && chart.generational.pluto.confident ? (() => {
+          const bridge = getFamilyBridge(viewerPlutoSign, chart.generational.pluto.sign);
+          if (!bridge) return null;
+          return (
+            <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 12, border: "1px solid rgba(183,154,216,.22)", background: "rgba(255,255,255,.025)" }}>
+              <p className="eyebrow" style={{ marginBottom: 6 }}>
+                You + {person.relation ? formatRelationshipLabel(person.relation) : person.display_name}
+              </p>
+              <p style={{ fontSize: ".84rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{bridge}</p>
+            </div>
+          );
+        })() : null}
+      </section>
 
       {/* ── Key aspects ── */}
       {natalAspectReadings.length > 0 ? (

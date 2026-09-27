@@ -28,9 +28,11 @@ describe("person page information architecture", () => {
     expect(page).toContain('p.body !== "sun" && p.body !== "moon"');
   });
 
-  it("keeps outer planets once: diamond-marked rows, no standalone generation section", () => {
+  it("keeps outer planets once in a standalone generational signature card", () => {
     expect(page).toContain('isGen ? " ✦" : ""');
     expect(page).not.toContain('sectionHead("generational")');
+    expect(page).toContain('id="generational" className="glass-card');
+    expect(page).toContain("Generational signature");
     expect(page).not.toContain("generationInfo.name");
     expect(page).not.toContain("generationNameForYear");
     expect(page).toContain("plutoGenerationLabel");
@@ -108,5 +110,7 @@ describe("person page information architecture", () => {
     expect(page).toContain("aspectPatternCopy");
     expect(page).not.toContain("const stellia");
     expect(page.indexOf('id="chart-patterns"')).toBeLessThan(page.indexOf('id="aspects"'));
+    expect(page.indexOf('id="chart-patterns"')).toBeLessThan(page.indexOf('id="generational"'));
+    expect(page.indexOf('id="generational"')).toBeLessThan(page.indexOf('id="aspects"'));
   });
 });

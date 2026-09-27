@@ -2,9 +2,18 @@ import type { HouseSystem } from "@galaxia/astro";
 import { HOUSE_SYSTEM_OPTIONS, isHouseSystem } from "@galaxia/astro";
 import {
   ACCOUNT_DELETE_COPY,
+  ACCOUNT_DELETE_MODAL_COPY,
   ACCOUNT_EXPORT_COPY,
+  ACCOUNT_SECTION_COPY,
   DEFAULT_FETCH_TIMEOUT_MS,
-  DELETE_CONFIRMATION_WORD,
+  DELETE_CONFIRMATION_DISPLAY_WORD,
+  EMAIL_CHANGE_COPY,
+  PASSWORD_CHANGE_COPY,
+  PASSWORD_RULE_HINT,
+  checkEmailChange,
+  checkPasswordChange,
+  emailChangeSentMessage,
+  formatRelationshipLabel,
   isDeleteConfirmation,
   shouldWarnBillingOnDelete,
   withTimeout
@@ -12,7 +21,7 @@ import {
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useState } from "react";
-import { Linking, Pressable, ScrollView, Share, Text, TextInput, View } from "react-native";
+import { Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, View } from "react-native";
 import { PendingConnectInvites } from "../../../src/components/pending-connect-invites";
 import { requestAccountDelete, requestAccountExport } from "../../../src/lib/account-api";
 import { siteUrlFor } from "../../../src/lib/env";
@@ -58,6 +67,14 @@ const SETTINGS_PREFS_RETRY = "Try again";
 const SETTINGS_PEOPLE_EMPTY = "No people yet. Add someone to your constellation.";
 const SETTINGS_GROUPS_EMPTY = "No groups yet. Create one from Groups.";
 
+/**
+ * Password and email change feedback. The tone decides the colour only; the
+ * message is either a shared authored string from `@galaxia/core` or the auth
+ * service's own error, reported verbatim (web parity:
+ * apps/web/components/settings-account-credentials.tsx).
+ */
+type CredentialFeedback = { tone: "success" | "error"; message: string } | null;
+
 export default function SettingsScreen() {
   const { session, signOut } = useAuth();
   const { status: subStatus, trialDaysLeft, comped } = useEntitlement();
@@ -84,13 +101,22 @@ export default function SettingsScreen() {
   const [supportStatus, setSupportStatus] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-  const [deleteStep, setDeleteStep] = useState<"idle" | "confirm">("idle");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTyped, setDeleteTyped] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
   const [prefsLoading, setPrefsLoading] = useState(true);
   const [prefsError, setPrefsError] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordFeedback, setPasswordFeedback] = useState<CredentialFeedback>(null);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [emailFeedback, setEmailFeedback] = useState<CredentialFeedback>(null);
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -214,6 +240,64 @@ export default function SettingsScreen() {
     setSupportSubject("");
     setSupportBody("");
     setSupportStatus("Sent. We'll follow up by email.");
+  };
+
+  /**
+   * Password change against the live session. The session is re-read at the
+   * moment of the write because this screen can sit open longer than the
+   * session lasts, and "sign in again" is the honest answer to that.
+   */
+  const submitPasswordChange = async () => {
+    setPasswordFeedback(null);
+    const check = checkPasswordChange(newPassword, confirmPassword);
+    if (!check.ok) {
+      setPasswordFeedback({ tone: "error", message: check.error });
+      return;
+    }
+    setSavingPassword(true);
+    const { data: { session: live } } = await supabase.auth.getSession();
+    if (!live) {
+      setSavingPassword(false);
+      setPasswordFeedback({ tone: "error", message: PASSWORD_CHANGE_COPY.sessionExpired });
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setSavingPassword(false);
+    if (error) {
+      // Verbatim. A password the service refuses says why on its own.
+      setPasswordFeedback({ tone: "error", message: error.message });
+      return;
+    }
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordFeedback({ tone: "success", message: PASSWORD_CHANGE_COPY.success });
+  };
+
+  const submitEmailChange = async () => {
+    setEmailFeedback(null);
+    const check = checkEmailChange(newEmail, accountEmail);
+    if (!check.ok) {
+      setEmailFeedback({ tone: "error", message: check.error });
+      return;
+    }
+    setSavingEmail(true);
+    const { data: { session: live } } = await supabase.auth.getSession();
+    if (!live) {
+      setSavingEmail(false);
+      setEmailFeedback({ tone: "error", message: EMAIL_CHANGE_COPY.sessionExpired });
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ email: check.email });
+    setSavingEmail(false);
+    if (error) {
+      setEmailFeedback({ tone: "error", message: error.message });
+      return;
+    }
+    setNewEmail("");
+    setEmailFeedback({
+      tone: "success",
+      message: emailChangeSentMessage(check.email, accountEmail)
+    });
   };
 
   const downloadExport = async () => {
@@ -466,81 +550,119 @@ export default function SettingsScreen() {
       </View>
 
       <View style={cardStyle}>
-        <Text style={cardTitle}>{ACCOUNT_EXPORT_COPY.title}</Text>
-        <Text style={cardBody}>{ACCOUNT_EXPORT_COPY.lead}</Text>
-        {accountEmail ? <Text style={{ color: tokens.colors.goldSoft, fontSize: 13 }}>Account: {accountEmail}</Text> : null}
-        <Pressable onPress={() => void downloadExport()} disabled={exporting} style={pillStyle}>
-          <Text style={pillLabel}>{exporting ? "Preparing…" : ACCOUNT_EXPORT_COPY.button}</Text>
-        </Pressable>
-        {exportError ? <Text style={{ color: tokens.colors.rose, fontSize: 13 }}>{exportError}</Text> : null}
-      </View>
+        <Text style={cardTitle}>Account</Text>
+        <Text style={cardBody}>
+          {accountEmail
+            ? `You sign in with ${accountEmail}. Change that address or your password here.`
+            : "Change the address you sign in with, or your password, here."}
+        </Text>
 
-      <View style={cardStyle}>
-        <Text style={cardTitle}>{ACCOUNT_DELETE_COPY.title}</Text>
-        <Text style={cardBody}>{ACCOUNT_DELETE_COPY.lead}</Text>
-        <Text style={cardBody}>{ACCOUNT_DELETE_COPY.irreversible}</Text>
-        <Text style={cardBody}>{ACCOUNT_DELETE_COPY.shareHonesty}</Text>
-        {showBillingWarning ? (
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: "rgba(230,174,108,0.35)",
-              backgroundColor: "rgba(230,174,108,0.08)",
-              borderRadius: 12,
-              padding: 12,
-              gap: 8
-            }}
-          >
-            <Text style={{ color: tokens.colors.cream, lineHeight: 20 }}>{ACCOUNT_DELETE_COPY.billingWarning}</Text>
-            <Pressable onPress={openBillingOnWeb}>
-              <Text style={{ color: tokens.colors.gold, fontWeight: "700" }}>{ACCOUNT_DELETE_COPY.billingLinkLabel}</Text>
+        <Pressable
+          onPress={() => setPasswordOpen((prev) => !prev)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: passwordOpen }}
+          style={disclosureStyle(passwordOpen)}
+        >
+          <Text style={{ color: passwordOpen ? tokens.colors.gold : tokens.colors.cream, fontWeight: "700", fontSize: 14 }}>
+            {PASSWORD_CHANGE_COPY.sectionLabel}
+          </Text>
+        </Pressable>
+        {passwordOpen ? (
+          <View style={{ gap: 8 }}>
+            <Text style={cardBody}>{PASSWORD_CHANGE_COPY.lead}</Text>
+            <TextInput
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder={PASSWORD_CHANGE_COPY.newLabel}
+              placeholderTextColor={tokens.colors.mist2}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="newPassword"
+              editable={!savingPassword}
+              style={fieldStyle}
+            />
+            <TextInput
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder={PASSWORD_CHANGE_COPY.confirmLabel}
+              placeholderTextColor={tokens.colors.mist2}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="newPassword"
+              editable={!savingPassword}
+              style={fieldStyle}
+            />
+            <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>{PASSWORD_RULE_HINT}</Text>
+            <Pressable
+              onPress={() => void submitPasswordChange()}
+              disabled={savingPassword || !newPassword || !confirmPassword}
+              style={[pillStyle, { opacity: savingPassword || !newPassword || !confirmPassword ? 0.5 : 1 }]}
+            >
+              <Text style={pillLabel}>
+                {savingPassword ? PASSWORD_CHANGE_COPY.submitting : PASSWORD_CHANGE_COPY.submit}
+              </Text>
             </Pressable>
+            {passwordFeedback ? (
+              <Text
+                style={{
+                  color: passwordFeedback.tone === "success" ? tokens.colors.gold : tokens.colors.rose,
+                  fontSize: 13
+                }}
+              >
+                {passwordFeedback.message}
+              </Text>
+            ) : null}
           </View>
         ) : null}
-        {deleteStep === "idle" ? (
-          <Pressable
-            onPress={() => {
-              setDeleteStep("confirm");
-              setDeleteTyped("");
-              setDeleteError(null);
-            }}
-            style={pillStyle}
-          >
-            <Text style={pillLabel}>Continue to delete…</Text>
-          </Pressable>
-        ) : (
-          <View style={{ gap: 10 }}>
-            <Text style={cardBody}>{ACCOUNT_DELETE_COPY.typePrompt}</Text>
+
+        <Pressable
+          onPress={() => setEmailOpen((prev) => !prev)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: emailOpen }}
+          style={disclosureStyle(emailOpen)}
+        >
+          <Text style={{ color: emailOpen ? tokens.colors.gold : tokens.colors.cream, fontWeight: "700", fontSize: 14 }}>
+            {EMAIL_CHANGE_COPY.sectionLabel}
+          </Text>
+        </Pressable>
+        {emailOpen ? (
+          <View style={{ gap: 8 }}>
+            <Text style={cardBody}>{EMAIL_CHANGE_COPY.lead}</Text>
             <TextInput
-              value={deleteTyped}
-              onChangeText={setDeleteTyped}
-              placeholder={DELETE_CONFIRMATION_WORD}
+              value={newEmail}
+              onChangeText={setNewEmail}
+              placeholder={EMAIL_CHANGE_COPY.newLabel}
               placeholderTextColor={tokens.colors.mist2}
               autoCapitalize="none"
               autoCorrect={false}
-              editable={!deleting}
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              editable={!savingEmail}
               style={fieldStyle}
             />
             <Pressable
-              onPress={() => void deleteAccount()}
-              disabled={!canDelete || deleting}
-              style={[pillStyle, { opacity: !canDelete || deleting ? 0.5 : 1 }]}
+              onPress={() => void submitEmailChange()}
+              disabled={savingEmail || !newEmail.trim()}
+              style={[pillStyle, { opacity: savingEmail || !newEmail.trim() ? 0.5 : 1 }]}
             >
-              <Text style={pillLabel}>{deleting ? "Deleting…" : ACCOUNT_DELETE_COPY.confirmButton}</Text>
+              <Text style={pillLabel}>
+                {savingEmail ? EMAIL_CHANGE_COPY.submitting : EMAIL_CHANGE_COPY.submit}
+              </Text>
             </Pressable>
-            <Pressable
-              disabled={deleting}
-              onPress={() => {
-                setDeleteStep("idle");
-                setDeleteTyped("");
-                setDeleteError(null);
-              }}
-            >
-              <Text style={{ color: tokens.colors.cream, fontWeight: "700" }}>Never mind</Text>
-            </Pressable>
+            {emailFeedback ? (
+              <Text
+                style={{
+                  color: emailFeedback.tone === "success" ? tokens.colors.gold : tokens.colors.rose,
+                  fontSize: 13
+                }}
+              >
+                {emailFeedback.message}
+              </Text>
+            ) : null}
           </View>
-        )}
-        {deleteError ? <Text style={{ color: tokens.colors.rose, fontSize: 13 }}>{deleteError}</Text> : null}
+        ) : null}
       </View>
 
       <View style={cardStyle}>
@@ -555,7 +677,7 @@ export default function SettingsScreen() {
           people.map((person) => (
             <View key={person.id} style={listItem}>
               <Text style={{ color: tokens.colors.cream, fontWeight: "700" }}>{person.display_name}</Text>
-              <Text style={{ color: tokens.colors.mist }}>{person.relation}</Text>
+              <Text style={{ color: tokens.colors.mist }}>{formatRelationshipLabel(person.relation)}</Text>
             </View>
           ))
         )}
@@ -575,10 +697,118 @@ export default function SettingsScreen() {
         )}
       </View>
 
+      <View style={cardStyle}>
+        <Text style={cardTitle}>{ACCOUNT_SECTION_COPY.title}</Text>
+        <Text style={cardBody}>{ACCOUNT_SECTION_COPY.lead}</Text>
+        {accountEmail ? (
+          <Text style={{ color: tokens.colors.goldSoft, fontSize: 13 }}>Account: {accountEmail}</Text>
+        ) : null}
+
+        <Pressable onPress={() => void downloadExport()} disabled={exporting} style={pillStyle}>
+          <Text style={pillLabel}>
+            {exporting ? ACCOUNT_SECTION_COPY.exportBusy : ACCOUNT_SECTION_COPY.exportButton}
+          </Text>
+        </Pressable>
+        <Text style={{ color: tokens.colors.mist2, fontSize: 12, lineHeight: 18 }}>
+          {ACCOUNT_SECTION_COPY.exportHelp}
+        </Text>
+        {exportError ? <Text style={{ color: tokens.colors.rose, fontSize: 13 }}>{exportError}</Text> : null}
+
+        {showBillingWarning ? (
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: "rgba(230,174,108,0.35)",
+              backgroundColor: "rgba(230,174,108,0.08)",
+              borderRadius: 12,
+              padding: 12,
+              gap: 8
+            }}
+          >
+            <Text style={{ color: tokens.colors.cream, lineHeight: 20 }}>{ACCOUNT_DELETE_COPY.billingWarning}</Text>
+            <Pressable onPress={openBillingOnWeb}>
+              <Text style={{ color: tokens.colors.gold, fontWeight: "700" }}>{ACCOUNT_DELETE_COPY.billingLinkLabel}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            setDeleteTyped("");
+            setDeleteError(null);
+            setDeleteModalOpen(true);
+          }}
+          style={dangerPillStyle}
+        >
+          <Text style={dangerPillLabel}>{ACCOUNT_SECTION_COPY.deleteButton}</Text>
+        </Pressable>
+        {deleteError && !deleteModalOpen ? (
+          <Text style={{ color: tokens.colors.rose, fontSize: 13 }}>{deleteError}</Text>
+        ) : null}
+      </View>
+
       <Pressable onPress={() => void handleSignOut()} disabled={signingOut} style={pillStyle}>
         <Text style={pillLabel}>{signingOut ? "Signing out…" : "Sign out"}</Text>
       </Pressable>
       {status ? <Text style={{ color: tokens.colors.gold }}>{status}</Text> : null}
+
+      <Modal
+        visible={deleteModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!deleting) setDeleteModalOpen(false);
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(10,7,23,0.78)",
+            justifyContent: "center",
+            padding: 20
+          }}
+        >
+          <View style={[cardStyle, { backgroundColor: tokens.colors.ink2, borderColor: "rgba(218,140,140,0.4)", gap: 12 }]}>
+            <Text style={[cardTitle, { color: tokens.colors.rose }]}>{ACCOUNT_DELETE_MODAL_COPY.title}</Text>
+            <Text style={cardBody}>{ACCOUNT_DELETE_MODAL_COPY.body}</Text>
+            <Text style={cardBody}>{ACCOUNT_DELETE_MODAL_COPY.typePrompt}</Text>
+            <TextInput
+              value={deleteTyped}
+              onChangeText={setDeleteTyped}
+              placeholder={DELETE_CONFIRMATION_DISPLAY_WORD}
+              placeholderTextColor={tokens.colors.mist2}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              editable={!deleting}
+              style={fieldStyle}
+            />
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void deleteAccount()}
+              disabled={!canDelete || deleting}
+              style={[dangerPillStyle, { opacity: !canDelete || deleting ? 0.5 : 1 }]}
+            >
+              <Text style={dangerPillLabel}>
+                {deleting ? ACCOUNT_DELETE_MODAL_COPY.confirmBusy : ACCOUNT_DELETE_MODAL_COPY.confirmButton}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={deleting}
+              onPress={() => {
+                setDeleteModalOpen(false);
+                setDeleteTyped("");
+                setDeleteError(null);
+              }}
+              style={pillStyle}
+            >
+              <Text style={pillLabel}>{ACCOUNT_DELETE_MODAL_COPY.cancelButton}</Text>
+            </Pressable>
+            {deleteError ? <Text style={{ color: tokens.colors.rose, fontSize: 13 }}>{deleteError}</Text> : null}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -633,3 +863,29 @@ const pillLabel = {
   color: tokens.colors.cream,
   fontWeight: "700"
 } as const;
+
+const dangerPillStyle = {
+  borderWidth: 1,
+  borderColor: "rgba(218,140,140,0.55)",
+  backgroundColor: "rgba(218,140,140,0.12)",
+  borderRadius: tokens.radii.pill,
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+  alignSelf: "flex-start"
+} as const;
+
+const dangerPillLabel = {
+  color: tokens.colors.rose,
+  fontWeight: "700"
+} as const;
+
+/** Expandable row header inside the Account card (web parity: DisclosureButton). */
+function disclosureStyle(open: boolean) {
+  return {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: open ? tokens.colors.gold : tokens.colors.line,
+    backgroundColor: open ? "rgba(230,174,108,0.09)" : "transparent",
+    padding: 10
+  } as const;
+}

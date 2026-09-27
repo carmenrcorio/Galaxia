@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   ACCOUNT_DELETE_COPY,
+  ACCOUNT_DELETE_MODAL_COPY,
+  ACCOUNT_SECTION_COPY,
+  DELETE_CONFIRMATION_DISPLAY_WORD,
   DELETE_CONFIRMATION_WORD,
   EXPORT_PROFILE_FIELDS,
   isDeleteConfirmation,
@@ -28,12 +31,22 @@ describe("account-data helpers", () => {
     expect(shouldWarnBillingOnDelete(null)).toBe(false);
   });
 
-  it("export profile allowlist excludes Stripe and deprecated tier fields", () => {
-    expect(EXPORT_PROFILE_FIELDS).toContain("subscription_status");
-    expect(EXPORT_PROFILE_FIELDS).toContain("comped");
+  it("export profile allowlist is name, timezone, and house system only", () => {
+    expect([...EXPORT_PROFILE_FIELDS]).toEqual(["display_name", "timezone", "house_system"]);
+    expect(EXPORT_PROFILE_FIELDS).not.toContain("id");
     expect(EXPORT_PROFILE_FIELDS).not.toContain("stripe_customer_id");
     expect(EXPORT_PROFILE_FIELDS).not.toContain("stripe_subscription_id");
     expect(EXPORT_PROFILE_FIELDS).not.toContain("subscription_tier");
+  });
+
+  it("re-exports the Settings Account section copy web and mobile share", () => {
+    expect(DELETE_CONFIRMATION_DISPLAY_WORD).toBe("DELETE");
+    expect(ACCOUNT_SECTION_COPY.title).toBe("Account");
+    expect(ACCOUNT_SECTION_COPY.exportButton).toBe("Download my data");
+    expect(ACCOUNT_SECTION_COPY.deleteButton).toBe("Delete my account");
+    expect(ACCOUNT_DELETE_MODAL_COPY.body).toBe(
+      "This will permanently delete your account, your constellation, and everything in it. This cannot be undone."
+    );
   });
 
   it("delete failure copy does not claim a partial delete succeeded", () => {

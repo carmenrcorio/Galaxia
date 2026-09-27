@@ -47,6 +47,7 @@ export const PURGED_USER_TABLES = [
   "trial_emails",
   "person_daily_nudges",
   "vela_rate_limits",
+  "account_export_rate_limits",
   "daily_nudge_emails",
   "memorial_milestones",
   "relational_transits",
@@ -212,6 +213,8 @@ insert into person_daily_nudges (
 
 insert into vela_rate_limits (user_id, count) values ('${DEPARTING}', 3);
 
+insert into account_export_rate_limits (user_id, count) values ('${DEPARTING}', 1);
+
 insert into daily_nudge_emails (owner_id, date, person_id)
 values ('${DEPARTING}', '2026-09-14', '11111111-aaaa-4aaa-8aaa-000000000001');
 
@@ -324,6 +327,7 @@ describe("purge table inventory (update these lists when adding a table)", () =>
     expect(authUsers).toBeGreaterThan(tp);
     expect(body).toContain("delete from quick_share_snapshots where created_by = uid;");
     expect(body).toContain("delete from vela_rate_limits where user_id = uid;");
+    expect(body).toContain("delete from account_export_rate_limits where user_id = uid;");
     expect(body).toContain("delete from admin_users where owner_id = uid;");
     expect(body).toContain("delete from messages");
     expect(body).toContain("delete from early_access");
@@ -379,6 +383,7 @@ select jsonb_build_object(
   'trial_emails', (select count(*) from trial_emails where user_id = '${DEPARTING}'),
   'person_daily_nudges', (select count(*) from person_daily_nudges where owner_id = '${DEPARTING}'),
   'vela_rate_limits', (select count(*) from vela_rate_limits where user_id = '${DEPARTING}'),
+  'account_export_rate_limits', (select count(*) from account_export_rate_limits where user_id = '${DEPARTING}'),
   'daily_nudge_emails', (select count(*) from daily_nudge_emails where owner_id = '${DEPARTING}'),
   'constellation_letters', (select count(*) from constellation_letters where owner_id = '${DEPARTING}'),
   'email_sends', (select count(*) from email_sends where owner_id = '${DEPARTING}'),
@@ -420,6 +425,7 @@ select jsonb_build_object(
           trial_emails: "trial_emails",
           person_daily_nudges: "person_daily_nudges",
           vela_rate_limits: "vela_rate_limits",
+          account_export_rate_limits: "account_export_rate_limits",
           daily_nudge_emails: "daily_nudge_emails",
           constellation_letters: "constellation_letters",
           email_sends: "email_sends",

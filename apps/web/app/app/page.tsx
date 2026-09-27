@@ -48,6 +48,7 @@ import {
   RELATION_LINE_STYLE,
   clampSeatRn,
   elementFromRelation,
+  formatRelationshipLabel,
   formFromRelation,
   galaxyGeometry,
   galaxyLabelHalfWidthPx,
@@ -2061,7 +2062,7 @@ export default function AppHomePage() {
               </span>
             ))}
             <span style={{ marginLeft: "auto", fontSize: ".68rem", color: "var(--mist2)" }}>
-                            {hoverPerson ? `${hoverPerson.display_name} · ${hoverPerson.relation}` : "Click a star to open"}
+                            {hoverPerson ? `${hoverPerson.display_name} · ${formatRelationshipLabel(hoverPerson.relation)}` : "Click a star to open"}
             </span>
           </div>
         ) : null}

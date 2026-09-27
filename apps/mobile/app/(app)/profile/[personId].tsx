@@ -10,12 +10,15 @@ import {
   computeSynastry,
   detectAspectPatterns,
   formatMomentSkyContext,
+  getFamilyBridge,
   getPlutoEraReading,
   getPlutoWorkView,
   houseSystemLabelForChart,
   isProfessionalPersonRelation,
   ownerLocalDate,
   parseMomentTransitSnapshot,
+  PLUTO_SIGN_EXTENDED,
+  plutoGenerationLabel,
   plutoSourceLine,
   selectNatalAspectGeometry,
   whenUTCForOwnerLocalDate,
@@ -38,6 +41,7 @@ import {
   chartPrecisionExplanation,
   chartPrecisionFact,
   describeGenerationalArchetype,
+  formatRelationshipLabel,
   hasPassed,
   housesUnavailableCopy,
   isMinorForSafety,
@@ -60,6 +64,7 @@ import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { FlipSignCards } from "../../../src/components/flip-sign-cards";
+import { SignMetadataCards } from "../../../src/components/sign-metadata-cards";
 import { RetrogradeBadge } from "../../../src/components/retrograde-badge";
 import { ChartWheel } from "../../../src/components/chart-wheel";
 import { ConnectInviteButton } from "../../../src/components/connect-invite-button";
@@ -105,6 +110,7 @@ export default function PersonProfileScreen() {
   const [velaPins, setVelaPins] = useState<VelaPinRow[]>([]);
   const [editOpen, setEditOpen] = useState(false);
   const [editUpgradeTo, setEditUpgradeTo] = useState<Exclude<ChartPrecision, "none"> | null>(null);
+  const [viewerPlutoSign, setViewerPlutoSign] = useState<SignKey | null>(null);
 
   const resolvedPersonId = useMemo(() => (Array.isArray(personId) ? personId[0] : personId), [personId]);
 
@@ -132,6 +138,7 @@ export default function PersonProfileScreen() {
 
   const loadProfile = async () => {
     if (!session?.user.id || !resolvedPersonId) return;
+    setViewerPlutoSign(null);
 
     // A unique index on people(owner_id) WHERE is_self guarantees at most
     // one row here — no ordering/limit tie-breaker needed.
@@ -182,6 +189,28 @@ export default function PersonProfileScreen() {
     setNotes(noteData ?? []);
 
     void acknowledgeConnectIfNeeded(session.user.id, personRow);
+
+    if (personRow.is_self) {
+      setViewerPlutoSign(null);
+    } else {
+      const { data: selfPerson } = await supabase
+        .from("people")
+        .select("id")
+        .eq("owner_id", session.user.id)
+        .eq("is_self", true)
+        .maybeSingle();
+      if (selfPerson?.id) {
+        const { data: selfChart } = await supabase
+          .from("charts")
+          .select("data")
+          .eq("person_id", selfPerson.id)
+          .maybeSingle();
+        const selfPluto = (selfChart?.data as NatalChart | undefined)?.generational?.pluto;
+        setViewerPlutoSign(selfPluto?.confident ? (selfPluto.sign as SignKey) : null);
+      } else {
+        setViewerPlutoSign(null);
+      }
+    }
 
     if (shouldShowLiveTransits(personRow)) {
       const localDate = ownerLocalDate();
@@ -348,7 +377,7 @@ export default function PersonProfileScreen() {
         <View style={{ flex: 1 }}>
           <Text style={{ color: tokens.colors.cream, fontSize: 31, fontFamily: fonts.frauncesSemi }}>{person.display_name}</Text>
           <Text style={{ color: tokens.colors.mist }}>
-            {person.relation}{isMemorial ? " · remembered" : ""}
+            {formatRelationshipLabel(person.relation)}{isMemorial ? " · remembered" : ""}
           </Text>
           <ChartPrecisionFacts
             precision={person.birth_precision}
@@ -362,7 +391,42 @@ export default function PersonProfileScreen() {
         </View>
       </View>
 
-      {chart ? <FlipSignCards chart={chart} minorSafe={personIsMinor} /> : null}
+      {chart ? (
+        <View style={[cardStyle, { gap: 0 }]}>
+          <Text style={vocabSubhead}>
+            {chart.precision === "exact" && chart.asc
+              ? `Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`
+              : "Zodiac wheel"}
+          </Text>
+          <Text
+            style={{
+              color: tokens.colors.cream,
+              fontFamily: fonts.fraunces,
+              fontSize: 17,
+              textAlign: "center",
+              marginBottom: 4
+            }}
+          >
+            {person.display_name}
+          </Text>
+          <FlipSignCards chart={chart} minorSafe={personIsMinor} />
+          <ChartWheel
+            chart={chart}
+            aspects={natalAspects}
+            planetTooltips={{ minorSafe: personIsMinor, onSeeFullReading: revealPlacementCard }}
+          />
+          {chart.houseSystemFallbackReason ? (
+            <Text style={cardBody}>{chart.houseSystemFallbackReason}</Text>
+          ) : null}
+          {chart.precision !== "exact" || !chart.asc ? (
+            <Text style={cardBody}>
+              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      {chart ? <SignMetadataCards chart={chart} /> : null}
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
         <Link href="/compare" asChild>
@@ -396,40 +460,6 @@ export default function PersonProfileScreen() {
           }}
           upgradeTo={editUpgradeTo}
         />
-      ) : null}
-
-      {chart ? (
-        <View style={cardStyle}>
-          <Text style={vocabSubhead}>
-            {chart.precision === "exact" && chart.asc
-              ? `Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`
-              : "Zodiac wheel"}
-          </Text>
-          <Text
-            style={{
-              color: tokens.colors.cream,
-              fontFamily: fonts.fraunces,
-              fontSize: 17,
-              textAlign: "center",
-              marginBottom: 4
-            }}
-          >
-            {person.display_name}
-          </Text>
-          <ChartWheel
-            chart={chart}
-            aspects={natalAspects}
-            planetTooltips={{ minorSafe: personIsMinor, onSeeFullReading: revealPlacementCard }}
-          />
-          {chart.houseSystemFallbackReason ? (
-            <Text style={cardBody}>{chart.houseSystemFallbackReason}</Text>
-          ) : null}
-          {chart.precision !== "exact" || !chart.asc ? (
-            <Text style={cardBody}>
-              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
-            </Text>
-          ) : null}
-        </View>
       ) : null}
 
       <PersonTodayCards
@@ -578,9 +608,14 @@ export default function PersonProfileScreen() {
             ) : null}
 
             <View style={cardStyle}>
-                            <Text style={cardTitle}>{PERSON_TAB_LABEL.generational}</Text>
+              <Text style={cardTitle}>Generational signature</Text>
               <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.generational ?? "Generational"}</Text>
               <Text style={badgeStyle}>Reads from your birth year</Text>
+              {chart.generational.pluto.confident ? (
+                <Text style={[cardBody, { color: tokens.colors.cream, fontWeight: "700" }]}>
+                  {plutoGenerationLabel(chart.generational.pluto.sign)}
+                </Text>
+              ) : null}
               <Text style={cardBody}>{chart.generational.cohortLabel}</Text>
               <Text style={cardBody}>
                 Uranus in {chart.generational.uranus.sign}: {describeGenerationalArchetype("Uranus", chart.generational.uranus.sign)}
@@ -596,7 +631,8 @@ export default function PersonProfileScreen() {
                 const era = getPlutoEraReading(sign);
                 const professional = isProfessionalPersonRelation(person.relation);
                 const work = professional ? getPlutoWorkView(sign) : null;
-                if (!era && !work) return null;
+                const extended = PLUTO_SIGN_EXTENDED[sign] ?? null;
+                if (!era && !work && !extended) return null;
                 return (
                   <View style={{ gap: 6, marginTop: 8 }}>
                     {work ? (
@@ -621,6 +657,46 @@ export default function PersonProfileScreen() {
                       </>
                     ) : null}
                     <Text style={[cardBody, { color: tokens.colors.mist2 }]}>{plutoSourceLine(sign)}</Text>
+                    {extended ? (
+                      <>
+                        <Text style={domainStyle}>The corruption signature</Text>
+                        <Text style={cardBody}>{extended.corruptionSignature}</Text>
+                        {extended.historicalFigures.length > 0 ? (
+                          <View style={{ gap: 6 }}>
+                            <Text style={domainStyle}>Others who carried this</Text>
+                            {extended.historicalFigures.map((figure) => (
+                              <View key={figure.name} style={{ gap: 2 }}>
+                                <Text style={[cardBody, { color: tokens.colors.cream, fontWeight: "700" }]}>
+                                  {figure.name}: {figure.knownFor}
+                                </Text>
+                                <Text style={cardBody}>{figure.plutoBridge}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        ) : null}
+                        {extended.eraEvents.length > 0 ? (
+                          <View style={{ gap: 6 }}>
+                            <Text style={domainStyle}>What they lived through</Text>
+                            {extended.eraEvents.map((event) => (
+                              <View key={event.label} style={{ gap: 2 }}>
+                                <Text style={[cardBody, { color: tokens.colors.cream, fontWeight: "700" }]}>{event.label}</Text>
+                                <Text style={cardBody}>{event.detail}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </View>
+                );
+              })() : null}
+              {!person.is_self && viewerPlutoSign && chart.generational.pluto.confident ? (() => {
+                const bridge = getFamilyBridge(viewerPlutoSign, chart.generational.pluto.sign);
+                if (!bridge) return null;
+                return (
+                  <View style={nestedCallout}>
+                    <Text style={domainStyle}>You + {person.relation ? formatRelationshipLabel(person.relation) : person.display_name}</Text>
+                    <Text style={cardBody}>{bridge}</Text>
                   </View>
                 );
               })() : null}
@@ -812,6 +888,24 @@ const cardTitle = {
 const cardBody = {
   color: tokens.colors.mist,
   lineHeight: 20
+} as const;
+
+const domainStyle = {
+  color: tokens.colors.mist2,
+  fontSize: 11,
+  fontWeight: "700",
+  letterSpacing: 1.2,
+  textTransform: "uppercase"
+} as const;
+
+const nestedCallout = {
+  marginTop: 8,
+  padding: 12,
+  gap: 4,
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: tokens.colors.line,
+  backgroundColor: "rgba(255,255,255,0.025)"
 } as const;
 
 const vocabSubhead = {

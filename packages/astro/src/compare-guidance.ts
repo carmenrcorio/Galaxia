@@ -28,7 +28,7 @@ import {
   type HouseOverlayDescription,
   type HouseOverlayLens,
 } from "./house-overlay-descriptions";
-import type { Aspect, BodyName, SynastryResult } from "./index";
+import type { Aspect, BodyName, PairElementBalance, SynastryResult } from "./index";
 
 function isQuincunxType(type: string | undefined): boolean {
   return (type ?? "").toLowerCase() === "quincunx";
@@ -2502,4 +2502,36 @@ export function relationElementSignal(
     return `${nameA} leads with ${domA} and ${nameB} with ${domB}. Where one is thin the other is strong, so you can cover each other's blind spots if you let it.`;
   }
   return `${nameA} leans ${domA}, ${nameB} leans ${domB}. Different default weather, so translate before you assume the other felt what you felt.`;
+}
+
+function elementList(elements: PairElementBalance["dominantElements"]): string {
+  const labels = elements.map((element) => cap(element));
+  if (labels.length <= 1) return labels[0] ?? "";
+  if (labels.length === 2) return `${labels[0]} and ${labels[1]}`;
+  return `${labels.slice(0, -1).join(", ")}, and ${labels.at(-1)}`;
+}
+
+/**
+ * FOUNDER-REVIEW: all pair element-balance interpretation copy.
+ * Returns separate paragraphs so every surface can keep the same reading.
+ */
+export function pairElementBalanceInterpretation(balance: PairElementBalance): string[] {
+  const lines: string[] = [];
+
+  if (balance.balanced) {
+    lines.push("Your element mix is balanced. No single element sets the tone for this pair.");
+  } else if (balance.dominantElements.length > 0) {
+    lines.push(`You share ${elementList(balance.dominantElements)} dominance.`);
+  }
+
+  if (balance.missingElements.length > 0) {
+    const elements = elementList(balance.missingElements);
+    lines.push(
+      balance.missingElements.length === 1
+        ? `${elements} is lightly represented across both charts. You may need to make room for it deliberately.`
+        : `${elements} are lightly represented across both charts. You may need to make room for those modes deliberately.`
+    );
+  }
+
+  return lines;
 }

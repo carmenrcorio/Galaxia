@@ -30,10 +30,12 @@ import { ChartPdfExport } from "../../components/chart-pdf-export";
 import { ChartWheel } from "../../components/chart-wheel";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { NatalSignReveal } from "../../components/natal-sign-reveal";
+import { SignMetadataCards } from "../../components/sign-metadata-cards";
 import { HousesUnavailableCard } from "../../components/houses-unavailable-card";
 import { QuickChartShell } from "../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../components/share-link-button";
+import { SingleChartGenerationalSummary } from "../../components/single-chart-generational-summary";
 import { RetrogradeBadge } from "../../components/retrograde-badge";
 import { Spinner } from "../../components/spinner";
 import { BODY_GLYPH, signElement } from "../../lib/design";
@@ -225,30 +227,35 @@ export default function QuickChartPage() {
       ) : (
         <>
                     <ChartImageExport filename={chartExportFilename(name, "natal-chart.png")} label="Share chart image">
-            <NatalSignReveal
-              chart={result.chart}
-              displayDate={result.displayDate}
-              birthPlace={result.birthPlace}
-              name={name || undefined}
-              birthDate={result.birthDate}
-              birthPrecision={input.precision}
-            />
+            <section className="glass-card fade-in chart-identity-unit">
+              <NatalSignReveal
+                chart={result.chart}
+                displayDate={result.displayDate}
+                birthPlace={result.birthPlace}
+                name={name || undefined}
+                birthDate={result.birthDate}
+                birthPrecision={input.precision}
+                className="natal-sign-reveal--embedded"
+              />
 
-            {result.chart.cusps ? (
-              <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>
-                <ChartWheel
-                  chart={result.chart}
-                  exportSafe
-                  planetTooltips={{ minorSafe: chartMinorSafe, onSeeFullReading: revealPlacementRow }}
-                />
-              </section>
-            ) : null}
-            <HousesUnavailableCard
-              hasHouses={Boolean(result.chart.cusps && result.chart.cusps.length === 12)}
-              precision={result.chart.precision}
-              className="glass-card fade-in"
-              style={{ marginTop: 16 }}
-            />
+              {result.chart.cusps ? (
+                <div className="chart-identity-unit__wheel">
+                  <ChartWheel
+                    chart={result.chart}
+                    exportSafe
+                    planetTooltips={{ minorSafe: chartMinorSafe, onSeeFullReading: revealPlacementRow }}
+                  />
+                </div>
+              ) : null}
+              <HousesUnavailableCard
+                hasHouses={Boolean(result.chart.cusps && result.chart.cusps.length === 12)}
+                precision={result.chart.precision}
+                className="chart-identity-unit__empty"
+                style={{ padding: "12px 0 0", marginTop: 4 }}
+              />
+            </section>
+
+            <SignMetadataCards chart={result.chart} />
           </ChartImageExport>
 
           <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>
@@ -299,6 +306,8 @@ export default function QuickChartPage() {
               </div>
             ) : null}
           </section>
+
+          <SingleChartGenerationalSummary chart={result.chart} />
 
           <section className="glass-card fade-in fade-in-delay-2" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>
             <SaveToGalaxyButton birthInput={input} defaultName={name || undefined} />

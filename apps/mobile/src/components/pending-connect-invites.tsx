@@ -1,4 +1,4 @@
-import { DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
+import { DEFAULT_FETCH_TIMEOUT_MS, formatRelationshipLabel, withTimeout } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
@@ -117,7 +117,7 @@ export function PendingConnectInvites() {
       ) : (
         <View style={{ gap: 8 }}>
           {rows.map((row) => {
-            const relationLabel = connectRelationLabel(row.relationship_type);
+            const relationLabel = formatRelationshipLabel(connectRelationLabel(row.relationship_type));
             const named = Boolean(row.person_id && row.recipient_name);
             const primary = named ? row.recipient_name! : relationLabel;
             const meta: string[] = [];

@@ -52,6 +52,7 @@ export const SITE_FOOTER_LINKS: NavLink[] = [
   { href: "/download", label: "Download" },
   { href: "/blog", label: "Blog" },
   { href: "/glossary", label: "Glossary" },
+  { href: "/methodology", label: "Methodology" },
   { href: "/press", label: "Press" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },

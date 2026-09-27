@@ -33,7 +33,13 @@ describe("shared glossary terms", () => {
     expect(aspectGlossarySlug("Trine")).toBe("trine");
     expect(aspectGlossarySlug("Quincunx")).toBe("quincunx");
     expect(aspectGlossarySlug("applying")).toBeUndefined();
-    expect(GLOSSARY_TERMS).toHaveLength(38);
+    expect(GLOSSARY_TERMS).toHaveLength(41);
+  });
+
+  it("defines the sign metadata terms", () => {
+    expect(getGlossaryTerm("element")?.term).toBe("Element");
+    expect(getGlossaryTerm("modality")?.term).toBe("Modality");
+    expect(getGlossaryTerm("ruling-planet")?.term).toBe("Ruling planet");
   });
 
   it("defines the adjusts and quincunx relationship terms", () => {

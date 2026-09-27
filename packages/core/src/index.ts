@@ -71,6 +71,7 @@ export * from "./app-tour";
 export * from "./star-color";
 
 export * from "./person-chip-color";
+export * from "./sign-metadata-colors";
 
 export * from "./memorial-constellations";
 
@@ -115,3 +116,5 @@ export * from "./async-surface";
 export * from "./retrograde";
 
 export * from "./glossary-terms";
+
+export * from "./format-relationship-label";

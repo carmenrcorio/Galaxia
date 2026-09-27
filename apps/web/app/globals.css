@@ -597,10 +597,214 @@ select.field--rect {
     display: flex;
   }
 }
+/* Export clone: no 3D. The back face is unmounted while this class is on. */
+.flip-sign-card.is-export {
+  perspective: none;
+}
+.flip-sign-card.is-export .flip-sign-card__inner,
+.flip-sign-card.is-export:hover .flip-sign-card__inner,
+.flip-sign-card.is-export:focus-visible .flip-sign-card__inner {
+  transform: none;
+  transform-style: flat;
+  transition: none;
+}
 .sign-chip__glyph { font-size: 1.2rem; display: block; }
 .sign-chip__label { font-size: 0.8125rem; color: var(--mist2); text-transform: uppercase; letter-spacing: .12em; }
 .sign-chip__value { font-family: var(--serif); font-size: .88rem; color: var(--cream); font-weight: 500; }
 .sign-chip__vibe  { font-size: .72rem; color: var(--mist2); font-style: italic; line-height: 1.3; margin-top: 2px; }
+
+/* ─── Sun-sign reference ────────────────────────────────────────────────── */
+.sign-metadata-card {
+  position: relative;
+  overflow: hidden;
+  margin-top: 16px;
+  padding: 16px 16px 18px;
+}
+.sign-metadata-card__eyebrow {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 14px;
+}
+/* Each row is its own band so element, symbol, and materials read as separate ideas. */
+.sign-metadata-card__row {
+  position: relative;
+  z-index: 1;
+}
+.sign-metadata-card__row + .sign-metadata-card__row {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line2);
+}
+.sign-metadata-card__zodiac {
+  position: absolute;
+  z-index: 0;
+  right: 14px;
+  top: 38px;
+  font-family: "ZodiacGlyphs", var(--serif);
+  font-size: clamp(4.2rem, 10vw, 6.2rem);
+  line-height: 1;
+  opacity: .1;
+  pointer-events: none;
+}
+.sign-metadata-card__identity {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sign-metadata-card__pill {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  background: rgba(10,7,23,.52);
+}
+.sign-metadata-card__label {
+  display: block;
+  color: var(--mist2);
+  font-size: .56rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.sign-metadata-card__value {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--cream);
+  font-size: .72rem;
+  font-weight: 600;
+}
+.sign-metadata-card__value--secondary {
+  color: var(--mist);
+  font-weight: 500;
+}
+.sign-metadata-card__dot,
+.sign-metadata-card__metal-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.sign-metadata-card__planet {
+  color: var(--gold);
+  font-family: "ZodiacGlyphs", var(--serif);
+  font-size: .95rem;
+  line-height: 1;
+}
+.sign-metadata-card__symbol {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 70ch);
+  display: grid;
+  gap: 5px;
+  padding: 0 64px 0 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.sign-metadata-card__symbol-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sign-metadata-card__symbol-name {
+  color: var(--gold);
+  font-family: var(--serif);
+  font-size: 1.08rem;
+  font-weight: 500;
+}
+.sign-metadata-card__chevron {
+  color: var(--gold-soft);
+  font-size: .58rem;
+}
+.sign-metadata-card__origin,
+.sign-metadata-card__significance {
+  color: var(--mist);
+  font-size: .75rem;
+  line-height: 1.48;
+}
+.sign-metadata-card__significance {
+  width: min(100%, 70ch);
+  margin: 0;
+}
+.sign-metadata-card__row--identity .sign-metadata-card__significance {
+  margin-top: 11px;
+  padding-right: 64px;
+}
+.sign-metadata-card__materials {
+  display: grid;
+  gap: 16px;
+}
+/* The dot gets its own fixed column so the label, value, and significance
+   share one text edge regardless of which dot size is used. */
+.sign-metadata-card__material {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+.sign-metadata-card__material > .sign-metadata-card__dot,
+.sign-metadata-card__material > .sign-metadata-card__metal-dot {
+  justify-self: center;
+}
+.sign-metadata-card__material > .sign-metadata-card__significance {
+  grid-column: 2;
+}
+.sign-metadata-card__metal-dot {
+  background: linear-gradient(135deg, var(--cream), var(--mist2) 48%, var(--gold-soft));
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.35);
+}
+.sign-metadata-card__material-value {
+  display: block;
+  margin-top: 1px;
+  color: var(--cream);
+  font-family: var(--serif);
+  font-size: .76rem;
+}
+.sign-metadata-card__birthstone-dot {
+  width: 10px;
+  height: 10px;
+}
+
+/* Big Three cards and wheel share one visual frame. */
+.chart-identity-unit {
+  display: grid;
+  gap: 0;
+  text-align: center;
+}
+.chart-identity-unit__wheel {
+  margin-top: 0;
+}
+.natal-sign-reveal--embedded {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.natal-sign-reveal--embedded > div {
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 420px) {
+  .sign-metadata-card { padding: 15px 14px; }
+  .sign-metadata-card__symbol { padding-right: 44px; }
+  .sign-metadata-card__row--identity .sign-metadata-card__significance { padding-right: 44px; }
+  .sign-metadata-card__zodiac { right: 8px; font-size: 4.2rem; }
+  .sign-metadata-card__pill { padding: 5px 8px; }
+}
 
 /* ─── Placement rows (from landing .pl + galaxia.jsx .kd-place) ─────────── */
 .pl-row {

@@ -38,6 +38,18 @@ describe("Phase 5 person depth: Today, EditPerson, remembrance, edges, connect",
     expect(src).not.toContain("<RelationshipEdgesBox");
   });
 
+  it("profile exposes the full generational signature and family bridge", () => {
+    const src = readMobile("app/(app)/profile/[personId].tsx");
+    expect(src).toContain("Generational signature");
+    expect(src).toContain("plutoGenerationLabel");
+    expect(src).toContain("PLUTO_SIGN_EXTENDED");
+    expect(src).toContain("The corruption signature");
+    expect(src).toContain("Others who carried this");
+    expect(src).toContain("What they lived through");
+    expect(src).toContain("getFamilyBridge");
+    expect(src).toContain("viewerPlutoSign");
+  });
+
   it("EditPerson writes existing columns, searchPlaces pick-required, passed_at separate from chart", () => {
     const edit = readMobile("src/components/edit-person-panel.tsx");
     expect(edit).toContain("searchPlaces");

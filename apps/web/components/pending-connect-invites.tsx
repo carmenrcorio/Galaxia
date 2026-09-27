@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
+import { DEFAULT_FETCH_TIMEOUT_MS, formatRelationshipLabel, withTimeout } from "@galaxia/core";
 import {
   CONNECT_EMPTY_PENDING,
   CONNECT_GENERIC_ERROR,
@@ -117,7 +117,7 @@ export function PendingConnectInvites() {
       ) : (
         <div style={{ display: "grid", gap: 8 }}>
           {rows.map((row) => {
-            const relationLabel = connectRelationLabel(row.relationship_type);
+            const relationLabel = formatRelationshipLabel(connectRelationLabel(row.relationship_type));
             const named = Boolean(row.person_id && row.recipient_name);
             const primary = named ? row.recipient_name! : relationLabel;
             const meta: string[] = [];

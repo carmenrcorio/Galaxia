@@ -11,6 +11,7 @@ import {
   checkEmailChange,
   checkPasswordChange,
   emailChangeSentMessage,
+  formatRelationshipLabel,
   isDeleteConfirmation,
   shouldWarnBillingOnDelete,
   withTimeout
@@ -752,7 +753,7 @@ export default function SettingsScreen() {
           people.map((person) => (
             <View key={person.id} style={listItem}>
               <Text style={{ color: tokens.colors.cream, fontWeight: "700" }}>{person.display_name}</Text>
-              <Text style={{ color: tokens.colors.mist }}>{person.relation}</Text>
+              <Text style={{ color: tokens.colors.mist }}>{formatRelationshipLabel(person.relation)}</Text>
             </View>
           ))
         )}

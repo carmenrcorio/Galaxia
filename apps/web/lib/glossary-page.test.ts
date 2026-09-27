@@ -52,9 +52,9 @@ describe("/glossary metadata", () => {
 });
 
 describe("glossary term list", () => {
-  it("holds 30 to 40 terms with unique kebab ids matching the heading slug", () => {
+  it("holds 30 to 45 terms with unique kebab ids matching the heading slug", () => {
     expect(GLOSSARY_TERMS.length).toBeGreaterThanOrEqual(30);
-    expect(GLOSSARY_TERMS.length).toBeLessThanOrEqual(40);
+    expect(GLOSSARY_TERMS.length).toBeLessThanOrEqual(45);
     const ids = GLOSSARY_TERMS.map((t) => t.id);
     expect(new Set(ids).size).toBe(GLOSSARY_TERMS.length);
     for (const item of GLOSSARY_TERMS) {
@@ -70,9 +70,15 @@ describe("glossary term list", () => {
     expect(glossaryPreview(orb!.definition)).toBe(
       "The distance in degrees between an exact aspect. A tighter orb means a stronger connection.",
     );
-    expect(GLOSSARY_TERMS).toHaveLength(38);
+    expect(GLOSSARY_TERMS).toHaveLength(41);
     expect(getGlossaryTerm("adjusts")?.term).toBe("Adjusts");
     expect(getGlossaryTerm("quincunx")?.term).toBe("Quincunx");
+  });
+
+  it("includes the sign metadata terms used by profile cards", () => {
+    expect(getGlossaryTerm("element")?.term).toBe("Element");
+    expect(getGlossaryTerm("modality")?.term).toBe("Modality");
+    expect(getGlossaryTerm("ruling-planet")?.term).toBe("Ruling planet");
   });
 
   it("groups alphabetically by first letter for h2 sections", () => {

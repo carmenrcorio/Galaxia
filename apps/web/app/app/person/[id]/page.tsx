@@ -83,6 +83,7 @@ import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../.
 import { ConnectInviteButton } from "../../../../components/connect-invite-button";
 import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
 import { FlipSignCards } from "../../../../components/flip-sign-cards";
+import { SignMetadataCards } from "../../../../components/sign-metadata-cards";
 import { RetrogradeBadge } from "../../../../components/retrograde-badge";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
@@ -1182,6 +1183,7 @@ export default function PersonProfilePage() {
       </div>
 
       <FlipSignCards chart={chart} minorSafe={personIsMinor} />
+      <SignMetadataCards chart={chart} />
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>

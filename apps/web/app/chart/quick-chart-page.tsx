@@ -30,6 +30,7 @@ import { ChartPdfExport } from "../../components/chart-pdf-export";
 import { ChartWheel } from "../../components/chart-wheel";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { NatalSignReveal } from "../../components/natal-sign-reveal";
+import { SignMetadataCards } from "../../components/sign-metadata-cards";
 import { HousesUnavailableCard } from "../../components/houses-unavailable-card";
 import { QuickChartShell } from "../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../components/save-to-galaxy-button";
@@ -224,6 +225,8 @@ export default function QuickChartPage() {
               birthDate={result.birthDate}
               birthPrecision={input.precision}
             />
+
+            <SignMetadataCards chart={result.chart} />
 
             {result.chart.cusps ? (
               <section className="glass-card fade-in" style={{ marginTop: 16, textAlign: "center" }}>

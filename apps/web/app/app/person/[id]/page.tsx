@@ -9,7 +9,9 @@
  */
 
 import {
+  aspectPatternCopy,
   computeSynastry,
+  type AspectPattern,
   type NatalChart,
   type Placement,
   type PersonDailyNudgeRecord,
@@ -37,7 +39,6 @@ import {
   type SignKey,
   houseMeaning,
   interpretHouse,
-  STELLIUM_NOTE,
   type HouseKey,
   plutoGenerationLabel,
   PLUTO_SIGN_EXTENDED,
@@ -521,21 +522,6 @@ export default function PersonProfilePage() {
     }
     return map;
   }, [natalAspectReadings]);
-
-  /** Detect stellia: 3+ bodies in same house OR same sign (known signs only) */
-  const stellia = useMemo(() => {
-    if (!chart) return [];
-    const byHouse = new Map<number, string[]>();
-    const bySign  = new Map<string, string[]>();
-    for (const p of chart.placements.filter(pl => pl.confident !== false)) {
-      if (p.house) { if (!byHouse.has(p.house)) byHouse.set(p.house, []); byHouse.get(p.house)!.push(p.body); }
-      if (!bySign.has(p.sign)) bySign.set(p.sign, []); bySign.get(p.sign)!.push(p.body);
-    }
-    const result: Array<{ type: "house"|"sign"; label: string; bodies: string[] }> = [];
-    byHouse.forEach((bodies, house) => { if (bodies.length >= 3) result.push({ type: "house", label: houseMeaning(house as HouseKey)?.name ?? `House ${house}`, bodies }); });
-    bySign.forEach((bodies, sign) => { if (bodies.length >= 3 && !result.some(s => s.type === "house" && s.bodies.every(b => bodies.includes(b)))) result.push({ type: "sign", label: sign, bodies }); });
-    return result;
-  }, [chart]);
 
   /** House occupants map for the Twelve Houses section */
   const houseOccupants = useMemo(() => {
@@ -1461,19 +1447,6 @@ export default function PersonProfilePage() {
           </button>
         </div>
 
-        {/* Stellium alert: highest structural priority */}
-        {stellia.map((s, i) => (
-          <div key={i} style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 12, background: "rgba(230,174,108,.07)", border: "1px solid rgba(230,174,108,.25)" }}>
-            <p style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--gold)", margin: "0 0 3px" }}>
-              Stellium in {s.type === "house" ? `the ${s.label.toLowerCase()}` : s.label}
-            </p>
-            <p style={{ fontSize: ".78rem", color: "var(--cream)", margin: "0 0 3px" }}>
-              {s.bodies.map((b) => bodyDisplayName(b)).join(" · ")}
-            </p>
-            <p style={{ fontSize: ".76rem", color: "var(--mist)", lineHeight: 1.55, margin: 0 }}>{STELLIUM_NOTE}</p>
-          </div>
-        ))}
-
         {chart.placements
           .filter((p) => p.body !== "sun" && p.body !== "moon" && p.body !== "north_node" && p.body !== "chiron" && !GENERATIONAL.includes(normaliseBody(p.body)))
           .map((p) => renderPlacementRow(p))}
@@ -1505,6 +1478,41 @@ export default function PersonProfilePage() {
         {chart.placements.filter((p) => p.body === "north_node").map((p) => renderPlacementRow(p))}
         {chart.placements.filter((p) => p.body === "chiron").map((p) => renderPlacementRow(p))}
       </section>
+
+      {(chart.patterns ?? []).length > 0 ? (
+        <section id="chart-patterns" className="glass-card fade-in fade-in-delay-2">
+          {/* FOUNDER-REVIEW: Chart Patterns section labels and metadata. */}
+          <p className="eyebrow" style={{ marginBottom: 10 }}>Chart Patterns</p>
+          <div style={{ display: "grid", gap: 10 }}>
+            {(chart.patterns ?? []).map((pattern: AspectPattern, index) => {
+              const copy = aspectPatternCopy(pattern);
+              const title =
+                pattern.type === "grand_trine"
+                  ? "Grand Trine"
+                  : pattern.type === "t_square"
+                    ? "T-Square"
+                    : `Stellium in ${pattern.sign}`;
+              const detail =
+                pattern.type === "grand_trine"
+                  ? `${pattern.element ? `${pattern.element[0]!.toUpperCase()}${pattern.element.slice(1)} · ` : ""}${pattern.planets.map(bodyDisplayName).join(" · ")}`
+                  : pattern.type === "t_square"
+                    ? `Focal: ${pattern.focalPlanet ? bodyDisplayName(pattern.focalPlanet) : "Unknown"}${pattern.modality ? ` · ${pattern.modality[0]!.toUpperCase()}${pattern.modality.slice(1)}` : ""}`
+                    : pattern.planets.map(bodyDisplayName).join(" · ");
+              return (
+                <article
+                  key={`${pattern.type}-${pattern.planets.join("-")}-${index}`}
+                  style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(255,255,255,.035)", border: "1px solid rgba(230,174,108,.22)" }}
+                >
+                  <p style={{ fontSize: ".74rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--gold)", margin: "0 0 4px" }}>{title}</p>
+                  <p style={{ fontSize: ".78rem", color: "var(--mist2)", margin: "0 0 7px" }}>{detail}</p>
+                  <p style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600, lineHeight: 1.5, margin: "0 0 5px" }}>{copy.short}</p>
+                  <p style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{copy.long}</p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {/* ── Key aspects ── */}
       {natalAspectReadings.length > 0 ? (

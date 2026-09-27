@@ -233,7 +233,3 @@ export function interpretHouse(body: BodyKey, house: HouseKey, opts: PlacementSa
 export function houseMeaning(house: HouseKey): HouseMeaning | undefined {
   return HOUSE_MEANING[house];
 }
-
-/** Stellium: 3+ bodies in one house or sign. Worth calling out. */
-export const STELLIUM_NOTE =
-  "Three or more planets gathered here. This is where the weight of the chart falls: a concentration of energy that shapes far more of the life than any single placement would.";

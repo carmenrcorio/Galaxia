@@ -1,4 +1,5 @@
 import { Body, GeoVector, Ecliptic, EclipticGeoMoon, GeoMoonState, RotateState, Rotation_EQJ_ECT, SiderealTime, SunPosition } from "astronomy-engine";
+import { detectAspectPatterns, type AspectPattern } from "./aspect-patterns";
 import { isChartPoint } from "./bodies";
 import { chironLongitudeAt, isChironEphemerisCovered, julianDayUTC } from "./chiron-ephemeris";
 
@@ -67,6 +68,8 @@ export interface Placement {
 
 export interface NatalChart {
   placements: Placement[];
+  /** Natal aspect structures. Optional only for persisted charts created before engine v3. */
+  patterns?: AspectPattern[];
   asc?: Sign;
   mc?: Sign;
   cusps?: number[];
@@ -90,16 +93,31 @@ export interface Aspect {
   phase?: AspectPhase;
 }
 
+export const CHART_ELEMENTS = ["fire", "earth", "air", "water"] as const;
+export type ChartElement = (typeof CHART_ELEMENTS)[number];
+export type ElementCounts = Record<ChartElement, number>;
+
+export interface PairElementBalance {
+  /** Sun through Pluto for person A. Chart points are excluded. */
+  a: ElementCounts;
+  /** Sun through Pluto for person B. Chart points are excluded. */
+  b: ElementCounts;
+  combined: ElementCounts;
+  /** Every element tied for the highest count, in canonical element order. */
+  dominantElements: ChartElement[];
+  /** Elements represented by zero or one planet across the pair. */
+  missingElements: ChartElement[];
+  /** No automatic gear: every represented element is within one count of the others. */
+  balanced: boolean;
+}
+
 export interface SynastryResult {
   aspects: Aspect[];
   houseOverlays: {
     aInB: { body: BodyName; house: number }[];
     bInA: { body: BodyName; house: number }[];
   };
-  elementBalance: {
-    a: Record<"fire" | "earth" | "air" | "water", number>;
-    b: Record<"fire" | "earth" | "air" | "water", number>;
-  };
+  elementBalance: PairElementBalance;
   scores: {
     overall: number;
     emotional: number;
@@ -520,6 +538,32 @@ function placementFor(
   };
 }
 
+function computePlacementAspects(
+  fromPlacements: Placement[],
+  toPlacements: Placement[]
+): Aspect[] {
+  const aspects: Aspect[] = [];
+  for (const pa of fromPlacements) {
+    for (const pb of toPlacements) {
+      const angle = Math.abs(normalizeSignedAngle(pa.lon - pb.lon));
+      for (const [type, def] of Object.entries(ASPECT_DEFS) as [AspectType, (typeof ASPECT_DEFS)[AspectType]][]) {
+        const orb = Math.abs(angle - def.angle);
+        if (orb <= def.orb) {
+          aspects.push({
+            from: pa.body,
+            to: pb.body,
+            type,
+            orb: Number(orb.toFixed(2)),
+            harmony: Number((def.harmony - orb / (def.orb * 2)).toFixed(2)),
+            phase: aspectPhase(pa, pb, def.angle, orb)
+          });
+        }
+      }
+    }
+  }
+  return aspects;
+}
+
 export function computeNatalChart(birth: Birth): NatalChart {
   const houseSystemRequested = birth.houseSystem ?? "placidus";
   const date = getWorkingDate(birth);
@@ -564,9 +608,12 @@ export function computeNatalChart(birth: Birth): NatalChart {
     if (neptune) generational.neptuneHouse = houseFromLongitude(neptune.lon, cusps);
     if (pluto) generational.plutoHouse = houseFromLongitude(pluto.lon, cusps);
   }
+  const natalAspects =
+    birth.precision === "year" ? [] : computePlacementAspects(placements, placements);
 
   return {
     placements,
+    patterns: detectAspectPatterns(natalAspects, placements),
     asc: ascLon === undefined ? undefined : longitudeToSign(ascLon),
     mc: mcLon === undefined ? undefined : longitudeToSign(mcLon),
     cusps,
@@ -578,26 +625,47 @@ export function computeNatalChart(birth: Birth): NatalChart {
   };
 }
 
+export function countPlanetElements(placements: Placement[]): ElementCounts {
+  return placements.reduce<ElementCounts>(
+    (counts, placement) => {
+      // Element balance is specifically Sun through Pluto. North Node,
+      // Chiron, and any future non-planet points do not change the tally.
+      if (!PLANET_BODIES.includes(placement.body as PlanetName)) return counts;
+      counts[elementForSign(placement.sign)] += 1;
+      return counts;
+    },
+    { fire: 0, earth: 0, air: 0, water: 0 }
+  );
+}
+
+export function summarizePairElementBalance(a: ElementCounts, b: ElementCounts): PairElementBalance {
+  const combined = CHART_ELEMENTS.reduce<ElementCounts>(
+    (counts, element) => {
+      counts[element] = a[element] + b[element];
+      return counts;
+    },
+    { fire: 0, earth: 0, air: 0, water: 0 }
+  );
+  const values = CHART_ELEMENTS.map((element) => combined[element]);
+  const total = values.reduce((sum, count) => sum + count, 0);
+  const highest = Math.max(...values);
+  const lowest = Math.min(...values);
+  const balanced = total > 0 && highest - lowest <= 1;
+
+  return {
+    a,
+    b,
+    combined,
+    dominantElements: total === 0 || balanced
+      ? []
+      : CHART_ELEMENTS.filter((element) => combined[element] === highest),
+    missingElements: CHART_ELEMENTS.filter((element) => combined[element] <= 1),
+    balanced,
+  };
+}
+
 export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
-  const aspects: Aspect[] = [];
-  for (const pa of a.placements) {
-    for (const pb of b.placements) {
-      const angle = Math.abs(normalizeSignedAngle(pa.lon - pb.lon));
-      for (const [type, def] of Object.entries(ASPECT_DEFS) as [AspectType, (typeof ASPECT_DEFS)[AspectType]][]) {
-        const orb = Math.abs(angle - def.angle);
-        if (orb <= def.orb) {
-          aspects.push({
-            from: pa.body,
-            to: pb.body,
-            type,
-            orb: Number(orb.toFixed(2)),
-            harmony: Number((def.harmony - orb / (def.orb * 2)).toFixed(2)),
-            phase: aspectPhase(pa, pb, def.angle, orb)
-          });
-        }
-      }
-    }
-  }
+  const aspects = computePlacementAspects(a.placements, b.placements);
 
   const scoringAspects = aspects.filter((hit) => hit.type !== "quincunx");
   const sumDomain = (bodies: BodyName[]): number =>
@@ -611,16 +679,10 @@ export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
   const stability = toScore(sumDomain(["saturn", "jupiter"]));
   const overall = Math.round((emotional + communication + warmth + values + stability) / 5);
 
-  const countElements = (placements: Placement[]): Record<"fire" | "earth" | "air" | "water", number> =>
-    placements.reduce(
-      (acc, placement) => {
-        // Chart points are not planets; keep element tallies planetary.
-        if (isChartPoint(placement.body)) return acc;
-        acc[elementForSign(placement.sign)] += 1;
-        return acc;
-      },
-      { fire: 0, earth: 0, air: 0, water: 0 }
-    );
+  const elementBalance = summarizePairElementBalance(
+    countPlanetElements(a.placements),
+    countPlanetElements(b.placements)
+  );
 
   return {
     aspects,
@@ -628,7 +690,7 @@ export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
       aInB: b.cusps ? a.placements.map((p) => ({ body: p.body, house: houseFromLongitude(p.lon, b.cusps!) })) : [],
       bInA: a.cusps ? b.placements.map((p) => ({ body: p.body, house: houseFromLongitude(p.lon, a.cusps!) })) : []
     },
-    elementBalance: { a: countElements(a.placements), b: countElements(b.placements) },
+    elementBalance,
     scores: { overall, emotional, communication, warmth, values, stability }
   };
 }
@@ -749,6 +811,7 @@ export { chironIsRetrograde, chironLongitude, chironLongitudeAt, isChironEphemer
 
 export * from "./birth";
 export * from "./geocode";
+export * from "./aspect-patterns";
 
 export * from "./house-system";
 

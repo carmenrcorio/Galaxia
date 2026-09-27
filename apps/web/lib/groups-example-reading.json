@@ -231,6 +231,39 @@
             "confident": true
           }
         ],
+        "patterns": [
+          {
+            "type": "t_square",
+            "planets": [
+              "moon",
+              "saturn",
+              "mercury"
+            ],
+            "focalPlanet": "mercury",
+            "modality": "fixed"
+          },
+          {
+            "type": "stellium",
+            "planets": [
+              "moon",
+              "mars",
+              "pluto",
+              "chiron"
+            ],
+            "sign": "Sagittarius",
+            "count": 4
+          },
+          {
+            "type": "stellium",
+            "planets": [
+              "mercury",
+              "uranus",
+              "neptune"
+            ],
+            "sign": "Aquarius",
+            "count": 3
+          }
+        ],
         "asc": "Leo",
         "mc": "Taurus",
         "cusps": [
@@ -394,6 +427,38 @@
             "retro": false,
             "lonSpeedDegPerDay": 0.01985,
             "confident": true
+          }
+        ],
+        "patterns": [
+          {
+            "type": "t_square",
+            "planets": [
+              "mars",
+              "jupiter",
+              "moon"
+            ],
+            "focalPlanet": "moon",
+            "modality": "mutable"
+          },
+          {
+            "type": "t_square",
+            "planets": [
+              "saturn",
+              "chiron",
+              "sun"
+            ],
+            "focalPlanet": "sun",
+            "modality": "cardinal"
+          },
+          {
+            "type": "t_square",
+            "planets": [
+              "saturn",
+              "chiron",
+              "venus"
+            ],
+            "focalPlanet": "venus",
+            "modality": "cardinal"
           }
         ],
         "asc": "Scorpio",
@@ -561,6 +626,88 @@
             "confident": true
           }
         ],
+        "patterns": [
+          {
+            "type": "t_square",
+            "planets": [
+              "moon",
+              "mars",
+              "uranus"
+            ],
+            "focalPlanet": "uranus",
+            "modality": "fixed"
+          },
+          {
+            "type": "t_square",
+            "planets": [
+              "moon",
+              "mars",
+              "chiron"
+            ],
+            "focalPlanet": "chiron",
+            "modality": "cardinal"
+          },
+          {
+            "type": "t_square",
+            "planets": [
+              "moon",
+              "saturn",
+              "uranus"
+            ],
+            "focalPlanet": "uranus",
+            "modality": "fixed"
+          },
+          {
+            "type": "t_square",
+            "planets": [
+              "moon",
+              "saturn",
+              "chiron"
+            ],
+            "focalPlanet": "chiron",
+            "modality": "cardinal"
+          },
+          {
+            "type": "t_square",
+            "planets": [
+              "uranus",
+              "chiron",
+              "moon"
+            ],
+            "focalPlanet": "moon",
+            "modality": "fixed"
+          },
+          {
+            "type": "t_square",
+            "planets": [
+              "uranus",
+              "chiron",
+              "mars"
+            ],
+            "focalPlanet": "mars",
+            "modality": "fixed"
+          },
+          {
+            "type": "t_square",
+            "planets": [
+              "uranus",
+              "chiron",
+              "saturn"
+            ],
+            "focalPlanet": "saturn",
+            "modality": "cardinal"
+          },
+          {
+            "type": "stellium",
+            "planets": [
+              "sun",
+              "venus",
+              "jupiter"
+            ],
+            "sign": "Taurus",
+            "count": 3
+          }
+        ],
         "asc": "Cancer",
         "mc": "Aries",
         "cusps": [
@@ -724,6 +871,38 @@
             "retro": true,
             "lonSpeedDegPerDay": -0.0446,
             "confident": true
+          }
+        ],
+        "patterns": [
+          {
+            "type": "t_square",
+            "planets": [
+              "jupiter",
+              "north_node",
+              "venus"
+            ],
+            "focalPlanet": "venus",
+            "modality": "cardinal"
+          },
+          {
+            "type": "t_square",
+            "planets": [
+              "jupiter",
+              "chiron",
+              "neptune"
+            ],
+            "focalPlanet": "neptune",
+            "modality": "cardinal"
+          },
+          {
+            "type": "t_square",
+            "planets": [
+              "uranus",
+              "chiron",
+              "neptune"
+            ],
+            "focalPlanet": "neptune",
+            "modality": "cardinal"
           }
         ],
         "asc": "Sagittarius",

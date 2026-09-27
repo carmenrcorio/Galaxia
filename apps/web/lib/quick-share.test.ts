@@ -41,6 +41,14 @@ const baseComparePayload = {
   synastry: {
     scores: { overall: 60 },
     aspects: [{ from: "Sun", to: "Moon", type: "trine", orb: 1.2, harmony: 1 }],
+    elementBalance: {
+      a: { fire: 4, earth: 3, air: 2, water: 1 },
+      b: { fire: 2, earth: 3, air: 2, water: 3 },
+      combined: { fire: 999, earth: 0, air: 0, water: 0 },
+      dominantElements: ["water"],
+      missingElements: ["earth"],
+      balanced: true,
+    },
   },
   generational: { theme: "Shared sky", shared: [], diverged: [] },
 };
@@ -69,6 +77,14 @@ describe("validateQuickSharePersistBody — romantic-minor structural guarantee"
       const p = result.payload as CompareSharePayload;
       expect(p.pairHasMinor).toBe(true);
       expect(p.relationType).toBe("platonic");
+      expect(p.synastry?.elementBalance).toEqual({
+        a: { fire: 4, earth: 3, air: 2, water: 1 },
+        b: { fire: 2, earth: 3, air: 2, water: 3 },
+        combined: { fire: 6, earth: 6, air: 4, water: 4 },
+        dominantElements: ["fire", "earth"],
+        missingElements: [],
+        balanced: false,
+      });
     }
   });
 

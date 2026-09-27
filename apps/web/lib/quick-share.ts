@@ -11,10 +11,14 @@
  */
 
 import {
+  CHART_ELEMENTS,
   COMPARE_RELATION_TYPES,
   isRomanticRelation,
+  summarizePairElementBalance,
   type BirthFormInput,
+  type ElementCounts,
   type NatalChart,
+  type PairElementBalance,
   type RelationType,
 } from "@galaxia/astro";
 
@@ -26,6 +30,8 @@ export type QuickShareKind = "single" | "compare";
 export type SynastryShareShape = {
   scores: Record<string, number>;
   aspects: Array<{ from: string; to: string; type: string; orb: number; harmony: number }>;
+  /** Optional only for backward compatibility with snapshots created before element balance shipped. */
+  elementBalance?: PairElementBalance;
 };
 
 export type GenerationalShareShape = {
@@ -360,7 +366,31 @@ function sanitizeSynastry(raw: unknown): SynastryShareShape | null {
       harmony: item.harmony,
     });
   }
-  return { scores, aspects };
+  const elementBalance =
+    raw.elementBalance === undefined ? undefined : sanitizePairElementBalance(raw.elementBalance);
+  if (raw.elementBalance !== undefined && !elementBalance) return null;
+  return { scores, aspects, ...(elementBalance ? { elementBalance } : {}) };
+}
+
+function sanitizeElementCounts(raw: unknown): ElementCounts | null {
+  if (!isPlainObject(raw)) return null;
+  const counts = { fire: 0, earth: 0, air: 0, water: 0 };
+  for (const element of CHART_ELEMENTS) {
+    const count = raw[element];
+    if (typeof count !== "number" || !Number.isInteger(count) || count < 0) return null;
+    counts[element] = count;
+  }
+  return counts;
+}
+
+function sanitizePairElementBalance(raw: unknown): PairElementBalance | null {
+  if (!isPlainObject(raw)) return null;
+  const a = sanitizeElementCounts(raw.a);
+  const b = sanitizeElementCounts(raw.b);
+  if (!a || !b) return null;
+  // Recompute all pair-level conclusions from the allowlisted per-person
+  // counts. Stored combined/dominant flags can never override real tallies.
+  return summarizePairElementBalance(a, b);
 }
 
 function sanitizeGenerational(raw: unknown): GenerationalShareShape | null {

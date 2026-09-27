@@ -154,6 +154,7 @@ describe("QuickComparePage result order", () => {
     expect(capture.contains(needA)).toBe(true);
     expect(capture.contains(needB)).toBe(true);
     expect(capture.contains(tableHeading)).toBe(true);
+    expect(capture.contains(screen.getByTestId("element-balance-card"))).toBe(true);
     expect(precedes(needA, needB)).toBe(true);
     expect(precedes(needB, tableHeading)).toBe(true);
     expect(screen.getByRole("button", { name: "flows" })).toBeTruthy();

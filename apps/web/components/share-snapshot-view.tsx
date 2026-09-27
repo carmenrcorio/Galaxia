@@ -53,6 +53,7 @@ import { ChartImageExport, chartExportFilename } from "./chart-image-export";
 import { ChartPdfExport } from "./chart-pdf-export";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES } from "./chart-wheel";
 import { DynamicTableSection } from "./dynamic-table-section";
+import { ElementBalanceCard } from "./element-balance-card";
 import { FlowsAndCatchesSection } from "./flows-and-catches-section";
 import { GenerationalSection } from "./generational-section";
 import { NatalSignReveal } from "./natal-sign-reveal";
@@ -362,6 +363,13 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
             ))}
           </DynamicTableSection>
         )}
+        {!framing.blockRomanticMinorRender && payload.synastry?.elementBalance ? (
+          <ElementBalanceCard
+            nameA={personA.display_name}
+            nameB={personB.display_name}
+            balance={payload.synastry.elementBalance}
+          />
+        ) : null}
       </ChartImageExport>
 
       {framing.blockRomanticMinorRender || !payload.synastry ? null : (

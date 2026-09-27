@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   computeNatalChart,
   computeSynastry,
+  interpretPairElementBalance,
   summarizePairElementBalance,
   type ElementCounts,
 } from "../src/index";
@@ -72,5 +73,39 @@ describe("pair element balance", () => {
     expect(balance.balanced).toBe(false);
     expect(balance.dominantElements).toEqual([]);
     expect(balance.missingElements).toEqual(["fire", "earth", "air", "water"]);
+  });
+
+  it("uses the approved dominant and missing interpretations", () => {
+    const balance = summarizePairElementBalance(
+      { fire: 5, earth: 3, air: 2, water: 0 },
+      { fire: 4, earth: 3, air: 3, water: 0 },
+    );
+
+    expect(interpretPairElementBalance(balance)).toEqual([
+      "Running hot. High energy, risk of burnout or competition. Channel it: build something together.",
+      "Emotional check-ins do not happen naturally. Feelings build until they surface some other way.",
+    ]);
+  });
+
+  it("describes co-dominance without choosing one tied element", () => {
+    const balance = summarizePairElementBalance(
+      { fire: 4, earth: 3, air: 2, water: 1 },
+      { fire: 2, earth: 3, air: 2, water: 3 },
+    );
+
+    expect(interpretPairElementBalance(balance)).toEqual([
+      "You share Fire and Earth dominance. More than one element sets the pace, so neither has to carry the whole dynamic.",
+    ]);
+  });
+
+  it("uses the approved balanced interpretation when no element dominates", () => {
+    const balance = summarizePairElementBalance(
+      { fire: 3, earth: 2, air: 3, water: 2 },
+      { fire: 2, earth: 3, air: 2, water: 3 },
+    );
+
+    expect(interpretPairElementBalance(balance)).toEqual([
+      "No element dominates. Versatility but no automatic gear.",
+    ]);
   });
 });

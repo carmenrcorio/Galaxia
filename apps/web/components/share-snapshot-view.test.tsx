@@ -162,6 +162,7 @@ describe("ShareSnapshotView compare order", () => {
           synastry: {
             scores,
             aspects: synastry.aspects,
+            elementBalance: synastry.elementBalance,
           },
           generational,
         }}
@@ -180,6 +181,7 @@ describe("ShareSnapshotView compare order", () => {
     expect(precedes(overall, watch)).toBe(true);
     expect(screen.getByRole("button", { name: "flows" })).toBeTruthy();
     expect(screen.getByText(/and catches/)).toBeTruthy();
+    expect(screen.getByTestId("element-balance-card")).toBeTruthy();
     expect(screen.getByText("Generational call-out")).toBeTruthy();
   });
 });

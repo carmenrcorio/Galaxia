@@ -49,6 +49,7 @@ import { tokens } from "@galaxia/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ChartWheel } from "../../../src/components/chart-wheel";
+import { ElementBalanceCard } from "../../../src/components/element-balance-card";
 import { GenerationalSection } from "../../../src/components/generational-section";
 import { GlossaryTooltip } from "../../../src/components/glossary-tooltip";
 import { InitialAvatar } from "../../../src/components/initial-avatar";
@@ -553,6 +554,12 @@ export default function CompareScreen() {
               {result.synastry.scores.communication} · warmth {result.synastry.scores.warmth}
             </Text>
           </View>
+
+          <ElementBalanceCard
+            nameA={result.personA.display_name}
+            nameB={result.personB.display_name}
+            balance={result.synastry.elementBalance}
+          />
 
           <View style={cardStyle}>
             <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "baseline" }}>

@@ -632,6 +632,56 @@ export function summarizePairElementBalance(a: ElementCounts, b: ElementCounts):
   };
 }
 
+// FOUNDER-REVIEW: Element-balance interpretation copy.
+const DOMINANT_ELEMENT_COPY: Record<ChartElement, string> = {
+  fire: "Running hot. High energy, risk of burnout or competition. Channel it: build something together.",
+  earth: "Grounded and steady. Risk: so comfortable neither reaches.",
+  air: "Ideas move fast, communication easy. Risk: staying in heads, never landing on a decision.",
+  water: "Emotionally attuned beyond words. Risk: absorbing each other's moods until you cannot tell whose is whose.",
+};
+
+// FOUNDER-REVIEW: Missing-element interpretation copy.
+const MISSING_ELEMENT_COPY: Record<ChartElement, string> = {
+  fire: "Neither leads with impulse. Consciously inject energy.",
+  earth: "Follow-through not automatic. Great at dreaming; the to-do list needs a system.",
+  air: "Feel more than analyze. When communication breaks, neither stepped back to think before reacting.",
+  water: "Emotional check-ins do not happen naturally. Feelings build until they surface some other way.",
+};
+
+function titleCaseElement(element: ChartElement): string {
+  return element.charAt(0).toUpperCase() + element.slice(1);
+}
+
+function formatElementList(elements: ChartElement[]): string {
+  const names = elements.map(titleCaseElement);
+  if (names.length < 2) return names[0] ?? "";
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ${names.at(-1)}`;
+}
+
+export function interpretPairElementBalance(balance: PairElementBalance): string[] {
+  const interpretations: string[] = [];
+  const highest = Math.max(...CHART_ELEMENTS.map((element) => balance.combined[element]));
+  if (balance.balanced || balance.dominantElements.length === 0 || highest < 5) {
+    // FOUNDER-REVIEW: Balanced element interpretation copy.
+    interpretations.push("No element dominates. Versatility but no automatic gear.");
+  } else if (balance.dominantElements.length === 1) {
+    interpretations.push(DOMINANT_ELEMENT_COPY[balance.dominantElements[0]!]);
+  } else {
+    // FOUNDER-REVIEW: Co-dominant element interpretation copy.
+    interpretations.push(
+      `You share ${formatElementList(balance.dominantElements)} dominance. More than one element sets the pace, so neither has to carry the whole dynamic.`
+    );
+  }
+
+  for (const element of balance.missingElements) {
+    if (balance.combined[element] === 0) {
+      interpretations.push(MISSING_ELEMENT_COPY[element]);
+    }
+  }
+  return interpretations;
+}
+
 export function computeSynastry(a: NatalChart, b: NatalChart): SynastryResult {
   const aspects: Aspect[] = [];
   for (const pa of a.placements) {

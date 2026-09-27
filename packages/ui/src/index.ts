@@ -18,6 +18,12 @@ export const tokens = {
     air: "#B79AD8",
     water: "#6FB1B8"
   },
+  elementBalance: {
+    fire: "#E8784F",
+    earth: "#7FA883",
+    air: "#D8B85A",
+    water: "#5F9FAF"
+  },
   radii: {
     sm: 8,
     md: 12,

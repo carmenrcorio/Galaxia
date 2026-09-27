@@ -2,4 +2,4 @@
 
 **Trigger**: Compare needs an honest element-balance model before the expanded visual and interpretation can be shared across surfaces.
 
-`[ADDED]` **Pair element balance now includes each person’s Sun-through-Pluto counts, combined counts, every co-dominant element, low or missing elements, and an explicit balanced state.** Tied elements are preserved instead of being resolved by object order.
+`[ADDED]` **Compare now shows each person’s Sun-through-Pluto element mix as a labeled stacked bar, followed by deterministic dominant, co-dominant, missing, or balanced interpretation.** The shared computation preserves tied elements instead of resolving them by object order. The card appears on signed-in Compare, Quick Compare, token shares, mobile Compare, and web chart-image exports.

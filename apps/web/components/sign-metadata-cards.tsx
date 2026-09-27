@@ -117,13 +117,11 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
       <div className="sign-metadata-card__row sign-metadata-card__row--materials">
         <div className="sign-metadata-card__materials">
           <div className="sign-metadata-card__material">
-            <span className="sign-metadata-card__material-head">
-              <span aria-hidden="true" className="sign-metadata-card__metal-dot" />
-              <span>
-                {/* FOUNDER-REVIEW: traditional material reference label. */}
-                <span className="sign-metadata-card__label">Metal</span>
-                <span className="sign-metadata-card__material-value">{metadata.metal}</span>
-              </span>
+            <span aria-hidden="true" className="sign-metadata-card__metal-dot" />
+            <span>
+              {/* FOUNDER-REVIEW: traditional material reference label. */}
+              <span className="sign-metadata-card__label">Metal</span>
+              <span className="sign-metadata-card__material-value">{metadata.metal}</span>
             </span>
             {/* FOUNDER-REVIEW: approved metal significance copy. */}
             <p className="sign-metadata-card__significance" data-testid="metal-significance">
@@ -132,17 +130,15 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
           </div>
 
           <div className="sign-metadata-card__material">
-            <span className="sign-metadata-card__material-head">
-              <span
-                aria-hidden="true"
-                className="sign-metadata-card__dot sign-metadata-card__birthstone-dot"
-                style={{ background: birthstoneColor, boxShadow: `0 0 8px ${birthstoneColor}` }}
-              />
-              <span>
-                {/* FOUNDER-REVIEW: traditional stone reference label. */}
-                <span className="sign-metadata-card__label">Birthstone</span>
-                <span className="sign-metadata-card__material-value">{metadata.birthstone}</span>
-              </span>
+            <span
+              aria-hidden="true"
+              className="sign-metadata-card__dot sign-metadata-card__birthstone-dot"
+              style={{ background: birthstoneColor, boxShadow: `0 0 8px ${birthstoneColor}` }}
+            />
+            <span>
+              {/* FOUNDER-REVIEW: traditional stone reference label. */}
+              <span className="sign-metadata-card__label">Birthstone</span>
+              <span className="sign-metadata-card__material-value">{metadata.birthstone}</span>
             </span>
             {/* FOUNDER-REVIEW: approved birthstone significance copy. */}
             <p className="sign-metadata-card__significance" data-testid="birthstone-significance">

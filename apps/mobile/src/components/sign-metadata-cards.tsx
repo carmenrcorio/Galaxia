@@ -103,7 +103,9 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
       <View style={[rowStyle, dividedRowStyle, materialsStyle]}>
         <View style={materialStyle}>
           <View style={materialHeadStyle}>
-            <View accessibilityElementsHidden style={[dotStyle, { backgroundColor: tokens.colors.goldSoft }]} />
+            <View style={dotColumnStyle}>
+              <View accessibilityElementsHidden style={[dotStyle, { backgroundColor: tokens.colors.goldSoft }]} />
+            </View>
             <View>
               {/* FOUNDER-REVIEW: traditional material reference label. */}
               <Text style={labelStyle}>Metal</Text>
@@ -111,14 +113,16 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
             </View>
           </View>
           {/* FOUNDER-REVIEW: approved metal significance copy. */}
-          <Text style={significanceStyle} testID="metal-significance">
+          <Text style={materialSignificanceStyle} testID="metal-significance">
             {metadata.metalSignificance}
           </Text>
         </View>
 
         <View style={materialStyle}>
           <View style={materialHeadStyle}>
-            <View accessibilityElementsHidden style={[stoneDotStyle, { backgroundColor: birthstoneColor }]} />
+            <View style={dotColumnStyle}>
+              <View accessibilityElementsHidden style={[stoneDotStyle, { backgroundColor: birthstoneColor }]} />
+            </View>
             <View>
               {/* FOUNDER-REVIEW: traditional stone reference label. */}
               <Text style={labelStyle}>Birthstone</Text>
@@ -126,7 +130,7 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
             </View>
           </View>
           {/* FOUNDER-REVIEW: approved birthstone significance copy. */}
-          <Text style={significanceStyle} testID="birthstone-significance">
+          <Text style={materialSignificanceStyle} testID="birthstone-significance">
             {metadata.birthstoneSignificance}
           </Text>
         </View>
@@ -252,8 +256,6 @@ const originStyle = {
   lineHeight: 17,
 } as const;
 
-const significanceStyle = originStyle;
-
 const elementSignificanceStyle = {
   ...originStyle,
   paddingRight: 46,
@@ -270,7 +272,19 @@ const materialStyle = {
 const materialHeadStyle = {
   flexDirection: "row",
   alignItems: "center",
-  gap: 7,
+  gap: 6,
+} as const;
+
+/* The dot gets its own fixed column so the label, value, and significance
+   share one text edge regardless of which dot size is used. */
+const dotColumnStyle = {
+  width: 12,
+  alignItems: "center",
+} as const;
+
+const materialSignificanceStyle = {
+  ...originStyle,
+  paddingLeft: 18,
 } as const;
 
 const stoneDotStyle = {

@@ -734,14 +734,20 @@ select.field--rect {
   display: grid;
   gap: 16px;
 }
+/* The dot gets its own fixed column so the label, value, and significance
+   share one text edge regardless of which dot size is used. */
 .sign-metadata-card__material {
   display: grid;
+  grid-template-columns: 12px 1fr;
+  align-items: center;
   gap: 6px;
 }
-.sign-metadata-card__material-head {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
+.sign-metadata-card__material > .sign-metadata-card__dot,
+.sign-metadata-card__material > .sign-metadata-card__metal-dot {
+  justify-self: center;
+}
+.sign-metadata-card__material > .sign-metadata-card__significance {
+  grid-column: 2;
 }
 .sign-metadata-card__metal-dot {
   background: linear-gradient(135deg, var(--cream), var(--mist2) 48%, var(--gold-soft));

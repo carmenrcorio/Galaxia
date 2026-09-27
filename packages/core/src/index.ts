@@ -107,6 +107,8 @@ export * from "./glyphs";
 
 export * from "./chart-wheel-geometry";
 
+export * from "./planet-tooltip";
+
 export * from "./create-person";
 
 export * from "./birth-data-invite";

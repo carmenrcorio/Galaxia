@@ -46,7 +46,7 @@ import {
 } from "@galaxia/core";
 import React, { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { designColor } from "../lib/design";
-import { WheelPlanetTooltip, type WheelPlanetTooltipMode } from "./wheel-planet-tooltip";
+import { WheelPlanetTooltip, wheelTooltipMode, type WheelPlanetTooltipMode } from "./wheel-planet-tooltip";
 
 export const COMPARE_WHEEL_NEEDS_HOUSES = CORE_COMPARE_WHEEL_NEEDS_HOUSES;
 export const OVERLAY_ASPECTS_MISSING_NOTE = CORE_OVERLAY_ASPECTS_MISSING_NOTE;
@@ -205,7 +205,7 @@ export function ChartWheel({
     if (!interactive) return;
     if (e.pointerType === "touch") return;
     setFocus({ owner, body });
-    if (tooltipsOn) openTip(key, "hover");
+    if (tooltipsOn) openTip(key, wheelTooltipMode());
   }
 
   function onPlanetPointerLeave(e: ReactPointerEvent) {
@@ -222,7 +222,7 @@ export function ChartWheel({
     setFocus(sameGlyph ? null : { owner, body });
     if (!tooltipsOn) return;
     if (sameGlyph) closeTip();
-    else openTip(key, "touch");
+    else openTip(key, wheelTooltipMode());
   }
 
   const color = (name: string) => designColor(name, exportSafe);
@@ -318,7 +318,7 @@ export function ChartWheel({
               onFocus={() => {
                 if (!tooltipsOn) return;
                 setFocus({ owner, body });
-                openTip(key, "hover");
+                openTip(key, wheelTooltipMode());
               }}
               onBlur={() => {
                 if (!tooltipsOn) return;
@@ -332,10 +332,22 @@ export function ChartWheel({
                 planetTooltips?.onSeeFullReading(body);
                 closeTip();
               }}
-              style={{ cursor: interactive ? "pointer" : undefined, opacity: dimPlanet ? 0.35 : 1 }}
+              style={{
+                cursor: interactive ? "pointer" : undefined,
+                opacity: dimPlanet ? 0.35 : 1,
+                // Own ring below instead: the browser default boxes a round
+                // glyph. It tracks the open card, so focus stays visible.
+                outline: tooltipsOn ? "none" : undefined,
+              }}
             >
               {/* Keep a large invisible touch target on phone without crowding visuals. */}
               <circle cx={px} cy={py} r={layout.glyphR + 9} fill="transparent" />
+              {tipKey?.key === key ? (
+                <circle
+                  cx={px} cy={py} r={layout.glyphR + 4}
+                  fill="none" stroke={color("gold")} strokeWidth="1.5" strokeOpacity="0.85"
+                />
+              ) : null}
               <circle
                 cx={px} cy={py} r={layout.glyphR}
                 fill={layout.planetFill}
@@ -357,10 +369,7 @@ export function ChartWheel({
           mode={tipKey.mode}
           elementToken={signElement(tipPlanet.sign)}
           getAnchorRect={() => glyphRefs.current[tipKey.key]?.getBoundingClientRect() ?? null}
-          getWheelCenterX={() => {
-            const rect = svgRef.current?.getBoundingClientRect();
-            return rect ? rect.left + rect.width / 2 : null;
-          }}
+          getWheelRect={() => svgRef.current?.getBoundingClientRect() ?? null}
           onSeeFullReading={() => {
             closeTip();
             setFocus(null);

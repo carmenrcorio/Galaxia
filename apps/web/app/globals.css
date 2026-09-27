@@ -1064,6 +1064,9 @@ select.field--rect {
   bottom: 0;
   top: auto;
   width: auto;
+  /* Opaque, unlike the small hover card: a full-width sheet sits over body
+     copy, and the card's 3% translucency lets that copy read through. */
+  background: linear-gradient(180deg, rgb(29, 22, 64), rgb(10, 7, 23));
   padding: 10px 18px calc(20px + env(safe-area-inset-bottom));
   border-radius: 22px 22px 0 0;
   border-bottom: none;

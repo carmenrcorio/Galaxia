@@ -9,11 +9,14 @@
  * that ChartImageExport takes of the wheel section.
  *
  * Two shapes, one content model:
- *  - "hover" (fine pointer): anchored beside the glyph, pushed radially away
- *    from the wheel centre so the card never covers the centre or the ring of
- *    other glyphs. Re-measured on scroll and resize while open.
- *  - "touch" (coarse pointer): a bottom sheet, because a 240px card cannot sit
- *    beside a 300px wheel on a phone without landing on top of it.
+ *  - "hover" (fine pointer): vertically centred on the glyph and pushed out
+ *    past the wheel's own edge, on whichever side the glyph sits. That keeps
+ *    it beside the planet the reader is pointing at while leaving the centre,
+ *    the sign band, and every other glyph uncovered. Re-measured on scroll
+ *    and resize while open.
+ *  - "touch" (coarse pointer, or a viewport too narrow for the card to fit
+ *    beside the wheel): a bottom sheet, because a 240px card cannot sit beside
+ *    a 300px wheel on a phone without landing on top of it.
  */
 
 import {
@@ -33,13 +36,30 @@ const SWIPE_DISMISS_PX = 56;
 
 export type WheelPlanetTooltipMode = "hover" | "touch";
 
+/**
+ * Narrowest viewport that can hold the card beside the wheel: the wheel's own
+ * max width plus a card and its gaps on one side.
+ */
+const HOVER_CARD_MIN_VIEWPORT = 306 + WHEEL_TOOLTIP_WIDTH + GLYPH_GAP + VIEWPORT_EDGE * 2;
+
+/**
+ * Which shape the card takes, decided by the device rather than by whichever
+ * event opened it: a tap both fires pointer events and focuses the glyph, so
+ * per-event modes flip-flop.
+ */
+export function wheelTooltipMode(): WheelPlanetTooltipMode {
+  if (typeof window === "undefined") return "hover";
+  if (window.matchMedia?.("(pointer: coarse)").matches) return "touch";
+  return window.innerWidth < HOVER_CARD_MIN_VIEWPORT ? "touch" : "hover";
+}
+
 export type WheelPlanetTooltipProps = {
   content: PlanetTooltipContent;
   mode: WheelPlanetTooltipMode;
   /** Live glyph rect. A function so scroll and resize can re-measure it. */
   getAnchorRect: () => DOMRect | null;
-  /** Viewport x of the wheel centre. The card is pushed away from it. */
-  getWheelCenterX: () => number | null;
+  /** Live wheel rect. Picks the side and the edge the card clears. */
+  getWheelRect: () => DOMRect | null;
   /** Element colour token for the sign band this glyph sits in. */
   elementToken: string;
   onSeeFullReading: () => void;
@@ -52,14 +72,16 @@ export type WheelPlanetTooltipProps = {
 
 function anchoredStyle(
   anchor: DOMRect,
-  wheelCenterX: number | null,
+  wheel: DOMRect | null,
   cardHeight: number,
 ): CSSProperties {
   const glyphCenterX = anchor.left + anchor.width / 2;
-  const pushRight = wheelCenterX == null ? true : glyphCenterX >= wheelCenterX;
+  const pushRight = wheel == null ? true : glyphCenterX >= wheel.left + wheel.width / 2;
+  // Clear the wheel's own edge, not just the glyph's, so the card never lands
+  // on the sign band or a neighbouring glyph.
   const rawLeft = pushRight
-    ? anchor.right + GLYPH_GAP
-    : anchor.left - GLYPH_GAP - WHEEL_TOOLTIP_WIDTH;
+    ? Math.max(anchor.right, wheel?.right ?? anchor.right) + GLYPH_GAP
+    : Math.min(anchor.left, wheel?.left ?? anchor.left) - GLYPH_GAP - WHEEL_TOOLTIP_WIDTH;
   const maxLeft = Math.max(VIEWPORT_EDGE, window.innerWidth - WHEEL_TOOLTIP_WIDTH - VIEWPORT_EDGE);
   const left = Math.max(VIEWPORT_EDGE, Math.min(rawLeft, maxLeft));
 
@@ -74,7 +96,7 @@ export function WheelPlanetTooltip({
   content,
   mode,
   getAnchorRect,
-  getWheelCenterX,
+  getWheelRect,
   elementToken,
   onSeeFullReading,
   onRequestClose,
@@ -99,7 +121,7 @@ export function WheelPlanetTooltip({
       const anchor = getAnchorRect();
       if (!anchor) return;
       const height = cardRef.current?.offsetHeight ?? 0;
-      setCoords(anchoredStyle(anchor, getWheelCenterX(), height));
+      setCoords(anchoredStyle(anchor, getWheelRect(), height));
     }
     place();
     window.addEventListener("scroll", place, true);
@@ -108,7 +130,7 @@ export function WheelPlanetTooltip({
       window.removeEventListener("scroll", place, true);
       window.removeEventListener("resize", place);
     };
-  }, [mode, getAnchorRect, getWheelCenterX, content.name, mounted]);
+  }, [mode, getAnchorRect, getWheelRect, content.name, mounted]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {

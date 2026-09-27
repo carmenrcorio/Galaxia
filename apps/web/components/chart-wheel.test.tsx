@@ -13,6 +13,7 @@ import { ChartWheel } from "./chart-wheel";
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 function chartStub(overrides: Partial<NatalChart> = {}): NatalChart {
@@ -128,6 +129,7 @@ describe("ChartWheel planet glyph card", () => {
   });
 
   it("opens as a bottom sheet on a touch tap, and the same tap again closes it", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("coarse"), media: query }));
     render(
       <ChartWheel
         chart={chartStub()}

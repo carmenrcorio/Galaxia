@@ -35,6 +35,7 @@ import { HousesUnavailableCard } from "../../components/houses-unavailable-card"
 import { QuickChartShell } from "../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../components/save-to-galaxy-button";
 import { ShareLinkButton } from "../../components/share-link-button";
+import { SingleChartGenerationalSummary } from "../../components/single-chart-generational-summary";
 import { RetrogradeBadge } from "../../components/retrograde-badge";
 import { Spinner } from "../../components/spinner";
 import { BODY_GLYPH, signElement } from "../../lib/design";
@@ -289,6 +290,8 @@ export default function QuickChartPage() {
               </div>
             ) : null}
           </section>
+
+          <SingleChartGenerationalSummary chart={result.chart} />
 
           <section className="glass-card fade-in fade-in-delay-2" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>
             <SaveToGalaxyButton birthInput={input} defaultName={name || undefined} />

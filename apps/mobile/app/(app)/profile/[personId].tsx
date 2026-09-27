@@ -10,12 +10,15 @@ import {
   computeSynastry,
   detectAspectPatterns,
   formatMomentSkyContext,
+  getFamilyBridge,
   getPlutoEraReading,
   getPlutoWorkView,
   houseSystemLabelForChart,
   isProfessionalPersonRelation,
   ownerLocalDate,
   parseMomentTransitSnapshot,
+  PLUTO_SIGN_EXTENDED,
+  plutoGenerationLabel,
   plutoSourceLine,
   selectNatalAspectGeometry,
   whenUTCForOwnerLocalDate,
@@ -106,6 +109,7 @@ export default function PersonProfileScreen() {
   const [velaPins, setVelaPins] = useState<VelaPinRow[]>([]);
   const [editOpen, setEditOpen] = useState(false);
   const [editUpgradeTo, setEditUpgradeTo] = useState<Exclude<ChartPrecision, "none"> | null>(null);
+  const [viewerPlutoSign, setViewerPlutoSign] = useState<SignKey | null>(null);
 
   const resolvedPersonId = useMemo(() => (Array.isArray(personId) ? personId[0] : personId), [personId]);
 
@@ -116,6 +120,7 @@ export default function PersonProfileScreen() {
 
   const loadProfile = async () => {
     if (!session?.user.id || !resolvedPersonId) return;
+    setViewerPlutoSign(null);
 
     // A unique index on people(owner_id) WHERE is_self guarantees at most
     // one row here — no ordering/limit tie-breaker needed.
@@ -166,6 +171,28 @@ export default function PersonProfileScreen() {
     setNotes(noteData ?? []);
 
     void acknowledgeConnectIfNeeded(session.user.id, personRow);
+
+    if (personRow.is_self) {
+      setViewerPlutoSign(null);
+    } else {
+      const { data: selfPerson } = await supabase
+        .from("people")
+        .select("id")
+        .eq("owner_id", session.user.id)
+        .eq("is_self", true)
+        .maybeSingle();
+      if (selfPerson?.id) {
+        const { data: selfChart } = await supabase
+          .from("charts")
+          .select("data")
+          .eq("person_id", selfPerson.id)
+          .maybeSingle();
+        const selfPluto = (selfChart?.data as NatalChart | undefined)?.generational?.pluto;
+        setViewerPlutoSign(selfPluto?.confident ? (selfPluto.sign as SignKey) : null);
+      } else {
+        setViewerPlutoSign(null);
+      }
+    }
 
     if (shouldShowLiveTransits(personRow)) {
       const localDate = ownerLocalDate();
@@ -549,9 +576,14 @@ export default function PersonProfileScreen() {
             ) : null}
 
             <View style={cardStyle}>
-                            <Text style={cardTitle}>{PERSON_TAB_LABEL.generational}</Text>
+              <Text style={cardTitle}>Generational signature</Text>
               <Text style={vocabSubhead}>{PERSON_TAB_VOCAB.generational ?? "Generational"}</Text>
               <Text style={badgeStyle}>Reads from your birth year</Text>
+              {chart.generational.pluto.confident ? (
+                <Text style={[cardBody, { color: tokens.colors.cream, fontWeight: "700" }]}>
+                  {plutoGenerationLabel(chart.generational.pluto.sign)}
+                </Text>
+              ) : null}
               <Text style={cardBody}>{chart.generational.cohortLabel}</Text>
               <Text style={cardBody}>
                 Uranus in {chart.generational.uranus.sign}: {describeGenerationalArchetype("Uranus", chart.generational.uranus.sign)}
@@ -567,7 +599,8 @@ export default function PersonProfileScreen() {
                 const era = getPlutoEraReading(sign);
                 const professional = isProfessionalPersonRelation(person.relation);
                 const work = professional ? getPlutoWorkView(sign) : null;
-                if (!era && !work) return null;
+                const extended = PLUTO_SIGN_EXTENDED[sign] ?? null;
+                if (!era && !work && !extended) return null;
                 return (
                   <View style={{ gap: 6, marginTop: 8 }}>
                     {work ? (
@@ -592,6 +625,46 @@ export default function PersonProfileScreen() {
                       </>
                     ) : null}
                     <Text style={[cardBody, { color: tokens.colors.mist2 }]}>{plutoSourceLine(sign)}</Text>
+                    {extended ? (
+                      <>
+                        <Text style={domainStyle}>The corruption signature</Text>
+                        <Text style={cardBody}>{extended.corruptionSignature}</Text>
+                        {extended.historicalFigures.length > 0 ? (
+                          <View style={{ gap: 6 }}>
+                            <Text style={domainStyle}>Others who carried this</Text>
+                            {extended.historicalFigures.map((figure) => (
+                              <View key={figure.name} style={{ gap: 2 }}>
+                                <Text style={[cardBody, { color: tokens.colors.cream, fontWeight: "700" }]}>
+                                  {figure.name}: {figure.knownFor}
+                                </Text>
+                                <Text style={cardBody}>{figure.plutoBridge}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        ) : null}
+                        {extended.eraEvents.length > 0 ? (
+                          <View style={{ gap: 6 }}>
+                            <Text style={domainStyle}>What they lived through</Text>
+                            {extended.eraEvents.map((event) => (
+                              <View key={event.label} style={{ gap: 2 }}>
+                                <Text style={[cardBody, { color: tokens.colors.cream, fontWeight: "700" }]}>{event.label}</Text>
+                                <Text style={cardBody}>{event.detail}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </View>
+                );
+              })() : null}
+              {!person.is_self && viewerPlutoSign && chart.generational.pluto.confident ? (() => {
+                const bridge = getFamilyBridge(viewerPlutoSign, chart.generational.pluto.sign);
+                if (!bridge) return null;
+                return (
+                  <View style={nestedCallout}>
+                    <Text style={domainStyle}>You + {person.relation || person.display_name}</Text>
+                    <Text style={cardBody}>{bridge}</Text>
                   </View>
                 );
               })() : null}
@@ -783,6 +856,24 @@ const cardTitle = {
 const cardBody = {
   color: tokens.colors.mist,
   lineHeight: 20
+} as const;
+
+const domainStyle = {
+  color: tokens.colors.mist2,
+  fontSize: 11,
+  fontWeight: "700",
+  letterSpacing: 1.2,
+  textTransform: "uppercase"
+} as const;
+
+const nestedCallout = {
+  marginTop: 8,
+  padding: 12,
+  gap: 4,
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: tokens.colors.line,
+  backgroundColor: "rgba(255,255,255,0.025)"
 } as const;
 
 const vocabSubhead = {

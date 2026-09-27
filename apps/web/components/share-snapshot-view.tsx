@@ -60,6 +60,7 @@ import { RetrogradeBadge } from "./retrograde-badge";
 import { HousesUnavailableCard } from "./houses-unavailable-card";
 import { QuickChartShell } from "./quick-chart-shell";
 import { SaveToGalaxyButton } from "./save-to-galaxy-button";
+import { SingleChartGenerationalSummary } from "./single-chart-generational-summary";
 
 function getSign(chart: NatalChart, body: string) {
   const p = chart.placements.find((pl) => pl.body === body);
@@ -207,6 +208,8 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
           </div>
         ) : null}
       </section>
+
+      <SingleChartGenerationalSummary chart={payload.chart} />
 
       <section className="glass-card fade-in fade-in-delay-2" style={{ marginTop: 16, textAlign: "center", display: "grid", gap: 12 }}>
         {giftBirth ? (

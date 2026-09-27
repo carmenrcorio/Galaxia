@@ -50,83 +50,102 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
         {SIGN_GLYPH[sunSign]}
       </span>
 
-      <div className="sign-metadata-card__identity">
-        <span className="sign-metadata-card__pill">
-          <span className="sign-metadata-card__label">
-            <GlossaryTerm glossarySlug="element">Element</GlossaryTerm>
+      <div className="sign-metadata-card__row sign-metadata-card__row--identity">
+        <div className="sign-metadata-card__identity">
+          <span className="sign-metadata-card__pill">
+            <span className="sign-metadata-card__label">
+              <GlossaryTerm glossarySlug="element">Element</GlossaryTerm>
+            </span>
+            <span className="sign-metadata-card__value" style={{ color: elementColor }}>
+              <span
+                aria-hidden="true"
+                className="sign-metadata-card__dot"
+                style={{ background: elementColor, boxShadow: `0 0 8px ${elementColor}` }}
+              />
+              {titleCase(metadata.element)}
+            </span>
           </span>
-          <span className="sign-metadata-card__value" style={{ color: elementColor }}>
-            <span
-              aria-hidden="true"
-              className="sign-metadata-card__dot"
-              style={{ background: elementColor, boxShadow: `0 0 8px ${elementColor}` }}
-            />
-            {titleCase(metadata.element)}
-          </span>
-        </span>
 
-        <span className="sign-metadata-card__pill">
-          <span className="sign-metadata-card__label">
-            <GlossaryTerm glossarySlug="modality">Modality</GlossaryTerm>
+          <span className="sign-metadata-card__pill">
+            <span className="sign-metadata-card__label">
+              <GlossaryTerm glossarySlug="modality">Modality</GlossaryTerm>
+            </span>
+            <span className="sign-metadata-card__value sign-metadata-card__value--secondary">
+              {titleCase(metadata.modality)}
+            </span>
           </span>
-          <span className="sign-metadata-card__value sign-metadata-card__value--secondary">
-            {titleCase(metadata.modality)}
-          </span>
-        </span>
 
-        <span className="sign-metadata-card__pill">
-          <span className="sign-metadata-card__label">
-            <GlossaryTerm glossarySlug="ruling-planet">Ruling planet</GlossaryTerm>
+          <span className="sign-metadata-card__pill">
+            <span className="sign-metadata-card__label">
+              <GlossaryTerm glossarySlug="ruling-planet">Ruling planet</GlossaryTerm>
+            </span>
+            <span className="sign-metadata-card__value">
+              <span aria-hidden="true" className="sign-metadata-card__planet">{planetGlyph}</span>
+              {metadata.rulingPlanet}
+            </span>
           </span>
-          <span className="sign-metadata-card__value">
-            <span aria-hidden="true" className="sign-metadata-card__planet">{planetGlyph}</span>
-            {metadata.rulingPlanet}
-          </span>
-        </span>
+        </div>
+
+        {/* FOUNDER-REVIEW: approved element significance copy. */}
+        <p className="sign-metadata-card__significance" data-testid="element-significance">
+          {metadata.elementSignificance}
+        </p>
       </div>
 
-      <button
-        type="button"
-        aria-expanded={originOpen}
-        className="sign-metadata-card__symbol"
-        // FOUNDER-REVIEW: accessible action label for the approved symbol explanation.
-        aria-label={`${originOpen ? "Hide" : "Read"} why ${sunSign} uses the ${metadata.symbol}`}
-        onClick={() => setOriginOpen((open) => !open)}
-      >
-        <span className="sign-metadata-card__symbol-head">
-          {/* FOUNDER-REVIEW: symbol heading follows the approved design structure. */}
-          <span className="sign-metadata-card__symbol-name">The {metadata.symbol}</span>
-          <span aria-hidden="true" className="sign-metadata-card__chevron">
-            {originOpen ? "▲" : "▼"}
+      <div className="sign-metadata-card__row sign-metadata-card__row--symbol">
+        <button
+          type="button"
+          aria-expanded={originOpen}
+          className="sign-metadata-card__symbol"
+          // FOUNDER-REVIEW: accessible action label for the approved symbol explanation.
+          aria-label={`${originOpen ? "Hide" : "Read"} why ${sunSign} uses the ${metadata.symbol}`}
+          onClick={() => setOriginOpen((open) => !open)}
+        >
+          <span className="sign-metadata-card__symbol-head">
+            {/* FOUNDER-REVIEW: symbol heading follows the approved design structure. */}
+            <span className="sign-metadata-card__symbol-name">The {metadata.symbol}</span>
+            <span aria-hidden="true" className="sign-metadata-card__chevron">
+              {originOpen ? "▲" : "▼"}
+            </span>
           </span>
-        </span>
-        <span className="sign-metadata-card__origin">
-          {originOpen ? metadata.symbolOrigin : firstSentence(metadata.symbolOrigin)}
-        </span>
-      </button>
+          <span className="sign-metadata-card__origin">
+            {originOpen ? metadata.symbolOrigin : firstSentence(metadata.symbolOrigin)}
+          </span>
+        </button>
+      </div>
 
-      <div className="sign-metadata-card__materials">
-        <span className="sign-metadata-card__material">
-          <span aria-hidden="true" className="sign-metadata-card__metal-dot" />
-          <span>
-            {/* FOUNDER-REVIEW: traditional material reference label. */}
-            <span className="sign-metadata-card__label">Metal</span>
-            <span className="sign-metadata-card__material-value">{metadata.metal}</span>
-          </span>
-        </span>
+      <div className="sign-metadata-card__row sign-metadata-card__row--materials">
+        <div className="sign-metadata-card__materials">
+          <div className="sign-metadata-card__material">
+            <span aria-hidden="true" className="sign-metadata-card__metal-dot" />
+            <span>
+              {/* FOUNDER-REVIEW: traditional material reference label. */}
+              <span className="sign-metadata-card__label">Metal</span>
+              <span className="sign-metadata-card__material-value">{metadata.metal}</span>
+            </span>
+            {/* FOUNDER-REVIEW: approved metal significance copy. */}
+            <p className="sign-metadata-card__significance" data-testid="metal-significance">
+              {metadata.metalSignificance}
+            </p>
+          </div>
 
-        <span className="sign-metadata-card__material">
-          <span
-            aria-hidden="true"
-            className="sign-metadata-card__dot sign-metadata-card__birthstone-dot"
-            style={{ background: birthstoneColor, boxShadow: `0 0 8px ${birthstoneColor}` }}
-          />
-          <span>
-            {/* FOUNDER-REVIEW: traditional stone reference label. */}
-            <span className="sign-metadata-card__label">Birthstone</span>
-            <span className="sign-metadata-card__material-value">{metadata.birthstone}</span>
-          </span>
-        </span>
+          <div className="sign-metadata-card__material">
+            <span
+              aria-hidden="true"
+              className="sign-metadata-card__dot sign-metadata-card__birthstone-dot"
+              style={{ background: birthstoneColor, boxShadow: `0 0 8px ${birthstoneColor}` }}
+            />
+            <span>
+              {/* FOUNDER-REVIEW: traditional stone reference label. */}
+              <span className="sign-metadata-card__label">Birthstone</span>
+              <span className="sign-metadata-card__material-value">{metadata.birthstone}</span>
+            </span>
+            {/* FOUNDER-REVIEW: approved birthstone significance copy. */}
+            <p className="sign-metadata-card__significance" data-testid="birthstone-significance">
+              {metadata.birthstoneSignificance}
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

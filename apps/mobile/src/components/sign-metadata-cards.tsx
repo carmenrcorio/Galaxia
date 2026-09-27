@@ -47,67 +47,92 @@ export function SignMetadataCards({ chart }: { chart: NatalChart }) {
         {SIGN_GLYPH[sunSign]}
       </Text>
 
-      <View style={identityStyle}>
-        <View style={pillStyle}>
-          <GlossaryTooltip glossarySlug="element" style={labelStyle}>Element</GlossaryTooltip>
-          <View style={inlineValueStyle}>
-            <View
-              accessibilityElementsHidden
-              style={[dotStyle, { backgroundColor: elementColor }]}
-            />
-            <Text style={[pillValueStyle, { color: elementColor }]}>{titleCase(metadata.element)}</Text>
+      <View style={rowStyle}>
+        <View style={identityStyle}>
+          <View style={pillStyle}>
+            <GlossaryTooltip glossarySlug="element" style={labelStyle}>Element</GlossaryTooltip>
+            <View style={inlineValueStyle}>
+              <View
+                accessibilityElementsHidden
+                style={[dotStyle, { backgroundColor: elementColor }]}
+              />
+              <Text style={[pillValueStyle, { color: elementColor }]}>{titleCase(metadata.element)}</Text>
+            </View>
+          </View>
+
+          <View style={pillStyle}>
+            <GlossaryTooltip glossarySlug="modality" style={labelStyle}>Modality</GlossaryTooltip>
+            <Text style={[pillValueStyle, { color: tokens.colors.mist }]}>{titleCase(metadata.modality)}</Text>
+          </View>
+
+          <View style={pillStyle}>
+            <GlossaryTooltip glossarySlug="ruling-planet" style={labelStyle}>Ruling planet</GlossaryTooltip>
+            <View style={inlineValueStyle}>
+              <Text accessibilityElementsHidden style={planetStyle}>{planetGlyph}</Text>
+              <Text style={pillValueStyle}>{metadata.rulingPlanet}</Text>
+            </View>
           </View>
         </View>
 
-        <View style={pillStyle}>
-          <GlossaryTooltip glossarySlug="modality" style={labelStyle}>Modality</GlossaryTooltip>
-          <Text style={[pillValueStyle, { color: tokens.colors.mist }]}>{titleCase(metadata.modality)}</Text>
-        </View>
-
-        <View style={pillStyle}>
-          <GlossaryTooltip glossarySlug="ruling-planet" style={labelStyle}>Ruling planet</GlossaryTooltip>
-          <View style={inlineValueStyle}>
-            <Text accessibilityElementsHidden style={planetStyle}>{planetGlyph}</Text>
-            <Text style={pillValueStyle}>{metadata.rulingPlanet}</Text>
-          </View>
-        </View>
+        {/* FOUNDER-REVIEW: approved element significance copy. */}
+        <Text style={elementSignificanceStyle} testID="element-significance">
+          {metadata.elementSignificance}
+        </Text>
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ expanded: originOpen }}
-        // FOUNDER-REVIEW: accessible action label for the approved symbol explanation.
-        accessibilityLabel={`${originOpen ? "Hide" : "Read"} why ${sunSign} uses the ${metadata.symbol}`}
-        onPress={() => setOriginOpen((open) => !open)}
-        style={symbolStyle}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          {/* FOUNDER-REVIEW: symbol heading follows the approved design structure. */}
-          <Text style={symbolNameStyle}>The {metadata.symbol}</Text>
-          <Text accessibilityElementsHidden style={chevronStyle}>{originOpen ? "▲" : "▼"}</Text>
-        </View>
-        <Text style={originStyle}>
-          {originOpen ? metadata.symbolOrigin : firstSentence(metadata.symbolOrigin)}
-        </Text>
-      </Pressable>
-
-      <View style={materialsStyle}>
-        <View style={materialStyle}>
-          <View accessibilityElementsHidden style={[dotStyle, { backgroundColor: tokens.colors.goldSoft }]} />
-          <View>
-            {/* FOUNDER-REVIEW: traditional material reference label. */}
-            <Text style={labelStyle}>Metal</Text>
-            <Text style={materialValueStyle}>{metadata.metal}</Text>
+      <View style={[rowStyle, dividedRowStyle]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: originOpen }}
+          // FOUNDER-REVIEW: accessible action label for the approved symbol explanation.
+          accessibilityLabel={`${originOpen ? "Hide" : "Read"} why ${sunSign} uses the ${metadata.symbol}`}
+          onPress={() => setOriginOpen((open) => !open)}
+          style={symbolStyle}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            {/* FOUNDER-REVIEW: symbol heading follows the approved design structure. */}
+            <Text style={symbolNameStyle}>The {metadata.symbol}</Text>
+            <Text accessibilityElementsHidden style={chevronStyle}>{originOpen ? "▲" : "▼"}</Text>
           </View>
+          <Text style={originStyle}>
+            {originOpen ? metadata.symbolOrigin : firstSentence(metadata.symbolOrigin)}
+          </Text>
+        </Pressable>
+      </View>
+
+      <View style={[rowStyle, dividedRowStyle, materialsStyle]}>
+        <View style={materialStyle}>
+          <View style={materialHeadStyle}>
+            <View style={dotColumnStyle}>
+              <View accessibilityElementsHidden style={[dotStyle, { backgroundColor: tokens.colors.goldSoft }]} />
+            </View>
+            <View>
+              {/* FOUNDER-REVIEW: traditional material reference label. */}
+              <Text style={labelStyle}>Metal</Text>
+              <Text style={materialValueStyle}>{metadata.metal}</Text>
+            </View>
+          </View>
+          {/* FOUNDER-REVIEW: approved metal significance copy. */}
+          <Text style={materialSignificanceStyle} testID="metal-significance">
+            {metadata.metalSignificance}
+          </Text>
         </View>
 
         <View style={materialStyle}>
-          <View accessibilityElementsHidden style={[stoneDotStyle, { backgroundColor: birthstoneColor }]} />
-          <View>
-            {/* FOUNDER-REVIEW: traditional stone reference label. */}
-            <Text style={labelStyle}>Birthstone</Text>
-            <Text style={materialValueStyle}>{metadata.birthstone}</Text>
+          <View style={materialHeadStyle}>
+            <View style={dotColumnStyle}>
+              <View accessibilityElementsHidden style={[stoneDotStyle, { backgroundColor: birthstoneColor }]} />
+            </View>
+            <View>
+              {/* FOUNDER-REVIEW: traditional stone reference label. */}
+              <Text style={labelStyle}>Birthstone</Text>
+              <Text style={materialValueStyle}>{metadata.birthstone}</Text>
+            </View>
           </View>
+          {/* FOUNDER-REVIEW: approved birthstone significance copy. */}
+          <Text style={materialSignificanceStyle} testID="birthstone-significance">
+            {metadata.birthstoneSignificance}
+          </Text>
         </View>
       </View>
     </View>
@@ -122,8 +147,8 @@ const cardStyle = {
   borderWidth: 1,
   borderColor: tokens.colors.line,
   paddingHorizontal: 14,
-  paddingVertical: 13,
-  gap: 8,
+  paddingVertical: 15,
+  gap: 14,
 } as const;
 
 const eyebrowStyle = {
@@ -132,6 +157,18 @@ const eyebrowStyle = {
   fontSize: 10,
   letterSpacing: 2.2,
   textTransform: "uppercase",
+} as const;
+
+/* Each row is its own band so element, symbol, and materials read as separate ideas. */
+const rowStyle = {
+  zIndex: 1,
+  gap: 11,
+} as const;
+
+const dividedRowStyle = {
+  paddingTop: 18,
+  borderTopWidth: 1,
+  borderTopColor: "rgba(183,154,216,0.14)",
 } as const;
 
 const zodiacStyle = {
@@ -148,7 +185,6 @@ const identityStyle = {
   flexDirection: "row",
   flexWrap: "wrap",
   gap: 6,
-  zIndex: 1,
 } as const;
 
 const pillStyle = {
@@ -198,8 +234,7 @@ const planetStyle = {
 } as const;
 
 const symbolStyle = {
-  zIndex: 1,
-  gap: 3,
+  gap: 5,
   paddingRight: 46,
 } as const;
 
@@ -221,21 +256,35 @@ const originStyle = {
   lineHeight: 17,
 } as const;
 
+const elementSignificanceStyle = {
+  ...originStyle,
+  paddingRight: 46,
+} as const;
+
 const materialsStyle = {
-  flexDirection: "row",
-  flexWrap: "wrap",
-  alignItems: "center",
-  gap: 22,
-  paddingTop: 8,
-  borderTopWidth: 1,
-  borderTopColor: "rgba(183,154,216,0.14)",
-  zIndex: 1,
+  gap: 16,
 } as const;
 
 const materialStyle = {
+  gap: 6,
+} as const;
+
+const materialHeadStyle = {
   flexDirection: "row",
   alignItems: "center",
-  gap: 7,
+  gap: 6,
+} as const;
+
+/* The dot gets its own fixed column so the label, value, and significance
+   share one text edge regardless of which dot size is used. */
+const dotColumnStyle = {
+  width: 12,
+  alignItems: "center",
+} as const;
+
+const materialSignificanceStyle = {
+  ...originStyle,
+  paddingLeft: 18,
 } as const;
 
 const stoneDotStyle = {

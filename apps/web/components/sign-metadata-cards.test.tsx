@@ -45,6 +45,30 @@ describe("SignMetadataCards", () => {
     expect(screen.getByText("Ruling planet").closest(".glossary-term")).toBeTruthy();
   });
 
+  it("explains the element, metal, and birthstone without a tap", () => {
+    render(<SignMetadataCards chart={chart()} />);
+
+    expect(screen.getByTestId("element-significance").textContent).toBe(
+      "Earth here is the mountain -- not the soil that grows things but the structure that endures them. Capricorn's element is permanence, built one decision at a time.",
+    );
+    expect(screen.getByTestId("metal-significance").textContent).toBe(
+      "Heavy, dense, and foundational. Lead is the base metal that alchemists believed could become gold -- but only through sustained transformation. The work is the point.",
+    );
+    expect(screen.getByTestId("birthstone-significance").textContent).toBe(
+      "Deep red, dense, and durable. Garnet is not flashy. It does not need to be. It is the stone you find in estate jewelry that outlasted the person who wore it.",
+    );
+  });
+
+  it("separates the identity, symbol, and materials bands into their own rows", () => {
+    render(<SignMetadataCards chart={chart()} />);
+
+    const rows = screen.getByTestId("sign-metadata-cards").querySelectorAll(".sign-metadata-card__row");
+    expect(rows.length).toBe(3);
+    expect(rows[0].classList.contains("sign-metadata-card__row--identity")).toBe(true);
+    expect(rows[1].classList.contains("sign-metadata-card__row--symbol")).toBe(true);
+    expect(rows[2].classList.contains("sign-metadata-card__row--materials")).toBe(true);
+  });
+
   it("expands the complete approved symbol origin", () => {
     render(<SignMetadataCards chart={chart()} />);
 

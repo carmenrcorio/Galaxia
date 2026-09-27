@@ -21,7 +21,7 @@ describe("SingleChartGenerationalSummary", () => {
     expect(screen.getByText(chart.generational.cohortLabel)).toBeTruthy();
     expect(screen.getByText(/^Uranus in /)).toBeTruthy();
     expect(screen.getByText(/^Neptune in /)).toBeTruthy();
-    expect(screen.getByText(/^Pluto in /)).toBeTruthy();
+    expect(screen.getByText(`Pluto in ${chart.generational.pluto.sign}`)).toBeTruthy();
   });
 
   it("keeps a year-only signature visible without asserting an uncertain Pluto sign", () => {

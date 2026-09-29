@@ -1,0 +1,7 @@
+## Generational signature: era reading stands outside the Pluto row (branch `cursor/era-section-outside-pluto-ef3f`) — 2026-09-29
+
+**Trigger**: On the person page (Who they are), "How this era shaped them" rendered inside the Pluto star's collapsible row, so closing Pluto hid the era reading, its source line, the corruption signature, the figures, and the era events. That copy is about the cohort, not Pluto's placement.
+
+`[FIXED]` **`apps/web/app/app/person/[id]/page.tsx` and `apps/web/components/generational-era-surface.tsx`.** The three star rows still toggle their own sign, house, and aspect copy. After them, `GenerationalEraSections` renders whenever Pluto's sign is confident: the era reading with its existing eyebrow string, the source line, then the remaining cohort blocks. No interpretation string was rewritten.
+
+`[DECISION]` **Corruption signature, "Others who carried this," and "What they lived through" moved out with the era reading.** They are keyed to the confident Pluto sign of the era, the same gate as the era reading, and they are not a reading of that person's Pluto placement. Capricorn still omits the figures block because that array is empty on purpose. The professional work view ("What this era brings to work") also leaves the Pluto toggle. On the person card it follows the source line. Compare still leads with the work view when the relationship is professional. Mobile already showed these blocks with no star toggle, so it was left as it was.

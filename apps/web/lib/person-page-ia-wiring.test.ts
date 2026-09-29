@@ -44,7 +44,7 @@ describe("person page information architecture", () => {
     expect(page).not.toContain("Generation X");
     expect(page).not.toContain("Generation Z");
     expect(page).toContain("getFamilyBridge");
-    expect(page).toContain("PLUTO_SIGN_EXTENDED");
+    expect(page).toContain("GenerationalEraSections");
     expect(page).toContain("Changed sign that year");
   });
 
@@ -61,13 +61,45 @@ describe("person page information architecture", () => {
       "aspectPatternCopy",
       "DAILY_SKY_UNAVAILABLE_YEAR_BODY",
       "DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP",
+    ]) {
+      expect(page).toContain(token);
+    }
+    const era = readFileSync(
+      resolve(__dirname, "../components/generational-era-surface.tsx"),
+      "utf8"
+    );
+    for (const token of [
       "GenerationalEraSurface",
+      "PLUTO_SIGN_EXTENDED",
       "The corruption signature",
       "Others who carried this",
       "What they lived through",
     ]) {
-      expect(page).toContain(token);
+      expect(era).toContain(token);
     }
+  });
+
+  it("keeps the era reading outside the Pluto row", () => {
+    const expandStart = page.indexOf("function ExpandRow");
+    const expandEnd = page.indexOf("/* ─── Modality balance");
+    const expandFn = page.slice(expandStart, expandEnd);
+    expect(expandFn).not.toContain("GenerationalEra");
+    expect(expandFn).not.toContain("corruptionSignature");
+    expect(expandFn).not.toContain("The corruption signature");
+    expect(expandFn).not.toContain("plutoExtended");
+    expect(expandFn).toContain("planetAspects");
+    expect(expandFn).toContain(">Aspects<");
+
+    const genStart = page.indexOf('id="generational"');
+    const genEnd = page.indexOf('id="aspects"');
+    const gen = page.slice(genStart, genEnd);
+    const rows = gen.indexOf("renderPlacementRow(p)");
+    const era = gen.indexOf("<GenerationalEraSections");
+    const bridge = gen.indexOf("getFamilyBridge");
+    expect(rows).toBeGreaterThan(-1);
+    expect(era).toBeGreaterThan(rows);
+    expect(bridge).toBeGreaterThan(era);
+    expect(gen).toContain("chart.generational.pluto.confident");
   });
 
   it("has one navigation layer: tabs only, Today above them", () => {

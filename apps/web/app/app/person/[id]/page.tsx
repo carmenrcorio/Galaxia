@@ -41,10 +41,8 @@ import {
   interpretHouse,
   type HouseKey,
   plutoGenerationLabel,
-  PLUTO_SIGN_EXTENDED,
   getFamilyBridge,
   isProfessionalPersonRelation,
-  type PlutoSignExtended,
   bodyDisplayName,
   isChartPoint,
 } from "@galaxia/astro";
@@ -89,7 +87,7 @@ import { SignMetadataCards } from "../../../../components/sign-metadata-cards";
 import { RetrogradeBadge } from "../../../../components/retrograde-badge";
 import { ChartWheel } from "../../../../components/chart-wheel";
 import { EditPersonPanel } from "../../../../components/edit-person-panel";
-import { GenerationalEraSurface } from "../../../../components/generational-era-surface";
+import { GenerationalEraSections } from "../../../../components/generational-era-surface";
 import { InitialAvatar } from "../../../../components/initial-avatar";
 import { PersonProfileNav, ChartVocabSubhead } from "../../../../components/chart-section-nav";
 import { HousesUnavailableCard } from "../../../../components/houses-unavailable-card";
@@ -187,7 +185,7 @@ function HouseBadge({ house }: { house: number }) {
 /* ─── ExpandRow — the single expandable row used throughout ─────────────── */
 function ExpandRow({
   open, onToggle, label, domain, degree, house, el, glyph, retro, short, long,
-  houseReading, planetAspects, hasHouses, plutoExtended, plutoSign, showWorkView, anchorId
+  houseReading, planetAspects, hasHouses, anchorId
 }: {
   open: boolean; onToggle: () => void;
   /** Scroll target for the wheel glyph card's "see full reading" link. */
@@ -199,17 +197,7 @@ function ExpandRow({
   /** Per-planet aspects — rendered in expanded state */
   planetAspects?: Array<{ from: string; to: string; type: string; orb: number; short: string; tight: boolean }>;
   hasHouses?: boolean;
-  /** Pluto-only extended content (era reading, work view, corruption signature, figures, events).
-   *  Renders after the long description, expanded state only. Caller is responsible
-   *  for only passing this when the placement's sign is confident (never for a
-   *  guessed year-only sign — §12). */
-  plutoExtended?: PlutoSignExtended | null;
-  /** Confident Pluto sign for the era / work lookup. Never a guessed sign. */
-  plutoSign?: SignKey;
-  /** Professional recorded relationship: work view leads the Pluto block. */
-  showWorkView?: boolean;
 }) {
-  const [openEraEvent, setOpenEraEvent] = useState<string | null>(null);
   return (
     <div id={anchorId} style={{ borderBottom: "1px solid rgba(183,154,216,.08)", scrollMarginTop: 92 }}>
       <button
@@ -291,64 +279,6 @@ function ExpandRow({
                   );
                 })}
               </div>
-            </div>
-          ) : null}
-          {/* Block 4: PLUTO EXTENDED — era reading (and work view when professional), then shadow, figures, events */}
-          {plutoExtended && plutoSign ? (
-            <div style={{ display: "grid", gap: 12 }}>
-              <GenerationalEraSurface
-                sign={plutoSign}
-                showWorkView={Boolean(showWorkView)}
-                showSource
-              />
-              <div>
-                <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--gold-soft)", margin: "0 0 4px" }}>
-                  The corruption signature
-                </p>
-                <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{plutoExtended.corruptionSignature}</p>
-              </div>
-              {plutoExtended.historicalFigures.length > 0 ? (
-                <div>
-                  <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--mist2)", margin: "0 0 6px" }}>
-                    Others who carried this
-                  </p>
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {plutoExtended.historicalFigures.map((figure) => (
-                      <div key={figure.name}>
-                        <p style={{ fontSize: ".82rem", color: "var(--cream)", margin: 0 }}>
-                          <strong>{figure.name}</strong>: {figure.knownFor}
-                        </p>
-                        <p className="muted" style={{ fontSize: ".76rem", lineHeight: 1.5, margin: "2px 0 0" }}>{figure.plutoBridge}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              {plutoExtended.eraEvents.length > 0 ? (
-                <div>
-                  <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--mist2)", margin: "0 0 6px" }}>
-                    What they lived through
-                  </p>
-                  <div className="prompt-chips">
-                    {plutoExtended.eraEvents.map((event) => (
-                      <button
-                        key={event.label}
-                        type="button"
-                        className="prompt-chip"
-                        onClick={() => setOpenEraEvent(prev => prev === event.label ? null : event.label)}
-                        aria-expanded={openEraEvent === event.label}
-                      >
-                        {event.label}
-                      </button>
-                    ))}
-                  </div>
-                  {openEraEvent ? (
-                    <p className="muted" style={{ fontSize: ".8rem", lineHeight: 1.55, marginTop: 8 }}>
-                      {plutoExtended.eraEvents.find(e => e.label === openEraEvent)?.detail}
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
             </div>
           ) : null}
         </div>
@@ -1140,8 +1070,6 @@ export default function PersonProfilePage() {
       }];
     });
     const rowKey = `pl-${p.body}`;
-    const plutoExtended: PlutoSignExtended | null =
-      p.body === "pluto" ? PLUTO_SIGN_EXTENDED[sk] ?? null : null;
     return (
       <ExpandRow
         key={p.body}
@@ -1160,9 +1088,6 @@ export default function PersonProfilePage() {
         houseReading={houseR}
         planetAspects={bodyAspects}
         hasHouses={hasHouses}
-        plutoExtended={plutoExtended}
-        plutoSign={plutoExtended ? sk : undefined}
-        showWorkView={isProfessionalPersonRelation(person.relation)}
       />
     );
   };
@@ -1531,6 +1456,12 @@ export default function PersonProfilePage() {
         {chart.placements
           .filter((p) => GENERATIONAL.includes(normaliseBody(p.body)))
           .map((p) => renderPlacementRow(p))}
+        {chart.generational.pluto.confident ? (
+          <GenerationalEraSections
+            sign={chart.generational.pluto.sign}
+            showWorkView={isProfessionalPersonRelation(person.relation)}
+          />
+        ) : null}
         {!person.is_self && viewerPlutoSign && chart.generational.pluto.confident ? (() => {
           const bridge = getFamilyBridge(viewerPlutoSign, chart.generational.pluto.sign);
           if (!bridge) return null;

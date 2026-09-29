@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
+import { applyCurlyQuotes } from "./curly-quotes";
 import { publicEnv } from "./env";
 
 /**
@@ -60,6 +61,14 @@ export interface BlogPost {
   byline: string;
   /** ISO timestamp. Null for a draft that has never been published. */
   publishedAt: string | null;
+  /**
+   * True only when `posts.is_timely` is true. Evergreen posts (null or
+   * false) hide the visible date. JSON-LD `datePublished` still uses
+   * `publishedAt`.
+   */
+  isTimely: boolean;
+  /** ISO date (`YYYY-MM-DD`) or null. Phase 3 uses this for the Timely badge. */
+  expiresAt: string | null;
   /** ISO timestamp — `updated_at`, maintained by Postgres on every row write. Used as the Article JSON-LD `dateModified`. */
   updatedAt: string;
 }
@@ -73,7 +82,7 @@ export const BLOG_CATEGORIES: BlogCategory[] = [
   {
     slug: "debunked",
     label: "Astrology, debunked",
-    emptyNote: "More on this soon. We're building out a whole category on what astrology can't actually claim."
+    emptyNote: "More on this soon. We\u2019re building out a whole category on what astrology can\u2019t actually claim."
   }
 ];
 
@@ -81,8 +90,20 @@ export function getCategory(slug: string): BlogCategory | undefined {
   return BLOG_CATEGORIES.find((c) => c.slug === slug);
 }
 
-const POST_FIELDS =
+const POST_FIELDS_BASE =
   "id, slug, title, dek, category, body, hero_image_url, hero_image_alt, figure_image_url, figure_image_alt, figure_caption, figure_long_description, figure_after_heading, status, read_time_minutes, byline, published_at, updated_at";
+
+/** Includes Phase 1 columns. Readers fall back to POST_FIELDS_BASE if the migration is not applied yet, so a deploy cannot 500 the blog. */
+const POST_FIELDS = `${POST_FIELDS_BASE}, is_timely, expires_at`;
+
+function timelyColumnsMissing(message: string): boolean {
+  return /is_timely|expires_at/i.test(message);
+}
+
+function curl(value: string | null): string | null {
+  if (!value) return value;
+  return applyCurlyQuotes(value);
+}
 
 interface PostRow {
   id: string;
@@ -103,28 +124,32 @@ interface PostRow {
   byline: string;
   published_at: string | null;
   updated_at: string;
+  is_timely?: boolean | null;
+  expires_at?: string | null;
 }
 
 function toBlogPost(row: PostRow): BlogPost {
   return {
     id: row.id,
     slug: row.slug,
-    title: row.title,
-    dek: row.dek,
+    title: applyCurlyQuotes(row.title),
+    dek: applyCurlyQuotes(row.dek),
     category: row.category === "debunked" ? "debunked" : "guides",
-    body: row.body,
+    body: applyCurlyQuotes(row.body),
     heroImageUrl: row.hero_image_url,
-    heroImageAlt: row.hero_image_alt,
+    heroImageAlt: curl(row.hero_image_alt),
     figureImageUrl: row.figure_image_url,
-    figureImageAlt: row.figure_image_alt,
-    figureCaption: row.figure_caption,
-    figureLongDescription: row.figure_long_description,
-    figureAfterHeading: row.figure_after_heading,
+    figureImageAlt: curl(row.figure_image_alt),
+    figureCaption: curl(row.figure_caption),
+    figureLongDescription: curl(row.figure_long_description),
+    figureAfterHeading: curl(row.figure_after_heading),
     status: row.status === "published" ? "published" : "draft",
     readTimeMinutes: row.read_time_minutes,
     byline: row.byline,
     publishedAt: row.published_at,
-    updatedAt: row.updated_at
+    updatedAt: row.updated_at,
+    isTimely: row.is_timely === true,
+    expiresAt: row.expires_at ?? null
   };
 }
 
@@ -157,39 +182,45 @@ function createPublicPostsClient() {
 export async function getPublishedPosts(): Promise<BlogPost[]> {
   const supabase = createPublicPostsClient();
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("posts")
-    .select(POST_FIELDS)
-    .eq("status", "published")
-    .order("published_at", { ascending: false });
+  const run = (fields: string) =>
+    supabase.from("posts").select(fields).eq("status", "published").order("published_at", { ascending: false });
+  let { data, error } = await run(POST_FIELDS);
+  if (error && timelyColumnsMissing(error.message)) {
+    ({ data, error } = await run(POST_FIELDS_BASE));
+  }
   if (error) throw new Error(`getPublishedPosts: ${error.message}`);
-  return ((data ?? []) as PostRow[]).map(toBlogPost);
+  return ((data ?? []) as unknown as PostRow[]).map(toBlogPost);
 }
 
 export async function getPublishedPostsByCategory(category: BlogCategorySlug): Promise<BlogPost[]> {
   const supabase = createPublicPostsClient();
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("posts")
-    .select(POST_FIELDS)
-    .eq("status", "published")
-    .eq("category", category)
-    .order("published_at", { ascending: false });
+  const run = (fields: string) =>
+    supabase
+      .from("posts")
+      .select(fields)
+      .eq("status", "published")
+      .eq("category", category)
+      .order("published_at", { ascending: false });
+  let { data, error } = await run(POST_FIELDS);
+  if (error && timelyColumnsMissing(error.message)) {
+    ({ data, error } = await run(POST_FIELDS_BASE));
+  }
   if (error) throw new Error(`getPublishedPostsByCategory: ${error.message}`);
-  return ((data ?? []) as PostRow[]).map(toBlogPost);
+  return ((data ?? []) as unknown as PostRow[]).map(toBlogPost);
 }
 
 export async function getPublishedPost(slug: string): Promise<BlogPost | null> {
   const supabase = createPublicPostsClient();
   if (!supabase) return null;
-  const { data, error } = await supabase
-    .from("posts")
-    .select(POST_FIELDS)
-    .eq("status", "published")
-    .eq("slug", slug)
-    .maybeSingle();
+  const run = (fields: string) =>
+    supabase.from("posts").select(fields).eq("status", "published").eq("slug", slug).maybeSingle();
+  let { data, error } = await run(POST_FIELDS);
+  if (error && timelyColumnsMissing(error.message)) {
+    ({ data, error } = await run(POST_FIELDS_BASE));
+  }
   if (error) throw new Error(`getPublishedPost: ${error.message}`);
-  return data ? toBlogPost(data as PostRow) : null;
+  return data ? toBlogPost(data as unknown as PostRow) : null;
 }
 
 export function formatPostDate(iso: string): string {

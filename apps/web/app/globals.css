@@ -2588,6 +2588,16 @@ section { padding-block: clamp(76px, 12vh, 140px); }
   transition: color .25s;
 }
 .blog-header-link:hover { color: var(--cream); }
+.blog-header-link:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+@media (max-width: 480px) {
+  .blog-header-in { flex-wrap: wrap; row-gap: 4px; }
+  .blog-header-nav { gap: 14px; }
+  .blog-header-link { font-size: .8rem; }
+}
 
 .blog-index-page {
   padding-top: clamp(40px, 6vh, 64px);
@@ -2752,11 +2762,11 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   padding-bottom: clamp(56px, 8vh, 88px);
   max-width: 720px;
 }
-/* Post hero — below the title, before the byline (not the smaller inline
-   .article-figure treatment used for photos inside the body). 1200x630 is
-   the og:image size; width/height attrs plus aspect-ratio hold the slot
-   so the image cannot cause layout shift. Graceful when hero_image_url is
-   empty: app/[slug]/page.tsx simply does not render this element. */
+/* Post hero — below the byline, before "In this piece" (not the smaller
+   inline .article-figure treatment used for photos inside the body).
+   width/height attrs plus aspect-ratio hold the slot so the image cannot
+   cause layout shift. When hero_image_url is empty the template omits this
+   element, so a missing illustration does not reserve a broken frame. */
 .article-hero {
   margin: 0 0 22px;
   border-radius: 22px;
@@ -2823,6 +2833,11 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   line-height: 1.35;
 }
 .article-toc-list a:hover { color: var(--cream); }
+.article-toc-list a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
 .article-mid-cta {
   margin: 28px 0;
   padding: 16px 0;
@@ -2849,6 +2864,20 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   line-height: 1.65;
   margin: 0 0 16px;
 }
+.article-chart-reading-help {
+  color: var(--mist);
+  font-weight: 300;
+  line-height: 1.65;
+  margin: 14px 0 0;
+}
+.article-chart-reading-howto { margin-top: 14px; }
+.article-chart-reading-howto-label {
+  margin: 0;
+  color: var(--cream);
+  font-size: .82rem;
+  font-weight: 600;
+}
+.article-chart-reading-howto .article-chart-reading-help { margin-top: 6px; }
 .article-chart-reading-form {
   display: grid;
   gap: 10px;

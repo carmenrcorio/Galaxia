@@ -19,6 +19,15 @@ export const MARKETING_NAV_LINKS: NavLink[] = [
   { href: "/pricing", label: "Pricing" },
 ];
 
+/** Blog index, category, and post header. Same labels as the marketing nav, in the same order. */
+const BLOG_HEADER_HREFS = ["/chart", "/blog", "/pricing"] as const;
+
+export const BLOG_HEADER_LINKS: NavLink[] = BLOG_HEADER_HREFS.map((href) => {
+  const link = MARKETING_NAV_LINKS.find((item) => item.href === href);
+  if (!link) throw new Error(`Blog header is missing ${href}`);
+  return link;
+});
+
 export const MARKETING_NAV_LOGIN: NavLink = { href: "/login", label: "Log in" };
 export const MARKETING_NAV_SIGNUP: NavLink = { href: "/signup", label: "Start 14 days free" };
 export const MARKETING_NAV_ACTIONS: NavLink[] = [MARKETING_NAV_LOGIN, MARKETING_NAV_SIGNUP];

@@ -59,6 +59,11 @@ describe("app/sitemap.ts — /login and /signup excluded", () => {
     expect(src).toContain("BLOG_CATEGORIES.map((c) => `/blog/${c.slug}`)");
     expect(src).toContain("getPublishedPosts()");
   });
+
+  it("revalidates every 60s, the same window as /blog, so a post published after build is listed", () => {
+    expect(src).toContain("export const revalidate = 60");
+    expect(readRoute("apps/web/app/blog/page.tsx")).toContain("export const revalidate = 60");
+  });
 });
 
 describe("app/layout.tsx — metadataBase unchanged", () => {

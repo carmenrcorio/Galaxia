@@ -87,6 +87,11 @@ export const articleMarkdownComponents: Components = {
     <a href={href} target={href?.startsWith("http") ? "_blank" : undefined} rel="noreferrer">
       {children}
     </a>
+  ),
+  table: ({ children }) => (
+    <div className="article-table-wrap">
+      <table className="article-table">{children}</table>
+    </div>
   )
 };
 

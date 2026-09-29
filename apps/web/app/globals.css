@@ -2916,6 +2916,32 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
 }
 .article-content strong { color: var(--cream); font-weight: 600; }
 .article-content em { font-style: italic; color: var(--cream); }
+/* GFM tables (remark-gfm). body sets overflow-x: hidden, so a wide
+   comparison table has to scroll inside the article instead of clipping. */
+.article-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 8px 0 20px;
+}
+.article-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .92rem;
+  line-height: 1.45;
+}
+.article-table th,
+.article-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  color: var(--mist);
+  font-weight: 300;
+}
+.article-table th {
+  color: var(--cream);
+  font-weight: 600;
+}
 .article-blockquote {
   border-left: 2px solid rgba(230,174,108,.4);
   padding: 4px 0 4px 18px;

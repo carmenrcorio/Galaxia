@@ -2,6 +2,11 @@ import type { MetadataRoute } from "next";
 import { publicEnv } from "../lib/env";
 import { BLOG_CATEGORIES, getPublishedPosts } from "../lib/blog";
 
+// Same window as /blog and /[slug]. Without this, Next caches sitemap.xml
+// at build time, so a post inserted after the deploy stays out of the
+// sitemap until the next build.
+export const revalidate = 60;
+
 // Same base URL as `metadataBase` in app/layout.tsx (see PR #153) — falls back
 // to the prod URL when NEXT_PUBLIC_SITE_URL is unset, so this never emits
 // relative/broken <loc> entries.
@@ -27,11 +32,11 @@ const SITE_URL = publicEnv.siteUrl || "https://galaxia-three.vercel.app";
  * `/glossary` is a static public term list (no posts table read).
  * `/methodology` publishes the chart engine method (ephemeris, houses, orbs).
  *
- * Post URLs (`/${slug}`) are read from the `posts` table at request time
+ * Post URLs (`/${slug}`) are read from the `posts` table
  * (getPublishedPosts — published rows only, via lib/blog.ts) rather than
  * hardcoded, now that they come from the admin editor (/admin/posts)
  * instead of a static per-article route folder. A new post appears here
- * the same request it becomes visible on /blog — no sitemap edit needed.
+ * on the same 60s window as /blog — no sitemap edit needed.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const routes = [

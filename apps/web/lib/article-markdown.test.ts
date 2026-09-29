@@ -26,6 +26,17 @@ describe("ArticleMarkdown — image paragraphs", () => {
     expect(html).toBe('<p class="article-p">Just text.</p>');
   });
 
+  it("wraps a GFM table so it can scroll inside the article", () => {
+    const html = renderToStaticMarkup(
+      createElement(ArticleMarkdown, {
+        children: "| Question | Start |\n| --- | --- |\n| Why do we react this way? | Synastry |\n"
+      })
+    );
+    expect(html).toContain('<div class="article-table-wrap"><table class="article-table">');
+    expect(html).toContain("Synastry");
+    expect(html).not.toMatch(/<p[^>]*>\s*<table/);
+  });
+
   it("is what the post template actually renders", () => {
     const src = readFileSync(join(REPO_ROOT, "apps/web/app/[slug]/page.tsx"), "utf8");
     expect(src).toContain("ArticleMarkdown");

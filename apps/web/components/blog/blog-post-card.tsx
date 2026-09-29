@@ -21,7 +21,9 @@ export function BlogPostCard({
           post, until Carmen assigns one through /admin/posts) — no thumbnail
           renders at all, never a broken-image box. Related cards show title
           and dek only. */}
-      {!related && post.heroImageUrl ? <img className="blog-post-card-thumb" src={post.heroImageUrl} alt="" /> : null}
+      {!related && post.heroImageUrl ? (
+        <img className="blog-post-card-thumb" src={post.heroImageUrl} alt={post.heroImageAlt ?? ""} />
+      ) : null}
       {!related && category ? <span className="blog-post-card-tag">{category.label}</span> : null}
       <h2 className="blog-post-card-title">{post.title}</h2>
       <p className="blog-post-card-dek">{post.dek}</p>

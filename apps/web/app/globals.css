@@ -2967,6 +2967,46 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   border: 1px solid rgba(230,174,108,.13);
   box-shadow: 0 30px 80px -34px rgba(0,0,0,.7);
 }
+/* Supporting diagram. Full content width. 1200x700 attrs plus aspect-ratio
+   hold the slot. Caption and the text-description toggle use --cream on
+   --ink, the same pair as body text. */
+.article-diagram {
+  margin: 28px 0 32px;
+  max-width: 100%;
+}
+.article-diagram img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1200 / 700;
+  border-radius: 22px;
+  border: 1px solid rgba(230,174,108,.16);
+  box-shadow: 0 30px 80px -34px rgba(0,0,0,.7);
+}
+.article-diagram figcaption {
+  margin-top: 12px;
+  color: var(--cream);
+  font-size: .92rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.article-diagram-description {
+  margin-top: 10px;
+}
+.article-diagram-description summary {
+  cursor: pointer;
+  color: var(--cream);
+  font-size: .88rem;
+  font-weight: 600;
+}
+.article-diagram-description summary:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+.article-diagram-description .article-p {
+  margin-top: 10px;
+}
 .article-cta {
   margin-top: 36px;
   padding-top: 12px;

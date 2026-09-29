@@ -2,6 +2,7 @@ import { Children, isValidElement, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
+  FIGURE_MARKER,
   MID_CTA_MARKER,
   MID_POST_CTA_COPY,
   injectMidPostCtaMarker,
@@ -97,10 +98,12 @@ export const articleMarkdownComponents: Components = {
 
 export function ArticleMarkdown({
   children,
-  midCtaHref
+  midCtaHref,
+  figure
 }: {
   children: string;
   midCtaHref?: string;
+  figure?: ReactNode;
 }) {
   const body = midCtaHref ? injectMidPostCtaMarker(children) : children;
   const seen = new Map<string, number>();
@@ -115,7 +118,9 @@ export function ArticleMarkdown({
       );
     },
     p: ({ node, children: paragraph }) => {
-      if (midCtaHref && flattenReactText(paragraph).trim() === MID_CTA_MARKER) {
+      const text = flattenReactText(paragraph).trim();
+      if (text === FIGURE_MARKER) return figure ?? null;
+      if (midCtaHref && text === MID_CTA_MARKER) {
         return <MidPostCta href={midCtaHref} />;
       }
       return isImageOnlyParagraph(node) ? <>{paragraph}</> : <p className="article-p">{paragraph}</p>;

@@ -1,4 +1,5 @@
 import type { JsonLdObject } from "../components/seo/json-ld";
+import { absolutePostImageUrl } from "./blog-metadata";
 
 const SITE_URL = "https://galaxiamea.com";
 
@@ -13,6 +14,7 @@ export interface ArticleJsonLdPost {
   title: string;
   publishedAt: string | null;
   updatedAt: string;
+  heroImageUrl?: string | null;
 }
 
 /**
@@ -22,12 +24,14 @@ export interface ArticleJsonLdPost {
  * never a `/blog/` prefix: posts render at `app/[slug]/page.tsx`.
  */
 export function buildArticleJsonLd(post: ArticleJsonLdPost): JsonLdObject {
+  const image = post.heroImageUrl?.trim() ? absolutePostImageUrl(post.heroImageUrl.trim()) : undefined;
   return {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: post.title,
     datePublished: post.publishedAt ?? post.updatedAt,
     dateModified: post.updatedAt || post.publishedAt || undefined,
+    ...(image ? { image } : {}),
     author: {
       "@type": "Organization",
       name: "Galaxia"

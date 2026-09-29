@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
+import { ArticleDiagram } from "../../components/blog/article-diagram";
 import { ArticleMarkdown } from "../../components/blog/article-markdown";
 import { BlogHeader } from "../../components/blog/blog-header";
 import { BlogPostCard } from "../../components/blog/blog-post-card";
@@ -10,6 +12,7 @@ import {
   ARTICLE_TOC_LABEL,
   READ_NEXT_LABEL,
   extractH2Headings,
+  insertFigureAfterHeading,
   midPostCtaHref,
   pickRelatedPosts
 } from "../../lib/article-structure";
@@ -59,6 +62,31 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
   const toc = post.readTimeMinutes >= 5 ? extractH2Headings(post.body) : [];
   const related = pickRelatedPosts(published, post);
   const publishedLabel = post.publishedAt ? formatPostDate(post.publishedAt) : null;
+  const heroAlt = post.heroImageAlt?.trim() ?? "";
+  const figureReady = Boolean(
+    post.figureImageUrl?.trim() &&
+      post.figureImageAlt?.trim() &&
+      post.figureCaption?.trim() &&
+      post.figureLongDescription?.trim()
+  );
+  const placed = figureReady
+    ? insertFigureAfterHeading(post.body, post.figureAfterHeading ?? "")
+    : { markdown: post.body, placement: "none" as const };
+  if (figureReady && placed.placement !== "named") {
+    console.warn(
+      `[blog] figure heading not found for ${post.slug} ("${post.figureAfterHeading ?? ""}"); placed after the first section`
+    );
+  }
+  const figure = figureReady ? (
+    <ArticleDiagram
+      src={post.figureImageUrl ?? ""}
+      alt={post.figureImageAlt ?? ""}
+      caption={post.figureCaption ?? ""}
+      longDescription={post.figureLongDescription ?? ""}
+      width={1200}
+      height={700}
+    />
+  ) : null;
 
   return (
     <>
@@ -66,7 +94,11 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
       <BlogHeader />
       <main className="container article-page article-content">
         <h1 className="auth-title article-title">{post.title}</h1>
-        {post.heroImageUrl ? (
+        {post.heroImageUrl && heroAlt ? (
+          <figure className="article-hero">
+            <Image src={post.heroImageUrl} alt={heroAlt} width={1600} height={840} priority />
+          </figure>
+        ) : post.heroImageUrl ? (
           <figure className="article-hero">
             <img src={post.heroImageUrl} alt="" width={1200} height={630} />
           </figure>
@@ -88,7 +120,9 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
             </ol>
           </nav>
         ) : null}
-        <ArticleMarkdown midCtaHref={midPostCtaHref(post.category)}>{post.body}</ArticleMarkdown>
+        <ArticleMarkdown midCtaHref={midPostCtaHref(post.category)} figure={figure}>
+          {placed.markdown}
+        </ArticleMarkdown>
 
         <ChartReadingCapture />
 

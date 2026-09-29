@@ -9,6 +9,9 @@ import { slugify } from "./slugify";
 /** Sentinel injected into markdown, then swapped for the mid-post CTA. Never authored into post bodies. */
 export const MID_CTA_MARKER = "%%GALAXIA_MID_CTA%%";
 
+/** Sentinel swapped for the supporting figure. Never authored into post bodies. */
+export const FIGURE_MARKER = "%%GALAXIA_FIGURE%%";
+
 
 export const ARTICLE_TOC_LABEL = "In this piece";
 
@@ -90,6 +93,50 @@ function insertAtWordMidpoint(markdown: string, marker: string): string {
   }
   if (!inserted) out.push(marker);
   return out.join("\n\n");
+}
+
+export type FigurePlacement = "named" | "first-h2" | "missing";
+
+/**
+ * Insert `marker` after the H2 section whose plain text matches `heading`
+ * (the paragraphs under that heading, before the next H2). If that heading
+ * is not in the body, insert after the first H2 section instead. If the
+ * body has no H2, append the marker.
+ */
+export function insertFigureAfterHeading(
+  markdown: string,
+  heading: string,
+  marker = FIGURE_MARKER
+): { markdown: string; placement: FigurePlacement } {
+  if (markdown.includes(marker)) return { markdown, placement: "named" };
+
+  const lines = markdown.split("\n");
+  const h2Indexes: number[] = [];
+  let inFence = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? "";
+    if (line.trimStart().startsWith("```")) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    if (/^## [^#]/.test(line)) h2Indexes.push(i);
+  }
+
+  if (h2Indexes.length === 0) {
+    const suffix = markdown.endsWith("\n") ? "" : "\n";
+    return { markdown: `${markdown}${suffix}\n${marker}\n`, placement: "missing" };
+  }
+
+  const wanted = headingPlainText(heading);
+  const namedIndex = h2Indexes.find((i) => headingPlainText((lines[i] ?? "").replace(/^##\s+/, "")) === wanted);
+  const placement: FigurePlacement = namedIndex === undefined ? "first-h2" : "named";
+  const sectionStart = namedIndex ?? h2Indexes[0] ?? 0;
+  const order = h2Indexes.indexOf(sectionStart);
+  const nextHeading = h2Indexes[order + 1];
+  const insertAt = nextHeading ?? lines.length;
+  const next = [...lines.slice(0, insertAt), "", marker, "", ...lines.slice(insertAt)];
+  return { markdown: next.join("\n"), placement };
 }
 
 /**

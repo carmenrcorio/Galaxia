@@ -48,6 +48,13 @@ export interface BlogPost {
   category: BlogCategorySlug;
   body: string;
   heroImageUrl: string | null;
+  heroImageAlt: string | null;
+  figureImageUrl: string | null;
+  figureImageAlt: string | null;
+  figureCaption: string | null;
+  figureLongDescription: string | null;
+  /** Plain text of the H2 the supporting figure follows. */
+  figureAfterHeading: string | null;
   status: "draft" | "published";
   readTimeMinutes: number;
   byline: string;
@@ -75,7 +82,7 @@ export function getCategory(slug: string): BlogCategory | undefined {
 }
 
 const POST_FIELDS =
-  "id, slug, title, dek, category, body, hero_image_url, status, read_time_minutes, byline, published_at, updated_at";
+  "id, slug, title, dek, category, body, hero_image_url, hero_image_alt, figure_image_url, figure_image_alt, figure_caption, figure_long_description, figure_after_heading, status, read_time_minutes, byline, published_at, updated_at";
 
 interface PostRow {
   id: string;
@@ -85,6 +92,12 @@ interface PostRow {
   category: string;
   body: string;
   hero_image_url: string | null;
+  hero_image_alt: string | null;
+  figure_image_url: string | null;
+  figure_image_alt: string | null;
+  figure_caption: string | null;
+  figure_long_description: string | null;
+  figure_after_heading: string | null;
   status: string;
   read_time_minutes: number;
   byline: string;
@@ -101,6 +114,12 @@ function toBlogPost(row: PostRow): BlogPost {
     category: row.category === "debunked" ? "debunked" : "guides",
     body: row.body,
     heroImageUrl: row.hero_image_url,
+    heroImageAlt: row.hero_image_alt,
+    figureImageUrl: row.figure_image_url,
+    figureImageAlt: row.figure_image_alt,
+    figureCaption: row.figure_caption,
+    figureLongDescription: row.figure_long_description,
+    figureAfterHeading: row.figure_after_heading,
     status: row.status === "published" ? "published" : "draft",
     readTimeMinutes: row.read_time_minutes,
     byline: row.byline,

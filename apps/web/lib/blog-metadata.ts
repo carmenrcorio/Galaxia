@@ -13,11 +13,22 @@ export const SITE_OG_IMAGE = {
   alt: SITE_OG_ALT
 } as const;
 
+export const SITE_ORIGIN = "https://galaxiamea.com";
+
+/** OG and JSON-LD need an absolute image URL. Public paths stay relative in the database. */
+export function absolutePostImageUrl(url: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/")) return `${SITE_ORIGIN}${url}`;
+  return url;
+}
+
 export interface PostMetadataInput {
   slug: string;
   title: string;
   dek: string;
   heroImageUrl: string | null;
+  /** Manifest alt for the nine illustrated posts. Older heroes keep the title as og:image:alt. */
+  heroImageAlt?: string | null;
 }
 
 export interface CategoryMetadataInput {
@@ -30,8 +41,16 @@ export interface CategoryMetadataInput {
  * never a `/blog/` prefix: posts live at the top-level `[slug]` route.
  */
 export function buildPostMetadata(post: PostMetadataInput): Metadata {
+  const heroAlt = post.heroImageAlt?.trim() ?? "";
   const ogImage = post.heroImageUrl
-    ? [{ url: post.heroImageUrl, alt: post.title, width: 1200, height: 630 }]
+    ? [
+        {
+          url: absolutePostImageUrl(post.heroImageUrl),
+          alt: heroAlt || post.title,
+          width: heroAlt ? 1600 : 1200,
+          height: heroAlt ? 840 : 630
+        }
+      ]
     : [SITE_OG_IMAGE];
 
   return {

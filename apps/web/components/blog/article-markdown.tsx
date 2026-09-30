@@ -1,6 +1,7 @@
 import { Children, isValidElement, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { BlogCtaLink } from "./blog-analytics";
 import {
   FIGURE_MARKER,
   MID_CTA_MARKER,
@@ -62,13 +63,13 @@ function flattenReactText(node: ReactNode): string {
     .join("");
 }
 
-function MidPostCta({ href }: { href: string }) {
+function MidPostCta({ href, slug }: { href: string; slug: string }) {
   return (
     <p className="article-mid-cta">
-      <a href={href}>
+      <BlogCtaLink href={href} slug={slug} cta="inline">
         <em>{MID_POST_CTA_COPY}</em>
         {" →"}
-      </a>
+      </BlogCtaLink>
     </p>
   );
 }
@@ -99,10 +100,12 @@ export const articleMarkdownComponents: Components = {
 export function ArticleMarkdown({
   children,
   midCtaHref,
+  slug,
   figure
 }: {
   children: string;
   midCtaHref?: string;
+  slug?: string;
   figure?: ReactNode;
 }) {
   const body = midCtaHref ? injectMidPostCtaMarker(children) : children;
@@ -121,7 +124,7 @@ export function ArticleMarkdown({
       const text = flattenReactText(paragraph).trim();
       if (text === FIGURE_MARKER) return figure ?? null;
       if (midCtaHref && text === MID_CTA_MARKER) {
-        return <MidPostCta href={midCtaHref} />;
+        return <MidPostCta href={midCtaHref} slug={slug ?? ""} />;
       }
       return isImageOnlyParagraph(node) ? <>{paragraph}</> : <p className="article-p">{paragraph}</p>;
     }

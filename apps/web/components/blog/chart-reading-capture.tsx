@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { MONTHS } from "../birth-fields";
+import { trackBlogClick } from "./blog-analytics";
+import { BLOG_ANALYTICS } from "../../lib/blog-index";
 import {
   CHART_READING_BIRTH_DATA_NOTE,
   CHART_READING_CONFIRMATION,
@@ -20,7 +22,7 @@ import {
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: currentYear - 1799 }, (_, i) => currentYear - i);
 
-export function ChartReadingCapture() {
+export function ChartReadingCapture({ slug }: { slug?: string } = {}) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [month, setMonth] = useState("");
@@ -149,7 +151,14 @@ export function ChartReadingCapture() {
           onChange={(event) => setBirthPlace(event.target.value)}
         />
         <div className="article-chart-reading-actions">
-          <button type="submit" className="btn-primary" disabled={status === "submitting"}>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={status === "submitting"}
+            onClick={() => {
+              if (slug) trackBlogClick(BLOG_ANALYTICS.cta, slug, "closing");
+            }}
+          >
             {CHART_READING_SUBMIT}
           </button>
           <Link href="/privacy" className="article-chart-reading-privacy">

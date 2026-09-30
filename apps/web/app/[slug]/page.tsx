@@ -140,11 +140,11 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
             </ol>
           </nav>
         ) : null}
-        <ArticleMarkdown midCtaHref={midPostCtaHref(post.category)} figure={figure}>
+        <ArticleMarkdown midCtaHref={midPostCtaHref(post.category)} slug={post.slug} figure={figure}>
           {placed.markdown}
         </ArticleMarkdown>
 
-        <ChartReadingCapture />
+        <ChartReadingCapture slug={post.slug} />
 
         {related.length > 0 ? (
           <section className="article-read-next" aria-labelledby="article-read-next-heading">

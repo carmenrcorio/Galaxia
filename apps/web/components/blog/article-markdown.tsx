@@ -67,8 +67,8 @@ function MidPostCta({ href, slug }: { href: string; slug: string }) {
   return (
     <p className="article-mid-cta">
       <BlogCtaLink href={href} slug={slug} cta="inline">
-        <em>{MID_POST_CTA_COPY}</em>
-        {" →"}
+        {MID_POST_CTA_COPY}
+        {" \u2192"}
       </BlogCtaLink>
     </p>
   );

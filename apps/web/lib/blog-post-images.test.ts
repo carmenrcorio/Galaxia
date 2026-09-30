@@ -128,8 +128,15 @@ describe("blog hero and figure images", () => {
     expect(html).toContain('loading="lazy"');
     expect(html).toContain("<figcaption>Diagram caption</figcaption>");
     expect(html).toContain(`<summary>${FIGURE_TEXT_DESCRIPTION_LABEL}</summary>`);
+    expect(html).toContain('<details class="article-diagram-description">');
+    expect(html).not.toMatch(/<details[^>]*\sopen/);
     expect(html).toContain("Diagram long description.");
     expect(FIGURE_TEXT_DESCRIPTION_LABEL).not.toContain("\u2014");
+    const css = readFileSync(join(REPO_ROOT, "apps/web/app/globals.css"), "utf8");
+    expect(css).toContain(".article-diagram-description summary");
+    expect(css).toContain("color: var(--cream)");
+    expect(css).toContain("color-scheme: dark");
+    expect(css).toMatch(/\.article-diagram-description summary:focus-visible \{[\s\S]*outline: 2px solid var\(--gold\)/);
   });
 
   it("copies manifest text onto every slug and places the figure after the named section", () => {

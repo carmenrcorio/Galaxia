@@ -8,7 +8,6 @@ import {
   READ_NEXT_LABEL,
   extractH2Headings,
   injectMidPostCtaMarker,
-  midPostCtaHref,
   MIN_TOC_HEADINGS,
   pickRelatedPosts,
   tocHeadings,
@@ -56,7 +55,7 @@ describe("uniqueHeadingId / extractH2Headings", () => {
 });
 
 describe("injectMidPostCtaMarker", () => {
-  it("inserts after the h2 closest to the document midpoint", () => {
+  it("inserts after the last block of the first h2 section, not under the heading", () => {
     const md = [
       "Lead paragraph about the topic.",
       "",
@@ -73,22 +72,47 @@ describe("injectMidPostCtaMarker", () => {
       `${"word ".repeat(40)}`
     ].join("\n");
     const out = injectMidPostCtaMarker(md);
-    const middleAt = out.indexOf("## Middle heading");
+    const firstAt = out.indexOf("## First heading");
     const markerAt = out.indexOf(MID_CTA_MARKER);
-    const lastAt = out.indexOf("## Last heading");
-    expect(markerAt).toBeGreaterThan(middleAt);
-    expect(markerAt).toBeLessThan(lastAt);
-    const afterMiddle = out.slice(middleAt);
-    expect(afterMiddle.indexOf(MID_CTA_MARKER)).toBeGreaterThan(afterMiddle.indexOf("word"));
-    expect(afterMiddle.startsWith(`## Middle heading\n\n${MID_CTA_MARKER}`)).toBe(false);
+    const middleAt = out.indexOf("## Middle heading");
+    expect(markerAt).toBeGreaterThan(firstAt);
+    expect(markerAt).toBeLessThan(middleAt);
+    const afterFirst = out.slice(firstAt);
+    expect(afterFirst.indexOf(MID_CTA_MARKER)).toBeGreaterThan(afterFirst.indexOf("word"));
+    expect(afterFirst.startsWith(`## First heading\n\n${MID_CTA_MARKER}`)).toBe(false);
+    expect(out.indexOf("## Middle heading")).toBeGreaterThan(markerAt);
+    expect(out.slice(middleAt)).not.toContain(MID_CTA_MARKER);
   });
 
-  it("falls back to the 50% word-count paragraph when there is no midpoint h2", () => {
+  it("places the marker after a list that closes the section, not inside the list", () => {
+    const md = ["## Core idea", "", "The chart describes a pattern.", "", "- one", "- two", "", "## Next", "", "Later."].join(
+      "\n"
+    );
+    const out = injectMidPostCtaMarker(md);
+    const listAt = out.indexOf("- two");
+    const markerAt = out.indexOf(MID_CTA_MARKER);
+    const nextAt = out.indexOf("## Next");
+    expect(markerAt).toBeGreaterThan(listAt);
+    expect(markerAt).toBeLessThan(nextAt);
+    expect(out).not.toMatch(/- two\n%%GALAXIA_MID_CTA%%/);
+  });
+
+  it("skips a list-only first section and uses the next section that has a paragraph", () => {
+    const md = ["## List only", "", "- one", "- two", "", "## The idea", "", "A real paragraph.", "", "## After", "", "More."].join(
+      "\n"
+    );
+    const out = injectMidPostCtaMarker(md);
+    expect(out.indexOf(MID_CTA_MARKER)).toBeGreaterThan(out.indexOf("A real paragraph."));
+    expect(out.indexOf(MID_CTA_MARKER)).toBeLessThan(out.indexOf("## After"));
+    expect(out.indexOf("- two")).toBeLessThan(out.indexOf("## The idea"));
+  });
+
+  it("follows the last paragraph when there is no h2", () => {
     const first = Array.from({ length: 40 }, () => "alpha").join(" ");
     const second = Array.from({ length: 40 }, () => "bravo").join(" ");
     const md = `${first}\n\n${second}`;
     const out = injectMidPostCtaMarker(md);
-    expect(out).toBe(`${first}\n\n${MID_CTA_MARKER}\n\n${second}`);
+    expect(out).toBe(`${first}\n\n${second}\n\n${MID_CTA_MARKER}\n`);
   });
 
   it("does not double-insert when the marker is already present", () => {
@@ -133,13 +157,6 @@ describe("tocHeadings", () => {
   });
 });
 
-describe("midPostCtaHref", () => {
-  it("sends guides to /chart and debunked to /chart/compare", () => {
-    expect(midPostCtaHref("guides")).toBe("/chart");
-    expect(midPostCtaHref("debunked")).toBe("/chart/compare");
-  });
-});
-
 describe("authored chrome strings", () => {
   it("locks authored chrome strings and never uses U+2014", () => {
     const src = readFileSync(join(__dirname, "article-structure.ts"), "utf8");
@@ -168,14 +185,18 @@ describe("post template wiring", () => {
     );
   });
 
-  it("renders byline and read time, and the publish date only for timely posts", () => {
+  it("renders byline, updated date, and read time on every post", () => {
     expect(page).toContain("article-byline");
-    expect(page).toContain("BLOG_BYLINE_SUB");
-    expect(page).toContain("BLOG_BYLINE_BIO");
+    expect(page).toContain("BLOG_BYLINE");
+    expect(page).toContain("article-intro-note");
+    expect(page).toContain("BLOG_INTRO_NOTE");
     expect(page).toContain("BLOG_METHOD_PATH");
-    expect(page).toContain("formatPostDate");
-    expect(page).toContain("showPublishedDate");
-    expect(page).toContain("post.isTimely");
+    expect(page).toContain("formatUpdatedDate");
+    expect(page).toContain("postUpdatedIso");
+    expect(page).toContain("<time dateTime={updatedIso}>");
+    expect(page).not.toContain("BLOG_BYLINE_SUB");
+    expect(page).not.toContain("BLOG_BYLINE_BIO");
+    expect(page).not.toContain("showPublishedDate");
     expect(page).toContain("readTimeMinutes");
     expect(page).toContain("min read");
     expect(page).toContain("buildArticleJsonLd(post)");
@@ -198,9 +219,11 @@ describe("post template wiring", () => {
     expect(page.indexOf("ChartReadingCapture")).toBeLessThan(page.indexOf("article-read-next"));
   });
 
-  it("injects the mid-post CTA through ArticleMarkdown, not the stored body", () => {
-    expect(page).toContain("midCtaHref={midPostCtaHref(post.category)}");
+  it("injects one mid-post CTA through ArticleMarkdown, and skips it for the sensitive slugs", () => {
+    expect(page).toContain("midCtaHref={inlineHref ?? undefined}");
+    expect(page).toContain("inlineCtaHref(post.slug)");
     expect(page).not.toContain(MID_CTA_MARKER);
+    expect(page).toContain("ArticleClosingCta");
   });
 
   it("related cards hide author, date, and read time, and index cards show a date only when timely", () => {

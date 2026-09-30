@@ -38,12 +38,14 @@ describe("ChartReadingCapture", () => {
     expect(container.textContent).not.toContain("\u2014");
     expect(screen.getByLabelText("Email")).toBeTruthy();
     expect(screen.getByLabelText("Name")).toBeTruthy();
-    expect(screen.getByLabelText("Birth place (optional)")).toBeTruthy();
-    const form = container.querySelector("form");
+    const place = screen.getByLabelText("Birth place (optional)");
+    expect(place).toBeTruthy();
     const helper = container.querySelector("#chart-reading-helper");
-    expect(form).toBeTruthy();
+    const button = screen.getByRole("button", { name: CHART_READING_SUBMIT });
     expect(helper).toBeTruthy();
-    expect(form!.compareDocumentPosition(helper!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(place.compareDocumentPosition(helper!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(helper!.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelector('input[type="time"]')).toBeNull();
   });
 
   it("posts to the capture route and shows the confirmation line", async () => {

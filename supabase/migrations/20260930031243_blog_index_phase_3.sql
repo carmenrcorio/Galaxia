@@ -26,10 +26,10 @@ where slug = 'synastry-chart-meaning'
 
 update public.posts
 set
-  dek = $merc_dek$Mercury retrogrades October 24 to November 13, 2026, in Scorpio. Instead of "don't sign contracts," here is what it means for how you and your partner talk.$merc_dek$,
+  dek = $merc_dek$Mercury retrogrades October 24 to November 13, 2026, in Scorpio. Instead of "don't sign contracts," see what it can mean for how you and your partner talk.$merc_dek$,
   updated_at = now()
 where slug = 'mercury-retrograde-relationships-2026'
-  and dek is distinct from $merc_dek$Mercury retrogrades October 24 to November 13, 2026, in Scorpio. Instead of "don't sign contracts," here is what it means for how you and your partner talk.$merc_dek$;
+  and dek is distinct from $merc_dek$Mercury retrogrades October 24 to November 13, 2026, in Scorpio. Instead of "don't sign contracts," see what it can mean for how you and your partner talk.$merc_dek$;
 
 update public.posts
 set

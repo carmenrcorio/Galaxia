@@ -178,7 +178,9 @@ describe("blog index phase 3 migration", () => {
     expect(excerpts.moon_dek).toContain("partner's Moon");
     expect(excerpts.moon_dek).not.toContain("beside a partner");
     expect(excerpts.syn_dek).toContain("each catch");
+    expect(excerpts.merc_dek).toContain("can mean");
     expect(excerpts.merc_dek).toContain("your partner");
+    expect(excerpts.merc_dek).not.toContain("it means");
     expect(excerpts.time_dek).toContain("birth chart");
     expect(SQL.match(/update public\.posts/g)).toHaveLength(5);
   });

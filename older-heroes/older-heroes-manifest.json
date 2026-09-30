@@ -1,0 +1,92 @@
+[
+  {
+    "slug": "what-a-chart-cannot-tell-you",
+    "hero": {
+      "file": "what-a-chart-cannot-tell-you-hero.png",
+      "width": 1600,
+      "height": 840,
+      "alt": "Decorative illustration: a chart wheel drawn in thin lavender lines with four gold points and an empty dashed circle at its center, suggesting what a chart leaves unknown."
+    }
+  },
+  {
+    "slug": "colleague-you-cannot-read",
+    "hero": {
+      "file": "colleague-you-cannot-read-hero.png",
+      "width": 1600,
+      "height": 840,
+      "alt": "Decorative illustration: a teal point on the left and a lavender point on the right, each with faint lines reaching toward a soft glowing barrier between them that they do not cross."
+    }
+  },
+  {
+    "slug": "sun-sign-not-personality",
+    "hero": {
+      "file": "sun-sign-not-personality-hero.png",
+      "width": 1600,
+      "height": 840,
+      "alt": "Decorative illustration: a small gold sun at the center of several concentric rings with many colored points orbiting around it, showing the Sun as one part of a larger chart."
+    }
+  },
+  {
+    "slug": "reading-chart-of-someone-who-died",
+    "hero": {
+      "file": "reading-chart-of-someone-who-died-hero.png",
+      "width": 1600,
+      "height": 840,
+      "alt": "Decorative illustration: a single soft gold star at the center of faint rings, with small white stars scattered around it and thin gold lines reaching out, a quiet memorial image."
+    }
+  },
+  {
+    "slug": "compatibility-scores-wrong-question",
+    "hero": {
+      "file": "compatibility-scores-wrong-question-hero.png",
+      "width": 1600,
+      "height": 840,
+      "alt": "Decorative illustration: a dial-shaped arc partly filled in coral, with a teal point and a gold point beside it joined by a dotted line, suggesting two people who cannot be reduced to one score."
+    }
+  },
+  {
+    "slug": "moon-square-saturn-parent-child",
+    "hero": {
+      "file": "moon-square-saturn-parent-child-hero.png",
+      "width": 1600,
+      "height": 840,
+      "alt": "Decorative illustration: a gold crescent moon and a coral ringed planet placed a right angle apart on a wheel, joined by lines through the center to show a square aspect."
+    }
+  },
+  {
+    "slug": "nobody-has-your-grandmother",
+    "hero": {
+      "file": "nobody-has-your-grandmother-hero.png",
+      "width": 1600,
+      "height": 840,
+      "alt": "Decorative illustration: a bright gold star at the top with lines branching down to five colored stars and then to smaller white stars, like a family tree drawn as a constellation."
+    }
+  },
+  {
+    "slug": "synastry-chart-meaning",
+    "hero": {
+      "file": "synastry-chart-meaning-hero.png",
+      "width": 1600,
+      "height": 840,
+      "alt": "Decorative illustration: two overlapping sets of concentric rings, one teal and one lavender, with gold lines connecting points between them to show contacts between two charts."
+    }
+  },
+  {
+    "slug": "synastry-aspects-explained",
+    "hero": {
+      "file": "synastry-aspects-explained-hero.png",
+      "width": 1600,
+      "height": 840,
+      "alt": "Decorative illustration: six white points around a ring joined by lines in lavender, teal and gold, forming the triangles and hexagon patterns that aspects make."
+    }
+  },
+  {
+    "slug": "mothers-moon-sign-apology",
+    "hero": {
+      "file": "mothers-moon-sign-apology-hero.png",
+      "width": 1600,
+      "height": 840,
+      "alt": "Decorative illustration: a large gold crescent moon with a soft glow, and a smaller coral star nearby joined by a dotted line, on a starry background with faint rings."
+    }
+  }
+]

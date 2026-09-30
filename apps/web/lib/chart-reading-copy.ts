@@ -7,8 +7,9 @@
 /**
  * FOUNDER-REVIEW: helper under the birth-date fields.
  * The form collects month, day, and year, plus an optional place. It does
- * not collect a birth time, so the helper does not ask for one. A missing
- * date still emails a sample from a published chart (1987-12-29, Little Rock).
+ * not collect a birth time, so the helper does not ask for one. When no usable
+ * birth date is provided, the email uses a sample from a published chart
+ * (1987-12-29, Little Rock) with an honest disclaimer.
  */
 export const CHART_READING_SAMPLE_NO_BIRTH_DATE =
   "We didn't have your birth date, so here's a sample reading to show you what Galaxia sees in a chart.";

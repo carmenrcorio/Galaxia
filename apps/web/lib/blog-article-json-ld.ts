@@ -24,7 +24,7 @@ export interface ArticleJsonLdPost {
  * never a `/blog/` prefix: posts render at `app/[slug]/page.tsx`.
  */
 export function buildArticleJsonLd(post: ArticleJsonLdPost): JsonLdObject {
-  const image = post.heroImageUrl?.trim() ? absolutePostImageUrl(post.heroImageUrl.trim()) : undefined;
+  const image = post.heroImageUrl?.trim() ? absolutePostImageUrl(post.heroImageUrl.trim()) ?? undefined : undefined;
   return {
     "@context": "https://schema.org",
     "@type": "Article",

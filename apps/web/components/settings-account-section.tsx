@@ -17,6 +17,7 @@ import {
   ACCOUNT_SECTION_COPY,
   shouldWarnBillingOnDelete
 } from "../lib/account-data";
+import { clearShownSharedTransits } from "../lib/this-week-seen";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { AccountDeleteDialog } from "./account-delete-dialog";
 import { Spinner } from "./spinner";
@@ -80,6 +81,7 @@ export function SettingsAccountSection({
       }
       // The login row is already gone, so this only clears the local session.
       await supabase.auth.signOut().catch(() => undefined);
+      clearShownSharedTransits();
       window.location.href = "/";
     } catch {
       setDeleteError(ACCOUNT_DELETE_COPY.errorGeneric);

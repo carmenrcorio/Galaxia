@@ -2974,14 +2974,6 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   line-height: 1.65;
   margin: 14px 0 0;
 }
-.article-chart-reading-howto { margin-top: 14px; }
-.article-chart-reading-howto-label {
-  margin: 0;
-  color: var(--cream);
-  font-size: .82rem;
-  font-weight: 600;
-}
-.article-chart-reading-howto .article-chart-reading-help { margin-top: 6px; }
 .article-chart-reading-form {
   display: grid;
   gap: 10px;

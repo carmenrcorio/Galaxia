@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { clearShownSharedTransits } from "../lib/this-week-seen";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 
 export function SignOutButton() {
@@ -16,6 +17,7 @@ export function SignOutButton() {
       setStatus("Sign-out failed. Try again.");
       return;
     }
+    clearShownSharedTransits();
     router.push("/login");
     router.refresh();
   };

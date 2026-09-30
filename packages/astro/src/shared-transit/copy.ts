@@ -325,8 +325,22 @@ function fill(template: string, vars: Record<string, string>): string {
 }
 
 export interface SharedTransitCopy {
+  /** In-app card line: planets, signs, timing, houses. */
   lead: string;
+  /** In-app relational paragraph. */
   body: string;
+  /** Lock-screen text. Names only. Never planets, signs, or aspect types. */
+  pushHeadline: string;
+  /**
+   * Full in-app text. The This Week card renders `lead` and `body`
+   * separately; together they are this string.
+   */
+  cardDetail: string;
+}
+
+// FOUNDER-REVIEW
+function pushHeadlineFor(nameA: string, nameB: string): string {
+  return `Something is shifting between ${nameA} and ${nameB} this week.`;
 }
 
 export interface SharedWeekCardModel {
@@ -359,7 +373,7 @@ export function toSharedWeekCardModel(event: SharedTransitEvent, whenUTC?: strin
 
 export function renderSharedTransitCopy(event: SharedTransitEvent, whenUTC?: string): SharedTransitCopy {
   const [a, b] = event.members;
-  if (!a || !b) return { lead: "", body: "" };
+  if (!a || !b) return { lead: "", body: "", pushHeadline: "", cardDetail: "" };
   const transiting = bodyDisplayName(event.transiting);
   const vars: Record<string, string> = {
     transiting,
@@ -397,12 +411,17 @@ export function renderSharedTransitCopy(event: SharedTransitEvent, whenUTC?: str
   const timing = timingPhrase(event, whenUTC);
   const house = houseClause(a, b);
   const lead = [leadCore, timing, house].filter(Boolean).join(" ");
-  return { lead, body };
+  const pushHeadline = pushHeadlineFor(a.personName, b.personName);
+  const cardDetail = [lead, body].filter(Boolean).join(" ");
+  return { lead, body, pushHeadline, cardDetail };
 }
 
 /**
  * Pair event from a stored row. Sign comes from the row. Longitude is unknown
  * here, so this helper does not claim a synastry link or a relationship role.
+ * `natalLon` is 0 as a placeholder and must not be fed to the synastry gate:
+ * 0 and 0 would look like a conjunction. Push callers pass real chart
+ * longitudes to `storedPairPassesScannerGate` and skip the row when it fails.
  * Speed is 0 because copy does not display it and the row did not store it.
  */
 export function sharedTransitEventFromStoredPair(input: {

@@ -66,6 +66,11 @@ export interface SharedTransitPersonInput {
   birthPrecision?: Precision | "none" | null;
   relation?: string | null;
   isSelf?: boolean;
+  /**
+   * From `isMinorForSafety`. When either person in a pair is a minor, copy
+   * uses a family frame or the neutral person frame, never partners.
+   */
+  isMinor?: boolean;
 }
 
 /** A card the old feed could emit, including 3+ person clusters and reordered duplicates. */

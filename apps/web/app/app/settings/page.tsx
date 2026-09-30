@@ -11,6 +11,7 @@ import { Spinner } from "../../../components/spinner";
 import { HOUSE_SYSTEM_OPTIONS, isHouseSystem, SHARED_WEEK_PREF_ALL, SHARED_WEEK_SETTINGS_BLURB } from "@galaxia/astro";
 import { DEFAULT_FETCH_TIMEOUT_MS, formatRelationshipLabel, withTimeout } from "@galaxia/core";
 import { EMPTY_STATE_WELCOME_HREF } from "../../../lib/nav-links";
+import { clearShownSharedTransits } from "../../../lib/this-week-seen";
 import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
 
 interface PersonLite {
@@ -192,6 +193,7 @@ export default function SettingsPage() {
       setSigningOut(false);
       return;
     }
+    clearShownSharedTransits();
     window.location.href = "/login";
   };
 

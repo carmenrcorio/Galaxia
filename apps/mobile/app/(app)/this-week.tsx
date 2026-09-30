@@ -12,7 +12,7 @@ import {
   type SharedTransitPersonInput,
   type SharedWeekCardModel,
 } from "@galaxia/astro";
-import { DEFAULT_FETCH_TIMEOUT_MS, peopleForThisWeek, passedPersonIds, sunSignFromChart, thisWeekRowsFromStored, withTimeout } from "@galaxia/core";
+import { DEFAULT_FETCH_TIMEOUT_MS, isMinorForSafety, peopleForThisWeek, passedPersonIds, sunSignFromChart, thisWeekRowsFromStored, withTimeout } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
 import { Link } from "expo-router";
 import { useEffect, useState } from "react";
@@ -47,7 +47,7 @@ export default function ThisWeekScreen() {
       const nowISO = new Date().toISOString();
       const [{ data: profile }, { data: peopleRows }, { data: upcomingRows }] = await Promise.all([
         supabase.from("profiles").select("relational_transit_alerts").eq("id", ownerId).maybeSingle(),
-        supabase.from("people").select("id, display_name, relation, birth_date, birth_precision, is_self, passed_at").eq("owner_id", ownerId),
+        supabase.from("people").select("id, display_name, relation, birth_date, birth_precision, is_self, is_minor, passed_at").eq("owner_id", ownerId),
         supabase
           .from("relational_transits")
           .select("active_from, transit_body, affected_profiles")
@@ -65,6 +65,7 @@ export default function ThisWeekScreen() {
         is_self: boolean;
         birth_date: string | null;
         birth_precision: Precision | "none" | null;
+        is_minor?: boolean | null;
         passed_at?: string | null;
       }>;
       const memorialIds = passedPersonIds(peopleList);
@@ -95,6 +96,11 @@ export default function ThisWeekScreen() {
           birthPrecision: raw.birth_precision,
           relation: raw.relation,
           isSelf: raw.is_self,
+          isMinor: isMinorForSafety({
+            isMinor: raw.is_minor,
+            birthDate: raw.birth_date,
+            birthPrecision: raw.birth_precision,
+          }),
         });
       }
       const seen = await readShownSharedTransits(ownerId);

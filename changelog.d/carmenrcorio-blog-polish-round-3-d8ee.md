@@ -4,7 +4,7 @@
 
 `[CHANGED]` Every post gets one closing call to action. Timely posts and three sensitive posts use the approved body variants. One inline “See how this plays out in your own chart →” link sits after the first section that explains the chart idea. The three sensitive posts have no inline link.
 
-`[CHANGED]` The chart-reading helper under the birth fields is “We calculate the chart from the date you enter.” The form collects a date and an optional place, not a birth time.
+`[CHANGED]` The chart-reading helper under the birth fields is “We calculate the chart from the date you enter.” The form collects a date and an optional place, not a birth time. The memorial closer does not ask for a birth time.
 
 `[CHANGED]` Figure text-description toggles use a dark-theme `<details>` with a cream label, gold marker, and gold focus ring.
 

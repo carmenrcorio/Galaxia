@@ -48,7 +48,10 @@ describe("blog closing and inline CTAs", () => {
     expect(memorial.heading).toBe("Look at their chart, gently");
     expect(memorial.button).toBe("View their chart");
     expect(memorial.href).toBe("/chart");
-    expect(memorial.body).not.toMatch(/Take it at your own pace\.[\s\S]*Take it at your own pace/);
+    expect(memorial.body).toBe(
+      "Add their birth date to see their chart calculated from astronomical positions. Take it at your own pace."
+    );
+    expect(memorial.body.toLowerCase()).not.toContain("birth time");
 
     const colleague = closingCtaForSlug("colleague-you-cannot-read");
     expect(colleague.heading).toBe("See where your charts connect");

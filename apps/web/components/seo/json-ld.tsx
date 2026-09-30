@@ -19,12 +19,17 @@ interface JsonLdProps {
   data: JsonLdObject | JsonLdObject[];
 }
 
+/** Escape `<` / `>` so a string value cannot close the hosting `<script>` tag. */
+export function stringifyJsonLdForScript(data: JsonLdObject | JsonLdObject[]): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c").replace(/>/g, "\\u003e");
+}
+
 export function JsonLd({ data }: JsonLdProps) {
   return (
     <script
       type="application/ld+json"
-      // eslint-disable-next-line react/no-danger -- JSON-LD must be raw, unescaped JSON inside the script tag.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      // eslint-disable-next-line react/no-danger -- JSON-LD must be raw JSON; angle brackets are unicode-escaped.
+      dangerouslySetInnerHTML={{ __html: stringifyJsonLdForScript(data) }}
     />
   );
 }

@@ -9,9 +9,11 @@ import {
   hasCompleteBirthData,
   isValidCaptureEmail,
   normalizeCaptureEmail,
+  resolvePersonalizedBirthDate,
   selectReadingPlacements,
   signOf
 } from "./chart-reading";
+import { CHART_READING_SAMPLE_NO_BIRTH_DATE } from "./chart-reading-copy";
 
 function dateWithUncertainMoon(): { month: number; day: number; year: number } {
   for (let day = 1; day <= 28; day += 1) {
@@ -33,11 +35,31 @@ describe("email validation", () => {
 });
 
 describe("hasCompleteBirthData", () => {
-  it("requires month, day, year, and a non-empty city together", () => {
+  it("requires month, day, and year together; place is optional", () => {
     expect(hasCompleteBirthData({ month: 12, day: 29, year: 1987, birthPlace: "Little Rock" })).toBe(true);
-    expect(hasCompleteBirthData({ month: 12, day: 29, year: 1987, birthPlace: "  " })).toBe(false);
-    expect(hasCompleteBirthData({ month: 12, day: 29, year: 1987 })).toBe(false);
+    expect(hasCompleteBirthData({ month: 12, day: 29, year: 1987, birthPlace: "  " })).toBe(true);
+    expect(hasCompleteBirthData({ month: 12, day: 29, year: 1987 })).toBe(true);
+    expect(hasCompleteBirthData({ month: 3, day: 15, year: 1990 })).toBe(true);
+    expect(hasCompleteBirthData({ month: 3, day: 15 })).toBe(false);
     expect(hasCompleteBirthData({ birthPlace: "Little Rock" })).toBe(false);
+  });
+});
+
+describe("resolvePersonalizedBirthDate", () => {
+  it("rejects partial, invalid, and future dates", () => {
+    expect(resolvePersonalizedBirthDate({ month: 3, day: 15 })).toBeNull();
+    expect(resolvePersonalizedBirthDate({ month: 2, day: 31, year: 1993 })).toBeNull();
+    const nextYear = new Date().getFullYear() + 2;
+    expect(resolvePersonalizedBirthDate({ month: 1, day: 1, year: nextYear })).toBeNull();
+    const tomorrow = new Date();
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    expect(
+      resolvePersonalizedBirthDate({
+        month: tomorrow.getUTCMonth() + 1,
+        day: tomorrow.getUTCDate(),
+        year: tomorrow.getUTCFullYear()
+      })
+    ).toBeNull();
   });
 });
 
@@ -81,6 +103,7 @@ describe("buildChartReading", () => {
     const reading = buildChartReading({ name: "Maya" });
     expect(reading.sample).toBe(true);
     expect(reading.personName).toBe("Maya");
+    expect(reading.sampleDisclaimer).toBe(CHART_READING_SAMPLE_NO_BIRTH_DATE);
     expect(reading.sunSign).toBe(signOf(buildFallbackChart(), "sun"));
     expect(reading.moonSign).toBe(signOf(buildFallbackChart(), "moon"));
     expect(reading.emptyNote).toBeNull();
@@ -90,6 +113,44 @@ describe("buildChartReading", () => {
       );
       expect(BODY_LABEL[placement.body]).toBeTruthy();
     }
+  });
+
+  it("uses the reader birthday without a birth place, not the 1987 Little Rock sample", () => {
+    const reading = buildChartReading({
+      month: 3,
+      day: 15,
+      year: 1990,
+      birthPlace: ""
+    });
+    expect(reading.sample).toBe(false);
+    expect(reading.sampleDisclaimer).toBeNull();
+    expect(reading.sunSign).toBe("Pisces");
+    const chart = buildPersonalizedChart({ month: 3, day: 15, year: 1990 });
+    expect(reading.sunSign).toBe(signOf(chart, "sun"));
+    expect(reading.moonSign).toBe(signOf(chart, "moon"));
+    const fallbackSun = signOf(buildFallbackChart(), "sun");
+    expect(fallbackSun).toBe("Capricorn");
+    expect(reading.sunSign).not.toBe(fallbackSun);
+  });
+
+  it("matches the no-place chart when a city string is provided (place is not geocoded)", () => {
+    const withPlace = buildChartReading({
+      month: 3,
+      day: 15,
+      year: 1990,
+      birthPlace: "Austin, TX"
+    });
+    const withoutPlace = buildChartReading({
+      month: 3,
+      day: 15,
+      year: 1990,
+      birthPlace: ""
+    });
+    expect(withPlace.sample).toBe(false);
+    expect(withoutPlace.sample).toBe(false);
+    expect(withPlace.sunSign).toBe(withoutPlace.sunSign);
+    expect(withPlace.moonSign).toBe(withoutPlace.moonSign);
+    expect(withPlace.placements.map((p) => p.body)).toEqual(withoutPlace.placements.map((p) => p.body));
   });
 
   it("computes a date-only chart when date and city are both present", () => {
@@ -115,9 +176,10 @@ describe("buildChartReading", () => {
     }
   });
 
-  it("rejects an impossible calendar date rather than computing a wrong chart", () => {
-    expect(() =>
-      buildChartReading({ month: 2, day: 31, year: 1993, birthPlace: "Austin" })
-    ).toThrow(/Invalid date/);
+  it("falls back to the sample with a disclaimer for an impossible calendar date", () => {
+    const reading = buildChartReading({ month: 2, day: 31, year: 1993, birthPlace: "Austin" });
+    expect(reading.sample).toBe(true);
+    expect(reading.sampleDisclaimer).toBe(CHART_READING_SAMPLE_NO_BIRTH_DATE);
+    expect(reading.sunSign).toBe(signOf(buildFallbackChart(), "sun"));
   });
 });

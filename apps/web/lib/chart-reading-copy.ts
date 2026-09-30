@@ -10,6 +10,9 @@
  * not collect a birth time, so the helper does not ask for one. A missing
  * date still emails a sample from a published chart (1987-12-29, Little Rock).
  */
+export const CHART_READING_SAMPLE_NO_BIRTH_DATE =
+  "We didn't have your birth date, so here's a sample reading to show you what Galaxia sees in a chart.";
+
 export const CHART_READING_BIRTH_DATA_NOTE = "We calculate the chart from the date you enter.";
 
 /** FOUNDER-REVIEW: heading for the birth-time help blurb. */

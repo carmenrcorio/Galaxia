@@ -205,6 +205,21 @@ describe("blog hero and figure images", () => {
     expect(placed.markdown.indexOf("Alpha.")).toBeLessThan(placed.markdown.indexOf(FIGURE_MARKER));
   });
 
+  it("does not render figure images with unsafe src schemes", () => {
+    expect(
+      renderToStaticMarkup(
+        createElement(ArticleDiagram, {
+          src: "http://example.com/figure.png",
+          alt: "Alt",
+          caption: "Caption",
+          longDescription: "Long.",
+          width: 1200,
+          height: 700
+        })
+      )
+    ).toBe("");
+  });
+
   it("sets an absolute hero on Open Graph, Twitter, and Article JSON-LD", () => {
     const url = "/blog/synastry-vs-composite-chart/hero.png";
     const alt = "Decorative illustration: two overlapping outlined circles.";

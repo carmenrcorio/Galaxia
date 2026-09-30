@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { safeFigureImageSrc } from "../../lib/safe-image-url";
 
 /** FOUNDER-REVIEW: "Text description of this diagram" */
 export const FIGURE_TEXT_DESCRIPTION_LABEL = "Text description of this diagram";
@@ -24,7 +25,7 @@ export function ArticleDiagram({
   width,
   height
 }: ArticleDiagramProps): ReactNode {
-  const imageSrc = src.trim();
+  const imageSrc = safeFigureImageSrc(src);
   const imageAlt = alt.trim();
   const imageCaption = caption.trim();
   const description = longDescription.trim();

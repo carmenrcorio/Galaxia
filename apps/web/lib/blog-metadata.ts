@@ -15,11 +15,36 @@ export const SITE_OG_IMAGE = {
 
 export const SITE_ORIGIN = "https://galaxiamea.com";
 
-/** OG and JSON-LD need an absolute image URL. Public paths stay relative in the database. */
-export function absolutePostImageUrl(url: string): string {
-  if (/^https?:\/\//i.test(url)) return url;
-  if (url.startsWith("/")) return `${SITE_ORIGIN}${url}`;
-  return url;
+const BLOCKED_IN_IMAGE_URL = /<\/script>|javascript:|data:/i;
+
+function isValidHttpsAbsoluteImageUrl(url: string): boolean {
+  if (!url.startsWith("https://")) return false;
+  if (BLOCKED_IN_IMAGE_URL.test(url)) return false;
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** OG and JSON-LD need an absolute https image URL. Public paths stay relative in the database. */
+export function absolutePostImageUrl(url: string): string | null {
+  const trimmed = url.trim();
+  if (!trimmed || BLOCKED_IN_IMAGE_URL.test(trimmed)) return null;
+
+  let absolute: string;
+  if (/^https?:\/\//i.test(trimmed)) {
+    absolute = trimmed;
+  } else if (trimmed.startsWith("/")) {
+    absolute = `${SITE_ORIGIN}${trimmed}`;
+  } else {
+    return null;
+  }
+
+  if (BLOCKED_IN_IMAGE_URL.test(absolute)) return null;
+  if (!isValidHttpsAbsoluteImageUrl(absolute)) return null;
+  return absolute;
 }
 
 export interface PostMetadataInput {
@@ -42,10 +67,11 @@ export interface CategoryMetadataInput {
  */
 export function buildPostMetadata(post: PostMetadataInput): Metadata {
   const heroAlt = post.heroImageAlt?.trim() ?? "";
-  const ogImage = post.heroImageUrl
+  const heroAbsolute = post.heroImageUrl ? absolutePostImageUrl(post.heroImageUrl) : null;
+  const ogImage = heroAbsolute
     ? [
         {
-          url: absolutePostImageUrl(post.heroImageUrl),
+          url: heroAbsolute,
           alt: heroAlt || post.title,
           width: heroAlt ? 1600 : 1200,
           height: heroAlt ? 840 : 630

@@ -105,9 +105,9 @@ describe("blog index helpers", () => {
     expect(startHere.map((item) => item.slug)).toEqual(["moon-sign-in-relationships"]);
   });
 
-  it("uses the constellation placeholder for title-on-starfield heroes and any remote hero", () => {
+  it("uses a local hero for the older posts and the placeholder for any remote hero", () => {
     expect(cardThumbnailSrc("sun-sign-not-personality", "/blog/sun-sign-not-personality/hero.png")).toBe(
-      BLOG_CARD_PLACEHOLDER_SRC
+      "/blog/sun-sign-not-personality/hero.png"
     );
     expect(
       cardThumbnailSrc(
@@ -119,8 +119,8 @@ describe("blog index helpers", () => {
       "/blog/whole-sign-houses-explained/hero.png"
     );
     expect(cardThumbnailSrc("draft-without-art", null)).toBeNull();
-    expect(TITLE_HERO_PLACEHOLDER_SLUGS).toContain("synastry-chart-meaning");
-    expect(TITLE_HERO_PLACEHOLDER_SLUGS).not.toContain("venus-retrograde-2026-relationships");
+    expect(TITLE_HERO_PLACEHOLDER_SLUGS).toEqual([]);
+    expect(TITLE_HERO_PLACEHOLDER_SLUGS).not.toContain("synastry-chart-meaning");
   });
 
   it("keeps new index copy free of em dashes", () => {

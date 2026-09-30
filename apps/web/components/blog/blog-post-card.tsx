@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatPostDate, getCategory, type BlogPost } from "../../lib/blog";
+import { BLOG_ABOUT_TAG, formatPostDate, getCategory, type BlogPost } from "../../lib/blog";
 
 export function BlogPostCard({
   post,
@@ -24,7 +24,11 @@ export function BlogPostCard({
       {!related && post.heroImageUrl ? (
         <img className="blog-post-card-thumb" src={post.heroImageUrl} alt={post.heroImageAlt ?? ""} />
       ) : null}
-      {!related && category ? <span className="blog-post-card-tag">{category.label}</span> : null}
+      {!related && post.aboutGalaxia ? (
+        <span className="blog-post-card-tag">{BLOG_ABOUT_TAG}</span>
+      ) : !related && category ? (
+        <span className="blog-post-card-tag">{category.label}</span>
+      ) : null}
       <h2 className="blog-post-card-title">{post.title}</h2>
       <p className="blog-post-card-dek">{post.dek}</p>
       {variant !== "related" ? (

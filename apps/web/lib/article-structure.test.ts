@@ -113,6 +113,12 @@ describe("pickRelatedPosts", () => {
   it("fills from the other category when the same category has fewer than two", () => {
     expect(pickRelatedPosts(posts, { slug: "d", category: "debunked" }).map((p) => p.slug)).toEqual(["e", "a"]);
   });
+
+  it("uses relatedSlugs in order and skips a missing slug", () => {
+    expect(
+      pickRelatedPosts(posts, { slug: "a", category: "guides", relatedSlugs: ["d", "missing", "e"] }).map((p) => p.slug)
+    ).toEqual(["d", "e"]);
+  });
 });
 
 describe("tocHeadings", () => {
@@ -164,6 +170,9 @@ describe("post template wiring", () => {
 
   it("renders byline and read time, and the publish date only for timely posts", () => {
     expect(page).toContain("article-byline");
+    expect(page).toContain("BLOG_BYLINE_SUB");
+    expect(page).toContain("BLOG_BYLINE_BIO");
+    expect(page).toContain("BLOG_METHOD_PATH");
     expect(page).toContain("formatPostDate");
     expect(page).toContain("showPublishedDate");
     expect(page).toContain("post.isTimely");

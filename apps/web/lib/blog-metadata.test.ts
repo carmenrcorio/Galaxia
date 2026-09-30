@@ -76,10 +76,10 @@ describe("buildCategoryMetadata", () => {
 
   it("keeps astrology keywords in category titles and descriptions", () => {
     const guides = buildCategoryMetadata({ slug: "guides", label: "Astrology guides" });
-    expect(guides.title).toMatch(/Astrology Guides for Real Birth Charts/);
-    expect(String(guides.description)).toMatch(/natal charts/i);
-    const debunked = buildCategoryMetadata({ slug: "debunked", label: "Astrology, debunked" });
-    expect(debunked.title).toMatch(/Astrology, Debunked/);
+    expect(guides.title).toMatch(/Learn Astrology: Birth Charts, Synastry, and Houses/);
+    expect(String(guides.description)).toMatch(/birth charts/i);
+    const debunked = buildCategoryMetadata({ slug: "debunked", label: "Honest astrology" });
+    expect(debunked.title).toMatch(/Honest Astrology/);
     expect(String(debunked.description)).toMatch(/astrology/i);
   });
 });

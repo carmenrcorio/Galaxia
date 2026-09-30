@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArticleDiagram } from "../../components/blog/article-diagram";
 import { ArticleMarkdown } from "../../components/blog/article-markdown";
@@ -18,7 +19,15 @@ import {
 } from "../../lib/article-structure";
 import { buildArticleJsonLd } from "../../lib/blog-article-json-ld";
 import { buildPostMetadata } from "../../lib/blog-metadata";
-import { formatPostDate, getPublishedPost, getPublishedPosts } from "../../lib/blog";
+import {
+  BLOG_BYLINE_BIO,
+  BLOG_BYLINE_SUB,
+  BLOG_METHOD_LINK_LABEL,
+  BLOG_METHOD_PATH,
+  formatPostDate,
+  getPublishedPost,
+  getPublishedPosts
+} from "../../lib/blog";
 
 type Params = { slug: string };
 
@@ -60,7 +69,11 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
   if (!post) notFound();
 
   const toc = tocHeadings(post.body);
-  const related = pickRelatedPosts(published, post);
+  const related = pickRelatedPosts(published, {
+    slug: post.slug,
+    category: post.category,
+    relatedSlugs: post.relatedSlugs
+  });
   const publishedLabel = post.publishedAt ? formatPostDate(post.publishedAt) : null;
   const showPublishedDate = post.isTimely && publishedLabel;
   const heroAlt = post.heroImageAlt?.trim() ?? "";
@@ -99,6 +112,12 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
           {post.byline}
           {showPublishedDate ? ` · ${publishedLabel}` : ""}
           {` · ${post.readTimeMinutes} min read`}
+        </p>
+        <p className="article-byline-sub">{BLOG_BYLINE_SUB}</p>
+        <p className="article-byline-bio">{BLOG_BYLINE_BIO}</p>
+        {post.methodNote ? <p className="article-method-note">{post.methodNote}</p> : null}
+        <p className="article-byline-method">
+          <Link href={BLOG_METHOD_PATH}>{BLOG_METHOD_LINK_LABEL}</Link>
         </p>
         {post.heroImageUrl && heroAlt ? (
           <figure className="article-hero">

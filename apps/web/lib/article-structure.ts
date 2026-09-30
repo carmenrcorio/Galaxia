@@ -208,17 +208,31 @@ export interface RelatedPostInput {
   slug: string;
   category: "guides" | "debunked";
   publishedAt: string | null;
+  relatedSlugs?: string[] | null;
 }
 
 /**
- * Two posts from the same category, newest first, excluding `current`.
- * If fewer than `count` exist there, fill from the other category.
+ * Read next is the post's `relatedSlugs`, in that order, when any are set.
+ * Posts without a pair still fall back to two from the same category, newest
+ * first, then the other category. That fallback is what older posts use
+ * until a topic pair is approved.
  */
 export function pickRelatedPosts<T extends RelatedPostInput>(
   posts: T[],
-  current: { slug: string; category: "guides" | "debunked" },
+  current: { slug: string; category: "guides" | "debunked"; relatedSlugs?: string[] | null },
   count = 2
 ): T[] {
+  const explicit = (current.relatedSlugs ?? []).filter((slug) => slug && slug !== current.slug);
+  if (explicit.length > 0) {
+    const bySlug = new Map(posts.map((post) => [post.slug, post]));
+    const picked: T[] = [];
+    for (const slug of explicit) {
+      const post = bySlug.get(slug);
+      if (post && post.slug !== current.slug) picked.push(post);
+      if (picked.length >= count) break;
+    }
+    return picked;
+  }
   const others = posts.filter((post) => post.slug !== current.slug);
   const byDateDesc = (a: T, b: T) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "");
   const same = others.filter((post) => post.category === current.category).sort(byDateDesc);

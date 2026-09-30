@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   CHART_READING_BIRTH_DATA_NOTE,
   CHART_READING_CLOSING_LINE,
+  CHART_READING_SAMPLE_NO_BIRTH_DATE,
   CHART_READING_CONFIRMATION,
   CHART_READING_SUBMIT,
   chartReadingEmailSubject,
@@ -23,6 +24,7 @@ describe("chart-reading authored copy", () => {
       CHART_READING_SUBMIT,
       CHART_READING_CONFIRMATION,
       CHART_READING_CLOSING_LINE,
+      CHART_READING_SAMPLE_NO_BIRTH_DATE,
       chartReadingEmailSubject("Cancer"),
       chartReadingEmailSubject(null),
       chartReadingOpeningLine({ personName: "Sam", sample: false }),

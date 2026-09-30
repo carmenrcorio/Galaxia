@@ -71,9 +71,6 @@ function stripSqlComments(sql: string): string {
 }
 
 function functionBody(sql: string): string {
-  // Anchor on purge_own_account_data's own declaration rather than the first
-  // dollar-quoted block in the file. 20260913160000 defines two trigger
-  // functions ahead of the purge, so "the first body" is not this one.
   const decl = sql.search(/create or replace function public\.purge_own_account_data\s*\(/i);
   if (decl < 0) {
     throw new Error("could not find purge_own_account_data declaration");
@@ -86,6 +83,19 @@ function functionBody(sql: string): string {
   // 20260909040000_push_tokens.sql has leftover editor line-number prefixes
   // (`    50|`) inside the function; production's applied body does not. Strip them
   // so we compare SQL, not the polluted file markup.
+  return sql.slice(start + "as $$".length, end).replace(/^\s*\d+\|/gm, "");
+}
+
+function functionBodyPurgeUser(sql: string): string {
+  const decl = sql.search(/create or replace function public\.purge_user_account\s*\(/i);
+  if (decl < 0) {
+    throw new Error("could not find purge_user_account declaration");
+  }
+  const start = sql.indexOf("as $$", decl);
+  const end = sql.indexOf("$$;", start);
+  if (start < 0 || end <= start) {
+    throw new Error("could not find plpgsql body");
+  }
   return sql.slice(start + "as $$".length, end).replace(/^\s*\d+\|/gm, "");
 }
 
@@ -108,11 +118,11 @@ function latestPurgeSource(): string {
   let latest = "";
   for (const file of files) {
     const src = readMigration(file);
-    if (/create or replace function public\.purge_own_account_data\s*\(/i.test(src)) {
+    if (/create or replace function public\.purge_user_account\s*\(/i.test(src)) {
       latest = src;
     }
   }
-  if (!latest) throw new Error("no purge_own_account_data definition found");
+  if (!latest) throw new Error("no purge_user_account definition found");
   return latest;
 }
 
@@ -391,10 +401,10 @@ describe("20260913160000_constellation_connect_schema.sql", () => {
   });
 });
 
-describe("the latest purge_own_account_data definition keeps the FK-gap fix", () => {
+describe("the latest purge_user_account definition keeps the FK-gap fix", () => {
   it("wins over earlier CREATE OR REPLACE recreations", () => {
     const latest = latestPurgeSource();
-    const body = functionBody(latest);
+    const body = functionBodyPurgeUser(latest);
     const tp = body.indexOf("delete from thread_participants where user_id = uid;");
     const threads = body.indexOf("delete from threads where owner_id = uid;");
     expect(tp).toBeGreaterThan(-1);
@@ -414,7 +424,7 @@ describe("the latest purge_own_account_data definition keeps the FK-gap fix", ()
   });
 
   it("also keeps the constellation-connect cleanup, in both directions", () => {
-    const body = functionBody(latestPurgeSource());
+    const body = functionBodyPurgeUser(latestPurgeSource());
     expect(body).toContain(
       "delete from connection_grants where subject_user = uid or viewer_user = uid;"
     );

@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { publicEnv } from "../../../lib/env";
 import { privateEnv } from "../../../lib/env.server";
 
+/**
+ * Waitlist signup. Uses the service role (RLS denies direct client inserts on
+ * early_access). Email format is validated here; duplicates upsert cleanly.
+ */
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as { email?: string; source?: string };

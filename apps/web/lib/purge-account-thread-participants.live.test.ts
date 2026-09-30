@@ -105,7 +105,9 @@ describe("VERIFY (live DB): purge_own_account_data clears thread_participants an
   }, 30_000);
 
   it("clears participation, keeps audit rows with nulled FKs, then auth.users delete succeeds", async () => {
-    const { error: purgeError } = await departing.rpc("purge_own_account_data");
+    const { error: purgeError } = await admin.rpc("purge_user_account", {
+      p_user_id: departingId
+    });
     expect(purgeError).toBeNull();
 
     const { data: leftover, error: leftoverErr } = await admin

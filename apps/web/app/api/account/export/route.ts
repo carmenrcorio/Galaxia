@@ -42,11 +42,7 @@ export async function GET(req: Request) {
   const uid = user.id;
 
   const { data: admitted, error: rateError } = await supabase.rpc(
-    "check_and_increment_account_export_rate",
-    {
-      p_limit: ACCOUNT_EXPORT_RATE_LIMIT.limit,
-      p_window_seconds: ACCOUNT_EXPORT_RATE_LIMIT.windowSeconds
-    }
+    "check_and_increment_account_export_rate"
   );
   if (rateError) {
     return NextResponse.json({ error: ACCOUNT_EXPORT_COPY.errorGeneric }, { status: 500 });

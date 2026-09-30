@@ -104,11 +104,11 @@ function latestPurgeBody(): string {
   let latest = "";
   for (const file of files) {
     const src = readFileSync(join(MIGRATIONS, file), "utf8");
-    if (/create or replace function public\.purge_own_account_data\s*\(/i.test(src)) {
+    if (/create or replace function public\.purge_user_account\s*\(/i.test(src)) {
       latest = src;
     }
   }
-  const decl = latest.search(/create or replace function public\.purge_own_account_data\s*\(/i);
+  const decl = latest.search(/create or replace function public\.purge_user_account\s*\(/i);
   const start = latest.indexOf("as $$", decl);
   const end = latest.indexOf("$$;", start);
   return latest.slice(start + "as $$".length, end);
@@ -291,12 +291,8 @@ values ('purge-replay-capture@example.com', false);
 do $$
 begin
   perform set_config('request.jwt.claim.sub', '${DEPARTING}', true);
-  perform set_config(
-    'request.jwt.claims',
-    json_build_object('sub', '${DEPARTING}', 'role', 'authenticated')::text,
-    true
-  );
-  perform public.purge_own_account_data();
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  perform public.purge_user_account('${DEPARTING}'::uuid);
 end;
 $$;
 `;

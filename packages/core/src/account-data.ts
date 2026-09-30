@@ -398,6 +398,8 @@ export const ACCOUNT_DELETE_COPY = {
     "Deleting your account does not cancel billing. If you have an active subscription (or lifetime access billed through our payment provider), cancel it first so you are not charged after your account is gone.",
   billingLinkLabel: "Cancel subscription",
   errorGeneric: "We could not delete your account. Nothing was removed. Please try again.",
+  errorPasswordRequired: "Enter your password to confirm account deletion.",
+  errorPasswordInvalid: "That password does not match this account. Nothing was removed.",
   successRedirectNote: "Your account has been deleted."
 } as const;
 
@@ -420,6 +422,7 @@ export const ACCOUNT_DELETE_MODAL_COPY = {
   title: "Delete my account",
   body: "This will permanently delete your account, your constellation, and everything in it. This cannot be undone.",
   typePrompt: `Type ${DELETE_CONFIRMATION_DISPLAY_WORD} to confirm.`,
+  passwordPrompt: "Your password",
   confirmButton: "Delete my account forever",
   confirmBusy: "Deleting your account",
   cancelButton: "Keep my account"

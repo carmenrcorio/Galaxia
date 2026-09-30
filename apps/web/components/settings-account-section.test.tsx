@@ -61,18 +61,21 @@ describe("Settings Account section", () => {
     expect(screen.getByText(ACCOUNT_DELETE_MODAL_COPY.typePrompt)).toBeTruthy();
   });
 
-  it("keeps the confirm button disabled until DELETE is typed", () => {
+  it("keeps the confirm button disabled until DELETE and password are entered", () => {
     render(<SettingsAccountSection subscriptionStatus={null} />);
     fireEvent.click(screen.getByRole("button", { name: ACCOUNT_SECTION_COPY.deleteButton }));
     const confirm = screen.getByRole("button", {
       name: ACCOUNT_DELETE_MODAL_COPY.confirmButton
     }) as HTMLButtonElement;
     const input = screen.getByPlaceholderText("DELETE") as HTMLInputElement;
+    const password = document.getElementById(`${input.id}-password`) as HTMLInputElement;
 
     expect(confirm.disabled).toBe(true);
     fireEvent.change(input, { target: { value: "DELET" } });
     expect(confirm.disabled).toBe(true);
     fireEvent.change(input, { target: { value: "DELETE" } });
+    expect(confirm.disabled).toBe(true);
+    fireEvent.change(password, { target: { value: "secret" } });
     expect(confirm.disabled).toBe(false);
   });
 
@@ -83,12 +86,19 @@ describe("Settings Account section", () => {
     render(<SettingsAccountSection subscriptionStatus={null} />);
     fireEvent.click(screen.getByRole("button", { name: ACCOUNT_SECTION_COPY.deleteButton }));
     fireEvent.change(screen.getByPlaceholderText("DELETE"), { target: { value: "DELETE" } });
+    const deleteInput = screen.getByPlaceholderText("DELETE") as HTMLInputElement;
+    fireEvent.change(document.getElementById(`${deleteInput.id}-password`)!, {
+      target: { value: "secret" }
+    });
     fireEvent.click(screen.getByRole("button", { name: ACCOUNT_DELETE_MODAL_COPY.confirmButton }));
 
     await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/account/delete",
-      expect.objectContaining({ method: "POST", body: JSON.stringify({ confirmation: "DELETE" }) })
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ confirmation: "DELETE", password: "secret" })
+      })
     );
     expect(window.location.href).toBe("/");
   });
@@ -102,6 +112,10 @@ describe("Settings Account section", () => {
     render(<SettingsAccountSection subscriptionStatus={null} />);
     fireEvent.click(screen.getByRole("button", { name: ACCOUNT_SECTION_COPY.deleteButton }));
     fireEvent.change(screen.getByPlaceholderText("DELETE"), { target: { value: "DELETE" } });
+    const deleteInput = screen.getByPlaceholderText("DELETE") as HTMLInputElement;
+    fireEvent.change(document.getElementById(`${deleteInput.id}-password`)!, {
+      target: { value: "secret" }
+    });
     fireEvent.click(screen.getByRole("button", { name: ACCOUNT_DELETE_MODAL_COPY.confirmButton }));
 
     await screen.findByText("We could not delete your account.");

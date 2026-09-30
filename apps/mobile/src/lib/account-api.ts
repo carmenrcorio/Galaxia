@@ -54,10 +54,14 @@ export async function requestAccountExport(
 
 export async function requestAccountDelete(
   accessToken: string,
-  confirmation: string
+  confirmation: string,
+  password: string
 ): Promise<{ ok: true } | AccountActionErr> {
   if (!isDeleteConfirmation(confirmation)) {
     return { ok: false, error: 'Type the word "delete" to confirm account deletion.' };
+  }
+  if (!password) {
+    return { ok: false, error: ACCOUNT_DELETE_COPY.errorPasswordRequired };
   }
   let url: string;
   try {
@@ -69,7 +73,10 @@ export async function requestAccountDelete(
     const res = await fetch(url, {
       method: "POST",
       headers: bearerHeaders(accessToken, true),
-      body: JSON.stringify({ confirmation: confirmation.trim().toLowerCase() })
+      body: JSON.stringify({
+        confirmation: confirmation.trim().toLowerCase(),
+        password
+      })
     });
     if (!res.ok) {
       const body = (await res.json().catch(() => ({}))) as { error?: string };

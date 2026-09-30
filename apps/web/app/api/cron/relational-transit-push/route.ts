@@ -1,11 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { MAJOR_RELATIONAL_TRANSIT_BODIES, renderSharedTransitCopy, sharedTransitEventFromStoredPair, type AspectType, type BodyName, type Sign } from "@galaxia/astro";
+import { MAJOR_RELATIONAL_TRANSIT_BODIES, renderSharedTransitCopy, scannerNatalLongitude, sharedTransitEventFromStoredPair, type AspectType, type BodyName, type NatalChart, type Sign } from "@galaxia/astro";
 import { livingAffectedForThisWeek, passedPersonIds } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
 import { cronBearerMatches } from "../../../../lib/cron-auth";
 import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary";
+import { relationalPushSafetySkip } from "../../../../lib/relational-transit-push-safety";
 
 /**
  * Push-send job for Generational Transit Alerts (Feature 3, part 2).
@@ -52,6 +53,14 @@ interface RelationalTransitRow {
   }>;
 }
 
+interface PushPersonRow {
+  id: string;
+  passed_at: string | null;
+  is_minor: boolean | null;
+  birth_date: string | null;
+  birth_precision: "none" | "exact" | "date" | "year" | null;
+}
+
 export const maxDuration = 800;
 
 export async function GET(req: Request) {
@@ -76,7 +85,7 @@ async function handle(req: Request) {
   const supabase = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, { auth: { persistSession: false } });
 
   const now = Date.now();
-  const skipped = { noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0, memorialFiltered: 0, pushFailed: 0 };
+  const skipped = { noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0, memorialFiltered: 0, minorFiltered: 0, stalePair: 0, pushFailed: 0 };
   let pushed = 0;
 
   const walk = await walkCronPages({
@@ -116,11 +125,12 @@ async function handle(req: Request) {
 
     const { data: peopleRows } = await supabase
       .from("people")
-      .select("id, passed_at")
+      .select("id, passed_at, is_minor, birth_date, birth_precision")
       .eq("owner_id", event.owner_id);
+    const peopleList = (peopleRows ?? []) as PushPersonRow[];
     const livingProfiles = livingAffectedForThisWeek(
       event.affected_profiles,
-      passedPersonIds((peopleRows ?? []) as Array<{ id: string; passed_at: string | null }>)
+      passedPersonIds(peopleList)
     );
     if (!livingProfiles) {
       skipped.memorialFiltered += 1;
@@ -128,6 +138,47 @@ async function handle(req: Request) {
       // memorial people stay marked. Mark sent so we do not re-check it
       // every run. Reversing passed_at creates a new living-only scan row.
       await supabase.from("relational_transits").update({ push_sent_at: new Date().toISOString() }).eq("id", event.id);
+      return;
+    }
+
+    // Same two people `sharedTransitEventFromStoredPair` will name.
+    const ranked = [...livingProfiles]
+      .sort((a, b) => a.orb_deg - b.orb_deg || a.profile_id.localeCompare(b.profile_id))
+      .slice(0, 2);
+    const peopleById = new Map(peopleList.map((person) => [person.id, person]));
+    const { data: chartRows } = await supabase
+      .from("charts")
+      .select("person_id, data")
+      .in("person_id", ranked.map((member) => member.profile_id));
+    const chartById = new Map<string, NatalChart>(
+      (chartRows ?? []).map((row) => [row.person_id as string, row.data as NatalChart])
+    );
+    const longitudes = ranked.map((member) => {
+      const person = peopleById.get(member.profile_id);
+      return scannerNatalLongitude(chartById.get(member.profile_id), member.natal_body, person?.birth_precision);
+    });
+    const safetySkip = relationalPushSafetySkip({
+      people: ranked.map((member) => {
+        const person = peopleById.get(member.profile_id);
+        if (!person) return null;
+        return {
+          isMinor: person.is_minor,
+          birthDate: person.birth_date,
+          birthPrecision: person.birth_precision,
+        };
+      }),
+      longitudes: [longitudes[0] ?? null, longitudes[1] ?? null],
+    });
+    if (safetySkip === "minor") {
+      skipped.minorFiltered += 1;
+      // Do not mark the row. A later run inside the lookback can
+      // send once neither person is a minor. The row stays in the table.
+      return;
+    }
+    if (safetySkip === "stale") {
+      skipped.stalePair += 1;
+      // Old multi-person rows can name a pair today's synastry gate would
+      // drop. Do not push, and do not delete the row.
       return;
     }
 
@@ -156,7 +207,7 @@ async function handle(req: Request) {
       await supabase.from("relational_transits").update({ push_sent_at: new Date().toISOString() }).eq("id", event.id);
       return;
     }
-    const headline = renderSharedTransitCopy(pair, nowISO).lead;
+    const headline = renderSharedTransitCopy(pair, nowISO).pushHeadline;
 
     const messages = tokens.map((to) => ({
       to,

@@ -70,8 +70,8 @@ export function assembleSharedWeekFeed(
       kind: "relational",
       synastryLink: link,
       relationshipRole: sharedTransitRole(
-        { isSelf: personA?.isSelf, relation: personA?.relation },
-        { isSelf: personB?.isSelf, relation: personB?.relation }
+        { isSelf: personA?.isSelf, relation: personA?.relation, isMinor: personA?.isMinor },
+        { isSelf: personB?.isSelf, relation: personB?.relation, isMinor: personB?.isMinor }
       ),
       salience: 0,
     };

@@ -28,7 +28,7 @@ import {
   type SharedTransitPersonInput,
   type SharedWeekCardModel,
 } from "@galaxia/astro";
-import { getMemorialConstellation, peopleForThisWeek, passedPersonIds, sunSignFromChart, thisWeekRowsFromStored, usesMemorialGlyph, DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
+import { getMemorialConstellation, isMinorForSafety, peopleForThisWeek, passedPersonIds, sunSignFromChart, thisWeekRowsFromStored, usesMemorialGlyph, DEFAULT_FETCH_TIMEOUT_MS, withTimeout } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { InitialAvatar } from "./initial-avatar";
@@ -67,6 +67,7 @@ interface PersonMemorialInfo {
   is_self: boolean;
   birth_date?: string | null;
   birth_precision?: Precision | "none" | null;
+  is_minor?: boolean | null;
   sunSign?: string | null;
 }
 
@@ -179,7 +180,7 @@ export function RelationalTransitFeed({
       const nowISO = new Date().toISOString();
       const [{ data: profileRow }, { data: peopleRows }, { data: upcomingRows }] = await Promise.all([
         supabase.from("profiles").select("relational_transit_alerts").eq("id", ownerId).maybeSingle(),
-        supabase.from("people").select("id, display_name, relation, passed_at, memorial_constellation, is_self, birth_date, birth_precision").eq("owner_id", ownerId),
+        supabase.from("people").select("id, display_name, relation, passed_at, memorial_constellation, is_self, birth_date, birth_precision, is_minor").eq("owner_id", ownerId),
         supabase
           .from("relational_transits")
           .select("active_from, transit_body, affected_profiles")
@@ -220,6 +221,11 @@ export function RelationalTransitFeed({
           birthPrecision: raw.birth_precision,
           relation: raw.relation,
           isSelf: raw.is_self,
+          isMinor: isMinorForSafety({
+            isMinor: raw.is_minor,
+            birthDate: raw.birth_date,
+            birthPrecision: raw.birth_precision,
+          }),
         });
       }
       const feed = pref === "off" || inputs.length < 2

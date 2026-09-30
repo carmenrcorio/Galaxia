@@ -10,7 +10,7 @@ import {
   type Precision,
   type SharedTransitPersonInput,
 } from "@galaxia/astro";
-import { peopleForThisWeek } from "@galaxia/core";
+import { isMinorForSafety, peopleForThisWeek } from "@galaxia/core";
 import { publicEnv } from "../../../../lib/env";
 import { privateEnv } from "../../../../lib/env.server";
 import { cronBearerMatches } from "../../../../lib/cron-auth";
@@ -27,9 +27,10 @@ import { cronSummaryResponse, walkCronPages } from "../../../../lib/cron-summary
  * Living people only. Reuses `peopleForThisWeek` (@galaxia/core) — the
  * same care hole as Today in your sky. A passed (memorial) person is
  * never "what's pulling on two people in your circle at once." Minors
- * stay in: relational transits are family information, not romantic
- * content, and minors' charts already surface elsewhere (compare,
- * groups, home).
+ * stay in the scan and can appear on the in-app card. `isMinor` is set
+ * from `isMinorForSafety` so a stored "partner" label cannot select the
+ * partner copy frame. That frame is forced to family or person in
+ * `sharedTransitRole`. Push suppression lives in the push route.
  *
  * `profiles.relational_transit_alerts` ('all' | 'major_only' | 'off') gates
  * the in-app feed and any future push send, NOT this compute step — the
@@ -51,6 +52,7 @@ interface ScanPersonRow {
   birth_precision: "exact" | "date" | "year" | "none";
   birth_date: string | null;
   is_self: boolean;
+  is_minor: boolean | null;
   passed_at: string | null;
 }
 
@@ -95,7 +97,7 @@ async function handle(req: Request) {
 
     const { data: peopleRows } = await supabase
       .from("people")
-      .select("id, display_name, relation, birth_precision, birth_date, is_self, passed_at")
+      .select("id, display_name, relation, birth_precision, birth_date, is_self, is_minor, passed_at")
       .eq("owner_id", ownerId);
 
     const people = peopleForThisWeek((peopleRows ?? []) as ScanPersonRow[]);
@@ -121,6 +123,11 @@ async function handle(req: Request) {
         birthPrecision: p.birth_precision as Precision | "none",
         relation: p.relation,
         isSelf: p.is_self,
+        isMinor: isMinorForSafety({
+          isMinor: p.is_minor,
+          birthDate: p.birth_date,
+          birthPrecision: p.birth_precision,
+        }),
       });
     }
     if (inputs.length < 2) {

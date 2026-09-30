@@ -27,21 +27,11 @@ export const BLOG_TIMELY_BADGE = "Timely";
 export const BLOG_CARD_PLACEHOLDER_SRC = "/blog/constellation-placeholder.png";
 
 /**
- * Older posts whose stored hero is a title-on-starfield SVG. One slug per
- * line so a replacement can be removed on its own.
+ * Slugs that still use the neutral constellation placeholder on index cards.
+ * The ten older posts now have local illustrated heroes, so this list is empty.
+ * Add a slug back only while its card should keep the placeholder.
  */
-export const TITLE_HERO_PLACEHOLDER_SLUGS = [
-  "compatibility-scores-wrong-question",
-  "reading-chart-of-someone-who-died",
-  "synastry-aspects-explained",
-  "sun-sign-not-personality",
-  "what-a-chart-cannot-tell-you",
-  "nobody-has-your-grandmother",
-  "moon-square-saturn-parent-child",
-  "synastry-chart-meaning",
-  "colleague-you-cannot-read",
-  "mothers-moon-sign-apology"
-] as const;
+export const TITLE_HERO_PLACEHOLDER_SLUGS = [] as const;
 
 /** Evergreen only. A post that is timely right now is left out of this row. */
 export const START_HERE_SLUGS = [

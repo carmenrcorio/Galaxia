@@ -18,6 +18,12 @@ describe("blog publication phase 2 migration", () => {
     expect(SQL).not.toContain("97%");
     expect(SQL).not.toContain("Every 18 months");
     expect(SQL).toContain("About every 19 months");
+    expect(SQL).toContain("Galaxia defaults to Placidus houses");
+    expect(SQL).toContain("## Why some people prefer Whole Sign");
+    expect(SQL).toContain("Many astrologers prefer Whole Sign for a few practical reasons:");
+    expect(SQL).toContain("You can switch it in [Settings](/app/settings), in the House system section.");
+    expect(SQL).not.toContain("Galaxia uses Whole Sign");
+    expect(SQL).not.toMatch(/wiring/i);
     expect(SQL).toContain("Astrology was entangled with the early development of astronomy, calendars, and mathematics");
     expect(SQL).not.toContain("Weeks 1–2 (Scorpio)");
     expect(SQL).not.toContain("Weeks 3–5 (moving into Libra)");
@@ -36,5 +42,11 @@ describe("blog publication phase 2 migration", () => {
     expect(SQL).toContain("where slug = 'reading-chart-of-someone-who-died'");
     expect(SQL).toContain("It is not a way to contact them");
     expect(SQL).toContain("about_galaxia = true");
+    expect(SQL).toContain(
+      "related_slugs = array['moon-sign-in-relationships', 'moon-square-saturn-parent-child']::text[]"
+    );
+    expect(SQL).toContain("related_slugs = array['nobody-has-your-grandmother']::text[]");
+    expect(SQL).toContain("Ask for one change, and say it as a request.");
+    expect(SQL).toContain("easier to work with once you can name it");
   });
 });

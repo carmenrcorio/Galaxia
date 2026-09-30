@@ -71,7 +71,7 @@ Some astrologers offer birth time rectification, an attempt to work out the time
 
 For a relationship, the placements that do not depend on birth time often give you plenty to work with. Compare the slower planets, look at where the two charts flow and where they catch, and treat house placements as unknown until a time is confirmed.
 
-If you are curious about what those house placements mean and how we calculate them, see [Whole Sign houses explained](/whole-sign-houses-explained). Otherwise, [add your chart](/chart) and start with what you know.
+If you are curious about houses, and how Whole Sign differs from other systems, see [Whole Sign houses explained](/whole-sign-houses-explained). Otherwise, [add your chart](/chart) and start with what you know.
 
 A birth chart describes how someone is built. It does not predict what they will do. [How Galaxia handles astrology](/method).
 $p_chart_without_birth_time_body$,
@@ -136,7 +136,7 @@ All three orientations can be hard to read if you do not know what they are orie
 
 ## Uranus and the disruption instinct
 
-Uranus moves faster than Pluto or Neptune, shifting signs roughly every seven years. Cohorts with prominent Uranus placements in their generational signature tend to be the first to name what is not working, to push back on unjustified authority, and to find workarounds when systems fail. This is not opposition for its own sake. It is a wiring toward honesty about broken things.
+Uranus moves faster than Pluto or Neptune, shifting signs roughly every seven years. Cohorts with prominent Uranus placements in their generational signature tend to be the first to name what is not working, to push back on unjustified authority, and to find workarounds when systems fail. This is not opposition for its own sake. It is a tendency toward honesty about broken things.
 
 The colleague who keeps raising the same problem that nobody wants to address is often operating from a Uranian instinct. Whether they are right about the problem is a separate question from understanding where the behavior comes from.
 
@@ -146,7 +146,7 @@ Generational astrology tells you what the ground is, not who stands on it. Two p
 
 A birth chart for a colleague you actually have birth data for will always be more precise than the generational layer alone. The Sun, Moon, Mercury, Venus, and Mars are personal. They do not belong to a decade. If you only have a year, use the year honestly. If you have a date and a place, [run the full chart](/chart). Galaxia will not fill in the rest.
 
-This is also the case for using astrology at work at all. It is a map of wiring, not a hiring tool, not a personality test you administer without consent, and not a way to decide who deserves what. [Galaxia for work](/for-work) is explicit about that boundary. If you are using this to understand someone you already work with, so you can talk to them more clearly, that is the honest use. If you are using it to sort people, you have left the map.
+This is also the case for using astrology at work at all. It is a map of how someone is built, not a hiring tool, not a personality test you administer without consent, and not a way to decide who deserves what. [Galaxia for work](/for-work) is explicit about that boundary. If you are using this to understand someone you already work with, so you can talk to them more clearly, that is the honest use. If you are using it to sort people, you have left the map.
 
 But if you have been working with someone and something keeps not translating, the generational layer is often where the pattern is. It is not that they are difficult. It is that they are operating from a different set of assumptions about what work is for, what respect looks like, and what authority has to earn. Knowing that is usually more useful than working harder at the surface level.
 
@@ -157,7 +157,7 @@ If you want to see a person's full birth chart, including their outer planet pla
 A birth chart describes how someone is built. It does not predict what they will do. [How Galaxia handles astrology](/method).
 $p_colleague_you_cannot_read_body$,
   byline = 'Your Galaxy Guide',
-  related_slugs = null,
+  related_slugs = array['nobody-has-your-grandmother']::text[],
   about_galaxia = false,
   method_note = null,
   updated_at = now()
@@ -174,7 +174,7 @@ This is also why you have almost certainly known couples who should not work by 
 
 ## What synastry actually does
 
-[Synastry](/synastry-chart-meaning) is the practice of comparing two full birth charts. Not two Sun signs. Two complete charts, with every placement and every contact between them. What you are reading is not a grade but a map: here is where your wiring runs parallel to theirs, here is where it runs perpendicular, here is where your Saturn lands on their Moon and what that generates, here is where their Venus touches your Jupiter and why some things between you have always felt easy without either of you knowing why.
+[Synastry](/synastry-chart-meaning) is a comparison of two complete charts, not two Sun signs, with every placement and every contact between them. What you are reading is not a grade but a map: here is where your tendencies run parallel to theirs, here is where they run perpendicular, here is where your Saturn lands on their Moon and what that generates, here is where their Venus touches your Jupiter and why some things between you have always felt easy without either of you knowing why.
 
 This is not a compatibility score. It is a description of the terrain. And knowing the terrain is more useful than a grade because the terrain tells you what to expect and where the work is, rather than whether to proceed at all.
 
@@ -184,7 +184,7 @@ This is not a compatibility score. It is a description of the terrain. And knowi
 
 How two people handle conflict is more predictive of long-term outcomes than any compatibility percentage. The chart shows this through Mars: both people's Mars placements describe how each one handles friction, and the contacts between those Mars positions describe what happens when the two friction styles meet in the same room.
 
-Two people with Mars in Libra both tend to avoid direct conflict. In one scenario, this means small things never get addressed until they are large. In another, it means two people who are both diplomatic and both willing to find common ground. Context and choice shape which version you get. The chart tells you the wiring. It does not decide the outcome.
+Two people with Mars in Libra both tend to avoid direct conflict. In one scenario, this means small things never get addressed until they are large. In another, it means two people who are both diplomatic and both willing to find common ground. Context and choice shape which version you get. The chart tells you the tendencies. It does not decide the outcome.
 
 Mars in Aries and Mars in Capricorn in the same relationship often means quick, hot conflict that resolves fast on one side and controlled, strategic friction that resolves slowly on the other. Neither is better. They are different engines that need different approaches to keep from frustrating each other.
 
@@ -220,12 +220,12 @@ Galaxia will not answer the first question for you. A birth chart does not decid
 
 The most revealing contacts in a synastry are the ones between Mars and Mars, Moon and Moon, Sun and Sun, Venus and Venus, and the significant cross-aspects: one person's Saturn to the other's personal planets, one person's Moon to the other's Venus, the contacts that describe how care gets expressed and whether it lands.
 
-None of these produce a score you should trust as a verdict. Together, they produce a picture of two specific people and how their wiring interacts in practice. That picture is worth more than any percentage, because percentages average out exactly the details that matter.
+None of these produce a score you should trust as a verdict. Together, they produce a picture of two specific people and how their habits interact in practice. That picture is worth more than any percentage, because percentages average out exactly the details that matter.
 
 The [free comparison](/chart/compare) shows you the contacts between two full birth charts with plain descriptions of each one. Flows, catches, and the terrain between two people. Vela can walk a specific contact without inventing a grade. Not a substitute for the two of you. A map of where the terrain is going to ask something of you.
 $p_compatibility_scores_wrong_question_body$,
   byline = 'Your Galaxy Guide',
-  related_slugs = null,
+  related_slugs = array['synastry-chart-meaning', 'sun-sign-not-personality']::text[],
   about_galaxia = false,
   method_note = null,
   updated_at = now()
@@ -432,7 +432,7 @@ Here is what it actually looks like in a family.
 
 The Moon represents emotional need and emotional expression: what someone requires to feel safe, received, connected. Saturn represents structure, limits, and the instinct toward containment. When one person's Moon makes a square to another person's Saturn, those two things are in friction. Not opposition, not alignment, friction. The Moon person brings emotional content and the Saturn person's natural response is to compress or redirect it. Neither person is trying to hurt the other. This is just what each one does.
 
-A square is a 90-degree angle. In a birth chart it describes two parts of one person that do not easily cooperate. In synastry it describes two people whose wiring meets at that same awkward angle. [The seven synastry aspects that shape how a relationship feels](/synastry-aspects-explained) cover this contact in the romantic and general case. This post is the family version, because the parent-child chart is where the pattern often starts, and where it can run for decades before anyone has language for it.
+A square is a 90-degree angle. In a birth chart it describes two parts of one person that do not easily cooperate. In synastry it describes two people whose tendencies meet at that same awkward angle. [The seven synastry aspects that shape how a relationship feels](/synastry-aspects-explained) cover this contact in the romantic and general case. This post is the family version, because the parent-child chart is where the pattern often starts, and where it can run for decades before anyone has language for it.
 
 In a parent-child configuration, this most often plays out with the Saturn parent and the Moon child, though it can run the other way. The child brings their emotional life to the parent, and the parent's response is to reframe it, redirect it toward something productive, minimize it, or move quickly past it. "You'll be fine." "What are you going to do about it?" "I don't know why you're making this such a big deal." These are not attacks. They are a Saturn mind encountering an emotion and doing what it does: looking for the structure underneath it.
 
@@ -450,15 +450,15 @@ From the parent's side, the dynamic looks different. The reframe toward action, 
 
 What the Saturn parent usually does not see is that the child is not asking for a tool. They are asking to be seen in the feeling before they do anything with it. That is a very different request, and Saturn does not have a native response to it.
 
-A Saturn parent who is reading this and recognizing themselves is already doing more than the aspect requires. Recognition is not the same as blame. The wiring was there before the child was. The parent did not install it to cause harm.
+A Saturn parent who is reading this and recognizing themselves is already doing more than the aspect requires. Recognition is not the same as blame. That pattern was there before the child was. The parent did not install it to cause harm.
 
 ## Why neither person is to blame
 
 The difficulty of this aspect in a parent-child relationship is that neither person is usually trying to hurt the other and both people usually know something is off without being able to locate it. The parent often knows they were not as emotionally available as they could have been and feels some version of guilt or regret about it. The child often knows the parent cared and is confused by why it did not feel that way.
 
-The aspect does not mean the parent did not love the child. It means the parent's wiring for expressing love did not connect with the child's wiring for receiving it. Those are two different problems and they are worth keeping separate, because conflating them is how both people end up holding blame that does not belong to them.
+The aspect does not mean the parent did not love the child. It means the parent's way of expressing love did not connect with the child's way of receiving it. Those are two different problems and they are worth keeping separate, because conflating them is how both people end up holding blame that does not belong to them.
 
-A birth chart cannot tell you who was right. [How Galaxia handles astrology](/method). Synastry cannot either. [What a synastry chart actually tells you](/synastry-chart-meaning) is a map of flows and catches, not a verdict. This aspect is a catch. It is a specific one, and it is workable once it has a name.
+A birth chart cannot tell you who was right. [How Galaxia handles astrology](/method). Synastry cannot either. [What a synastry chart actually tells you](/synastry-chart-meaning) is a map of flows and catches, not a verdict. This aspect is a catch. It is a specific one, and it is easier to work with once you can name it.
 
 ## What a Saturn parent can actually do
 
@@ -474,12 +474,12 @@ Knowing that the parent's structure was not rejection changes something. It does
 
 If you are also looking at how each of you repairs after conflict, the Moon signs themselves are a second translation layer. [What your mother's Moon sign says about how she says sorry](/mothers-moon-sign-apology) is that reading. The square is the architecture. The Moon signs are the dialect.
 
-You can see this aspect in a full [synastry chart](/synastry-chart-meaning), which maps the contacts between two birth charts and shows you where the wiring connects and where it is in friction. If this dynamic feels familiar, looking at both charts can be clarifying. Galaxia computes the aspect from astronomical positions. It does not decide what the two of you should do with it. Vela can walk the same computed contact in plain language. It will not invent a softer story than the chart contains.
+You can see this aspect in a full [synastry chart](/synastry-chart-meaning), which maps the contacts between two birth charts and shows you where you connect and where you catch. If this dynamic feels familiar, looking at both charts can be clarifying. Galaxia computes the aspect from astronomical positions. It does not decide what the two of you should do with it. Vela can walk the same computed contact in plain language. It will not invent a softer story than the chart contains.
 
-The [free comparison](/chart/compare) lets you run a synastry between any two people, including family members. You can see where your wiring aligns and where it was always going to be harder.
+The [free comparison](/chart/compare) lets you run a synastry between any two people, including family members. You can see where you align and where it was always going to be harder.
 $p_moon_square_saturn_parent_child_body$,
   byline = 'Your Galaxy Guide',
-  related_slugs = null,
+  related_slugs = array['synastry-aspects-explained', 'mothers-moon-sign-apology']::text[],
   about_galaxia = false,
   method_note = null,
   updated_at = now()
@@ -573,7 +573,7 @@ If you want to see her Moon next to yours, and to see how those two emotional de
 A birth chart describes how someone is built. It does not predict what they will do. [How Galaxia handles astrology](/method).
 $p_mothers_moon_sign_apology_body$,
   byline = 'Your Galaxy Guide',
-  related_slugs = null,
+  related_slugs = array['moon-sign-in-relationships', 'moon-square-saturn-parent-child']::text[],
   about_galaxia = false,
   method_note = null,
   updated_at = now()
@@ -682,7 +682,7 @@ And because it's a full relational engine and not a compatibility gimmick, it do
 
 ## The part no other app will touch
 
-Here's the section that's uncomfortable to write about and impossible to skip, because it's the clearest proof of the whole point.
+Here's the section that's uncomfortable to write about and impossible to skip, because it's the clearest example of what this app is for.
 
 Every astrology app treats a person as a live subscriber. If you stop opening the app, your chart just sits there unused; there's no concept of a chart that outlives its owner. Which means the moment someone you love dies, every one of those apps has nothing left to offer you. Not their chart, not a way to keep it, not a way to still ask what a transit means for the relationship you still carry.
 
@@ -740,7 +740,7 @@ You can also read the good things this way, and there is something specific abou
 
 ## Reading the synastry
 
-You can also look at the [synastry](/synastry-chart-meaning) between your chart and a deceased person's, which maps the contacts between both birth charts and shows you where your wiring aligned and where it was in friction. This can be clarifying in ways that go beyond understanding the other person.
+You can also look at the [synastry](/synastry-chart-meaning) between your chart and a deceased person's, which maps the contacts between both birth charts and shows you where you aligned and where you were in friction. This can be clarifying in ways that go beyond understanding the other person.
 
 Grief has a specific shape, and that shape is often not only about who the person was but about who they were to you specifically. The synastry shows you the architecture of that particular relationship: where you understood each other without trying, and where you were always translating, and what the dynamics were that neither of you named while you had the chance. Some people find that information useful. It can locate things that have been vague and give them a shape that is easier to work with.
 
@@ -765,7 +765,7 @@ You can run a birth chart for any person, including someone who has died. The ch
 You can generate a full birth chart for anyone from a birth date and location at the [free chart](/chart). If you are looking for a way to understand someone you have lost, or to see how your charts connected, that is a place to start.
 $p_reading_chart_of_someone_who_died_body$,
   byline = 'Your Galaxy Guide',
-  related_slugs = null,
+  related_slugs = array['what-a-chart-cannot-tell-you', 'nobody-has-your-grandmother']::text[],
   about_galaxia = false,
   method_note = $p_reading_chart_of_someone_who_died_note$Reading a chart after a death is a record of how that person was built. It is not a way to contact them, and it cannot finish a conversation you did not get to have.$p_reading_chart_of_someone_who_died_note$,
   updated_at = now()
@@ -814,7 +814,7 @@ For a fuller list of what a birth chart will never answer, see [what a chart can
 
 14 days free at galaxiamea.com$p_sun_sign_not_personality_body$,
   byline = 'Your Galaxy Guide',
-  related_slugs = null,
+  related_slugs = array['what-a-chart-cannot-tell-you', 'compatibility-scores-wrong-question']::text[],
   about_galaxia = false,
   method_note = null,
   updated_at = now()
@@ -898,7 +898,7 @@ You don't need to memorize all seven of these to get value from a synastry chart
 A birth chart describes how someone is built. It does not predict what they will do. [How Galaxia handles astrology](/method).
 $p_synastry_aspects_explained_body$,
   byline = 'Your Galaxy Guide',
-  related_slugs = null,
+  related_slugs = array['moon-square-saturn-parent-child', 'synastry-chart-meaning']::text[],
   about_galaxia = false,
   method_note = null,
   updated_at = now()
@@ -1203,7 +1203,7 @@ You do not need a ritual. Here is a light structure:
 
 **Weeks 3–5:** Look at fairness. Who does what, who gives more, what you would change if it were easy.
 
-**Final week and direct station:** Bring one thing to your partner you would like to adjust. Not an accusation. An adjustment.
+**Final week and direct station:** Bring one thing to your partner you would like to adjust. Ask for one change, and say it as a request.
 
 Do it because it is useful, not because the sky said so.
 
@@ -1236,13 +1236,13 @@ Galaxia is built on that distinction. The engine computes planetary positions fr
 
 ## What the chart actually describes
 
-The chart describes wiring: what someone reaches toward, what they pull back from, how they think, what kind of environments suit them, where they experience ease and where they hold tension. These are things about how someone works, not what they will do. The distinction matters because behavior is what wiring does when it meets circumstance, and circumstance is not in the chart.
+The chart describes how someone is built: what someone reaches toward, what they pull back from, how they think, what kind of environments suit them, where they experience ease and where they hold tension. These are things about how someone works, not what they will do. The distinction matters because behavior is what those tendencies do when they meet circumstance, and circumstance is not in the chart.
 
 Here is the clearest example: Venus in Scorpio.
 
 A person with Venus in Scorpio experiences attachment intensely. They want deep knowledge of the people they are close to. They do not do casual without some cost to themselves. When they love someone, they want the real thing, not the surface version. That is what Venus in Scorpio describes, and it is accurate for the people who have it.
 
-What it does not describe is whether they will be faithful. You can have Venus in Scorpio and be completely faithful, because faithfulness is a choice, and choices belong to the person, not to the chart. You can have Venus in Scorpio and not be, for exactly the same reason. The chart gives you the wiring. What someone does with that wiring is theirs entirely. This is not a weakness of astrology. It is what makes the chart genuinely useful rather than deterministic.
+What it does not describe is whether they will be faithful. You can have Venus in Scorpio and be completely faithful, because faithfulness is a choice, and choices belong to the person, not to the chart. You can have Venus in Scorpio and not be, for exactly the same reason. The chart gives you the tendencies. What someone does with them is theirs entirely. This is not a weakness of astrology. It is what makes the chart genuinely useful rather than deterministic.
 
 A [Sun sign](/sun-sign-not-personality) alone cannot even get you this far. One placement standing in for a whole birth chart is how astrology gets a reputation it did not earn. [Your Sun sign is not your personality](/sun-sign-not-personality) is the shorter version of that argument. This post is the limit case: even the full chart has a ceiling, and the ceiling is the point.
 
@@ -1256,7 +1256,7 @@ This is also why two people with the same Mars sign can look nothing like each o
 
 ## The question the chart cannot answer
 
-"Will this relationship work" is not a question astrology can answer, and any reading that claims otherwise is making something up. What the chart can do is tell you where two people's wiring creates friction and where it creates ease. It can describe the areas that will require the most work and the areas that will feel effortless. It cannot tell you whether the people involved will do the work. That depends on them, on what is at stake for them, on what they have built together, on choices they have not made yet. None of that is in the chart.
+"Will this relationship work" is not a question astrology can answer, and any reading that claims otherwise is making something up. What the chart can do is tell you where two people's habits create friction and where it creates ease. It can describe the areas that will require the most work and the areas that will feel effortless. It cannot tell you whether the people involved will do the work. That depends on them, on what is at stake for them, on what they have built together, on choices they have not made yet. None of that is in the chart.
 
 [What a synastry chart actually tells you](/synastry-chart-meaning) is the relational version of this same limit. Flows and catches are real. A verdict is not. If you have been looking for a percentage that will decide the relationship for you, [compatibility scores are the wrong question](/compatibility-scores-wrong-question).
 
@@ -1264,7 +1264,7 @@ This is also why two people with the same Mars sign can look nothing like each o
 
 Specific timing. If you are looking for when something will happen, the chart is not the right tool. Transits and progressions can describe periods of likely activity in certain areas of life, but the specificity most people want (the month, the person, the event) is not there. Anyone who claims to read that level of detail from a chart is reading more than the chart contains.
 
-Behavior under extreme stress. The chart describes the baseline. What someone does when they are frightened, grieving, or cornered is shaped as much by their history as by their wiring. The chart tells you where the pressure points are. It cannot tell you how someone will perform under pressure they have not faced before.
+Behavior under extreme stress. The chart describes the baseline. What someone does when they are frightened, grieving, or cornered is shaped as much by their history as by how they are built. The chart tells you where the pressure points are. It cannot tell you how someone will perform under pressure they have not faced before.
 
 Moral character. This one is important. The chart carries no moral information. A strong Scorpio signature does not indicate someone who will harm you. A prominent Pisces does not indicate someone who will deceive you. The stereotyping that attaches ethical content to astrological placements is reading the mechanism and confusing it for the person. The mechanism is neutral. What the person does with it is not something the chart decides.
 
@@ -1281,7 +1281,7 @@ The most honest use of astrology is descriptive, not predictive. [How Galaxia ha
 Vela, Galaxia's guide, answers from the same curated interpretation library as the rest of the app. It does not improvise a future. If you want to see what the chart can actually hold, [run a free birth chart](/chart). It will give you the full picture in plain language, without hedging the things it can see or claiming the things it cannot.
 $p_what_a_chart_cannot_tell_you_body$,
   byline = 'Your Galaxy Guide',
-  related_slugs = null,
+  related_slugs = array['sun-sign-not-personality']::text[],
   about_galaxia = false,
   method_note = null,
   updated_at = now()
@@ -1289,8 +1289,8 @@ where slug = 'what-a-chart-cannot-tell-you';
 
 update public.posts set
   title = $p_whole_sign_houses_explained_title$Whole Sign Houses Explained (and Why Charts Differ)$p_whole_sign_houses_explained_title$,
-  dek = $p_whole_sign_houses_explained_dek$Why does your chart look different on different sites? Often it is the house system. Here is how Whole Sign houses work, and when Galaxia uses them.$p_whole_sign_houses_explained_dek$,
-  body = $p_whole_sign_houses_explained_body$If you have ever put your birth details into two different astrology sites and gotten charts that did not quite match, you are not imagining it. One common reason is the **house system**, the method used to divide the chart into twelve sections. Galaxia uses Whole Sign houses. This post explains what that means and why it may explain the difference you noticed.
+  dek = $p_whole_sign_houses_explained_dek$Why does your chart look different on different sites? Often it is the house system. Here is how Whole Sign houses work, and why the same birth can differ.$p_whole_sign_houses_explained_dek$,
+  body = $p_whole_sign_houses_explained_body$If you have ever put your birth details into two different astrology sites and gotten charts that did not quite match, you are not imagining it. One common reason is the **house system**, the method used to divide the chart into twelve sections. Galaxia defaults to Placidus houses and lets you switch to Whole Sign or Equal in your settings. This post explains how Whole Sign works and why it might explain the difference you noticed.
 
 ## What houses are
 
@@ -1326,9 +1326,9 @@ The planet and its sign do not change. The area of life it is assigned to can.
 
 Astrologers disagree, and no system has been shown to be more accurate in any measurable way. Whole Sign is the oldest known system, used in Hellenistic astrology, and it has seen a revival among modern practitioners. Placidus remains widely used. Neither is objectively correct.
 
-## Why Whole Sign is worth knowing
+## Why some people prefer Whole Sign
 
-Galaxia's default house system is Placidus. Whole Sign and Equal House are available in settings, and Whole Sign is what we show when Placidus is undefined at a polar latitude. Whole Sign has a few practical strengths:
+Many astrologers prefer Whole Sign for a few practical reasons:
 
 - **It is consistent.** Every house is one sign, so a small error in birth time is less likely to push a planet into a different house, except when the Ascendant itself changes signs.
 - **It is transparent.** The rule fits in one sentence, so you can check the result yourself.
@@ -1341,6 +1341,8 @@ Those are reasons the system is appealing, not proof that it is more accurate. I
 If a chart from another source does not match ours, check the house system first. The planets and signs should be identical. If those differ, check the birth time and location.
 
 If you do not know your exact birth time, houses will be less reliable. You can still learn a lot from signs and aspects. We cover that in our guide to [what you can learn from a chart without a birth time](/chart-without-birth-time).
+
+You can switch it in [Settings](/app/settings), in the House system section.
 
 Ready to see your own chart? [Add your birth details](/chart) and look at how your houses fall.
 

@@ -87,4 +87,14 @@ describe("relational-transit-scan route — living people only", () => {
   it("does not re-derive passed filtering inline", () => {
     expect(src).not.toMatch(/\.passed_at\s*(!=|==)=?\s*null/);
   });
+
+  it("keeps minors in the scan and passes isMinorForSafety into the copy frame", () => {
+    expect(src).toContain("isMinorForSafety");
+    expect(src).toContain("isMinor: isMinorForSafety(");
+    expect(src).not.toMatch(/if\s*\(\s*isMinorForSafety[\s\S]{0,120}(?:continue|return)\s*;/);
+    const flagIdx = src.indexOf("isMinor: isMinorForSafety(");
+    const scanIdx = src.indexOf("buildSharedWeekFeed(");
+    expect(flagIdx).toBeGreaterThan(-1);
+    expect(scanIdx).toBeGreaterThan(flagIdx);
+  });
 });

@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from "react";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { clearShownSharedTransits } from "../lib/this-week-seen";
 import { supabase } from "../lib/supabase";
 
 interface AuthContextValue {
@@ -38,6 +39,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       loading,
       signOut: async () => {
         await supabase.auth.signOut();
+        await clearShownSharedTransits();
       }
     }),
     [loading, session]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeNatalChart } from "../src/index";
+import { computeNatalChart, type BodyName, type NatalChart } from "../src/index";
 import {
   applySharedTransitNovelty,
   assembleSharedWeekFeed,
@@ -8,9 +8,14 @@ import {
   mergeShownSharedTransits,
   pairEventsFromCollapsedCards,
   renderSharedTransitCopy,
+  scannerNatalLongitude,
   scoreSharedTransitSalience,
   sharedTransitCanonicalId,
+  sharedTransitEventFromStoredPair,
+  sharedTransitRole,
+  storedPairPassesScannerGate,
   synastryLinkForLongitudes,
+  toSharedWeekCardModel,
   WEEKLY_FEED_LIMIT,
   type EnumeratedSharedCard,
   type SharedTransitEvent,
@@ -159,6 +164,37 @@ describe("WS-B genuinely shared classifier", () => {
     expect(feed.weekly[0]!.relationshipRole).toBe("partners");
     expect(feed.individual).toEqual([]);
   });
+
+  it("forces a minor with a partner label onto the person frame", () => {
+    const hits = [
+      hit({ personId: "a", natalPoint: "venus", natalLon: 10, transiting: "mars", aspect: "trine", personName: "Ada", transitingSpeed: 0.5 }),
+      hit({ personId: "b", natalPoint: "mars", natalLon: 10.8, transiting: "mars", aspect: "trine", personName: "Bo", transitingSpeed: 0.5 }),
+    ];
+    const people = [
+      { id: "a", name: "Ada", chart: { placements: [], precision: "exact" as const, generational: emptyGen() }, isSelf: true, relation: "self", isMinor: false },
+      { id: "b", name: "Bo", chart: { placements: [], precision: "exact" as const, generational: emptyGen() }, relation: "partner", isMinor: true },
+    ];
+    const feed = assembleSharedWeekFeed(hits, people, "2026-09-27T12:00:00.000Z");
+    expect(feed.weekly).toHaveLength(1);
+    expect(feed.weekly[0]!.relationshipRole).toBe("circle");
+    const copy = renderSharedTransitCopy(feed.weekly[0]!, "2026-09-27T12:00:00.000Z");
+    const romantic = renderSharedTransitCopy(
+      { ...feed.weekly[0]!, relationshipRole: "partners" },
+      "2026-09-27T12:00:00.000Z"
+    );
+    expect(copy.body).not.toBe(romantic.body);
+    expect(copy.body.toLowerCase()).not.toMatch(/\bpartners?\b/);
+    expect(copy.cardDetail.toLowerCase()).not.toMatch(/\bpartners?\b/);
+  });
+
+  it("keeps a family frame for a minor tagged child, and a person frame for a minor tagged friend", () => {
+    expect(sharedTransitRole({ isSelf: true }, { relation: "child", isMinor: true })).toBe("parent-child");
+    expect(sharedTransitRole({ isSelf: true }, { relation: "sibling", isMinor: true })).toBe("siblings");
+    expect(sharedTransitRole({ isSelf: true }, { relation: "friend", isMinor: true })).toBe("circle");
+    expect(sharedTransitRole({ isSelf: true }, { relation: "ex", isMinor: true })).toBe("circle");
+    expect(sharedTransitRole({ isSelf: true, isMinor: true }, { relation: "partner" })).toBe("circle");
+    expect(sharedTransitRole({ isSelf: true }, { relation: "partner" })).toBe("partners");
+  });
 });
 
 describe("WS-C salience, cadence, novelty", () => {
@@ -216,6 +252,18 @@ describe("WS-D copy", () => {
     expect(first.body).not.toContain(BANNED);
     expect(`${first.lead} ${first.body}`).not.toContain("\u2014");
     expect(`${first.lead} ${first.body}`).not.toMatch(/\ws's/);
+    expect(first.pushHeadline).toBe("Something is shifting between Carmen Sofia and Hubs this week.");
+    expect(first.cardDetail).toBe(`${first.lead} ${first.body}`);
+    const lockScreen = first.pushHeadline.replaceAll("Carmen Sofia", "").replaceAll("Hubs", "");
+    for (const word of ["Jupiter", "Cancer", "Libra", "square", "Moon", "house", "orb"]) {
+      expect(lockScreen).not.toContain(word);
+      expect(first.pushHeadline).not.toContain(word);
+    }
+    const card = toSharedWeekCardModel(event, "2026-09-27T12:00:00.000Z");
+    expect(card.lead).toBe(first.lead);
+    expect(card.body).toBe(first.body);
+    expect(card.lead).toContain("Jupiter");
+    expect(card.lead).not.toBe(first.pushHeadline);
   });
 
   it("uses a plural possessive and does not repeat an identical natal point", () => {
@@ -264,6 +312,49 @@ describe("section 0 fixture regression", () => {
   });
 });
 
+describe("stored pair scanner gate", () => {
+  it("accepts a real synastry link and rejects an incidental co-transit", () => {
+    expect(storedPairPassesScannerGate(10, 10.8)).toBe(true);
+    expect(storedPairPassesScannerGate(10, 25)).toBe(false);
+    expect(storedPairPassesScannerGate(null, 10)).toBe(false);
+    expect(storedPairPassesScannerGate(0, 0)).toBe(true);
+  });
+
+  it("reads a confident chart longitude and refuses year-blocked, unconfident, and chart points", () => {
+    const chart = chartWith([{ body: "venus", lon: 12.5 }, { body: "moon", lon: 40, confident: false }, { body: "north_node", lon: 3 }]);
+    expect(scannerNatalLongitude(chart, "venus", "exact")).toBe(12.5);
+    expect(scannerNatalLongitude(chart, "moon", "exact")).toBeNull();
+    expect(scannerNatalLongitude(chart, "north_node", "exact")).toBeNull();
+    expect(scannerNatalLongitude(chart, "venus", "year")).toBeNull();
+    expect(scannerNatalLongitude(chart, "missing", "exact")).toBeNull();
+    expect(scannerNatalLongitude(null, "venus", "exact")).toBeNull();
+  });
+
+  it("leaves stored-pair longitudes as placeholders so the push route must supply chart longitudes", () => {
+    const stored = sharedTransitEventFromStoredPair({
+      transiting: "jupiter",
+      aspect: "trine",
+      whenUTC: "2026-09-27T12:00:00.000Z",
+      members: [
+        { personId: "a", personName: "Ada", natalPoint: "venus", natalSign: "Aries", orb: 0.4, exactAt: "2026-09-28T00:00:00.000Z" },
+        { personId: "b", personName: "Bo", natalPoint: "mars", natalSign: "Leo", orb: 0.5, exactAt: "2026-09-29T00:00:00.000Z" },
+      ],
+    });
+    expect(stored).not.toBeNull();
+    expect(stored!.synastryLink).toBeUndefined();
+    expect(stored!.members.every((member) => member.natalLon === 0)).toBe(true);
+    const chartA = chartWith([{ body: "venus", lon: 10 }]);
+    const chartB = chartWith([{ body: "mars", lon: 25 }]);
+    const lonA = scannerNatalLongitude(chartA, "venus", "exact");
+    const lonB = scannerNatalLongitude(chartB, "mars", "exact");
+    expect(storedPairPassesScannerGate(lonA, lonB)).toBe(false);
+    expect(storedPairPassesScannerGate(
+      scannerNatalLongitude(chartA, "venus", "exact"),
+      scannerNatalLongitude(chartWith([{ body: "mars", lon: 10.4 }]), "mars", "exact")
+    )).toBe(true);
+  });
+});
+
 describe("buildSharedWeekFeed on real charts", () => {
   const chartA = computeNatalChart({ dateUTC: "1990-06-15T14:20:00.000Z", precision: "exact", lat: 40.7, lng: -74.0, tzOffsetMin: -240 });
   const chartB = computeNatalChart({ dateUTC: "1962-01-10T08:00:00.000Z", precision: "exact", lat: 41.8, lng: -87.6, tzOffsetMin: -360 });
@@ -289,6 +380,24 @@ describe("buildSharedWeekFeed on real charts", () => {
     expect(again.weekly.map((event) => event.id)).toEqual(ids);
   });
 });
+
+function chartWith(
+  placements: Array<{ body: BodyName; lon: number; confident?: boolean }>,
+  precision: NatalChart["precision"] = "exact"
+): NatalChart {
+  return {
+    placements: placements.map((placement) => ({
+      body: placement.body,
+      lon: placement.lon,
+      sign: "Aries",
+      degree: placement.lon % 30,
+      retro: false,
+      confident: placement.confident ?? true,
+    })),
+    precision,
+    generational: emptyGen(),
+  };
+}
 
 function emptyGen() {
   const planet = { sign: "Aries" as const, confident: true };

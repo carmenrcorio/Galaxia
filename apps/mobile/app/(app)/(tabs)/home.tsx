@@ -280,6 +280,11 @@ export default function HomeScreen() {
           birthPrecision: person.birth_precision as Precision | "none",
           relation: person.relation,
           isSelf: person.is_self,
+          isMinor: isMinorForSafety({
+            isMinor: person.is_minor,
+            birthDate: person.birth_date,
+            birthPrecision: person.birth_precision,
+          }),
         });
       }
       const seenWeek = await readShownSharedTransits(session.user.id);

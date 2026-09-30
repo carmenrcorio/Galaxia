@@ -72,10 +72,12 @@ describe("relational-transit-push route — returns a JSON summary with real num
     expect(markIdx).toBeGreaterThan(okIdx);
   });
 
-  it("skipped is a real per-event breakdown (noTokens/preferenceOff/majorOnlyFiltered/memorialFiltered/pushFailed), not a placeholder", () => {
-    expect(src).toMatch(/const skipped = \{ noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0, memorialFiltered: 0, pushFailed: 0 \};/);
+  it("skipped is a real per-event breakdown (noTokens/preferenceOff/majorOnlyFiltered/memorialFiltered/minorFiltered/stalePair/pushFailed), not a placeholder", () => {
+    expect(src).toMatch(/const skipped = \{ noTokens: 0, preferenceOff: 0, majorOnlyFiltered: 0, memorialFiltered: 0, minorFiltered: 0, stalePair: 0, pushFailed: 0 \};/);
     expect(src).toMatch(/skipped\.pushFailed \+= 1/);
     expect(src).toMatch(/skipped\.memorialFiltered \+= 1/);
+    expect(src).toMatch(/skipped\.minorFiltered \+= 1/);
+    expect(src).toMatch(/skipped\.stalePair \+= 1/);
   });
 });
 
@@ -85,11 +87,50 @@ describe("relational-transit-push route — never names a memorial person", () =
   it("filters stored affected_profiles through livingAffectedForThisWeek before composing the headline", () => {
     expect(src).toContain("livingAffectedForThisWeek");
     expect(src).toContain("passedPersonIds");
-    expect(src).toMatch(/\.select\("id, passed_at"\)/);
+    expect(src).toMatch(/\.select\("id, passed_at, is_minor, birth_date, birth_precision"\)/);
     const filterIdx = src.indexOf("const livingProfiles = livingAffectedForThisWeek");
     const headlineIdx = src.indexOf("renderSharedTransitCopy(");
     expect(filterIdx).toBeGreaterThan(-1);
     expect(headlineIdx).toBeGreaterThan(filterIdx);
     expect(src).toContain("livingProfiles.map(");
+  });
+
+  it("sends names-only pushHeadline, and keeps the deep link on the transit card", () => {
+    expect(src).toContain(".pushHeadline");
+    expect(src).not.toMatch(/renderSharedTransitCopy\([\s\S]{0,80}\)\.lead/);
+    expect(src).toContain('title: "This week"');
+    expect(src).toContain('type: "relational_transit"');
+    expect(src).toContain("relationalTransitId: event.id");
+    const copyIdx = src.indexOf("renderSharedTransitCopy(");
+    const bodyIdx = src.indexOf("body: headline");
+    expect(copyIdx).toBeGreaterThan(-1);
+    expect(bodyIdx).toBeGreaterThan(copyIdx);
+  });
+
+  it("skips the push when either person is a minor, via relationalPushSafetySkip, and does not mark that row sent", () => {
+    expect(src).toContain("relationalPushSafetySkip");
+    expect(src).not.toMatch(/\.is_minor\s*===\s*true/);
+    const safety = readFileSync(join(REPO_ROOT, "apps/web/lib/relational-transit-push-safety.ts"), "utf8");
+    expect(safety).toContain("isMinorForSafety");
+    expect(safety).not.toMatch(/\.is_minor\s*===\s*true/);
+    const minorIdx = src.indexOf("relationalPushSafetySkip(");
+    const sendIdx = src.indexOf("fetch(EXPO_PUSH_URL");
+    expect(minorIdx).toBeGreaterThan(-1);
+    expect(sendIdx).toBeGreaterThan(minorIdx);
+    const minorBlock = src.slice(minorIdx, src.indexOf("skipped.minorFiltered += 1") + 200);
+    expect(minorBlock).not.toContain("update({ push_sent_at");
+  });
+
+  it("re-checks the stored pair against the current synastry gate before rendering the push", () => {
+    expect(src).toContain("scannerNatalLongitude");
+    expect(src).toContain("relationalPushSafetySkip");
+    const safety = readFileSync(join(REPO_ROOT, "apps/web/lib/relational-transit-push-safety.ts"), "utf8");
+    expect(safety).toContain("storedPairPassesScannerGate");
+    const gateIdx = src.indexOf("relationalPushSafetySkip(");
+    const copyIdx = src.indexOf("renderSharedTransitCopy(");
+    expect(gateIdx).toBeGreaterThan(-1);
+    expect(copyIdx).toBeGreaterThan(gateIdx);
+    const staleBlock = src.slice(gateIdx, src.indexOf("skipped.stalePair += 1") + 200);
+    expect(staleBlock).not.toContain("update({ push_sent_at");
   });
 });

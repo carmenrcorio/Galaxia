@@ -6,7 +6,9 @@
 
 import { mergeShownSharedTransits, type SharedTransitEvent, type ShownSharedTransit } from "@galaxia/astro";
 
-const PREFIX = "galaxia.thisWeek.shown.v1.";
+export const THIS_WEEK_SEEN_KEY_PREFIX = "galaxia.thisWeek.shown.v1.";
+
+const PREFIX = THIS_WEEK_SEEN_KEY_PREFIX;
 
 export function readShownSharedTransits(ownerId: string): ShownSharedTransit[] {
   if (typeof window === "undefined") return [];
@@ -17,6 +19,21 @@ export function readShownSharedTransits(ownerId: string): ShownSharedTransit[] {
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
+  }
+}
+
+/** Drop every This Week novelty entry in this browser. Call after sign-out completes. */
+export function clearShownSharedTransits(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i += 1) {
+      const key = window.localStorage.key(i);
+      if (key?.startsWith(PREFIX)) keys.push(key);
+    }
+    for (const key of keys) window.localStorage.removeItem(key);
+  } catch {
+    // Private mode. A later visit may still see the previous ledger.
   }
 }
 

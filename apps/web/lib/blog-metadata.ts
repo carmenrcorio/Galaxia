@@ -84,14 +84,14 @@ export function buildCategoryMetadata(category: CategoryMetadataInput): Metadata
   const copy =
     category.slug === "debunked"
       ? {
-          title: "Astrology, Debunked | Galaxia Blog",
+          title: "Honest Astrology: What a Birth Chart Can and Cannot Claim",
           description:
-            "What astrology can and cannot claim. Natal charts, synastry, placements, aspects, and the limits of a real reading."
+            "What astrology can and cannot claim. Birth charts, synastry, placements, aspects, and the limits of a real reading."
         }
       : {
-          title: "Astrology Guides for Real Birth Charts | Galaxia Blog",
+          title: "Learn Astrology: Birth Charts, Synastry, and Houses",
           description:
-            "Guides for reading natal charts, synastry, placements, aspects, and houses. What astrology can actually tell you about understanding the people in your life."
+            "Guides for reading birth charts, synastry, placements, aspects, and houses. What astrology can tell you about the people in your life."
         };
   const { title, description } = copy;
 

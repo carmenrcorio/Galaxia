@@ -179,10 +179,10 @@ describe("layer two: astrology language stays where search and in-product intent
 
   it("blog categories keep astrology in labels and metadata", () => {
     const blog = readRepo("apps/web/lib/blog.ts");
-    expect(blog).toMatch(/label: "Astrology guides"/);
-    expect(blog).toMatch(/label: "Astrology, debunked"/);
-    const guides = buildCategoryMetadata({ slug: "guides", label: "Astrology guides" });
-    const debunked = buildCategoryMetadata({ slug: "debunked", label: "Astrology, debunked" });
+    expect(blog).toMatch(/label: "Learn"/);
+    expect(blog).toMatch(/label: "Honest astrology"/);
+    const guides = buildCategoryMetadata({ slug: "guides", label: "Learn" });
+    const debunked = buildCategoryMetadata({ slug: "debunked", label: "Honest astrology" });
     expect(String(guides.title)).toMatch(/astrology/i);
     expect(String(guides.description)).toMatch(/astrology/i);
     expect(String(debunked.title)).toMatch(/astrology/i);

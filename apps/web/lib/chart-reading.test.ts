@@ -92,6 +92,17 @@ describe("buildChartReading", () => {
     }
   });
 
+  it("still returns the Little Rock sample when the reader gave a date but no place", () => {
+    // TODO: see buildChartReading. This locks the current mismatch so a
+    // later fix has to update the assertion on purpose.
+    const reading = buildChartReading({ name: "Sam", month: 4, day: 10, year: 1993 });
+    const sample = buildChartReading({ name: "Sam" });
+    expect(reading.sample).toBe(true);
+    expect(reading.sunSign).toBe(sample.sunSign);
+    expect(reading.moonSign).toBe(sample.moonSign);
+    expect(reading.sunSign).toBe(signOf(buildFallbackChart(), "sun"));
+  });
+
   it("computes a date-only chart when date and city are both present", () => {
     const reading = buildChartReading({
       name: "Sam",

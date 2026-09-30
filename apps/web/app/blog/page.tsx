@@ -7,6 +7,7 @@ import { CosmicBackground } from "../../components/cosmic-background";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { BLOG_CATEGORIES, getPublishedPosts } from "../../lib/blog";
+import { BLOG_INDEX_LEDE, BLOG_START_HERE_INTRO, BLOG_START_HERE_TITLE, partitionBlogIndex } from "../../lib/blog-index";
 
 const TITLE = "Galaxia Blog: Birth Charts, Synastry, and Astrology Guides";
 const DESCRIPTION = "Guides for reading real birth charts: synastry, generations, and what astrology can and can\u2019t actually tell you.";
@@ -40,6 +41,7 @@ export const revalidate = 60;
 
 export default async function BlogIndexPage() {
   const posts = await getPublishedPosts();
+  const { startHere, rest } = partitionBlogIndex(posts);
 
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
@@ -51,9 +53,7 @@ export default async function BlogIndexPage() {
         <div className="blog-index-glow" aria-hidden="true" />
         <span className="eyebrow">Galaxia blog</span>
         <h1 className="page-title">How to actually read a birth chart.</h1>
-        <p className="lede">
-          Natal charts, synastry, generations, and what astrology can and cannot claim. Starting with the people already in your life.
-        </p>
+        <p className="lede">{BLOG_INDEX_LEDE}</p>
 
         <nav aria-label="Categories" className="blog-tabs">
           <span className="blog-tab blog-tab--active">All posts</span>
@@ -64,15 +64,32 @@ export default async function BlogIndexPage() {
           ))}
         </nav>
 
-        <div className="blog-post-list">
-          {posts.length === 0 ? (
-            <p className="blog-category-empty">No posts yet. New guides will show up here.</p>
-          ) : (
-            posts.map((post) => (
-              <BlogPostCard key={post.slug} post={post} />
-            ))
-          )}
-        </div>
+        {posts.length === 0 ? (
+          <p className="blog-category-empty">No posts yet. New guides will show up here.</p>
+        ) : (
+          <>
+            {startHere.length > 0 ? (
+              <section className="blog-start-here" aria-labelledby="blog-start-here-heading">
+                <h2 id="blog-start-here-heading" className="blog-start-here-title">
+                  {BLOG_START_HERE_TITLE}
+                </h2>
+                <p className="blog-start-here-intro">{BLOG_START_HERE_INTRO}</p>
+                <div className="blog-start-here-list">
+                  {startHere.map((post) => (
+                    <BlogPostCard key={post.slug} post={post} placement="start-here" />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+            {rest.length > 0 ? (
+              <div className="blog-post-list">
+                {rest.map((post) => (
+                  <BlogPostCard key={post.slug} post={post} />
+                ))}
+              </div>
+            ) : null}
+          </>
+        )}
       </main>
       <SiteFooter />
     </div>

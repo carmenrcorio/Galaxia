@@ -80,20 +80,19 @@ export function buildPostMetadata(post: PostMetadataInput): Metadata {
  * Blog category listing metadata. Restates `images` on both `openGraph` and
  * `twitter` so Next does not replace the root default with an imageless object.
  */
+export function categoryListingDescription(slug: string): string {
+  if (slug === "debunked") {
+    return "What astrology can and cannot claim. Birth charts, synastry, placements, aspects, and the limits of a real reading.";
+  }
+  return "Guides for reading birth charts, synastry, placements, aspects, and houses. What astrology can tell you about the people in your life.";
+}
+
 export function buildCategoryMetadata(category: CategoryMetadataInput): Metadata {
-  const copy =
+  const title =
     category.slug === "debunked"
-      ? {
-          title: "Honest Astrology: What a Birth Chart Can and Cannot Claim",
-          description:
-            "What astrology can and cannot claim. Birth charts, synastry, placements, aspects, and the limits of a real reading."
-        }
-      : {
-          title: "Learn Astrology: Birth Charts, Synastry, and Houses",
-          description:
-            "Guides for reading birth charts, synastry, placements, aspects, and houses. What astrology can tell you about the people in your life."
-        };
-  const { title, description } = copy;
+      ? "Honest Astrology: What a Birth Chart Can and Cannot Claim"
+      : "Learn Astrology: Birth Charts, Synastry, and Houses";
+  const description = categoryListingDescription(category.slug);
 
   return {
     title,

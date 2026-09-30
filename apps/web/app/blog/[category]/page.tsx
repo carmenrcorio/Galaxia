@@ -7,8 +7,9 @@ import { BlogZodiacTrail } from "../../../components/blog/blog-zodiac-trail";
 import { CosmicBackground } from "../../../components/cosmic-background";
 import { SiteFooter } from "../../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../../components/marketing/webpage-json-ld";
-import { buildCategoryMetadata } from "../../../lib/blog-metadata";
+import { buildCategoryMetadata, categoryListingDescription } from "../../../lib/blog-metadata";
 import { BLOG_CATEGORIES, getCategory, getPublishedPostsByCategory, type BlogCategorySlug } from "../../../lib/blog";
+import { sortBlogFeed } from "../../../lib/blog-index";
 
 type Params = { category: string };
 
@@ -31,18 +32,14 @@ export default async function BlogCategoryPage({ params }: { params: Promise<Par
   const category = getCategory(slug);
   if (!category) notFound();
 
-  const posts = await getPublishedPostsByCategory(category.slug as BlogCategorySlug);
+  const posts = sortBlogFeed(await getPublishedPostsByCategory(category.slug as BlogCategorySlug));
 
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
       <WebPageJsonLd
         path={`/blog/${category.slug}`}
         name={category.label}
-        description={
-          category.slug === "debunked"
-            ? "What astrology can and cannot claim. Natal charts, synastry, placements, aspects, and the limits of a real reading."
-            : "Guides for reading natal charts, synastry, placements, aspects, and houses."
-        }
+        description={categoryListingDescription(category.slug)}
       />
       <CosmicBackground />
       <BlogHeader />

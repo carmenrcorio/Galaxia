@@ -79,13 +79,6 @@ export interface BlogPost {
   updatedAt: string;
 }
 
-/** FOUNDER-REVIEW: shared byline for every post. The name is not a person. */
-export const BLOG_BYLINE_SUB = "Written by the team at Galaxia Mea";
-/** FOUNDER-REVIEW */
-export const BLOG_BYLINE_BIO =
-  "We hope to help educate you and keep evolving your understanding of the stars in our sky and how they connect to our lives and the people we share them with.";
-/** FOUNDER-REVIEW */
-export const BLOG_METHOD_LINK_LABEL = "How we write about astrology";
 /** FOUNDER-REVIEW: card tag for product-pitch posts. */
 export const BLOG_ABOUT_TAG = "About Galaxia";
 export const BLOG_METHOD_PATH = "/method";

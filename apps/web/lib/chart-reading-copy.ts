@@ -5,16 +5,12 @@
  */
 
 /**
- * FOUNDER-REVIEW: founder-supplied helper, shown under the closing form.
- * Behavior mismatch: this form does not collect birth time, and it does not
- * compute a rising sign or houses. A complete month/day/year plus place
- * produces a date-only reading. Anything short of that emails a sample from
- * a published chart (1987-12-29, Little Rock) rather than "the basics" from
- * partial data. Place is marked optional in the field, but the reading path
- * still treats a missing place as incomplete and uses that sample.
+ * FOUNDER-REVIEW: helper under the birth-date fields.
+ * The form collects month, day, and year, plus an optional place. It does
+ * not collect a birth time, so the helper does not ask for one. A missing
+ * date still emails a sample from a published chart (1987-12-29, Little Rock).
  */
-export const CHART_READING_BIRTH_DATA_NOTE =
-  "Don\u2019t know your birth time? No problem. We\u2019ll calculate the basics so you still get a reading. To really unlock yourself and the people in your life, add the exact time and place of birth. They\u2019re what reveal your rising sign and houses.";
+export const CHART_READING_BIRTH_DATA_NOTE = "We calculate the chart from the date you enter.";
 
 /** FOUNDER-REVIEW: heading for the birth-time help blurb. */
 export const CHART_READING_TIME_HELP_LABEL = "How to find your birth time";

@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArticleDiagram } from "../../components/blog/article-diagram";
+import { ArticleClosingCta } from "../../components/blog/article-closing-cta";
 import { ArticleMarkdown } from "../../components/blog/article-markdown";
 import { BlogHeader } from "../../components/blog/blog-header";
 import { BlogPostCard } from "../../components/blog/blog-post-card";
@@ -13,21 +14,14 @@ import {
   ARTICLE_TOC_LABEL,
   READ_NEXT_LABEL,
   insertFigureAfterHeading,
-  midPostCtaHref,
   pickRelatedPosts,
   tocHeadings
 } from "../../lib/article-structure";
 import { buildArticleJsonLd } from "../../lib/blog-article-json-ld";
 import { buildPostMetadata } from "../../lib/blog-metadata";
-import {
-  BLOG_BYLINE_BIO,
-  BLOG_BYLINE_SUB,
-  BLOG_METHOD_LINK_LABEL,
-  BLOG_METHOD_PATH,
-  formatPostDate,
-  getPublishedPost,
-  getPublishedPosts
-} from "../../lib/blog";
+import { BLOG_BYLINE, BLOG_INTRO_NOTE, BLOG_INTRO_NOTE_LINK, closingCtaForSlug, inlineCtaHref } from "../../lib/blog-cta";
+import { BLOG_METHOD_PATH, getPublishedPost, getPublishedPosts } from "../../lib/blog";
+import { formatUpdatedDate, postUpdatedIso } from "../../lib/blog-index";
 
 type Params = { slug: string };
 
@@ -74,8 +68,8 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
     category: post.category,
     relatedSlugs: post.relatedSlugs
   });
-  const publishedLabel = post.publishedAt ? formatPostDate(post.publishedAt) : null;
-  const showPublishedDate = post.isTimely && publishedLabel;
+  const updatedIso = postUpdatedIso(post.updatedAt, post.publishedAt);
+  const inlineHref = inlineCtaHref(post.slug);
   const heroAlt = post.heroImageAlt?.trim() ?? "";
   const figureReady = Boolean(
     post.figureImageUrl?.trim() &&
@@ -109,16 +103,20 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
       <main className="container article-page article-content">
         <h1 className="auth-title article-title">{post.title}</h1>
         <p className="article-byline">
-          {post.byline}
-          {showPublishedDate ? ` · ${publishedLabel}` : ""}
+          {BLOG_BYLINE}
+          {updatedIso ? (
+            <>
+              {" · Updated "}
+              <time dateTime={updatedIso}>{formatUpdatedDate(updatedIso)}</time>
+            </>
+          ) : null}
           {` · ${post.readTimeMinutes} min read`}
         </p>
-        <p className="article-byline-sub">{BLOG_BYLINE_SUB}</p>
-        <p className="article-byline-bio">{BLOG_BYLINE_BIO}</p>
-        {post.methodNote ? <p className="article-method-note">{post.methodNote}</p> : null}
-        <p className="article-byline-method">
-          <Link href={BLOG_METHOD_PATH}>{BLOG_METHOD_LINK_LABEL}</Link>
+        <p className="article-intro-note">
+          {BLOG_INTRO_NOTE}{" "}
+          <Link href={BLOG_METHOD_PATH}>{BLOG_INTRO_NOTE_LINK}</Link>
         </p>
+        {post.methodNote ? <p className="article-method-note">{post.methodNote}</p> : null}
         {post.heroImageUrl && heroAlt ? (
           <figure className="article-hero">
             <Image src={post.heroImageUrl} alt={heroAlt} width={1600} height={840} priority />
@@ -140,9 +138,11 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
             </ol>
           </nav>
         ) : null}
-        <ArticleMarkdown midCtaHref={midPostCtaHref(post.category)} slug={post.slug} figure={figure}>
+        <ArticleMarkdown midCtaHref={inlineHref ?? undefined} slug={post.slug} figure={figure}>
           {placed.markdown}
         </ArticleMarkdown>
+
+        <ArticleClosingCta slug={post.slug} cta={closingCtaForSlug(post.slug)} />
 
         <ChartReadingCapture slug={post.slug} />
 

@@ -24,10 +24,6 @@ export const MID_POST_CTA_COPY = "See how this plays out in your own chart";
 
 export const READ_NEXT_LABEL = "Read next";
 
-export function midPostCtaHref(category: "guides" | "debunked"): "/chart" | "/chart/compare" {
-  return category === "debunked" ? "/chart/compare" : "/chart";
-}
-
 export function headingPlainText(raw: string): string {
   return raw
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
@@ -74,35 +70,6 @@ export function tocHeadings(markdown: string): ArticleHeading[] {
   return headings.length >= MIN_TOC_HEADINGS ? headings : [];
 }
 
-function wordCount(text: string): number {
-  return text
-    .trim()
-    .split(/\s+/)
-    .filter((token) => /[\p{L}\p{N}]/u.test(token)).length;
-}
-
-function insertAtWordMidpoint(markdown: string, marker: string): string {
-  const paragraphs = markdown.split(/\n\n+/);
-  if (paragraphs.length <= 1) {
-    return `${markdown}\n\n${marker}\n`;
-  }
-  const total = wordCount(markdown);
-  const target = total / 2;
-  let seen = 0;
-  const out: string[] = [];
-  let inserted = false;
-  for (const paragraph of paragraphs) {
-    out.push(paragraph);
-    seen += wordCount(paragraph);
-    if (!inserted && seen >= target) {
-      out.push(marker);
-      inserted = true;
-    }
-  }
-  if (!inserted) out.push(marker);
-  return out.join("\n\n");
-}
-
 export type FigurePlacement = "named" | "first-h2" | "missing";
 
 /**
@@ -147,22 +114,46 @@ export function insertFigureAfterHeading(
   return { markdown: next.join("\n"), placement };
 }
 
-function lineStartOffsets(lines: string[]): number[] {
-  const offsets: number[] = [];
-  let acc = 0;
-  for (const line of lines) {
-    offsets.push(acc);
-    acc += line.length + 1;
+function isFenceToggle(line: string): boolean {
+  return line.trimStart().startsWith("```");
+}
+
+/** A real paragraph line: not a heading, list item, table row, or marker. */
+function isProseLine(line: string): boolean {
+  const text = line.trim();
+  if (!text) return false;
+  if (/^#{1,6}\s/.test(text)) return false;
+  if (/^([-*+]|\d+\.)\s/.test(text)) return false;
+  if (text.startsWith("|")) return false;
+  if (text === FIGURE_MARKER || text === MID_CTA_MARKER) return false;
+  return true;
+}
+
+function sectionHasProse(lines: string[], from: number, to: number): boolean {
+  let inFence = false;
+  for (let i = from; i < to; i++) {
+    const line = lines[i] ?? "";
+    if (isFenceToggle(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    if (isProseLine(line)) return true;
   }
-  return offsets;
+  return false;
+}
+
+function insertMarkerBefore(lines: string[], index: number, marker: string): string {
+  const next = [...lines.slice(0, index), "", marker, "", ...lines.slice(index)];
+  return next.join("\n");
 }
 
 /**
- * Insert the mid-post CTA marker after the first paragraph of the h2
- * closest to the document midpoint (the middle third). The marker never
- * sits directly under that heading, and never before that section's first
- * paragraph. If no h2 sits in the middle third, or that section has no
- * paragraph, insert at the 50% word-count paragraph boundary instead.
+ * Insert the mid-post CTA after the last block of the first H2 section
+ * that contains a paragraph. That is the first section after the
+ * introduction. The marker never sits directly under the heading, never
+ * inside a list, and never mid-paragraph. If no H2 section has a
+ * paragraph, the marker follows the last paragraph in the piece.
  * Never writes the CTA into the stored body: the renderer injects this
  * at read time.
  */
@@ -170,12 +161,11 @@ export function injectMidPostCtaMarker(markdown: string, marker = MID_CTA_MARKER
   if (markdown.includes(marker)) return markdown;
 
   const lines = markdown.split("\n");
-  const offsets = lineStartOffsets(lines);
   const h2Indexes: number[] = [];
   let inFence = false;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] ?? "";
-    if (line.trimStart().startsWith("```")) {
+    if (isFenceToggle(line)) {
       inFence = !inFence;
       continue;
     }
@@ -183,25 +173,29 @@ export function injectMidPostCtaMarker(markdown: string, marker = MID_CTA_MARKER
     if (/^## [^#]/.test(line)) h2Indexes.push(i);
   }
 
-  const length = markdown.length;
-  const mid = length / 2;
-  const nearby = h2Indexes.filter((index) => {
-    const at = offsets[index] ?? 0;
-    return at >= length * 0.25 && at <= length * 0.75;
-  });
-  nearby.sort((a, b) => Math.abs((offsets[a] ?? 0) - mid) - Math.abs((offsets[b] ?? 0) - mid));
-  const chosen = nearby[0];
-  if (chosen !== undefined) {
-    let cursor = chosen + 1;
-    while (cursor < lines.length && (lines[cursor] ?? "").trim() === "") cursor++;
-    const firstLine = lines[cursor] ?? "";
-    if (cursor < lines.length && !/^## [^#]/.test(firstLine) && !firstLine.trimStart().startsWith("```")) {
-      while (cursor < lines.length && (lines[cursor] ?? "").trim() !== "") cursor++;
-      const next = [...lines.slice(0, cursor), "", marker, ...lines.slice(cursor)];
-      return next.join("\n");
-    }
+  for (let n = 0; n < h2Indexes.length; n++) {
+    const start = h2Indexes[n] ?? 0;
+    const end = h2Indexes[n + 1] ?? lines.length;
+    if (!sectionHasProse(lines, start + 1, end)) continue;
+    return insertMarkerBefore(lines, end, marker);
   }
-  return insertAtWordMidpoint(markdown, marker);
+
+  let lastProse = -1;
+  inFence = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? "";
+    if (isFenceToggle(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    if (isProseLine(line)) lastProse = i;
+  }
+  if (lastProse === -1) {
+    const suffix = markdown.endsWith("\n") ? "" : "\n";
+    return `${markdown}${suffix}\n${marker}\n`;
+  }
+  return insertMarkerBefore(lines, lastProse + 1, marker);
 }
 
 export interface RelatedPostInput {

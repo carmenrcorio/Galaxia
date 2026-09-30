@@ -42,15 +42,17 @@ export function BlogCtaLink({
   href,
   slug,
   cta,
+  className,
   children
 }: {
   href: string;
   slug: string;
   cta: BlogCtaKind;
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <a href={href} onClick={() => trackBlogClick(BLOG_ANALYTICS.cta, slug, cta)}>
+    <a href={href} className={className} onClick={() => trackBlogClick(BLOG_ANALYTICS.cta, slug, cta)}>
       {children}
     </a>
   );

@@ -52,6 +52,24 @@ export type BlogAnalyticsEvent = (typeof BLOG_ANALYTICS)[keyof typeof BLOG_ANALY
 /** Which call to action was clicked. No other properties are sent. */
 export type BlogCtaKind = "inline" | "closing";
 
+/** Post header date: "Sep 29, 2026". UTC calendar day of the stored timestamp. */
+export function formatUpdatedDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC"
+  });
+}
+
+/** Visible "Updated" date. `updated_at` first. `published_at` only when that is empty. */
+export function postUpdatedIso(updatedAt: string | null | undefined, publishedAt: string | null): string | null {
+  const updated = updatedAt?.trim() ?? "";
+  if (updated) return updated;
+  const published = publishedAt?.trim() ?? "";
+  return published || null;
+}
+
 export interface BlogIndexFields {
   slug: string;
   isTimely: boolean;

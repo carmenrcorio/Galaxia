@@ -150,6 +150,9 @@ export function ChartReadingCapture({ slug }: { slug?: string } = {}) {
           value={birthPlace}
           onChange={(event) => setBirthPlace(event.target.value)}
         />
+        <p id="chart-reading-helper" className="article-chart-reading-help">
+          {CHART_READING_BIRTH_DATA_NOTE}
+        </p>
         <div className="article-chart-reading-actions">
           <button
             type="submit"
@@ -167,9 +170,6 @@ export function ChartReadingCapture({ slug }: { slug?: string } = {}) {
         </div>
         {error ? <p className="article-chart-reading-error">{error}</p> : null}
       </form>
-      <p id="chart-reading-helper" className="article-chart-reading-help">
-        {CHART_READING_BIRTH_DATA_NOTE}
-      </p>
       <div className="article-chart-reading-howto">
         <p className="article-chart-reading-howto-label">{CHART_READING_TIME_HELP_LABEL}</p>
         <p className="article-chart-reading-help">{CHART_READING_TIME_HELP_SHORT}</p>

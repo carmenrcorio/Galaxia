@@ -12,8 +12,10 @@ import {
   START_HERE_SLUGS,
   TITLE_HERO_PLACEHOLDER_SLUGS,
   cardThumbnailSrc,
+  formatUpdatedDate,
   isTimelyActive,
   partitionBlogIndex,
+  postUpdatedIso,
   sortBlogFeed,
   type BlogIndexFields
 } from "./blog-index";
@@ -147,6 +149,15 @@ describe("blog index helpers", () => {
     expect(analytics).toContain("track(event, { slug, cta })");
     expect(analytics).toContain("track(event, { slug })");
     expect(analytics).not.toContain("email");
+  });
+
+  it("formats the post header date as Sep 29, 2026 and prefers updated_at", () => {
+    expect(formatUpdatedDate("2026-09-29T18:00:00.000Z")).toBe("Sep 29, 2026");
+    expect(postUpdatedIso("2026-09-30T00:00:00.000Z", "2026-09-29T00:00:00.000Z")).toBe(
+      "2026-09-30T00:00:00.000Z"
+    );
+    expect(postUpdatedIso("  ", "2026-09-29T00:00:00.000Z")).toBe("2026-09-29T00:00:00.000Z");
+    expect(postUpdatedIso("", null)).toBeNull();
   });
 });
 

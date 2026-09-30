@@ -27,9 +27,10 @@ export function AccountDeleteDialog({
   deleting: boolean;
   error: string | null;
   onCancel: () => void;
-  onConfirm: (confirmation: string) => void;
+  onConfirm: (confirmation: string, password: string) => void;
 }) {
   const [typed, setTyped] = useState("");
+  const [password, setPassword] = useState("");
   const titleId = useId();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,6 +38,7 @@ export function AccountDeleteDialog({
   useEffect(() => {
     if (!open) return;
     setTyped("");
+    setPassword("");
     inputRef.current?.focus();
   }, [open]);
 
@@ -54,7 +56,7 @@ export function AccountDeleteDialog({
 
   if (!open) return null;
 
-  const confirmed = isDeleteConfirmation(typed);
+  const confirmed = isDeleteConfirmation(typed) && password.length > 0;
 
   return (
     <div
@@ -112,10 +114,23 @@ export function AccountDeleteDialog({
           disabled={deleting}
         />
 
+        <label htmlFor={`${inputId}-password`} style={{ color: "var(--mist)", fontSize: 14 }}>
+          {ACCOUNT_DELETE_MODAL_COPY.passwordPrompt}
+        </label>
+        <input
+          id={`${inputId}-password`}
+          className="field field--rect"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          autoComplete="current-password"
+          disabled={deleting}
+        />
+
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
           <button
             type="button"
-            onClick={() => onConfirm(typed)}
+            onClick={() => onConfirm(typed, password)}
             disabled={!confirmed || deleting}
             style={{
               cursor: !confirmed || deleting ? "not-allowed" : "pointer",

@@ -17,7 +17,8 @@ describe("account export/delete accept the mobile session JWT (D5)", () => {
     expect(del).toContain("accessToken");
     expect(exp).toContain("accessToken");
     expect(exp).toMatch(/export async function GET\(req: Request\)/);
-    expect(del).toContain("purge_own_account_data");
+    expect(del).toContain("purge_user_account");
+    expect(del).toContain("signInWithPassword");
   });
 
   it("cookie AccountDataPanel still calls the same routes without an Authorization header", () => {
@@ -26,7 +27,7 @@ describe("account export/delete accept the mobile session JWT (D5)", () => {
     expect(panel).toContain('fetch("/api/account/delete"');
     expect(panel).not.toMatch(/Authorization/);
     expect(panel).toContain("ACCOUNT_DELETE_COPY");
-    expect(panel).toContain("JSON.stringify({ confirmation })");
+    expect(panel).toContain("JSON.stringify({ confirmation, password })");
   });
 
   it("the Settings Account section calls the same two routes on the cookie session", () => {

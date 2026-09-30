@@ -59,14 +59,14 @@ export function AccountDataPanel({
     }
   }
 
-  async function deleteAccount(confirmation: string) {
+  async function deleteAccount(confirmation: string, password: string) {
     setDeleting(true);
     setDeleteError(null);
     try {
       const res = await fetch("/api/account/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmation })
+        body: JSON.stringify({ confirmation, password })
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -166,7 +166,7 @@ export function AccountDataPanel({
           setDialogOpen(false);
           setDeleteError(null);
         }}
-        onConfirm={(confirmation) => void deleteAccount(confirmation)}
+        onConfirm={(confirmation, password) => void deleteAccount(confirmation, password)}
       />
     </div>
   );

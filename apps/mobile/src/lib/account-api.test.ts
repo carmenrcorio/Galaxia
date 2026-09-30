@@ -44,12 +44,12 @@ describe("mobile account export/delete call the web routes (D5)", () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await requestAccountDelete("user-jwt", " DELETE ");
+    const result = await requestAccountDelete("user-jwt", " DELETE ", "secret-pass");
     expect(result).toEqual({ ok: true });
     expect(fetchMock).toHaveBeenCalledWith("https://galaxiamea.com/api/account/delete", {
       method: "POST",
       headers: { Authorization: "Bearer user-jwt", "Content-Type": "application/json" },
-      body: JSON.stringify({ confirmation: "delete" })
+      body: JSON.stringify({ confirmation: "delete", password: "secret-pass" })
     });
   });
 
@@ -57,7 +57,7 @@ describe("mobile account export/delete call the web routes (D5)", () => {
     process.env[SITE_URL_VAR] = "https://galaxiamea.com";
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const result = await requestAccountDelete("user-jwt", "yes");
+    const result = await requestAccountDelete("user-jwt", "yes", "secret-pass");
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/delete/);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -68,7 +68,7 @@ describe("mobile account export/delete call the web routes (D5)", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     const exported = await requestAccountExport("user-jwt");
-    const deleted = await requestAccountDelete("user-jwt", "delete");
+    const deleted = await requestAccountDelete("user-jwt", "delete", "secret-pass");
     expect(exported).toEqual({ ok: false, error: ACCOUNT_EXPORT_COPY.errorGeneric });
     expect(deleted).toEqual({ ok: false, error: ACCOUNT_DELETE_COPY.errorGeneric });
     expect(fetchMock).not.toHaveBeenCalled();

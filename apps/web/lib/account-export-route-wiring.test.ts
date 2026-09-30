@@ -24,8 +24,8 @@ describe("GET /api/account/export", () => {
 
   it("admits one export per hour through the atomic Postgres counter", () => {
     expect(ROUTE).toContain('supabase.rpc(\n    "check_and_increment_account_export_rate"');
-    expect(ROUTE).toContain("ACCOUNT_EXPORT_RATE_LIMIT.limit");
-    expect(ROUTE).toContain("ACCOUNT_EXPORT_RATE_LIMIT.windowSeconds");
+    expect(ROUTE).not.toContain("p_limit");
+    expect(ROUTE).not.toContain("p_window_seconds");
     expect(ROUTE).toContain("status: 429");
     expect(ROUTE).toContain("ACCOUNT_EXPORT_COPY.errorRateLimited");
     expect(ACCOUNT_EXPORT_RATE_LIMIT.limit).toBe(1);

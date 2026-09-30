@@ -31,6 +31,7 @@ const PRODUCT_RPCS = [
   "delete_own_group",
   "delete_own_person",
   "purge_own_account_data",
+  "purge_user_account",
   "check_and_increment_vela_rate"
 ] as const;
 

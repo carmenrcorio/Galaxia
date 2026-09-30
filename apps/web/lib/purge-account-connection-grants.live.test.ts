@@ -206,7 +206,9 @@ describe("VERIFY (live DB): purge_own_account_data ends connect grants in both d
   }, 60_000);
 
   it("strips both mirrors, clears grants both ways, and leaves auth.users deletable", async () => {
-    const { error: purgeError } = await departing.rpc("purge_own_account_data");
+    const { error: purgeError } = await admin.rpc("purge_user_account", {
+      p_user_id: departingId
+    });
     expect(purgeError).toBeNull();
 
     // ── Outgoing side: the sender keeps the bare star they named ──────────

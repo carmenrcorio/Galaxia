@@ -323,9 +323,6 @@ function compareGenerational(
 // (supabase/migrations/20260725050000_vela_chat_rate_limit.sql), an atomic
 // per-user fixed-window counter. See index.ts's admission check below for
 // how tier is chosen and how the RPC result maps to 429 vs 503.
-const VELA_RATE_PAID  = { limit: 20, windowSeconds: 600 } as const;
-const VELA_RATE_TRIAL = { limit: 5,  windowSeconds: 600 } as const;
-
 // Rate-limit response copy. Finalized.
 const RATE_LIMIT_COPY =
   "You've reached the chat limit for now. Give it a few minutes and try again.";
@@ -398,17 +395,14 @@ Deno.serve(async (req) => {
     // fields profileAllowsAccess already consumed above; this is not a
     // second access decision, only a classification of the access already
     // granted by the entitlement check just above.
-    const isTrial  = !profile?.comped && profile?.subscription_status === "trialing";
-    const rateTier = isTrial ? VELA_RATE_TRIAL : VELA_RATE_PAID;
-
     let rateLimitAllowed: boolean;
     try {
       // Scoped tightly to the RPC call + its result check only — a real bug
       // anywhere else in the handler must still surface as the file's normal
       // catch-all (500), not get mislabeled as this transient 503.
+      // Caps are hardcoded in Postgres (trial 5/600s, paid 20/600s) from profiles.
       const { data: rateLimitData, error: rateLimitError } = await supabase.rpc(
-        "check_and_increment_vela_rate",
-        { p_limit: rateTier.limit, p_window_seconds: rateTier.windowSeconds }
+        "check_and_increment_vela_rate"
       );
       if (rateLimitError) {
         return jsonResponse(503, { error: RATE_LIMIT_503_COPY });

@@ -103,6 +103,7 @@ export default function SettingsScreen() {
   const [exportError, setExportError] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTyped, setDeleteTyped] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -322,10 +323,10 @@ export default function SettingsScreen() {
 
   const deleteAccount = async () => {
     const token = session?.access_token;
-    if (!token || !isDeleteConfirmation(deleteTyped)) return;
+    if (!token || !isDeleteConfirmation(deleteTyped) || !deletePassword) return;
     setDeleting(true);
     setDeleteError(null);
-    const result = await requestAccountDelete(token, deleteTyped);
+    const result = await requestAccountDelete(token, deleteTyped, deletePassword);
     if (!result.ok) {
       setDeleteError(result.error);
       setDeleting(false);
@@ -368,7 +369,7 @@ export default function SettingsScreen() {
   }
 
   const showBillingWarning = shouldWarnBillingOnDelete(subStatus);
-  const canDelete = isDeleteConfirmation(deleteTyped);
+  const canDelete = isDeleteConfirmation(deleteTyped) && deletePassword.length > 0;
 
   return (
     <ScrollView style={screenFill} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 100 }}>
@@ -736,6 +737,7 @@ export default function SettingsScreen() {
           accessibilityRole="button"
           onPress={() => {
             setDeleteTyped("");
+            setDeletePassword("");
             setDeleteError(null);
             setDeleteModalOpen(true);
           }}
@@ -783,6 +785,18 @@ export default function SettingsScreen() {
               editable={!deleting}
               style={fieldStyle}
             />
+            <Text style={cardBody}>{ACCOUNT_DELETE_MODAL_COPY.passwordPrompt}</Text>
+            <TextInput
+              value={deletePassword}
+              onChangeText={setDeletePassword}
+              placeholder={ACCOUNT_DELETE_MODAL_COPY.passwordPrompt}
+              placeholderTextColor={tokens.colors.mist2}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!deleting}
+              style={fieldStyle}
+            />
             <Pressable
               accessibilityRole="button"
               onPress={() => void deleteAccount()}
@@ -799,6 +813,7 @@ export default function SettingsScreen() {
               onPress={() => {
                 setDeleteModalOpen(false);
                 setDeleteTyped("");
+                setDeletePassword("");
                 setDeleteError(null);
               }}
               style={pillStyle}

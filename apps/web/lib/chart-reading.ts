@@ -19,7 +19,10 @@ import {
   type SignKey
 } from "@galaxia/astro";
 import { isMinorForSafety } from "@galaxia/core";
-import { CHART_READING_NO_SETTLED_PLACEMENT } from "./chart-reading-copy";
+import {
+  CHART_READING_NO_SETTLED_PLACEMENT,
+  CHART_READING_SAMPLE_NO_BIRTH_DATE
+} from "./chart-reading-copy";
 
 /**
  * Cafe Astrology published Placidus chart used as external ground truth in
@@ -74,6 +77,8 @@ export interface ChartReading {
   placements: ChartReadingPlacement[];
   /** Honest empty-state copy when birth data produced no settled placement. */
   emptyNote: string | null;
+  /** Shown at the top of sample emails when no usable birth date was provided. */
+  sampleDisclaimer: string | null;
 }
 
 export function isValidCaptureEmail(email: string): boolean {
@@ -90,7 +95,46 @@ export function hasCompleteBirthData(input: {
   year?: number;
   birthPlace?: string;
 }): boolean {
-  return Boolean(input.month && input.day && input.year && input.birthPlace?.trim());
+  return resolvePersonalizedBirthDate(input) !== null;
+}
+
+function birthDateFieldCount(input: { month?: number; day?: number; year?: number }): number {
+  let count = 0;
+  if (input.month !== undefined && input.month !== null) count += 1;
+  if (input.day !== undefined && input.day !== null) count += 1;
+  if (input.year !== undefined && input.year !== null) count += 1;
+  return count;
+}
+
+function isFutureCalendarDate(month: number, day: number, year: number): boolean {
+  const now = new Date();
+  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const birthUtc = Date.UTC(year, month - 1, day);
+  return birthUtc > todayUtc;
+}
+
+/** Month, day, and year that pass calendar validation and are not in the future. */
+export function resolvePersonalizedBirthDate(input: {
+  month?: number;
+  day?: number;
+  year?: number;
+}): { month: number; day: number; year: number } | null {
+  const fieldCount = birthDateFieldCount(input);
+  if (fieldCount !== 3) return null;
+
+  const { month, day, year } = input;
+  if (!Number.isInteger(month) || !Number.isInteger(day) || !Number.isInteger(year)) {
+    return null;
+  }
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+  try {
+    buildBirthInput({ precision: "date", month, day, year });
+  } catch {
+    return null;
+  }
+  if (isFutureCalendarDate(month, day, year)) return null;
+  return { month, day, year };
 }
 
 function confidentPlacementText(
@@ -159,17 +203,13 @@ export function buildChartReading(input: {
   birthPlace?: string;
 }): ChartReading {
   const personName = input.name?.trim() ? input.name.trim() : null;
-  const personalized = hasCompleteBirthData(input);
+  const birthDate = resolvePersonalizedBirthDate(input);
 
-  if (personalized) {
-    const chart = buildPersonalizedChart({
-      month: input.month!,
-      day: input.day!,
-      year: input.year!
-    });
-    const birthDate = `${String(input.year).padStart(4, "0")}-${String(input.month).padStart(2, "0")}-${String(input.day).padStart(2, "0")}`;
+  if (birthDate) {
+    const chart = buildPersonalizedChart(birthDate);
+    const birthDateIso = `${String(birthDate.year).padStart(4, "0")}-${String(birthDate.month).padStart(2, "0")}-${String(birthDate.day).padStart(2, "0")}`;
     const minorSafe = isMinorForSafety({
-      birthDate,
+      birthDate: birthDateIso,
       birthPrecision: "date"
     });
     const placements = selectReadingPlacements(chart, minorSafe);
@@ -179,15 +219,11 @@ export function buildChartReading(input: {
       sunSign: signOf(chart, "sun"),
       moonSign: signOf(chart, "moon"),
       placements,
-      emptyNote: placements.length === 0 ? CHART_READING_NO_SETTLED_PLACEMENT : null
+      emptyNote: placements.length === 0 ? CHART_READING_NO_SETTLED_PLACEMENT : null,
+      sampleDisclaimer: null
     };
   }
 
-  // TODO: A reader who gave month, day, and year but no place still gets the
-  // published sample chart (29 December 1987, Little Rock) instead of a
-  // date-only chart from their own birthday. Place is not geocoded.
-  // hasCompleteBirthData only checks that the string is non-empty, and
-  // buildPersonalizedChart never receives it.
   const chart = buildFallbackChart();
   const placements = selectReadingPlacements(chart, false);
   return {
@@ -196,6 +232,7 @@ export function buildChartReading(input: {
     sunSign: signOf(chart, "sun"),
     moonSign: signOf(chart, "moon"),
     placements,
-    emptyNote: null
+    emptyNote: null,
+    sampleDisclaimer: CHART_READING_SAMPLE_NO_BIRTH_DATE
   };
 }

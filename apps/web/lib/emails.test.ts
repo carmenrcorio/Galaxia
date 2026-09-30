@@ -25,7 +25,12 @@ import {
   type TrialEmailData
 } from "./emails";
 import { BODY_LABEL, buildChartReading } from "./chart-reading";
-import { CHART_READING_CLOSING_LINE, chartReadingOpeningLine, placementLabel } from "./chart-reading-copy";
+import {
+  CHART_READING_CLOSING_LINE,
+  CHART_READING_SAMPLE_NO_BIRTH_DATE,
+  chartReadingOpeningLine,
+  placementLabel
+} from "./chart-reading-copy";
 
 const FOOTER_ENTITY = "Galaxia Mea LLC · 1 Shadowrock Ct, Simpsonville, SC 29680";
 const FOOTER_WHY = "You are receiving this email because you signed up for Galaxia Mea.";
@@ -506,6 +511,8 @@ describe("chartReadingEmail", () => {
     expect(reading.sample).toBe(true);
     expect(rendered.subject).toBe(`What a ${reading.moonSign} Moon actually does`);
     expect(rendered.preview).toBe("Three placements, in the words we already have.");
+    expect(rendered.html).toContain(CHART_READING_SAMPLE_NO_BIRTH_DATE);
+    expect(rendered.text).toContain(CHART_READING_SAMPLE_NO_BIRTH_DATE);
     expect(rendered.html).toContain(chartReadingOpeningLine({
       personName: null,
       sample: true,
@@ -532,6 +539,7 @@ describe("chartReadingEmail", () => {
     });
     const rendered = chartReadingEmail({ reading, unsubscribeUrl });
     expect(rendered.html).toContain("Here is Sam's reading.");
+    expect(rendered.html).not.toContain(CHART_READING_SAMPLE_NO_BIRTH_DATE);
     expect(rendered.html).not.toContain("Hi Sam");
     expect(rendered.html).not.toContain("Thanks for signing up");
     expect(rendered.subject).not.toMatch(/your astrology reading/i);

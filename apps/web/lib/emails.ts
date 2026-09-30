@@ -773,7 +773,11 @@ export function chartReadingEmail(d: ChartReadingEmailData): RenderedEmail {
   });
   const emptyNote = d.reading.emptyNote;
 
-  const htmlParts: string[] = [frameP(escapeHtml(opening))];
+  const htmlParts: string[] = [];
+  if (d.reading.sampleDisclaimer) {
+    htmlParts.push(frameP(escapeHtml(d.reading.sampleDisclaimer)));
+  }
+  htmlParts.push(frameP(escapeHtml(opening)));
   if (emptyNote) {
     htmlParts.push(goldRule(), frameP(escapeHtml(emptyNote)));
   }
@@ -784,6 +788,7 @@ export function chartReadingEmail(d: ChartReadingEmailData): RenderedEmail {
   htmlParts.push(complianceFooterHtml(d.unsubscribeUrl));
 
   const textParts = [
+    ...(d.reading.sampleDisclaimer ? [d.reading.sampleDisclaimer, ""] : []),
     opening,
     "",
     emptyNote ? `${emptyNote}\n` : "",

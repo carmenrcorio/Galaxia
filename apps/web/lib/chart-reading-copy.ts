@@ -8,6 +8,9 @@
 export const CHART_READING_BIRTH_DATA_NOTE =
   "Enter your birthday and we'll send you a look at what your chart says.";
 
+export const CHART_READING_SAMPLE_NO_BIRTH_DATE =
+  "We didn't have your birth date, so here's a sample reading to show you what Galaxia sees in a chart.";
+
 export const CHART_READING_SUBMIT = "Send my reading";
 
 export const CHART_READING_CONFIRMATION = "The reading is on its way to that inbox.";

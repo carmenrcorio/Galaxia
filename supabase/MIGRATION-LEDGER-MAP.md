@@ -42,7 +42,7 @@ Git has `20260914023000_people_notes_messages_indexes.sql` at the same version p
 
 ## Applying new work
 
-New migrations must use a version strictly after the highest production entry per `AGENTS.md` / `ENGINEERING.md` §16.
+New migrations (e.g. `20260930210000_security_phase_1_fixes.sql`) must use a version strictly after the highest production entry per `AGENTS.md` / `ENGINEERING.md` §16. At snapshot time the highest ledger entry was `20260930164350`.
 
 ## Applied via MCP (2026-09-30)
 

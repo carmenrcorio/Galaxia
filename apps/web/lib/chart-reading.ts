@@ -183,6 +183,11 @@ export function buildChartReading(input: {
     };
   }
 
+  // TODO: A reader who gave month, day, and year but no place still gets the
+  // published sample chart (29 December 1987, Little Rock) instead of a
+  // date-only chart from their own birthday. Place is not geocoded.
+  // hasCompleteBirthData only checks that the string is non-empty, and
+  // buildPersonalizedChart never receives it.
   const chart = buildFallbackChart();
   const placements = selectReadingPlacements(chart, false);
   return {

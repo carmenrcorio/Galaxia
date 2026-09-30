@@ -4,27 +4,9 @@
  * on computed data.
  */
 
-/**
- * FOUNDER-REVIEW: helper under the birth-date fields.
- * The form collects month, day, and year, plus an optional place. It does
- * not collect a birth time, so the helper does not ask for one. A missing
- * date still emails a sample from a published chart (1987-12-29, Little Rock).
- */
-export const CHART_READING_BIRTH_DATA_NOTE = "We calculate the chart from the date you enter.";
-
-/** FOUNDER-REVIEW: heading for the birth-time help blurb. */
-export const CHART_READING_TIME_HELP_LABEL = "How to find your birth time";
-
-/** FOUNDER-REVIEW: default birth-time help, shown in the form. */
-export const CHART_READING_TIME_HELP_SHORT =
-  "Check your birth certificate or hospital records, or ask a parent. The exact time and place make your chart more accurate.";
-
-/**
- * FOUNDER-REVIEW: alternate birth-time help. Stored only. Not rendered
- * until the founder chooses a surface for it.
- */
-export const CHART_READING_TIME_HELP_WITTY =
-  "Call your mom. She remembers, and she\u2019ll tell you more than you asked for. Your birth certificate has it too, and so do hospital records if she\u2019s not picking up. No luck? We\u2019ll still calculate the basics, but your rising sign and houses are worth one slightly awkward phone call.";
+/** FOUNDER-REVIEW: helper under the birth-date fields. */
+export const CHART_READING_BIRTH_DATA_NOTE =
+  "Enter your birthday and we'll send you a look at what your chart says.";
 
 export const CHART_READING_SUBMIT = "Send my reading";
 

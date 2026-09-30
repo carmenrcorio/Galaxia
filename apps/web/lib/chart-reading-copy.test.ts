@@ -6,9 +6,6 @@ import {
   CHART_READING_CLOSING_LINE,
   CHART_READING_CONFIRMATION,
   CHART_READING_SUBMIT,
-  CHART_READING_TIME_HELP_LABEL,
-  CHART_READING_TIME_HELP_SHORT,
-  CHART_READING_TIME_HELP_WITTY,
   chartReadingEmailSubject,
   chartReadingOpeningLine
 } from "./chart-reading-copy";
@@ -17,11 +14,12 @@ describe("chart-reading authored copy", () => {
   it("never uses U+2014 in authored chart-reading copy", () => {
     const src = readFileSync(join(__dirname, "chart-reading-copy.ts"), "utf8");
     expect(src).not.toContain("\u2014");
+    expect(CHART_READING_BIRTH_DATA_NOTE).toBe(
+      "Enter your birthday and we'll send you a look at what your chart says."
+    );
+    expect(CHART_READING_BIRTH_DATA_NOTE).not.toMatch(/rising|houses|birth time|birth place|more accurate/i);
     for (const value of [
       CHART_READING_BIRTH_DATA_NOTE,
-      CHART_READING_TIME_HELP_LABEL,
-      CHART_READING_TIME_HELP_SHORT,
-      CHART_READING_TIME_HELP_WITTY,
       CHART_READING_SUBMIT,
       CHART_READING_CONFIRMATION,
       CHART_READING_CLOSING_LINE,

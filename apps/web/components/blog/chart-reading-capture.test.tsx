@@ -6,10 +6,7 @@ import { ChartReadingCapture } from "./chart-reading-capture";
 import {
   CHART_READING_BIRTH_DATA_NOTE,
   CHART_READING_CONFIRMATION,
-  CHART_READING_SUBMIT,
-  CHART_READING_TIME_HELP_LABEL,
-  CHART_READING_TIME_HELP_SHORT,
-  CHART_READING_TIME_HELP_WITTY
+  CHART_READING_SUBMIT
 } from "../../lib/chart-reading-copy";
 
 vi.mock("next/link", () => ({
@@ -23,12 +20,13 @@ afterEach(() => {
 });
 
 describe("ChartReadingCapture", () => {
-  it("renders the helper under the form, the short birth-time note, and optional place", () => {
+  it("renders honest helper copy and an optional place, with no birth-time promises", () => {
     const { container } = render(<ChartReadingCapture />);
     expect(screen.getByText(CHART_READING_BIRTH_DATA_NOTE)).toBeTruthy();
-    expect(screen.getByText(CHART_READING_TIME_HELP_LABEL)).toBeTruthy();
-    expect(screen.getByText(CHART_READING_TIME_HELP_SHORT)).toBeTruthy();
-    expect(container.textContent).not.toContain(CHART_READING_TIME_HELP_WITTY);
+    expect(container.textContent).not.toMatch(/rising sign/i);
+    expect(container.textContent).not.toMatch(/\bhouses\b/i);
+    expect(container.textContent).not.toMatch(/birth time/i);
+    expect(container.textContent).not.toMatch(/more accurate/i);
     expect(container.textContent).not.toMatch(/published chart/i);
     expect(screen.getByRole("button", { name: CHART_READING_SUBMIT })).toBeTruthy();
     const privacy = screen.getByRole("link", { name: "Privacy" });
@@ -57,6 +55,11 @@ describe("ChartReadingCapture", () => {
 
     render(<ChartReadingCapture />);
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "maya@example.com" } });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Maya" } });
+    fireEvent.change(screen.getByLabelText("Birth month"), { target: { value: "4" } });
+    fireEvent.change(screen.getByLabelText("Birth day"), { target: { value: "10" } });
+    fireEvent.change(screen.getByLabelText("Birth year"), { target: { value: "1993" } });
+    fireEvent.change(screen.getByLabelText("Birth place (optional)"), { target: { value: "Austin" } });
     fireEvent.click(screen.getByRole("button", { name: CHART_READING_SUBMIT }));
 
     await waitFor(() => {
@@ -65,7 +68,14 @@ describe("ChartReadingCapture", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("/api/blog/chart-reading-capture");
-    expect(JSON.parse(init.body as string).email).toBe("maya@example.com");
+    expect(JSON.parse(init.body as string)).toEqual({
+      email: "maya@example.com",
+      name: "Maya",
+      month: 4,
+      day: 10,
+      year: 1993,
+      birthPlace: "Austin"
+    });
 
     vi.unstubAllGlobals();
   });

@@ -14,9 +14,7 @@ import {
   CHART_READING_PLACE_LABEL,
   CHART_READING_PLACE_PLACEHOLDER,
   CHART_READING_SEND_FAILED,
-  CHART_READING_SUBMIT,
-  CHART_READING_TIME_HELP_LABEL,
-  CHART_READING_TIME_HELP_SHORT
+  CHART_READING_SUBMIT
 } from "../../lib/chart-reading-copy";
 
 const currentYear = new Date().getFullYear();
@@ -170,10 +168,6 @@ export function ChartReadingCapture({ slug }: { slug?: string } = {}) {
         </div>
         {error ? <p className="article-chart-reading-error">{error}</p> : null}
       </form>
-      <div className="article-chart-reading-howto">
-        <p className="article-chart-reading-howto-label">{CHART_READING_TIME_HELP_LABEL}</p>
-        <p className="article-chart-reading-help">{CHART_READING_TIME_HELP_SHORT}</p>
-      </div>
     </section>
   );
 }

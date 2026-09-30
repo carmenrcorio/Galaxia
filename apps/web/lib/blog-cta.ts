@@ -56,7 +56,7 @@ const CLOSING_BY_SLUG: Record<string, BlogClosingCta> = {
   },
   "reading-chart-of-someone-who-died": {
     heading: "Look at their chart, gently",
-    body: "Add their birth date to see their chart calculated from astronomical positions. Take it at your own pace. If you know their birth time and place, add those too for a more precise reading.",
+    body: "Add their birth date to see their chart calculated from astronomical positions. Take it at your own pace.",
     button: "View their chart",
     href: "/chart"
   },

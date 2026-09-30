@@ -1,16 +1,10 @@
 import Link from "next/link";
+import { BLOG_HEADER_LINKS } from "../../lib/nav-links";
 
 /**
  * Persistent header for blog surfaces (`/blog`, `/blog/[category]`, and every
- * individual post under `app/<slug>/page.tsx`). Before this, article pages
- * had no <header> or <nav> in the DOM at all — a reader landing on a post
- * had no way back to the site short of the browser's back button.
- *
- * Deliberately lighter than <MarketingNav>: a full landing nav (with links
- * out to Why Galaxia, Generations, Meet Vela, and Pricing) is more than a
- * reader mid-article needs. This is just the wordmark (→ home) + one link
- * back to the blog index, same sticky/blur treatment as the other nav bars
- * (marketing-nav.tsx, app-nav.tsx) for visual consistency.
+ * individual post under `app/<slug>/page.tsx`). Wordmark plus the same
+ * Free chart, Blog, and Pricing links the marketing header uses.
  */
 export function BlogHeader() {
   return (
@@ -20,9 +14,11 @@ export function BlogHeader() {
           Galax<span className="blog-header-brand-italic">ia</span>
         </Link>
         <nav aria-label="Blog" className="blog-header-nav">
-          <Link href="/blog" className="blog-header-link">
-            Blog
-          </Link>
+          {BLOG_HEADER_LINKS.map((link) => (
+            <Link key={link.href} href={link.href as never} className="blog-header-link">
+              {link.label}
+            </Link>
+          ))}
         </nav>
       </div>
     </header>

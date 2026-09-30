@@ -4,9 +4,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ChartReadingCapture } from "./chart-reading-capture";
 import {
+  CHART_READING_BIRTH_DATA_NOTE,
   CHART_READING_CONFIRMATION,
-  CHART_READING_FRAMING,
-  CHART_READING_SUBMIT
+  CHART_READING_SUBMIT,
+  CHART_READING_TIME_HELP_LABEL,
+  CHART_READING_TIME_HELP_SHORT,
+  CHART_READING_TIME_HELP_WITTY
 } from "../../lib/chart-reading-copy";
 
 vi.mock("next/link", () => ({
@@ -20,9 +23,13 @@ afterEach(() => {
 });
 
 describe("ChartReadingCapture", () => {
-  it("renders framing, email, optional fields, submit, and privacy without required labels", () => {
+  it("renders the helper under the form, the short birth-time note, and optional place", () => {
     const { container } = render(<ChartReadingCapture />);
-    expect(screen.getByText(CHART_READING_FRAMING)).toBeTruthy();
+    expect(screen.getByText(CHART_READING_BIRTH_DATA_NOTE)).toBeTruthy();
+    expect(screen.getByText(CHART_READING_TIME_HELP_LABEL)).toBeTruthy();
+    expect(screen.getByText(CHART_READING_TIME_HELP_SHORT)).toBeTruthy();
+    expect(container.textContent).not.toContain(CHART_READING_TIME_HELP_WITTY);
+    expect(container.textContent).not.toMatch(/published chart/i);
     expect(screen.getByRole("button", { name: CHART_READING_SUBMIT })).toBeTruthy();
     const privacy = screen.getByRole("link", { name: "Privacy" });
     expect(privacy.getAttribute("href")).toBe("/privacy");
@@ -31,7 +38,12 @@ describe("ChartReadingCapture", () => {
     expect(container.textContent).not.toContain("\u2014");
     expect(screen.getByLabelText("Email")).toBeTruthy();
     expect(screen.getByLabelText("Name")).toBeTruthy();
-    expect(screen.getByLabelText("Birthplace")).toBeTruthy();
+    expect(screen.getByLabelText("Birth place (optional)")).toBeTruthy();
+    const form = container.querySelector("form");
+    const helper = container.querySelector("#chart-reading-helper");
+    expect(form).toBeTruthy();
+    expect(helper).toBeTruthy();
+    expect(form!.compareDocumentPosition(helper!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("posts to the capture route and shows the confirmation line", async () => {

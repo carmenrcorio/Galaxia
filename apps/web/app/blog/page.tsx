@@ -9,7 +9,7 @@ import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { BLOG_CATEGORIES, getPublishedPosts } from "../../lib/blog";
 
 const TITLE = "Galaxia Blog: Birth Charts, Synastry, and Astrology Guides";
-const DESCRIPTION = "Guides for reading real birth charts: synastry, generations, and what astrology can and can't actually tell you.";
+const DESCRIPTION = "Guides for reading real birth charts: synastry, generations, and what astrology can and can\u2019t actually tell you.";
 
 export const metadata: Metadata = {
   title: TITLE,

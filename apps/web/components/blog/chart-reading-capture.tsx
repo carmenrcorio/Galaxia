@@ -4,14 +4,17 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { MONTHS } from "../birth-fields";
 import {
+  CHART_READING_BIRTH_DATA_NOTE,
   CHART_READING_CONFIRMATION,
   CHART_READING_EMAIL_PLACEHOLDER,
-  CHART_READING_FRAMING,
   CHART_READING_NAME_PLACEHOLDER,
   CHART_READING_NETWORK_ERROR,
+  CHART_READING_PLACE_LABEL,
   CHART_READING_PLACE_PLACEHOLDER,
   CHART_READING_SEND_FAILED,
-  CHART_READING_SUBMIT
+  CHART_READING_SUBMIT,
+  CHART_READING_TIME_HELP_LABEL,
+  CHART_READING_TIME_HELP_SHORT
 } from "../../lib/chart-reading-copy";
 
 const currentYear = new Date().getFullYear();
@@ -73,17 +76,14 @@ export function ChartReadingCapture() {
   }
 
   return (
-    <section className="article-chart-reading" aria-labelledby="chart-reading-framing">
-      <p id="chart-reading-framing" className="article-chart-reading-framing">
-        {CHART_READING_FRAMING}
-      </p>
+    <section className="article-chart-reading" aria-labelledby="chart-reading-helper">
       <form onSubmit={submit} className="article-chart-reading-form">
         <input
           className="field"
           type="email"
           autoComplete="email"
           aria-label="Email"
-          aria-describedby="chart-reading-framing"
+          aria-describedby="chart-reading-helper"
           placeholder={CHART_READING_EMAIL_PLACEHOLDER}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
@@ -143,7 +143,7 @@ export function ChartReadingCapture() {
           className="field"
           type="text"
           autoComplete="address-level2"
-          aria-label="Birthplace"
+          aria-label={CHART_READING_PLACE_LABEL}
           placeholder={CHART_READING_PLACE_PLACEHOLDER}
           value={birthPlace}
           onChange={(event) => setBirthPlace(event.target.value)}
@@ -158,6 +158,13 @@ export function ChartReadingCapture() {
         </div>
         {error ? <p className="article-chart-reading-error">{error}</p> : null}
       </form>
+      <p id="chart-reading-helper" className="article-chart-reading-help">
+        {CHART_READING_BIRTH_DATA_NOTE}
+      </p>
+      <div className="article-chart-reading-howto">
+        <p className="article-chart-reading-howto-label">{CHART_READING_TIME_HELP_LABEL}</p>
+        <p className="article-chart-reading-help">{CHART_READING_TIME_HELP_SHORT}</p>
+      </div>
     </section>
   );
 }

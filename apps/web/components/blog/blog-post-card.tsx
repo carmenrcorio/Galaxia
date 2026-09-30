@@ -29,7 +29,7 @@ export function BlogPostCard({
       <p className="blog-post-card-dek">{post.dek}</p>
       {variant !== "related" ? (
         <p className="blog-post-card-meta">
-          {post.publishedAt ? `${formatPostDate(post.publishedAt)} · ` : ""}
+          {post.isTimely && post.publishedAt ? `${formatPostDate(post.publishedAt)} · ` : ""}
           {post.readTimeMinutes} min read
         </p>
       ) : null}

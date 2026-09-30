@@ -20,6 +20,7 @@ import {
   THIS_WEEK_HREF,
   TODAY_SKY_HREF,
   FEATURE_TEASER_LINKS,
+  BLOG_HEADER_LINKS,
   MARKETING_NAV_ACTIONS,
   MARKETING_NAV_BRAND_HREF,
   MARKETING_NAV_LINKS,
@@ -136,6 +137,24 @@ describe("marketing nav hrefs resolve to App Router pages", () => {
 
     const leftover = extractLiteralHrefs(src);
     assertEveryHrefResolves(leftover, "marketing nav leftover literal", { allowEmpty: true });
+  });
+});
+
+describe("blog header links", () => {
+  it("places Free chart and Pricing beside Blog, using the marketing nav labels", () => {
+    expect(BLOG_HEADER_LINKS.map((link) => [link.href, link.label])).toEqual([
+      ["/chart", "Free chart"],
+      ["/blog", "Blog"],
+      ["/pricing", "Pricing"]
+    ]);
+    for (const link of BLOG_HEADER_LINKS) {
+      const marketing = MARKETING_NAV_LINKS.find((item) => item.href === link.href);
+      expect(marketing).toEqual(link);
+      assertHrefResolves(link.href, "blog header");
+    }
+    const src = readFileSync(join(WEB_ROOT, "components/blog/blog-header.tsx"), "utf8");
+    expect(src).toContain("BLOG_HEADER_LINKS");
+    expect(src).toMatch(/BLOG_HEADER_LINKS\.map/);
   });
 });
 

@@ -11,10 +11,10 @@ import { JsonLd } from "../../components/seo/json-ld";
 import {
   ARTICLE_TOC_LABEL,
   READ_NEXT_LABEL,
-  extractH2Headings,
   insertFigureAfterHeading,
   midPostCtaHref,
-  pickRelatedPosts
+  pickRelatedPosts,
+  tocHeadings
 } from "../../lib/article-structure";
 import { buildArticleJsonLd } from "../../lib/blog-article-json-ld";
 import { buildPostMetadata } from "../../lib/blog-metadata";
@@ -59,9 +59,10 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
   const [post, published] = await Promise.all([getPublishedPost(slug), getPublishedPosts()]);
   if (!post) notFound();
 
-  const toc = post.readTimeMinutes >= 5 ? extractH2Headings(post.body) : [];
+  const toc = tocHeadings(post.body);
   const related = pickRelatedPosts(published, post);
   const publishedLabel = post.publishedAt ? formatPostDate(post.publishedAt) : null;
+  const showPublishedDate = post.isTimely && publishedLabel;
   const heroAlt = post.heroImageAlt?.trim() ?? "";
   const figureReady = Boolean(
     post.figureImageUrl?.trim() &&
@@ -94,6 +95,11 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
       <BlogHeader />
       <main className="container article-page article-content">
         <h1 className="auth-title article-title">{post.title}</h1>
+        <p className="article-byline">
+          {post.byline}
+          {showPublishedDate ? ` · ${publishedLabel}` : ""}
+          {` · ${post.readTimeMinutes} min read`}
+        </p>
         {post.heroImageUrl && heroAlt ? (
           <figure className="article-hero">
             <Image src={post.heroImageUrl} alt={heroAlt} width={1600} height={840} priority />
@@ -103,11 +109,6 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
             <img src={post.heroImageUrl} alt="" width={1200} height={630} />
           </figure>
         ) : null}
-                <p className="article-byline">
-          {post.byline}
-          {publishedLabel ? ` · ${publishedLabel}` : ""}
-          {` · ${post.readTimeMinutes} min read`}
-        </p>
         {toc.length > 0 ? (
           <nav className="article-toc" aria-label={ARTICLE_TOC_LABEL}>
             <p className="article-toc-label">{ARTICLE_TOC_LABEL}</p>
@@ -138,12 +139,6 @@ export default async function BlogPostPage({ params }: { params: Promise<Params>
             </div>
           </section>
         ) : null}
-
-        <div className="article-cta">
-          <a className="btn-primary" href="https://galaxiamea.com">
-            Start 14 days free
-          </a>
-        </div>
       </main>
       <SiteFooter />
     </>

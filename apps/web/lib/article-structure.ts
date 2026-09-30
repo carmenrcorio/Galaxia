@@ -15,6 +15,9 @@ export const FIGURE_MARKER = "%%GALAXIA_FIGURE%%";
 
 export const ARTICLE_TOC_LABEL = "In this piece";
 
+/** "In this piece" renders only when a post has at least this many H2s. */
+export const MIN_TOC_HEADINGS = 3;
+
 
 export const MID_POST_CTA_COPY = "See how this plays out in your own chart";
 
@@ -64,6 +67,11 @@ export function extractH2Headings(markdown: string): ArticleHeading[] {
     headings.push({ text, id: uniqueHeadingId(text, seen) });
   }
   return headings;
+}
+
+export function tocHeadings(markdown: string): ArticleHeading[] {
+  const headings = extractH2Headings(markdown);
+  return headings.length >= MIN_TOC_HEADINGS ? headings : [];
 }
 
 function wordCount(text: string): number {
@@ -139,27 +147,59 @@ export function insertFigureAfterHeading(
   return { markdown: next.join("\n"), placement };
 }
 
+function lineStartOffsets(lines: string[]): number[] {
+  const offsets: number[] = [];
+  let acc = 0;
+  for (const line of lines) {
+    offsets.push(acc);
+    acc += line.length + 1;
+  }
+  return offsets;
+}
+
 /**
- * Insert the mid-post CTA marker after the h2 closest to the document
- * midpoint (the middle third). If no h2 sits there, insert at the 50%
- * word-count paragraph boundary instead. Never writes the CTA into the
- * stored body: the renderer injects this at read time.
+ * Insert the mid-post CTA marker after the first paragraph of the h2
+ * closest to the document midpoint (the middle third). The marker never
+ * sits directly under that heading, and never before that section's first
+ * paragraph. If no h2 sits in the middle third, or that section has no
+ * paragraph, insert at the 50% word-count paragraph boundary instead.
+ * Never writes the CTA into the stored body: the renderer injects this
+ * at read time.
  */
 export function injectMidPostCtaMarker(markdown: string, marker = MID_CTA_MARKER): string {
   if (markdown.includes(marker)) return markdown;
 
-  const matches = [...markdown.matchAll(/^## [^#\n].*$/gm)];
+  const lines = markdown.split("\n");
+  const offsets = lineStartOffsets(lines);
+  const h2Indexes: number[] = [];
+  let inFence = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? "";
+    if (line.trimStart().startsWith("```")) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    if (/^## [^#]/.test(line)) h2Indexes.push(i);
+  }
+
   const length = markdown.length;
   const mid = length / 2;
-  const nearby = matches.filter((m) => {
-    const index = m.index ?? 0;
-    return index >= length * 0.25 && index <= length * 0.75;
+  const nearby = h2Indexes.filter((index) => {
+    const at = offsets[index] ?? 0;
+    return at >= length * 0.25 && at <= length * 0.75;
   });
-  nearby.sort((a, b) => Math.abs((a.index ?? 0) - mid) - Math.abs((b.index ?? 0) - mid));
+  nearby.sort((a, b) => Math.abs((offsets[a] ?? 0) - mid) - Math.abs((offsets[b] ?? 0) - mid));
   const chosen = nearby[0];
-  if (chosen) {
-    const at = (chosen.index ?? 0) + chosen[0].length;
-    return `${markdown.slice(0, at)}\n\n${marker}\n${markdown.slice(at)}`;
+  if (chosen !== undefined) {
+    let cursor = chosen + 1;
+    while (cursor < lines.length && (lines[cursor] ?? "").trim() === "") cursor++;
+    const firstLine = lines[cursor] ?? "";
+    if (cursor < lines.length && !/^## [^#]/.test(firstLine) && !firstLine.trimStart().startsWith("```")) {
+      while (cursor < lines.length && (lines[cursor] ?? "").trim() !== "") cursor++;
+      const next = [...lines.slice(0, cursor), "", marker, ...lines.slice(cursor)];
+      return next.join("\n");
+    }
   }
   return insertAtWordMidpoint(markdown, marker);
 }

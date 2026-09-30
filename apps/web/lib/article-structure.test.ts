@@ -9,7 +9,9 @@ import {
   extractH2Headings,
   injectMidPostCtaMarker,
   midPostCtaHref,
+  MIN_TOC_HEADINGS,
   pickRelatedPosts,
+  tocHeadings,
   uniqueHeadingId
 } from "./article-structure";
 
@@ -76,6 +78,9 @@ describe("injectMidPostCtaMarker", () => {
     const lastAt = out.indexOf("## Last heading");
     expect(markerAt).toBeGreaterThan(middleAt);
     expect(markerAt).toBeLessThan(lastAt);
+    const afterMiddle = out.slice(middleAt);
+    expect(afterMiddle.indexOf(MID_CTA_MARKER)).toBeGreaterThan(afterMiddle.indexOf("word"));
+    expect(afterMiddle.startsWith(`## Middle heading\n\n${MID_CTA_MARKER}`)).toBe(false);
   });
 
   it("falls back to the 50% word-count paragraph when there is no midpoint h2", () => {
@@ -110,6 +115,18 @@ describe("pickRelatedPosts", () => {
   });
 });
 
+describe("tocHeadings", () => {
+  it("stays empty until there are at least three h2s", () => {
+    expect(MIN_TOC_HEADINGS).toBe(3);
+    expect(tocHeadings("## One\n\n## Two\n")).toEqual([]);
+    expect(tocHeadings("## One\n\n## Two\n\n## Three\n").map((heading) => heading.text)).toEqual([
+      "One",
+      "Two",
+      "Three"
+    ]);
+  });
+});
+
 describe("midPostCtaHref", () => {
   it("sends guides to /chart and debunked to /chart/compare", () => {
     expect(midPostCtaHref("guides")).toBe("/chart");
@@ -135,9 +152,9 @@ describe("post template wiring", () => {
   const card = readFileSync(CARD, "utf8");
   const css = readFileSync(CSS, "utf8");
 
-  it("renders the hero below the title and before the byline, with CLS-safe 1200x630 sizing", () => {
-    expect(page.indexOf("article-title")).toBeLessThan(page.indexOf("article-hero"));
-    expect(page.indexOf("article-hero")).toBeLessThan(page.indexOf("article-byline"));
+  it("renders the byline under the title and the hero under the byline, with CLS-safe 1200x630 sizing", () => {
+    expect(page.indexOf("article-title")).toBeLessThan(page.indexOf("article-byline"));
+    expect(page.indexOf("article-byline")).toBeLessThan(page.indexOf("article-hero"));
     expect(page).toContain("width={1200}");
     expect(page).toContain("height={630}");
     expect(css).toMatch(
@@ -145,21 +162,25 @@ describe("post template wiring", () => {
     );
   });
 
-  it("renders byline, date, and read time on the post page itself", () => {
+  it("renders byline and read time, and the publish date only for timely posts", () => {
     expect(page).toContain("article-byline");
     expect(page).toContain("formatPostDate");
+    expect(page).toContain("showPublishedDate");
+    expect(page).toContain("post.isTimely");
     expect(page).toContain("readTimeMinutes");
     expect(page).toContain("min read");
+    expect(page).toContain("buildArticleJsonLd(post)");
   });
 
-  it("renders In this piece from h2s when read time is at least 5, and Read next before the bottom CTA", () => {
+  it("renders In this piece from h2s when there are at least 3, and Read next after the closing form", () => {
     expect(page).toContain("ARTICLE_TOC_LABEL");
-    expect(page).toContain("extractH2Headings");
-    expect(page).toContain("readTimeMinutes >= 5");
+    expect(page).toContain("tocHeadings");
+    expect(page).not.toContain("readTimeMinutes >= 5");
+    expect(page).not.toContain("Start 14 days free");
     expect(page).toContain("READ_NEXT_LABEL");
     expect(page).toContain("pickRelatedPosts");
     expect(page).toContain("variant=\"related\"");
-    expect(page.indexOf("article-read-next")).toBeLessThan(page.indexOf("article-cta"));
+    expect(page.indexOf("ChartReadingCapture")).toBeLessThan(page.indexOf("article-read-next"));
   });
 
   it("places the chart-reading capture after the article body and before Read next", () => {
@@ -173,10 +194,11 @@ describe("post template wiring", () => {
     expect(page).not.toContain(MID_CTA_MARKER);
   });
 
-  it("related cards hide author, date, and read time", () => {
+  it("related cards hide author, date, and read time, and index cards show a date only when timely", () => {
     expect(card).toContain('variant?: "index" | "related"');
     expect(card).toContain('variant !== "related"');
     expect(card).toContain("blog-post-card-meta");
+    expect(card).toContain("post.isTimely && post.publishedAt");
   });
 
   it("shrinks the post title on desktop only, leaving the mobile auth-title clamp in place", () => {

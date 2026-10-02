@@ -1,0 +1,319 @@
+{"file":"apps/mobile/app/(app)/onboarding.tsx","line":500,"display":"Rising sign and house positions need your birth time. Without it, we keep a date-only chart.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/app/(app)/profile/[personId].tsx","line":554,"display":"Chart Patterns","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/app/index.tsx","line":94,"display":"Your Life. Your People. Your Galaxy. Sign in to map your inner circle, then show up for each bond with more intention.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/src/components/chart-wheel.tsx","line":127,"display":"Tap a star to explore","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/src/components/element-balance-section.tsx","line":79,"display":"Element balance","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/src/components/flip-sign-cards.tsx","line":66,"display":"Tap to flip","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/src/components/flip-sign-cards.tsx","line":94,"display":"Rx","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/src/components/retrograde-badge.tsx","line":3,"display":"Rx","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/src/components/sign-metadata-cards.tsx","line":70,"display":"element-significance","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/src/components/sign-metadata-cards.tsx","line":78,"display":"The {metadata.symbol}","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/src/components/sign-metadata-cards.tsx","line":93,"display":"Metal","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/src/components/sign-metadata-cards.tsx","line":98,"display":"metal-significance","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/src/components/sign-metadata-cards.tsx","line":110,"display":"Birthstone","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/src/components/sign-metadata-cards.tsx","line":115,"display":"birthstone-significance","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/mobile/src/lib/signup.ts","line":6,"display":"Age confirmation required","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/app/api/chart-lead/newsletter/unsubscribe/route.ts","line":11,"display":"You are unsubscribed from Galaxia Notes. Chart emails are unchanged unless you opt out of those separately.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/app/api/chart-lead/newsletter-signup/route.ts","line":16,"display":"You are on the list for Galaxia Notes. You can unsubscribe anytime.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/app/api/chart-lead/route.ts","line":44,"display":"Invalid request.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/app/api/chart-lead/route.ts","line":82,"display":"Your chart could not be saved. Try again.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/app/app/person/[id]/page.tsx","line":1414,"display":"Chart Patterns","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/app/chart/quick-chart-page.tsx","line":285,"display":"className=\"pill-link pill-link--teal\"","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/app/globals.css","line":893,"display":".glyph-sq-wrap {","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/blog/article-diagram.tsx","line":4,"display":"Text description of this diagram","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/blog/article-hero.tsx","line":3,"display":"Decorative star field placeholder while the article hero image is prepared","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/chart-lead-capture.tsx","line":10,"display":"Send me Galaxia Notes, about twice a month","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/chart-lead-capture.tsx","line":51,"display":"Your chart could not be saved. Try again.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/chart-lead-capture.tsx","line":59,"display":"The connection dropped. Check it and try again.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/chart-lead-capture.tsx","line":85,"display":"Save this chart and get it by email","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/chart-lead-capture.tsx","line":89,"display":"We will send this chart to your inbox and note when a transit matters for it. You can unsubscribe anytime.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/chart-lead-capture.tsx","line":96,"display":"Email address","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/chart-lead-capture.tsx","line":98,"display":"you@example.com","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/chart-lead-capture.tsx","line":114,"display":"Saving…","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/chart-lead-capture.tsx","line":130,"display":"No thanks, keep exploring","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/chart-sharpen-panel.tsx","line":58,"display":"Sharpen your chart","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/chart-sharpen-panel.tsx","line":85,"display":"Continue","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/chart-wheel.tsx","line":258,"display":"Tap a star to explore","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/element-balance-section.tsx","line":116,"display":"Element balance","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/flip-sign-cards.tsx","line":102,"display":"Tap to flip","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/flip-sign-cards.tsx","line":149,"display":"Rx","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/login-form.tsx","line":44,"display":"We couldn't send the reset email. Please try again.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/login-form.tsx","line":64,"display":"Forgot password?","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/login-form.tsx","line":82,"display":"Email for password reset","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/login-form.tsx","line":95,"display":"Send reset link","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/login-form.tsx","line":99,"display":"Back to sign in","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/login-form.tsx","line":113,"display":"Check your email for a reset link.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/login-form.tsx","line":116,"display":"No account? Start 14 days free","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/marketing/quick-chart-result-actions.tsx","line":34,"display":"Now compare with someone in your life","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/marketing/quick-chart-result-actions.tsx","line":42,"display":"See the full chart","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/retrograde-badge.tsx","line":3,"display":"Rx","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/sign-metadata-cards.tsx","line":82,"display":"sign-metadata-card__significance","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/sign-metadata-cards.tsx","line":91,"display":"sign-metadata-card__symbol-name","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/sign-metadata-cards.tsx","line":105,"display":"Metal","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/sign-metadata-cards.tsx","line":109,"display":"aria-hidden=\"true\"","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/sign-metadata-cards.tsx","line":122,"display":"Birthstone","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/components/sign-metadata-cards.tsx","line":126,"display":"sign-metadata-card__significance","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/birth-form-copy.ts","line":3,"display":"Your birth details stay private. We use them only to compute your chart.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/birth-form-copy.ts","line":7,"display":"Rising sign and house positions need your birth time. Without it, we keep a date-only chart.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/birth-form-copy.ts","line":11,"display":"Birth place sets the time zone and house calculation for an exact-time chart.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/birth-form-copy.ts","line":15,"display":"I don't know my birth time","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-cta.ts","line":8,"display":"By Galaxia","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-cta.ts","line":11,"display":"Galaxia describes what a chart shows, not what will happen.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-cta.ts","line":14,"display":"How we write about astrology \\u2192","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-cta.ts","line":40,"display":"nobody-has-your-grandmother","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-cta.ts","line":48,"display":"/generations","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-cta.ts","line":72,"display":"href: \"/chart/compare\"","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-cta.ts","line":80,"display":"href: \"/chart\"","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-cta.ts","line":88,"display":"href: \"/generations\"","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-cta.ts","line":96,"display":"body: \"Add yourself and your partner to see where Scorpio and Libra fall in each chart, and which planets Venus will touch as it moves backward.\"","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-index.ts","line":13,"display":"Birth charts, synastry, generations, and what astrology can and cannot claim. Starting with the people already in your life.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-index.ts","line":17,"display":"Start here","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-index.ts","line":20,"display":"Three evergreen guides on synastry, the Sun sign, and the Moon.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog-index.ts","line":24,"display":"Timely","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog.ts","line":85,"display":"About Galaxia","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog.ts","line":92,"display":"Learn","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/blog.ts","line":98,"display":"Honest astrology","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead-drip.ts","line":59,"display":"This chart has [placement] in [sign].","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead-drip.ts","line":68,"display":"This chart does not settle the [placement] sign. It could be [signs].","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead-drip.ts","line":69,"display":"A more precise birth date and time can settle this placement.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead-drip.ts","line":76,"display":"This chart does not have enough birth detail to settle the [placement] sign.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead-drip.ts","line":77,"display":"Add more birth detail in Galaxia before treating this placement as settled.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead.ts","line":6,"display":"Saved. We will email your chart and note when transits matter for it.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead.ts","line":9,"display":"Enter a valid email address.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead.ts","line":11,"display":"Too many requests. Try again in a minute.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead.ts","line":13,"display":"You are unsubscribed from chart and transit emails for this address. Galaxia Notes are unchanged unless you opt out separately.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead.ts","line":54,"display":"Birth data is required.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead.ts","line":60,"display":"Birth data is required.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead.ts","line":80,"display":"Invalid birth timezone.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead.ts","line":85,"display":"Invalid birth latitude.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-lead.ts","line":90,"display":"Invalid birth longitude.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-reading-copy.ts","line":7,"display":"Send my reading","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/chart-reading-copy.ts","line":28,"display":"Birth place (optional)","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":526,"display":"You are receiving this email because you asked for transit alerts for a free chart.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":536,"display":"What your Moon sign says about how you love","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":538,"display":"The way care reaches this chart.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":540,"display":"Hi there,","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":541,"display":"The Moon describes what helps care feel safe, familiar, and real. It is one piece of how this chart gives and receives closeness.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":542,"display":"Start 14 days free","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":566,"display":"The part of your chart that explains your arguments","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":568,"display":"How this chart speaks, pushes, and repairs.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":570,"display":"Hi there,","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":571,"display":"Mercury describes how meaning gets expressed. Mars describes what happens when pressure rises. Put two charts together and the pattern becomes much easier to see.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":572,"display":"Compare two charts","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":601,"display":"One chart is interesting. Two is where it gets real.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":603,"display":"The relationship appears between the charts.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":605,"display":"Hi there,","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":606,"display":"A single chart can describe how one person is built. A relationship appears when two charts meet: where communication flows, where conflict catches, and what each person needs from the other.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":607,"display":"That is what Galaxia is built to show. Add the people who matter and compare the real charts between you.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/emails.ts","line":608,"display":"Start free","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/marketing-page-cta.ts","line":3,"display":"import type { Route } from \"next\";","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/method-copy.ts","line":5,"display":"the brief asked this page to say houses are calculated in","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/method-copy.ts","line":8,"display":"written ahead of time","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/method-copy.ts","line":14,"display":"How Galaxia Handles Astrology in Charts and Houses","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/method-copy.ts","line":17,"display":"Birth charts here describe how someone is built. They do not predict what will happen. Here is the house system, the written copy, and the limits.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/method-copy.ts","line":21,"display":"How Galaxia handles astrology","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/method-copy.ts","line":24,"display":"This is the short version of how we write about astrology. The calculation details, including the ephemeris and the orb table, are on the ","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/method-copy.ts","line":25,"display":"methodology page","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/method-copy.ts","line":33,"display":"\"Natal chart means the same thing as birth chart. Birth chart is the term we use.\"","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/method-copy.ts","line":42,"display":"\"Interpretation copy in Galaxia is written and stored before anyone opens the app. A reading pulls that copy. It does not invent a new prediction for the person in front of it.\"","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/method-copy.ts","line":50,"display":"\"Signs, planets, aspects, and houses can describe tendencies. That includes how someone tends to feel safe, where two people tend to catch, and which part of life a placement points at.\"","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/method-copy.ts","line":58,"display":"\"It cannot tell you whether to stay, who was at fault, what someone who has died would say now, or what will happen next month.\"","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/method-copy.ts","line":66,"display":"\"Galaxia\\u2019s default house system is Placidus. You can switch to Whole Sign or Equal House in settings. If Placidus is undefined at a polar birth latitude, we show Whole Sign and say so.\"","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":5,"display":"/methodology","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":11,"display":"How Galaxia Computes Your Chart","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":14,"display":"How Galaxia computes your chart","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":17,"display":"Real astronomical data, published methodology. See the ephemeris source, orb tables, and house system behind every Galaxia chart.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":21,"display":"Every chart on Galaxia is computed from real sky positions. This page publishes the method: the ephemeris, the house system, the orb table, and what we leave out.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":25,"display":"Galaxia: astrology to understand the people in your life","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":32,"display":"Ephemeris source","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":34,"display":"paragraphs: [","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":42,"display":"House system","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":44,"display":"paragraphs: [","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":53,"display":"Aspect orbs","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":55,"display":"paragraphs: [","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":59,"display":"tableCaption:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":62,"display":"columnHeaders: {","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":69,"display":"transitMoonNote:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":75,"display":"Applying and separating","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":77,"display":"paragraphs: [","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":86,"display":"What we do not compute","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":88,"display":"We compute the Sun through Pluto, plus the Ascendant and Midheaven when birth time and place are known. We use the five major aspects (conjunction, sextile, square, trine, opposition) and the quincunx on natal and synastry charts, tropical signs, and retrograde flags. Transits, daily notes, and Vela stay on the five majors. We do not compute the rest of a professional ephemeris chart, and we do not pretend those points are present.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":91,"display":"\"Chiron\",","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/methodology-copy.ts","line":114,"display":"Conjunction","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/newsletter-signup.ts","line":6,"display":"You are on the list. The next Galaxia Notes issue will land in your inbox.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/newsletter-signup.ts","line":9,"display":"Enter a valid email address.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/newsletter-signup.ts","line":12,"display":"Something went wrong. Try again in a moment.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/newsletter-signup.ts","line":15,"display":"Too many tries. Wait a minute and try again.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/newsletter-signup.ts","line":18,"display":"Galaxia Notes","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/newsletter-signup.ts","line":21,"display":"Short notes on reading charts and relationships.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/newsletter-signup.ts","line":24,"display":"Get Galaxia Notes","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/newsletter-signup.ts","line":27,"display":"Your email","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/newsletter-signup.ts","line":30,"display":"About twice a month. Unsubscribe anytime. ","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/newsletter-signup.ts","line":33,"display":"Privacy","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/quick-chart.ts","line":124,"display":"Compare with someone","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"apps/web/lib/quick-chart.ts","line":127,"display":"return who","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/aspect-patterns.ts","line":166,"display":"Creative confidence that feeds itself. Risk: coasting without being tested.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/aspect-patterns.ts","line":168,"display":"Steady material instincts. Risk: comfort that never reaches.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/aspect-patterns.ts","line":170,"display":"Ideas connect before finished. Risk: talking instead of doing.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/aspect-patterns.ts","line":172,"display":"Emotional intelligence that reads a room. Risk: absorbing what is not yours.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/aspect-patterns.ts","line":179,"display":"fire","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/aspect-patterns.ts","line":186,"display":"Built-in tension that demands action","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/aspect-patterns.ts","line":188,"display":"Two forces pull opposite, both push a third point. That point is where growth happens. Not a flaw. A motor.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/aspect-patterns.ts","line":193,"display":"short: `${pattern.count ?? pattern.planets.length} planets in ${pattern.sign}: a concentration of purpose`,","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/aspect-patterns.ts","line":195,"display":"When this many planets occupy one sign, that energy dominates. Superpower and blind spot in the same breath.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/bodies.ts","line":14,"display":"chiron: \"Chiron\"","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/compare-guidance.ts","line":1651,"display":"north_node","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/compare-guidance.ts","line":2164,"display":"north_node","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/compare-guidance.ts","line":2515,"display":"const lines: string[] = [];","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/generational-layer.ts","line":196,"display":"return `Pluto in ${sign} generation`;","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/generational-layer.ts","line":307,"display":"The Great Depression","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/generational-layer.ts","line":342,"display":"Muhammad Ali","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/generational-layer.ts","line":347,"display":"Postwar Boom","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/generational-layer.ts","line":378,"display":"corruptionSignature:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/generational-layer.ts","line":386,"display":"Tupac Shakur","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/generational-layer.ts","line":388,"display":"Jean-Michel Basquiat","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/generational-layer.ts","line":392,"display":"Vietnam War","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/generational-layer.ts","line":427,"display":"The Internet","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/generational-layer.ts","line":464,"display":"September 11","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/generational-layer.ts","line":501,"display":"Social Media","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/house-interpretations.ts","line":184,"display":"north_node: {","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/house-overlay-descriptions.ts","line":20,"display":"friend: {","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/interpretations.ts","line":47,"display":"Where growth asks you to go","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/interpretations.ts","line":49,"display":"Where healing and vulnerability meet","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/interpretations.ts","line":239,"display":"north_node: {","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":6,"display":"../bodies","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":15,"display":"Shared contacts that activate a real link between two people. Faster planets lead the week.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":19,"display":"What is actually moving between two people this week.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":22,"display":"A transit shows up here only when it touches a real aspect between two people's charts.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":26,"display":"Alerts when a transit activates a real link between two people in your constellation. Faster planets lead the week.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":30,"display":"The Sun out to Pluto. Faster planets lead the week.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":33,"display":"Nothing is activating a real link between two people this week. The sky is quiet between you.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":37,"display":"No new shared link this week. The ones already in motion are unchanged.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":44,"display":"return `Nothing is activating a real link between two people this week. The next shared link begins around ${dateLabel}.`;","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":48,"display":"It is exact today.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":50,"display":"It is still tightening.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":52,"display":"It is already separating.","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":56,"display":"conjunction: \"meeting\",","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":58,"display":"gently supporting","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":60,"display":"squaring","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":62,"display":"flowing with","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":64,"display":"pulling against","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":66,"display":"adjusting with","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":178,"display":"const shapes = [","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":194,"display":"flow:partners","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":200,"display":"flow:parent-child","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":206,"display":"flow:siblings","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":212,"display":"flow:friends","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":218,"display":"flow:circle","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":224,"display":"friction:partners","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":230,"display":"friction:parent-child","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":236,"display":"friction:siblings","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":242,"display":"friction:friends","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":248,"display":"friction:circle","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":254,"display":"fusion:partners","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":260,"display":"fusion:parent-child","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":266,"display":"fusion:siblings","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":272,"display":"fusion:friends","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":278,"display":"fusion:circle","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":284,"display":"friction:luminary+social:parent-child","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":290,"display":"friction:social+social:partners","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":296,"display":"flow:personal+personal:friends","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":302,"display":"circle","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/shared-transit/copy.ts","line":341,"display":"return `Something is shifting between ${nameA} and ${nameB} this week.`;","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":27,"display":"symbolOrigin:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":33,"display":"elementSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":36,"display":"metalSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":39,"display":"birthstoneSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":47,"display":"symbolOrigin:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":53,"display":"elementSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":56,"display":"metalSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":59,"display":"birthstoneSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":67,"display":"symbolOrigin:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":73,"display":"elementSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":76,"display":"metalSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":79,"display":"birthstoneSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":87,"display":"symbolOrigin:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":93,"display":"elementSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":96,"display":"metalSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":99,"display":"birthstoneSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":107,"display":"symbolOrigin:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":113,"display":"elementSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":116,"display":"metalSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":119,"display":"birthstoneSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":127,"display":"symbolOrigin:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":133,"display":"elementSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":136,"display":"metalSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":139,"display":"birthstoneSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":147,"display":"symbolOrigin:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":153,"display":"elementSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":156,"display":"metalSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":159,"display":"birthstoneSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":167,"display":"symbolOrigin:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":173,"display":"elementSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":176,"display":"metalSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":179,"display":"birthstoneSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":187,"display":"symbolOrigin:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":193,"display":"elementSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":196,"display":"metalSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":199,"display":"birthstoneSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":207,"display":"symbolOrigin:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":213,"display":"elementSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":216,"display":"metalSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":219,"display":"birthstoneSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":227,"display":"symbolOrigin:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":233,"display":"elementSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":236,"display":"metalSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":239,"display":"birthstoneSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":247,"display":"symbolOrigin:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":253,"display":"elementSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":256,"display":"metalSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/sign-metadata.ts","line":259,"display":"birthstoneSignificance:","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/astro/src/synastry-interpretations.ts","line":1125,"display":"supposed to stay","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/account-credentials.ts","line":48,"display":"\"Your session has ended, so your password could not be changed. Sign in again and try once more.\"","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/account-credentials.ts","line":61,"display":"Change email","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/account-credentials.ts","line":148,"display":"currentEmail?: string | null","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/account-data.ts","line":407,"display":"Account","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/account-data.ts","line":420,"display":"Delete my account","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/app-tour.ts","line":14,"display":"Add someone you know","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/glossary-terms.ts","line":36,"display":"id: \"adjusts\",","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/glossary-terms.ts","line":100,"display":"id: \"element\",","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/glossary-terms.ts","line":183,"display":"modality","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/glossary-terms.ts","line":280,"display":"id: \"orb\",","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/glossary-terms.ts","line":333,"display":"quincunx","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/glossary-terms.ts","line":353,"display":"ruling-planet","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/glossary-terms.ts","line":519,"display":"See full definition","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/person-care.ts","line":30,"display":"Leave out of Today and the daily note","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/person-care.ts","line":32,"display":"They stay on your constellation. This only skips the daily sky and the morning note.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/planet-tooltip.ts","line":14,"display":"See full reading below","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/planet-tooltip.ts","line":17,"display":"See full reading","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/planet-tooltip.ts","line":20,"display":"Close placement details","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/retrograde.ts","line":7,"display":"Rx","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"packages/core/src/retrograde.ts","line":10,"display":"Retrograde","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260911161000_posts_rewrite_em_dash.sql","line":1,"display":"body = $POST_BODY$Every astrology app on your phone knows your Mercury placement. Ask it about your grandmother's, and it has nothing.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260911180000_synastry_post_title_length.sql","line":1,"display":"Actually","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260911230000_synastry_post_strip_reintroduced_em_dash.sql","line":1,"display":"-- 20260909120000_synastry_post_internal_links.sql was written before the","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260914180000_f10_blog_posts.sql","line":1,"display":"-- links from existing published posts. Seeded the same way as","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260914180000_f10_blog_posts.sql","line":21,"display":"'mothers-moon-sign-apology',","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260914180000_f10_blog_posts.sql","line":114,"display":"'colleague-you-cannot-read',","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260914180000_f10_blog_posts.sql","line":193,"display":"'moon-square-saturn-parent-child',","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260914180000_f10_blog_posts.sql","line":258,"display":"'what-a-chart-cannot-tell-you',","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260914180000_f10_blog_posts.sql","line":321,"display":"'reading-chart-of-someone-who-died',","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260914180000_f10_blog_posts.sql","line":382,"display":"'compatibility-scores-wrong-question',","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260914180000_f10_blog_posts.sql","line":452,"display":"update public.posts","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260914180000_f10_blog_posts.sql","line":491,"display":"update public.posts","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260914180000_f10_blog_posts.sql","line":504,"display":"update public.posts","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260914180000_f10_blog_posts.sql","line":519,"display":"update public.posts","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260914221000_f12_internal_links.sql","line":15,"display":"E'\\n\\n[Synastry](/synastry-chart-meaning) is the practice of comparing two full natal charts.'","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260916043000_synastry_aspects_title_drop_predict.sql","line":1,"display":"Predict","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260929174016_seo_blog_nine_posts.sql","line":40,"display":"Transits","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260929174016_seo_blog_nine_posts.sql","line":114,"display":"Synastry","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260929174016_seo_blog_nine_posts.sql","line":186,"display":"Transits","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260929174016_seo_blog_nine_posts.sql","line":266,"display":"-- Front-matter category \"History\" is stored as guides.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260929174016_seo_blog_nine_posts.sql","line":333,"display":"Synastry","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260929174016_seo_blog_nine_posts.sql","line":404,"display":"Signs & Planets","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260929174016_seo_blog_nine_posts.sql","line":469,"display":"Transits","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260929174016_seo_blog_nine_posts.sql","line":532,"display":"-- Front-matter category \"Charts\" is stored as guides.","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260929210633_publish_whole_sign_and_date_seo_posts.sql","line":29,"display":"published_at","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260929230323_blog_post_timely_and_drop_pricing_lines.sql","line":33,"display":"never charged per question","visibility":"user-visible","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"supabase/migrations/20260930031243_blog_index_phase_3.sql","line":4,"display":"update public.posts","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}
+{"file":"content/store/play-store.md","line":3,"display":"## Title (max 30 characters)","visibility":"internal","onMain":true,"onlyOnBranch":null,"introduced":"unknown"}

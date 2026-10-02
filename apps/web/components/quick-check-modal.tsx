@@ -47,7 +47,9 @@ import { createSupabaseBrowserClient } from "../lib/supabase/client";
 import { AskBirthData } from "./ask-birth-data";
 import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
 import { CustomCheck } from "./custom-check";
+import { formatCrossChartAspectLine, platonicWatchLineDerivation } from "../lib/why-reading";
 import { Spinner } from "./spinner";
+import { WhyThisReading } from "./why-this-reading";
 
 const RELATIONS = GALAXY_RELATION_PICKER_OPTIONS;
 const FOCUS_TYPES: { key: RelationType; label: string }[] = [
@@ -229,19 +231,31 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
                   {whatTheyNeed(result.synastry.scores, { display_name: name || "They" }, focus, result.synastry)}
                 </p>
                 {relationshipWatchLine(result.synastry.scores, focus, result.synastry) ? (
-                  <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6, fontStyle: "italic", margin: 0, borderLeft: "2px solid rgba(183,154,216,.35)", paddingLeft: 12 }}>
-                    {relationshipWatchLine(result.synastry.scores, focus, result.synastry)}
-                  </p>
+                  <div>
+                    <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6, fontStyle: "italic", margin: 0, borderLeft: "2px solid rgba(183,154,216,.35)", paddingLeft: 12 }}>
+                      {relationshipWatchLine(result.synastry.scores, focus, result.synastry)}
+                    </p>
+                    <WhyThisReading
+                      insightType="watch_line_mercury"
+                      line={platonicWatchLineDerivation(result.synastry, "You", name || "Them")}
+                    />
+                  </div>
                 ) : null}
                 <div>
                   <p className="eyebrow" style={{ marginBottom: 6 }}>Where it flows and catches</p>
                   {selectCompareAspectRows(result.synastry.aspects, focus, 4).map((a, idx) => {
                     const reading = interpretSynastryAspect(a.from.toLowerCase() as BodyKey, a.to.toLowerCase() as BodyKey, a.type.toLowerCase() as AspectKey);
                     return (
-                      <div key={`${a.from}-${a.to}-${idx}`} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
-                        <span style={{ fontSize: ".76rem", color: a.type === "quincunx" ? "var(--gold)" : a.harmony >= 0 ? "var(--teal)" : "var(--rose)", flexShrink: 0 }}>{a.type === "quincunx" ? "~" : a.harmony >= 0 ? "↑" : "↓"}</span>
-                        <span className="muted" style={{ fontSize: ".78rem" }}>{a.from} {a.type} {a.to}</span>
-                        <span className="muted" style={{ fontSize: ".72rem", fontStyle: "italic" }}>{reading.short}</span>
+                      <div key={`${a.from}-${a.to}-${idx}`}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
+                          <span style={{ fontSize: ".76rem", color: a.type === "quincunx" ? "var(--gold)" : a.harmony >= 0 ? "var(--teal)" : "var(--rose)", flexShrink: 0 }}>{a.type === "quincunx" ? "~" : a.harmony >= 0 ? "↑" : "↓"}</span>
+                          <span className="muted" style={{ fontSize: ".78rem" }}>{a.from} {a.type} {a.to}</span>
+                          <span className="muted" style={{ fontSize: ".72rem", fontStyle: "italic" }}>{reading.short}</span>
+                        </div>
+                        <WhyThisReading
+                          insightType="quick_check_aspect"
+                          line={formatCrossChartAspectLine(a, "You", name || "Them")}
+                        />
                       </div>
                     );
                   })}

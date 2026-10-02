@@ -38,6 +38,7 @@ import { GlossaryTerm } from "../../../components/glossary-term";
 import { RelatedLinks } from "../../../components/marketing/related-links";
 import { QuickChartShell } from "../../../components/quick-chart-shell";
 import { SaveToGalaxyButton } from "../../../components/save-to-galaxy-button";
+import { platonicWatchLineDerivation } from "../../../lib/why-reading";
 import { ShareLinkButton } from "../../../components/share-link-button";
 import { Spinner } from "../../../components/spinner";
 import { RELATED_LINKS, CHART_MODE_COMPARE, CHART_MODE_SINGLE } from "../../../lib/nav-links";
@@ -262,8 +263,28 @@ export default function QuickComparePage() {
     return p && p.confident !== false ? p.sign : undefined;
   };
 
-  const personA = result ? { display_name: nameA || "Person A", sun: getSign(result.chartA, "sun"), moon: getSign(result.chartA, "moon"), venus: getSign(result.chartA, "venus"), mars: getSign(result.chartA, "mars") } : null;
-  const personB = result ? { display_name: nameB || "Person B", sun: getSign(result.chartB, "sun"), moon: getSign(result.chartB, "moon"), venus: getSign(result.chartB, "venus"), mars: getSign(result.chartB, "mars") } : null;
+  const personA = result
+    ? {
+        display_name: nameA || "Person A",
+        sun: getSign(result.chartA, "sun"),
+        moon: getSign(result.chartA, "moon"),
+        venus: getSign(result.chartA, "venus"),
+        mars: getSign(result.chartA, "mars"),
+        mercury: getSign(result.chartA, "mercury"),
+        saturn: getSign(result.chartA, "saturn"),
+      }
+    : null;
+  const personB = result
+    ? {
+        display_name: nameB || "Person B",
+        sun: getSign(result.chartB, "sun"),
+        moon: getSign(result.chartB, "moon"),
+        venus: getSign(result.chartB, "venus"),
+        mars: getSign(result.chartB, "mars"),
+        mercury: getSign(result.chartB, "mercury"),
+        saturn: getSign(result.chartB, "saturn"),
+      }
+    : null;
 
   // Same gate as /app/compare: strip romantic types when a minor is present
   // (API signal only — never re-derive age on the client).
@@ -436,6 +457,11 @@ export default function QuickComparePage() {
               <DynamicTableSection
                 scores={result.synastry.scores}
                 watchLine={relationshipWatchLine(result.synastry.scores, relationType, result.synastry as never)}
+                watchLineDerivation={platonicWatchLineDerivation(
+                  result.synastry,
+                  personA!.display_name,
+                  personB!.display_name
+                )}
               >
                 {[personA!, personB!].map((person) => (
                   <div key={person.display_name} style={{ marginBottom: 10, padding: "13px 15px", borderRadius: 13, background: "linear-gradient(165deg, rgba(255,255,255,.025), rgba(255,255,255,.008))", border: "1px solid rgba(183,154,216,.12)" }}>

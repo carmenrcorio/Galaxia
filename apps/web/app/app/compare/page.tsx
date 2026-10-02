@@ -53,6 +53,8 @@ import {
   PersonPickerField,
 } from "../../../components/person-picker";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
+import { WhyThisReading } from "../../../components/why-this-reading";
+import { formatHouseOverlayLine, platonicWatchLineDerivation } from "../../../lib/why-reading";
 import { GenerationalSection } from "../../../components/generational-section";
 import { ElementBalanceSection } from "../../../components/element-balance-section";
 import { InitialAvatar } from "../../../components/initial-avatar";
@@ -841,19 +843,29 @@ function ComparePageInner() {
                 })}
               </div>
               {relationshipWatchLine(result.synastry.scores, relationType, result.synastry) ? (
-                <p
-                  className="muted"
-                  style={{
-                    fontSize: ".82rem",
-                    lineHeight: 1.62,
-                    fontStyle: "italic",
-                    margin: "4px 0 0",
-                    borderLeft: "2px solid rgba(183,154,216,.35)",
-                    paddingLeft: 12,
-                  }}
-                >
-                  {relationshipWatchLine(result.synastry.scores, relationType, result.synastry)}
-                </p>
+                <div style={{ margin: "4px 0 0" }}>
+                  <p
+                    className="muted"
+                    style={{
+                      fontSize: ".82rem",
+                      lineHeight: 1.62,
+                      fontStyle: "italic",
+                      margin: 0,
+                      borderLeft: "2px solid rgba(183,154,216,.35)",
+                      paddingLeft: 12,
+                    }}
+                  >
+                    {relationshipWatchLine(result.synastry.scores, relationType, result.synastry)}
+                  </p>
+                  <WhyThisReading
+                    insightType="watch_line_mercury"
+                    line={platonicWatchLineDerivation(
+                      result.synastry,
+                      result.personA.display_name,
+                      result.personB.display_name
+                    )}
+                  />
+                </div>
               ) : null}
             </section>
 
@@ -900,6 +912,14 @@ function ComparePageInner() {
                             {detail}
                           </p>
                         ) : null}
+                        <WhyThisReading
+                          insightType="house_overlay"
+                          line={formatHouseOverlayLine(
+                            line,
+                            result.personA.display_name,
+                            result.personB.display_name
+                          )}
+                        />
                       </div>
                     );
                   })}

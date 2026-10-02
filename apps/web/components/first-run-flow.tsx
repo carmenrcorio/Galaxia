@@ -22,7 +22,9 @@ import {
   resolveFirstRunEntry,
   settleFirstRun,
 } from "../lib/first-run";
+import { formatFirstRunNeedLine } from "../lib/why-reading";
 import { persistPerson } from "../lib/persist-person";
+import { WhyThisReading } from "./why-this-reading";
 import { decodeBirthQuery } from "../lib/quick-chart";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
 
@@ -473,6 +475,10 @@ export function FirstRunFlow() {
                       <p style={{ color: "var(--cream)", fontSize: "1.02rem", lineHeight: 1.65, margin: 0 }}>
                         {need.statement}
                       </p>
+                      <WhyThisReading
+                        insightType="first_run_need"
+                        line={formatFirstRunNeedLine(need.body, need.sign)}
+                      />
                     </div>
                     <p className="helper-text" style={{ marginTop: 10 }}>
                       {FIRST_RUN_COPY.readingProvenance}

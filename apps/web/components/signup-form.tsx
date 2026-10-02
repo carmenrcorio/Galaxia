@@ -128,7 +128,7 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
           value={lastName}
           onChange={(event) => setLastName(event.target.value)}
         />
-        <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>
+        <p className="helper-text helper-text--soft">
           This is what Galaxia calls you. Your email stays your login and is never shown as your name.
         </p>
         <label className="muted" htmlFor="signup-email">
@@ -139,11 +139,11 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
           Password
         </label>
         <input id="signup-password" className="field" required minLength={PASSWORD_MIN_LENGTH} autoComplete="new-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-                <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>{PASSWORD_RULE_HINT}</p>
+                <p className="helper-text helper-text--soft">{PASSWORD_RULE_HINT}</p>
         {/* COPPA age gate: required on account creation, never on login. The
             submit button stays disabled until this is checked. The server also
             rejects POST /api/auth/signup unless age_confirmed is true. */}
-        <label className="muted" style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: ".85rem" }} htmlFor="signup-age-gate">
+        <label className="helper-text helper-text--soft" style={{ display: "flex", alignItems: "flex-start", gap: 8 }} htmlFor="signup-age-gate">
           <input
             id="signup-age-gate"
             data-testid="age-gate-checkbox"
@@ -163,7 +163,7 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
         >
           {status === "submitting" ? "Creating account..." : "Create account"}
         </button>
-                <p className="muted" style={{ fontSize: ".78rem", margin: 0 }}>
+                <p className="helper-text helper-text--soft">
           By creating an account you agree to our <Link href="/terms">Terms</Link> and{" "}
           <Link href="/privacy">Privacy Policy</Link>.
         </p>

@@ -338,8 +338,8 @@ export default function QuickComparePage() {
             <div>
               <p className="eyebrow" style={{ marginBottom: 8 }}>Person B</p>
               {giftToken ? (
-                <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.55, margin: 0 }}>
-                                    {SHARE_GIFT_COMPARE_B_LOCKED}
+                <p className="helper-text helper-text--soft" style={{ margin: 0 }}>
+                  {SHARE_GIFT_COMPARE_B_LOCKED}
                 </p>
               ) : (
                 <>

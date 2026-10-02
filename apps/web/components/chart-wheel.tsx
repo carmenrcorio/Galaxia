@@ -45,6 +45,10 @@ import {
   type WheelPlanetGlyph,
 } from "@galaxia/core";
 import React, { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  dismissWheelExploreHint,
+  readWheelExploreHintDismissed,
+} from "../lib/chart-affordance-hints";
 import { designColor } from "../lib/design";
 import { WheelPlanetTooltip, wheelTooltipMode, type WheelPlanetTooltipMode } from "./wheel-planet-tooltip";
 
@@ -138,10 +142,25 @@ export function ChartWheel({
   }
 
   const [focus, setFocus] = useState<{ owner: WheelChartOwner; body: string } | null>(null);
+  const [exploreHint, setExploreHint] = useState(false);
 
   // Glyph detail card. Natal only: the bi-wheel packs two rings of glyphs into
   // the same space, where a card would sit on top of the other chart.
   const tooltipsOn = interactive && !layout.isOverlay && planetTooltips != null;
+
+  useEffect(() => {
+    if (!tooltipsOn) {
+      setExploreHint(false);
+      return;
+    }
+    setExploreHint(!readWheelExploreHintDismissed());
+  }, [tooltipsOn]);
+
+  function noteWheelExplored() {
+    if (!exploreHint) return;
+    dismissWheelExploreHint();
+    setExploreHint(false);
+  }
   const [tipKey, setTipKey] = useState<{ key: string; mode: WheelPlanetTooltipMode } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const glyphRefs = useRef<Record<string, SVGGElement | null>>({});
@@ -204,6 +223,7 @@ export function ChartWheel({
   function onPlanetPointerEnter(owner: WheelChartOwner, body: string, key: string, e: ReactPointerEvent) {
     if (!interactive) return;
     if (e.pointerType === "touch") return;
+    noteWheelExplored();
     setFocus({ owner, body });
     if (tooltipsOn) openTip(key, wheelTooltipMode());
   }
@@ -218,6 +238,7 @@ export function ChartWheel({
   function onPlanetPointerUp(owner: WheelChartOwner, body: string, key: string, e: ReactPointerEvent) {
     if (!interactive) return;
     if (e.pointerType !== "touch") return;
+    noteWheelExplored();
     const sameGlyph = focus != null && focus.owner === owner && focus.body === body;
     setFocus(sameGlyph ? null : { owner, body });
     if (!tooltipsOn) return;
@@ -228,7 +249,16 @@ export function ChartWheel({
   const color = (name: string) => designColor(name, exportSafe);
 
   return (
-    <div style={{ width: "100%", maxWidth: 306, margin: "0 auto", paddingInline: 8 }}>
+    <div
+      className={exploreHint ? "chart-wheel--hint-active" : undefined}
+      style={{ width: "100%", maxWidth: 306, margin: "0 auto", paddingInline: 8 }}
+    >
+      {exploreHint ? (
+        <p className="chart-wheel-explore-hint">
+          {/* FOUNDER-REVIEW: Tap a star to explore */}
+          Tap a star to explore
+        </p>
+      ) : null}
       <svg ref={svgRef} viewBox={`0 0 ${layout.size} ${layout.size}`} width="100%" style={{ display: "block", overflow: "visible" }}>
         <circle cx={layout.cx} cy={layout.cy} r={layout.rOut} fill="none" stroke={layout.lineColor} strokeWidth="1" />
         <circle cx={layout.cx} cy={layout.cy} r={layout.rSignIn} fill="none" stroke={layout.lineColor} strokeWidth="1" />
@@ -317,6 +347,7 @@ export function ChartWheel({
               onPointerUp={(e) => onPlanetPointerUp(owner, body, key, e)}
               onFocus={() => {
                 if (!tooltipsOn) return;
+                noteWheelExplored();
                 setFocus({ owner, body });
                 openTip(key, wheelTooltipMode());
               }}
@@ -353,6 +384,7 @@ export function ChartWheel({
                 fill={layout.planetFill}
                 stroke={color(strokeToken)}
                 strokeWidth={isFocus ? 1.75 : 1.25}
+                {...(exploreHint && tooltipsOn ? { "data-wheel-glyph-hint": true } : {})}
               />
               {/* Cream glyph fill: element-coloured air was unreadable at mobile width. */}
               <text x={px} y={py} fill={color("cream")} fontSize={layout.glyphFs} textAnchor="middle" dominantBaseline="central">
@@ -382,17 +414,17 @@ export function ChartWheel({
       ) : null}
       {layout.showYearNote ? (
         <p
-          className="muted"
-          style={{ fontSize: ".72rem", marginTop: 8, textAlign: "center", maxWidth: "36ch", marginLeft: "auto", marginRight: "auto", lineHeight: 1.45 }}
+          className="helper-text"
+          style={{ marginTop: 8, textAlign: "center", maxWidth: "36ch", marginLeft: "auto", marginRight: "auto" }}
         >
           {YEAR_ASPECTS_NEED_DATE_NOTE}
         </p>
       ) : null}
       {layout.overlayMissingAspects ? (
         <p
-          className="muted"
+          className="helper-text"
           data-overlay-aspects-missing=""
-          style={{ fontSize: ".72rem", marginTop: 8, textAlign: "center", maxWidth: "36ch", marginLeft: "auto", marginRight: "auto", lineHeight: 1.45 }}
+          style={{ marginTop: 8, textAlign: "center", maxWidth: "36ch", marginLeft: "auto", marginRight: "auto" }}
         >
           {OVERLAY_ASPECTS_MISSING_NOTE}
         </p>

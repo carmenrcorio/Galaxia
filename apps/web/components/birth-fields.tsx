@@ -23,12 +23,11 @@ import {
   CHART_PRECISION_TIERS,
 } from "@galaxia/core";
 import { useMemo, useState } from "react";
+import { BirthDateSelects, birthSelectClass } from "./birth-date-selects";
 import { Spinner } from "./spinner";
 
-export const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
+export { BirthDateSelects, birthSelectClass, MONTHS } from "./birth-date-selects";
+export type { BirthDateSelectsProps } from "./birth-date-selects";
 
 export const PRECISION_TIERS: { key: Precision; label: string; unlocks: string }[] = CHART_PRECISION_TIERS;
 
@@ -68,7 +67,6 @@ export function BirthFields({
   }
 
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: currentYear - 1799 }, (_, i) => currentYear - i);
 
   // Parsed date string for geocoding reference
   const dateForGeo = (input.year && input.month && input.day)
@@ -138,7 +136,7 @@ export function BirthFields({
     <div style={{ display: "grid", gap: 12 }}>
 
       {/* Precision selector */}
-      <p style={{ fontSize: ".76rem", color: "var(--mist2)", lineHeight: 1.5, margin: 0 }}>
+      <p className="helper-text">
         {CHART_PRECISION_LADDER_INTRO}
       </p>
       <div style={{ display: "grid", gap: 6 }}>
@@ -153,7 +151,7 @@ export function BirthFields({
             <strong style={{ color: input.precision === tier.key ? "var(--gold)" : "var(--cream)", display: "block", marginBottom: 2 }}>
               {tier.label}
             </strong>
-            <span className="muted" style={{ fontSize: ".8rem" }}>{tier.unlocks}</span>
+            <span className="helper-text helper-text--soft">{tier.unlocks}</span>
           </button>
         ))}
       </div>
@@ -161,7 +159,7 @@ export function BirthFields({
       {/* No birth data yet — nothing more to collect */}
       {input.precision === "none" ? null : input.precision === "year" ? (
         <div>
-          <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 5 }}>Birth year</p>
+          <p className="helper-text" style={{ marginBottom: 5 }}>Birth year</p>
           <input
             type="number" className="field" min={1800} max={currentYear}
             value={input.yearOnly ?? ""}
@@ -173,27 +171,17 @@ export function BirthFields({
         <>
           {/* ── Structured date: Month / Day / Year ── */}
           <div>
-            <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 5 }}>Birth date</p>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 2fr", gap: 6 }}>
-              {/* Month */}
-              <select className="field" id={`${idPrefix}-month`} name={`${idPrefix}-month`} aria-label="Birth month" value={input.month ?? ""} onChange={e => onChange({ ...input, month: e.target.value ? parseInt(e.target.value, 10) : undefined })}>
-                <option value="">Month</option>
-                {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
-              </select>
-              {/* Day */}
-              <select className="field" id={`${idPrefix}-day`} name={`${idPrefix}-day`} aria-label="Birth day" value={input.day ?? ""} onChange={e => onChange({ ...input, day: e.target.value ? parseInt(e.target.value, 10) : undefined })}>
-                <option value="">Day</option>
-                {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-              {/* Year */}
-              <select className="field" id={`${idPrefix}-year`} name={`${idPrefix}-year`} aria-label="Birth year" value={input.year ?? ""} onChange={e => onChange({ ...input, year: e.target.value ? parseInt(e.target.value, 10) : undefined })}>
-                <option value="">Year</option>
-                {years.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
-            {/* Show parsed date back for confirmation */}
+            <BirthDateSelects
+              idPrefix={idPrefix}
+              month={input.month}
+              day={clampedDay}
+              year={input.year}
+              onMonthChange={(month) => onChange({ ...input, month })}
+              onDayChange={(day) => onChange({ ...input, day })}
+              onYearChange={(year) => onChange({ ...input, year })}
+            />
             {displayDate ? (
-              <p style={{ fontSize: ".74rem", color: "var(--teal)", marginTop: 5 }}>
+              <p className="helper-text" style={{ color: "var(--teal)", marginTop: 5 }}>
                 ✓ {displayDate}
               </p>
             ) : null}
@@ -202,15 +190,15 @@ export function BirthFields({
           {/* ── Exact time: Hour / Minute ── */}
           {input.precision === "exact" ? (
             <div>
-              <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 5 }}>Birth time (local time at birth place)</p>
+              <p className="helper-text" style={{ marginBottom: 5 }}>Birth time (local time at birth place)</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                <select className="field" id={`${idPrefix}-hour`} name={`${idPrefix}-hour`} aria-label="Birth hour" value={input.hour ?? ""} onChange={e => onChange({ ...input, hour: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })}>
+                <select className={birthSelectClass(input.hour)} id={`${idPrefix}-hour`} name={`${idPrefix}-hour`} aria-label="Birth hour" value={input.hour ?? ""} onChange={e => onChange({ ...input, hour: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })}>
                   <option value="">Hour</option>
                   {Array.from({ length: 24 }, (_, i) => i).map(h => (
                     <option key={h} value={h}>{String(h).padStart(2, "0")}:00 ({h === 0 ? "midnight" : h === 12 ? "noon" : h < 12 ? `${h} am` : `${h - 12} pm`})</option>
                   ))}
                 </select>
-                <select className="field" id={`${idPrefix}-minute`} name={`${idPrefix}-minute`} aria-label="Birth minute" value={input.minute ?? ""} onChange={e => onChange({ ...input, minute: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })}>
+                <select className={birthSelectClass(input.minute)} id={`${idPrefix}-minute`} name={`${idPrefix}-minute`} aria-label="Birth minute" value={input.minute ?? ""} onChange={e => onChange({ ...input, minute: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })}>
                   <option value="">Minute</option>
                   {[0,5,10,15,20,25,30,35,40,45,50,55].map(m => (
                     <option key={m} value={m}>{String(m).padStart(2, "0")}</option>
@@ -226,7 +214,7 @@ export function BirthFields({
 
           {/* ── City search with disambiguation ── */}
           <div>
-            <p style={{ fontSize: ".74rem", color: "var(--mist2)", marginBottom: 5 }}>
+            <p className="helper-text" style={{ marginBottom: 5 }}>
               {input.precision === "exact" ? "Birth city: required for Ascendant and houses" : "Birth city (optional: improves precision)"}
             </p>
 
@@ -236,7 +224,7 @@ export function BirthFields({
                 <p style={{ color: "var(--teal)", fontSize: ".82rem", fontWeight: 600, margin: "0 0 2px" }}>
                   ✓ {input.birthPlace}
                 </p>
-                <p style={{ color: "var(--mist2)", fontSize: ".72rem", margin: "0 0 6px" }}>
+                <p className="helper-text" style={{ margin: "0 0 6px" }}>
                   {input.lat && input.lng ? `${parseFloat(input.lat).toFixed(4)}°, ${parseFloat(input.lng).toFixed(4)}°` : ""}
                   {tzLabel ? ` · ${tzLabel}` : ""}
                 </p>
@@ -265,13 +253,13 @@ export function BirthFields({
                 </div>
 
                 {searchError ? (
-                  <p className="error" style={{ fontSize: ".74rem", marginTop: 5 }}>{searchError}</p>
+                  <p className="error helper-text" style={{ marginTop: 5 }}>{searchError}</p>
                 ) : null}
 
                 {/* Disambiguation list — user MUST choose */}
                 {candidates.length > 0 ? (
                   <div style={{ marginTop: 6, borderRadius: 12, overflow: "hidden", border: "1px solid rgba(183,154,216,.2)" }}>
-                    <p style={{ fontSize: ".7rem", color: "var(--mist2)", padding: "6px 12px", background: "rgba(10,7,23,.4)", margin: 0 }}>
+                    <p className="helper-text" style={{ padding: "6px 12px", background: "rgba(10,7,23,.4)", margin: 0 }}>
                       {candidates.length} result{candidates.length > 1 ? "s" : ""}. Choose the correct one.
                     </p>
                     {candidates.map((c, i) => (
@@ -294,14 +282,14 @@ export function BirthFields({
             )}
 
             {noPlaceWarning && !candidates.length && !resolvedPlace ? (
-              <p className="error" style={{ fontSize: ".74rem", marginTop: 5 }}>
+              <p className="error helper-text" style={{ marginTop: 5 }}>
                 A birth city is required for exact precision. Search above to resolve it.
               </p>
             ) : null}
           </div>
 
           {/* Manual coordinate override */}
-          <details style={{ color: "var(--mist2)", fontSize: ".78rem" }}>
+          <details className="helper-text">
             <summary style={{ cursor: "pointer" }}>Enter coordinates manually (advanced)</summary>
             <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
               <input className="field" value={input.lat ?? ""}
@@ -310,7 +298,7 @@ export function BirthFields({
               <input className="field" value={input.lng ?? ""}
                 onChange={e => onChange({ ...input, lng: e.target.value })}
                 placeholder="Longitude (e.g. -92.1099)" />
-              <p style={{ margin: 0, fontSize: ".72rem", color: "var(--mist2)" }}>
+              <p className="helper-text">
                 Search for the birth city first. Coordinates alone do not set the time zone, so the chart would be wrong.
               </p>
             </div>

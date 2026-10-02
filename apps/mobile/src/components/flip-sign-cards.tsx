@@ -6,8 +6,12 @@ import {
   type SignKey
 } from "@galaxia/astro";
 import { tokens } from "@galaxia/ui";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import {
+  dismissFlipCardHint,
+  readFlipCardHintDismissed,
+} from "../lib/chart-affordance-hints";
 import { fonts } from "../lib/typography";
 import { RetrogradeBadge } from "./retrograde-badge";
 
@@ -37,18 +41,46 @@ export function FlipSignCards({
 
   if (tiles.length === 0) return null;
 
+  const [flipHintVisible, setFlipHintVisible] = useState(false);
+  useEffect(() => {
+    void readFlipCardHintDismissed().then((dismissed) => setFlipHintVisible(!dismissed));
+  }, []);
+
+  function noteFlipInteraction() {
+    if (!flipHintVisible) return;
+    void dismissFlipCardHint();
+    setFlipHintVisible(false);
+  }
+
   return (
-    <View testID="flip-sign-cards" style={{ flexDirection: "row", gap: 8 }}>
-      {tiles.map((tile) => (
-        <MobileFlipCard key={tile.key} tile={tile} />
-      ))}
+    <View style={{ gap: 8 }}>
+      {flipHintVisible ? (
+        <Text
+          style={{
+            color: tokens.colors.mist2,
+            fontSize: 14,
+            textAlign: "center",
+            fontFamily: fonts.inter,
+          }}
+        >
+          {/* FOUNDER-REVIEW: Tap to flip */}
+          Tap to flip
+        </Text>
+      ) : null}
+      <View testID="flip-sign-cards" style={{ flexDirection: "row", gap: 8 }}>
+        {tiles.map((tile) => (
+          <MobileFlipCard key={tile.key} tile={tile} onFlip={noteFlipInteraction} />
+        ))}
+      </View>
     </View>
   );
 }
 
 function MobileFlipCard({
-  tile
+  tile,
+  onFlip,
 }: {
+  onFlip: () => void;
   tile: { key: string; label: string; sign: string; retro: boolean; short: string; long: string };
 }) {
   const [flipped, setFlipped] = useState(false);
@@ -64,7 +96,12 @@ function MobileFlipCard({
           ? `${tile.label} in ${tile.sign}${tile.retro ? " Rx" : ""}. ${summary}`
           : `${tile.label} in ${tile.sign}${tile.retro ? " Rx" : ""}. Flip for what this means in the chart.`
       }
-      onPress={() => setFlipped((prev) => !prev)}
+      onPress={() => {
+        setFlipped((prev) => {
+          if (!prev) onFlip();
+          return !prev;
+        });
+      }}
       style={{
         flex: 1,
         minHeight: 156,

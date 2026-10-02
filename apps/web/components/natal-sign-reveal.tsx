@@ -75,7 +75,7 @@ export function NatalSignReveal({
       className={["glass-card", "fade-in", "natal-sign-reveal", className].filter(Boolean).join(" ")}
       style={{ textAlign: "center", ...style }}
     >
-      <p className="muted" style={{ fontSize: ".8rem", marginBottom: 4 }}>
+      <p className="helper-text helper-text--soft" style={{ marginBottom: 4 }}>
         {label} · {displayDate}
         {birthPlace ? ` · ${birthPlace}` : ""}
       </p>
@@ -93,7 +93,7 @@ export function NatalSignReveal({
       ) : null}
 
       {!rising ? (
-        <p className="muted natal-sign-reveal__rising-note" style={{ fontSize: ".76rem", marginTop: 8, lineHeight: 1.5 }}>
+        <p className="helper-text natal-sign-reveal__rising-note" style={{ marginTop: 8 }}>
                     Rising needs a birth time and city.
           {fullChartHref ? (
             <>

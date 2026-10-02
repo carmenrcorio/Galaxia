@@ -219,7 +219,7 @@ export function AddPersonForm({
           explicit here, especially when adding a child. */}
       <div style={{ marginBottom: 12 }}>
         <CustomCheck checked={minor} onChange={setMinor} label={FIELD_COPY.minorLabel} />
-        <p className="muted" style={{ fontSize: ".74rem", marginTop: 6, lineHeight: 1.5 }}>
+        <p className="helper-text" style={{ marginTop: 6 }}>
           {FIELD_COPY.minorExplain}
         </p>
       </div>

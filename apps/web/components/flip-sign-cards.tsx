@@ -14,6 +14,10 @@ import {
   type SignKey,
 } from "@galaxia/astro";
 import { useState } from "react";
+import {
+  dismissFlipCardHint,
+  readFlipCardHintDismissed,
+} from "../lib/chart-affordance-hints";
 import { SIGN_GLYPH, signElement } from "../lib/design";
 import { useChartImageCapturing } from "./chart-image-capture";
 import { RetrogradeBadge } from "./retrograde-badge";
@@ -83,22 +87,40 @@ export function FlipSignCards({
 
   if (tiles.length === 0) return null;
 
+  const [flipHintHidden, setFlipHintHidden] = useState(() => readFlipCardHintDismissed());
+
+  function noteFlipInteraction() {
+    if (flipHintHidden) return;
+    dismissFlipCardHint();
+    setFlipHintHidden(true);
+  }
+
   return (
-    <div
-      className="flip-sign-cards"
-      data-testid="flip-sign-cards"
-      style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}
-    >
-      {tiles.map((tile) => (
-        <FlipSignCard key={tile.key} tile={tile} />
-      ))}
-    </div>
+    <>
+      {!flipHintHidden ? (
+        <p className="flip-sign-hint">
+          {/* FOUNDER-REVIEW: Tap to flip */}
+          Tap to flip
+        </p>
+      ) : null}
+      <div
+        className="flip-sign-cards"
+        data-testid="flip-sign-cards"
+        style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}
+      >
+        {tiles.map((tile) => (
+          <FlipSignCard key={tile.key} tile={tile} onFlip={noteFlipInteraction} />
+        ))}
+      </div>
+    </>
   );
 }
 
 function FlipSignCard({
   tile,
+  onFlip,
 }: {
+  onFlip: () => void;
   tile: {
     key: "sun" | "moon" | "rising";
     label: string;
@@ -133,7 +155,12 @@ function FlipSignCard({
       }
       disabled={!canFlip}
       onClick={() => {
-        if (canFlip && !capturing) setFlipped((prev) => !prev);
+        if (canFlip && !capturing) {
+          setFlipped((prev) => {
+            if (!prev) onFlip();
+            return !prev;
+          });
+        }
       }}
     >
       <span className="flip-sign-card__inner">

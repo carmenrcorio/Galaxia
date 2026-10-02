@@ -7,9 +7,12 @@
     "changelog:collate": "node scripts/collate-changelog.mjs",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
-    "test": "turbo run test",
+    "test": "turbo run test && node --test scripts/founder-review-tooling.test.mjs",
     "typecheck": "turbo run typecheck",
-    "founder-review:list": "node scripts/founder-review-list.mjs"
+    "founder-review:list": "node scripts/founder-review-list.mjs",
+    "founder-review:queue": "node scripts/founder-review-generate-queue.mjs",
+    "founder-review:apply": "node scripts/founder-review-apply.mjs",
+    "founder-review:history": "node scripts/founder-review-history.mjs"
   },
   "devDependencies": {
     "turbo": "^2.0.14",

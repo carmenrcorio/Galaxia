@@ -1,10 +1,15 @@
 /**
  * Client-facing copy for the blog Galaxia Notes newsletter box.
  * Persistence lives in POST /api/chart-lead/newsletter-signup (chart-lead-upsert).
+ *
+ * Before any Galaxia Notes issue is emailed, build a confirmation (double
+ * opt-in) flow: the signup route accepts any syntactically valid address
+ * without verifying ownership today.
  */
 
 /** FOUNDER-REVIEW */
-export const NEWSLETTER_SUCCESS = "You are on the list. The next Galaxia Notes issue will land in your inbox.";
+export const NEWSLETTER_SUCCESS =
+  "You are on the list. We will email you when the first Galaxia Notes issue is ready.";
 
 /** FOUNDER-REVIEW */
 export const NEWSLETTER_INVALID_EMAIL = "Enter a valid email address.";

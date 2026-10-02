@@ -22,6 +22,10 @@ import {
 } from "@galaxia/astro";
 import { isMinorForSafety, placementAnchorId } from "@galaxia/core";
 import Link from "next/link";
+import {
+  METHODOLOGY_FORM_LINK_BEFORE,
+  METHODOLOGY_FORM_LINK_LABEL,
+} from "../../lib/methodology-copy";
 import { useCallback, useEffect, useState } from "react";
 import { BirthDateSelects } from "../../components/birth-date-selects";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
@@ -232,6 +236,10 @@ export default function QuickChartPage() {
               onYearChange={(year) => setInput({ ...input, precision: "date", year })}
             />
             <FormPrivacyReassurance />
+            <p className="helper-text helper-text--soft" style={{ margin: 0 }}>
+              {METHODOLOGY_FORM_LINK_BEFORE}
+              <Link href="/methodology">{METHODOLOGY_FORM_LINK_LABEL}</Link>.
+            </p>
             <details open={showAdvancedBirth} onToggle={(e) => setShowAdvancedBirth((e.target as HTMLDetailsElement).open)}>
               <summary className="helper-text" style={{ cursor: "pointer" }}>
                 Year only, exact time, or city now

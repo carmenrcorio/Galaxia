@@ -12,7 +12,9 @@ describe("/method", () => {
     expect([...METHOD_DESCRIPTION].length).toBeLessThanOrEqual(158);
     const copy = METHOD_SECTIONS.flatMap((section) => [section.heading, ...section.paragraphs]).join(" ");
     expect(copy).toMatch(/does not predict/);
-    expect(copy).toMatch(/written and stored/);
+    expect(copy).toMatch(/written in advance and stored/);
+    expect(copy).toMatch(/reviewed and approved by the founder/);
+    expect(copy).toMatch(/Written readings and Vela/);
     expect(copy).toMatch(/Birth chart is the term we use/);
     expect(copy).toMatch(/default house system is Placidus/);
     expect(copy).toMatch(/Whole Sign/);
@@ -26,6 +28,7 @@ describe("/method", () => {
     const sitemap = readFileSync(join(__dirname, "../app/sitemap.ts"), "utf8");
     expect(page).toContain("METHOD_PATH");
     expect(page).toContain('href="/methodology"');
+    expect(readFileSync(join(__dirname, "../lib/method-copy.ts"), "utf8")).toMatch(/Anthropic/);
     expect(sitemap).toContain('"/method"');
     expect(page).not.toContain("\u2014");
   });

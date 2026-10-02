@@ -26,6 +26,11 @@ import {
   type RelationType,
 } from "@galaxia/astro";
 import Link from "next/link";
+import {
+  METHODOLOGY_COMPARE_LIMITS_LINE,
+  METHODOLOGY_FORM_LINK_BEFORE,
+  METHODOLOGY_FORM_LINK_LABEL,
+} from "../../../lib/methodology-copy";
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../../components/birth-fields";
 import { ChartImageExport, chartExportFilename } from "../../../components/chart-image-export";
@@ -370,6 +375,13 @@ export default function QuickComparePage() {
               )}
             </div>
 
+            <p className="helper-text helper-text--soft" style={{ margin: 0 }}>
+              {METHODOLOGY_FORM_LINK_BEFORE}
+              <Link href="/methodology">{METHODOLOGY_FORM_LINK_LABEL}</Link>.
+            </p>
+            <p className="helper-text helper-text--soft" style={{ margin: 0 }}>
+              {METHODOLOGY_COMPARE_LIMITS_LINE}
+            </p>
             <button className="btn-primary" onClick={() => runCompare(inputA, inputB)} disabled={loading || giftLoading} style={{ gap: 8, justifySelf: "start" }}>
               {loading && <Spinner size={13} color="#1a1206" />}
               {loading ? "Comparing…" : giftLoading ? "Loading gifted chart…" : "Compare our charts"}

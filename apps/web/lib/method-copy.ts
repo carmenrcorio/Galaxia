@@ -40,10 +40,18 @@ export const METHOD_SECTIONS = [
   {
     id: "copy",
     // FOUNDER-REVIEW
-    heading: "The words are written ahead of time",
+    heading: "Written readings and Vela",
     paragraphs: [
-      "Interpretation copy in Galaxia is written and stored before anyone opens the app. A reading pulls that copy. It does not invent a new prediction for the person in front of it."
-    ]
+      "Placement and aspect copy is written in advance and stored in the codebase before anyone opens the app. A reading pulls that stored copy; it is not generated on the fly and does not invent a new prediction for the person in front of it.",
+      "Each reading is reviewed and approved by the founder before it ships."
+    ],
+    // FOUNDER-REVIEW
+    velaBeforeLink:
+      "Vela, the in-app guide, is different: it uses Anthropic's Claude to generate replies from your computed chart facts. See the ",
+    // FOUNDER-REVIEW
+    velaLinkLabel: "methodology page",
+    // FOUNDER-REVIEW
+    velaAfterLink: " for how that is constrained."
   },
   {
     id: "can",

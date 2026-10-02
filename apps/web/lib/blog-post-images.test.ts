@@ -141,9 +141,10 @@ describe("blog hero and figure images", () => {
 
   it("copies manifest text onto every slug and places the figure after the named section", () => {
     const page = readFileSync(join(REPO_ROOT, "apps/web/app/[slug]/page.tsx"), "utf8");
-    expect(page).toContain("width={1600}");
-    expect(page).toContain("height={840}");
-    expect(page).toContain("priority");
+    const hero = readFileSync(join(REPO_ROOT, "apps/web/components/blog/article-hero.tsx"), "utf8");
+    expect(hero).toContain("width={1600}");
+    expect(hero).toContain("height={840}");
+    expect(hero).toContain("priority");
     expect(page).toContain("insertFigureAfterHeading");
 
     for (const [slug, spec] of Object.entries(PLACEMENT)) {

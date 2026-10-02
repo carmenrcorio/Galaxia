@@ -4,7 +4,9 @@ import { CloseSection } from "../../components/marketing/close-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
+import { MarketingAtfCta } from "../../components/marketing/marketing-atf-cta";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
+import { MEET_VELA_ATF_CTA } from "../../lib/marketing-page-cta";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { VelaExampleSection } from "../../components/marketing/vela-example-section";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
@@ -48,6 +50,7 @@ export default function MeetVelaPage() {
       <MarketingNav />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Meet Vela" lede={DESCRIPTION} />
+        <MarketingAtfCta cta={MEET_VELA_ATF_CTA} />
         <VelaExampleSection />
         <RelatedLinks heading="Keep exploring" links={RELATED_LINKS.meetVela} />
         <CloseSection />

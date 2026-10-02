@@ -25,7 +25,9 @@ import {
 } from "@galaxia/astro";
 import { aspectGlossarySlug } from "@galaxia/core";
 import { useState, type ReactNode } from "react";
+import { formatCrossChartAspectLine } from "../lib/why-reading";
 import { GlossaryTerm } from "./glossary-term";
+import { WhyThisReading } from "./why-this-reading";
 
 export type FlowsCatchesAspect = {
   from: string;
@@ -184,6 +186,10 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
               {row.tactic}.
             </p>
             ) : null}
+            <WhyThisReading
+              insightType="flows_catches_row"
+              line={formatCrossChartAspectLine(row.a, nameA, nameB)}
+            />
           </div>
         </div>
         );
@@ -192,20 +198,25 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
       {framing.length > 0 ? (
         <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
           {framing.map((f, idx) => (
-            <p
-              key={`framing-${idx}`}
-              style={{
-                fontSize: ".82rem",
-                color: "var(--mist)",
-                lineHeight: 1.6,
-                fontStyle: "italic",
-                margin: 0,
-                borderLeft: `2px solid ${f.flows ? "rgba(111,177,184,.4)" : "rgba(200,120,120,.4)"}`,
-                paddingLeft: 12,
-              }}
-            >
-              {f.text}
-            </p>
+            <div key={`framing-${idx}`}>
+              <p
+                style={{
+                  fontSize: ".82rem",
+                  color: "var(--mist)",
+                  lineHeight: 1.6,
+                  fontStyle: "italic",
+                  margin: 0,
+                  borderLeft: `2px solid ${f.flows ? "rgba(111,177,184,.4)" : "rgba(200,120,120,.4)"}`,
+                  paddingLeft: 12,
+                }}
+              >
+                {f.text}
+              </p>
+              <WhyThisReading
+                insightType="flows_catches_framing"
+                line={formatCrossChartAspectLine(f.aspect, nameA, nameB)}
+              />
+            </div>
           ))}
         </div>
       ) : null}
@@ -230,54 +241,59 @@ export function FlowsAndCatchesSection({ aspects, relationType, nameA, nameB }: 
                   typeLabel = <GlossaryTerm glossarySlug={typeSlug}>{row.a.type}</GlossaryTerm>;
                 }
                 return (
-                <div
-                  key={`detail-${row.key}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    gap: 8,
-                    padding: "7px 0",
-                    borderBottom: "1px solid rgba(255,255,255,.04)",
-                  }}
-                >
-                  <span
+                <div key={`detail-${row.key}`}>
+                  <div
                     style={{
-                      fontSize: ".8rem",
-                      color: groupChrome(row.group).color,
-                      flexShrink: 0,
-                      minWidth: 60,
+                      display: "flex",
+                      alignItems: "baseline",
+                      gap: 8,
+                      padding: "7px 0",
+                      borderBottom: "1px solid rgba(255,255,255,.04)",
                     }}
-                  >
-                    {groupChrome(row.group).badge}
-                  </span>
-                  <span className="muted" style={{ fontSize: ".82rem" }}>
-                    {row.a.from} {typeLabel} {row.a.to}
-                    {row.a.phase ? ` · ${row.a.phase}` : ""}
-                  </span>
-                  <span
-                    style={{
-                      marginLeft: "auto",
-                      flexShrink: 0,
-                      textAlign: "right",
-                      lineHeight: 1.2,
-                    }}
-                    title={`${row.a.orb.toFixed(1)}°`}
                   >
                     <span
                       style={{
-                        display: "block",
-                        fontSize: ".78rem",
-                        fontWeight: 600,
-                        color: "var(--cream)",
-                        textTransform: "lowercase",
+                        fontSize: ".8rem",
+                        color: groupChrome(row.group).color,
+                        flexShrink: 0,
+                        minWidth: 60,
                       }}
                     >
-                      {row.strength}
+                      {groupChrome(row.group).badge}
                     </span>
-                    <span className="muted" style={{ display: "block", fontSize: ".64rem" }}>
-                      {row.a.orb.toFixed(1)}°
+                    <span className="muted" style={{ fontSize: ".82rem" }}>
+                      {row.a.from} {typeLabel} {row.a.to}
+                      {row.a.phase ? ` · ${row.a.phase}` : ""}
                     </span>
-                  </span>
+                    <span
+                      style={{
+                        marginLeft: "auto",
+                        flexShrink: 0,
+                        textAlign: "right",
+                        lineHeight: 1.2,
+                      }}
+                      title={`${row.a.orb.toFixed(1)}°`}
+                    >
+                      <span
+                        style={{
+                          display: "block",
+                          fontSize: ".78rem",
+                          fontWeight: 600,
+                          color: "var(--cream)",
+                          textTransform: "lowercase",
+                        }}
+                      >
+                        {row.strength}
+                      </span>
+                      <span className="muted" style={{ display: "block", fontSize: ".64rem" }}>
+                        {row.a.orb.toFixed(1)}°
+                      </span>
+                    </span>
+                  </div>
+                  <WhyThisReading
+                    insightType="flows_catches_row"
+                    line={formatCrossChartAspectLine(row.a, nameA, nameB)}
+                  />
                 </div>
                 );
               })}

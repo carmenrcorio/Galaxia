@@ -7,6 +7,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { syncSignupNameToProfile } from "../lib/account-name";
+import {
+  METHODOLOGY_FORM_LINK_BEFORE,
+  METHODOLOGY_FORM_LINK_LABEL,
+  METHODOLOGY_SIGNUP_LIMITS_LINE,
+} from "../lib/methodology-copy";
 import { loginWithNextHref } from "../lib/nav-links";
 import { PASSWORD_MIN_LENGTH, PASSWORD_RULE_HINT } from "../lib/password-rules";
 import { safeNextPath } from "../lib/safe-next-path";
@@ -105,6 +110,13 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
   return (
     <div className="glass-card" style={{ maxWidth: 460 }}>
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 10 }}>
+        <p className="helper-text helper-text--soft" style={{ margin: 0 }}>
+          {METHODOLOGY_FORM_LINK_BEFORE}
+          <Link href="/methodology">{METHODOLOGY_FORM_LINK_LABEL}</Link>.
+        </p>
+        <p className="helper-text helper-text--soft" style={{ margin: 0 }}>
+          {METHODOLOGY_SIGNUP_LIMITS_LINE}
+        </p>
                 <label className="muted" htmlFor="signup-first-name">
           First name
         </label>

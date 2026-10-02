@@ -1,34 +1,25 @@
 import { Children, isValidElement, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { BlogCtaLink } from "./blog-analytics";
 import {
   FIGURE_MARKER,
-  MID_CTA_MARKER,
-  MID_POST_CTA_COPY,
-  injectMidPostCtaMarker,
+  MID_NEWSLETTER_MARKER,
+  injectMidNewsletterMarker,
   uniqueHeadingId
 } from "../../lib/article-structure";
+import { INLINE_IMAGE_MARKER_PREFIX, type PostInlineImage } from "../../lib/blog-inline-images";
+import { BlogNewsletterBox } from "./blog-newsletter-box";
+import { MarkdownImage } from "./markdown-image";
 
 /**
  * Markdown renderer for a published post body.
  *
- * The `img` override wraps screenshots in `<figure class="article-figure">`
- * so the CSS in globals.css can size and frame them. remark-parse still
- * treats a standalone `![alt](src)` as an *inline* node inside a paragraph,
- * so a naive `<p><figure>` tree is invalid HTML: the browser hoists the
- * figure out of the `<p>` before React hydrates, which is React #418 on
- * any post that has an image (only synastry-chart-meaning, as of this
- * writing). When a paragraph's only real children are images, we skip the
- * `<p>` wrapper so the figure is a direct child of the article.
+ * The `img` override uses next/image for local and https sources. remark-parse
+ * still treats a standalone `![alt](src)` as an *inline* node inside a paragraph,
+ * so image-only paragraphs skip the `<p>` wrapper for valid HTML.
  *
- * This is not a relaxation of the renderer (no raw HTML, no
- * `rehype-raw`, no `suppressHydrationWarning`). It is the valid-HTML
- * counterpart of the figure wrap.
- *
- * Heading `id`s are generated here (no extra rehype plugin) so the
- * in-article "In this piece" jump links match. The mid-post CTA is
- * injected at render time from `midCtaHref`, never written into `posts.body`.
+ * Heading `id`s are generated here so the in-article TOC jump links match.
+ * The mid-post newsletter box is injected at render time, never stored in body.
  */
 function isImageOnlyParagraph(
   node:
@@ -63,28 +54,13 @@ function flattenReactText(node: ReactNode): string {
     .join("");
 }
 
-function MidPostCta({ href, slug }: { href: string; slug: string }) {
-  return (
-    <p className="article-mid-cta">
-      <BlogCtaLink href={href} slug={slug} cta="inline">
-        {MID_POST_CTA_COPY}
-        {" \u2192"}
-      </BlogCtaLink>
-    </p>
-  );
-}
-
 export const articleMarkdownComponents: Components = {
   p: ({ node, children }) =>
     isImageOnlyParagraph(node) ? <>{children}</> : <p className="article-p">{children}</p>,
   h2: ({ children }) => <h2 className="article-h2">{children}</h2>,
   h3: ({ children }) => <h2 className="article-h2">{children}</h2>,
   blockquote: ({ children }) => <blockquote className="article-blockquote">{children}</blockquote>,
-  img: ({ src, alt }) => (
-    <figure className="article-figure">
-      <img src={typeof src === "string" ? src : undefined} alt={alt ?? ""} />
-    </figure>
-  ),
+  img: ({ src, alt, title }) => <MarkdownImage src={src} alt={alt} title={title} />,
   a: ({ href, children }) => (
     <a href={href} target={href?.startsWith("http") ? "_blank" : undefined} rel="noreferrer">
       {children}
@@ -99,16 +75,18 @@ export const articleMarkdownComponents: Components = {
 
 export function ArticleMarkdown({
   children,
-  midCtaHref,
   slug,
-  figure
+  figure,
+  showMidNewsletter = false,
+  inlineImagesByMarker
 }: {
   children: string;
-  midCtaHref?: string;
   slug?: string;
   figure?: ReactNode;
+  showMidNewsletter?: boolean;
+  inlineImagesByMarker?: Map<string, ReactNode>;
 }) {
-  const body = midCtaHref ? injectMidPostCtaMarker(children) : children;
+  const body = showMidNewsletter && slug ? injectMidNewsletterMarker(children) : children;
   const seen = new Map<string, number>();
   const components: Components = {
     ...articleMarkdownComponents,
@@ -123,16 +101,32 @@ export function ArticleMarkdown({
     p: ({ node, children: paragraph }) => {
       const text = flattenReactText(paragraph).trim();
       if (text === FIGURE_MARKER) return figure ?? null;
-      if (midCtaHref && text === MID_CTA_MARKER) {
-        return <MidPostCta href={midCtaHref} slug={slug ?? ""} />;
+      if (text.startsWith(INLINE_IMAGE_MARKER_PREFIX) && text.endsWith("%%")) {
+        return inlineImagesByMarker?.get(text) ?? null;
+      }
+      if (showMidNewsletter && slug && text === MID_NEWSLETTER_MARKER) {
+        return <BlogNewsletterBox slug={slug} />;
       }
       return isImageOnlyParagraph(node) ? <>{paragraph}</> : <p className="article-p">{paragraph}</p>;
     }
   };
+
+  if (!children.trim()) return null;
 
   return (
     <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
       {body}
     </ReactMarkdown>
   );
+}
+
+export function buildInlineImagesMarkerMap(
+  images: PostInlineImage[],
+  render: (image: PostInlineImage, index: number) => ReactNode
+): Map<string, ReactNode> {
+  const map = new Map<string, ReactNode>();
+  images.forEach((image, index) => {
+    map.set(`%%GALAXIA_INLINE_IMAGE_${index}%%`, render(image, index));
+  });
+  return map;
 }

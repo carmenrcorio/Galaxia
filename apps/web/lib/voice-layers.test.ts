@@ -172,7 +172,7 @@ describe("layer two: astrology language stays where search and in-product intent
     const copy = readRepo("apps/web/lib/methodology-copy.ts");
     expect(copy).toMatch(/How Galaxia Computes Your Chart/);
     expect(copy).toMatch(/ephemeris source/);
-    expect(copy).toMatch(/orb tables/);
+    expect(copy).toMatch(/orb table/);
     expect(copy).toMatch(/house system/);
     expect(readRepo("apps/web/app/methodology/page.tsx")).toMatch(/canonical: METHODOLOGY_PATH/);
   });

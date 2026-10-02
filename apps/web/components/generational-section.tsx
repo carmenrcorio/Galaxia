@@ -20,8 +20,13 @@ import {
   type Sign,
 } from "@galaxia/astro";
 import Link from "next/link";
+import {
+  formatGenerationalDivergedLine,
+  formatGenerationalSharedLine,
+} from "../lib/why-reading";
 import { SIGN_GLYPH } from "../lib/design";
 import { GenerationalEraSurface } from "./generational-era-surface";
+import { WhyThisReading } from "./why-this-reading";
 
 export type GenerationalSectionData = {
   shared: { planet: string; sign: string }[];
@@ -110,6 +115,10 @@ export function GenerationalSection({ generational, professional = false }: Prop
                   <p className="muted" style={{ fontSize: ".72rem", marginTop: 4 }}>
                     {placementProof(entry.planet, entry.sign)}
                   </p>
+                  <WhyThisReading
+                    insightType="generational_shared"
+                    line={formatGenerationalSharedLine(entry.planet, entry.sign)}
+                  />
                 </div>
               );
             }
@@ -124,6 +133,10 @@ export function GenerationalSection({ generational, professional = false }: Prop
                   <p className="muted" style={{ fontSize: ".72rem", marginTop: 4 }}>
                     {placementProof(planet, sign)}
                   </p>
+                  <WhyThisReading
+                    insightType="generational_shared"
+                    line={formatGenerationalSharedLine(planet, sign)}
+                  />
                 </div>
               );
             }
@@ -138,6 +151,10 @@ export function GenerationalSection({ generational, professional = false }: Prop
                 <p className="muted" style={{ fontSize: ".72rem", marginTop: 4 }}>
                   {placementProof(planet, sign)}
                 </p>
+                <WhyThisReading
+                  insightType="generational_shared"
+                  line={formatGenerationalSharedLine(planet, sign)}
+                />
               </div>
             );
           })}
@@ -171,6 +188,10 @@ export function GenerationalSection({ generational, professional = false }: Prop
                 <p className="muted" style={{ fontSize: ".72rem", lineHeight: 1.5, marginTop: 8 }}>
                   {proof}
                 </p>
+                <WhyThisReading
+                  insightType="generational_diverged"
+                  line={formatGenerationalDivergedLine(planet, signA, signB)}
+                />
               </div>
             );
           })}

@@ -50,7 +50,7 @@ export const BLOG_ANALYTICS = {
 export type BlogAnalyticsEvent = (typeof BLOG_ANALYTICS)[keyof typeof BLOG_ANALYTICS];
 
 /** Which call to action was clicked. No other properties are sent. */
-export type BlogCtaKind = "inline" | "closing";
+export type BlogCtaKind = "intro" | "inline" | "closing";
 
 /** Post header date: "Sep 29, 2026". UTC calendar day of the stored timestamp. */
 export function formatUpdatedDate(iso: string): string {

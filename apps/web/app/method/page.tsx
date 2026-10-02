@@ -51,6 +51,13 @@ export default function MethodPage() {
             {section.paragraphs.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
             ))}
+            {"velaBeforeLink" in section && section.velaBeforeLink ? (
+              <p>
+                {section.velaBeforeLink}
+                <Link href="/methodology">{section.velaLinkLabel}</Link>
+                {section.velaAfterLink}
+              </p>
+            ) : null}
           </section>
         ))}
       </main>

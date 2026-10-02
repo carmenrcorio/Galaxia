@@ -5,7 +5,9 @@ import { EdgeSection } from "../../components/marketing/edge-section";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
+import { MarketingAtfCta } from "../../components/marketing/marketing-atf-cta";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
+import { GENERATIONS_ATF_CTA } from "../../lib/marketing-page-cta";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { RELATED_LINKS } from "../../lib/nav-links";
@@ -48,6 +50,7 @@ export default function GenerationsPage() {
       <MarketingNav />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Generations" lede={DESCRIPTION} />
+        <MarketingAtfCta cta={GENERATIONS_ATF_CTA} />
         <EdgeSection />
         <RelatedLinks heading="Keep exploring" links={RELATED_LINKS.generations} />
         <RelatedLinks heading="From the blog" links={RELATED_LINKS.generationsBlog} />

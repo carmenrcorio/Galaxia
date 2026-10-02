@@ -154,7 +154,7 @@ export function ChartReadingCapture({ slug }: { slug?: string } = {}) {
         <div className="article-chart-reading-actions">
           <button
             type="submit"
-            className="btn-primary"
+            className="pill-link pill-link--gold"
             disabled={status === "submitting"}
             onClick={() => {
               if (slug) trackBlogClick(BLOG_ANALYTICS.cta, slug, "closing");

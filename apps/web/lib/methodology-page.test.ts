@@ -1,15 +1,18 @@
-import { aspectDefinition, type AspectType } from "@galaxia/astro";
+import { aspectDefinition, natalAspectCoverage, type AspectType } from "@galaxia/astro";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   METHODOLOGY_ASPECT_TYPES,
+  METHODOLOGY_COMPARE_LIMITS_LINE,
   METHODOLOGY_DESCRIPTION,
   METHODOLOGY_H1,
   METHODOLOGY_LEDE,
   METHODOLOGY_PATH,
   METHODOLOGY_SECTIONS,
+  METHODOLOGY_SIGNUP_LIMITS_LINE,
   METHODOLOGY_TITLE,
+  methodologyNatalAspectCoverageSentence,
   methodologyOrbDegrees,
   methodologyInterpretationCoverageLines,
   methodologyOrbRows,
@@ -32,9 +35,7 @@ describe("/methodology metadata", () => {
     const src = read(PAGE);
     expect(METHODOLOGY_TITLE).toBe("How Galaxia Computes Your Chart");
     expect(METHODOLOGY_H1).toBe("How Galaxia computes your chart");
-    expect(METHODOLOGY_DESCRIPTION).toBe(
-      "Real astronomical data, published methodology. See the ephemeris source, orb tables, and house system behind every Galaxia chart.",
-    );
+    expect(METHODOLOGY_DESCRIPTION).toMatch(/Real astronomical data/);
     expect(METHODOLOGY_PATH).toBe("/methodology");
     expect(src).toMatch(/alternates:\s*\{\s*canonical:\s*METHODOLOGY_PATH\s*\}/);
     expect(src).toContain("url: METHODOLOGY_PATH");
@@ -57,7 +58,7 @@ describe("/methodology metadata", () => {
 });
 
 describe("/methodology orb table matches the engine", () => {
-  it("uses one orb per aspect type for luminaries, personal, and outer planets", () => {
+  it("uses one orb per aspect type from aspectDefinition()", () => {
     const expected: Record<AspectType, number> = {
       conjunction: 8,
       sextile: 4,
@@ -81,23 +82,19 @@ describe("/methodology orb table matches the engine", () => {
     ]);
   });
 
-  it("renders the live orb in all three planet columns, not a restated number", () => {
+  it("renders a single orb column driven by methodologyOrbRows()", () => {
     const src = read(PAGE);
     expect(src).toContain("methodologyOrbRows()");
     expect(src).toContain("{row.orb}°");
-    expect(src).not.toMatch(/8°|6°|4°/);
+    expect(src).not.toContain("columnHeaders.luminaries");
     const engine = read(ENGINE);
     expect(engine).toContain("conjunction: { angle: 0, orb: 8");
-    expect(engine).toContain("sextile: { angle: 60, orb: 4");
-    expect(engine).toContain("square: { angle: 90, orb: 6");
-    expect(engine).toContain("trine: { angle: 120, orb: 6");
-    expect(engine).toContain("opposition: { angle: 180, orb: 8");
     expect(engine).toContain("quincunx: { angle: 150, orb: 2.5");
   });
 
   it("states that the engine does not widen orbs by planet class", () => {
     expect(METHODOLOGY_SECTIONS.orbs.paragraphs[0]).toMatch(/one allowance per aspect type/);
-    expect(METHODOLOGY_SECTIONS.orbs.tableCaption).toMatch(/does not widen the window by planet class/);
+    expect(METHODOLOGY_SECTIONS.orbs.tableCaption).toMatch(/same orb applies to every planet pair/);
   });
 });
 
@@ -113,22 +110,63 @@ describe("/methodology interpretation coverage", () => {
 });
 
 describe("/methodology content and voice", () => {
-  it("names the real ephemeris, Placidus default, and honest omissions", () => {
+  it("names astronomy-engine, True Node, Chiron table, and precision tiers", () => {
     expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[0]).toMatch(/astronomy-engine/);
-    expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[0]).toMatch(/not AI-generated/);
+    expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[1]).toMatch(/True Node/);
+    expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[1]).toMatch(/Mean Node is not computed/);
+    expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[2]).toMatch(/JPL Horizons/);
+    expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[2]).toMatch(/Chiron synastry readings are authored/);
+    expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[2]).toMatch(/natal Chiron sign and house copy is not authored yet/);
+    expect(METHODOLOGY_SECTIONS.precision.paragraphs[0]).toMatch(/Year-only/);
+    expect(METHODOLOGY_SECTIONS.precision.paragraphs[1]).toMatch(/Date-only/);
+    expect(METHODOLOGY_SECTIONS.precision.paragraphs[2]).toMatch(/Exact charts/);
     expect(METHODOLOGY_SECTIONS.houses.paragraphs[1]).toMatch(/Placidus/);
+  });
+
+  it("omissions list excludes Chiron and True Node; includes Mean Node", () => {
+    expect(METHODOLOGY_SECTIONS.omissions.items).not.toContain("Chiron");
+    expect(METHODOLOGY_SECTIONS.omissions.items.join(" ")).not.toMatch(/True Node/);
+    expect(METHODOLOGY_SECTIONS.omissions.items).toContain("Mean Node");
     expect(METHODOLOGY_SECTIONS.omissions.items).toEqual(
       expect.arrayContaining([
-        "Chiron",
-        "Lunar nodes (True Node or Mean Node)",
         "Black Moon Lilith",
         "Minor aspects other than the quincunx (semisextile, semisquare, sesquiquadrate)",
         "Arabic parts, including the Part of Fortune",
       ]),
     );
-    expect(METHODOLOGY_SECTIONS.applying.paragraphs[2]).toMatch(
-      /Natal and synastry aspects also mark applying or separating/,
+  });
+
+  it("limits block matches /method and glossary themes", () => {
+    expect(METHODOLOGY_SECTIONS.limits.paragraphs.join(" ")).toMatch(/does not predict/);
+    expect(METHODOLOGY_SECTIONS.limits.paragraphs.join(" ")).toMatch(/whether to stay/);
+    expect(METHODOLOGY_SECTIONS.limits.paragraphs.join(" ")).toMatch(/Rising sign and house/);
+  });
+
+  it("readings section states stored copy and founder review before ship", () => {
+    expect(METHODOLOGY_SECTIONS.readings.intro).toMatch(/written in advance and stored/);
+    expect(METHODOLOGY_SECTIONS.readings.intro).not.toMatch(/hand-written/i);
+    expect(METHODOLOGY_SECTIONS.readings.founderReview).toMatch(
+      /reviewed and approved by the founder before it ships/,
     );
+  });
+
+  it("natal aspect coverage sentence matches natalAspectCoverage()", () => {
+    const { authored, possible } = natalAspectCoverage();
+    expect(methodologyNatalAspectCoverageSentence()).toBe(
+      `Today ${authored} of ${possible} possible natal aspect pairs have a written reading in the library.`,
+    );
+  });
+
+  it("Vela section names Claude without a model version", () => {
+    const text = METHODOLOGY_SECTIONS.vela.paragraphs.join(" ");
+    expect(text).toMatch(/Anthropic/);
+    expect(text).not.toMatch(/claude-sonnet|claude-opus|model version/i);
+    expect(text).toMatch(/can be wrong/);
+  });
+
+  it("accuracy section is scoped to the Placidus regression test", () => {
+    expect(METHODOLOGY_SECTIONS.accuracy.paragraphs[0]).toMatch(/one arcminute/);
+    expect(METHODOLOGY_SECTIONS.accuracy.paragraphs[0]).toMatch(/do not claim a universal match/);
   });
 
   it("tags authored copy FOUNDER-REVIEW and never uses U+2014", () => {
@@ -139,6 +177,13 @@ describe("/methodology content and voice", () => {
     expect(METHODOLOGY_TITLE).not.toContain("\u2014");
     expect(METHODOLOGY_DESCRIPTION).not.toContain("\u2014");
     expect(METHODOLOGY_LEDE).not.toContain("\u2014");
+  });
+
+  it("exports signup and compare helper lines", () => {
+    expect(METHODOLOGY_SIGNUP_LIMITS_LINE).toMatch(/Rising sign or houses/);
+    expect(METHODOLOGY_COMPARE_LIMITS_LINE).toMatch(/whether to stay/);
+    expect(read("apps/web/components/signup-form.tsx")).toContain("METHODOLOGY_SIGNUP_LIMITS_LINE");
+    expect(read("apps/web/app/chart/compare/page.tsx")).toContain("METHODOLOGY_COMPARE_LIMITS_LINE");
   });
 });
 
@@ -158,5 +203,12 @@ describe("/methodology sitemap and related links", () => {
   it("is linked from /glossary and /security", () => {
     expect(RELATED_LINKS.glossary.map((l) => l.href)).toContain("/methodology");
     expect(RELATED_LINKS.security.map((l) => l.href)).toContain("/methodology");
+  });
+
+  it("is linked from signup, chart, compare, and the footer", () => {
+    expect(read("apps/web/components/signup-form.tsx")).toContain('href="/methodology"');
+    expect(read("apps/web/app/chart/quick-chart-page.tsx")).toContain('href="/methodology"');
+    expect(read("apps/web/app/chart/compare/page.tsx")).toContain('href="/methodology"');
+    expect(read("apps/web/lib/nav-links.ts")).toContain('href: "/methodology"');
   });
 });

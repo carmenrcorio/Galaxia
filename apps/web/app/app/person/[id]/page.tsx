@@ -104,6 +104,12 @@ import { CAPTURE_MOMENT } from "../../../../lib/moment-copy";
 import { EMPTY_STATE_WELCOME_HREF, captureMomentHref } from "../../../../lib/nav-links";
 import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, updateNoteTags, updateNoteTheme, type RecordEntry } from "../../../../lib/record";
 import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
+import {
+  formatChartPatternLine,
+  formatNatalAspectLine,
+  formatPlacementLine,
+} from "../../../../lib/why-reading";
+import { WhyThisReading } from "../../../../components/why-this-reading";
 
 interface PersonRow {
   id: string; display_name: string; relation: string;
@@ -185,7 +191,7 @@ function HouseBadge({ house }: { house: number }) {
 /* ─── ExpandRow — the single expandable row used throughout ─────────────── */
 function ExpandRow({
   open, onToggle, label, domain, degree, house, el, glyph, retro, short, long,
-  houseReading, planetAspects, hasHouses, anchorId
+  houseReading, planetAspects, hasHouses, anchorId, whyLine
 }: {
   open: boolean; onToggle: () => void;
   /** Scroll target for the wheel glyph card's "see full reading" link. */
@@ -197,6 +203,7 @@ function ExpandRow({
   /** Per-planet aspects — rendered in expanded state */
   planetAspects?: Array<{ from: string; to: string; type: string; orb: number; short: string; tight: boolean }>;
   hasHouses?: boolean;
+  whyLine?: string | null;
 }) {
   return (
     <div id={anchorId} style={{ borderBottom: "1px solid rgba(183,154,216,.08)", scrollMarginTop: 92 }}>
@@ -232,6 +239,7 @@ function ExpandRow({
         </div>
         <span style={{ color: "var(--mist2)", fontSize: ".72rem", flexShrink: 0, marginLeft: 6, transform: open ? "rotate(90deg)" : "none", display: "inline-block", transition: "transform .2s" }}>▶</span>
       </button>
+      <WhyThisReading insightType="natal_placement" line={whyLine} />
       {open ? (
         <div style={{ paddingBottom: 14, paddingLeft: 48, paddingRight: 6, display: "grid", gap: 12 }}>
           {/* Block 1: IN [SIGN] */}
@@ -1088,6 +1096,11 @@ export default function PersonProfilePage() {
         houseReading={houseR}
         planetAspects={bodyAspects}
         hasHouses={hasHouses}
+        whyLine={
+          hasHouses
+            ? formatPlacementLine(p.body, p.sign, p.house, p.degree)
+            : formatPlacementLine(p.body, p.sign, undefined, p.degree)
+        }
       />
     );
   };
@@ -1437,6 +1450,7 @@ export default function PersonProfilePage() {
                   <p style={{ fontSize: ".78rem", color: "var(--mist2)", margin: "0 0 7px" }}>{detail}</p>
                   <p style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600, lineHeight: 1.5, margin: "0 0 5px" }}>{copy.short}</p>
                   <p style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{copy.long}</p>
+                  <WhyThisReading insightType="chart_pattern" line={formatChartPatternLine(pattern)} />
                 </article>
               );
             })}
@@ -1512,6 +1526,10 @@ export default function PersonProfilePage() {
                   <span style={{ fontSize:".7rem",color:"var(--mist2)",flexShrink:0 }}>{toDMS(a.orb)}</span>
                   <span style={{ color:"var(--mist2)",fontSize:".7rem",flexShrink:0,marginLeft:4,transform:isOpen?"rotate(90deg)":"none",display:"inline-block",transition:"transform .2s" }}>▶</span>
                 </button>
+                <WhyThisReading
+                  insightType="natal_aspect"
+                  line={formatNatalAspectLine({ from: a.from, to: a.to, type: a.type, orb: a.orb })}
+                />
                 {isOpen && reading.long ? <div style={{ paddingBottom:10,paddingLeft:64 }}><p style={{ fontSize:".82rem",color:"var(--mist)",lineHeight:1.62,margin:0 }}>{reading.long}</p></div> : null}
               </div>
             );

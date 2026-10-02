@@ -1,9 +1,18 @@
-import { aspectDefinition, interpretationLibraryCoverageSummary, type AspectType } from "@galaxia/astro";
+import {
+  aspectDefinition,
+  interpretationLibraryCoverageSummary,
+  natalAspectCoverage,
+  type AspectType,
+} from "@galaxia/astro";
 
 /**
  * Authored copy for `/methodology`. Every user-visible string is tagged
  * FOUNDER-REVIEW (ENGINEERING.md §11). Values that come from the engine
- * (orbs, house-system names) are imported, never restated by hand.
+ * (orbs, house-system names, natal aspect coverage counts) are imported,
+ * never restated by hand.
+ *
+ * PLACEHOLDER_PRACTITIONER_CREDIT: When a named practitioner credit is approved
+ * for public display, add it here (or adjacent review-statement module).
  */
 
 export const METHODOLOGY_PATH = "/methodology";
@@ -16,25 +25,63 @@ export const METHODOLOGY_H1 = "How Galaxia computes your chart";
 
 // FOUNDER-REVIEW
 export const METHODOLOGY_DESCRIPTION =
-  "Real astronomical data, published methodology. See the ephemeris source, orb tables, and house system behind every Galaxia chart.";
+  "Real astronomical data, published methodology. See the ephemeris source, orb table, house system, precision tiers, written readings, and Vela behind every Galaxia chart.";
 
 // FOUNDER-REVIEW
 export const METHODOLOGY_LEDE =
-  "Every chart on Galaxia is computed from real sky positions. This page publishes the method: the ephemeris, the house system, the orb table, and what we leave out.";
+  "Every chart on Galaxia is computed from real sky positions. This page publishes the method: what we calculate, what we omit, how orbs work, how birth precision limits the chart, and how written readings differ from Vela.";
 
 // FOUNDER-REVIEW
 export const METHODOLOGY_OG_ALT =
   "Galaxia: astrology to understand the people in your life";
 
+/** Short link line near signup and chart entry forms. */
+// FOUNDER-REVIEW
+export const METHODOLOGY_FORM_LINK_BEFORE = "How we compute charts: ";
+// FOUNDER-REVIEW
+export const METHODOLOGY_FORM_LINK_LABEL = "methodology";
+
+/** One-sentence limits on signup and public compare (helper-text). */
+// FOUNDER-REVIEW
+export const METHODOLOGY_SIGNUP_LIMITS_LINE =
+  "A birth chart describes how someone is built, not what will happen next, and without a birth time Galaxia will not show a Rising sign or houses.";
+
+// FOUNDER-REVIEW
+export const METHODOLOGY_COMPARE_LIMITS_LINE =
+  "Synastry describes patterns between two charts; it cannot tell you whether to stay or who was at fault.";
+
 export const METHODOLOGY_SECTIONS = {
+  limits: {
+    id: "limits",
+    // FOUNDER-REVIEW
+    heading: "What a chart can and cannot do",
+    // FOUNDER-REVIEW
+    paragraphs: [
+      "A birth chart describes how someone is built. It does not predict events, choices, or outcomes.",
+      "It cannot tell you whether to stay in a relationship, who was at fault, or what will happen next month.",
+      "Without a birth time, a Rising sign and house placements cannot be computed honestly, and Galaxia will not invent them.",
+    ],
+  },
+  precision: {
+    id: "birth-precision",
+    // FOUNDER-REVIEW
+    heading: "Birth precision",
+    // FOUNDER-REVIEW
+    paragraphs: [
+      "Year-only charts compute the Sun and the outer planets Uranus, Neptune, and Pluto only. Inner planets and the True Node are omitted because their signs depend on a day we do not know. Natal aspects are not computed for year-only data.",
+      "Date-only charts compute the standard set of bodies at noon UTC on that calendar date. Houses, the Ascendant, and the Midheaven are not shown because birth time and place are missing.",
+      "Exact charts use local birth time converted to UTC with the birth place timezone. Houses and angles are computed only when latitude and longitude are known.",
+    ],
+  },
   ephemeris: {
     id: "ephemeris-source",
     // FOUNDER-REVIEW
     heading: "Ephemeris source",
     // FOUNDER-REVIEW
     paragraphs: [
-      "Real astronomical positions computed from astronomy-engine, an open-source MIT library of published planetary theory, not AI-generated or looked up from a table.",
-      "Positions are geocentric ecliptic longitudes in the tropical zodiac, the same frame astro.com and Cafe Astrology use. A careful reader can cross-check a chart against those sites.",
+      "Sun through Pluto use astronomy-engine, an open-source MIT library of published planetary theory. Positions are geocentric ecliptic longitudes in the tropical zodiac, not AI-generated.",
+      "The True Node is computed on date-only and exact charts from the geocentric Moon state (osculating node). Mean Node is not computed.",
+      "Chiron is computed when the birth date falls in the 1900 through 2101 range covered by our table. Positions come from JPL Horizons samples with ten-day linear interpolation, not from astronomy-engine. Chiron synastry readings are authored for Compare; natal Chiron sign and house copy is not authored yet.",
     ],
   },
   houses: {
@@ -43,8 +90,8 @@ export const METHODOLOGY_SECTIONS = {
     heading: "House system",
     // FOUNDER-REVIEW
     paragraphs: [
-      "Houses are twelve rooms of a life: where a placement tends to show up. Mars in a partnership house and Mars in a work house are the same planet in different rooms.",
-      "Galaxia's default is Placidus, the time-based system on astro.com and Cafe Astrology. House sizes are uneven because they follow how the sky actually rises at that latitude.",
+      "Houses are twelve life arenas: where a placement tends to show up. Mars in a partnership house and Mars in a work house are the same planet in different rooms.",
+      "Galaxia's default is Placidus, the time-based system used on many reference chart sites. House sizes are uneven because they follow how the sky rises at that latitude.",
       "You can switch to Whole Sign or Equal House in settings. Those choices are computed, not relabeled. If Placidus is undefined at a polar birth latitude, we show Whole Sign and say so.",
     ],
   },
@@ -58,13 +105,11 @@ export const METHODOLOGY_SECTIONS = {
     ],
     // FOUNDER-REVIEW
     tableCaption:
-      "Orb allowances in degrees, used for natal aspects and synastry. The three planet columns match because the engine does not widen the window by planet class.",
+      "Orb allowances in degrees for natal aspects and synastry. The same orb applies to every planet pair.",
     // FOUNDER-REVIEW
     columnHeaders: {
       aspect: "Aspect",
-      luminaries: "Luminaries (Sun/Moon)",
-      personal: "Personal planets",
-      outer: "Outer planets",
+      orb: "Orb (°)",
     },
     // FOUNDER-REVIEW
     transitMoonNote:
@@ -81,10 +126,44 @@ export const METHODOLOGY_SECTIONS = {
       "Natal and synastry aspects also mark applying or separating from each planet's longitude speed at the birth moment. If that speed is missing, the phase is left blank rather than guessed.",
     ],
   },
+  readings: {
+    id: "how-readings-are-written",
+    // FOUNDER-REVIEW
+    heading: "How readings are written",
+    // FOUNDER-REVIEW
+    intro:
+      "Placement and aspect copy is written in advance and stored in the codebase before anyone opens the app. A reading pulls that stored copy; it is not generated on the fly for each person.",
+    // FOUNDER-REVIEW
+    founderReview:
+      "Each reading is reviewed and approved by the founder before it ships.",
+    // FOUNDER-REVIEW
+    coverageNote:
+      "Not every natal aspect pair has a written reading. Pairs we have not authored are not shown rather than filled in with generic text.",
+  },
   interpretationLibrary: {
     id: "interpretation-library",
     // FOUNDER-REVIEW
     heading: "Curated interpretation library",
+  },
+  vela: {
+    id: "what-vela-does",
+    // FOUNDER-REVIEW
+    heading: "What Vela does",
+    // FOUNDER-REVIEW
+    paragraphs: [
+      "Vela is the in-app guide powered by Anthropic's Claude. Its replies are generated, unlike the written readings above.",
+      "Vela receives computed chart facts and a list of aspects from your stored charts. It is instructed to name only aspects from that list, never to invent placements, and not to predict the future.",
+      "Vela can be wrong or incomplete like any AI. Treat it as guidance grounded in your chart data, not as a final authority.",
+    ],
+  },
+  accuracy: {
+    id: "accuracy-checks",
+    // FOUNDER-REVIEW
+    heading: "What we test against",
+    // FOUNDER-REVIEW
+    paragraphs: [
+      "House cusp calculation is checked against a published Placidus reference chart to within about one arcminute. We do not claim a universal match to every external ephemeris for every chart.",
+    ],
   },
   omissions: {
     id: "what-we-do-not-compute",
@@ -92,11 +171,10 @@ export const METHODOLOGY_SECTIONS = {
     heading: "What we do not compute",
     // FOUNDER-REVIEW
     intro:
-      "We compute the Sun through Pluto, plus the Ascendant and Midheaven when birth time and place are known. We use the five major aspects (conjunction, sextile, square, trine, opposition) and the quincunx on natal and synastry charts, tropical signs, and retrograde flags. Transits, daily notes, and Vela stay on the five majors. We do not compute the rest of a professional ephemeris chart, and we do not pretend those points are present.",
+      "We compute the Sun through Pluto, the True Node on date and exact charts, and Chiron when our table covers the date. We use the five major aspects plus the quincunx on natal and synastry charts, tropical signs, and retrograde flags. Transits, daily notes, and Vela aspect lists stay on the five majors. We do not compute the rest of a professional ephemeris chart, and we do not pretend those points are present.",
     // FOUNDER-REVIEW
     items: [
-      "Chiron",
-      "Lunar nodes (True Node or Mean Node)",
+      "Mean Node",
       "Black Moon Lilith",
       "Asteroids",
       "Minor aspects other than the quincunx (semisextile, semisquare, sesquiquadrate)",
@@ -152,4 +230,10 @@ export function methodologyOrbRows(): Array<{
     label: METHODOLOGY_ASPECT_LABELS[type],
     orb: methodologyOrbDegrees(type),
   }));
+}
+
+/** Natal pair reading counts from the engine (cannot drift from interpretations.ts). */
+export function methodologyNatalAspectCoverageSentence(): string {
+  const { authored, possible } = natalAspectCoverage();
+  return `Today ${authored} of ${possible} possible natal aspect pairs have a written reading in the library.`;
 }

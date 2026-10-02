@@ -16,7 +16,9 @@ describe("ArticleMarkdown — image paragraphs", () => {
       })
     );
     expect(html).toContain('<p class="article-p">Lead paragraph.</p>');
-    expect(html).toContain('<figure class="article-figure"><img src="/synastry-flows-catches.png" alt="Flows and catches"/></figure>');
+    expect(html).toContain('class="article-figure"');
+    expect(html).toMatch(/synastry-flows-catches\.png/);
+    expect(html).toContain("Flows and catches");
     expect(html).not.toMatch(/<p[^>]*>\s*<figure/);
     expect(html).toContain('<p class="article-p">Closing paragraph.</p>');
   });
@@ -44,7 +46,7 @@ describe("ArticleMarkdown — image paragraphs", () => {
   });
 });
 
-describe("ArticleMarkdown — heading ids and mid-post CTA", () => {
+describe("ArticleMarkdown — heading ids and mid-post newsletter", () => {
   it("adds matching ids to h2 headings so TOC jump links resolve", () => {
     const html = renderToStaticMarkup(
       createElement(ArticleMarkdown, {
@@ -55,18 +57,17 @@ describe("ArticleMarkdown — heading ids and mid-post CTA", () => {
     expect(html).toContain('<h2 id="reading-yours-1" class="article-h2">Reading yours</h2>');
   });
 
-  it("injects the mid-post CTA in the renderer, never as a visible marker", () => {
+  it("injects the mid-post newsletter in the renderer, never as a visible marker", () => {
     const html = renderToStaticMarkup(
       createElement(ArticleMarkdown, {
         children: "Lead paragraph about the reading.\n\n## First heading\n\nMore words here that fill the first half of the piece so the midpoint is real.\n\n## Middle heading\n\nSecond half of the piece continues after the injected call to action.\n\n## Last heading\n\nClosing words.",
-        midCtaHref: "/chart"
+        slug: "sun-sign-not-personality",
+        showMidNewsletter: true
       })
     );
-    expect(html).toContain('class="article-mid-cta"');
-    expect(html).toContain('href="/chart"');
-    expect(html).toContain("See how this plays out in your own chart");
-    expect(html).toContain("→");
-    expect(html).not.toContain("%%GALAXIA_MID_CTA%%");
+    expect(html).toContain("Galaxia Notes");
+    expect(html).toContain("article-newsletter");
+    expect(html).not.toContain("%%GALAXIA_MID_NEWSLETTER%%");
   });
 
   it("does not add ids to markdown h3s even though they still render as h2 visually", () => {

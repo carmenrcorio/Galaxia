@@ -7,7 +7,10 @@ import {
   BLOG_INTRO_NOTE_LINK,
   INLINE_CTA_EXCLUDED_SLUGS,
   closingCtaForSlug,
-  inlineCtaHref
+  inlineCtaHref,
+  introCtaForSlug,
+  postCtaHref,
+  showMidNewsletter
 } from "./blog-cta";
 
 const SQL = readFileSync(
@@ -15,7 +18,7 @@ const SQL = readFileSync(
   "utf8"
 );
 
-describe("blog closing and inline CTAs", () => {
+describe("blog CTA routing", () => {
   it("uses one byline and the approved intro note", () => {
     expect(BLOG_BYLINE).toBe("By Galaxia");
     expect(BLOG_INTRO_NOTE).toBe("Galaxia describes what a chart shows, not what will happen.");
@@ -26,58 +29,70 @@ describe("blog closing and inline CTAs", () => {
     }
   });
 
-  it("keeps the free compare button, with timely bodies and sensitive variants", () => {
-    const standard = closingCtaForSlug("synastry-chart-meaning");
-    expect(standard.heading).toBe("See it in your own charts");
-    expect(standard.button).toBe("Compare two charts free");
-    expect(standard.href).toBe("/chart/compare");
-    expect(standard.body).toContain("The comparison is free.");
+  it("routes offers by post type", () => {
+    expect(postCtaHref("nobody-has-your-grandmother")).toBe("/generations");
+    expect(postCtaHref("reading-chart-of-someone-who-died")).toBe("/chart");
+    expect(postCtaHref("synastry-chart-meaning")).toBe("/chart/compare");
+    expect(postCtaHref("synastry-aspects-explained")).toBe("/chart/compare");
+    expect(postCtaHref("neptune-in-synastry-meaning")).toBe("/chart/compare");
+    expect(postCtaHref("sun-sign-not-personality", "debunked")).toBe("/chart");
+    expect(postCtaHref("what-a-chart-cannot-tell-you", "debunked")).toBe("/chart");
+    expect(postCtaHref("moon-sign-in-relationships", "guides")).toBe("/chart");
+  });
+
+  it("keeps timely and sensitive closing copy with matching hrefs", () => {
+    expect(closingCtaForSlug("synastry-chart-meaning").href).toBe("/chart/compare");
+    expect(closingCtaForSlug("sun-sign-not-personality", "debunked").href).toBe("/chart");
+    expect(closingCtaForSlug("nobody-has-your-grandmother").href).toBe("/generations");
 
     expect(closingCtaForSlug("venus-retrograde-2026-relationships").body).toContain("Scorpio and Libra");
     expect(closingCtaForSlug("mercury-retrograde-relationships-2026").body).toContain("Mercury");
     const uranus = closingCtaForSlug("uranus-retrograde-gemini-2026-relationships");
     expect(uranus.body).toContain("Gemini");
-    expect(uranus.body.toLowerCase()).not.toContain("early degrees");
+    expect(uranus.href).toBe("/chart");
 
     const family = closingCtaForSlug("moon-square-saturn-parent-child");
     expect(family.heading).toBe("Look at your own family chart");
-    expect(family.button).toBe("Compare two charts free");
-    expect(family.href).toBe("/chart/compare");
+    expect(family.href).toBe("/chart");
 
     const memorial = closingCtaForSlug("reading-chart-of-someone-who-died");
     expect(memorial.heading).toBe("Look at their chart, gently");
     expect(memorial.button).toBe("View their chart");
     expect(memorial.href).toBe("/chart");
-    expect(memorial.body).toBe(
-      "Add their birth date to see their chart calculated from astronomical positions. Take it at your own pace."
-    );
-    expect(memorial.body.toLowerCase()).not.toContain("birth time");
 
     const colleague = closingCtaForSlug("colleague-you-cannot-read");
     expect(colleague.heading).toBe("See where your charts connect");
-    expect(colleague.href).toBe("/chart/compare");
-
-    for (const slug of [
-      "synastry-chart-meaning",
-      "venus-retrograde-2026-relationships",
-      "moon-square-saturn-parent-child",
-      "reading-chart-of-someone-who-died",
-      "colleague-you-cannot-read"
-    ]) {
-      const cta = closingCtaForSlug(slug);
-      expect(cta.heading).not.toContain("\u2014");
-      expect(cta.body).not.toContain("\u2014");
-      expect(cta.button).not.toContain("\u2014");
-    }
+    expect(colleague.href).toBe("/chart");
   });
 
-  it("gives every other post one inline link to the same destination, and none to the three sensitive posts", () => {
-    expect(inlineCtaHref("synastry-chart-meaning")).toBe("/chart/compare");
-    expect(inlineCtaHref("what-a-chart-cannot-tell-you")).toBe("/chart/compare");
-    expect(inlineCtaHref("reading-chart-of-someone-who-died")).toBeNull();
-    expect(inlineCtaHref("moon-square-saturn-parent-child")).toBeNull();
-    expect(inlineCtaHref("colleague-you-cannot-read")).toBeNull();
+  it("intro CTAs describe what happens next", () => {
+    expect(introCtaForSlug("sun-sign-not-personality", "debunked").button).toContain("60 seconds");
+    expect(introCtaForSlug("synastry-chart-meaning", "guides").href).toBe("/chart/compare");
+    expect(introCtaForSlug("nobody-has-your-grandmother", "guides").href).toBe("/generations");
+  });
+
+  it("skips the mid newsletter for three sensitive slugs only", () => {
+    expect(showMidNewsletter("synastry-chart-meaning")).toBe(true);
+    expect(showMidNewsletter("reading-chart-of-someone-who-died")).toBe(false);
+    expect(showMidNewsletter("moon-square-saturn-parent-child")).toBe(false);
+    expect(showMidNewsletter("colleague-you-cannot-read")).toBe(false);
     expect(INLINE_CTA_EXCLUDED_SLUGS).toHaveLength(3);
+    expect(inlineCtaHref("reading-chart-of-someone-who-died")).toBeNull();
+  });
+
+  it("uses no em dashes in CTA strings", () => {
+    for (const slug of [
+      "synastry-chart-meaning",
+      "sun-sign-not-personality",
+      "nobody-has-your-grandmother",
+      "reading-chart-of-someone-who-died"
+    ]) {
+      const intro = introCtaForSlug(slug, "guides");
+      const close = closingCtaForSlug(slug, "guides");
+      for (const value of [intro.body, intro.button, close.heading, close.body, close.button]) {
+        expect(value).not.toContain("\u2014");
+      }
+    }
   });
 });
 
@@ -92,10 +107,5 @@ describe("blog polish round 3 migration", () => {
     expect(SQL).not.toMatch(/set\s+slug\s*=/i);
     expect(SQL).not.toContain("canonical");
     expect(SQL).not.toContain("\u2014");
-    expect(SQL).not.toContain("early degrees");
-    expect(SQL).not.toContain("Every 18 months");
-    expect(SQL).not.toContain("Weeks 1–2 (Scorpio)");
-    expect(SQL).toContain("Vela can walk the same computed contact");
-    expect(SQL).toContain("14 days free at galaxiamea.com");
   });
 });

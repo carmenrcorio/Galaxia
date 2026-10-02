@@ -6,8 +6,11 @@ import { slugify } from "./slugify";
  * `server-only` / Supabase.
  */
 
-/** Sentinel injected into markdown, then swapped for the mid-post CTA. Never authored into post bodies. */
-export const MID_CTA_MARKER = "%%GALAXIA_MID_CTA%%";
+/** Sentinel injected into markdown, then swapped for the mid-post newsletter box. Never authored into post bodies. */
+export const MID_NEWSLETTER_MARKER = "%%GALAXIA_MID_NEWSLETTER%%";
+
+/** @deprecated Renamed to MID_NEWSLETTER_MARKER. */
+export const MID_CTA_MARKER = MID_NEWSLETTER_MARKER;
 
 /** Sentinel swapped for the supporting figure. Never authored into post bodies. */
 export const FIGURE_MARKER = "%%GALAXIA_FIGURE%%";
@@ -157,7 +160,30 @@ function insertMarkerBefore(lines: string[], index: number, marker: string): str
  * Never writes the CTA into the stored body: the renderer injects this
  * at read time.
  */
-export function injectMidPostCtaMarker(markdown: string, marker = MID_CTA_MARKER): string {
+export function splitMarkdownBeforeFirstH2(markdown: string): { before: string; fromFirstH2: string } {
+  const lines = markdown.split("\n");
+  let inFence = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? "";
+    if (line.trimStart().startsWith("```")) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    if (/^## [^#]/.test(line)) {
+      const before = lines.slice(0, i).join("\n").trimEnd();
+      const fromFirstH2 = lines.slice(i).join("\n");
+      return { before, fromFirstH2 };
+    }
+  }
+  return { before: markdown.trimEnd(), fromFirstH2: "" };
+}
+
+export function injectMidNewsletterMarker(markdown: string, marker = MID_NEWSLETTER_MARKER): string {
+  return injectMidPostCtaMarker(markdown, marker);
+}
+
+export function injectMidPostCtaMarker(markdown: string, marker = MID_NEWSLETTER_MARKER): string {
   if (markdown.includes(marker)) return markdown;
 
   const lines = markdown.split("\n");

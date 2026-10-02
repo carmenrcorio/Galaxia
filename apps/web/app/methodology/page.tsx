@@ -16,6 +16,7 @@ import {
   METHODOLOGY_SECTIONS,
   METHODOLOGY_TITLE,
   methodologyInterpretationCoverageLines,
+  methodologyNatalAspectCoverageSentence,
   methodologyOrbRows,
 } from "../../lib/methodology-copy";
 import { RELATED_LINKS } from "../../lib/nav-links";
@@ -50,8 +51,21 @@ export const metadata: Metadata = {
 };
 
 export default function MethodologyPage() {
-  const { ephemeris, houses, orbs, applying, interpretationLibrary, omissions } = METHODOLOGY_SECTIONS;
+  const {
+    limits,
+    precision,
+    ephemeris,
+    houses,
+    orbs,
+    applying,
+    readings,
+    interpretationLibrary,
+    vela,
+    accuracy,
+    omissions,
+  } = METHODOLOGY_SECTIONS;
   const orbRows = methodologyOrbRows();
+  const coverageSentence = methodologyNatalAspectCoverageSentence();
   const interpretationLines = methodologyInterpretationCoverageLines();
 
   return (
@@ -63,6 +77,26 @@ export default function MethodologyPage() {
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title={METHODOLOGY_H1} lede={METHODOLOGY_LEDE} />
         <div className="container methodology-page">
+          <section>
+            <h2 id={limits.id} className="methodology-h2">
+              {limits.heading}
+            </h2>
+            {limits.paragraphs.map((paragraph) => (
+              <p key={paragraph} className="methodology-p">
+                {paragraph}
+              </p>
+            ))}
+          </section>
+          <section>
+            <h2 id={precision.id} className="methodology-h2">
+              {precision.heading}
+            </h2>
+            {precision.paragraphs.map((paragraph) => (
+              <p key={paragraph} className="methodology-p">
+                {paragraph}
+              </p>
+            ))}
+          </section>
           <section>
             <h2 id={ephemeris.id} className="methodology-h2">
               {ephemeris.heading}
@@ -98,17 +132,13 @@ export default function MethodologyPage() {
                 <thead>
                   <tr>
                     <th scope="col">{orbs.columnHeaders.aspect}</th>
-                    <th scope="col">{orbs.columnHeaders.luminaries}</th>
-                    <th scope="col">{orbs.columnHeaders.personal}</th>
-                    <th scope="col">{orbs.columnHeaders.outer}</th>
+                    <th scope="col">{orbs.columnHeaders.orb}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {orbRows.map((row) => (
                     <tr key={row.type}>
                       <th scope="row">{row.label}</th>
-                      <td>{row.orb}°</td>
-                      <td>{row.orb}°</td>
                       <td>{row.orb}°</td>
                     </tr>
                   ))}
@@ -128,10 +158,39 @@ export default function MethodologyPage() {
             ))}
           </section>
           <section>
+            <h2 id={readings.id} className="methodology-h2">
+              {readings.heading}
+            </h2>
+            <p className="methodology-p">{readings.intro}</p>
+            <p className="methodology-p">{readings.founderReview}</p>
+            <p className="methodology-p">{readings.coverageNote}</p>
+            <p className="methodology-p">{coverageSentence}</p>
+          </section>
+          <section>
             <h2 id={interpretationLibrary.id} className="methodology-h2">
               {interpretationLibrary.heading}
             </h2>
             {interpretationLines.map((paragraph) => (
+              <p key={paragraph} className="methodology-p">
+                {paragraph}
+              </p>
+            ))}
+          </section>
+          <section>
+            <h2 id={vela.id} className="methodology-h2">
+              {vela.heading}
+            </h2>
+            {vela.paragraphs.map((paragraph) => (
+              <p key={paragraph} className="methodology-p">
+                {paragraph}
+              </p>
+            ))}
+          </section>
+          <section>
+            <h2 id={accuracy.id} className="methodology-h2">
+              {accuracy.heading}
+            </h2>
+            {accuracy.paragraphs.map((paragraph) => (
               <p key={paragraph} className="methodology-p">
                 {paragraph}
               </p>

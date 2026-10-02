@@ -10,7 +10,9 @@ import {
 } from "../../components/marketing/for-work-sections";
 import { MarketingNav } from "../../components/marketing/marketing-nav";
 import { RelatedLinks } from "../../components/marketing/related-links";
+import { MarketingAtfCta } from "../../components/marketing/marketing-atf-cta";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
+import { FOR_WORK_ATF_CTA } from "../../lib/marketing-page-cta";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { RELATED_LINKS } from "../../lib/nav-links";
@@ -61,6 +63,7 @@ export default function ForWorkPage() {
       <MarketingNav />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <ForWorkHero />
+        <MarketingAtfCta cta={FOR_WORK_ATF_CTA} />
         <ForWorkMoments />
         <ForWorkGenerational />
         <ForWorkWhatThisIsNot />

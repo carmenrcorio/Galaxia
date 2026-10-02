@@ -6,7 +6,9 @@ import { MarketingNav } from "../../components/marketing/marketing-nav";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { RemembranceSection } from "../../components/marketing/remembrance-section";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
+import { MarketingAtfCta } from "../../components/marketing/marketing-atf-cta";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
+import { WHY_GALAXIA_ATF_CTA } from "../../lib/marketing-page-cta";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { WhyNotSection } from "../../components/marketing/why-not-section";
@@ -61,6 +63,7 @@ export default function WhyGalaxiaPage() {
       <MarketingNav />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Why Galaxia" lede={DESCRIPTION} />
+        <MarketingAtfCta cta={WHY_GALAXIA_ATF_CTA} />
         <WhySection />
         <RemembranceSection />
         <WhyNotSection />

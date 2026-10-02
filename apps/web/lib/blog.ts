@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
+import { parseInlineImages, type PostInlineImage } from "./blog-inline-images";
 import { applyCurlyQuotes } from "./curly-quotes";
 import { publicEnv } from "./env";
 
@@ -77,6 +78,8 @@ export interface BlogPost {
   aboutGalaxia: boolean;
   /** ISO timestamp — `updated_at`, maintained by Postgres on every row write. Used as the Article JSON-LD `dateModified`. */
   updatedAt: string;
+  heroImageCredit: string | null;
+  inlineImages: PostInlineImage[];
 }
 
 /** FOUNDER-REVIEW: card tag for product-pitch posts. */
@@ -107,7 +110,7 @@ const POST_FIELDS_BASE =
 
 /** Includes Phase 1 columns. Readers fall back to POST_FIELDS_BASE if the migration is not applied yet, so a deploy cannot 500 the blog. */
 const POST_FIELDS = `${POST_FIELDS_BASE}, is_timely, expires_at`;
-const POST_FIELDS_FULL = `${POST_FIELDS}, related_slugs, method_note, about_galaxia`;
+const POST_FIELDS_FULL = `${POST_FIELDS}, related_slugs, method_note, about_galaxia, hero_image_credit, inline_images`;
 
 function timelyColumnsMissing(message: string): boolean {
   return /is_timely|expires_at/i.test(message);
@@ -115,6 +118,10 @@ function timelyColumnsMissing(message: string): boolean {
 
 function phase2ColumnsMissing(message: string): boolean {
   return /related_slugs|method_note|about_galaxia/i.test(message);
+}
+
+function phaseImageColumnsMissing(message: string): boolean {
+  return /hero_image_credit|inline_images/i.test(message);
 }
 
 function curl(value: string | null): string | null {
@@ -146,6 +153,8 @@ interface PostRow {
   related_slugs?: string[] | null;
   method_note?: string | null;
   about_galaxia?: boolean | null;
+  hero_image_credit?: string | null;
+  inline_images?: unknown;
 }
 
 function toBlogPost(row: PostRow): BlogPost {
@@ -172,7 +181,9 @@ function toBlogPost(row: PostRow): BlogPost {
     expiresAt: row.expires_at ?? null,
     relatedSlugs: Array.isArray(row.related_slugs) ? row.related_slugs : null,
     methodNote: curl(row.method_note ?? null),
-    aboutGalaxia: row.about_galaxia === true
+    aboutGalaxia: row.about_galaxia === true,
+    heroImageCredit: curl(row.hero_image_credit ?? null),
+    inlineImages: parseInlineImages(row.inline_images)
   };
 }
 
@@ -208,6 +219,9 @@ export async function getPublishedPosts(): Promise<BlogPost[]> {
   const run = (fields: string) =>
     supabase.from("posts").select(fields).eq("status", "published").order("published_at", { ascending: false });
   let { data, error } = await run(POST_FIELDS_FULL);
+  if (error && phaseImageColumnsMissing(error.message)) {
+    ({ data, error } = await run(`${POST_FIELDS}, related_slugs, method_note, about_galaxia`));
+  }
   if (error && phase2ColumnsMissing(error.message)) {
     ({ data, error } = await run(POST_FIELDS));
   }
@@ -229,6 +243,9 @@ export async function getPublishedPostsByCategory(category: BlogCategorySlug): P
       .eq("category", category)
       .order("published_at", { ascending: false });
   let { data, error } = await run(POST_FIELDS_FULL);
+  if (error && phaseImageColumnsMissing(error.message)) {
+    ({ data, error } = await run(`${POST_FIELDS}, related_slugs, method_note, about_galaxia`));
+  }
   if (error && phase2ColumnsMissing(error.message)) {
     ({ data, error } = await run(POST_FIELDS));
   }
@@ -245,6 +262,9 @@ export async function getPublishedPost(slug: string): Promise<BlogPost | null> {
   const run = (fields: string) =>
     supabase.from("posts").select(fields).eq("status", "published").eq("slug", slug).maybeSingle();
   let { data, error } = await run(POST_FIELDS_FULL);
+  if (error && phaseImageColumnsMissing(error.message)) {
+    ({ data, error } = await run(`${POST_FIELDS}, related_slugs, method_note, about_galaxia`));
+  }
   if (error && phase2ColumnsMissing(error.message)) {
     ({ data, error } = await run(POST_FIELDS));
   }

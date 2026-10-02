@@ -9,7 +9,7 @@ import { MARKETING_NAV_SIGNUP, PRICING_FREE_CHART_CTA } from "../../lib/nav-link
 export function PricingSection() {
   return (
     <section className="container" id="pricing">
-      <div className="price-wrap">
+      <div className="price-wrap" id="plans">
         <div className="price-cards">
           <div className="pcard glass-card">
                         <div className="pcard-name">Monthly</div>

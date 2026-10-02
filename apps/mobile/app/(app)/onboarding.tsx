@@ -497,6 +497,10 @@ function BirthFields({
           {input.precision === "exact" ? (
             <>
               <Text style={helperLabelStyle}>Birth time (24h): hour · minute</Text>
+              {/* FOUNDER-REVIEW: why birth time */}
+              <Text style={helperTextStyle}>
+                Rising sign and house positions need your birth time. Without it, we keep a date-only chart.
+              </Text>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 <TextInput
                   value={input.hour != null ? String(input.hour) : ""}
@@ -523,6 +527,11 @@ function BirthFields({
       <Text style={{ color: tokens.colors.cream, fontWeight: "600" }}>
         Birth place {input.precision === "exact" ? "(required for exact time)" : "(optional)"}
       </Text>
+      {input.precision === "exact" ? (
+        <Text style={helperTextStyle}>
+          Birth place sets the time zone and house calculation for an exact-time chart.
+        </Text>
+      ) : null}
       <TextInput
         value={cityQuery}
         onChangeText={setCityQuery}

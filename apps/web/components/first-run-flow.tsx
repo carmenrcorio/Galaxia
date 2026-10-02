@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AddPersonForm, AskAfterAdd, type AddPersonSavedInfo } from "./add-person-form";
 import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
+import { FormPrivacyReassurance } from "./form-privacy-reassurance";
 import { Spinner } from "./spinner";
 import {
   readFirstRunProfile,
@@ -417,6 +418,9 @@ export function FirstRunFlow() {
                     {FIRST_RUN_COPY.birthNoDeferral}
                   </p>
                 </div>
+                <div style={{ marginBottom: 14 }}>
+                  <FormPrivacyReassurance />
+                </div>
 
                 {userId ? (
                   <AddPersonForm
@@ -527,7 +531,10 @@ export function FirstRunFlow() {
                   placeholder={FIRST_RUN_COPY.youNamePlaceholder}
                   style={{ marginBottom: 12, borderRadius: 14 }}
                 />
-                <BirthFields input={selfInput} onChange={setSelfInput} idPrefix="self" />
+                <BirthFields input={selfInput} onChange={setSelfInput} idPrefix="self" showWhyTime showWhyPlace />
+                <div style={{ marginTop: 10 }}>
+                  <FormPrivacyReassurance />
+                </div>
 
                 <button
                   className="btn-primary"

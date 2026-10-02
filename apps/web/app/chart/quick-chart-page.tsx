@@ -23,8 +23,11 @@ import {
 import { isMinorForSafety, placementAnchorId } from "@galaxia/core";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { BirthDateSelects } from "../../components/birth-date-selects";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../components/birth-fields";
 import { ChartLeadCapture } from "../../components/chart-lead-capture";
+import { ChartSharpenPanel, chartNeedsSharpen } from "../../components/chart-sharpen-panel";
+import { FormPrivacyReassurance } from "../../components/form-privacy-reassurance";
 import { ChartImageExport, chartExportFilename } from "../../components/chart-image-export";
 import { ChartPdfExport } from "../../components/chart-pdf-export";
 import { ChartWheel } from "../../components/chart-wheel";
@@ -67,6 +70,8 @@ export default function QuickChartPage() {
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [fromShareLink, setFromShareLink] = useState(false);
+  const [showAdvancedBirth, setShowAdvancedBirth] = useState(false);
+  const [sharpenDismissed, setSharpenDismissed] = useState(false);
 
   // Offer the logged-in user their own birth data as a pre-fill for the single
   // chart, mirroring how /chart/compare pre-fills Person A. Only a suggestion —
@@ -216,7 +221,25 @@ export default function QuickChartPage() {
                 Shown only to you. Never saved or shared.
               </p>
             </div>
-            <BirthFields input={input} onChange={setInput} />
+            <p className="eyebrow" style={{ margin: 0 }}>Step 1 of 3</p>
+            <BirthDateSelects
+              idPrefix="quick-chart"
+              month={input.month}
+              day={input.day}
+              year={input.year}
+              onMonthChange={(month) => setInput({ ...input, precision: "date", month })}
+              onDayChange={(day) => setInput({ ...input, precision: "date", day })}
+              onYearChange={(year) => setInput({ ...input, precision: "date", year })}
+            />
+            <FormPrivacyReassurance />
+            <details open={showAdvancedBirth} onToggle={(e) => setShowAdvancedBirth((e.target as HTMLDetailsElement).open)}>
+              <summary className="helper-text" style={{ cursor: "pointer" }}>
+                Year only, exact time, or city now
+              </summary>
+              <div style={{ marginTop: 10 }}>
+                <BirthFields input={input} onChange={setInput} showWhyTime showWhyPlace />
+              </div>
+            </details>
             <button className="btn-primary" onClick={() => runChart(input)} disabled={loading} style={{ gap: 8, justifySelf: "start" }}>
               {loading && <Spinner size={13} color="#1a1206" />}
               {loading ? "Computing…" : "See the chart"}
@@ -273,7 +296,23 @@ export default function QuickChartPage() {
             </Link>
           </section>
 
-          {!viewer.loading && !viewer.userId ? <ChartLeadCapture chartData={input} /> : null}
+          {!viewer.loading && !viewer.userId ? <ChartLeadCapture chartData={input} source="chart" /> : null}
+
+          {!sharpenDismissed && chartNeedsSharpen(input) ? (
+            <>
+              <ChartSharpenPanel
+                input={input}
+                onChange={setInput}
+                applying={loading}
+                onApply={(next) => {
+                  void runChart(next);
+                }}
+              />
+              <button type="button" className="pill-link" style={{ fontSize: ".78rem", marginTop: 8 }} onClick={() => setSharpenDismissed(true)}>
+                Skip sharpening for now
+              </button>
+            </>
+          ) : null}
 
           <section className="glass-card fade-in fade-in-delay-1" style={{ marginTop: 16 }}>
             <button className="pill-link" onClick={() => setExpanded((e) => !e)} style={{ fontSize: ".82rem", marginBottom: expanded ? 12 : 0 }}>

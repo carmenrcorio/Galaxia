@@ -8,6 +8,7 @@ import {
   normalizeChartLeadEmail,
   parseChartLeadBirthInput,
 } from "../../../lib/chart-lead";
+import { type ChartLeadSource, upsertChartLead } from "../../../lib/chart-lead-upsert";
 import { missingEnvMessage, publicEnv } from "../../../lib/env";
 import { privateEnv } from "../../../lib/env.server";
 import { getClientKeyFromHeaders, isRateLimited } from "../../../lib/rate-limit";
@@ -17,6 +18,17 @@ export const runtime = "nodejs";
 interface ChartLeadBody {
   email?: unknown;
   chartData?: unknown;
+  source?: unknown;
+  consentMarketing?: unknown;
+}
+
+const SOURCES: ChartLeadSource[] = ["homepage", "chart", "blog", "welcome", "free_chart"];
+
+function parseSource(value: unknown): ChartLeadSource {
+  if (typeof value === "string" && (SOURCES as string[]).includes(value)) {
+    return value as ChartLeadSource;
+  }
+  return "chart";
 }
 
 export async function POST(req: Request) {
@@ -39,13 +51,15 @@ export async function POST(req: Request) {
   }
 
   let chartData;
-  try {
-    chartData = parseChartLeadBirthInput(body.chartData);
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Invalid birth data." },
-      { status: 400 }
-    );
+  if (body.chartData !== undefined && body.chartData !== null) {
+    try {
+      chartData = parseChartLeadBirthInput(body.chartData);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Invalid birth data." },
+        { status: 400 }
+      );
+    }
   }
 
   if (!publicEnv.supabaseUrl || !privateEnv.serviceRole) {
@@ -55,19 +69,18 @@ export async function POST(req: Request) {
   const supabase = createClient(publicEnv.supabaseUrl, privateEnv.serviceRole, {
     auth: { persistSession: false },
   });
-  const { error } = await supabase.from("chart_leads").upsert(
-    {
-      email,
-      chart_data: chartData,
-      source: "free_chart",
-      subscribed: true,
-    },
-    { onConflict: "email" }
-  );
 
-  if (error) {
-    // FOUNDER-REVIEW: "Your alerts could not be saved. Try again."
-    return NextResponse.json({ error: "Your alerts could not be saved. Try again." }, { status: 500 });
+  const result = await upsertChartLead(supabase, {
+    email,
+    source: parseSource(body.source),
+    chartData,
+    subscribed: true,
+    consentMarketing: body.consentMarketing === true,
+  });
+
+  if (!result.ok) {
+    // FOUNDER-REVIEW: "Your chart could not be saved. Try again."
+    return NextResponse.json({ error: "Your chart could not be saved. Try again." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, message: CHART_LEAD_CONFIRMATION });

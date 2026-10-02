@@ -69,6 +69,7 @@ export async function POST(req: Request) {
         .from("chart_leads")
         .select("id, email, chart_data, drip_step, created_at, unsubscribe_token")
         .eq("subscribed", true)
+        .not("chart_data", "is", null)
         .is("converted_at", null)
         .lt("drip_step", 3)
         .order("id", { ascending: true })

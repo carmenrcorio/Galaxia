@@ -9,6 +9,7 @@ const route = read("apps/web/app/api/cron/chart-lead-drip/route.ts");
 const unsubscribe = read("apps/web/app/api/chart-lead/unsubscribe/route.ts");
 const workflow = read(".github/workflows/chart-lead-drip.yml");
 const migration = read("supabase/migrations/20260926235914_chart_lead_drip_conversion.sql");
+const marketingMigration = read("supabase/migrations/20261002180200_chart_leads_marketing_consent.sql");
 
 describe("chart lead drip cron wiring", () => {
   it("fails closed behind the shared CRON_SECRET bearer pattern", () => {
@@ -24,6 +25,7 @@ describe("chart lead drip cron wiring", () => {
     expect(reconcileIndex).toBeGreaterThan(-1);
     expect(reconcileIndex).toBeLessThan(selectIndex);
     expect(route).toContain('.eq("subscribed", true)');
+    expect(route).toContain('.not("chart_data", "is", null)');
     expect(route).toContain('.is("converted_at", null)');
     expect(route).toContain('.lt("drip_step", 3)');
   });
@@ -65,6 +67,14 @@ describe("chart lead unsubscribe wiring", () => {
     expect(unsubscribe).toContain("export async function POST");
     expect(unsubscribe).not.toContain("getUser");
     expect(unsubscribe).not.toContain("CRON_SECRET");
+  });
+});
+
+describe("chart lead marketing migration", () => {
+  it("adds consent_marketing, nullable chart_data, and converted_user_id", () => {
+    expect(marketingMigration).toContain("consent_marketing boolean not null default false");
+    expect(marketingMigration).toContain("alter column chart_data drop not null");
+    expect(marketingMigration).toContain("converted_user_id uuid references auth.users(id)");
   });
 });
 

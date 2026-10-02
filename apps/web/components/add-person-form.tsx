@@ -224,7 +224,14 @@ export function AddPersonForm({
         </p>
       </div>
 
-      <BirthFields input={birth} onChange={setBirth} allowNone={allowDeferred} idPrefix={idPrefix} />
+      <BirthFields
+        input={birth}
+        onChange={setBirth}
+        allowNone={allowDeferred}
+        idPrefix={idPrefix}
+        showWhyTime
+        showWhyPlace
+      />
       {allowAsk && !minor ? (
         <div style={{ marginTop: 12 }}>
           <CustomCheck

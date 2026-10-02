@@ -3,17 +3,27 @@ import { buildBirthInput, type BirthFormInput } from "@galaxia/astro";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL_LENGTH = 254;
 
-// FOUNDER-REVIEW: "You are in. We will reach out when something moves."
-export const CHART_LEAD_CONFIRMATION = "You are in. We will reach out when something moves.";
+// FOUNDER-REVIEW: "Saved. We will email your chart and note when transits matter for it."
+export const CHART_LEAD_CONFIRMATION =
+  "Saved. We will email your chart and note when transits matter for it.";
 // FOUNDER-REVIEW: "Enter a valid email address."
 export const CHART_LEAD_INVALID_EMAIL = "Enter a valid email address.";
 // FOUNDER-REVIEW: "Too many requests. Try again in a minute."
 export const CHART_LEAD_RATE_LIMITED = "Too many requests. Try again in a minute.";
-// FOUNDER-REVIEW: "You are unsubscribed from transit alerts for this chart."
-export const CHART_LEAD_UNSUBSCRIBED = "You are unsubscribed from transit alerts for this chart.";
+// FOUNDER-REVIEW: chart email unsubscribe confirmation.
+export const CHART_LEAD_UNSUBSCRIBED =
+  "You are unsubscribed from chart and transit emails for this address. Galaxia Notes are unchanged unless you opt out separately.";
 
 export function chartLeadUnsubscribeUrl(siteUrl: string, token: string): string {
   return `${siteUrl.replace(/\/$/, "")}/api/chart-lead/unsubscribe?token=${encodeURIComponent(token)}`;
+}
+
+export function chartLeadNewsletterUnsubscribeUrl(siteUrl: string, token: string): string {
+  return `${siteUrl.replace(/\/$/, "")}/api/chart-lead/newsletter/unsubscribe?token=${encodeURIComponent(token)}`;
+}
+
+export function chartLeadPreferencesUrl(siteUrl: string, token: string): string {
+  return `${siteUrl.replace(/\/$/, "")}/api/chart-lead/preferences?token=${encodeURIComponent(token)}`;
 }
 
 export function normalizeChartLeadEmail(value: string): string {

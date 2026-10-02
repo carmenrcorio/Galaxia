@@ -46,7 +46,7 @@ export function QuickChartResultActions({
       </div>
 
       {!viewer.loading && !viewer.userId ? (
-        <ChartLeadCapture chartData={chartData} />
+        <ChartLeadCapture chartData={chartData} source="homepage" />
       ) : null}
     </>
   );

@@ -23,6 +23,7 @@ import {
   CHART_PRECISION_TIERS,
 } from "@galaxia/core";
 import { useMemo, useState } from "react";
+import { BIRTH_SKIP_TIME_LABEL, BIRTH_WHY_PLACE, BIRTH_WHY_TIME } from "../lib/birth-form-copy";
 import { BirthDateSelects, birthSelectClass } from "./birth-date-selects";
 import { Spinner } from "./spinner";
 
@@ -39,15 +40,39 @@ export const BASE_BIRTH_INPUT: BirthFormInput = {
   birthPlace: "", lat: "", lng: "", tzOffsetMin: undefined, tzId: undefined
 };
 
+export type BirthFieldsSections = {
+  precision?: boolean;
+  date?: boolean;
+  time?: boolean;
+  place?: boolean;
+};
+
 export function BirthFields({
-  input, onChange, allowNone = false, idPrefix = "birth",
+  input,
+  onChange,
+  allowNone = false,
+  idPrefix = "birth",
+  sections,
+  showWhyTime = false,
+  showWhyPlace = false,
+  onSkipExactTime,
 }: {
   input: BirthFormInput;
   onChange: (next: BirthFormInput) => void;
   allowNone?: boolean;
   /** Unique prefix so two BirthFields on /chart/compare do not share ids. */
   idPrefix?: string;
+  /** When set, only render selected sections (precision defaults true if omitted). */
+  sections?: BirthFieldsSections;
+  showWhyTime?: boolean;
+  showWhyPlace?: boolean;
+  /** Shown when exact time is visible; keeps date-only precision. */
+  onSkipExactTime?: () => void;
 }) {
+  const showPrecision = sections?.precision ?? true;
+  const showDate = sections?.date ?? true;
+  const showTime = sections?.time ?? true;
+  const showPlace = sections?.place ?? true;
   // Geocoder state
   const [searching, setSearching] = useState(false);
   const [candidates, setCandidates] = useState<GeoCandidate[]>([]);
@@ -136,6 +161,8 @@ export function BirthFields({
     <div style={{ display: "grid", gap: 12 }}>
 
       {/* Precision selector */}
+      {showPrecision ? (
+      <>
       <p className="helper-text">
         {CHART_PRECISION_LADDER_INTRO}
       </p>
@@ -155,9 +182,12 @@ export function BirthFields({
           </button>
         ))}
       </div>
+      </>
+      ) : null}
 
       {/* No birth data yet — nothing more to collect */}
       {input.precision === "none" ? null : input.precision === "year" ? (
+        showDate ? (
         <div>
           <p className="helper-text" style={{ marginBottom: 5 }}>Birth year</p>
           <input
@@ -167,9 +197,11 @@ export function BirthFields({
             placeholder="e.g. 1952"
           />
         </div>
+        ) : null
       ) : (
         <>
           {/* ── Structured date: Month / Day / Year ── */}
+          {showDate ? (
           <div>
             <BirthDateSelects
               idPrefix={idPrefix}
@@ -186,11 +218,17 @@ export function BirthFields({
               </p>
             ) : null}
           </div>
+          ) : null}
 
           {/* ── Exact time: Hour / Minute ── */}
-          {input.precision === "exact" ? (
+          {showTime && input.precision === "exact" ? (
             <div>
               <p className="helper-text" style={{ marginBottom: 5 }}>Birth time (local time at birth place)</p>
+              {showWhyTime ? (
+                <p className="helper-text helper-text--soft" style={{ marginBottom: 8 }}>
+                  {BIRTH_WHY_TIME}
+                </p>
+              ) : null}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                 <select className={birthSelectClass(input.hour)} id={`${idPrefix}-hour`} name={`${idPrefix}-hour`} aria-label="Birth hour" value={input.hour ?? ""} onChange={e => onChange({ ...input, hour: e.target.value !== "" ? parseInt(e.target.value, 10) : undefined })}>
                   <option value="">Hour</option>
@@ -209,14 +247,25 @@ export function BirthFields({
                   ))}
                 </select>
               </div>
+              {onSkipExactTime ? (
+                <button type="button" className="pill-link" style={{ fontSize: ".78rem", marginTop: 8 }} onClick={onSkipExactTime}>
+                  {BIRTH_SKIP_TIME_LABEL}
+                </button>
+              ) : null}
             </div>
           ) : null}
 
           {/* ── City search with disambiguation ── */}
+          {showPlace ? (
           <div>
             <p className="helper-text" style={{ marginBottom: 5 }}>
               {input.precision === "exact" ? "Birth city: required for Ascendant and houses" : "Birth city (optional: improves precision)"}
             </p>
+            {showWhyPlace && input.precision === "exact" ? (
+              <p className="helper-text helper-text--soft" style={{ marginBottom: 8 }}>
+                {BIRTH_WHY_PLACE}
+              </p>
+            ) : null}
 
             {/* If a place is already resolved, show confirmation + clear button */}
             {resolvedPlace ? (
@@ -287,8 +336,10 @@ export function BirthFields({
               </p>
             ) : null}
           </div>
+          ) : null}
 
           {/* Manual coordinate override */}
+          {showPlace ? (
           <details className="helper-text">
             <summary style={{ cursor: "pointer" }}>Enter coordinates manually (advanced)</summary>
             <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
@@ -303,6 +354,7 @@ export function BirthFields({
               </p>
             </div>
           </details>
+          ) : null}
         </>
       )}
     </div>

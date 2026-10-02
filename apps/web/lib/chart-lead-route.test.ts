@@ -12,20 +12,33 @@ vi.mock("./env.server", () => ({
   privateEnv: { serviceRole: "service-role-test-key" },
 }));
 
-const upsert = vi.fn();
-const from = vi.fn(() => ({ upsert }));
+const selectMaybeSingle = vi.fn();
+const update = vi.fn(() => ({ eq: vi.fn().mockResolvedValue({ error: null }) }));
+const insert = vi.fn();
+const from = vi.fn(() => ({
+  select: vi.fn(() => ({
+    eq: vi.fn(() => ({ maybeSingle: selectMaybeSingle })),
+  })),
+  update,
+  insert,
+}));
 
-function request(ip = "203.0.113.5", email = " SKY@example.com ") {
+function request(
+  ip = "203.0.113.5",
+  body: Record<string, unknown> = {
+    email: " SKY@example.com ",
+    chartData: { precision: "date", month: 6, day: 15, year: 1990 },
+    source: "chart",
+    consentMarketing: true,
+  }
+) {
   return new Request("https://galaxiamea.com/api/chart-lead", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-forwarded-for": ip,
     },
-    body: JSON.stringify({
-      email,
-      chartData: { precision: "date", month: 6, day: 15, year: 1990 },
-    }),
+    body: JSON.stringify(body),
   });
 }
 
@@ -33,32 +46,50 @@ describe("POST /api/chart-lead", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     __resetRateLimitStoreForTests();
-    upsert.mockResolvedValue({ error: null });
+    selectMaybeSingle.mockResolvedValue({ data: null, error: null });
+    insert.mockResolvedValue({ error: null });
     vi.mocked(createClient).mockReturnValue({ from } as never);
   });
 
-  it("normalizes and upserts a service-role-only chart lead", async () => {
+  it("inserts a new chart lead with marketing consent", async () => {
     const response = await POST(request());
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       ok: true,
-      message: "You are in. We will reach out when something moves.",
+      message: "Saved. We will email your chart and note when transits matter for it.",
     });
     expect(from).toHaveBeenCalledWith("chart_leads");
-    expect(upsert).toHaveBeenCalledWith(
-      {
-        email: "sky@example.com",
-        chart_data: { precision: "date", month: 6, day: 15, year: 1990 },
-        source: "free_chart",
-        subscribed: true,
-      },
-      { onConflict: "email" }
-    );
+    expect(insert).toHaveBeenCalledWith({
+      email: "sky@example.com",
+      source: "chart",
+      chart_data: { precision: "date", month: 6, day: 15, year: 1990 },
+      subscribed: true,
+      consent_marketing: true,
+    });
+  });
+
+  it("merges chart data onto an existing lead without clearing consent", async () => {
+    selectMaybeSingle.mockResolvedValue({
+      data: { email: "sky@example.com", consent_marketing: false },
+      error: null,
+    });
+    const response = await POST(request("203.0.113.5", {
+      email: "sky@example.com",
+      chartData: { precision: "date", month: 6, day: 15, year: 1990 },
+      source: "homepage",
+      consentMarketing: false,
+    }));
+    expect(response.status).toBe(200);
+    expect(update).toHaveBeenCalledWith({
+      source: "homepage",
+      chart_data: { precision: "date", month: 6, day: 15, year: 1990 },
+      subscribed: true,
+    });
   });
 
   it("rejects invalid email and birth input before writing", async () => {
-    const badEmail = await POST(request("203.0.113.6", "not-an-email"));
+    const badEmail = await POST(request("203.0.113.6", { email: "not-an-email", chartData: { precision: "date", month: 6, day: 15, year: 1990 } }));
     expect(badEmail.status).toBe(400);
 
     const badBirth = new Request("https://galaxiamea.com/api/chart-lead", {
@@ -67,7 +98,7 @@ describe("POST /api/chart-lead", () => {
       body: JSON.stringify({ email: "sky@example.com", chartData: { precision: "none" } }),
     });
     expect((await POST(badBirth)).status).toBe(400);
-    expect(upsert).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
   });
 
   it("enforces the existing 30 requests per minute IP limiter", async () => {

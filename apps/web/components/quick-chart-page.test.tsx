@@ -192,23 +192,25 @@ describe("QuickChartPage anonymous chart lead capture", () => {
       .mockResolvedValueOnce(chartResponse)
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ message: "You are in. We will reach out when something moves." }),
+        json: async () => ({
+          message: "Saved. We will email your chart and note when transits matter for it.",
+        }),
       });
     vi.stubGlobal("fetch", fetchMock);
     window.history.replaceState(null, "", "/chart?pr=date&m=6&d=15&y=1990");
 
     render(<QuickChartPage />);
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Get transit alerts for this chart" })).toBeTruthy();
+      expect(screen.getByRole("heading", { name: "Save this chart and get it by email" })).toBeTruthy();
     });
 
     fireEvent.change(screen.getByRole("textbox", { name: "Email address" }), {
       target: { value: "SKY@example.com" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Send me alerts" }));
+    fireEvent.click(screen.getByRole("button", { name: "Email my chart" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("status").textContent).toContain("You are in.");
+      expect(screen.getByRole("status").textContent).toContain("Saved.");
     });
     const [, request] = fetchMock.mock.calls[1] as [string, RequestInit];
     expect(fetchMock.mock.calls[1]?.[0]).toBe("/api/chart-lead");
@@ -223,6 +225,8 @@ describe("QuickChartPage anonymous chart lead capture", () => {
         lat: "",
         lng: "",
       },
+      source: "chart",
+      consentMarketing: false,
     });
   });
 
@@ -235,6 +239,6 @@ describe("QuickChartPage anonymous chart lead capture", () => {
     await waitFor(() => {
       expect(screen.getByText(chartCompareCtaHeadline())).toBeTruthy();
     });
-    expect(screen.queryByRole("heading", { name: "Get transit alerts for this chart" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Save this chart and get it by email" })).toBeNull();
   });
 });

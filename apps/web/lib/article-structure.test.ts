@@ -175,14 +175,14 @@ describe("post template wiring", () => {
   const card = readFileSync(CARD, "utf8");
   const css = readFileSync(CSS, "utf8");
 
-  it("renders the byline under the title and the hero under the byline, with CLS-safe 1200x630 sizing", () => {
+  it("renders the byline under the title and the hero under the byline, with CLS-safe hero sizing", () => {
     expect(page.indexOf("article-title")).toBeLessThan(page.indexOf("article-byline"));
-    expect(page.indexOf("article-byline")).toBeLessThan(page.indexOf("article-hero"));
-    expect(page).toContain("width={1200}");
-    expect(page).toContain("height={630}");
+    expect(page.indexOf("article-byline")).toBeLessThan(page.indexOf("<ArticleHero"));
+    expect(page).toContain("<ArticleHero");
     expect(css).toMatch(
-      /\.article-hero img \{[\s\S]*max-width:\s*100%;[\s\S]*aspect-ratio:\s*1200\s*\/\s*630/
+      /\.article-hero img[\s\S]*aspect-ratio:\s*1200\s*\/\s*630/
     );
+    expect(css).toContain(".article-hero--fallback");
   });
 
   it("renders byline, updated date, and read time on every post", () => {
@@ -219,11 +219,12 @@ describe("post template wiring", () => {
     expect(page.indexOf("ChartReadingCapture")).toBeLessThan(page.indexOf("article-read-next"));
   });
 
-  it("injects one mid-post CTA through ArticleMarkdown, and skips it for the sensitive slugs", () => {
-    expect(page).toContain("midCtaHref={inlineHref ?? undefined}");
-    expect(page).toContain("inlineCtaHref(post.slug)");
-    expect(page).not.toContain(MID_CTA_MARKER);
+  it("injects intro CTA, mid newsletter, and closing CTA on the post template", () => {
+    expect(page).toContain("ArticleIntroCta");
+    expect(page).toContain("showMidNewsletter={midNewsletter}");
     expect(page).toContain("ArticleClosingCta");
+    expect(page).toContain("ArticleHero");
+    expect(page).not.toContain(MID_CTA_MARKER);
   });
 
   it("related cards hide author, date, and read time, and index cards show a date only when timely", () => {

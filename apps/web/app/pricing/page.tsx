@@ -5,7 +5,9 @@ import { MarketingNav } from "../../components/marketing/marketing-nav";
 import { PricingSection } from "../../components/marketing/pricing-section";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
+import { MarketingAtfCta } from "../../components/marketing/marketing-atf-cta";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
+import { PRICING_ATF_CTA } from "../../lib/marketing-page-cta";
 import { SiteFooter } from "../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../components/marketing/webpage-json-ld";
 import { RELATED_LINKS } from "../../lib/nav-links";
@@ -49,6 +51,7 @@ export default function PricingPage() {
       <MarketingNav />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
                 <SectionPageIntro title="One Honest Plan" lede={DESCRIPTION} />
+        <MarketingAtfCta cta={PRICING_ATF_CTA} />
         <PricingSection />
         <RelatedLinks heading="Keep exploring" links={RELATED_LINKS.pricing} />
         <CloseSection />

@@ -124,7 +124,7 @@ function StepProgress({ current }: { current: FirstRunStep }) {
             <div
               style={{
                 marginTop: 6,
-                fontSize: ".64rem",
+                fontSize: "max(0.6875rem, 11px)",
                 letterSpacing: ".12em",
                 textTransform: "uppercase",
                 color: state === "todo" ? "var(--mist2)" : "var(--gold)",
@@ -413,7 +413,7 @@ export function FirstRunFlow() {
                   {FIRST_RUN_COPY.birthLede}
                 </p>
                 <div className="teal-callout" style={{ marginBottom: 16 }}>
-                  <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.55, margin: 0 }}>
+                  <p className="helper-text helper-text--soft" style={{ margin: 0 }}>
                     {FIRST_RUN_COPY.birthNoDeferral}
                   </p>
                 </div>
@@ -452,7 +452,7 @@ export function FirstRunFlow() {
                 </h2>
 
                 {subject.refusedRelation ? (
-                  <p className="muted" style={{ marginBottom: 14, fontSize: ".82rem" }}>
+                  <p className="helper-text helper-text--soft" style={{ marginBottom: 14 }}>
                     {FIRST_RUN_COPY.readingRefused(subject.displayName)}
                   </p>
                 ) : null}
@@ -470,11 +470,11 @@ export function FirstRunFlow() {
                         {need.statement}
                       </p>
                     </div>
-                    <p className="muted" style={{ fontSize: ".76rem", marginTop: 10 }}>
+                    <p className="helper-text" style={{ marginTop: 10 }}>
                       {FIRST_RUN_COPY.readingProvenance}
                     </p>
                     {need.generational ? (
-                      <p className="muted" style={{ fontSize: ".76rem", marginTop: 6 }}>
+                      <p className="helper-text" style={{ marginTop: 6 }}>
                         {FIRST_RUN_COPY.readingGenerational}
                       </p>
                     ) : null}

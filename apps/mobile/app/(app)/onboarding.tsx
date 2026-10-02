@@ -56,6 +56,18 @@ const deferredTier: PrecisionTier = {
 
 const relationOptions = GALAXY_RELATION_PICKER_OPTIONS;
 
+const helperTextStyle = {
+  color: tokens.colors.mist,
+  fontSize: 14,
+  lineHeight: 20
+} as const;
+
+const helperLabelStyle = {
+  color: tokens.colors.mist2,
+  fontSize: 14,
+  lineHeight: 20
+} as const;
+
 const baseInput: BirthFormInput = {
   precision: "date",
   month: undefined,
@@ -286,7 +298,7 @@ export default function OnboardingScreen() {
         <Text style={{ color: tokens.colors.cream }}>This person is a minor</Text>
         <Switch value={personMinor} onValueChange={setPersonMinor} />
       </View>
-      <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
+      <Text style={helperTextStyle}>
         Galaxia also automatically protects anyone whose birth date shows they're under 18, even if this stays off.
       </Text>
       <BirthFields input={personInput} onChange={setPersonInput} allowNone />
@@ -448,7 +460,7 @@ function BirthFields({
         />
       ) : (
         <>
-          <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>Month (1–12) · Day · Year</Text>
+          <Text style={helperLabelStyle}>Month (1–12) · Day · Year</Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <TextInput
               value={input.month != null ? String(input.month) : ""}
@@ -476,7 +488,7 @@ function BirthFields({
             />
           </View>
           {input.month ? (
-            <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
+            <Text style={helperTextStyle}>
               {MONTHS[input.month - 1]}
               {displayDate ? ` · ${displayDate}` : ""}
             </Text>
@@ -484,7 +496,7 @@ function BirthFields({
 
           {input.precision === "exact" ? (
             <>
-              <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>Birth time (24h): hour · minute</Text>
+              <Text style={helperLabelStyle}>Birth time (24h): hour · minute</Text>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 <TextInput
                   value={input.hour != null ? String(input.hour) : ""}
@@ -536,7 +548,7 @@ function BirthFields({
           <Text style={{ color: tokens.colors.cream, fontWeight: "700", textAlign: "center" }}>Search places</Text>
         )}
       </Pressable>
-      {searchError ? <Text style={{ color: tokens.colors.rose, fontSize: 12 }}>{searchError}</Text> : null}
+      {searchError ? <Text style={{ color: tokens.colors.rose, fontSize: 14 }}>{searchError}</Text> : null}
       {candidates.map((c) => (
         <Pressable
           key={`${c.label}-${c.lat}-${c.lng}`}
@@ -550,7 +562,7 @@ function BirthFields({
           }}
         >
           <Text style={{ color: tokens.colors.cream }}>{c.label}</Text>
-          <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>
+          <Text style={helperTextStyle}>
             {c.tzId}
             {c.tzOffset != null ? ` · UTC${c.tzOffset >= 0 ? "+" : ""}${(c.tzOffset / 60).toFixed(0)}h` : " · timezone unresolved"}
           </Text>
@@ -558,7 +570,7 @@ function BirthFields({
       ))}
       {resolvedPlace ? (
         <View style={{ gap: 4 }}>
-          <Text style={{ color: tokens.colors.goldSoft, fontSize: 12 }}>
+          <Text style={{ color: tokens.colors.goldSoft, fontSize: 14, lineHeight: 20 }}>
             {input.birthPlace}
             {input.tzId
               ? input.tzOffsetMin != null
@@ -567,17 +579,17 @@ function BirthFields({
               : ""}
           </Text>
           <Pressable onPress={clearPlace}>
-            <Text style={{ color: tokens.colors.mist2, fontSize: 12 }}>Clear place</Text>
+            <Text style={helperLabelStyle}>Clear place</Text>
           </Pressable>
         </View>
       ) : null}
       {needsPlaceForExact ? (
-        <Text style={{ color: tokens.colors.rose, fontSize: 12, lineHeight: 18 }}>
+        <Text style={{ color: tokens.colors.rose, fontSize: 14, lineHeight: 20 }}>
           Exact birth time needs a birth place with a resolved timezone. Without it, local time cannot be converted to UTC and the chart would be wrong.
         </Text>
       ) : null}
       {input.precision !== "exact" ? (
-        <Text style={{ color: tokens.colors.mist2, fontSize: 12, lineHeight: 18 }}>
+        <Text style={helperTextStyle}>
           Date-only and year-only charts do not need a timezone: they stay honestly hedged without Ascendant or houses.
         </Text>
       ) : null}
@@ -614,7 +626,7 @@ function PrecisionPicker({
           <Text style={{ color: input.precision === tier.key ? tokens.colors.gold : tokens.colors.cream, fontWeight: "700" }}>
             {tier.label}
           </Text>
-          <Text style={{ color: tokens.colors.mist, lineHeight: 18 }}>{tier.unlocks}</Text>
+          <Text style={{ color: tokens.colors.mist, fontSize: 14, lineHeight: 20 }}>{tier.unlocks}</Text>
         </Pressable>
       ))}
     </View>

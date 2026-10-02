@@ -92,7 +92,7 @@ export default function PublicIndexScreen() {
     >
       <Text style={{ color: tokens.colors.cream, fontSize: 34, fontWeight: "700" }}>Galaxia</Text>
       {/* FOUNDER-REVIEW: locked homepage tagline, then the sign-in cue. */}
-      <Text style={{ color: tokens.colors.mist, lineHeight: 22 }}>
+      <Text style={{ color: tokens.colors.mist, fontSize: 14, lineHeight: 22 }}>
         Your Life. Your People. Your Galaxy. Sign in to map your inner circle, then show up for each bond with more intention.
       </Text>
       <TextInput
@@ -159,7 +159,7 @@ export default function PublicIndexScreen() {
         >
           {ageConfirmed ? <Text style={{ color: tokens.colors.ink, fontSize: 13, fontWeight: "700" }}>{"\u2713"}</Text> : null}
         </View>
-        <Text style={{ color: tokens.colors.mist, flex: 1, lineHeight: 18 }}>I confirm I am 18 years of age or older.</Text>
+        <Text style={{ color: tokens.colors.mist, flex: 1, fontSize: 14, lineHeight: 20 }}>I confirm I am 18 years of age or older.</Text>
       </TouchableOpacity>
       <Pressable
         onPress={() => authenticate("sign-up")}

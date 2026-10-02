@@ -104,10 +104,10 @@ describe("B2: NatalSignReveal is not on the homepage first-load graph", () => {
     expect(entry).not.toMatch(/from ["'].*natal-sign-reveal["']/);
   });
 
-  it("does not import birth-fields; MONTHS is local", () => {
+  it("does not import birth-fields; date selects are birth-date-selects", () => {
     expect(entry).not.toMatch(/from ["'].*birth-fields["']/);
-    expect(entry).toContain("const MONTHS = [");
-    expect(entry).toContain('"January"');
+    expect(entry).toMatch(/from ["'].*birth-date-selects["']/);
+    expect(entry).toContain("BirthDateSelects");
   });
 });
 

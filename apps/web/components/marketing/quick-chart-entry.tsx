@@ -6,13 +6,13 @@
  * reveals Sun/Moon inline, followed by compact next steps.
  *
  * NatalSignReveal and the result actions load only after a successful submit.
- * MONTHS is local so this module does not import birth-fields, which pulls the
- * astro runtime into the homepage first-load graph.
+ * Date selects come from birth-date-selects (month/day/year only, no astro import).
  */
 
 import type { NatalChart } from "@galaxia/astro";
 import dynamic from "next/dynamic";
 import { useState, type FormEvent } from "react";
+import { BirthDateSelects } from "../birth-date-selects";
 import { Spinner } from "../spinner";
 
 const NatalSignReveal = dynamic(() =>
@@ -21,11 +21,6 @@ const NatalSignReveal = dynamic(() =>
 const QuickChartResultActions = dynamic(() =>
   import("./quick-chart-result-actions").then((mod) => mod.QuickChartResultActions)
 );
-
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
 
 type RevealResult = {
   chart: NatalChart;
@@ -42,14 +37,6 @@ export function QuickChartEntry() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RevealResult | null>(null);
-
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: currentYear - 1799 }, (_, i) => currentYear - i);
-  const monthNum = month ? Number(month) : 0;
-  const yearNum = year ? Number(year) : 0;
-  const daysInMonth =
-    monthNum && yearNum ? new Date(yearNum, monthNum, 0).getDate() : 31;
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   function fullChartHrefFor(m: number, d: number, y: number, displayName: string): string {
     const params = new URLSearchParams({
@@ -129,8 +116,8 @@ export function QuickChartEntry() {
             <div className="quick-chart-entry-copy">
         <span className="eyebrow">Try it free</span>
         <h2 className="quick-chart-entry-h">See how someone you love is built.</h2>
-        <p className="quick-chart-entry-lede">
-                    Enter a name and birthday. No signup. Not a daily horoscope.
+        <p className="quick-chart-entry-lede helper-text helper-text--soft">
+          Enter a name and birthday. No signup. Not a daily horoscope.
         </p>
       </div>
 
@@ -168,47 +155,19 @@ export function QuickChartEntry() {
             aria-label="Name (optional)"
             disabled={loading}
           />
-          <div className="quick-chart-entry-dates">
-            <select
-              className="field"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              aria-label="Birth month"
-              required
-              disabled={loading}
-            >
-              <option value="">Month</option>
-              {MONTHS.map((label, i) => (
-                <option key={label} value={String(i + 1)}>{label}</option>
-              ))}
-            </select>
-            <select
-              className="field"
-              value={day}
-              onChange={(e) => setDay(e.target.value)}
-              aria-label="Birth day"
-              required
-              disabled={loading}
-            >
-              <option value="">Day</option>
-              {days.map((n) => (
-                <option key={n} value={String(n)}>{n}</option>
-              ))}
-            </select>
-            <select
-              className="field"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-              aria-label="Birth year"
-              required
-              disabled={loading}
-            >
-              <option value="">Year</option>
-              {years.map((n) => (
-                <option key={n} value={String(n)}>{n}</option>
-              ))}
-            </select>
-          </div>
+          <BirthDateSelects
+            className="quick-chart-entry-dates"
+            showLabel={false}
+            required
+            disabled={loading}
+            idPrefix="hero-quick-chart"
+            month={month ? Number(month) : undefined}
+            day={day ? Number(day) : undefined}
+            year={year ? Number(year) : undefined}
+            onMonthChange={(m) => setMonth(m != null ? String(m) : "")}
+            onDayChange={(d) => setDay(d != null ? String(d) : "")}
+            onYearChange={(y) => setYear(y != null ? String(y) : "")}
+          />
           <button type="submit" className="btn-primary" disabled={loading} style={{ gap: 8 }}>
             {loading ? <Spinner size={13} color="#1a1206" /> : null}
                         {loading ? "Computing…" : "See the chart"}

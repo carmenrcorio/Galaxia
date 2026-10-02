@@ -69,6 +69,6 @@ describe(".sign-chip__label size", () => {
   it("is above 12px (0.8125rem at a 16px root)", () => {
     const css = readFileSync(resolve(__dirname, "../app/globals.css"), "utf8");
     const match = css.match(/\.sign-chip__label\s*\{[^}]*font-size:\s*([^;]+);/);
-    expect(match?.[1]?.trim()).toBe("0.8125rem");
+    expect(match?.[1]?.trim()).toBe("max(0.875rem, 14px)");
   });
 });

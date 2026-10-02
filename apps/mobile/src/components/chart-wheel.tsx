@@ -12,9 +12,13 @@ import {
   type WheelPlanetGlyph,
 } from "@galaxia/core";
 import { tokens } from "@galaxia/ui";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import Svg, { Circle, G, Line, Path, Text as SvgText } from "react-native-svg";
+import {
+  dismissWheelExploreHint,
+  readWheelExploreHintDismissed,
+} from "../lib/chart-affordance-hints";
 import { fonts } from "../lib/typography";
 import { WheelPlanetSheet } from "./wheel-planet-sheet";
 
@@ -47,10 +51,25 @@ export function ChartWheel({ chart, overlayChart, aspects, interactive = true, p
   const overlayWarnOnce = useRef(false);
   const [focus, setFocus] = useState<{ owner: WheelChartOwner; body: string } | null>(null);
   const [sheetKey, setSheetKey] = useState<string | null>(null);
+  const [exploreHint, setExploreHint] = useState(false);
 
   // Natal only: the bi-wheel packs two rings of glyphs into the same space,
   // where a sheet would speak for whichever chart the reader did not tap.
   const tooltipsOn = interactive && !layout.isOverlay && planetTooltips != null;
+
+  useEffect(() => {
+    if (!tooltipsOn) {
+      setExploreHint(false);
+      return;
+    }
+    void readWheelExploreHintDismissed().then((dismissed) => setExploreHint(!dismissed));
+  }, [tooltipsOn]);
+
+  function noteWheelExplored() {
+    if (!exploreHint) return;
+    void dismissWheelExploreHint();
+    setExploreHint(false);
+  }
 
   function tooltipFor(planet: WheelPlanetGlyph) {
     if (!planetTooltips) return null;
@@ -85,6 +104,7 @@ export function ChartWheel({ chart, overlayChart, aspects, interactive = true, p
 
   function onPlanetPress(owner: WheelChartOwner, body: string, key: string) {
     if (!interactive) return;
+    noteWheelExplored();
     const sameGlyph = focus != null && focus.owner === owner && focus.body === body;
     setFocus(sameGlyph ? null : { owner, body });
     if (!tooltipsOn) return;
@@ -93,6 +113,21 @@ export function ChartWheel({ chart, overlayChart, aspects, interactive = true, p
 
   return (
     <View style={{ width: "100%", maxWidth: 306, alignSelf: "center", paddingHorizontal: 8 }}>
+      {exploreHint ? (
+        <Text
+          style={{
+            color: tokens.colors.mist,
+            fontSize: 14,
+            textAlign: "center",
+            marginBottom: 10,
+            lineHeight: 20,
+            fontFamily: fonts.inter,
+          }}
+        >
+          {/* FOUNDER-REVIEW: Tap a star to explore */}
+          Tap a star to explore
+        </Text>
+      ) : null}
       <View style={{ width: "100%", aspectRatio: 1 }}>
       <Svg
         viewBox={`0 0 ${layout.size} ${layout.size}`}
@@ -211,8 +246,9 @@ export function ChartWheel({ chart, overlayChart, aspects, interactive = true, p
                 cy={py}
                 r={layout.glyphR}
                 fill={layout.planetFill}
-                stroke={wheelColor(strokeToken)}
-                strokeWidth={isFocus ? 1.75 : 1.25}
+                stroke={exploreHint && tooltipsOn ? wheelColor("gold") : wheelColor(strokeToken)}
+                strokeWidth={isFocus ? 1.75 : exploreHint && tooltipsOn ? 1.6 : 1.25}
+                opacity={exploreHint && tooltipsOn ? 0.95 : 1}
               />
               <SvgText
                 x={px}

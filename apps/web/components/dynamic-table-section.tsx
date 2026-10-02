@@ -10,6 +10,7 @@
 import { orderedScoreEntries } from "@galaxia/astro";
 import type { ReactNode } from "react";
 import { COMPAT_LABELS, compatWord } from "../lib/design";
+import { WhyThisReading } from "./why-this-reading";
 
 const DYNAMIC_SCALE_LEGEND =
   "How to read this: these run from easiest to most effort. Gold comes naturally, teal takes a little tending, rose takes real work. Charged is the far end, the most friction between you, not the most spark.";
@@ -22,9 +23,11 @@ type Props = {
   children?: ReactNode;
   /** Relationship-level insight rendered once, not inside a person card. */
   watchLine?: string | null;
+  /** Factual derivation when watchLine used the platonic Mercury-aspect branch. */
+  watchLineDerivation?: string | null;
 };
 
-export function DynamicTableSection({ scores, children, watchLine }: Props) {
+export function DynamicTableSection({ scores, children, watchLine, watchLineDerivation }: Props) {
   return (
     <>
       {children ? (
@@ -65,19 +68,22 @@ export function DynamicTableSection({ scores, children, watchLine }: Props) {
           })}
         </div>
         {watchLine ? (
-          <p
-            className="muted"
-            style={{
-              fontSize: ".82rem",
-              lineHeight: 1.62,
-              fontStyle: "italic",
-              margin: "4px 0 0",
-              borderLeft: "2px solid rgba(183,154,216,.35)",
-              paddingLeft: 12,
-            }}
-          >
-            {watchLine}
-          </p>
+          <div style={{ margin: "4px 0 0" }}>
+            <p
+              className="muted"
+              style={{
+                fontSize: ".82rem",
+                lineHeight: 1.62,
+                fontStyle: "italic",
+                margin: 0,
+                borderLeft: "2px solid rgba(183,154,216,.35)",
+                paddingLeft: 12,
+              }}
+            >
+              {watchLine}
+            </p>
+            <WhyThisReading insightType="watch_line_mercury" line={watchLineDerivation} />
+          </div>
         ) : null}
       </section>
     </>

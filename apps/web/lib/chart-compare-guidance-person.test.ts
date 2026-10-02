@@ -3,12 +3,12 @@
  * must match /app/compare so whatTheyNeed() can surface sibling/friend and
  * parent-child / professional clauses on Quick Compare.
  */
-import { computeNatalChart, computeSynastry, whatTheyNeed, type BirthInput } from "@galaxia/astro";
+import { computeNatalChart, computeSynastry, whatTheyNeed, type Birth } from "@galaxia/astro";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const birthA: BirthInput = {
+const birthA: Birth = {
   dateUTC: "1990-06-15T14:30:00.000Z",
   precision: "exact",
   lat: 40.7128,
@@ -16,7 +16,7 @@ const birthA: BirthInput = {
   tzOffsetMin: -240,
 };
 
-const birthB: BirthInput = {
+const birthB: Birth = {
   dateUTC: "1988-03-22T09:15:00.000Z",
   precision: "exact",
   lat: 34.0522,
@@ -79,6 +79,56 @@ describe("Quick Compare GuidancePerson mercury/saturn parity", () => {
     expect(changed).toContain("siblings");
     expect(changed).toContain("friends");
     expect(changed).toContain("parent-child");
-    expect(changed.some((t) => t.startsWith("colleagues") || t.includes("colleague"))).toBe(true);
+    expect(changed).toContain("colleagues");
+    expect(changed).toContain("manager-report");
+    expect(changed).toContain("mentor-mentee");
+  });
+
+  it("documents before/after whatTheyNeed copy for PR review (fixed charts)", () => {
+    const chartA = computeNatalChart(birthA);
+    const chartB = computeNatalChart(birthB);
+    const synastry = computeSynastry(chartA, chartB);
+    const without = whatTheyNeed(
+      synastry.scores,
+      guidancePerson(chartB, "Sam", false),
+      "siblings",
+      synastry
+    );
+    const withMs = whatTheyNeed(
+      synastry.scores,
+      guidancePerson(chartB, "Sam", true),
+      "siblings",
+      synastry
+    );
+    expect(without).not.toBe(withMs);
+    expect(withMs).toContain("Mercury");
+
+    const parentBefore = whatTheyNeed(
+      synastry.scores,
+      guidancePerson(chartB, "Sam", false),
+      "parent-child",
+      synastry
+    );
+    const parentAfter = whatTheyNeed(
+      synastry.scores,
+      guidancePerson(chartB, "Sam", true),
+      "parent-child",
+      synastry
+    );
+    expect(parentBefore).not.toBe(parentAfter);
+    expect(parentAfter).toContain("Saturn");
+
+    if (process.env.LOG_NEEDS_EXAMPLES === "1") {
+      console.log(
+        JSON.stringify(
+          {
+            siblings: { before: without, after: withMs },
+            parentChild: { before: parentBefore, after: parentAfter },
+          },
+          null,
+          2
+        )
+      );
+    }
   });
 });

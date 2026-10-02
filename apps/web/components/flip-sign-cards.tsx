@@ -19,8 +19,10 @@ import {
   readFlipCardHintDismissed,
 } from "../lib/chart-affordance-hints";
 import { SIGN_GLYPH, signElement } from "../lib/design";
+import { formatFlipCardLine } from "../lib/why-reading";
 import { useChartImageCapturing } from "./chart-image-capture";
 import { RetrogradeBadge } from "./retrograde-badge";
+import { WhyThisReading } from "./why-this-reading";
 
 export function FlipSignCards({
   chart,
@@ -109,7 +111,15 @@ export function FlipSignCards({
         style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}
       >
         {tiles.map((tile) => (
-          <FlipSignCard key={tile.key} tile={tile} onFlip={noteFlipInteraction} />
+          <div key={tile.key} className="flip-sign-card-wrap">
+            <FlipSignCard tile={tile} onFlip={noteFlipInteraction} />
+            {tile.confident ? (
+              <WhyThisReading
+                insightType="flip_card"
+                line={formatFlipCardLine(tile.label, tile.sign)}
+              />
+            ) : null}
+          </div>
         ))}
       </div>
     </>

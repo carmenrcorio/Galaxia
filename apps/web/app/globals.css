@@ -567,6 +567,11 @@ select.field--rect.field--placeholder {
   width: 100%;
   min-width: 0;
 }
+.flip-sign-card-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 .flip-sign-card {
   display: block;
   cursor: pointer;
@@ -3868,5 +3873,59 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
     flex: 1 1 auto;
     min-width: 0;
     width: 100%;
+  }
+}
+
+/* Collapsed chart derivation (Why this reading) */
+.why-reading-toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 4px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: var(--gold-soft);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.why-reading-toggle:hover,
+.why-reading-toggle:focus-visible {
+  color: var(--gold);
+  outline: 2px solid rgba(230, 174, 108, 0.45);
+  outline-offset: 2px;
+}
+.why-reading-panel {
+  margin-top: 4px;
+  padding-left: 2px;
+}
+.why-reading-line {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--mist);
+  margin: 0 0 8px;
+}
+.why-reading-methodology {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 14px;
+  color: var(--teal);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.why-reading-methodology:hover,
+.why-reading-methodology:focus-visible {
+  color: var(--gold-soft);
+}
+@media (prefers-reduced-motion: reduce) {
+  .why-reading-toggle,
+  .why-reading-methodology {
+    transition: none;
   }
 }

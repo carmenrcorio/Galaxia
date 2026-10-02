@@ -65,6 +65,8 @@ import { HousesUnavailableCard } from "./houses-unavailable-card";
 import { QuickChartShell } from "./quick-chart-shell";
 import { SaveToGalaxyButton } from "./save-to-galaxy-button";
 import { SingleChartGenerationalSummary } from "./single-chart-generational-summary";
+import { formatFirstRunNeedLine, platonicWatchLineDerivation } from "../lib/why-reading";
+import { WhyThisReading } from "./why-this-reading";
 
 function getSign(chart: NatalChart, body: string) {
   const p = chart.placements.find((pl) => pl.body === body);
@@ -126,6 +128,10 @@ function SingleSnapshot({ payload, token }: { payload: SingleSharePayload; token
               <p style={{ color: "var(--cream)", fontSize: "1.02rem", lineHeight: 1.65, margin: 0 }}>
                 {need.statement}
               </p>
+              <WhyThisReading
+                insightType="first_run_need"
+                line={formatFirstRunNeedLine(need.body, need.sign)}
+              />
             </div>
             <p className="muted" style={{ fontSize: ".76rem", marginTop: 10 }}>
                             {SHARE_NEED_PROVENANCE}
@@ -342,6 +348,11 @@ function CompareSnapshot({ payload }: { payload: CompareSharePayload }) {
           <DynamicTableSection
             scores={payload.synastry.scores}
             watchLine={relationshipWatchLine(payload.synastry.scores, relationType, payload.synastry as never)}
+            watchLineDerivation={platonicWatchLineDerivation(
+              payload.synastry,
+              personA.display_name,
+              personB.display_name
+            )}
           >
             {[personA, personB].map((person) => (
               <div

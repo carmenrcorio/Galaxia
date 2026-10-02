@@ -5,6 +5,8 @@ import {
   type ElementCounts,
   type PairElementBalance,
 } from "@galaxia/astro";
+import { formatElementBalanceLine } from "../lib/why-reading";
+import { WhyThisReading } from "./why-this-reading";
 
 const ELEMENT_COLORS: Record<ChartElement, string> = {
   fire: "#DD7651",
@@ -122,9 +124,15 @@ export function ElementBalanceSection({
       {interpretation.length > 0 ? (
         <div style={{ display: "grid", gap: 5, marginTop: 14 }}>
           {interpretation.map((line) => (
-            <p key={line} className="muted" style={{ fontSize: ".8rem", lineHeight: 1.6, margin: 0 }}>
-              {line}
-            </p>
+            <div key={line}>
+              <p className="muted" style={{ fontSize: ".8rem", lineHeight: 1.6, margin: 0 }}>
+                {line}
+              </p>
+              <WhyThisReading
+                insightType="element_balance"
+                line={formatElementBalanceLine(balance, nameA, nameB)}
+              />
+            </div>
           ))}
         </div>
       ) : null}

@@ -262,8 +262,28 @@ export default function QuickComparePage() {
     return p && p.confident !== false ? p.sign : undefined;
   };
 
-  const personA = result ? { display_name: nameA || "Person A", sun: getSign(result.chartA, "sun"), moon: getSign(result.chartA, "moon"), venus: getSign(result.chartA, "venus"), mars: getSign(result.chartA, "mars") } : null;
-  const personB = result ? { display_name: nameB || "Person B", sun: getSign(result.chartB, "sun"), moon: getSign(result.chartB, "moon"), venus: getSign(result.chartB, "venus"), mars: getSign(result.chartB, "mars") } : null;
+  const personA = result
+    ? {
+        display_name: nameA || "Person A",
+        sun: getSign(result.chartA, "sun"),
+        moon: getSign(result.chartA, "moon"),
+        venus: getSign(result.chartA, "venus"),
+        mars: getSign(result.chartA, "mars"),
+        mercury: getSign(result.chartA, "mercury"),
+        saturn: getSign(result.chartA, "saturn"),
+      }
+    : null;
+  const personB = result
+    ? {
+        display_name: nameB || "Person B",
+        sun: getSign(result.chartB, "sun"),
+        moon: getSign(result.chartB, "moon"),
+        venus: getSign(result.chartB, "venus"),
+        mars: getSign(result.chartB, "mars"),
+        mercury: getSign(result.chartB, "mercury"),
+        saturn: getSign(result.chartB, "saturn"),
+      }
+    : null;
 
   // Same gate as /app/compare: strip romantic types when a minor is present
   // (API signal only — never re-derive age on the client).

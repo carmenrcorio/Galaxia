@@ -14,8 +14,10 @@ import {
   METHODOLOGY_TITLE,
   methodologyNatalAspectCoverageSentence,
   methodologyOrbDegrees,
+  methodologyInterpretationCoverageLines,
   methodologyOrbRows,
 } from "./methodology-copy";
+import { interpretationLibraryCoverageSummary } from "@galaxia/astro";
 import { RELATED_LINKS } from "./nav-links";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
@@ -96,13 +98,25 @@ describe("/methodology orb table matches the engine", () => {
   });
 });
 
+describe("/methodology interpretation coverage", () => {
+  it("paragraph counts match interpretationLibraryCoverageSummary()", () => {
+    const summary = interpretationLibraryCoverageSummary();
+    const lines = methodologyInterpretationCoverageLines();
+    expect(lines[1]).toContain(`${summary.natalAspect.authored} of ${summary.natalAspect.possible}`);
+    expect(lines[2]).toContain(`${summary.synastryTable.authored} of ${summary.synastryTable.possible}`);
+    expect(lines[3]).toContain(`${summary.chironSynastry.authored} of ${summary.chironSynastry.possible}`);
+    expect(read(PAGE)).toContain("methodologyInterpretationCoverageLines()");
+  });
+});
+
 describe("/methodology content and voice", () => {
   it("names astronomy-engine, True Node, Chiron table, and precision tiers", () => {
     expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[0]).toMatch(/astronomy-engine/);
     expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[1]).toMatch(/True Node/);
     expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[1]).toMatch(/Mean Node is not computed/);
     expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[2]).toMatch(/JPL Horizons/);
-    expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[2]).toMatch(/no written reading/);
+    expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[2]).toMatch(/Chiron synastry readings are authored/);
+    expect(METHODOLOGY_SECTIONS.ephemeris.paragraphs[2]).toMatch(/natal Chiron sign and house copy is not authored yet/);
     expect(METHODOLOGY_SECTIONS.precision.paragraphs[0]).toMatch(/Year-only/);
     expect(METHODOLOGY_SECTIONS.precision.paragraphs[1]).toMatch(/Date-only/);
     expect(METHODOLOGY_SECTIONS.precision.paragraphs[2]).toMatch(/Exact charts/);

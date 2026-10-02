@@ -824,6 +824,7 @@ export * from "./moment-snapshot";
 export * from "./moment-reflection";
 
 export * from "./interpretations";
+export * from "./reading-coverage";
 export * from "./sign-metadata";
 export * from "./synastry-interpretations";
 export * from "./house-interpretations";

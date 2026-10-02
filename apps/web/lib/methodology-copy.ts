@@ -1,5 +1,6 @@
 import {
   aspectDefinition,
+  interpretationLibraryCoverageSummary,
   natalAspectCoverage,
   type AspectType,
 } from "@galaxia/astro";
@@ -80,7 +81,7 @@ export const METHODOLOGY_SECTIONS = {
     paragraphs: [
       "Sun through Pluto use astronomy-engine, an open-source MIT library of published planetary theory. Positions are geocentric ecliptic longitudes in the tropical zodiac, not AI-generated.",
       "The True Node is computed on date-only and exact charts from the geocentric Moon state (osculating node). Mean Node is not computed.",
-      "Chiron is computed when the birth date falls in the 1900 through 2101 range covered by our table. Positions come from JPL Horizons samples with ten-day linear interpolation, not from astronomy-engine. Chiron currently has no written reading in the app; it is computed only.",
+      "Chiron is computed when the birth date falls in the 1900 through 2101 range covered by our table. Positions come from JPL Horizons samples with ten-day linear interpolation, not from astronomy-engine. Chiron synastry readings are authored for Compare; natal Chiron sign and house copy is not authored yet.",
     ],
   },
   houses: {
@@ -138,6 +139,11 @@ export const METHODOLOGY_SECTIONS = {
     // FOUNDER-REVIEW
     coverageNote:
       "Not every natal aspect pair has a written reading. Pairs we have not authored are not shown rather than filled in with generic text.",
+  },
+  interpretationLibrary: {
+    id: "interpretation-library",
+    // FOUNDER-REVIEW
+    heading: "Curated interpretation library",
   },
   vela: {
     id: "what-vela-does",
@@ -200,6 +206,18 @@ export const METHODOLOGY_ASPECT_LABELS: Record<AspectType, string> = {
 
 export function methodologyOrbDegrees(type: AspectType): number {
   return aspectDefinition(type).orb;
+}
+
+/** Natal + synastry reading counts; single source with CI (reading-coverage.ts). */
+export function methodologyInterpretationCoverageLines(): string[] {
+  const { natalAspect, synastryTable, chironSynastry } = interpretationLibraryCoverageSummary();
+  const synastryPairs = synastryTable.possible / 5;
+  return [
+    "Pair-specific readings are hand-written and static. The engine computes aspects; it does not invent copy for a missing cell.",
+    `Natal aspect readings (Sun through Pluto, six aspect types including quincunx): ${natalAspect.authored} of ${natalAspect.possible} cells authored. Unauthored cells are omitted from Key aspects rather than filled with generic text.`,
+    `Synastry readings in the compare library: ${synastryTable.authored} of ${synastryTable.possible} cells authored across ${synastryPairs} unordered pairs (five major aspects each; quincunx uses type-only copy).`,
+    `Chiron synastry (Chiron with each of eleven bodies, five major aspects): ${chironSynastry.authored} of ${chironSynastry.possible} cells authored.`,
+  ];
 }
 
 export function methodologyOrbRows(): Array<{

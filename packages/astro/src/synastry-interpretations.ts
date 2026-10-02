@@ -1344,6 +1344,250 @@ export const SYNASTRY_PAIR: Record<string, Partial<Record<AspectKey, Reading>>> 
       long: "One of you holds the underworld work; the other holds the stretch. You can finish a real change together, or you can turn growth into a power struggle.",
     },
   },
+  // ---- CHIRON SYNASTRY (Batch 01) ----
+  "chiron-jupiter": {
+    conjunction: {
+      short: "Big hopes touch a tender spot",
+      long: "One of you carries a big story about what should be possible; the other touches the place it still hurts to want that much. Generosity lands best when it names the limit as well as the hope.",
+    },
+    sextile: {
+      short: "Encouragement that fits",
+      long: "A little faith can open the tender place without overrunning it. Offer one concrete next step, not a lecture about how large life could be.",
+    },
+    square: {
+      short: "Pushing for more before the other is ready",
+      long: "One of you pushes for more before the other has room to heal. The friction is often about timing, not intent. Scale the plan down until both people can stand on it.",
+    },
+    trine: {
+      short: "Hope without mocking the hurt",
+      long: "You can talk about what is next without mocking what still stings. Use that to bless a real step, not a fantasy escape. Ease is not the same as finished.",
+    },
+    opposition: {
+      short: "One holds the vision, one holds the cost",
+      long: "One of you holds the vision; the other holds the place it cost something to believe. Treat both as data. Neither person has to give up their size or their sore spot.",
+    },
+  },
+  "chiron-mars": {
+    conjunction: {
+      short: "A small push feels like a big threat",
+      long: "Action and the sensitive place arrive together, so a small push can feel like a large threat. Slow the first move. Ask what the heat is protecting before you match it.",
+    },
+    sextile: {
+      short: "Friction you can turn into repair",
+      long: "You can channel annoyance into a repair if you name the target first. Point the energy at the problem, not the person's character.",
+    },
+    square: {
+      short: "Anger that comes from an old hurt",
+      long: "The spark is fast because something old is still live underneath. The argument is rarely about the headline issue. Pause and ask what got touched before you answer the tone.",
+    },
+    trine: {
+      short: "Hard things said without setting each other off",
+      long: "Effort and sensitivity cooperate here, which makes honest work possible. Say the hard thing while you still have the gentleness to land it.",
+    },
+    opposition: {
+      short: "One pushes, one braces",
+      long: "One of you advances; the other braces. Used well, you learn each other's stop signals. Used poorly, you train each other to fight or freeze.",
+    },
+  },
+  "chiron-mercury": {
+    conjunction: {
+      short: "Words land on a sore spot",
+      long: "What gets said and what gets hurt share a channel, so tone matters as much as content. Clarify before you correct. A kind sentence early saves a long repair.",
+    },
+    sextile: {
+      short: "Talk that actually helps",
+      long: "You can name the awkward thing without shaming each other when you choose to. Use short sentences. Ask if they want advice or only to be heard.",
+    },
+    square: {
+      short: "Feeling unheard even when you both try",
+      long: "One of you goes logical; the other goes raw, and both feel unheard. Repeat back the feeling before you answer the fact. Precision without warmth reads as an attack here.",
+    },
+    trine: {
+      short: "Hard topics find words easily",
+      long: "Hard topics tend to find words more easily here. That is worth protecting. Do not use fluency to talk over the slower person.",
+    },
+    opposition: {
+      short: "One explains, one feels",
+      long: "One of you explains; the other feels. Both are valid registers. Decide which register this conversation is in before you continue.",
+    },
+  },
+  "chiron-moon": {
+    conjunction: {
+      short: "Comfort and distance both land hard",
+      long: "Mood and the tender place occupy the same room, so comfort can land as overwhelming and distance as abandonment. Ask what kind of care they want, not what you would want.",
+    },
+    sextile: {
+      short: "Steady small gestures build trust",
+      long: "Small rituals of steadiness go further than grand speeches. Show up the same way twice and they will begin to trust the room.",
+    },
+    square: {
+      short: "Reaching out and flinching away",
+      long: "One of you reaches; the other flinches, and neither is wrong about the history. Name the flinch without punishing it. Steady beats clever here.",
+    },
+    trine: {
+      short: "Comfort without needing words",
+      long: "Emotional attunement runs quietly between you. Do not assume it fixed everything. Ask what still needs words.",
+    },
+    opposition: {
+      short: "One feels, one guards",
+      long: "One of you holds the feeling; the other holds the guard. You can meet in the middle if you stop asking one person to do both jobs alone.",
+    },
+  },
+  "chiron-neptune": {
+    conjunction: {
+      short: "Compassion that blurs boundaries",
+      long: "Compassion and confusion share a channel, so boundaries blur fast. Help each other name what is yours, what is borrowed, and what is simply unclear today.",
+    },
+    sextile: {
+      short: "Gentle kindness with a little structure",
+      long: "Gentle imagination can soothe if it stays attached to one real fact. Offer art, rest, or ritual, then check what actually changed.",
+    },
+    square: {
+      short: "Vagueness hurts when one needs clarity",
+      long: "One of you softens; the other needs clarity, and both feel let down. Get specific before you fill the gap with a story. Confirm the plan in plain words.",
+    },
+    trine: {
+      short: "Easy empathy that needs boundaries",
+      long: "Empathy runs easily here, which is beautiful and costly. Protect sleep, time alone, and the right to not absorb the room.",
+    },
+    opposition: {
+      short: "One idealizes, one remembers the cost",
+      long: "One of you idealizes; the other remembers what it cost. Honor both. A smaller true version beats a large vague rescue fantasy.",
+    },
+  },
+  "chiron-north_node": {
+    conjunction: {
+      short: "Growing in a way that touches a tender spot",
+      long: "The direction one of you is growing toward can touch the other's sensitivity, and not as punishment. Name the stretch; do not treat vulnerability as a verdict about the bond.",
+    },
+    sextile: {
+      short: "A nudge toward the next honest step",
+      long: "Small choices can aim someone at the right stretch without pushing. Ask what they are trying to become, then back one move that is theirs to make.",
+    },
+    square: {
+      short: "Growth that rubs a sore spot",
+      long: "Becoming and guarding the wound pull at angles. The tension can clarify what must change. Do not make either person the fix-it project.",
+    },
+    trine: {
+      short: "Growing feels safer together",
+      long: "The next chapter and the tender place cooperate more than usual. Say the stretch aloud so it stays chosen, not assumed.",
+    },
+    opposition: {
+      short: "One looks ahead, one guards an old hurt",
+      long: "One of you holds the future; the other holds the place that still hurts. Both jobs matter. Split them on purpose instead of fighting over who is behind.",
+    },
+  },
+  "chiron-pluto": {
+    conjunction: {
+      short: "Intense feelings, quick to feel betrayed",
+      long: "Intensity and sensitivity fuse, so small betrayals feel total and small loyalties feel lifesaving. Stay with facts. Do not turn every hurt into a referendum on the bond.",
+    },
+    sextile: {
+      short: "Honest depth when you both choose it",
+      long: "You can go under the surface together if you agree to come back up. One truthful conversation beats a week of silent pressure.",
+    },
+    square: {
+      short: "Power struggles that hide an old hurt",
+      long: "Control and vulnerability scrape, so tests show up disguised as ordinary disagreements. Name power directly. Ask what would make the room safe enough to stay.",
+    },
+    trine: {
+      short: "Staying through the hard part",
+      long: "Endurance and honesty cooperate, which lets real change finish instead of looping. Pick one change that is allowed to end, not ten that keep reopening.",
+    },
+    opposition: {
+      short: "One pushes for change, one guards an old hurt",
+      long: "One of you pushes total remake; the other protects what still hurts. Used well, you transform with consent. Used poorly, you confuse pressure with care.",
+    },
+  },
+  "chiron-saturn": {
+    conjunction: {
+      short: "Rules can feel like judgment",
+      long: "Structure and sensitivity arrive together, so responsibility can feel like judgment and care like control. Make expectations visible and kind. Leave room to be imperfect.",
+    },
+    sextile: {
+      short: "Steady support without scolding",
+      long: "Reliability soothes here more than pep talks. Keep promises small and kept. That is how trust rebuilds around a tender place.",
+    },
+    square: {
+      short: "Rules that feel like shame",
+      long: "One of you holds the rule; the other feels judged by it, even when the rule is fair. Separate the standard from the shame. Say why the limit exists.",
+    },
+    trine: {
+      short: "Structure that leaves room for feeling",
+      long: "You can be structured without being cold, which helps long repairs. Pick one container: a time, a budget, a boundary, and stay inside it together.",
+    },
+    opposition: {
+      short: "One sets limits, one guards a hurt",
+      long: "One of you enforces; the other guards what still hurts. Build a frame you both consent to, or the standoff becomes the relationship.",
+    },
+  },
+  "chiron-sun": {
+    conjunction: {
+      short: "Praise and criticism both land hard",
+      long: "Who one of you is and what still feels tender are visible in the same gesture, so praise and criticism both land hard. Be specific and gentle with the person, not only the performance.",
+    },
+    sextile: {
+      short: "Honest recognition without inflating",
+      long: "You can see each other clearly without making a spectacle of it. Name one true strength and one true limit in the same conversation.",
+    },
+    square: {
+      short: "Wanting to be seen rubs a sore spot",
+      long: "One of you needs to be seen; the other needs to protect a sore spot, and both feel slighted. Separate intent from impact before you score the exchange.",
+    },
+    trine: {
+      short: "Being yourselves comes easier",
+      long: "Warmth and honesty cooperate, so repair can be easier than the history might suggest. Still say the unsaid thing; ease is not the same as finished.",
+    },
+    opposition: {
+      short: "One shines, one guards a hurt",
+      long: "One of you shines; the other holds what still hurts in the light. Let both be true. Do not ask the guarded one to perform brightness on schedule.",
+    },
+  },
+  "chiron-uranus": {
+    conjunction: {
+      short: "Sudden changes feel personal",
+      long: "Sudden change and sensitivity fuse, so surprises feel personal even when they are not meant that way. Give warning when you can. Let the other person catch up before you declare the new rule.",
+    },
+    sextile: {
+      short: "Trying something new, with consent",
+      long: "Innovation can help if it is chosen, not sprung. Offer an odd solution and ask if they want it before you install it.",
+    },
+    square: {
+      short: "Needing freedom versus needing predictability",
+      long: "One of you needs air; the other needs predictability around what still hurts. Assign freedom a job so it does not read as abandonment.",
+    },
+    trine: {
+      short: "Change without a shock",
+      long: "You can update the pattern without blowing the bond up. Name what stays fixed, then change one thing on purpose.",
+    },
+    opposition: {
+      short: "One breaks patterns, one braces for the shock",
+      long: "One of you holds the rupture; the other holds the place that braces for impact. Used well, you modernize with care. Used poorly, you train each other to expect whiplash.",
+    },
+  },
+  "chiron-venus": {
+    conjunction: {
+      short: "Small slights sting, small kindnesses heal",
+      long: "Affection, taste, and what still feels rejected arrive together, so small slights sting and small kindnesses heal disproportionately. Be plain with appreciation. Do not test love with silence.",
+    },
+    sextile: {
+      short: "Warmth with room to be fragile",
+      long: "Warmth is available without performance. A specific thank-you lands deeper than a grand gesture here.",
+    },
+    square: {
+      short: "Different values touch a fear of not being chosen",
+      long: "What one of you finds beautiful or fair can rub the other's sore spot about being chosen. Name the feeling before you debate the preference.",
+    },
+    trine: {
+      short: "Affection that steadies",
+      long: "You can enjoy each other without walking on eggshells most days. Keep the small rituals; they are the medicine.",
+    },
+    opposition: {
+      short: "One offers warmth, one waits to be chosen",
+      long: "One of you holds warmth; the other holds the place that waits to be chosen. Let both be spoken. Do not make the guarded one prove they deserve care.",
+    },
+  },
+
 };
 
 /**

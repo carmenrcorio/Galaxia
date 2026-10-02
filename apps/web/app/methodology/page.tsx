@@ -15,6 +15,7 @@ import {
   METHODOLOGY_PATH,
   METHODOLOGY_SECTIONS,
   METHODOLOGY_TITLE,
+  methodologyInterpretationCoverageLines,
   methodologyNatalAspectCoverageSentence,
   methodologyOrbRows,
 } from "../../lib/methodology-copy";
@@ -50,10 +51,22 @@ export const metadata: Metadata = {
 };
 
 export default function MethodologyPage() {
-  const { limits, precision, ephemeris, houses, orbs, applying, readings, vela, accuracy, omissions } =
-    METHODOLOGY_SECTIONS;
+  const {
+    limits,
+    precision,
+    ephemeris,
+    houses,
+    orbs,
+    applying,
+    readings,
+    interpretationLibrary,
+    vela,
+    accuracy,
+    omissions,
+  } = METHODOLOGY_SECTIONS;
   const orbRows = methodologyOrbRows();
   const coverageSentence = methodologyNatalAspectCoverageSentence();
+  const interpretationLines = methodologyInterpretationCoverageLines();
 
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
@@ -152,6 +165,16 @@ export default function MethodologyPage() {
             <p className="methodology-p">{readings.founderReview}</p>
             <p className="methodology-p">{readings.coverageNote}</p>
             <p className="methodology-p">{coverageSentence}</p>
+          </section>
+          <section>
+            <h2 id={interpretationLibrary.id} className="methodology-h2">
+              {interpretationLibrary.heading}
+            </h2>
+            {interpretationLines.map((paragraph) => (
+              <p key={paragraph} className="methodology-p">
+                {paragraph}
+              </p>
+            ))}
           </section>
           <section>
             <h2 id={vela.id} className="methodology-h2">

@@ -42,4 +42,13 @@ Git has `20260914023000_people_notes_messages_indexes.sql` at the same version p
 
 ## Applying new work
 
-New migrations (e.g. `20260930210000_security_phase_1_fixes.sql`) must use a version strictly after the highest production entry (`20260930164350` at snapshot time) per `AGENTS.md` / `ENGINEERING.md` §16.
+New migrations (e.g. `20260930210000_security_phase_1_fixes.sql`) must use a version strictly after the highest production entry per `AGENTS.md` / `ENGINEERING.md` §16. At snapshot time the highest ledger entry was `20260930164350`.
+
+## Applied via MCP (2026-09-30)
+
+Git file `20260930210000_security_phase_1_fixes.sql` was applied to production in **two** MCP `apply_migration` records (same SQL, split for delivery):
+
+| Production version | Name |
+|--------------------|------|
+| `20260930200957` | `security_phase_1_fixes` (rate limits + early_access policy) |
+| `20260930201023` | `security_phase_1_fixes_account_purge` (`purge_user_account` + disabled `purge_own_account_data`) |

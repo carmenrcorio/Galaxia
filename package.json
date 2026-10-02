@@ -9,7 +9,8 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "founder-review:list": "node scripts/founder-review-list.mjs"
+    "founder-review:list": "node scripts/founder-review-list.mjs",
+    "readings:apply": "node scripts/readings-apply.mjs"
   },
   "devDependencies": {
     "turbo": "^2.0.14",

@@ -15,6 +15,7 @@ import {
   METHODOLOGY_PATH,
   METHODOLOGY_SECTIONS,
   METHODOLOGY_TITLE,
+  methodologyInterpretationCoverageLines,
   methodologyOrbRows,
 } from "../../lib/methodology-copy";
 import { RELATED_LINKS } from "../../lib/nav-links";
@@ -49,8 +50,9 @@ export const metadata: Metadata = {
 };
 
 export default function MethodologyPage() {
-  const { ephemeris, houses, orbs, applying, omissions } = METHODOLOGY_SECTIONS;
+  const { ephemeris, houses, orbs, applying, interpretationLibrary, omissions } = METHODOLOGY_SECTIONS;
   const orbRows = methodologyOrbRows();
+  const interpretationLines = methodologyInterpretationCoverageLines();
 
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
@@ -120,6 +122,16 @@ export default function MethodologyPage() {
               {applying.heading}
             </h2>
             {applying.paragraphs.map((paragraph) => (
+              <p key={paragraph} className="methodology-p">
+                {paragraph}
+              </p>
+            ))}
+          </section>
+          <section>
+            <h2 id={interpretationLibrary.id} className="methodology-h2">
+              {interpretationLibrary.heading}
+            </h2>
+            {interpretationLines.map((paragraph) => (
               <p key={paragraph} className="methodology-p">
                 {paragraph}
               </p>

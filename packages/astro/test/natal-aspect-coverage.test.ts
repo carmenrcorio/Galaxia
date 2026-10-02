@@ -55,11 +55,14 @@ describe("natalAspectCoverage lock", () => {
     expect(coverage.authored + coverage.unauthored.length).toBe(coverage.possible);
   });
 
-  it("reports 38 authored of 270 after adding quincunx (Option A: no authored quincunx cells)", () => {
+  it("possible grid is 45 pairs x 6 aspect types (quincunx included, none authored yet)", () => {
     const coverage = natalAspectCoverage();
-    expect(coverage.authored).toBe(38);
     expect(coverage.possible).toBe(270);
-    expect(coverage.unauthored).toHaveLength(232);
+    expect(coverage.authored + coverage.unauthored.length).toBe(270);
+    expect(coverage.unauthored.filter((k) => k.endsWith(":quincunx")).length).toBe(45);
+    expect(
+      coverage.unauthored.filter((k) => k.endsWith(":quincunx")).every((k) => !k.includes("north_node"))
+    ).toBe(true);
   });
 });
 

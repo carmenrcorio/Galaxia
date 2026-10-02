@@ -1,4 +1,4 @@
-import { aspectDefinition, type AspectType } from "@galaxia/astro";
+import { aspectDefinition, interpretationLibraryCoverageSummary, type AspectType } from "@galaxia/astro";
 
 /**
  * Authored copy for `/methodology`. Every user-visible string is tagged
@@ -81,6 +81,11 @@ export const METHODOLOGY_SECTIONS = {
       "Natal and synastry aspects also mark applying or separating from each planet's longitude speed at the birth moment. If that speed is missing, the phase is left blank rather than guessed.",
     ],
   },
+  interpretationLibrary: {
+    id: "interpretation-library",
+    // FOUNDER-REVIEW
+    heading: "Curated interpretation library",
+  },
   omissions: {
     id: "what-we-do-not-compute",
     // FOUNDER-REVIEW
@@ -123,6 +128,18 @@ export const METHODOLOGY_ASPECT_LABELS: Record<AspectType, string> = {
 
 export function methodologyOrbDegrees(type: AspectType): number {
   return aspectDefinition(type).orb;
+}
+
+/** Natal + synastry reading counts; single source with CI (reading-coverage.ts). */
+export function methodologyInterpretationCoverageLines(): string[] {
+  const { natalAspect, synastryTable, chironSynastry } = interpretationLibraryCoverageSummary();
+  const synastryPairs = synastryTable.possible / 5;
+  return [
+    "Pair-specific readings are hand-written and static. The engine computes aspects; it does not invent copy for a missing cell.",
+    `Natal aspect readings (Sun through Pluto, six aspect types including quincunx): ${natalAspect.authored} of ${natalAspect.possible} cells authored. Unauthored cells are omitted from Key aspects rather than filled with generic text.`,
+    `Synastry readings in the compare library: ${synastryTable.authored} of ${synastryTable.possible} cells authored across ${synastryPairs} unordered pairs (five major aspects each; quincunx uses type-only copy).`,
+    `Chiron synastry (Chiron with each of eleven bodies, five major aspects): ${chironSynastry.authored} of ${chironSynastry.possible} cells authored.`,
+  ];
 }
 
 export function methodologyOrbRows(): Array<{

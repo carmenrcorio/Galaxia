@@ -11,8 +11,10 @@ import {
   METHODOLOGY_SECTIONS,
   METHODOLOGY_TITLE,
   methodologyOrbDegrees,
+  methodologyInterpretationCoverageLines,
   methodologyOrbRows,
 } from "./methodology-copy";
+import { interpretationLibraryCoverageSummary } from "@galaxia/astro";
 import { RELATED_LINKS } from "./nav-links";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
@@ -96,6 +98,17 @@ describe("/methodology orb table matches the engine", () => {
   it("states that the engine does not widen orbs by planet class", () => {
     expect(METHODOLOGY_SECTIONS.orbs.paragraphs[0]).toMatch(/one allowance per aspect type/);
     expect(METHODOLOGY_SECTIONS.orbs.tableCaption).toMatch(/does not widen the window by planet class/);
+  });
+});
+
+describe("/methodology interpretation coverage", () => {
+  it("paragraph counts match interpretationLibraryCoverageSummary()", () => {
+    const summary = interpretationLibraryCoverageSummary();
+    const lines = methodologyInterpretationCoverageLines();
+    expect(lines[1]).toContain(`${summary.natalAspect.authored} of ${summary.natalAspect.possible}`);
+    expect(lines[2]).toContain(`${summary.synastryTable.authored} of ${summary.synastryTable.possible}`);
+    expect(lines[3]).toContain(`${summary.chironSynastry.authored} of ${summary.chironSynastry.possible}`);
+    expect(read(PAGE)).toContain("methodologyInterpretationCoverageLines()");
   });
 });
 

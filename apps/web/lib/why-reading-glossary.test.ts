@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { whyReadingGlossaryHighlight, whyReadingGlossaryHref, whyReadingGlossarySlug } from "./why-reading-glossary";
+import {
+  whyReadingGlossaryHighlight,
+  whyReadingGlossaryHref,
+  whyReadingGlossarySegments,
+  whyReadingGlossarySlug,
+} from "./why-reading-glossary";
 
 describe("whyReadingGlossaryHref", () => {
   it("links natal placements to planet glossary entries", () => {
@@ -41,6 +46,14 @@ describe("whyReadingGlossaryHref", () => {
     expect(whyReadingGlossarySlug("Moon in Cancer, house 4, 12.3 degrees.", "natal_placement")).toBe("moon");
     expect(
       whyReadingGlossaryHighlight("Moon square Saturn, orb 2.0 degrees.", "natal_aspect"),
-    ).toEqual({ slug: "moon-square-saturn", phrase: "Moon square Saturn" });
+    ).toEqual({ slug: "moon", phrase: "Moon" });
+  });
+
+  it("segments natal placements into planet and sign popovers", () => {
+    const segments = whyReadingGlossarySegments("Moon in Taurus, house 4, 8.0 degrees.", "natal_placement");
+    expect(segments.map((s) => ({ slug: s.slug, sign: s.sign, phrase: "Moon in Taurus, house 4, 8.0 degrees.".slice(s.start, s.end) }))).toEqual([
+      { slug: "moon", sign: undefined, phrase: "Moon" },
+      { slug: undefined, sign: "Taurus", phrase: "Taurus" },
+    ]);
   });
 });

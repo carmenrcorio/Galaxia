@@ -21,6 +21,7 @@ import { isMinorForSafety } from "@galaxia/core";
 import Link from "next/link";
 import type { Route } from "next";
 import type { CSSProperties } from "react";
+import { ChartMethodologyLink } from "./chart-methodology-link";
 import { FlipSignCards } from "./flip-sign-cards";
 
 export type NatalSignRevealProps = {
@@ -80,6 +81,7 @@ export function NatalSignReveal({
         {birthPlace ? ` · ${birthPlace}` : ""}
       </p>
 
+      <ChartMethodologyLink />
       <div style={{ margin: "14px 0" }}>
         <FlipSignCards chart={chart} minorSafe={minorSafe} />
       </div>

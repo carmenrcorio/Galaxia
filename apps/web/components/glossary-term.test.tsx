@@ -130,6 +130,26 @@ describe("GlossaryTerm", () => {
     expect(document.querySelector(".glossary-term__floating")).toBeNull();
   });
 
+  it("anchors the floating card below the trigger using top (not bottom)", () => {
+    const rect = { top: 136, left: 580, bottom: 180, right: 622, width: 42, height: 44, x: 580, y: 136, toJSON: () => ({}) };
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(rect as DOMRect);
+    Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+      configurable: true,
+      get() {
+        return this.classList?.contains("glossary-term__floating") ? 120 : 0;
+      },
+    });
+
+    render(<GlossaryTerm term="Moon" meaning="Feelings and needs." />);
+    fireEvent.focus(screen.getByRole("button", { name: "Moon" }));
+    const floating = document.querySelector(".glossary-term__floating") as HTMLElement | null;
+    expect(floating).toBeTruthy();
+    expect(floating!.style.bottom).toBe("");
+    expect(Number.parseFloat(floating!.style.top)).toBeGreaterThanOrEqual(rect.bottom + 8);
+
+    vi.restoreAllMocks();
+  });
+
   it("does not open on hover when the pointer cannot hover", () => {
     stubPointerHover(false);
     vi.useFakeTimers();

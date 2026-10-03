@@ -1230,14 +1230,14 @@ select.field--rect.field--placeholder {
 }
 .glossary-term__floating {
   position: fixed;
-  z-index: 80;
+  z-index: 120;
   min-width: 180px;
   max-width: 240px;
   padding: 14px 16px;
   border-radius: 22px;
-  background: linear-gradient(165deg, rgba(255,255,255,.045), rgba(255,255,255,.012));
-  backdrop-filter: blur(22px) saturate(1.15);
-  -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  /* Opaque glass-card tones: the shared .glass-card gradient is see-through over derivation text. */
+  background-color: rgb(10, 7, 23);
+  background-image: linear-gradient(165deg, rgb(29, 22, 64), rgb(10, 7, 23));
   border: 1px solid rgba(230,174,108,.13);
   box-shadow:
     0 30px 80px -34px rgba(0,0,0,.7),
@@ -1276,11 +1276,10 @@ select.field--rect.field--placeholder {
 }
 
 /* ─── Wheel planet tooltip (hover card + touch sheet) ────────────────────── */
-/* Same glass recipe as .glossary-term__floating; portaled to body so the SVG
-   wheel and its overflow ancestors cannot clip it. */
+/* Portaled to body so the SVG wheel and its overflow ancestors cannot clip it. */
 .wheel-tip {
   position: fixed;
-  z-index: 80;
+  z-index: 120;
   padding: 11px 13px;
   border-radius: 14px;
   background: linear-gradient(165deg, rgba(29, 22, 64, .97), rgba(10, 7, 23, .99));

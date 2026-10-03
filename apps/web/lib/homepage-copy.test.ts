@@ -80,17 +80,21 @@ describe("homepage outcome-led copy", () => {
     expect(css).toMatch(/\.hero-scroll-cue:hover svg\s*\{\s*animation:\s*bob/);
   });
 
-  it("keeps teaser destinations unchanged", () => {
+  it("keeps teaser destinations wired from nav config", () => {
     expect(FEATURE_TEASER_LINKS.map((l) => l.href)).toEqual([
+      "/methodology",
       "/why-galaxia",
       "/generations",
       "/meet-vela",
       "/security",
       "/pricing",
     ]);
+    expect(FEATURE_TEASER_LINKS[0].label).toBe("See the method");
     const src = read("components/marketing/feature-teasers.tsx");
     expect(src).toContain("FEATURE_TEASER_LINKS[0].href");
-    expect(src).toContain("FEATURE_TEASER_LINKS[4].href");
+    expect(src).toContain("FEATURE_TEASER_LINKS[5].href");
+    expect(src).toContain("How we compute this");
+    expect(src).toMatch(/FOUNDER-REVIEW[\s\S]*How we compute this/);
   });
 
   it("keeps the night-sky line on the Why Galaxia surface", () => {

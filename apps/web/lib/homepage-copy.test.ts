@@ -94,7 +94,7 @@ describe("homepage outcome-led copy", () => {
     expect(src).toContain("FEATURE_TEASER_LINKS[0].href");
     expect(src).toContain("FEATURE_TEASER_LINKS[5].href");
     expect(src).toContain("How we compute this");
-    expect(src).toMatch(/FOUNDER-REVIEW[\s\S]*How we compute this/);
+    expect(src).toMatch(/How we compute this[\s\S]*FOUNDER-REVIEW/);
   });
 
   it("keeps the night-sky line on the Why Galaxia surface", () => {

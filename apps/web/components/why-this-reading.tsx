@@ -4,6 +4,7 @@ import { track } from "@vercel/analytics/react";
 import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 import type { WhyReadingInsightType } from "../lib/why-reading";
+import { whyReadingGlossaryHref } from "../lib/why-reading-glossary";
 
 type Props = {
   /** Plain one-line derivation from computed facts only. Omit or empty to render nothing. */
@@ -24,6 +25,8 @@ export function WhyThisReading({ line, insightType, className }: Props) {
 
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const glossaryHref = whyReadingGlossaryHref(trimmed, insightType);
+  const detailHref = glossaryHref ?? METHODOLOGY_HREF;
 
   function toggle() {
     setOpen((was) => {
@@ -48,9 +51,14 @@ export function WhyThisReading({ line, insightType, className }: Props) {
       {open ? (
         <div id={panelId} className="why-reading-panel">
           <p className="why-reading-line">{trimmed}</p>
-          <Link href={METHODOLOGY_HREF as never} className="why-reading-methodology">
-            {/* FOUNDER-REVIEW: methodology link under opened derivation */}
-            How we compute this
+          <Link href={detailHref as never} className="why-reading-methodology">
+            {glossaryHref ? (
+              /* FOUNDER-REVIEW: glossary link under opened derivation */
+              <>What this term means</>
+            ) : (
+              /* FOUNDER-REVIEW: methodology link under opened derivation */
+              <>How we compute this</>
+            )}
           </Link>
         </div>
       ) : null}

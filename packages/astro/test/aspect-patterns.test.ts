@@ -3,7 +3,9 @@ import {
   aspectPatternCopy,
   computeNatalChart,
   computeSynastry,
+  describeTSquarePattern,
   detectAspectPatterns,
+  formatTSquarePatternDetail,
   type Aspect,
   type BodyName,
   type Placement,
@@ -48,6 +50,24 @@ describe("detectAspectPatterns", () => {
     ]);
   });
 
+  it("describes distinct T-squares that share focal planet and modality", () => {
+    const chart = computeNatalChart({
+      dateUTC: "1965-02-19T08:00:00.000Z",
+      precision: "exact",
+      lat: 40.7128,
+      lng: -74.006,
+    });
+    const aspects = computeSynastry(chart, chart).aspects;
+    const tSquares = detectAspectPatterns(aspects, chart.placements).filter(
+      (pattern) => pattern.type === "t_square" && pattern.focalPlanet === "north_node"
+    );
+    expect(tSquares).toHaveLength(2);
+    const lines = tSquares.map((pattern) => formatTSquarePatternDetail(pattern));
+    expect(lines[0]).not.toBe(lines[1]);
+    expect(lines).toContain("Mars opposite Chiron, both square North Node · Mutable");
+    expect(lines).toContain("Pluto opposite Chiron, both square North Node · Mutable");
+  });
+
   it("detects a T-Square and identifies its focal planet and modality", () => {
     const placements = [
       placement("sun", "Aries", 2),
@@ -68,6 +88,9 @@ describe("detectAspectPatterns", () => {
         modality: "cardinal",
       },
     ]);
+    expect(describeTSquarePattern(detectAspectPatterns(aspects, placements)[0]!)).toBe(
+      "Sun opposite Moon, both square Mars"
+    );
   });
 
   it("detects sign stelliums across planets, North Node, and Chiron", () => {

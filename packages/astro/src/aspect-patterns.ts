@@ -1,3 +1,4 @@
+import { bodyDisplayName } from "./bodies";
 import type { Aspect, BodyName, Placement, Sign } from "./index";
 
 export type AspectPatternType = "grand_trine" | "t_square" | "stellium";
@@ -33,6 +34,29 @@ const STELLIUM_BODIES = new Set<BodyName>([
   "north_node",
   "chiron",
 ]);
+
+const OPPOSITION_BODY_ORDER: BodyName[] = [
+  "sun",
+  "moon",
+  "mercury",
+  "venus",
+  "mars",
+  "jupiter",
+  "saturn",
+  "uranus",
+  "neptune",
+  "pluto",
+  "north_node",
+  "chiron",
+];
+
+function oppositionBodiesOrdered(a: BodyName, b: BodyName): [BodyName, BodyName] {
+  const rank = (body: BodyName) => {
+    const index = OPPOSITION_BODY_ORDER.indexOf(body);
+    return index === -1 ? OPPOSITION_BODY_ORDER.length : index;
+  };
+  return rank(a) <= rank(b) ? [a, b] : [b, a];
+}
 
 function pairKey(a: BodyName, b: BodyName): string {
   return [a, b].sort().join(":");
@@ -160,6 +184,29 @@ export function detectAspectPatterns(
   }
 
   return patterns;
+}
+
+/** Opposition leg + focal wording for T-square cards and derivations. */
+export function describeTSquarePattern(
+  pattern: Pick<AspectPattern, "type" | "planets" | "focalPlanet">
+): string {
+  if (pattern.type !== "t_square") return "";
+  const focal = pattern.focalPlanet;
+  const opposition = pattern.planets.filter((body) => body !== focal) as BodyName[];
+  const focalLabel = focal ? bodyDisplayName(focal) : "Unknown";
+  if (opposition.length !== 2) {
+    return pattern.planets.map(bodyDisplayName).join(" · ");
+  }
+  const [first, second] = oppositionBodiesOrdered(opposition[0]!, opposition[1]!);
+  return `${bodyDisplayName(first)} opposite ${bodyDisplayName(second)}, both square ${focalLabel}`;
+}
+
+/** Card and "Why this reading" detail line, including modality when present. */
+export function formatTSquarePatternDetail(pattern: AspectPattern): string {
+  const core = describeTSquarePattern(pattern);
+  if (!pattern.modality) return core;
+  const mod = `${pattern.modality[0]!.toUpperCase()}${pattern.modality.slice(1)}`;
+  return `${core} · ${mod}`;
 }
 
 const GRAND_TRINE_LONG: Record<AspectPatternElement, string> = {

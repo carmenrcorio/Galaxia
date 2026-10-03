@@ -1,6 +1,7 @@
 import {
   bodyDisplayName,
   CHART_ELEMENTS,
+  formatTSquarePatternDetail,
   type AspectPattern,
   type HouseOverlayLine,
   type PairElementBalance,
@@ -109,9 +110,7 @@ export function formatChartPatternLine(pattern: AspectPattern): string {
     return `Grand trine: ${el}${planets}.`;
   }
   if (pattern.type === "t_square") {
-    const focal = pattern.focalPlanet ? bodyDisplayName(pattern.focalPlanet) : "unknown focal";
-    const mod = pattern.modality ? `, ${pattern.modality} modality` : "";
-    return `T-square focal ${focal}${mod}.`;
+    return `${formatTSquarePatternDetail(pattern)}.`;
   }
   const planets = pattern.planets.map(bodyDisplayName).join(", ");
   return `Stellium in ${pattern.sign}: ${planets}.`;

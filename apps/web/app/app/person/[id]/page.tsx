@@ -10,6 +10,7 @@
 
 import {
   aspectPatternCopy,
+  formatTSquarePatternDetail,
   computeSynastry,
   type AspectPattern,
   type NatalChart,
@@ -1442,7 +1443,7 @@ export default function PersonProfilePage() {
                 pattern.type === "grand_trine"
                   ? `${pattern.element ? `${pattern.element[0]!.toUpperCase()}${pattern.element.slice(1)} · ` : ""}${pattern.planets.map(bodyDisplayName).join(" · ")}`
                   : pattern.type === "t_square"
-                    ? `Focal: ${pattern.focalPlanet ? bodyDisplayName(pattern.focalPlanet) : "Unknown"}${pattern.modality ? ` · ${pattern.modality[0]!.toUpperCase()}${pattern.modality.slice(1)}` : ""}`
+                    ? formatTSquarePatternDetail(pattern)
                     : pattern.planets.map(bodyDisplayName).join(" · ");
               return (
                 <article

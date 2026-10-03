@@ -14,7 +14,16 @@
  */
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode, type SyntheticEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type SyntheticEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import { planetMeaning, signMeaning } from "../lib/astro-glossary";
 import {
@@ -41,18 +50,32 @@ interface GlossaryTermProps {
 }
 
 const POPOVER_WIDTH = 240;
+const VIEWPORT_EDGE = 8;
+const TRIGGER_GAP = 8;
 const HOVER_OPEN_MS = 200;
 const HOVER_CLOSE_MS = 300;
 
-function popoverStyle(trigger: HTMLElement): CSSProperties {
-  const rect = trigger.getBoundingClientRect();
-  let left = rect.left + rect.width / 2 - POPOVER_WIDTH / 2;
-  left = Math.max(8, Math.min(left, window.innerWidth - POPOVER_WIDTH - 8));
-  const spaceAbove = rect.top;
-  if (spaceAbove > 96) {
-    return { left, bottom: window.innerHeight - rect.top + 8, width: POPOVER_WIDTH };
+/** Same viewport clamping idea as wheel-planet-tooltip anchoredStyle, adapted for above/below the trigger. */
+function anchoredPopoverStyle(anchor: DOMRect, popoverHeight: number): CSSProperties {
+  let left = anchor.left + anchor.width / 2 - POPOVER_WIDTH / 2;
+  left = Math.max(VIEWPORT_EDGE, Math.min(left, window.innerWidth - POPOVER_WIDTH - VIEWPORT_EDGE));
+
+  const belowTop = anchor.bottom + TRIGGER_GAP;
+  const aboveTop = anchor.top - popoverHeight - TRIGGER_GAP;
+  const roomBelow = window.innerHeight - VIEWPORT_EDGE - belowTop;
+  const roomAbove = aboveTop - VIEWPORT_EDGE;
+
+  let top: number;
+  if (popoverHeight <= roomBelow) {
+    top = belowTop;
+  } else if (popoverHeight <= roomAbove) {
+    top = aboveTop;
+  } else {
+    top = roomBelow >= roomAbove ? belowTop : aboveTop;
+    top = Math.max(VIEWPORT_EDGE, Math.min(top, window.innerHeight - popoverHeight - VIEWPORT_EDGE));
   }
-  return { left, top: rect.bottom + 8, width: POPOVER_WIDTH };
+
+  return { left, top, width: POPOVER_WIDTH };
 }
 
 export function GlossaryTerm({ term, meaning, glossarySlug, children }: GlossaryTermProps) {
@@ -113,21 +136,25 @@ export function GlossaryTerm({ term, meaning, glossarySlug, children }: Glossary
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    function update() {
-      const el = triggerRef.current;
-      if (!el) return;
-      setCoords(popoverStyle(el));
+  useLayoutEffect(() => {
+    if (!open) {
+      setCoords({});
+      return;
     }
-    update();
-    window.addEventListener("scroll", update, true);
-    window.addEventListener("resize", update);
+    function place() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const height = popoverRef.current?.offsetHeight ?? 0;
+      setCoords(anchoredPopoverStyle(trigger.getBoundingClientRect(), height));
+    }
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
     return () => {
-      window.removeEventListener("scroll", update, true);
-      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
     };
-  }, [open]);
+  }, [open, resolvedMeaning, showLink, mounted]);
 
   function clearHoverTimers() {
     if (openTimer.current) {
@@ -238,7 +265,11 @@ export function GlossaryTerm({ term, meaning, glossarySlug, children }: Glossary
               className="glossary-term__floating"
               role="tooltip"
               aria-hidden="true"
-              style={coords}
+              style={
+                coords.top != null
+                  ? coords
+                  : { left: -9999, top: 0, width: POPOVER_WIDTH, visibility: "hidden" as const }
+              }
               onMouseEnter={scheduleHoverOpen}
               onMouseLeave={scheduleHoverClose}
               onMouseDown={(event) => event.preventDefault()}

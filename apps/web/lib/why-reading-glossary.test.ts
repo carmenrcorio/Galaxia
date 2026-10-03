@@ -8,10 +8,10 @@ describe("whyReadingGlossaryHref", () => {
     ).toBe("/glossary#moon");
   });
 
-  it("falls back when the body has no glossary entry", () => {
+  it("links Chiron natal placements to the Chiron glossary entry", () => {
     expect(
       whyReadingGlossaryHref("Chiron in Gemini, house 5, 25.3 degrees.", "natal_placement"),
-    ).toBeNull();
+    ).toBe("/glossary#chiron");
   });
 
   it("links synastry aspects to aspect or pair glossary entries", () => {

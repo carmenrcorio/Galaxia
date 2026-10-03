@@ -28,8 +28,17 @@ describe("WhyThisReading", () => {
     expect(screen.getByRole("link", { name: "What this term means" }).getAttribute("href")).toBe("/glossary#moon");
   });
 
-  it("falls back to methodology when no glossary term matches", () => {
+  it("links Chiron placements to the Chiron glossary entry", () => {
     render(<WhyThisReading insightType="natal_placement" line="Chiron in Gemini." />);
+    const toggle = screen.getByRole("button", { name: "Why this reading" });
+    fireEvent.click(toggle);
+    expect(screen.getByRole("link", { name: "What this term means" }).getAttribute("href")).toBe(
+      "/glossary#chiron",
+    );
+  });
+
+  it("falls back to methodology when no glossary term matches", () => {
+    render(<WhyThisReading insightType="natal_placement" line="Lilith in Scorpio." />);
     const toggle = screen.getByRole("button", { name: "Why this reading" });
     fireEvent.click(toggle);
     expect(screen.getByRole("link", { name: "How we compute this" }).getAttribute("href")).toBe("/methodology");

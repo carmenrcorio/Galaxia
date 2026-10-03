@@ -75,6 +75,15 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       title: "Reading the Chart of Someone Who Has Died",
     },
   },
+  // FOUNDER-REVIEW: Chiron glossary definition.
+  {
+    id: "chiron",
+    term: "Chiron",
+    postCount: 0,
+    definition:
+      "Chiron is a small solar-system body, not one of the classical planets. Galaxia computes its position from JPL Horizons samples with linear interpolation when the birth date falls in our table range, not from the same library as the Sun through Pluto. Compare includes authored synastry readings for every major-aspect contact between Chiron and the other eleven bodies in the compare pool, while natal charts show sign and house with a domain line only and no authored sign or house copy yet; see the methodology page for how we compute it and what readings exist.",
+    readMore: null,
+  },
   {
     id: "compatibility-score",
     term: "Compatibility score",

@@ -70,7 +70,7 @@ describe("glossary term list", () => {
     expect(glossaryPreview(orb!.definition)).toBe(
       "The distance in degrees between an exact aspect. A tighter orb means a stronger connection.",
     );
-    expect(GLOSSARY_TERMS).toHaveLength(41);
+    expect(GLOSSARY_TERMS).toHaveLength(42);
     expect(getGlossaryTerm("adjusts")?.term).toBe("Adjusts");
     expect(getGlossaryTerm("quincunx")?.term).toBe("Quincunx");
   });

@@ -33,7 +33,16 @@ describe("shared glossary terms", () => {
     expect(aspectGlossarySlug("Trine")).toBe("trine");
     expect(aspectGlossarySlug("Quincunx")).toBe("quincunx");
     expect(aspectGlossarySlug("applying")).toBeUndefined();
-    expect(GLOSSARY_TERMS).toHaveLength(41);
+    expect(GLOSSARY_TERMS).toHaveLength(42);
+  });
+
+  it("defines Chiron with methodology-aligned coverage notes", () => {
+    const chiron = getGlossaryTerm("chiron");
+    expect(chiron?.term).toBe("Chiron");
+    expect(chiron?.definition).toMatch(/JPL Horizons/);
+    expect(chiron?.definition).toMatch(/no authored sign or house copy/i);
+    expect(chiron?.definition).toMatch(/methodology page/);
+    expect(chiron!.definition).not.toContain("\u2014");
   });
 
   it("defines the sign metadata terms", () => {

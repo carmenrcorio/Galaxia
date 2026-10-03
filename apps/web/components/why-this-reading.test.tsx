@@ -28,13 +28,11 @@ describe("WhyThisReading", () => {
     expect(screen.getByText(/in Cancer\./)).toBeTruthy();
   });
 
-  it("links Chiron placements to the Chiron glossary entry", () => {
+  it("highlights Chiron placements with an inline glossary term", () => {
     render(<WhyThisReading insightType="natal_placement" line="Chiron in Gemini." />);
     const toggle = screen.getByRole("button", { name: "Why this reading" });
     fireEvent.click(toggle);
-    expect(screen.getByRole("link", { name: "What this term means" }).getAttribute("href")).toBe(
-      "/glossary#chiron",
-    );
+    expect(screen.getByRole("button", { name: "Chiron" })).toBeTruthy();
   });
 
   it("falls back to methodology when no glossary term matches", () => {

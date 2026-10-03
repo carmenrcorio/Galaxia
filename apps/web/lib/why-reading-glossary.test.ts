@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { whyReadingGlossaryHref } from "./why-reading-glossary";
+import { whyReadingGlossaryHighlight, whyReadingGlossaryHref, whyReadingGlossarySlug } from "./why-reading-glossary";
 
 describe("whyReadingGlossaryHref", () => {
   it("links natal placements to planet glossary entries", () => {
@@ -35,5 +35,12 @@ describe("whyReadingGlossaryHref", () => {
   it("links flip cards to sun, moon, or rising glossary entries", () => {
     expect(whyReadingGlossaryHref("Sun in Leo.", "flip_card")).toBe("/glossary#sun");
     expect(whyReadingGlossaryHref("Rising in Scorpio.", "flip_card")).toBe("/glossary#rising-sign");
+  });
+
+  it("exposes slugs and inline highlight phrases", () => {
+    expect(whyReadingGlossarySlug("Moon in Cancer, house 4, 12.3 degrees.", "natal_placement")).toBe("moon");
+    expect(
+      whyReadingGlossaryHighlight("Moon square Saturn, orb 2.0 degrees.", "natal_aspect"),
+    ).toEqual({ slug: "moon-square-saturn", phrase: "Moon square Saturn" });
   });
 });

@@ -2,9 +2,16 @@
 
 import { track } from "@vercel/analytics/react";
 import Link from "next/link";
-import { useId, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useId,
+  useState,
+  type ReactNode,
+} from "react";
 import type { WhyReadingInsightType } from "../lib/why-reading";
-import { whyReadingGlossaryHref } from "../lib/why-reading-glossary";
+import { whyReadingGlossaryHighlight } from "../lib/why-reading-glossary";
+import { GlossaryTerm } from "./glossary-term";
 
 type Props = {
   /** Plain one-line derivation from computed facts only. Omit or empty to render nothing. */
@@ -15,6 +22,66 @@ type Props = {
 
 const METHODOLOGY_HREF = "/methodology";
 
+type WhyReadingGroupContextValue = {
+  openId: string | null;
+  setOpenId: (id: string | null) => void;
+};
+
+const WhyReadingGroupContext = createContext<WhyReadingGroupContextValue | null>(null);
+
+/** Keeps at most one "Why this reading" panel open within the wrapped subtree. */
+export function WhyReadingGroup({ children }: { children: ReactNode }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  return (
+    <WhyReadingGroupContext.Provider value={{ openId, setOpenId }}>
+      {children}
+    </WhyReadingGroupContext.Provider>
+  );
+}
+
+function WhyReadingDerivationLine({
+  line,
+  insightType,
+}: {
+  line: string;
+  insightType: WhyReadingInsightType;
+}) {
+  const highlight = whyReadingGlossaryHighlight(line, insightType);
+  if (!highlight) {
+    return (
+      <p className="why-reading-line">
+        {line}{" "}
+        <Link href={METHODOLOGY_HREF as never} className="why-reading-methodology">
+          {/* FOUNDER-REVIEW: methodology link under opened derivation */}
+          How we compute this
+        </Link>
+      </p>
+    );
+  }
+
+  const { slug, phrase } = highlight;
+  const idx = line.indexOf(phrase);
+  if (idx === -1) {
+    return (
+      <p className="why-reading-line">
+        {line}{" "}
+        <GlossaryTerm glossarySlug={slug}>{phrase}</GlossaryTerm>
+      </p>
+    );
+  }
+
+  const before = line.slice(0, idx);
+  const after = line.slice(idx + phrase.length);
+
+  return (
+    <p className="why-reading-line">
+      {before}
+      <GlossaryTerm glossarySlug={slug}>{phrase}</GlossaryTerm>
+      {after}
+    </p>
+  );
+}
+
 /**
  * Collapsed derivation under a curated insight. Renders nothing when `line`
  * is missing so callers never show a placeholder.
@@ -23,17 +90,20 @@ export function WhyThisReading({ line, insightType, className }: Props) {
   const trimmed = line?.trim();
   if (!trimmed) return null;
 
-  const [open, setOpen] = useState(false);
+  const instanceId = useId();
   const panelId = useId();
-  const glossaryHref = whyReadingGlossaryHref(trimmed, insightType);
-  const detailHref = glossaryHref ?? METHODOLOGY_HREF;
+  const group = useContext(WhyReadingGroupContext);
+  const [localOpen, setLocalOpen] = useState(false);
+  const open = group ? group.openId === instanceId : localOpen;
 
   function toggle() {
-    setOpen((was) => {
-      const next = !was;
-      if (next) track("why_reading_opened", { insight_type: insightType });
-      return next;
-    });
+    const next = !open;
+    if (group) {
+      group.setOpenId(next ? instanceId : null);
+    } else {
+      setLocalOpen(next);
+    }
+    if (next) track("why_reading_opened", { insight_type: insightType });
   }
 
   return (
@@ -50,16 +120,7 @@ export function WhyThisReading({ line, insightType, className }: Props) {
       </button>
       {open ? (
         <div id={panelId} className="why-reading-panel">
-          <p className="why-reading-line">{trimmed}</p>
-          <Link href={detailHref as never} className="why-reading-methodology">
-            {glossaryHref ? (
-              /* FOUNDER-REVIEW: glossary link under opened derivation */
-              <>What this term means</>
-            ) : (
-              /* FOUNDER-REVIEW: methodology link under opened derivation */
-              <>How we compute this</>
-            )}
-          </Link>
+          <WhyReadingDerivationLine line={trimmed} insightType={insightType} />
         </div>
       ) : null}
     </div>

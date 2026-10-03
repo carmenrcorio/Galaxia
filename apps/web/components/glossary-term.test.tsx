@@ -121,6 +121,15 @@ describe("GlossaryTerm", () => {
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
   });
 
+  it("dismisses on pointer down outside the trigger and popover", () => {
+    render(<GlossaryTerm term="Jupiter" meaning="Where someone grows." />);
+    const trigger = screen.getByRole("button", { name: "Jupiter" });
+    fireEvent.focus(trigger);
+    expect(document.querySelector(".glossary-term__floating")).toBeTruthy();
+    fireEvent.mouseDown(document.body);
+    expect(document.querySelector(".glossary-term__floating")).toBeNull();
+  });
+
   it("does not open on hover when the pointer cannot hover", () => {
     stubPointerHover(false);
     vi.useFakeTimers();

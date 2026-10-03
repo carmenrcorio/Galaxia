@@ -53,7 +53,7 @@ import {
   PersonPickerField,
 } from "../../../components/person-picker";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
-import { WhyThisReading } from "../../../components/why-this-reading";
+import { WhyReadingGroup, WhyThisReading } from "../../../components/why-this-reading";
 import { formatHouseOverlayLine, platonicWatchLineDerivation } from "../../../lib/why-reading";
 import { GenerationalSection } from "../../../components/generational-section";
 import { ElementBalanceSection } from "../../../components/element-balance-section";
@@ -615,6 +615,7 @@ function ComparePageInner() {
   const blockRomanticMinorRender = relationType !== null && pairHasMinor && isRomanticRelation(relationType);
 
   return (
+    <WhyReadingGroup>
     <main className="app-content">
       <p className="eyebrow">Synastry</p>
       <h1 className="page-title">Compare</h1>
@@ -1029,6 +1030,7 @@ function ComparePageInner() {
         </Link>
       ) : null}
     </main>
+    </WhyReadingGroup>
   );
 }
 

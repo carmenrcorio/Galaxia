@@ -109,7 +109,7 @@ import {
   formatNatalAspectLine,
   formatPlacementLine,
 } from "../../../../lib/why-reading";
-import { WhyThisReading } from "../../../../components/why-this-reading";
+import { WhyReadingGroup, WhyThisReading } from "../../../../components/why-this-reading";
 
 interface PersonRow {
   id: string; display_name: string; relation: string;
@@ -239,9 +239,9 @@ function ExpandRow({
         </div>
         <span style={{ color: "var(--mist2)", fontSize: ".72rem", flexShrink: 0, marginLeft: 6, transform: open ? "rotate(90deg)" : "none", display: "inline-block", transition: "transform .2s" }}>▶</span>
       </button>
-      <WhyThisReading insightType="natal_placement" line={whyLine} />
       {open ? (
         <div style={{ paddingBottom: 14, paddingLeft: 48, paddingRight: 6, display: "grid", gap: 12 }}>
+          <WhyThisReading insightType="natal_placement" line={whyLine} className="why-reading--in-row" />
           {/* Block 1: IN [SIGN] */}
           {long ? (
             <div>
@@ -1106,6 +1106,7 @@ export default function PersonProfilePage() {
   };
 
   return (
+    <WhyReadingGroup>
     <main className={`app-content${personPassed ? " app-content--remembrance" : ""}`}>
 
       {/* ── Header ── */}
@@ -1836,5 +1837,6 @@ export default function PersonProfilePage() {
 
       {status ? <p className="error">{status}</p> : null}
     </main>
+    </WhyReadingGroup>
   );
 }

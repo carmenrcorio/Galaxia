@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatChartPatternLine,
   formatCrossChartAspectLine,
   formatElementBalanceLine,
   formatNatalAspectLine,
@@ -17,6 +18,17 @@ describe("why-reading formatters", () => {
         "Sam"
       )
     ).toBe("Ada's Venus sextile Sam's Jupiter, orb 0.4 degrees.");
+  });
+
+  it("formats chart pattern T-square lines with opposition legs", () => {
+    expect(
+      formatChartPatternLine({
+        type: "t_square",
+        planets: ["mars", "chiron", "north_node"],
+        focalPlanet: "north_node",
+        modality: "mutable",
+      })
+    ).toBe("Mars opposite Chiron, both square North Node · Mutable.");
   });
 
   it("formats natal aspects", () => {

@@ -5,6 +5,7 @@ import {
   WORK_VIEW_HEADING,
   WORK_VIEW_LABELS,
   aspectPatternCopy,
+  formatTSquarePatternDetail,
   buildPersonDailyNudge,
   coerceDailyNudgeRow,
   computeSynastry,
@@ -565,7 +566,7 @@ export default function PersonProfileScreen() {
                     pattern.type === "grand_trine"
                       ? `${pattern.element ? `${pattern.element[0]!.toUpperCase()}${pattern.element.slice(1)} · ` : ""}${pattern.planets.map(bodyDisplayName).join(" · ")}`
                       : pattern.type === "t_square"
-                        ? `${pattern.focalPlanet ? `Focal: ${bodyDisplayName(pattern.focalPlanet)}` : ""}${pattern.modality ? ` · ${pattern.modality[0]!.toUpperCase()}${pattern.modality.slice(1)}` : ""}`
+                        ? formatTSquarePatternDetail(pattern)
                         : pattern.planets.map(bodyDisplayName).join(" · ");
                   return (
                     <View

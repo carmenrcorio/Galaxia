@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { WhyThisReading } from "./why-this-reading";
+import { WhyReadingGroup, WhyThisReading } from "./why-this-reading";
 
 vi.mock("@vercel/analytics/react", () => ({
   track: vi.fn(),
@@ -24,8 +24,8 @@ describe("WhyThisReading", () => {
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByText("Moon in Cancer.")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "What this term means" }).getAttribute("href")).toBe("/glossary#moon");
+    expect(screen.getByRole("button", { name: "Moon" })).toBeTruthy();
+    expect(screen.getByText(/in Cancer\./)).toBeTruthy();
   });
 
   it("falls back to methodology when no glossary term matches", () => {
@@ -33,5 +33,21 @@ describe("WhyThisReading", () => {
     const toggle = screen.getByRole("button", { name: "Why this reading" });
     fireEvent.click(toggle);
     expect(screen.getByRole("link", { name: "How we compute this" }).getAttribute("href")).toBe("/methodology");
+  });
+
+  it("keeps only one panel open inside WhyReadingGroup", () => {
+    render(
+      <WhyReadingGroup>
+        <WhyThisReading insightType="flip_card" line="Sun in Leo." />
+        <WhyThisReading insightType="flip_card" line="Moon in Cancer." />
+      </WhyReadingGroup>,
+    );
+    const toggles = screen.getAllByRole("button", { name: "Why this reading" });
+    fireEvent.click(toggles[0]!);
+    expect(toggles[0]!.getAttribute("aria-expanded")).toBe("true");
+    expect(toggles[1]!.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(toggles[1]!);
+    expect(toggles[0]!.getAttribute("aria-expanded")).toBe("false");
+    expect(toggles[1]!.getAttribute("aria-expanded")).toBe("true");
   });
 });

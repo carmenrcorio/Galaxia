@@ -49,7 +49,7 @@ import { BASE_BIRTH_INPUT, BirthFields } from "./birth-fields";
 import { CustomCheck } from "./custom-check";
 import { formatCrossChartAspectLine, platonicWatchLineDerivation } from "../lib/why-reading";
 import { Spinner } from "./spinner";
-import { WhyThisReading } from "./why-this-reading";
+import { WhyReadingGroup, WhyThisReading } from "./why-this-reading";
 
 const RELATIONS = GALAXY_RELATION_PICKER_OPTIONS;
 const FOCUS_TYPES: { key: RelationType; label: string }[] = [
@@ -160,6 +160,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(10,7,23,.75)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
       <div className="glass-card" style={{ maxWidth: 440, width: "100%", maxHeight: "88vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
+        <WhyReadingGroup>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <p className="eyebrow" style={{ margin: 0 }}>Quick check</p>
           <button type="button" onClick={onClose} style={{ background: "none", border: "none", color: "var(--mist2)", fontSize: "1.2rem", cursor: "pointer" }}>×</button>
@@ -282,6 +283,7 @@ function QuickCheckModal({ onClose }: { onClose: () => void }) {
             {error ? <p className="error" style={{ fontSize: ".8rem" }}>{error}</p> : null}
           </div>
         )}
+        </WhyReadingGroup>
       </div>
     </div>
   );

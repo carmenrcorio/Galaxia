@@ -102,6 +102,19 @@ export function GlossaryTerm({ term, meaning, glossarySlug, children }: Glossary
 
   useEffect(() => {
     if (!open) return;
+    function onPointerDown(event: MouseEvent) {
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || popoverRef.current?.contains(target)) {
+        return;
+      }
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
     function update() {
       const el = triggerRef.current;
       if (!el) return;

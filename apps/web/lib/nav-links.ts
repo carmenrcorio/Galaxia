@@ -16,6 +16,7 @@ export const MARKETING_NAV_LINKS: NavLink[] = [
   { href: "/meet-vela", label: "Ask Vela" },
   { href: "/chart", label: "Free chart" },
   { href: "/blog", label: "Blog" },
+  { href: "/learn", label: "Learn" },
   { href: "/pricing", label: "Pricing" },
 ];
 
@@ -44,7 +45,7 @@ export const APP_NAV_LINKS: NavLink[] = [
   // so the SEO URL is not split; that page renders the app nav when a session
   // is present so a signed-in viewer never leaves the product.
   { href: "/chart", label: "Free chart" },
-  { href: "/blog", label: "Blog" },
+  { href: "/learn", label: "Learn" },
 ];
 
 export const APP_NAV_ACCOUNT: NavLink = { href: "/account", label: "Account" };

@@ -1,7 +1,15 @@
 "use client";
 
 import type { HouseSystem } from "@galaxia/astro";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  LEARN_PATH,
+  SETTINGS_GLOSSARY_LABEL,
+  SETTINGS_LEARN_BLURB,
+  SETTINGS_LEARN_HUB_LABEL,
+  SETTINGS_LEARN_SECTION_TITLE,
+} from "../../../lib/learn-copy";
 import { SettingsAccountCredentials } from "../../../components/settings-account-credentials";
 import { SettingsAccountSection } from "../../../components/settings-account-section";
 import { SettingsSubscriptionPanel } from "../../../components/settings-subscription-panel";
@@ -332,6 +340,21 @@ export default function SettingsPage() {
       </section>
 
       <SettingsAccountCredentials accountEmail={accountEmail} />
+
+      <section className="glass-card">
+        <h2 className="card-title">{SETTINGS_LEARN_SECTION_TITLE}</h2>
+        <p className="muted" style={{ marginBottom: 12 }}>
+          {SETTINGS_LEARN_BLURB}
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+          <Link href={LEARN_PATH as never} className="pill-link">
+            {SETTINGS_LEARN_HUB_LABEL}
+          </Link>
+          <Link href="/glossary" className="pill-link">
+            {SETTINGS_GLOSSARY_LABEL}
+          </Link>
+        </div>
+      </section>
 
       <section className="glass-card">
         <h2 className="card-title">Privacy</h2>

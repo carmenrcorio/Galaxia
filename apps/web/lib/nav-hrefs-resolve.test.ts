@@ -262,6 +262,7 @@ describe("nav config still includes the non-Quick-Chart entries", () => {
       "/meet-vela",
       "/chart",
       "/blog",
+      "/learn",
       "/pricing",
     ]);
     expect(MARKETING_NAV_ACTIONS.map((l) => l.href)).toEqual(["/login", "/signup"]);
@@ -271,6 +272,7 @@ describe("nav config still includes the non-Quick-Chart entries", () => {
       "Ask Vela",
       "Free chart",
       "Blog",
+      "Learn",
       "Pricing",
     ]);
   });
@@ -284,7 +286,7 @@ describe("nav config still includes the non-Quick-Chart entries", () => {
       "/app/vela",
       "/app/settings",
       "/chart",
-      "/blog",
+      "/learn",
     ]);
     expect(APP_NAV_ACTIONS.map((l) => l.href)).toEqual(["/account"]);
   });
@@ -594,6 +596,7 @@ describe("public sitemap routes are unchanged by this relabel", () => {
     expect(routesBlock).toContain('"/pricing"');
     expect(routesBlock).toContain('"/blog"');
     expect(routesBlock).toContain('"/glossary"');
+    expect(routesBlock).toContain('"/learn"');
     expect(routesBlock).toContain('"/methodology"');
     expect(routesBlock).toContain('"/privacy"');
     expect(routesBlock).toContain('"/terms"');

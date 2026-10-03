@@ -148,6 +148,7 @@ export const RELATED_LINKS = {
 } as const satisfies Record<string, readonly NavLink[]>;
 
 export const FEATURE_TEASER_LINKS: NavLink[] = [
+  { href: "/methodology", label: "See the method" },
   { href: "/why-galaxia", label: "How it works" },
   { href: "/generations", label: "Your people" },
   { href: "/meet-vela", label: "Ask Vela" },

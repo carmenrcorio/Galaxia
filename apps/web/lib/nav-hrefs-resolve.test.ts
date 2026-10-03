@@ -425,6 +425,7 @@ describe("CTA hrefs resolve to App Router pages", () => {
     assertRendersFromConfig(readWeb("app/not-found.tsx"), ["NOT_FOUND_LINKS"], "not-found leftover literal");
     assertRendersFromConfig(readWeb("app/s/[token]/not-found.tsx"), ["SHARE_NOT_FOUND_CTA"], "share not-found leftover literal");
     expect(FEATURE_TEASER_LINKS.map((l) => l.href)).toEqual([
+      "/methodology",
       "/why-galaxia",
       "/generations",
       "/meet-vela",

@@ -53,6 +53,7 @@ import {
   PersonPickerField,
 } from "../../../components/person-picker";
 import { FlowsAndCatchesSection } from "../../../components/flows-and-catches-section";
+import { ChartMethodologyLink } from "../../../components/chart-methodology-link";
 import { WhyReadingGroup, WhyThisReading } from "../../../components/why-this-reading";
 import { formatHouseOverlayLine, platonicWatchLineDerivation } from "../../../lib/why-reading";
 import { GenerationalSection } from "../../../components/generational-section";
@@ -782,7 +783,8 @@ function ComparePageInner() {
               </p>
               {wheel ? (
                 wheel.chart.cusps ? (
-                  <div style={{ marginTop: 16 }}>
+                  <div style={{ marginTop: 16, textAlign: "center" }}>
+                    <ChartMethodologyLink />
                     <ChartWheel
                       chart={wheel.chart}
                       overlayChart={wheel.overlayChart}

@@ -110,6 +110,7 @@ import {
   formatNatalAspectLine,
   formatPlacementLine,
 } from "../../../../lib/why-reading";
+import { ChartMethodologyLink } from "../../../../components/chart-methodology-link";
 import { WhyReadingGroup, WhyThisReading } from "../../../../components/why-this-reading";
 
 interface PersonRow {
@@ -1150,9 +1151,10 @@ export default function PersonProfilePage() {
               ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
               : enduringEyebrow("Zodiac wheel")}
           </p>
-          <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", textAlign: "center", marginBottom: 10 }}>
+          <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", textAlign: "center", marginBottom: 4 }}>
             {person.display_name}
           </p>
+          <ChartMethodologyLink />
           <FlipSignCards chart={chart} minorSafe={personIsMinor} />
           <div className="chart-identity-unit__wheel">
             {wheelMounted ? (

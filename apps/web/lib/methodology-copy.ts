@@ -17,6 +17,10 @@ import {
 
 export const METHODOLOGY_PATH = "/methodology";
 
+/** One link per chart surface (profile, Quick Chart, compare). Not repeated per placement. */
+// FOUNDER-REVIEW
+export const METHODOLOGY_CHART_LINK_LABEL = "How we compute this";
+
 // FOUNDER-REVIEW
 export const METHODOLOGY_TITLE = "How Galaxia Computes Your Chart";
 

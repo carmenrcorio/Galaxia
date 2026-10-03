@@ -34,6 +34,7 @@ import {
 import { useEffect, useState } from "react";
 import { BASE_BIRTH_INPUT, BirthFields } from "../../../components/birth-fields";
 import { ChartImageExport, chartExportFilename } from "../../../components/chart-image-export";
+import { ChartMethodologyLink } from "../../../components/chart-methodology-link";
 import { ChartWheel, COMPARE_WHEEL_NEEDS_HOUSES } from "../../../components/chart-wheel";
 import { DynamicTableSection } from "../../../components/dynamic-table-section";
 import { ElementBalanceSection } from "../../../components/element-balance-section";
@@ -433,7 +434,8 @@ export default function QuickComparePage() {
               ) : null}
               {!blockRomanticMinorRender && result.synastry ? (
                 result.chartA.cusps ? (
-                  <div style={{ marginTop: 16 }}>
+                  <div style={{ marginTop: 16, textAlign: "center" }}>
+                    <ChartMethodologyLink />
                     <ChartWheel
                       chart={result.chartA}
                       overlayChart={result.chartB}

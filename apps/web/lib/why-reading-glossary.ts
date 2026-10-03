@@ -1,5 +1,14 @@
+import { planetMeaning, signMeaning } from "./astro-glossary";
 import { aspectGlossarySlug, getGlossaryTerm } from "./glossary-terms";
 import type { WhyReadingInsightType } from "./why-reading";
+
+export type WhyReadingGlossarySegment = {
+  start: number;
+  end: number;
+  slug?: string;
+  sign?: string;
+  planet?: string;
+};
 
 const ASPECT_WORDS =
   "conjunction|opposition|square|trine|sextile|quincunx";
@@ -116,6 +125,151 @@ function aspectPhrase(line: string): string | null {
   return `${parsed.from} ${parsed.type} ${parsed.to}`;
 }
 
+function segmentsOverlap(a: WhyReadingGlossarySegment, b: WhyReadingGlossarySegment): boolean {
+  return a.start < b.end && b.start < a.end;
+}
+
+function pushSegment(segments: WhyReadingGlossarySegment[], line: string, phrase: string, meta: Omit<WhyReadingGlossarySegment, "start" | "end">) {
+  const trimmedPhrase = phrase.trim();
+  if (!trimmedPhrase) return;
+  const start = line.indexOf(trimmedPhrase);
+  if (start === -1) return;
+  const candidate: WhyReadingGlossarySegment = { start, end: start + trimmedPhrase.length, ...meta };
+  if (segments.some((existing) => segmentsOverlap(existing, candidate))) return;
+  segments.push(candidate);
+}
+
+function pushPlanet(segments: WhyReadingGlossarySegment[], line: string, name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const slug = displayNameToGlossaryId(trimmed);
+  if (slug) {
+    pushSegment(segments, line, trimmed, { slug });
+    return;
+  }
+  if (planetMeaning(trimmed.toLowerCase())) {
+    pushSegment(segments, line, trimmed, { planet: trimmed.toLowerCase() });
+  }
+}
+
+function pushSign(segments: WhyReadingGlossarySegment[], line: string, sign: string) {
+  const trimmed = sign.trim();
+  if (!trimmed || !signMeaning(trimmed)) return;
+  pushSegment(segments, line, trimmed, { sign: trimmed });
+}
+
+function pushSlugTerm(segments: WhyReadingGlossarySegment[], line: string, phrase: string, slug: string) {
+  if (!resolveSlug(slug)) return;
+  pushSegment(segments, line, phrase, { slug });
+}
+
+function placementSignInLine(line: string): string | null {
+  const match = /\sin\s+([A-Za-z]+)/i.exec(line);
+  return match ? match[1]! : null;
+}
+
+function addPlacementStyleSegments(
+  segments: WhyReadingGlossarySegment[],
+  line: string,
+  insightType: WhyReadingInsightType,
+) {
+  const subject = parsePlacementSubject(line);
+  if (subject) {
+    if (insightType === "flip_card") {
+      const key = subject.toLowerCase();
+      const flipSlug = FLIP_LABEL_TO_GLOSSARY[key];
+      if (flipSlug && resolveSlug(flipSlug)) {
+        pushSegment(segments, line, subject, { slug: flipSlug });
+      } else {
+        pushPlanet(segments, line, subject);
+      }
+    } else {
+      pushPlanet(segments, line, subject);
+    }
+  }
+  const sign = placementSignInLine(line);
+  if (sign) pushSign(segments, line, sign);
+}
+
+function addAspectSegments(segments: WhyReadingGlossarySegment[], line: string) {
+  const parsed = parseCrossChartAspect(line);
+  if (!parsed) return;
+  pushPlanet(segments, line, parsed.from);
+  const aspectSlug = aspectGlossarySlug(parsed.type);
+  if (aspectSlug && resolveSlug(aspectSlug)) {
+    pushSegment(segments, line, parsed.type, { slug: aspectSlug });
+  }
+  pushPlanet(segments, line, parsed.to);
+}
+
+/** Ordered, non-overlapping glossary spans for inline popovers in a derivation line. */
+export function whyReadingGlossarySegments(
+  line: string,
+  insightType: WhyReadingInsightType,
+): WhyReadingGlossarySegment[] {
+  const trimmed = line.trim();
+  if (!trimmed) return [];
+
+  const segments: WhyReadingGlossarySegment[] = [];
+
+  const defaultId = INSIGHT_GLOSSARY_DEFAULT[insightType];
+  if (defaultId) {
+    const term = getGlossaryTerm(defaultId)?.term;
+    if (term && trimmed.toLowerCase().includes(term.toLowerCase())) {
+      pushSlugTerm(segments, trimmed, term, defaultId);
+    }
+    if (insightType === "house_overlay" && /\bhouse\b/i.test(trimmed)) {
+      pushSlugTerm(segments, trimmed, "house", "house");
+    }
+    return segments.sort((a, b) => a.start - b.start);
+  }
+
+  if (
+    insightType === "natal_placement" ||
+    insightType === "first_run_need" ||
+    insightType === "flip_card"
+  ) {
+    addPlacementStyleSegments(segments, trimmed, insightType);
+    return segments.sort((a, b) => a.start - b.start);
+  }
+
+  if (insightType === "generational_shared") {
+    const planet = parseGenerationalPlanet(trimmed);
+    if (planet) pushPlanet(segments, trimmed, planet);
+    const sign = placementSignInLine(trimmed);
+    if (sign) pushSign(segments, trimmed, sign);
+    return segments.sort((a, b) => a.start - b.start);
+  }
+
+  if (insightType === "generational_diverged") {
+    const planet = parseGenerationalPlanet(trimmed);
+    if (planet) pushPlanet(segments, trimmed, planet);
+    for (const match of trimmed.matchAll(/\bin\s+([A-Za-z]+)/gi)) {
+      pushSign(segments, trimmed, match[1]!);
+    }
+    return segments.sort((a, b) => a.start - b.start);
+  }
+
+  if (insightType === "chart_pattern") {
+    const slug = parseChartPatternSlug(trimmed);
+    const phrase = highlightPhrase(trimmed, insightType, slug ?? "");
+    if (slug && phrase) pushSlugTerm(segments, trimmed, phrase, slug);
+    return segments.sort((a, b) => a.start - b.start);
+  }
+
+  if (
+    insightType === "natal_aspect" ||
+    insightType === "quick_check_aspect" ||
+    insightType === "flows_catches_row" ||
+    insightType === "flows_catches_framing"
+  ) {
+    addAspectSegments(segments, trimmed);
+    return segments.sort((a, b) => a.start - b.start);
+  }
+
+  return segments.sort((a, b) => a.start - b.start);
+}
+
 function highlightPhrase(
   line: string,
   insightType: WhyReadingInsightType,
@@ -218,6 +372,11 @@ export function whyReadingGlossaryHighlight(
   line: string,
   insightType: WhyReadingInsightType,
 ): { slug: string; phrase: string } | null {
+  const segments = whyReadingGlossarySegments(line, insightType);
+  const first = segments.find((segment) => segment.slug);
+  if (first?.slug) {
+    return { slug: first.slug, phrase: line.slice(first.start, first.end) };
+  }
   const slug = whyReadingGlossarySlug(line, insightType);
   if (!slug) return null;
   const phrase = highlightPhrase(line, insightType, slug);

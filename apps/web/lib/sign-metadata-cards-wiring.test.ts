@@ -16,6 +16,7 @@ describe("web sign metadata card placement", () => {
 
     expect(bigThree).toBeGreaterThan(0);
     expect(person).toContain("chart-identity-unit");
+    expect(person).toContain("ChartMethodologyLink");
     expect(wheel).toBeGreaterThan(bigThree);
     expect(metadata).toBeGreaterThan(wheel);
     expect(actions).toBeGreaterThan(metadata);
@@ -29,6 +30,8 @@ describe("web sign metadata card placement", () => {
 
     expect(bigThree).toBeGreaterThan(0);
     expect(quick).toContain("chart-identity-unit");
+    expect(quick).toContain("<NatalSignReveal");
+    expect(read("components/natal-sign-reveal.tsx")).toContain("ChartMethodologyLink");
     expect(wheel).toBeGreaterThan(bigThree);
     expect(metadata).toBeGreaterThan(wheel);
   });

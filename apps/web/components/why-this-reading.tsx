@@ -1,7 +1,6 @@
 "use client";
 
 import { track } from "@vercel/analytics/react";
-import Link from "next/link";
 import {
   createContext,
   useContext,
@@ -10,8 +9,11 @@ import {
   type ReactNode,
 } from "react";
 import type { WhyReadingInsightType } from "../lib/why-reading";
-import { whyReadingGlossaryHighlight } from "../lib/why-reading-glossary";
-import { GlossaryTerm } from "./glossary-term";
+import {
+  whyReadingGlossarySegments,
+  type WhyReadingGlossarySegment,
+} from "../lib/why-reading-glossary";
+import { GlossaryPlanet, GlossarySign, GlossaryTerm } from "./glossary-term";
 
 type Props = {
   /** Plain one-line derivation from computed facts only. Omit or empty to render nothing. */
@@ -19,8 +21,6 @@ type Props = {
   insightType: WhyReadingInsightType;
   className?: string;
 };
-
-const METHODOLOGY_HREF = "/methodology";
 
 type WhyReadingGroupContextValue = {
   openId: string | null;
@@ -39,6 +39,32 @@ export function WhyReadingGroup({ children }: { children: ReactNode }) {
   );
 }
 
+function segmentNode(segment: WhyReadingGlossarySegment, line: string, key: number) {
+  const phrase = line.slice(segment.start, segment.end);
+  if (segment.slug) {
+    return (
+      <GlossaryTerm key={key} glossarySlug={segment.slug}>
+        {phrase}
+      </GlossaryTerm>
+    );
+  }
+  if (segment.sign) {
+    return (
+      <GlossarySign key={key} sign={segment.sign}>
+        {phrase}
+      </GlossarySign>
+    );
+  }
+  if (segment.planet) {
+    return (
+      <GlossaryPlanet key={key} planet={segment.planet}>
+        {phrase}
+      </GlossaryPlanet>
+    );
+  }
+  return phrase;
+}
+
 function WhyReadingDerivationLine({
   line,
   insightType,
@@ -46,40 +72,25 @@ function WhyReadingDerivationLine({
   line: string;
   insightType: WhyReadingInsightType;
 }) {
-  const highlight = whyReadingGlossaryHighlight(line, insightType);
-  if (!highlight) {
-    return (
-      <p className="why-reading-line">
-        {line}{" "}
-        <Link href={METHODOLOGY_HREF as never} className="why-reading-methodology">
-          {/* FOUNDER-REVIEW: methodology link under opened derivation */}
-          How we compute this
-        </Link>
-      </p>
-    );
+  const segments = whyReadingGlossarySegments(line, insightType);
+  if (segments.length === 0) {
+    return <p className="why-reading-line">{line}</p>;
   }
 
-  const { slug, phrase } = highlight;
-  const idx = line.indexOf(phrase);
-  if (idx === -1) {
-    return (
-      <p className="why-reading-line">
-        {line}{" "}
-        <GlossaryTerm glossarySlug={slug}>{phrase}</GlossaryTerm>
-      </p>
-    );
+  const parts: ReactNode[] = [];
+  let cursor = 0;
+  segments.forEach((segment, index) => {
+    if (segment.start > cursor) {
+      parts.push(line.slice(cursor, segment.start));
+    }
+    parts.push(segmentNode(segment, line, index));
+    cursor = segment.end;
+  });
+  if (cursor < line.length) {
+    parts.push(line.slice(cursor));
   }
 
-  const before = line.slice(0, idx);
-  const after = line.slice(idx + phrase.length);
-
-  return (
-    <p className="why-reading-line">
-      {before}
-      <GlossaryTerm glossarySlug={slug}>{phrase}</GlossaryTerm>
-      {after}
-    </p>
-  );
+  return <p className="why-reading-line">{parts}</p>;
 }
 
 /**

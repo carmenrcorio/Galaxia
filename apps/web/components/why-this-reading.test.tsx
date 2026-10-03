@@ -18,30 +18,32 @@ describe("WhyThisReading", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("toggles derivation and exposes aria-expanded", () => {
+  it("toggles derivation with glossary popovers on planet and sign", () => {
     render(<WhyThisReading insightType="flip_card" line="Moon in Cancer." />);
     const toggle = screen.getByRole("button", { name: "Why this reading" });
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByRole("button", { name: "Moon" })).toBeTruthy();
-    expect(screen.getByText(/in Cancer\./)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cancer" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "How we compute this" })).toBeNull();
   });
 
-  it("links Chiron placements to the Chiron glossary entry", () => {
+  it("opens Chiron placements in the glossary popover without a methodology link", () => {
     render(<WhyThisReading insightType="natal_placement" line="Chiron in Gemini." />);
     const toggle = screen.getByRole("button", { name: "Why this reading" });
     fireEvent.click(toggle);
-    expect(screen.getByRole("link", { name: "What this term means" }).getAttribute("href")).toBe(
-      "/glossary#chiron",
-    );
+    expect(screen.getByRole("button", { name: "Chiron" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Gemini" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "How we compute this" })).toBeNull();
   });
 
-  it("falls back to methodology when no glossary term matches", () => {
-    render(<WhyThisReading insightType="natal_placement" line="Lilith in Scorpio." />);
+  it("shows plain derivation when no glossary match exists", () => {
+    render(<WhyThisReading insightType="natal_placement" line="Lilith in Unknown." />);
     const toggle = screen.getByRole("button", { name: "Why this reading" });
     fireEvent.click(toggle);
-    expect(screen.getByRole("link", { name: "How we compute this" }).getAttribute("href")).toBe("/methodology");
+    expect(screen.getByText("Lilith in Unknown.")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "How we compute this" })).toBeNull();
   });
 
   it("keeps only one panel open inside WhyReadingGroup", () => {

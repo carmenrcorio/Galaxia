@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { GALAXIA_HELP_EMAIL } from "@galaxia/core";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { CloseSection } from "../../components/marketing/close-section";
-import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { MarketingNavShell } from "../../components/marketing/marketing-nav-shell";
 import { PressKitSection } from "../../components/marketing/press-kit-section";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
@@ -45,7 +45,7 @@ export default function PressPage() {
       <WebPageJsonLd path="/press" name={TITLE} description={DESCRIPTION} />
       <CosmicBackground />
       <RevealObserver />
-      <MarketingNav />
+      <MarketingNavShell />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Press" lede={LEDE} />
         <MarketingAtfCta cta={PRESS_ATF_CTA} />

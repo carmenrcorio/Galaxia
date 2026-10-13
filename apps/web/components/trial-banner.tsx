@@ -3,34 +3,41 @@
 import { trialDaysRemaining } from "@galaxia/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { trialBannerFromProfile, type TrialBannerState } from "../lib/trial-banner-logic";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
+
+const HIDDEN: TrialBannerState = { visible: false, trialEndsAt: null };
 
 /**
  * Calm, non-urgent trial banner. Shows only while `subscription_status` is
  * 'trialing' and the account is not comped. No countdown, no red, no
  * "don't miss out" — a warm, factual line with a link to /subscribe.
  */
-export function TrialBanner() {
-  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
-  const [comped, setComped] = useState(false);
+export function TrialBanner({ initial = HIDDEN }: { initial?: TrialBannerState }) {
+  const [banner, setBanner] = useState<TrialBannerState>(initial);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
+      if (!user) {
+        setBanner(HIDDEN);
+        return;
+      }
       const { data } = await supabase
         .from("profiles")
         .select("subscription_status, trial_ends_at, comped")
         .eq("id", user.id)
         .maybeSingle();
-      setStatus((data?.subscription_status as string | null) ?? null);
-      setTrialEndsAt((data?.trial_ends_at as string | null) ?? null);
-      setComped(data?.comped === true);
+      setBanner(
+        trialBannerFromProfile(
+          data as { subscription_status: string | null; trial_ends_at: string | null; comped: boolean | null } | null
+        )
+      );
     });
   }, []);
 
-  if (comped || status !== "trialing" || !trialEndsAt) return null;
+  if (!banner.visible || !banner.trialEndsAt) return null;
+  const trialEndsAt = banner.trialEndsAt;
   const ends = new Date(trialEndsAt);
   if (Number.isNaN(ends.getTime())) return null;
   const daysLeft = trialDaysRemaining(trialEndsAt);

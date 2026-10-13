@@ -51,7 +51,7 @@ export function BlogPostCard({
             height={900}
             sizes={placement === "start-here" ? "(max-width: 720px) 100vw, 280px" : "(max-width: 860px) 100vw, 860px"}
             loading="lazy"
-            style={{ width: "100%", height: "auto", objectFit: "cover" }}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         </span>
       ) : null}

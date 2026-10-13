@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { CloseSection } from "../../components/marketing/close-section";
-import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { MarketingNavShell } from "../../components/marketing/marketing-nav-shell";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
@@ -73,7 +73,7 @@ export default function MethodologyPage() {
       <WebPageJsonLd path={METHODOLOGY_PATH} name={METHODOLOGY_TITLE} description={METHODOLOGY_DESCRIPTION} />
       <CosmicBackground />
       <RevealObserver />
-      <MarketingNav />
+      <MarketingNavShell />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title={METHODOLOGY_H1} lede={METHODOLOGY_LEDE} />
         <div className="container methodology-page">

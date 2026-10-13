@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LoginForm } from "../../components/login-form";
-import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { MarketingNavShell } from "../../components/marketing/marketing-nav-shell";
 import { authReturnPath } from "../../lib/safe-next-path";
 
 const TITLE = "Sign in to Galaxia";
@@ -34,7 +34,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const nextPath = authReturnPath(resolved);
   return (
     <div style={{ minHeight: "100vh" }}>
-      <MarketingNav />
+      <MarketingNavShell />
       <main className="container" style={{ paddingTop: 72, paddingBottom: 72, maxWidth: 820 }}>
         <h1 className="auth-title">Sign in to Galaxia</h1>
         <p className="muted">

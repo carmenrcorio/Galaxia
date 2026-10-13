@@ -31,8 +31,8 @@ import {
 import { useSession } from "../../lib/use-session";
 import { AppNav } from "../app-nav";
 
-export function MarketingNav() {
-  const { userId } = useSession();
+export function MarketingNav({ initialUserId }: { initialUserId?: string | null } = {}) {
+  const { userId } = useSession(initialUserId);
 
   // Match the public Quick Chart shell: anonymous chrome is the server and
   // initial-hydration default, then a verified browser session swaps in the

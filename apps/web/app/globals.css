@@ -266,6 +266,9 @@ textarea:focus-visible {
 }
 
 /* app screen column — centered, 860px max, z-index 2 above CosmicBackground */
+.app-content--loading {
+  min-height: 72vh;
+}
 .app-content {
   width: min(860px, 94vw);
   margin: 0 auto;
@@ -2870,11 +2873,11 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   line-height: 0;
   background: var(--ink);
   border: 1px solid rgba(230,174,108,.13);
+  aspect-ratio: 16 / 9;
 }
 .blog-post-card-thumb img {
   width: 100%;
-  height: auto;
-  aspect-ratio: 16 / 9;
+  height: 100%;
   object-fit: cover;
 }
 .blog-post-card-tags {
@@ -2976,14 +2979,14 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   overflow: hidden;
   border: 1px solid rgba(230,174,108,.16);
   box-shadow: 0 30px 80px -34px rgba(0,0,0,.7);
+  aspect-ratio: 1200 / 630;
 }
 .article-hero img,
 .article-hero .article-hero-fallback {
   display: block;
   max-width: 100%;
   width: 100%;
-  height: auto;
-  aspect-ratio: 1200 / 630;
+  height: 100%;
   object-fit: cover;
 }
 .article-hero--fallback {

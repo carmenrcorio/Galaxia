@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { CloseSection } from "../../components/marketing/close-section";
 import { EdgeSection } from "../../components/marketing/edge-section";
-import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { MarketingNavShell } from "../../components/marketing/marketing-nav-shell";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
 import { MarketingAtfCta } from "../../components/marketing/marketing-atf-cta";
@@ -47,7 +47,7 @@ export default function GenerationsPage() {
       <WebPageJsonLd path="/generations" name={TITLE} description={DESCRIPTION} />
       <CosmicBackground />
       <RevealObserver />
-      <MarketingNav />
+      <MarketingNavShell />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Generations" lede={DESCRIPTION} />
         <MarketingAtfCta cta={GENERATIONS_ATF_CTA} />

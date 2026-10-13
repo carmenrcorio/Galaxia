@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CosmicBackground } from "../../components/cosmic-background-lazy";
 import { CloseSection } from "../../components/marketing/close-section";
 import { FeaturesSection } from "../../components/marketing/features-section";
-import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { MarketingNavShell } from "../../components/marketing/marketing-nav-shell";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { RemembranceSection } from "../../components/marketing/remembrance-section";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
@@ -60,7 +60,7 @@ export default function WhyGalaxiaPage() {
       <WebPageJsonLd path="/why-galaxia" name={TITLE} description={DESCRIPTION} />
       <CosmicBackground />
       <RevealObserver />
-      <MarketingNav />
+      <MarketingNavShell />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Why Galaxia" lede={DESCRIPTION} />
         <MarketingAtfCta cta={WHY_GALAXIA_ATF_CTA} />

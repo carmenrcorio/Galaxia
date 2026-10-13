@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { AppNav } from "../../components/app-nav";
-import { CosmicBackground } from "../../components/cosmic-background";
+import { CosmicBackground } from "../../components/cosmic-background-lazy";
 import { TimezoneSync } from "../../components/timezone-sync";
 import { TrialBanner } from "../../components/trial-banner";
 

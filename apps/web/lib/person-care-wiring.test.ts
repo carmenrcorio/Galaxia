@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 describe("source wiring — person page + home hide live sky for passed", () => {
   it("person page gates daily nudge with shouldShowLiveTransits (no run for passed)", () => {
     const src = readFileSync(
-      resolve(__dirname, "../app/app/person/[id]/page.tsx"),
+      resolve(__dirname, "../app/app/person/[id]/person-profile-page.tsx"),
       "utf8"
     );
     expect(src).toContain("shouldShowLiveTransits");
@@ -125,7 +125,7 @@ describe("source wiring — person page + home hide live sky for passed", () => 
 
   it("remembrance person page keeps a single Ask Vela entry (RemembranceSpace)", () => {
     const page = readFileSync(
-      resolve(__dirname, "../app/app/person/[id]/page.tsx"),
+      resolve(__dirname, "../app/app/person/[id]/person-profile-page.tsx"),
       "utf8"
     );
     const remembrance = readFileSync(

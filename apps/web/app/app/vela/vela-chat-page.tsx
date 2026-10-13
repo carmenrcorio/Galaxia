@@ -1,0 +1,718 @@
+"use client";
+
+import { isMinorForSafety, orderPair, suggestPinTheme, sunSignFromChart, type PinThemeId, DEFAULT_FETCH_TIMEOUT_MS, VELA_FETCH_TIMEOUT_MS, isFetchTimeoutError, withTimeout } from "@galaxia/core";
+import { detectCrisisLanguage, splitVelaReply } from "@galaxia/vela";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { InitialAvatar } from "../../../components/initial-avatar";
+import { PinThemePicker } from "../../../components/pin-theme-picker";
+import { Spinner } from "../../../components/spinner";
+import { VelaFocusPickers } from "../../../components/vela-focus-pickers";
+import { publicEnv } from "../../../lib/env";
+import { updateNoteTheme } from "../../../lib/record";
+import { createSupabaseBrowserClient } from "../../../lib/supabase/client";
+import { toVelaGroups, toVelaPeople, velaDefaultSubjectId } from "../../../lib/vela-roster";
+
+type VelaMode = "ask" | "shared";
+type Scope     = "person" | "pair" | "group";
+interface PersonLite {
+  id: string; display_name: string; relation: string; is_minor: boolean;
+  birth_date: string | null; birth_precision: "none" | "exact" | "date" | "year" | null;
+  passed_at?: string | null;
+  sunSign?: string | null;
+}
+interface GroupLite  { id: string; name: string; memberCount?: number; }
+/** Single source of truth (ENGINEERING.md §9) — never read person.is_minor directly. */
+const minorOf = (p: PersonLite | null | undefined) =>
+  Boolean(p) && isMinorForSafety({ isMinor: p!.is_minor, birthDate: p!.birth_date, birthPrecision: p!.birth_precision });
+interface ChatLine   { role: "user" | "vela"; text: string; suggestions?: string[]; withdrawnReason?: string | null; }
+
+const PRIVACY_CAPTION = "Private by default · no private notes in shared mode · consent required for shared threads";
+
+const VELA_ROSTER_LOADING = "Loading the people Vela can talk about.";
+const VELA_ROSTER_ERROR = "Vela could not load your people. Try again.";
+const VELA_ROSTER_RETRY = "Try again";
+const VELA_SEND_TIMEOUT = "Vela did not answer in time. Check your connection and try again.";
+const VELA_SEND_NETWORK = "Network error. Check your connection and try again.";
+const VELA_CONSENT_ERROR = "Consent could not be saved. Try again.";
+const VELA_PIN_FAILED = "This insight could not be pinned. Try again.";
+
+const SUGGESTED_PROMPTS = [
+  "What do we need most from each other?",
+  "Where do we naturally flow, and where do we catch?",
+  "What's the pattern under our repeating conflict?",
+  "How does our generational difference show up?",
+  "What does this person need to feel truly seen?"
+];
+
+function TypingIndicator() {
+  return (
+    <div className="bubble bubble-vela fade-in">
+      <div className="bubble-sender">Vela</div>
+      <span className="typing-dot" />
+      <span className="typing-dot" />
+      <span className="typing-dot" />
+    </div>
+  );
+}
+
+export default function VelaPage() {
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const [, startUiTransition] = useTransition();
+  const [mode, setMode]         = useState<VelaMode>("ask");
+  const [scope, setScope]       = useState<Scope>("person");
+  const [relType, setRelType]   = useState("general");
+  const [people, setPeople]     = useState<PersonLite[]>([]);
+  const [groups, setGroups]     = useState<GroupLite[]>([]);
+  const [rosterLoading, setRosterLoading] = useState(true);
+  const [rosterError, setRosterError] = useState(false);
+  const [rosterReload, setRosterReload] = useState(0);
+  const [subjectId, setSubjectId] = useState<string | null>(null);
+  const [pairId, setPairId]     = useState<string | null>(null);
+  const [groupId, setGroupId]   = useState<string | null>(null);
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [message, setMessage]   = useState("");
+  // The privacy line is a one-time caption under the thread header (PRIVACY_CAPTION),
+  // never a per-message bubble.
+  const [lines, setLines]       = useState<ChatLine[]>([]);
+  const [sending, setSending]   = useState(false);
+  const [status, setStatus]     = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  // No userName state here on purpose. It used to exist, seeded from
+  // email.split("@")[0], and was never rendered. Anything on this page that
+  // needs to name the signed-in user reads @galaxia/core resolveAccountName,
+  // which never derives a name from an email address.
+  const [pinnedKeys, setPinnedKeys] = useState<Set<number>>(new Set());
+  const [pinnedByIdx, setPinnedByIdx] = useState<Record<number, { id: string; theme: PinThemeId | null }>>({});
+  // Bootstrap params captured once from the entry URL. Navigation into this
+  // page is always cross-route (home "Resume a thread", Compare "Ask Vela",
+  // Groups "Ask Vela"), so the page remounts and a one-time read is reliable.
+  const [boot, setBoot] = useState<{
+    threadId: string | null; scope: Scope | null;
+    subject: string | null; pair: string | null; groupId: string | null; relType: string | null;
+  } | null>(null);
+  // Suppress the focus-change reset while we programmatically restore a thread.
+  const restoringRef = useRef(false);
+  // Seed Person A (subject) once from initialComparePairIds. A user who
+  // then changes slots must not be reset on roster reload.
+  const subjectSeededRef = useRef(false);
+  const chatRef  = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const velaPeople = useMemo(() => toVelaPeople(people), [people]);
+  const velaGroups = useMemo(() => toVelaGroups(groups), [groups]);
+
+  const selectedSubject = people.find(p => p.id === subjectId) ?? null;
+  const selectedPair    = people.find(p => p.id === pairId)    ?? null;
+  const selectedGroup   = groups.find(g => g.id === groupId)   ?? null;
+
+  // ── Minor safety gate ─────────────────────────────────────────────────────
+  // The line is NOT "minor as subject = blocked". A parent asking Vela PRIVATELY
+  // about their child is the core parenting use case the landing page promises —
+  // Vela coaches the parent and never addresses the child. What must never happen
+  // is a minor being a participant in a real-time two-way (shared) session.
+  //
+  // subjectIsMinor uses minorOf() (isMinorForSafety), never the raw is_minor
+  // boolean directly — a real child was found in production with the manual
+  // checkbox unchecked. Age computed from birth_date is an unconditional
+  // backstop here. NOTE: group scope does not check member minor status
+  // client-side (pre-existing gap, out of scope for this fix) — the edge
+  // function's server-side block IS authoritative and covers group members.
+  const subjectIsMinor = scope === "person"
+    ? minorOf(selectedSubject)
+    : scope === "pair"
+      ? minorOf(selectedSubject) || minorOf(selectedPair)
+      : false;
+
+  // Only shared mode with a minor in scope is blocked. Private ask-mode is allowed.
+  const sharedBlocked = mode === "shared" && subjectIsMinor;
+  // Show the warm parenting reassurance whenever a minor is the private subject.
+  const parentingAsk  = mode === "ask" && subjectIsMinor;
+
+  const functionUrl = `${publicEnv.supabaseUrl}/functions/v1/vela-chat`;
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const rawScope = q.get("scope");
+    setBoot({
+      threadId: q.get("threadId"),
+      scope: rawScope === "person" || rawScope === "pair" || rawScope === "group" ? rawScope : null,
+      subject: q.get("subject") ?? q.get("subjectPersonId"),
+      pair: q.get("pair"),
+      groupId: q.get("groupId"),
+      relType: q.get("relType")
+    });
+    // Prefill (never auto-send) — e.g. arriving from a transit banner.
+    const prefill = q.get("q");
+    if (prefill) setMessage(prefill);
+  }, []);
+
+  useEffect(() => {
+    if (!boot) return;
+    const load = async () => {
+      setRosterLoading(true);
+      setRosterError(false);
+      try {
+        await withTimeout((async () => {
+      const [{ data: ud }, { data: sd }] = await Promise.all([
+        supabase.auth.getUser(), supabase.auth.getSession()
+      ]);
+      const user = ud.user; const session = sd.session;
+      if (!user || !session) return;
+      setAccessToken(session.access_token);
+      setUserId(user.id);
+      const [{ data: pd }, { data: gd }] = await Promise.all([
+        supabase.from("people").select("id, display_name, relation, is_minor, birth_date, birth_precision, passed_at").eq("owner_id", user.id).order("display_name"),
+        supabase.from("groups").select("id, name").eq("owner_id", user.id).order("name")
+      ]);
+      const allPeople = ((pd ?? []) as PersonLite[]).map((p) => ({
+        ...p,
+        relation: p.relation ?? ""
+      }));
+      const ids = allPeople.map((p) => p.id);
+      if (ids.length) {
+        const { data: chartRows } = await supabase.from("charts").select("person_id, data").in("person_id", ids);
+        const sunById = new Map<string, string>();
+        for (const row of chartRows ?? []) {
+          const sign = sunSignFromChart(row.data as { placements?: Array<{ body: string; sign: string; confident?: boolean }> });
+          if (sign) sunById.set(row.person_id as string, sign);
+        }
+        for (const p of allPeople) p.sunSign = sunById.get(p.id) ?? null;
+      }
+      setPeople(allPeople);
+      const groupRows = (gd ?? []) as GroupLite[];
+      if (groupRows.length) {
+        const { data: memberRows } = await supabase
+          .from("group_members")
+          .select("group_id")
+          .in("group_id", groupRows.map((g) => g.id));
+        const counts = new Map<string, number>();
+        for (const row of memberRows ?? []) {
+          const gid = row.group_id as string;
+          counts.set(gid, (counts.get(gid) ?? 0) + 1);
+        }
+        for (const g of groupRows) g.memberCount = counts.get(g.id) ?? 0;
+      }
+      setGroups(groupRows);
+
+      restoringRef.current = true;
+
+      // 1) Resuming a thread — restore its exact scope from the stored row so
+      //    the "Asking about X" header and Focus selectors match the conversation.
+      if (boot.threadId) {
+        const { data: t } = await supabase
+          .from("threads")
+          .select("id, mode, subject_person, pair_low, pair_high, group_id")
+          .eq("id", boot.threadId).eq("owner_id", user.id).maybeSingle();
+        if (t) {
+          const row = t as { mode: VelaMode; subject_person: string | null; pair_low: string | null; pair_high: string | null; group_id: string | null };
+          setMode(row.mode === "shared" ? "shared" : "ask");
+          if (row.group_id) { setScope("group"); setGroupId(row.group_id); }
+          else if (row.pair_low && row.pair_high) { setScope("pair"); setSubjectId(row.pair_low); setPairId(row.pair_high); }
+          else if (row.subject_person) { setScope("person"); setSubjectId(row.subject_person); }
+          setThreadId(boot.threadId);
+          await loadHistory(boot.threadId);
+          prevSubjectRef.current = row.pair_low ?? row.subject_person ?? null;
+          subjectSeededRef.current = true;
+          restoringRef.current = false;
+          return;
+        }
+      }
+
+      // 2) Handoff from Compare / Groups — apply the carried scope.
+      if (boot.scope === "pair" && boot.subject && boot.pair) {
+        setScope("pair"); setSubjectId(boot.subject); setPairId(boot.pair);
+        if (boot.relType) setRelType(boot.relType);
+        prevSubjectRef.current = boot.subject;
+        subjectSeededRef.current = true;
+      } else if (boot.scope === "group" && boot.groupId) {
+        setScope("group"); setGroupId(boot.groupId);
+      } else if (boot.subject) {
+        setScope("person"); setSubjectId(boot.subject);
+        prevSubjectRef.current = boot.subject;
+        subjectSeededRef.current = true;
+      } else {
+        // 3) Fresh session defaults. Slot A prefers self via
+        // initialComparePairIds; slot B stays empty so the next action is
+        // picking the second person.
+        if (!subjectSeededRef.current) {
+          const nextSubject = velaDefaultSubjectId(null, allPeople);
+          setSubjectId((current) => current ?? nextSubject);
+          if (nextSubject) prevSubjectRef.current = nextSubject;
+          subjectSeededRef.current = nextSubject !== null;
+        }
+        if (gd?.[0]) setGroupId(gd[0].id as string);
+      }
+      restoringRef.current = false;
+        })(), DEFAULT_FETCH_TIMEOUT_MS);
+      } catch {
+        setRosterError(true);
+      } finally {
+        setRosterLoading(false);
+      }
+    };
+    void load();
+  }, [supabase, boot, rosterReload]);
+
+  useEffect(() => {
+    chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" });
+  }, [lines]);
+
+  // ── Thread isolation: reset thread when focus person changes ──────────────
+  // Each (subjectId, mode, scope) combination gets its own thread.
+  // Switching the focus dropdown must clear the conversation and force a new thread.
+  const prevSubjectRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!subjectId) return;
+    // Don't reset while we're programmatically restoring a resumed/handed-off thread.
+    if (restoringRef.current) { prevSubjectRef.current = subjectId; return; }
+    if (prevSubjectRef.current !== null && prevSubjectRef.current !== subjectId) {
+      // Focus person changed by the user — discard old thread and start fresh
+      setThreadId(null);
+      setLines([]);
+      setStatus(null);
+    }
+    prevSubjectRef.current = subjectId;
+  }, [subjectId]);
+
+  async function loadHistory(tid: string) {
+    // select("*") so the query also works before the suggestions/withdrawn migrations land
+    const { data } = await supabase.from("messages").select("*")
+      .eq("thread_id", tid).order("created_at").limit(80);
+    if (!data) return;
+    setLines((data as Array<{ sender: string; body: string; suggestions?: unknown; withdrawn_at?: string | null; withdrawn_reason?: string | null }>).map(r => {
+      if (r.sender !== "vela") return { role: "user" as const, text: r.body };
+      // A withdrawn message is never re-shown as if it were a normal answer —
+      // its content is replaced entirely by the withdrawal note, but the row
+      // (and this note) stays visible, never silently dropped.
+      if (r.withdrawn_at) {
+        return { role: "vela" as const, text: "", withdrawnReason: r.withdrawn_reason ?? "This note referenced inaccurate chart data and has been withdrawn." };
+      }
+      const stored = Array.isArray(r.suggestions)
+        ? (r.suggestions as unknown[]).filter((s): s is string => typeof s === "string")
+        : [];
+      if (stored.length > 0) return { role: "vela" as const, text: r.body, suggestions: stored };
+      // Legacy rows persisted the raw reply with "→ " lines inline — split on load.
+      const { body, suggestions } = splitVelaReply(r.body);
+      return { role: "vela" as const, text: body || r.body, suggestions };
+    }));
+  }
+
+  async function sendConsent() {
+    if (!accessToken || !threadId) { setStatus("Start a thread first."); return; }
+    const res = await fetch(functionUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ action: "consent", mode, threadId })
+    });
+    setStatus(res.ok ? "Consent captured for this thread." : VELA_CONSENT_ERROR);
+  }
+
+  async function sendMessage(prefill?: string) {
+    const userText = (prefill ?? message).trim();
+    if (sending || !accessToken || !userText) return;
+
+    // ── Safety block: only shared mode with a minor is refused ──────────────
+    // Private ask-mode about a child is allowed (Vela coaches the parent).
+    if (sharedBlocked) return; // input is hidden anyway — belt-and-suspenders
+
+    if (!subjectId && scope !== "group") { setStatus("Choose a person."); return; }
+    if (scope === "pair" && (!subjectId || !pairId || subjectId === pairId)) {
+      setStatus("Pick two different people for pair mode."); return;
+    }
+    if (scope === "group" && !groupId) { setStatus("Choose a group."); return; }
+    if (!publicEnv.supabaseUrl) { setStatus("Vela isn't configured yet."); return; }
+    if (detectCrisisLanguage(userText)) {
+      setStatus("If anyone is in immediate danger, contact local emergency services now.");
+    }
+
+    // Group threads: refresh the persisted cohort overlay via the Next.js route
+    // that runs @galaxia/astro cohortOverlay. The edge reads that row only —
+    // never client-built context, never a Deno reimplementation of the math.
+    if (scope === "group" && groupId) {
+      const cohortRes = await fetch("/api/groups/cohort", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId })
+      });
+      if (!cohortRes.ok) {
+        const body = await cohortRes.json().catch(() => ({})) as { error?: string };
+        setStatus(body.error ?? "Could not refresh this group's cohort overlay.");
+        return;
+      }
+    }
+
+    setMessage(""); setSending(true); setStatus(null);
+    setLines(prev => [...prev, { role: "user", text: userText }]);
+
+    try {
+      const res = await withTimeout(fetch(functionUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          action: "chat", mode, threadId, relationshipType: relType,
+          subjectPersonId: scope !== "group" ? subjectId : undefined,
+          pairPersonIds: scope === "pair" && subjectId && pairId ? [subjectId, pairId] : undefined,
+          groupId: scope === "group" ? groupId : undefined,
+          userMessage: userText
+        })
+      }), VELA_FETCH_TIMEOUT_MS);
+      const nextTid = res.headers.get("x-thread-id");
+      if (nextTid) setThreadId(nextTid);
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string };
+        const msg = res.status === 503
+          ? "Vela isn't available right now. The AI provider may not be configured."
+          : body.error ?? `Vela responded with an error (${res.status}).`;
+        setLines(prev => [...prev, { role: "vela", text: msg }]);
+        setSending(false); return;
+      }
+
+      if (!res.body) {
+        const text = await res.text();
+        setLines(prev => [...prev, { role: "vela", text: text || "Vela returned an empty response." }]);
+        setSending(false); return;
+      }
+
+      setLines(prev => [...prev, { role: "vela", text: "" }]);
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false; let streamed = "";
+      while (!done) {
+        const chunk = await reader.read();
+        done = chunk.done;
+        if (chunk.value) {
+          streamed += decoder.decode(chunk.value, { stream: true });
+          // Mid-stream: show only the answer body. Any trailing "→ " line —
+          // even a half-written one — stays buffered until the stream ends.
+          const { body } = splitVelaReply(streamed);
+          setLines(prev => {
+            const next = [...prev];
+            next[next.length - 1] = { role: "vela", text: body };
+            return next;
+          });
+        }
+      }
+      // Stream complete: reveal the suggestions as chips below the bubble.
+      const { body: finalBody, suggestions } = splitVelaReply(streamed);
+      setLines(prev => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "vela", text: finalBody || streamed.trim(), suggestions };
+        return next;
+      });
+    } catch (err) {
+      setLines(prev => [...prev, { role: "vela", text: isFetchTimeoutError(err) ? VELA_SEND_TIMEOUT : VELA_SEND_NETWORK }]);
+    } finally { setSending(false); }
+  }
+
+  /**
+   * Pin a Vela insight to the current scope's Record. Only Vela's messages are
+   * ever pinnable (the button is rendered on Vela bubbles only), which upholds
+   * the shared-mode rule: you may save Vela's guidance, never the other
+   * participant's words. The pin is private to the pinner (owner-scoped row).
+   */
+  async function pinInsight(idx: number, text: string) {
+    if (!userId || !text.trim() || pinnedKeys.has(idx)) return;
+    const theme = suggestPinTheme(text);
+    const row: Record<string, unknown> = {
+      owner_id: userId, kind: "vela_pin", body: text.trim(), source_thread_id: threadId ?? null,
+      theme
+    };
+    if (scope === "group" && groupId) row.group_id = groupId;
+    else if (scope === "pair" && subjectId && pairId) { const { pairLow, pairHigh } = orderPair(subjectId, pairId); row.pair_low = pairLow; row.pair_high = pairHigh; }
+    else if (subjectId) row.about_person = subjectId;
+    const { data, error } = await supabase.from("notes").insert(row).select("id").single();
+    if (!error && data?.id) {
+      setPinnedKeys(prev => new Set(prev).add(idx));
+      setPinnedByIdx(prev => ({ ...prev, [idx]: { id: data.id as string, theme } }));
+    }
+    else setStatus(VELA_PIN_FAILED);
+  }
+
+  async function changePinnedTheme(idx: number, theme: PinThemeId | null) {
+    const pin = pinnedByIdx[idx];
+    if (!userId || !pin) return;
+    setPinnedByIdx(prev => ({ ...prev, [idx]: { ...pin, theme } }));
+    const { error } = await updateNoteTheme(supabase, userId, pin.id, theme);
+    if (error) setStatus(error);
+  }
+
+  // Person/pair header only — never fall through to people[0] for group focus.
+  const scopeSubject = scope === "group" ? null : (selectedSubject ?? people[0] ?? null);
+  const hasMessages  = lines.some(l => l.role === "user");
+  const askingAboutHeader = scope === "group"
+    ? (selectedGroup?.name ?? null)
+    : scopeSubject
+      ? `${scopeSubject.display_name}${scope === "pair" && selectedPair ? ` & ${selectedPair.display_name}` : ""}`
+      : null;
+  const askingAboutAvatar = scope === "group"
+    ? (selectedGroup?.name ?? null)
+    : (scopeSubject?.display_name ?? null);
+
+  return (
+    <main className="app-content">
+      <p className="eyebrow">Your guide</p>
+      <h1 className="page-title">Vela</h1>
+      <p className="muted">Warm astrologer + practical coach, grounded in your real chart data.</p>
+
+      {/* Controls */}
+      <section className="glass-card fade-in">
+        <div style={{ display: "grid", gap: 14 }}>
+          <div>
+            <p className="eyebrow" style={{ marginBottom: 8 }}>Mode</p>
+            <div style={{ display: "flex", gap: 8 }}>
+              {(["ask", "shared"] as VelaMode[]).map(m => (
+                <button key={m} onClick={() => startUiTransition(() => setMode(m))} className="pill-link"
+                  style={{ borderColor: mode === m ? "rgba(230,174,108,.5)" : undefined, color: mode === m ? "var(--gold)" : undefined }}>
+                  {m === "ask" ? "Private (ask)" : "Shared space"}
+                </button>
+              ))}
+            </div>
+            <p className="muted" style={{ fontSize: ".78rem", marginTop: 6 }}>
+              {mode === "ask" ? "Only you see this conversation." : "Neutral for all: no private notes. Consent required."}
+            </p>
+          </div>
+
+          <div>
+            <p className="eyebrow" style={{ marginBottom: 8 }}>Focus</p>
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              {(["person", "pair", "group"] as Scope[]).map(s => (
+                <button key={s} onClick={() => startUiTransition(() => setScope(s))} className="pill-link"
+                  style={{ borderColor: scope === s ? "rgba(111,177,184,.5)" : undefined, color: scope === s ? "var(--teal)" : undefined }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <VelaFocusPickers
+                scope={scope}
+                people={velaPeople}
+                groups={velaGroups}
+                subjectId={subjectId}
+                pairId={pairId}
+                groupId={groupId}
+                onSubjectSelect={setSubjectId}
+                onPairSelect={setPairId}
+                onGroupSelect={setGroupId}
+                loading={rosterLoading}
+                error={rosterError}
+                loadingLabel={VELA_ROSTER_LOADING}
+                errorLabel={VELA_ROSTER_ERROR}
+                retryLabel={VELA_ROSTER_RETRY}
+                onRetry={() => setRosterReload((n) => n + 1)}
+              />
+            </div>
+            <input className="field" style={{ borderRadius: 14 }} value={relType}
+              onChange={e => setRelType(e.target.value)}
+              placeholder="Relationship type (partner, sibling, general…)" />
+          </div>
+
+          {sharedBlocked
+            ? <p className="error" style={{ margin: 0, fontSize: ".8rem" }}>Minor safety rule: shared mode is disabled when a minor is in scope.</p>
+            : null}
+        </div>
+      </section>
+
+      {mode === "shared" && !sharedBlocked ? (
+        <section className="glass-card fade-in">
+          <p className="eyebrow" style={{ marginBottom: 8 }}>Consent gate</p>
+          <p className="muted" style={{ fontSize: ".8rem", marginBottom: 6 }}>Shared threads need consent from both participants before Vela responds.</p>
+          <p className="muted" style={{ fontSize: ".8rem", marginBottom: 10 }}>
+            In a shared space, Vela stays neutral and never sees anyone's private notes. Please know: either participant
+            may privately save Vela's guidance to their own record. Neither of you can save the other's messages.
+          </p>
+          <button className="pill-link pill-link--teal" onClick={sendConsent}>Confirm my consent</button>
+        </section>
+      ) : null}
+
+      {/* Chat section */}
+      <section className="glass-card fade-in" style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid rgba(183,154,216,.1)" }}>
+          {askingAboutHeader && askingAboutAvatar ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {scope === "group" ? (
+                <InitialAvatar name={askingAboutAvatar} size="sm" personId={selectedGroup?.id ?? askingAboutAvatar} />
+              ) : (
+                <span className="avatar-cluster">
+                  {scopeSubject ? (
+                    <InitialAvatar
+                      name={scopeSubject.display_name}
+                      size="sm"
+                      personId={scopeSubject.id}
+                      sunSign={scopeSubject.sunSign}
+                      memorial={Boolean(scopeSubject.passed_at)}
+                    />
+                  ) : null}
+                  {scope === "pair" && selectedPair ? (
+                    <InitialAvatar
+                      name={selectedPair.display_name}
+                      size="sm"
+                      personId={selectedPair.id}
+                      sunSign={selectedPair.sunSign}
+                      memorial={Boolean(selectedPair.passed_at)}
+                    />
+                  ) : null}
+                </span>
+              )}
+              <p className="eyebrow" style={{ margin: 0 }}>
+                Asking about {askingAboutHeader}
+              </p>
+            </div>
+          ) : null}
+          {/* One quiet caption for the whole thread: never a per-message line */}
+          <p style={{ margin: askingAboutHeader ? "8px 0 0" : 0, fontSize: ".7rem", color: "var(--mist2)" }}>
+            {PRIVACY_CAPTION}
+          </p>
+        </div>
+
+        {/* ── Shared-mode + minor: the one case that stays refused ──────────── */}
+        {sharedBlocked ? (
+          <div style={{ padding: "18px 0", textAlign: "center" }}>
+            <p style={{ color: "var(--rose)", fontSize: ".88rem", marginBottom: 10 }}>
+              Shared spaces aren't available when a child is involved.
+            </p>
+            <p className="muted" style={{ fontSize: ".8rem", marginBottom: 14, maxWidth: "46ch", margin: "0 auto 14px" }}>
+              A child is never part of a two-way Vela session. To get parenting guidance about {selectedSubject?.display_name ?? "them"},
+              switch to <strong>Private (ask)</strong> mode. Vela will coach you, and your child never sees the conversation.
+            </p>
+            <button className="pill-link" onClick={() => setMode("ask")} style={{ fontSize: ".82rem" }}>
+              Switch to Private (ask)
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Parenting reassurance — shown, never a block, when the private subject is a minor */}
+            {parentingAsk ? (
+              <div style={{ background: "rgba(111,177,184,.08)", border: "1px solid rgba(111,177,184,.2)", borderRadius: 12, padding: "10px 14px", marginBottom: 12 }}>
+                <p className="muted" style={{ fontSize: ".8rem", margin: 0, lineHeight: 1.5 }}>
+                  Vela coaches you about your child privately. Your child is never part of this conversation and will never see it.
+                </p>
+              </div>
+            ) : null}
+            <div ref={chatRef} className="chat-thread">
+              {lines.map((line, idx) => {
+                if (line.role === "user") return (
+                  <div key={idx} className="bubble bubble-user fade-in">
+                    <div className="bubble-sender">You</div>
+                    {line.text}
+                  </div>
+                );
+                // Withdrawn: the answer content is never shown — only the quiet
+                // note. Never silently dropped; the row stays, so the audit
+                // trail is visible (this matters when the row is on a minor's profile).
+                if (line.withdrawnReason) {
+                  return (
+                    <div key={idx} className="bubble bubble-vela fade-in" style={{ opacity: .7, fontStyle: "italic" }}>
+                      <div className="bubble-sender">Vela</div>
+                      <span className="muted" style={{ fontSize: ".82rem" }}>{line.withdrawnReason}</span>
+                    </div>
+                  );
+                }
+                // Follow-up chips belong to the latest Vela answer only —
+                // earlier suggestions are stale once the conversation moves on.
+                const isLatestVela = idx === lines.length - 1 && !sending;
+                const chips = isLatestVela ? (line.suggestions ?? []) : [];
+                const canPin = Boolean(line.text) && !(sending && idx === lines.length - 1);
+                return (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7, maxWidth: "90%" }}>
+                    <div className="bubble bubble-vela fade-in" style={{ whiteSpace: "pre-wrap", maxWidth: "100%" }}>
+                      <div className="bubble-sender">Vela</div>
+                      {line.text || (sending ? null : "…")}
+                    </div>
+                    {canPin ? (
+                      <button
+                        type="button"
+                        onClick={() => void pinInsight(idx, line.text)}
+                        disabled={pinnedKeys.has(idx)}
+                        style={{
+                          background: "transparent", border: "none", cursor: pinnedKeys.has(idx) ? "default" : "pointer",
+                          color: pinnedKeys.has(idx) ? "var(--teal)" : "var(--mist2)", fontSize: ".72rem", padding: "0 2px"
+                        }}
+                        title="Save this insight to this person's record (private to you)"
+                      >
+                        {pinnedKeys.has(idx) ? "✓ Pinned to their record" : "＋ Pin to record"}
+                      </button>
+                    ) : null}
+                    {pinnedByIdx[idx] ? (
+                      <PinThemePicker
+                        value={pinnedByIdx[idx]!.theme}
+                        showHint
+                        onChange={(theme) => void changePinnedTheme(idx, theme)}
+                      />
+                    ) : null}
+                    {chips.length > 0 ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {chips.map(s => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => void sendMessage(s)}
+                            disabled={sending}
+                            style={{
+                              background: "transparent",
+                              border: "1px solid rgba(183,154,216,.22)",
+                              color: "var(--mist)",
+                              borderRadius: 999,
+                              padding: "7px 12px",
+                              fontSize: ".76rem",
+                              lineHeight: 1.25,
+                              cursor: "pointer",
+                              textAlign: "left"
+                            }}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+              {sending ? <TypingIndicator /> : null}
+            </div>
+
+            {!hasMessages ? (
+              <div className="prompt-chips">
+                {SUGGESTED_PROMPTS.slice(0, 3).map(p => (
+                  <button key={p} className="prompt-chip" onClick={() => sendMessage(p)}>{p}</button>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="vela-input-wrap" style={{ marginTop: 12 }}>
+              {parentingAsk ? (
+                <p className="muted" style={{ fontSize: ".72rem", marginBottom: 6 }}>
+                  Vela will coach you as the parent: your child won't see this conversation.
+                </p>
+              ) : null}
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                <textarea
+                  ref={inputRef}
+                  className="field"
+                  style={{ borderRadius: 16, resize: "none", flex: 1 }}
+                  value={message}
+                  onChange={e => setMessage(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendMessage(); } }}
+                  placeholder="Ask Vela about this relationship dynamic…"
+                  rows={2}
+                  disabled={sending}
+                />
+                <button className="btn-primary" onClick={() => sendMessage()}
+                  disabled={sending || !message.trim()}
+                  style={{ flexShrink: 0, alignSelf: "flex-end", padding: "11px 20px", gap: 6 }}>
+                  {sending && <Spinner size={13} color="#1a1206" />}
+                  {sending ? "Sending…" : "Send"}
+                </button>
+              </div>
+              {status ? (
+                <p className={status.includes("danger") || status.includes("immediate") ? "error" : "muted"}
+                  style={{ fontSize: ".78rem", marginTop: 6 }}>{status}</p>
+              ) : null}
+            </div>
+          </>
+        )}
+      </section>
+    </main>
+  );
+}

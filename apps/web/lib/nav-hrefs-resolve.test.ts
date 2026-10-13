@@ -188,6 +188,7 @@ describe("signed-in chart save hrefs", () => {
     expect(PERSON_PROFILE_HREF_PREFIX).toBe("/app/person/");
     expect(personProfileHref("abc")).toBe("/app/person/abc");
     expect(existsSync(join(WEB_APP_DIR, "app/person/[id]/page.tsx"))).toBe(true);
+    expect(existsSync(join(WEB_APP_DIR, "app/person/[id]/person-profile-page.tsx"))).toBe(true);
     expect(existsSync(join(WEB_APP_DIR, "app/chart/page.tsx"))).toBe(false);
   });
 
@@ -478,7 +479,7 @@ describe("empty-state hrefs resolve to App Router pages", () => {
       "settings subscription leftover literal",
     );
     assertRendersFromConfig(
-      readWeb("app/app/person/[id]/page.tsx"),
+      readWeb("app/app/person/[id]/person-profile-page.tsx"),
       ["EMPTY_STATE_WELCOME_HREF"],
       "person empty leftover literal",
     );

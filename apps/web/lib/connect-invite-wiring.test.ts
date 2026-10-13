@@ -92,7 +92,7 @@ describe("constellation connect UI wiring", () => {
   });
 
   it("wires generate onto the person profile and edit panel, not the constellation overlay", () => {
-    const person = read("apps/web/app/app/person/[id]/page.tsx");
+    const person = read("apps/web/app/app/person/[id]/person-profile-page.tsx");
     const edit = read("apps/web/components/edit-person-panel.tsx");
     const home = read("apps/web/app/app/page.tsx");
     expect(person).toContain("ConnectInviteButton");
@@ -105,7 +105,7 @@ describe("constellation connect UI wiring", () => {
   });
 
   it("person profile acknowledges an accepted invite instead of inventing a notification table", () => {
-    const person = read("apps/web/app/app/person/[id]/page.tsx");
+    const person = read("apps/web/app/app/person/[id]/person-profile-page.tsx");
     expect(person).toContain("acknowledgeConnectIfNeeded");
     expect(person).toContain('rpc("acknowledge_connect_accept"');
     expect(person).not.toContain("notifications");

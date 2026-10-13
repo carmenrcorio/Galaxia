@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const page = readFileSync(
-  resolve(__dirname, "../app/app/person/[id]/page.tsx"),
+  resolve(__dirname, "../app/app/person/[id]/person-profile-page.tsx"),
   "utf8"
 );
 const css = readFileSync(resolve(__dirname, "../app/globals.css"), "utf8");

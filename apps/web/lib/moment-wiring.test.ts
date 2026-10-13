@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 describe("source wiring: The Moment reuses notes and never fabricates a sky", () => {
   it("home and person profile both enter the same flow", () => {
     const home = readFileSync(resolve(__dirname, "../app/app/page.tsx"), "utf8");
-    const person = readFileSync(resolve(__dirname, "../app/app/person/[id]/page.tsx"), "utf8");
+    const person = readFileSync(resolve(__dirname, "../app/app/person/[id]/person-profile-page.tsx"), "utf8");
     expect(home).toContain("CAPTURE_MOMENT_HREF");
     expect(home).toContain("CAPTURE_MOMENT");
     expect(person).toContain("captureMomentHref(person.id)");

@@ -8,7 +8,7 @@ function read(rel: string): string {
 
 describe("web sign metadata card placement", () => {
   it("keeps the compact Big Three and wheel together before metadata and actions on a person profile", () => {
-    const person = read("app/app/person/[id]/page.tsx");
+    const person = read("app/app/person/[id]/person-profile-page.tsx");
     const bigThree = person.indexOf("<FlipSignCards");
     const wheel = person.indexOf("<ChartWheel");
     const metadata = person.indexOf("<SignMetadataCards");

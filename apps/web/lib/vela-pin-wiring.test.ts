@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 describe("source wiring: pinned Vela insights stay owner-only and the pin control stays put", () => {
   it("person page loads the person's pins, mounts search/group UI, and keeps Ask Vela more", () => {
     const src = readFileSync(
-      resolve(__dirname, "../app/app/person/[id]/page.tsx"),
+      resolve(__dirname, "../app/app/person/[id]/person-profile-page.tsx"),
       "utf8"
     );
     expect(src).toContain("VelaPinsPanel");
@@ -19,7 +19,7 @@ describe("source wiring: pinned Vela insights stay owner-only and the pin contro
 
   it("Vela pin control still lives on the answer bubble and still writes kind vela_pin", () => {
     const src = readFileSync(
-      resolve(__dirname, "../app/app/vela/page.tsx"),
+      resolve(__dirname, "../app/app/vela/vela-chat-page.tsx"),
       "utf8"
     );
     expect(src).toContain("＋ Pin to record");

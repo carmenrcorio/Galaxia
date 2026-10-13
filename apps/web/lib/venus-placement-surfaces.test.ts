@@ -62,7 +62,7 @@ describe("inventory surfaces — Venus never rendered without minorSafe", () => 
   });
 
   it("/app/person applies already-computed personIsMinor to natal placements + houses", () => {
-    const src = read("../app/app/person/[id]/page.tsx");
+    const src = read("../app/app/person/[id]/person-profile-page.tsx");
     expect(src).toContain("personIsMinor");
     expect(src).toContain("const safety = { minorSafe: personIsMinor }");
     expect(src).toContain("interpretPlacement(bk, sk, safety)");

@@ -34,9 +34,9 @@ describe("source wiring — async surface standard (ENGINEERING.md §18)", () =>
       web("app/app/this-week/page.tsx"),
       web("app/app/moment/page.tsx"),
       web("app/app/compare/page.tsx"),
-      web("app/app/person/[id]/page.tsx"),
+      web("app/app/person/[id]/person-profile-page.tsx"),
       web("app/app/groups/page.tsx"),
-      web("app/app/vela/page.tsx"),
+      web("app/app/vela/vela-chat-page.tsx"),
       web("app/app/settings/page.tsx"),
       mobile("app/(app)/(tabs)/vela.tsx"),
       mobile("app/(app)/(tabs)/settings.tsx")
@@ -45,7 +45,7 @@ describe("source wiring — async surface standard (ENGINEERING.md §18)", () =>
       expect(src).toContain("withTimeout");
       expect(src).toContain("DEFAULT_FETCH_TIMEOUT_MS");
     }
-    expect(web("app/app/vela/page.tsx")).toContain("VELA_FETCH_TIMEOUT_MS");
+    expect(web("app/app/vela/vela-chat-page.tsx")).toContain("VELA_FETCH_TIMEOUT_MS");
     expect(mobile("app/(app)/(tabs)/vela.tsx")).toContain("VELA_FETCH_TIMEOUT_MS");
   });
 });

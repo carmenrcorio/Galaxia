@@ -13,7 +13,7 @@ function read(rel: string): string {
   return readFileSync(resolve(__dirname, "..", rel), "utf8");
 }
 
-const personPage = read("app/app/person/[id]/page.tsx");
+const personPage = read("app/app/person/[id]/person-profile-page.tsx");
 const quickChart = read("app/chart/quick-chart-page.tsx");
 const wheel = read("components/chart-wheel.tsx");
 

@@ -1,0 +1,1867 @@
+"use client";
+
+/**
+ * /app/person/[id]
+ *
+ * Interpretation: @galaxia/astro interpretation libraries
+ * Wheel: design/reference/galaxia.jsx Wheel()
+ * Glyph maps: design/reference/galaxia.jsx
+ */
+
+import {
+  aspectPatternCopy,
+  formatTSquarePatternDetail,
+  computeSynastry,
+  type AspectPattern,
+  type NatalChart,
+  type Placement,
+  type PersonDailyNudgeRecord,
+  CHART_ENGINE_VERSION,
+  bodiesWithMovedLongitudes,
+  coerceDailyNudgeRow,
+  formatMovedBodies,
+  houseSystemLabelForChart,
+  ownerLocalDate,
+  placementsLongitudeChanged,
+  buildPersonDailyNudge,
+  whenUTCForOwnerLocalDate,
+  bodyDomain,
+  ELEMENT_ABSENT,
+  ELEMENT_DOMINANT,
+  GENERATIONAL,
+  ADJUST_BADGE,
+  interpretAspect,
+  interpretPlacement,
+  interpretRising,
+  selectNatalAspectGeometry,
+  selectNatalAspectReadings,
+  type AspectKey,
+  type BodyKey,
+  type SignKey,
+  houseMeaning,
+  interpretHouse,
+  type HouseKey,
+  plutoGenerationLabel,
+  getFamilyBridge,
+  isProfessionalPersonRelation,
+  bodyDisplayName,
+  isChartPoint,
+} from "@galaxia/astro";
+import {
+  aspectGlossarySlug,
+  buildPersonPageGroups,
+  groupForPersonSection,
+  isTodaySection,
+  PERSON_TAB_LABEL,
+  PERSON_TAB_VOCAB,
+  resolvePersonPageEntry,
+  formatRelationshipLabel,
+  hasPassed,
+  isMinorForSafety,
+  usesAncientLight,
+  shouldShowLiveTransits,
+  shouldShowMemorialTimeline,
+  CHART_PRECISION_NONE_WAITING,
+  CHART_SAVED_DETAILS_NO_CHART_BODY,
+  DAILY_SKY_UNAVAILABLE_YEAR_BODY,
+  DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP,
+  placementAnchorId,
+  type ChartPrecision,
+  type PersonGroupKey,
+  DEFAULT_FETCH_TIMEOUT_MS,
+  withTimeout,
+  type PersonNavSectionId,
+  type PinThemeId,
+  type RecordTagId,
+  type RecordViewFilters,
+} from "@galaxia/core";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import { GlossaryTerm } from "../../../../components/glossary-term";
+import { AskBirthData } from "../../../../components/ask-birth-data";
+import { ChartPrecisionIndicator, ChartPrecisionUpgradeButton } from "../../../../components/chart-precision-indicator";
+import { ConnectInviteButton } from "../../../../components/connect-invite-button";
+import { ChartImageExport, chartExportFilename } from "../../../../components/chart-image-export";
+import { FlipSignCards } from "../../../../components/flip-sign-cards";
+import { SignMetadataCards } from "../../../../components/sign-metadata-cards";
+import { RetrogradeBadge } from "../../../../components/retrograde-badge";
+import { ChartWheel } from "../../../../components/chart-wheel";
+import dynamic from "next/dynamic";
+
+const EditPersonPanel = dynamic(
+  () => import("../../../../components/edit-person-panel").then((mod) => mod.EditPersonPanel),
+  { ssr: false }
+);
+import { GenerationalEraSections } from "../../../../components/generational-era-surface";
+import { InitialAvatar } from "../../../../components/initial-avatar";
+import { PersonProfileNav, ChartVocabSubhead } from "../../../../components/chart-section-nav";
+import { HousesUnavailableCard } from "../../../../components/houses-unavailable-card";
+import { AspectsUnavailableCard } from "../../../../components/aspects-unavailable-card";
+import { MemorialTimeline } from "../../../../components/memorial-timeline";
+import { HonorDeclarationBox, HONOR_LIGHT_ANCHOR_ID } from "../../../../components/honor-declaration";
+import { RemembranceSpace } from "../../../../components/remembrance-space";
+import { PersonRecordTimeline } from "../../../../components/person-record-timeline";
+import { VelaPinsPanel } from "../../../../components/vela-pins-panel";
+import { Spinner } from "../../../../components/spinner";
+import { ASPECT_GLYPH, BODY_GLYPH, SIGN_GLYPH, signElement } from "../../../../lib/design";
+import { getPreferredHouseSystem } from "../../../../lib/house-system";
+import { CAPTURE_MOMENT } from "../../../../lib/moment-copy";
+import { EMPTY_STATE_WELCOME_HREF, captureMomentHref } from "../../../../lib/nav-links";
+import { fetchArchivedThreads, fetchRecord, fetchVelaPins, setThreadStatus, updateNoteTags, updateNoteTheme, type RecordEntry } from "../../../../lib/record";
+import { createSupabaseBrowserClient } from "../../../../lib/supabase/client";
+import {
+  formatChartPatternLine,
+  formatNatalAspectLine,
+  formatPlacementLine,
+} from "../../../../lib/why-reading";
+import { ChartMethodologyLink } from "../../../../components/chart-methodology-link";
+import { WhyReadingGroup, WhyThisReading } from "../../../../components/why-this-reading";
+
+interface PersonRow {
+  id: string; display_name: string; relation: string;
+  birth_precision: "none" | "exact" | "date" | "year"; is_minor: boolean;
+  birth_date?: string | null; birth_time?: string | null;
+  birth_place?: string | null; birth_lat?: number | null; birth_lng?: number | null;
+  tz_offset_min?: number | null;
+  passed_at?: string | null;
+  /** Owner-recorded actual date of death (distinct from passed_at). NULL = unknown. */
+  died_on?: string | null;
+  /** Curated palette hex; null = element-derived node color. */
+  star_color?: string | null;
+  /** Assigned memorial pattern id; null = ancient light when passed. */
+  memorial_constellation?: string | null;
+  is_self?: boolean;
+  linked_user_id?: string | null;
+  custom_position?: { angle: number; radius_pct: number } | null;
+  star_scale?: number | null;
+  exclude_from_dailies?: boolean | null;
+}
+/* ─── Normalise engine output to library key conventions ─────────────────── */
+function normaliseBody(b: string): BodyKey { return b.toLowerCase() as BodyKey; }
+function normaliseSign(s: string): SignKey  { return (s.charAt(0).toUpperCase() + s.slice(1)) as SignKey; }
+function normaliseAspect(t: string): AspectKey { return t.toLowerCase() as AspectKey; }
+
+function toDMS(deg: number): string {
+  const d = Math.floor(deg);
+  const m = Math.round((deg - d) * 60);
+  return `${d}°${String(m).padStart(2, "0")}′`;
+}
+
+const EL_GRAD: Record<string, string> = {
+  fire:  "linear-gradient(135deg,#F0A368,#DC6E5F)",
+  earth: "linear-gradient(135deg,#D8B873,#9DAE6E)",
+  air:   "linear-gradient(135deg,#D2B0E6,#9FA8E6)",
+  water: "linear-gradient(135deg,#79BEC8,#7193CE)",
+};
+
+const SIGNS_ORDER = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
+const EL_SOLID: Record<string, string> = { fire:"#E0825C", earth:"#cdbd7a", air:"#B79AD8", water:"#6FB1B8" };
+// ChartWheel extracted to components/chart-wheel.tsx (also used by the public Quick Chart).
+
+/* ─── HouseBadge — interactive tooltip on H4, H8 etc ────────────────────── */
+function HouseBadge({ house }: { house: number }) {
+  const [tip, setTip] = useState(false);
+  const hk = house as HouseKey;
+  const hm = houseMeaning(hk);
+  if (!hm) return <span style={{ fontSize: ".68rem", color: "var(--gold-soft)", background: "rgba(230,174,108,.12)", borderRadius: 5, padding: "1px 6px", marginLeft: 7, fontWeight: 400 }}>H{house}</span>;
+  return (
+    <span style={{ position: "relative", display: "inline-block" }}>
+      <button
+        type="button"
+        onClick={() => setTip(t => !t)}
+        style={{
+          fontSize: ".68rem", color: "var(--gold-soft)", background: tip ? "rgba(230,174,108,.22)" : "rgba(230,174,108,.12)",
+          border: "1px solid rgba(230,174,108,.25)", borderRadius: 6, padding: "2px 7px",
+          marginLeft: 7, fontWeight: 500, cursor: "pointer"
+        }}
+        aria-label={`${hm.name}: ${hm.short}`}
+      >
+        H{house}
+      </button>
+      {tip ? (
+        <div style={{
+          position: "absolute", bottom: "calc(100% + 6px)", left: 0, zIndex: 40, minWidth: 200, maxWidth: 240,
+          background: "linear-gradient(165deg,rgba(29,22,64,.97),rgba(10,7,23,.99))",
+          border: "1px solid rgba(230,174,108,.22)", borderRadius: 12, padding: "10px 12px",
+          boxShadow: "0 16px 40px -16px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.05)"
+        }}>
+          <p style={{ fontSize: ".7rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--gold)", margin: "0 0 3px" }}>{hm.name}</p>
+          <p style={{ fontSize: ".78rem", color: "var(--mist2)", margin: "0 0 5px" }}>{hm.domain}</p>
+          <p style={{ fontSize: ".78rem", color: "var(--cream)", margin: 0, lineHeight: 1.5 }}>{hm.short}</p>
+        </div>
+      ) : null}
+    </span>
+  );
+}
+
+/* ─── ExpandRow — the single expandable row used throughout ─────────────── */
+function ExpandRow({
+  open, onToggle, label, domain, degree, house, el, glyph, retro, short, long,
+  houseReading, planetAspects, hasHouses, anchorId, whyLine
+}: {
+  open: boolean; onToggle: () => void;
+  /** Scroll target for the wheel glyph card's "see full reading" link. */
+  anchorId?: string;
+  label: string; domain?: string; degree?: string; house?: number;
+  el: string; glyph: string; retro?: boolean; short: string; long: string;
+  /** House reading block — rendered in expanded state when present */
+  houseReading?: { houseName: string; houseDomain: string; long: string } | null;
+  /** Per-planet aspects — rendered in expanded state */
+  planetAspects?: Array<{ from: string; to: string; type: string; orb: number; short: string; tight: boolean }>;
+  hasHouses?: boolean;
+  whyLine?: string | null;
+}) {
+  return (
+    <div id={anchorId} style={{ borderBottom: "1px solid rgba(183,154,216,.08)", scrollMarginTop: 92 }}>
+      <button
+        onClick={onToggle}
+        style={{
+          width: "100%", background: "none", border: "none",
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "10px 0", cursor: "pointer", textAlign: "left"
+        }}
+        aria-expanded={open}
+      >
+        <div className="glyph-sq-wrap">
+          <div className="glyph-sq" style={{ background: EL_GRAD[el] ?? "var(--ink2)", color: "#1a1206", flexShrink: 0 }}>
+            {glyph}
+          </div>
+          <RetrogradeBadge retro={Boolean(retro)} corner />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {domain ? (
+            <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>
+              {domain}
+            </div>
+          ) : null}
+          <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600, display: "flex", alignItems: "center", flexWrap: "wrap" }}>
+            {label}
+            {house && hasHouses !== false ? <HouseBadge house={house} /> : null}
+          </div>
+          {degree ? <div style={{ fontSize: ".72rem", color: "var(--mist2)" }}>{degree}</div> : null}
+        </div>
+        <div style={{ flex: 1, minWidth: 0, textAlign: "right" }}>
+          <span style={{ fontSize: ".78rem", color: "var(--mist)", fontStyle: "italic" }}>{short}</span>
+        </div>
+        <span style={{ color: "var(--mist2)", fontSize: ".72rem", flexShrink: 0, marginLeft: 6, transform: open ? "rotate(90deg)" : "none", display: "inline-block", transition: "transform .2s" }}>▶</span>
+      </button>
+      {open ? (
+        <div style={{ paddingBottom: 14, paddingLeft: 48, paddingRight: 6, display: "grid", gap: 12 }}>
+          <WhyThisReading insightType="natal_placement" line={whyLine} className="why-reading--in-row" />
+          {/* Block 1: IN [SIGN] */}
+          {long ? (
+            <div>
+              <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--mist2)", margin: "0 0 4px" }}>
+                In {label.includes(" in ") ? label.split(" in ").slice(1).join(" in ") : "this sign"}
+              </p>
+              <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{long}</p>
+            </div>
+          ) : null}
+          {/* Block 2: IN THE [N]TH HOUSE */}
+          {houseReading ? (
+            <div>
+              <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--gold-soft)", margin: "0 0 2px" }}>
+                In the {houseReading.houseName.toLowerCase()}
+              </p>
+              <p style={{ fontSize: ".72rem", color: "var(--mist2)", margin: "0 0 4px" }}>{houseReading.houseDomain}</p>
+              <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{houseReading.long}</p>
+            </div>
+          ) : null}
+          {/* Block 3: ASPECTS */}
+          {planetAspects && planetAspects.length > 0 ? (
+            <div>
+              <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--mist2)", margin: "0 0 6px" }}>Aspects</p>
+              <div style={{ display: "grid", gap: 4 }}>
+                {planetAspects.map((a, i) => {
+                  const glyph = ASPECT_GLYPH[a.type] ?? a.type[0];
+                  const other = a.from.toLowerCase() === label.split(" ")[0].toLowerCase() ? a.to : a.from;
+                  return (
+                    <div key={i} style={{
+                      display: "flex", alignItems: "center", gap: 7, padding: "5px 8px", borderRadius: 8,
+                      background: a.tight ? "rgba(230,174,108,.06)" : "rgba(255,255,255,.02)",
+                      border: a.tight ? "1px solid rgba(230,174,108,.2)" : "1px solid rgba(183,154,216,.08)"
+                    }}>
+                      <span style={{ fontSize: ".8rem", color: "var(--mist2)", width: 36, textAlign: "center", letterSpacing: 1, flexShrink: 0 }}>
+                        {BODY_GLYPH[other.toLowerCase()] ?? other[0]} {glyph}
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontSize: ".78rem", color: "var(--cream)", fontWeight: 600 }}>{a.type} {other}</span>
+                        <span style={{ fontSize: ".72rem", color: "var(--mist)", marginLeft: 6, fontStyle: "italic" }}>{a.short}</span>
+                      </div>
+                      <span style={{ fontSize: ".68rem", color: "var(--mist2)" }}>{toDMS(a.orb)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ─── Modality balance ───────────────────────────────────────────────────── */
+const SIGN_MODALITY: Record<string, "cardinal"|"fixed"|"mutable"> = {
+  Aries:"cardinal",Cancer:"cardinal",Libra:"cardinal",Capricorn:"cardinal",
+  Taurus:"fixed",Leo:"fixed",Scorpio:"fixed",Aquarius:"fixed",
+  Gemini:"mutable",Virgo:"mutable",Sagittarius:"mutable",Pisces:"mutable"
+};
+const MODALITY_DOMINANT: Record<string, string> = {
+  cardinal: "Heavy on cardinal signs: they initiate well. Starting is the gift; finishing is the practice.",
+  fixed:    "Heavy on fixed signs: they hold their ground. Persistence is the gift; letting go is the practice.",
+  mutable:  "Heavy on mutable signs: they adapt well. Flexibility is the gift; commitment is the practice.",
+};
+const MODALITY_ABSENT: Record<string, string> = {
+  cardinal: "Little cardinal energy. Beginning things may feel like the hard part.",
+  fixed:    "Little fixed energy. Holding a course past comfort may require deliberate effort.",
+  mutable:  "Little mutable energy. Adapting to change may take more out of them than it would others.",
+};
+
+/* ─── Main page ─────────────────────────────────────────────────────────── */
+const PERSON_LOAD_ERROR = "This person could not load. Try again.";
+const PERSON_RETRY = "Try again";
+const PERSON_NOT_FOUND = "This person is not in your constellation.";
+const PERSON_NO_SELF = "No self profile yet.";
+
+export default function PersonProfilePage() {
+  const params   = useParams<{ id: string }>();
+  const personId = params.id;
+  const router   = useRouter();
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+
+  const [userId, setUserId]         = useState<string | null>(null);
+  const [person, setPerson]         = useState<PersonRow | null>(null);
+  const [chart, setChart]           = useState<NatalChart | null>(null);
+  const [engineVersion, setEngineVersion] = useState<number>(CHART_ENGINE_VERSION);
+  const [record, setRecord]         = useState<RecordEntry[]>([]);
+  const [velaPins, setVelaPins]     = useState<RecordEntry[]>([]);
+  const [archivedThreads, setArchivedThreads] = useState<RecordEntry[]>([]);
+  const [noteDraft, setNoteDraft]   = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [status, setStatus]         = useState<string | null>(null);
+  const [loading, setLoading]       = useState(true);
+  /** Session banner after a longitude-changing chart rewrite (also persisted to Record). */
+  const [chartCorrectionNotice, setChartCorrectionNotice] = useState<string | null>(null);
+  /** Durable daily nudge — same row home reads; never recompute copy on open. */
+  const [dailyNudge, setDailyNudge] = useState<PersonDailyNudgeRecord | null>(null);
+  /** Viewer's own confident Pluto sign — Family Bridge only, fetched only when this person is not the viewer's own self-chart. */
+  const [viewerPlutoSign, setViewerPlutoSign] = useState<SignKey | null>(null);
+
+  const [openRows, setOpenRows]     = useState<Set<string>>(new Set(["sun","moon","rising"]));
+  const [placementsAllOpen, setPlacementsAllOpen] = useState(false);
+  const [aspectsAllOpen, setAspectsAllOpen]       = useState(false);
+  const [housesAllOpen, setHousesAllOpen]         = useState(false);
+  const [activeGroup, setActiveGroup] = useState<PersonGroupKey>("them");
+  const [, startGroupTransition] = useTransition();
+  const [mountedGroups, setMountedGroups] = useState<Set<PersonGroupKey>>(() => new Set(["them"]));
+  const [wheelMounted, setWheelMounted] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editUpgradeTo, setEditUpgradeTo] = useState<Exclude<ChartPrecision, "none"> | null>(null);
+  const entryAppliedFor = useRef<string | null>(null);
+
+  const toggleRow = useCallback((key: string) => {
+    setOpenRows(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
+  }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setWheelMounted(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  const openPrecisionUpgrade = useCallback((target: Exclude<ChartPrecision, "none">) => {
+    setEditUpgradeTo(target);
+    setEditOpen(true);
+  }, []);
+
+  const handleEditOpenChange = useCallback((next: boolean) => {
+    setEditOpen(next);
+    if (!next) setEditUpgradeTo(null);
+  }, []);
+
+  const toggleAllPlacements = useCallback((open: boolean) => {
+    setPlacementsAllOpen(open);
+    setOpenRows(prev => { const next = new Set(prev); chart?.placements.forEach(p => open ? next.add(`pl-${p.body}`) : next.delete(`pl-${p.body}`)); return next; });
+  }, [chart]);
+
+  /**
+   * Wheel glyph card link. Opens the body's card in the placement list (Sun
+   * and Moon live in Big Three, everything else in Placements), makes sure the
+   * Them panel is the visible tab, then scrolls the card into view. The panel
+   * switch has to land before the scroll, so the scroll runs a frame later
+   * against an element that is no longer `hidden`.
+   */
+  const ensureGroupMounted = useCallback((group: PersonGroupKey) => {
+    setMountedGroups((prev) => (prev.has(group) ? prev : new Set(prev).add(group)));
+  }, []);
+
+  const revealPlacementCard = useCallback((body: string) => {
+    const rowKey = body === "sun" || body === "moon" ? body : `pl-${body}`;
+    ensureGroupMounted("them");
+    setActiveGroup("them");
+    setOpenRows(prev => new Set(prev).add(rowKey));
+    window.setTimeout(() => {
+      document.getElementById(placementAnchorId(body))?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
+  }, []);
+
+  const toggleAllHouses = useCallback((open: boolean) => {
+    setHousesAllOpen(open);
+    setOpenRows(prev => { const next = new Set(prev); for(let h=1;h<=12;h++) open?next.add(`h-${h}`):next.delete(`h-${h}`); return next; });
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      setUserId(user.id);
+      loadProfile(user.id);
+    });
+  }, [personId, supabase]);
+
+  const hasHouses = useMemo(() => Boolean(chart?.cusps?.length === 12), [chart]);
+
+  // Balance tallies count only placements whose sign is actually known —
+  // an uncertain (year-only) sign must not be tallied as if it were fact.
+  const elementBalance = useMemo(() => {
+    if (!chart || chart.precision === "year") return null;
+    return chart.placements.filter(p => p.confident !== false && !isChartPoint(p.body)).reduce(
+      (acc, p) => { acc[signElement(p.sign) as keyof typeof acc] += 1; return acc; },
+      { fire: 0, earth: 0, air: 0, water: 0 }
+    );
+  }, [chart]);
+
+  const modalityBalance = useMemo(() => {
+    if (!chart || chart.precision === "year") return null;
+    return chart.placements.filter(p => p.confident !== false && !isChartPoint(p.body)).reduce(
+      (acc, p) => { const m = SIGN_MODALITY[p.sign]; if (m) acc[m] += 1; return acc; },
+      { cardinal: 0, fixed: 0, mutable: 0 }
+    );
+  }, [chart]);
+
+  const { natalAspects, natalAspectReadings, natalQuincunxes } = useMemo(() => {
+    // Aspects need real positions. Year-only charts have sampled longitudes
+    // (mid-year), so aspect orbs computed from them would be fabricated.
+    // Geometry list (wheel): tightest 14, authored or not. Reading list:
+    // authored-only so ASPECT_NATURE never occupies a reading slot.
+    const empty = [] as ReturnType<typeof computeSynastry>["aspects"];
+    if (!chart || chart.precision === "year") {
+      return { natalAspects: empty, natalAspectReadings: empty, natalQuincunxes: empty };
+    }
+    const raw = computeSynastry(chart, chart).aspects;
+    const seen = new Set<string>();
+    const natalQuincunxes = raw
+      .filter((a) => a.type === "quincunx" && a.from !== a.to)
+      .slice()
+      .sort((a, b) => a.orb - b.orb)
+      .filter((a) => {
+        const key = `${[a.from, a.to].sort().join("-")}:${a.type}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    return {
+      natalAspects: selectNatalAspectGeometry(raw),
+      natalAspectReadings: selectNatalAspectReadings(raw),
+      natalQuincunxes,
+    };
+  }, [chart]);
+
+  // Defined here (not with the other toggles above) because it must close over
+  // the CURRENT natalAspectReadings. When it was a useCallback with an empty dep array
+  // declared before natalAspects, it captured the first render's value — which
+  // is [] while the chart is still loading — so "Expand all" flipped its label
+  // but never added any asp-* keys to openRows (the rows never opened).
+  const toggleAllAspects = useCallback((open: boolean) => {
+    setAspectsAllOpen(open);
+    setOpenRows(prev => {
+      const next = new Set(prev);
+      natalAspectReadings.forEach((a, idx) => {
+        const k = `asp-${a.from}-${a.to}-${idx}`;
+        if (open) next.add(k); else next.delete(k);
+      });
+      return next;
+    });
+  }, [natalAspectReadings]);
+
+  // Per-planet aspect map (for expanded placement rows): authored readings only.
+  const aspectsByBody = useMemo(() => {
+    const map = new Map<string, typeof natalAspectReadings>();
+    for (const a of natalAspectReadings) {
+      for (const body of [a.from, a.to]) {
+        if (!map.has(body)) map.set(body, []);
+        map.get(body)!.push(a);
+      }
+    }
+    return map;
+  }, [natalAspectReadings]);
+
+  /** House occupants map for the Twelve Houses section */
+  const houseOccupants = useMemo(() => {
+    if (!chart || !hasHouses) return new Map<number, Placement[]>();
+    const map = new Map<number, Placement[]>();
+    for (let h = 1; h <= 12; h++) map.set(h, []);
+    for (const p of chart.placements) { if (p.house) map.get(p.house)?.push(p); }
+    return map;
+  }, [chart, hasHouses]);
+
+  /**
+   * Rebuild the UTC birth instant from the stored, user-confirmed birth fields.
+   * Returns null when the stored data is insufficient — we never substitute
+   * "now", noon, or UTC to force a recompute through.
+   */
+  function rebuildDateUTC(p: PersonRow): string | null {
+    if (!p.birth_date) return null;
+    const [yr, mo, dy] = p.birth_date.slice(0, 10).split("-").map(Number);
+    if (p.birth_precision === "exact") {
+      if (!p.birth_time || p.tz_offset_min == null) return null;
+      const [hr, mn] = p.birth_time.slice(0, 5).split(":").map(Number);
+      return new Date(Date.UTC(yr!, mo! - 1, dy!, hr!, mn!, 0) - p.tz_offset_min * 60_000).toISOString();
+    }
+    if (p.birth_precision === "date") return `${p.birth_date.slice(0, 10)}T12:00:00.000Z`;
+    return `${yr}-01-01T00:00:00.000Z`;
+  }
+
+  async function acknowledgeConnectIfNeeded(uid: string, person: PersonRow) {
+    if (person.is_self) return;
+    const { data } = await supabase
+      .from("invites")
+      .select("id, person_id, accepted_by")
+      .eq("from_user", uid)
+      .eq("kind", "constellation_connect")
+      .eq("status", "accepted")
+      .is("sender_ack_at", null);
+    const match = (data ?? []).find((row) =>
+      row.person_id === person.id || (Boolean(person.linked_user_id) && row.accepted_by === person.linked_user_id),
+    );
+    if (match) {
+      await supabase.rpc("acknowledge_connect_accept", { p_invite_id: match.id });
+    }
+  }
+
+  async function loadProfile(uid: string) {
+    setLoading(true);
+    // A unique index on people(owner_id) WHERE is_self makes more than one
+    // self structurally impossible, so this is never a "pick among duplicates"
+    // query — no ordering/limit tie-breaker needed or used.
+    const actualId = personId === "self"
+      ? (await supabase.from("people").select("id").eq("owner_id", uid).eq("is_self", true).maybeSingle()).data?.id
+      : personId;
+    if (!actualId) { setStatus(PERSON_NO_SELF); setLoading(false); return; }
+    let pData: { [k: string]: unknown } | null = null;
+    let pErr: { message: string } | null = null;
+    let cData: { data?: unknown; house_system?: unknown; engine_version?: unknown } | null = null;
+    let cErr: { message: string } | null = null;
+    try {
+      const fetched = await withTimeout(Promise.all([
+        supabase.from("people").select("id, display_name, relation, birth_precision, is_minor, is_self, birth_date, birth_time, birth_place, birth_lat, birth_lng, tz_offset_min, passed_at, died_on, star_color, memorial_constellation, custom_position, star_scale, linked_user_id, exclude_from_dailies").eq("id", actualId).single(),
+        supabase.from("charts").select("data, house_system, engine_version").eq("person_id", actualId).single()
+      ]), DEFAULT_FETCH_TIMEOUT_MS);
+      pData = fetched[0].data as typeof pData;
+      pErr = fetched[0].error;
+      cData = fetched[1].data as typeof cData;
+      cErr = fetched[1].error;
+    } catch {
+      setStatus(PERSON_LOAD_ERROR);
+      setLoading(false);
+      return;
+    }
+    if (pErr || !pData) { setStatus(PERSON_LOAD_ERROR); setLoading(false); return; }
+    const personRow = pData as unknown as PersonRow & { tz_offset_min?: number | null };
+    void acknowledgeConnectIfNeeded(uid, personRow);
+    // Progressive capture: a person with no chart yet (birth_precision 'none')
+    // is not an error — render the "add birth data" state instead of failing.
+    if (cErr || !cData) {
+      setPerson(personRow); setChart(null); setDailyNudge(null); setViewerPlutoSign(null);
+      await loadRecord(uid, actualId);
+      setLoading(false);
+      return;
+    }
+    let chartData = cData.data as NatalChart;
+    let version = (cData.engine_version as number | null) ?? 1;
+
+    const preferred = await getPreferredHouseSystem(supabase, uid);
+    const stale = version < CHART_ENGINE_VERSION || (chartData.houseSystemRequested ?? "placidus") !== preferred;
+    let longitudeCorrectionBody: string | null = null;
+    if (stale) {
+      const dateUTC = rebuildDateUTC(personRow);
+      const canRecompute = dateUTC !== null && personRow.birth_precision !== "none" &&
+        (personRow.birth_precision !== "exact" || (personRow.birth_lat != null && personRow.birth_lng != null));
+      if (canRecompute) {
+        const { computeNatalChart } = await import("@galaxia/astro");
+        const recomputed = computeNatalChart({
+          dateUTC: dateUTC!,
+          precision: personRow.birth_precision as "exact" | "date" | "year",
+          lat: personRow.birth_lat ?? undefined,
+          lng: personRow.birth_lng ?? undefined,
+          tzOffsetMin: personRow.tz_offset_min ?? undefined,
+          houseSystem: preferred
+        });
+        const lonChanged = placementsLongitudeChanged(chartData, recomputed);
+        // House-only / label rewrites do not move synastry scores — apply quietly.
+        // Longitude changes must be recorded: a silent mutate of positions already
+        // shown to the user is a fabrication under ENGINEERING §12.
+        await supabase.from("charts").upsert({
+          person_id: actualId,
+          house_system: recomputed.houseSystem ?? null,
+          data: recomputed,
+          engine_version: CHART_ENGINE_VERSION,
+        });
+        if (lonChanged) {
+          const moved = bodiesWithMovedLongitudes(chartData, recomputed);
+          const movedList = formatMovedBodies(moved);
+          longitudeCorrectionBody = movedList
+            ? `Planet positions were corrected from the birth details already on file, not from a new edit. Bodies that moved: ${movedList}.`
+            : `Planet positions were corrected from the birth details already on file, not from a new edit.`;
+          await supabase.from("notes").insert({
+            owner_id: uid,
+            about_person: actualId,
+            kind: "chart_correction",
+            body: longitudeCorrectionBody,
+            payload: {
+              fromEngineVersion: version,
+              toEngineVersion: CHART_ENGINE_VERSION,
+              bodiesMoved: moved,
+              houseSystemRequested: preferred,
+              correctedAt: new Date().toISOString(),
+            },
+          });
+        }
+        chartData = recomputed;
+        version = CHART_ENGINE_VERSION;
+      } else if (version < CHART_ENGINE_VERSION && cData.house_system !== "equal" && chartData.cusps) {
+        // Legacy chart (engine v1) that cannot be recomputed from its stored
+        // fields. Its cusps were computed as Equal House but stored under the
+        // label "placidus" — correct the label to what the data actually is.
+        // Label-only: no longitude change, no Record entry.
+        chartData = { ...chartData, houseSystem: "equal", houseSystemRequested: preferred };
+        await supabase.from("charts").upsert({ person_id: actualId, house_system: "equal", data: chartData, engine_version: version });
+      }
+    }
+    setPerson(personRow); setChart(chartData); setEngineVersion(version);
+    setChartCorrectionNotice(longitudeCorrectionBody);
+
+    // Family Bridge (Generational layer): only meaningful when viewing
+    // someone else's chart, so only fetched then. Mirrors the "self" id
+    // lookup above (owner_id + is_self, unique by index, no tie-breaker
+    // needed). A missing self-person, missing self-chart, or an unconfident
+    // self Pluto sign all degrade to null — the card is simply omitted,
+    // never rendered from a guessed sign (§12).
+    if (personRow.is_self) {
+      setViewerPlutoSign(null);
+    } else {
+      const { data: selfPersonRow } = await supabase
+        .from("people").select("id").eq("owner_id", uid).eq("is_self", true).maybeSingle();
+      if (selfPersonRow?.id) {
+        const { data: selfChartRow } = await supabase
+          .from("charts").select("data").eq("person_id", selfPersonRow.id).maybeSingle();
+        const selfPluto = (selfChartRow?.data as NatalChart | undefined)?.generational?.pluto;
+        setViewerPlutoSign(selfPluto?.confident ? (selfPluto.sign as SignKey) : null);
+      } else {
+        setViewerPlutoSign(null);
+      }
+    }
+
+    // Durable daily nudge — shared with home. Build once if missing for today.
+    if (shouldShowLiveTransits(personRow)) {
+      const localDate = ownerLocalDate();
+      const { data: existingNudge } = await supabase
+        .from("person_daily_nudges")
+        .select("*")
+        .eq("owner_id", uid)
+        .eq("person_id", actualId)
+        .eq("date", localDate)
+        .maybeSingle();
+      if (existingNudge) {
+        setDailyNudge(coerceDailyNudgeRow(existingNudge as Record<string, unknown>));
+      } else {
+        const { data: recent } = await supabase
+          .from("person_daily_nudges")
+          .select("pass_id")
+          .eq("person_id", actualId)
+          .not("pass_id", "is", null)
+          .gte("date", new Date(Date.now() - 45 * 86400000).toISOString().slice(0, 10))
+          .neq("date", localDate);
+        const recentPassIds = new Set(
+          (recent ?? []).map((r) => r.pass_id as string).filter(Boolean)
+        );
+        const row = buildPersonDailyNudge({
+          ownerId: uid,
+          personId: actualId,
+          date: localDate,
+          whenUTC: whenUTCForOwnerLocalDate(localDate),
+          chart: chartData,
+          birthPrecision: personRow.birth_precision,
+          birthDate: personRow.birth_date,
+          relation: personRow.relation,
+          isSelf: Boolean(personRow.is_self),
+          minorSafe: isMinorForSafety({
+            isMinor: personRow.is_minor,
+            birthDate: personRow.birth_date,
+            birthPrecision: personRow.birth_precision,
+          }),
+          recentPassIds,
+        });
+        await supabase.from("person_daily_nudges").upsert(row, { onConflict: "person_id,date", ignoreDuplicates: true });
+        setDailyNudge(row);
+      }
+    } else {
+      setDailyNudge(null);
+    }
+
+    await loadRecord(uid, actualId);
+    setLoading(false);
+  }
+
+  /** Load the person's Record (all note kinds + active conversations), Vela pins, and archived threads. */
+  async function loadRecord(uid: string, actualId: string) {
+    const [rec, pins, archived] = await Promise.all([
+      fetchRecord(supabase, uid, { personId: actualId }, 200).catch(() => [] as RecordEntry[]),
+      fetchVelaPins(supabase, uid, actualId, 200).catch(() => [] as RecordEntry[]),
+      fetchArchivedThreads(supabase, uid, actualId, 40).catch(() => [] as RecordEntry[])
+    ]);
+    setRecord(rec); setVelaPins(pins); setArchivedThreads(archived);
+  }
+
+  async function widenRecordSearch(filters: RecordViewFilters) {
+    if (!userId || !person?.id || !filters.q?.trim()) return;
+    const extra = await fetchRecord(supabase, userId, { personId: person.id }, 200, filters).catch(() => [] as RecordEntry[]);
+    if (extra.length === 0) return;
+    setRecord((prev) => {
+      const seen = new Set(prev.map((entry) => entry.id));
+      const merged = [...prev];
+      for (const entry of extra) {
+        if (seen.has(entry.id)) continue;
+        seen.add(entry.id);
+        merged.push(entry);
+      }
+      return merged.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    });
+  }
+
+  async function saveNoteTags(noteId: string, tags: RecordTagId[]) {
+    setRecord((prev) => prev.map((entry) => (entry.id === noteId ? { ...entry, tags } : entry)));
+    if (!userId) return;
+    const { error } = await updateNoteTags(supabase, userId, noteId, tags);
+    if (error) setStatus(error);
+  }
+
+  async function widenVelaPinSearch(q: string) {
+    if (!userId || !person?.id || !q.trim()) return;
+    const extra = await fetchVelaPins(supabase, userId, person.id, 200, { q }).catch(() => [] as RecordEntry[]);
+    if (extra.length === 0) return;
+    setVelaPins((prev) => {
+      const seen = new Set(prev.map((entry) => entry.id));
+      const merged = [...prev];
+      for (const entry of extra) {
+        if (seen.has(entry.id)) continue;
+        seen.add(entry.id);
+        merged.push(entry);
+      }
+      return merged.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    });
+  }
+
+  async function savePinTheme(noteId: string, theme: PinThemeId | null) {
+    setVelaPins((prev) => prev.map((entry) => (entry.id === noteId ? { ...entry, theme } : entry)));
+    setRecord((prev) => prev.map((entry) => (entry.id === noteId ? { ...entry, theme } : entry)));
+    if (!userId) return;
+    const { error } = await updateNoteTheme(supabase, userId, noteId, theme);
+    if (error) setStatus(error);
+  }
+
+  const threadIdFromEntry = (entryId: string) => entryId.replace(/^thread-/, "");
+
+  async function archiveThread(entryId: string) {
+    const tid = threadIdFromEntry(entryId);
+    setRecord(prev => prev.filter(e => e.id !== entryId)); // hide from Record immediately
+    await setThreadStatus(supabase, tid, "archived");
+    if (userId) await loadRecord(userId, person?.id ?? personId);
+  }
+
+  async function unarchiveThread(entryId: string) {
+    const tid = threadIdFromEntry(entryId);
+    setArchivedThreads(prev => prev.filter(e => e.id !== entryId));
+    await setThreadStatus(supabase, tid, "active");
+    if (userId) await loadRecord(userId, person?.id ?? personId);
+  }
+
+  async function saveNote() {
+    if (!userId || !person?.id || !noteDraft.trim()) return;
+    setNoteSaving(true);
+    const { error } = await supabase.from("notes").insert({ owner_id: userId, about_person: person.id, body: noteDraft.trim() });
+    setNoteSaving(false);
+    if (error) { setStatus(error.message); return; }
+    setNoteDraft(""); loadProfile(userId);
+  }
+
+  useEffect(() => {
+    if (loading || !person || !chart) return;
+    const memorial = hasPassed(person) && !person.is_self && Boolean(userId);
+    const hasActiveToday =
+      shouldShowLiveTransits(person) &&
+      (Boolean(dailyNudge && dailyNudge.copy_tier !== "empty_hedge" && dailyNudge.transit_body) ||
+        person.birth_precision === "year");
+    const groups = buildPersonPageGroups({
+      hasRemembrance: memorial,
+      hasTimeline: shouldShowMemorialTimeline(person, chart),
+      hasActiveToday,
+      hasVelaOnThem: !memorial || velaPins.length > 0,
+      hasWheel: true,
+      hasBigThree: true,
+      hasPlacements: true,
+      hasAspects: natalAspectReadings.length > 0 || chart.precision === "year",
+      hasHouses: true,
+      hasGenerational: true,
+      hasRecord: true,
+      hasPastConversations: archivedThreads.length > 0,
+      hasHonorBox: memorial,
+      isMemorial: memorial,
+    });
+    const applyFromLocation = () => {
+      const entry = resolvePersonPageEntry({
+        hash: window.location.hash,
+        transit: new URLSearchParams(window.location.search).get("transit"),
+        hasActiveToday,
+        isMemorial: memorial,
+        groups,
+      });
+      ensureGroupMounted(entry.group);
+      setActiveGroup(entry.group);
+      if (entry.sectionId) {
+        const id = entry.sectionId;
+        window.setTimeout(() => {
+          document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 50);
+      }
+    };
+    const key = `${person.id}:${hasActiveToday ? "1" : "0"}:${memorial ? "1" : "0"}`;
+    if (entryAppliedFor.current !== key) {
+      entryAppliedFor.current = key;
+      applyFromLocation();
+    }
+    window.addEventListener("hashchange", applyFromLocation);
+    return () => window.removeEventListener("hashchange", applyFromLocation);
+  }, [loading, person, chart, dailyNudge, velaPins.length, archivedThreads.length, userId, natalAspectReadings.length, ensureGroupMounted]);
+
+  if (loading) return (
+    <main className="app-content app-content--loading">
+      <div className="skeleton skeleton-title" />
+      <div className="glass-card async-frame">{[40,65,50,80,100,70].map((w,i) => <div key={i} className="skeleton skeleton-text" style={{ width: `${w}%` }} />)}</div>
+      <div className="glass-card async-frame">{[80,100,70,90,65,75].map((w,i) => <div key={i} className="skeleton skeleton-text" style={{ width: `${w}%` }} />)}</div>
+      <div className="glass-card async-frame">{[55,90,70,85,60].map((w,i) => <div key={i} className="skeleton skeleton-text" style={{ width: `${w}%` }} />)}</div>
+    </main>
+  );
+
+  if (!person) return (
+    <main className="app-content">
+      <p className="muted">{status === PERSON_LOAD_ERROR ? PERSON_LOAD_ERROR : status ?? PERSON_NOT_FOUND}</p>
+      {status === PERSON_LOAD_ERROR && userId ? (
+        <button type="button" className="btn-primary" onClick={() => void loadProfile(userId)}>{PERSON_RETRY}</button>
+      ) : (
+        <Link href={EMPTY_STATE_WELCOME_HREF as never} className="btn-primary">Add birth data in onboarding</Link>
+      )}
+    </main>
+  );
+
+  // FOUND HOLE CLOSED: person page previously used raw `person.is_minor` for
+  // transit minorSafe. Every safety gate must call isMinorForSafety (§9) —
+  // same shape as Vela/Compare. A passed minor is still a minor.
+  const personIsMinor = isMinorForSafety({
+    isMinor: person.is_minor,
+    birthDate: person.birth_date,
+    birthPrecision: person.birth_precision,
+  });
+
+  const personPassed = hasPassed(person);
+  const showHonorBox = personPassed && !person.is_self && Boolean(userId);
+
+  // Progressive capture: person exists but has no chart yet.
+  if (!chart) return (
+    <main className={`app-content${personPassed ? " app-content--remembrance" : ""}`}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }} className="fade-in">
+        <InitialAvatar name={person.display_name} size="lg" personId={person.id} memorial={personPassed} />
+        <div>
+          <p className="eyebrow">{formatRelationshipLabel(person.relation)}{personPassed ? " · remembered" : ""}</p>
+          <h1 className="page-title">{person.display_name}</h1>
+          <div style={{ marginTop: 6 }}>
+            <ChartPrecisionIndicator
+              precision={person.birth_precision}
+              hasBirthPlace={Boolean(person.birth_place && person.birth_lat != null && person.birth_lng != null)}
+              onUpgrade={openPrecisionUpgrade}
+              showUpgrade
+            />
+          </div>
+          {personPassed ? (
+            <p className="muted" style={{ fontSize: ".88rem", margin: "8px 0 0", lineHeight: 1.5, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+              Remembered: their light is still arriving. {person.birth_precision === "none" ? "You can still add birth data when you have it." : ""}
+            </p>
+          ) : (
+            <p className="muted" style={{ fontSize: ".88rem", margin: "8px 0 0" }}>
+                            {person.birth_precision === "none" ? CHART_PRECISION_NONE_WAITING : CHART_SAVED_DETAILS_NO_CHART_BODY}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {showHonorBox ? (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <a href={`#${HONOR_LIGHT_ANCHOR_ID}`} className="pill-link" style={{ fontSize: ".82rem" }}>
+            Who carries their light ↓
+          </a>
+        </div>
+      ) : null}
+
+      {userId ? (
+        <RemembranceSpace
+          person={person}
+          userId={userId}
+          chart={null}
+          subjectIsMinor={personIsMinor}
+          onSaved={() => loadProfile(userId)}
+        />
+      ) : null}
+
+      {shouldShowMemorialTimeline(person, null) && userId ? (
+        <MemorialTimeline
+          person={person}
+          userId={userId}
+          chart={null}
+          onDiedOnSaved={() => loadProfile(userId)}
+        />
+      ) : null}
+
+      <section className="glass-card fade-in fade-in-delay-1" style={{ display: "grid", gap: 14 }}>
+        <div>
+          <p className="eyebrow" style={{ marginBottom: 6 }}>Add {person.display_name}&apos;s birth data</p>
+          <p className="muted" style={{ fontSize: ".84rem", lineHeight: 1.6 }}>
+            A birth year adds their generational sky. A full date adds every planetary sign. An exact time and city
+            unlock houses, the Ascendant, and the precise Moon. Add whatever you have: you can always refine it later.
+          </p>
+        </div>
+        <EditPersonPanel
+          person={person}
+          userId={userId ?? ""}
+          onSaved={() => loadProfile(userId ?? "")}
+          onDeleted={() => router.push("/app")}
+          open={editOpen}
+          onOpenChange={handleEditOpenChange}
+          upgradeTo={editUpgradeTo}
+        />
+        {userId && !usesAncientLight(person) ? (
+        <div style={{ borderTop: "1px solid rgba(183,154,216,.1)", paddingTop: 14 }}>
+          <p className="eyebrow" style={{ marginBottom: 8 }}>Don&apos;t know their details?</p>
+          <AskBirthData
+            personId={person.id}
+            personName={person.display_name}
+            userId={userId}
+            isMinor={personIsMinor}
+            birthDate={person.birth_date}
+            birthPrecision={person.birth_precision}
+          />
+          <div style={{ marginTop: 10 }}>
+            <ConnectInviteButton person={person} />
+          </div>
+        </div>
+        ) : null}
+      </section>
+
+      {showHonorBox ? (
+        <HonorDeclarationBox
+          person={person}
+          userId={userId!}
+          subjectIsMinor={personIsMinor}
+          onSaved={() => loadProfile(userId!)}
+        />
+      ) : null}
+
+      {status ? <p className="error">{status}</p> : null}
+    </main>
+  );
+
+  const sun  = chart.placements.find(p => p.body === "sun");
+  const moon = chart.placements.find(p => p.body === "moon");
+  const hasBirthPlace = Boolean(person.birth_place && person.birth_lat != null && person.birth_lng != null);
+  const showActiveTodayNote =
+    shouldShowLiveTransits(person) &&
+    Boolean(dailyNudge && dailyNudge.copy_tier !== "empty_hedge" && dailyNudge.transit_body);
+  const showActiveTodayPrecisionEmpty =
+    shouldShowLiveTransits(person) && person.birth_precision === "year" && !showActiveTodayNote;
+  const showActiveToday = showActiveTodayNote || showActiveTodayPrecisionEmpty;
+  // Always on: occupancy list when cusps exist, otherwise HousesUnavailableCard
+  // (year, date, and exact-without-place). Year-only used to skip the section
+  // and leave a blank gap.
+  const showHousesSection = true;
+  const showPastConversations = archivedThreads.length > 0;
+  const showRemembrance = personPassed && !person.is_self && Boolean(userId);
+  const showTimeline = shouldShowMemorialTimeline(person, chart);
+  // Remembrance keeps a single Vela entry in RemembranceSpace — hide the
+  // "Vela on {name}" module (and its nav chip) unless pinned insights exist.
+  const showVelaOnThem = !showRemembrance || velaPins.length > 0;
+  const groupsForPage = buildPersonPageGroups({
+    hasRemembrance: showRemembrance,
+    hasTimeline: showTimeline,
+    hasActiveToday: showActiveToday,
+    hasVelaOnThem: showVelaOnThem,
+    hasWheel: true,
+    hasBigThree: true,
+    hasPlacements: true,
+    hasAspects: natalAspectReadings.length > 0 || chart.precision === "year",
+    hasHouses: showHousesSection,
+    hasGenerational: true,
+    hasRecord: true,
+    hasPastConversations: showPastConversations,
+    hasHonorBox: showHonorBox,
+    isMemorial: showRemembrance,
+  });
+
+  const goToSection = (id: PersonNavSectionId) => {
+    if (!isTodaySection(id)) {
+      const group = groupForPersonSection(id, showRemembrance);
+      ensureGroupMounted(group);
+      startGroupTransition(() => setActiveGroup(group));
+    }
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
+    }
+    window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 40);
+  };
+
+  const enduringEyebrow = (label: string) =>
+    personPassed ? `${label} · who they were` : label;
+
+  const sectionHead = (id: keyof typeof PERSON_TAB_VOCAB) => {
+    const vocab = PERSON_TAB_VOCAB[id];
+    return (
+      <>
+                <p className="eyebrow" style={{ marginBottom: vocab ? 2 : 8 }}>{enduringEyebrow(PERSON_TAB_LABEL[id])}</p>
+        {vocab ? (
+          <ChartVocabSubhead
+            term={vocab}
+            glossarySlug={id === "aspects" ? "aspect" : id === "houses" ? "house" : undefined}
+          />
+        ) : null}
+      </>
+    );
+  };
+
+  // Generation header is the computed Pluto sign, never a year-band name.
+  // Year-only births that straddle a sign change stay unlabeled (§12).
+  const plutoGeneration =
+    chart.generational.pluto.confident
+      ? plutoGenerationLabel(chart.generational.pluto.sign)
+      : null;
+
+  const renderPlacementRow = (p: Placement) => {
+    const bk  = normaliseBody(p.body);
+    const sk  = normaliseSign(p.sign);
+    const el  = signElement(p.sign);
+    const gly = BODY_GLYPH[p.body] ?? p.body[0].toUpperCase();
+    const safety = { minorSafe: personIsMinor };
+    const domain = bodyDomain(bk, safety);
+    const isGen  = GENERATIONAL.includes(bk);
+    if (p.confident === false) {
+      return (
+        <div key={p.body} id={placementAnchorId(p.body)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(183,154,216,.08)", opacity: .65, scrollMarginTop: 92 }}>
+          <div className="glyph-sq-wrap">
+            <div className="glyph-sq" style={{ background: "var(--ink2)", color: "var(--mist2)", flexShrink: 0 }}>{gly}</div>
+            <RetrogradeBadge retro={p.retro} corner />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: ".58rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", marginBottom: 1 }}>{domain}</div>
+            <div style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600 }}>{bodyDisplayName(p.body)}: sign uncertain</div>
+          </div>
+          <span style={{ fontSize: ".76rem", color: "var(--mist2)", fontStyle: "italic", textAlign: "right" }}>
+            {p.possibleSigns?.length ? `Could be ${p.possibleSigns.join(" or ")}` : isGen ? "Changed sign that year" : "Needs a birth date"}
+          </span>
+        </div>
+      );
+    }
+    const signR = interpretPlacement(bk, sk, safety);
+    if (process.env.NODE_ENV !== "production" && !signR.short && !isChartPoint(p.body)) {
+      console.warn(`[interpretations] missing: ${bk} in ${sk}`);
+    }
+    const houseR = (p.house && hasHouses)
+      ? (() => { const hr = interpretHouse(bk, p.house as HouseKey, safety); const hm = houseMeaning(p.house as HouseKey); return hm && hr.long ? { houseName: hm.name, houseDomain: hm.domain, long: hr.long } : null; })()
+      : null;
+    const bodyAspects = (aspectsByBody.get(p.body) ?? []).flatMap(a => {
+      const reading = interpretAspect(normaliseBody(a.from), normaliseBody(a.to), normaliseAspect(a.type));
+      if (!reading) return [];
+      return [{
+        from: a.from, to: a.to, type: a.type, orb: a.orb, tight: a.orb < 2,
+        short: reading.short
+      }];
+    });
+    const rowKey = `pl-${p.body}`;
+    return (
+      <ExpandRow
+        key={p.body}
+        anchorId={placementAnchorId(p.body)}
+        open={openRows.has(rowKey)}
+        onToggle={() => toggleRow(rowKey)}
+        label={`${bodyDisplayName(p.body)} in ${p.sign}${isGen ? " ✦" : ""}`}
+        domain={domain}
+        degree={toDMS(p.degree)}
+        house={p.house}
+        el={el}
+        glyph={gly}
+        retro={p.retro}
+        short={signR.short}
+        long={signR.long}
+        houseReading={houseR}
+        planetAspects={bodyAspects}
+        hasHouses={hasHouses}
+        whyLine={
+          hasHouses
+            ? formatPlacementLine(p.body, p.sign, p.house, p.degree)
+            : formatPlacementLine(p.body, p.sign, undefined, p.degree)
+        }
+      />
+    );
+  };
+
+  return (
+    <WhyReadingGroup>
+    <main className={`app-content${personPassed ? " app-content--remembrance" : ""}`}>
+
+      {/* ── Header ── */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }} className="fade-in">
+        <InitialAvatar
+          name={person.display_name}
+          size="lg"
+          personId={person.id}
+          sunSign={sun && sun.confident !== false ? sun.sign : null}
+          memorial={personPassed}
+        />
+        <div>
+          <p className="eyebrow">{formatRelationshipLabel(person.relation)}{personPassed ? " · remembered" : ""}</p>
+          <h1 className="page-title">{person.display_name}</h1>
+          <div style={{ marginTop: 6 }}>
+            <ChartPrecisionIndicator
+              precision={person.birth_precision}
+              hasBirthPlace={hasBirthPlace}
+              onUpgrade={openPrecisionUpgrade}
+              showUpgrade
+            />
+          </div>
+          {personPassed ? (
+            <p className="muted" style={{ fontSize: ".84rem", margin: "4px 0 6px", lineHeight: 1.5, borderLeft: "2px solid rgba(230,174,108,.4)", paddingLeft: 10 }}>
+              Remembered: their chart stays with you. Their light softens into ancient light on your galaxy.
+            </p>
+          ) : null}
+          {sun?.confident === false ? (
+            <p className="muted" style={{ fontSize: ".88rem", margin: 0 }}>
+              Sun sign uncertain (year-only birth data)
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <ChartImageExport filename={chartExportFilename(person.display_name, "natal-chart.png")} label="Share chart image">
+        <section id="chart-wheel" className="glass-card fade-in fade-in-delay-1 person-chart-hero chart-identity-unit">
+          <p className="muted" style={{ fontSize: ".72rem", margin: "0 0 6px" }}>
+            {chart.precision === "exact" && chart.asc
+              ? enduringEyebrow(`Natal wheel · ${houseSystemLabelForChart(chart, engineVersion)}`)
+              : enduringEyebrow("Zodiac wheel")}
+          </p>
+          <p style={{ fontFamily: "var(--serif)", fontSize: "1.05rem", color: "var(--cream)", textAlign: "center", marginBottom: 4 }}>
+            {person.display_name}
+          </p>
+          <ChartMethodologyLink />
+          <FlipSignCards chart={chart} minorSafe={personIsMinor} />
+          <div className="chart-identity-unit__wheel">
+            {wheelMounted ? (
+              <ChartWheel
+                chart={chart}
+                aspects={natalAspects}
+                exportSafe
+                planetTooltips={{ minorSafe: personIsMinor, onSeeFullReading: revealPlacementCard }}
+              />
+            ) : (
+              <div aria-hidden style={{ width: 300, height: 300, margin: "0 auto" }} />
+            )}
+          </div>
+          {chart.houseSystemFallbackReason ? (
+            <p className="muted" style={{ fontSize: ".72rem", textAlign: "center", maxWidth: "52ch", margin: "0 auto" }}>
+              {chart.houseSystemFallbackReason}
+            </p>
+          ) : null}
+          {(chart.precision !== "exact" || !chart.asc) ? (
+            <p className="muted" style={{ fontSize: ".72rem", textAlign: "center", maxWidth: "48ch", margin: "0 auto" }}>
+              Houses and rising sign need an exact birth time and location. Add a birth city to unlock the full wheel.
+            </p>
+          ) : null}
+        </section>
+        <SignMetadataCards chart={chart} />
+      </ChartImageExport>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <Link href={`/app/compare?a=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Compare</Link>
+        {userId && !usesAncientLight(person) ? <ConnectInviteButton person={person} compact /> : null}
+        {/* Remembrance keeps a single Ask Vela entry inside RemembranceSpace — no header duplicate. */}
+        {!showRemembrance ? (
+          <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".82rem" }}>Ask Vela</Link>
+        ) : null}
+        {showHonorBox ? (
+          <a
+            href={`#${HONOR_LIGHT_ANCHOR_ID}`}
+            className="pill-link"
+            style={{ fontSize: ".82rem" }}
+            onClick={(event) => {
+              event.preventDefault();
+              goToSection("honor-light");
+            }}
+          >
+            Who carries their light ↓
+          </a>
+        ) : null}
+        <EditPersonPanel
+          person={person}
+          userId={userId ?? ""}
+          onSaved={() => loadProfile(userId ?? "")}
+          onDeleted={() => router.push("/app")}
+          open={editOpen}
+          onOpenChange={handleEditOpenChange}
+          upgradeTo={editUpgradeTo}
+        />
+      </div>
+
+      {chartCorrectionNotice ? (
+        <div
+          className="glass-card fade-in"
+          role="status"
+          style={{ borderColor: "rgba(230,174,108,.35)", background: "rgba(230,174,108,.06)", padding: "12px 14px" }}
+        >
+          <p className="eyebrow" style={{ marginBottom: 6 }}>Chart updated</p>
+          <p className="muted" style={{ margin: 0, fontSize: ".84rem", lineHeight: 1.55 }}>
+            {chartCorrectionNotice} A note was added to their Record with the time of the correction.
+          </p>
+        </div>
+      ) : null}
+
+      <div
+        id="person-today"
+        className="person-today"
+        style={{ display: "grid", gap: 14 }}
+      >
+      {showActiveTodayNote && dailyNudge ? (
+        <section id="active-today" className="glass-card fade-in" style={{ borderColor: "rgba(230,174,108,.28)", background: "rgba(230,174,108,.05)" }}>
+          {sectionHead("active-today")}
+          <div style={{ display: "grid", gap: 3 }}>
+            <p style={{ margin: 0, color: "var(--cream)", fontSize: ".92rem", lineHeight: 1.5 }}>
+              {dailyNudge.copy_resolved}
+            </p>
+            {dailyNudge.precision_mode === "exact" && dailyNudge.transit_body && dailyNudge.natal_body && dailyNudge.aspect_type ? (
+              <p style={{ margin: 0, display: "flex", alignItems: "baseline", gap: 6, fontSize: ".72rem", color: "var(--mist2)" }}>
+                <span style={{ color: "var(--gold-soft)", flexShrink: 0 }}>
+                  {BODY_GLYPH[dailyNudge.transit_body] ?? dailyNudge.transit_body}{" "}
+                  {ASPECT_GLYPH[dailyNudge.aspect_type] ?? ""}{" "}
+                  {BODY_GLYPH[dailyNudge.natal_body] ?? dailyNudge.natal_body}
+                </span>
+                <span>
+                  {dailyNudge.transit_body[0]!.toUpperCase() + dailyNudge.transit_body.slice(1)}{" "}
+                  {dailyNudge.aspect_type}{" "}
+                  {dailyNudge.natal_body[0]!.toUpperCase() + dailyNudge.natal_body.slice(1)}
+                  {dailyNudge.orb_deg != null ? ` · ${dailyNudge.orb_deg.toFixed(1)}°` : ""}
+                  {dailyNudge.phase ? ` · ${dailyNudge.phase}` : ""}
+                </span>
+              </p>
+            ) : null}
+          </div>
+          <Link
+            href={`/app/vela?scope=person&subject=${person.id}&q=${encodeURIComponent(`How does today's ${dailyNudge.transit_body} ${dailyNudge.aspect_type} their natal ${dailyNudge.natal_body} affect us right now?`)}`}
+            className="pill-link"
+            style={{ fontSize: ".8rem", marginTop: 10 }}
+          >
+            Ask Vela how this is showing up
+          </Link>
+        </section>
+      ) : showActiveTodayPrecisionEmpty ? (
+        <section
+          id="active-today"
+          className="glass-card fade-in"
+          style={{ borderStyle: "dashed", opacity: 0.7, scrollMarginTop: 92 }}
+        >
+          {sectionHead("active-today")}
+                    <p className="muted" style={{ fontSize: ".82rem", lineHeight: 1.6 }}>
+            {DAILY_SKY_UNAVAILABLE_YEAR_BODY}
+          </p>
+                    <p className="muted" style={{ fontSize: ".78rem", marginTop: 8 }}>
+            {DAILY_SKY_UNAVAILABLE_YEAR_FOLLOW_UP}
+          </p>
+          <div style={{ marginTop: 10 }}>
+            <ChartPrecisionUpgradeButton
+              precision={person.birth_precision}
+              hasBirthPlace={hasBirthPlace}
+              onUpgrade={openPrecisionUpgrade}
+            />
+          </div>
+        </section>
+      ) : null}
+      </div>
+
+      <PersonProfileNav
+        groups={groupsForPage}
+        activeGroup={activeGroup}
+        onGroupChange={(group) => {
+          setMountedGroups((prev) => (prev.has(group) ? prev : new Set(prev).add(group)));
+          startGroupTransition(() => {
+            setActiveGroup(group);
+          });
+          window.setTimeout(() => {
+            document.getElementById(`person-group-panel-${group}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 40);
+        }}
+        personName={person.display_name}
+      />
+
+      {mountedGroups.has("them") ? (
+      <div
+        id="person-group-panel-them"
+        role="tabpanel"
+        aria-labelledby="person-group-them"
+        className="person-group-panel"
+        hidden={activeGroup !== "them"}
+      >
+
+      {/* ── Big Three ── */}
+      <section id="big-three" className="glass-card fade-in fade-in-delay-1">
+        {sectionHead("big-three")}
+        <div style={{ display: "grid", gap: 8 }}>
+          {([
+            { key: "sun",    label: "Sun",    sign: sun?.sign,  body: "sun",  house: sun?.house,  uncertain: sun?.confident === false,  possibleSigns: sun?.possibleSigns,  degree: sun && sun.confident !== false ? toDMS(sun.degree) : undefined  },
+            { key: "moon",   label: "Moon",   sign: moon?.sign, body: "moon", house: moon?.house, uncertain: moon?.confident === false, possibleSigns: moon?.possibleSigns, degree: moon && moon.confident !== false ? toDMS(moon.degree) : undefined },
+            { key: "rising", label: "Rising", sign: chart.asc,  body: null,   house: undefined,   uncertain: false, possibleSigns: undefined, degree: undefined },
+          ] as { key: string; label: string; sign: string|undefined; body: string|null; house: number|undefined; uncertain: boolean; possibleSigns: string[]|undefined; degree?: string }[]).map(({ key, label, sign, body, house, uncertain, possibleSigns, degree }) => {
+            if (!sign) return (
+              <div key={key} className="sign-chip" style={{ opacity: .45 }}>
+                                <span className="sign-chip__glyph" style={{ color: "var(--mist2)" }}>·</span>
+                <span className="sign-chip__label">{label}</span>
+                <span className="sign-chip__value">{label === "Rising" ? "Exact time + city needed" : "·"}</span>
+              </div>
+            );
+            if (uncertain) return (
+              // A sign we cannot pin down is never presented as fact.
+              <div key={key} className="sign-chip" style={{ opacity: .6 }}>
+                <span className="sign-chip__glyph" style={{ color: "var(--mist2)" }}>?</span>
+                <span className="sign-chip__label">{label}</span>
+                <span className="sign-chip__value">
+                  {possibleSigns?.length ? `Could be ${possibleSigns.join(" or ")}` : "Uncertain"}: a birth date would settle it
+                </span>
+              </div>
+            );
+            const el = signElement(sign);
+            const safety = { minorSafe: personIsMinor };
+            const signReading = body ? interpretPlacement(normaliseBody(body), normaliseSign(sign), safety) : interpretRising(normaliseSign(sign));
+            const houseR = (body && house && hasHouses)
+              ? (() => { const hr = interpretHouse(normaliseBody(body), house as HouseKey, safety); const hm = houseMeaning(house as HouseKey); return hm && hr.long ? { houseName: hm.name, houseDomain: hm.domain, long: hr.long } : null; })()
+              : null;
+            const bodyAspects = body ? (aspectsByBody.get(body)?.map(a => {
+              const reading = interpretAspect(normaliseBody(a.from), normaliseBody(a.to), normaliseAspect(a.type));
+              if (!reading) return null;
+              return {
+                from: a.from, to: a.to, type: a.type, orb: a.orb, tight: a.orb < 2,
+                short: reading.short
+              };
+            }).filter((row): row is NonNullable<typeof row> => row !== null) ?? []) : [];
+            const isOpen = openRows.has(key);
+            return (
+              <div key={key} id={body ? placementAnchorId(body) : undefined} style={{ borderRadius: 12, border: `1px solid ${isOpen ? "rgba(230,174,108,.22)" : "rgba(255,255,255,.06)"}`, background: "rgba(255,255,255,.025)", overflow: "hidden", scrollMarginTop: 92 }}>
+                <button onClick={() => toggleRow(key)} style={{ width: "100%", background: "none", border: "none", cursor: "pointer", padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }} aria-expanded={isOpen}>
+                  <span style={{ fontSize: "1.3rem", color: `var(--${el})`, flexShrink: 0 }}>{SIGN_GLYPH[sign]}</span>
+                  <div style={{ textAlign: "left", flex: 1 }}>
+                    <div style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mist2)", display: "flex", alignItems: "center", gap: 4 }}>
+                      {label}{house && hasHouses ? <HouseBadge house={house} /> : null}
+                    </div>
+                    <div style={{ fontFamily: "var(--serif)", fontSize: ".95rem", color: "var(--cream)" }}>{sign}</div>
+                    {degree ? <div style={{ fontSize: ".72rem", color: "var(--mist2)" }}>{degree}</div> : null}
+                  </div>
+                  <span style={{ fontSize: ".76rem", color: "var(--mist)", fontStyle: "italic", flex: 1, textAlign: "right" }}>{signReading.short}</span>
+                  <span style={{ color: "var(--mist2)", fontSize: ".7rem", flexShrink: 0, marginLeft: 6, transform: isOpen ? "rotate(90deg)" : "none", display: "inline-block", transition: "transform .2s" }}>▶</span>
+                </button>
+                {isOpen ? (
+                  <div style={{ padding: "0 14px 14px 14px", display: "grid", gap: 12 }}>
+                    {signReading.long ? (
+                      <div>
+                        <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--mist2)", margin: "0 0 4px" }}>In {sign}</p>
+                        <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{signReading.long}</p>
+                      </div>
+                    ) : null}
+                    {houseR ? (
+                      <div>
+                        <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--gold-soft)", margin: "0 0 2px" }}>In the {houseR.houseName.toLowerCase()}</p>
+                        <p style={{ fontSize: ".72rem", color: "var(--mist2)", margin: "0 0 4px" }}>{houseR.houseDomain}</p>
+                        <p style={{ fontSize: ".82rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{houseR.long}</p>
+                      </div>
+                    ) : null}
+                    {bodyAspects.length > 0 ? (
+                      <div>
+                        <p style={{ fontSize: ".6rem", fontWeight: 700, letterSpacing: ".15em", textTransform: "uppercase", color: "var(--mist2)", margin: "0 0 6px" }}>Aspects</p>
+                        <div style={{ display: "grid", gap: 4 }}>
+                          {bodyAspects.map((a, i) => {
+                            const glyph = ASPECT_GLYPH[a.type] ?? a.type[0];
+                            const other = a.from.toLowerCase() === (body ?? "").toLowerCase() ? a.to : a.from;
+                            return (
+                              <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 8px", borderRadius: 8, background: a.tight ? "rgba(230,174,108,.06)" : "rgba(255,255,255,.02)", border: a.tight ? "1px solid rgba(230,174,108,.2)" : "1px solid rgba(183,154,216,.08)" }}>
+                                <span style={{ fontSize: ".8rem", color: "var(--mist2)", width: 36, textAlign: "center", letterSpacing: 1, flexShrink: 0 }}>{BODY_GLYPH[other.toLowerCase()] ?? other[0]} {glyph}</span>
+                                <div style={{ flex: 1 }}>
+                                  <span style={{ fontSize: ".78rem", color: "var(--cream)", fontWeight: 600 }}>{a.type} {other}</span>
+                                  <span style={{ fontSize: ".72rem", color: "var(--mist)", marginLeft: 6, fontStyle: "italic" }}>{a.short}</span>
+                                </div>
+                                <span style={{ fontSize: ".68rem", color: "var(--mist2)" }}>{toDMS(a.orb)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+        {!chart.asc && person.birth_precision === "exact" ? (
+          <p className="muted" style={{ fontSize: ".74rem", marginTop: 10 }}>Rising sign needs a birth city: edit this profile to add one.</p>
+        ) : null}
+      </section>
+
+      {/* ── Placements ── */}
+      <section id="placements" className="glass-card fade-in fade-in-delay-1">
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8, gap: 8 }}>
+          <div>{sectionHead("placements")}</div>
+          <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllPlacements(!placementsAllOpen)}>
+            {placementsAllOpen ? "Collapse all" : "Expand all"}
+          </button>
+        </div>
+
+        {chart.placements
+          .filter((p) => p.body !== "sun" && p.body !== "moon" && p.body !== "north_node" && p.body !== "chiron" && !GENERATIONAL.includes(normaliseBody(p.body)))
+          .map((p) => renderPlacementRow(p))}
+
+        {chart.placements.filter((p) => p.body === "north_node").map((p) => renderPlacementRow(p))}
+        {chart.placements.filter((p) => p.body === "chiron").map((p) => renderPlacementRow(p))}
+      </section>
+
+      {(chart.patterns ?? []).length > 0 ? (
+        <section id="chart-patterns" className="glass-card fade-in fade-in-delay-2">
+          {/* FOUNDER-REVIEW: Chart Patterns section labels and metadata. */}
+          <p className="eyebrow" style={{ marginBottom: 10 }}>Chart Patterns</p>
+          <div style={{ display: "grid", gap: 10 }}>
+            {(chart.patterns ?? []).map((pattern: AspectPattern, index) => {
+              const copy = aspectPatternCopy(pattern);
+              const title =
+                pattern.type === "grand_trine"
+                  ? "Grand Trine"
+                  : pattern.type === "t_square"
+                    ? "T-Square"
+                    : `Stellium in ${pattern.sign}`;
+              const detail =
+                pattern.type === "grand_trine"
+                  ? `${pattern.element ? `${pattern.element[0]!.toUpperCase()}${pattern.element.slice(1)} · ` : ""}${pattern.planets.map(bodyDisplayName).join(" · ")}`
+                  : pattern.type === "t_square"
+                    ? formatTSquarePatternDetail(pattern)
+                    : pattern.planets.map(bodyDisplayName).join(" · ");
+              return (
+                <article
+                  key={`${pattern.type}-${pattern.planets.join("-")}-${index}`}
+                  style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(255,255,255,.035)", border: "1px solid rgba(230,174,108,.22)" }}
+                >
+                  <p style={{ fontSize: ".74rem", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--gold)", margin: "0 0 4px" }}>{title}</p>
+                  <p style={{ fontSize: ".78rem", color: "var(--mist2)", margin: "0 0 7px" }}>{detail}</p>
+                  <p style={{ fontSize: ".86rem", color: "var(--cream)", fontWeight: 600, lineHeight: 1.5, margin: "0 0 5px" }}>{copy.short}</p>
+                  <p style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{copy.long}</p>
+                  <WhyThisReading insightType="chart_pattern" line={formatChartPatternLine(pattern)} />
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      <section id="generational" className="glass-card fade-in fade-in-delay-2">
+        <p className="eyebrow" style={{ marginBottom: 8 }}>Generational signature</p>
+        <ChartVocabSubhead term={PERSON_TAB_VOCAB.generational ?? "Generational"} />
+        {plutoGeneration ? (
+          <p style={{ fontSize: ".9rem", color: "var(--cream)", fontWeight: 600, margin: "8px 0 2px" }}>
+            {plutoGeneration}
+          </p>
+        ) : null}
+        <p className="muted" style={{ fontSize: ".8rem", marginBottom: 12 }}>{chart.generational.cohortLabel}</p>
+        {chart.placements
+          .filter((p) => GENERATIONAL.includes(normaliseBody(p.body)))
+          .map((p) => renderPlacementRow(p))}
+        {chart.generational.pluto.confident ? (
+          <GenerationalEraSections
+            sign={chart.generational.pluto.sign}
+            showWorkView={isProfessionalPersonRelation(person.relation)}
+          />
+        ) : null}
+        {!person.is_self && viewerPlutoSign && chart.generational.pluto.confident ? (() => {
+          const bridge = getFamilyBridge(viewerPlutoSign, chart.generational.pluto.sign);
+          if (!bridge) return null;
+          return (
+            <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 12, border: "1px solid rgba(183,154,216,.22)", background: "rgba(255,255,255,.025)" }}>
+              <p className="eyebrow" style={{ marginBottom: 6 }}>
+                You + {person.relation ? formatRelationshipLabel(person.relation) : person.display_name}
+              </p>
+              <p style={{ fontSize: ".84rem", color: "var(--mist)", lineHeight: 1.62, margin: 0 }}>{bridge}</p>
+            </div>
+          );
+        })() : null}
+      </section>
+
+      {/* ── Key aspects ── */}
+      {natalAspectReadings.length > 0 ? (
+        <section id="aspects" className="glass-card fade-in fade-in-delay-2">
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4, gap: 8 }}>
+            <div>{sectionHead("aspects")}</div>
+            <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllAspects(!aspectsAllOpen)}>{aspectsAllOpen ? "Collapse all" : "Expand all"}</button>
+          </div>
+          <p className="muted" style={{ fontSize: ".72rem", marginBottom: 10 }}>Gold border = tight (&lt; 2°) · tightest first</p>
+          {(() => {
+            const seenAspectTypes = new Set<string>();
+            return natalAspectReadings.map((a, idx) => {
+            const tight = a.orb < 2, mid = a.orb < 4;
+            const cls = tight ? "aspect-tight" : mid ? "aspect-mid" : "aspect-loose";
+            const aspGlyph = ASPECT_GLYPH[a.type] ?? a.type[0];
+            const bkA = normaliseBody(a.from), bkB = normaliseBody(a.to), ak = normaliseAspect(a.type);
+            const reading = interpretAspect(bkA, bkB, ak);
+            if (!reading) return null;
+            const typeSlug = aspectGlossarySlug(a.type);
+            let typeLabel: ReactNode = a.type;
+            if (typeSlug && !seenAspectTypes.has(typeSlug)) {
+              seenAspectTypes.add(typeSlug);
+              typeLabel = <GlossaryTerm glossarySlug={typeSlug}>{a.type}</GlossaryTerm>;
+            }
+            const rowKey = `asp-${a.from}-${a.to}-${idx}`;
+            const isOpen = openRows.has(rowKey);
+            return (
+              <div key={rowKey} className={cls} style={{ borderBottom: "1px solid rgba(255,255,255,.04)" }}>
+                <button onClick={() => toggleRow(rowKey)} style={{ width:"100%",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:8,padding:"9px 0" }} aria-expanded={isOpen}>
+                  <span style={{ fontSize:".88rem",color:"var(--mist2)",width:56,textAlign:"center",letterSpacing:2,flexShrink:0 }}>{BODY_GLYPH[a.from]??a.from[0]} {aspGlyph} {BODY_GLYPH[a.to]??a.to[0]}</span>
+                  <div style={{ flex:1,textAlign:"left" }}>
+                    <div style={{ fontSize:".82rem",color:"var(--cream)",fontWeight:600 }}>{a.from} {typeLabel} {a.to}</div>
+                    <div style={{ fontSize:".74rem",color:"var(--mist)",marginTop:1,fontStyle:"italic" }}>{reading.short}</div>
+                  </div>
+                  <span style={{ fontSize:".7rem",color:"var(--mist2)",flexShrink:0 }}>{toDMS(a.orb)}</span>
+                  <span style={{ color:"var(--mist2)",fontSize:".7rem",flexShrink:0,marginLeft:4,transform:isOpen?"rotate(90deg)":"none",display:"inline-block",transition:"transform .2s" }}>▶</span>
+                </button>
+                <WhyThisReading
+                  insightType="natal_aspect"
+                  line={formatNatalAspectLine({ from: a.from, to: a.to, type: a.type, orb: a.orb })}
+                />
+                {isOpen && reading.long ? <div style={{ paddingBottom:10,paddingLeft:64 }}><p style={{ fontSize:".82rem",color:"var(--mist)",lineHeight:1.62,margin:0 }}>{reading.long}</p></div> : null}
+              </div>
+            );
+          });
+          })()}
+        </section>
+      ) : natalQuincunxes.length === 0 ? (
+        <AspectsUnavailableCard
+          precision={chart.precision}
+          title={enduringEyebrow(PERSON_TAB_LABEL.aspects)}
+          eyebrow={PERSON_TAB_VOCAB.aspects ?? "Aspects"}
+          action={
+            <ChartPrecisionUpgradeButton
+              precision={person.birth_precision}
+              hasBirthPlace={hasBirthPlace}
+              onUpgrade={openPrecisionUpgrade}
+            />
+          }
+        />
+      ) : null}
+
+      {natalQuincunxes.length > 0 ? (
+        <section className="glass-card fade-in fade-in-delay-2">
+          <p className="eyebrow" style={{ marginBottom: 6 }}>Adjusts</p>
+          <p className="muted" style={{ fontSize: ".72rem", marginBottom: 10 }}>
+            {ADJUST_BADGE} · type and orb only
+          </p>
+          {natalQuincunxes.map((a, idx) => (
+            <div
+              key={`qx-${a.from}-${a.to}-${idx}`}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}
+            >
+              <span style={{ fontSize: ".88rem", color: "var(--gold)", width: 56, textAlign: "center", letterSpacing: 2, flexShrink: 0 }}>
+                {BODY_GLYPH[a.from] ?? a.from[0]} {ASPECT_GLYPH[a.type] ?? "\u26BB"} {BODY_GLYPH[a.to] ?? a.to[0]}
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: ".82rem", color: "var(--cream)", fontWeight: 600 }}>
+                  {a.from} {a.type} {a.to}
+                </div>
+                <div style={{ fontSize: ".74rem", color: "var(--gold)", marginTop: 1 }}>{ADJUST_BADGE}{a.phase ? ` · ${a.phase}` : ""}</div>
+              </div>
+              <span style={{ fontSize: ".7rem", color: "var(--mist2)", flexShrink: 0 }}>{toDMS(a.orb)}</span>
+            </div>
+          ))}
+        </section>
+      ) : null}
+
+      {/* ── Twelve Houses: occupancy list, or the shared unavailable card ── */}
+      {hasHouses ? (
+        <section id="houses" className="glass-card fade-in fade-in-delay-2">
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8, gap: 8 }}>
+            <div>{sectionHead("houses")}</div>
+            <button className="pill-link" style={{ fontSize: ".7rem", padding: "3px 10px" }} onClick={() => toggleAllHouses(!housesAllOpen)}>{housesAllOpen ? "Collapse all" : "Expand all"}</button>
+          </div>
+          <p className="muted" style={{ fontSize: ".72rem", marginBottom: 12 }}>{houseSystemLabelForChart(chart, engineVersion)} · click a house to read it</p>
+          {chart.houseSystemFallbackReason ? (
+            <p className="muted" style={{ fontSize: ".72rem", marginBottom: 12 }}>{chart.houseSystemFallbackReason}</p>
+          ) : null}
+          {Array.from({ length: 12 }, (_, i) => i + 1).map(h => {
+            const hk = h as HouseKey;
+            const hm = houseMeaning(hk)!;
+            const cuspLon = chart.cusps![h - 1]!;
+            const cuspSign = SIGNS_ORDER[Math.floor(((cuspLon % 360) + 360) % 360 / 30)]!;
+            const cuspDeg  = ((cuspLon % 360) + 360) % 360 % 30;
+            const occupants = houseOccupants.get(h) ?? [];
+            const isOpen = openRows.has(`h-${h}`);
+            return (
+              <div key={h} style={{ borderBottom: "1px solid rgba(183,154,216,.08)" }}>
+                <button onClick={() => toggleRow(`h-${h}`)} style={{ width:"100%",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:10,padding:"9px 0",textAlign:"left" }} aria-expanded={isOpen}>
+                  <div style={{ width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.04)",border:"1px solid rgba(183,154,216,.12)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                    <span style={{ fontSize:".76rem",fontFamily:"var(--serif)",color:"var(--gold-soft)",fontWeight:600 }}>{h}</span>
+                  </div>
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+                      <span style={{ fontSize:".82rem",color:"var(--cream)",fontWeight:600 }}>{hm.name}</span>
+                      <span style={{ fontSize:".68rem",color:"var(--mist2)" }}>{SIGN_GLYPH[cuspSign]} {toDMS(cuspDeg)} {cuspSign}</span>
+                    </div>
+                    <div style={{ fontSize:".7rem",color:"var(--mist2)",marginTop:1 }}>{hm.domain}</div>
+                  </div>
+                  <div style={{ textAlign:"right",flexShrink:0 }}>
+                    {occupants.length > 0 ? (
+                      <div style={{ display:"flex",gap:4,justifyContent:"flex-end",flexWrap:"wrap" }}>
+                        {occupants.map(p => <span key={p.body} style={{ fontSize:".9rem",color:EL_SOLID[signElement(p.sign)]??"#b9aede" }}>{BODY_GLYPH[p.body]??p.body[0]}</span>)}
+                      </div>
+                    ) : <span style={{ fontSize:".7rem",color:"var(--mist2)" }}>empty</span>}
+                  </div>
+                  <span style={{ color:"var(--mist2)",fontSize:".7rem",flexShrink:0,marginLeft:4,transform:isOpen?"rotate(90deg)":"none",display:"inline-block",transition:"transform .2s" }}>▶</span>
+                </button>
+                {isOpen ? (
+                  <div style={{ paddingBottom:12,paddingLeft:42,paddingRight:6 }}>
+                    <p style={{ fontSize:".82rem",color:"var(--mist)",lineHeight:1.62,margin:"0 0 8px" }}>{hm.long}</p>
+                    {occupants.length === 0 ? (
+                      <p style={{ fontSize:".76rem",color:"var(--mist2)",margin:0,fontStyle:"italic" }}>No planets here. An empty house is normal: the themes it describes are present in the life, just not strongly emphasised by birth placement.</p>
+                    ) : (
+                      <div style={{ display:"grid",gap:4 }}>
+                        {occupants.map(p => {
+                          const bk2 = normaliseBody(p.body);
+                          const hr2 = interpretHouse(bk2, hk, { minorSafe: personIsMinor });
+                          return hr2.short ? (
+                            <div key={p.body} style={{ display:"flex",alignItems:"baseline",gap:6 }}>
+                              <span style={{ fontSize:".9rem",color:EL_SOLID[signElement(p.sign)]??"#b9aede",flexShrink:0 }}>{BODY_GLYPH[p.body]??p.body[0]}</span>
+                              <span style={{ fontSize:".78rem",color:"var(--cream)",fontWeight:600 }}>{bodyDisplayName(p.body)}</span>
+                              <span style={{ fontSize:".76rem",color:"var(--mist)",fontStyle:"italic" }}>{hr2.short}</span>
+                            </div>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </section>
+      ) : null}
+      <HousesUnavailableCard
+        hasHouses={hasHouses}
+        precision={chart.precision}
+        title={enduringEyebrow(PERSON_TAB_LABEL.houses)}
+        eyebrow={PERSON_TAB_VOCAB.houses ?? "Houses"}
+        action={
+          <ChartPrecisionUpgradeButton
+            precision={person.birth_precision}
+            hasBirthPlace={hasBirthPlace}
+            onUpgrade={openPrecisionUpgrade}
+          />
+        }
+      />
+
+      {elementBalance ? (
+        <section id="element-balance" className="glass-card fade-in fade-in-delay-2">
+          <p className="eyebrow" style={{ marginBottom: 8 }}>Element & modality balance</p>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 8 }}>
+            {(["fire","earth","air","water"] as const).map(el => (
+              <span key={el} style={{ fontSize: ".75rem", color: `var(--${el})` }}>{el.charAt(0).toUpperCase() + el.slice(1)} {elementBalance[el]}</span>
+            ))}
+          </div>
+          {modalityBalance ? (
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10 }}>
+              {(["cardinal","fixed","mutable"] as const).map(m => (
+                <span key={m} style={{ fontSize: ".75rem", color: "var(--mist2)" }}>{m.charAt(0).toUpperCase() + m.slice(1)} {modalityBalance[m]}</span>
+              ))}
+            </div>
+          ) : null}
+          {(() => {
+            const counts = elementBalance;
+            const max = Math.max(...Object.values(counts));
+            const dom = (Object.entries(counts) as [string,number][]).find(([,v]) => v === max)?.[0] as "fire"|"earth"|"air"|"water"|undefined;
+            const absent = (Object.entries(counts) as [string,number][]).filter(([,v]) => v === 0).map(([k]) => k as "fire"|"earth"|"air"|"water");
+            const mcounts = modalityBalance ?? { cardinal:0, fixed:0, mutable:0 };
+            const mmax = Math.max(...Object.values(mcounts));
+            const mdom = (Object.entries(mcounts) as [string,number][]).find(([,v]) => v === mmax)?.[0] as keyof typeof MODALITY_DOMINANT|undefined;
+            const mabsent = (Object.entries(mcounts) as [string,number][]).filter(([,v]) => v === 0).map(([k]) => k);
+            return (
+              <div style={{ display: "grid", gap: 6 }}>
+                {dom && max >= 3 ? <p style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.55, margin: 0, borderLeft: `2px solid var(--${dom})`, paddingLeft: 10 }}>{ELEMENT_DOMINANT[dom]}</p> : null}
+                {absent.map(el => <p key={el} style={{ fontSize: ".8rem", color: "var(--mist2)", lineHeight: 1.55, margin: 0, borderLeft: "2px solid rgba(183,154,216,.25)", paddingLeft: 10 }}>{ELEMENT_ABSENT[el]}</p>)}
+                {mdom && mmax >= 4 ? <p style={{ fontSize: ".8rem", color: "var(--mist)", lineHeight: 1.55, margin: 0, borderLeft: "2px solid rgba(183,154,216,.4)", paddingLeft: 10 }}>{MODALITY_DOMINANT[mdom]}</p> : null}
+                {mabsent.map(m => <p key={m} style={{ fontSize: ".8rem", color: "var(--mist2)", lineHeight: 1.55, margin: 0, borderLeft: "2px solid rgba(183,154,216,.15)", paddingLeft: 10 }}>{MODALITY_ABSENT[m]}</p>)}
+              </div>
+            );
+          })()}
+        </section>
+      ) : null}
+      </div>
+      ) : null}
+
+      {mountedGroups.has(showRemembrance ? "remembrance" : "yours") ? (
+      <div
+        id={showRemembrance ? "person-group-panel-remembrance" : "person-group-panel-yours"}
+        role="tabpanel"
+        aria-labelledby={showRemembrance ? "person-group-remembrance" : "person-group-yours"}
+        className="person-group-panel"
+        hidden={activeGroup !== (showRemembrance ? "remembrance" : "yours")}
+      >
+      {showRemembrance ? (
+        <>
+          {userId ? (
+            <RemembranceSpace
+              person={person}
+              userId={userId}
+              chart={chart}
+              subjectIsMinor={personIsMinor}
+              onSaved={() => loadProfile(userId)}
+            />
+          ) : null}
+
+          {showTimeline ? (
+            <MemorialTimeline
+              person={person}
+              userId={userId!}
+              chart={chart}
+              onDiedOnSaved={() => loadProfile(userId!)}
+            />
+          ) : null}
+
+          {showHonorBox ? (
+            <HonorDeclarationBox
+              person={person}
+              userId={userId!}
+              subjectIsMinor={personIsMinor}
+              onSaved={() => loadProfile(userId!)}
+            />
+          ) : null}
+        </>
+      ) : null}
+
+      {/* ── The record (B1): notes, tending, Vela pins, saved readings, conversations ── */}
+      <section id="notes" className="glass-card fade-in fade-in-delay-3">
+        {sectionHead("notes")}
+        <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>
+          Owner-only · never shared. The chart never changes: this is the layer that does: everything you note, pin, and discuss about {person.display_name}, in date order.
+        </p>
+        <p style={{ margin: "0 0 12px" }}>
+          <Link href={captureMomentHref(person.id) as never} className="pill-link">{CAPTURE_MOMENT}</Link>
+        </p>
+        <textarea className="field field--rect" value={noteDraft} onChange={e => setNoteDraft(e.target.value)} placeholder="Log a private moment, pattern, or thing to remember…" rows={3} style={{ marginBottom: 10 }} />
+        <button className="btn-primary" onClick={saveNote} disabled={noteSaving || !noteDraft.trim()} style={{ gap: 8 }}>
+          {noteSaving && <Spinner size={13} color="#1a1206" />}
+          {noteSaving ? "Saving…" : "Add to the record"}
+        </button>
+        {record.length > 0 ? (
+          <PersonRecordTimeline
+            entries={record}
+            personName={person.display_name}
+            isSelf={Boolean(person.is_self)}
+            onArchive={archiveThread}
+            onTagsChange={saveNoteTags}
+            onFiltersChange={(filters) => {
+              void widenRecordSearch(filters);
+            }}
+          />
+        ) : (
+          <p className="muted" style={{ fontSize: ".8rem", marginTop: 12 }}>
+            Nothing recorded yet: notes, saved readings, and Vela conversations about {person.display_name} will gather here.
+          </p>
+        )}
+      </section>
+
+      {/* ── Past conversations (archived threads) ── */}
+      {archivedThreads.length > 0 ? (
+        <section id="past-conversations" className="glass-card fade-in fade-in-delay-3">
+          {sectionHead("past-conversations")}
+          <p className="muted" style={{ fontSize: ".75rem", marginBottom: 10 }}>Archived Vela threads about {person.display_name}. Nothing is ever deleted.</p>
+          {/* grid-template-columns: minmax(0,1fr): without it the single implicit
+              grid track is `auto`, which sizes to the max-content of its rows.
+              Each row's body <p> is white-space:nowrap (single-line ellipsis),
+              and overflow:hidden/ellipsis do NOT shrink an element's max-content
+              contribution, so the track (and thus the whole page's layout
+              viewport) grew to the untruncated text width, forcing horizontal
+              overflow / pinch-zoom-out on mobile. minmax(0,1fr) caps the track
+              at the container width so the ellipsis truncation actually engages. */}
+          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "minmax(0, 1fr)" }}>
+            {archivedThreads.map(entry => (
+              <div key={entry.id} style={{ background: "rgba(10,7,23,.4)", borderRadius: 10, padding: "10px 14px", borderLeft: "2px solid rgba(183,154,216,.25)", display: "flex", justifyContent: "space-between", alignItems: entry.withdrawnReason ? "flex-start" : "center", gap: 8 }}>
+                <div style={{ minWidth: 0 }}>
+                  {/* Withdrawn previews are already user-facing (formatWithdrawnReasonForDisplay
+                      in lib/record.ts): wrap so asserted / chart / when stay readable.
+                      Ordinary previews keep single-line ellipsis. */}
+                  <p style={{
+                    margin: 0,
+                    color: entry.withdrawnReason ? "var(--mist2)" : "var(--mist)",
+                    fontStyle: entry.withdrawnReason ? "italic" : "normal",
+                    fontSize: ".84rem",
+                    lineHeight: entry.withdrawnReason ? 1.45 : undefined,
+                    overflow: "hidden",
+                    textOverflow: entry.withdrawnReason ? undefined : "ellipsis",
+                    whiteSpace: entry.withdrawnReason ? "normal" : "nowrap",
+                  }}>{entry.body}</p>
+                  <small className="muted" style={{ fontSize: ".68rem" }}>{new Date(entry.createdAt).toLocaleDateString()}</small>
+                </div>
+                <span style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  {entry.href ? <Link href={entry.href as never} className="pill-link" style={{ fontSize: ".74rem" }}>Resume</Link> : null}
+                  <button className="pill-link" style={{ fontSize: ".74rem" }} onClick={() => unarchiveThread(entry.id)}>Unarchive</button>
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+      </div>
+      ) : null}
+
+      {/* Ask Vela already lives in the header bubbles. This card is last so
+          the hero and Right now stay first. Remembrance keeps a single Ask
+          Vela entry in RemembranceSpace unless pins exist. */}
+      {showVelaOnThem ? (
+        <section id="vela-on-them" className="glass-card fade-in fade-in-delay-1" style={{ borderColor: "rgba(183,154,216,.2)" }}>
+          {sectionHead("vela-on-them")}
+          {velaPins.length > 0 ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              <VelaPinsPanel pins={velaPins} onThemeChange={savePinTheme} onSearchChange={widenVelaPinSearch} />
+              {!showRemembrance ? (
+                <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".78rem", width: "fit-content", marginTop: 2 }}>Ask Vela more</Link>
+              ) : null}
+            </div>
+          ) : (
+            <div>
+              <p className="muted" style={{ fontSize: ".82rem", marginBottom: 10 }}>
+                Nothing pinned yet. Ask Vela about {person.display_name}, then pin any insight worth keeping: it will live here.
+              </p>
+              <Link href={`/app/vela?scope=person&subject=${person.id}`} className="pill-link" style={{ fontSize: ".8rem" }}>Ask Vela about {person.display_name}</Link>
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      {status ? <p className="error">{status}</p> : null}
+    </main>
+    </WhyReadingGroup>
+  );
+}

@@ -8,7 +8,7 @@ function read(rel: string): string {
 
 describe("natal Rx badge wiring", () => {
   it("person placement rows pin Rx to the planet glyph", () => {
-    const src = read("../app/app/person/[id]/page.tsx");
+    const src = read("../app/app/person/[id]/person-profile-page.tsx");
     expect(src).toContain('import { RetrogradeBadge } from "../../../../components/retrograde-badge"');
     expect(src).toContain("<RetrogradeBadge retro={Boolean(retro)} corner />");
     expect(src).toContain("retro={p.retro}");

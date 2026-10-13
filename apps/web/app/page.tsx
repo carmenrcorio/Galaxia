@@ -7,7 +7,7 @@ import { FeatureTeasers } from "../components/marketing/feature-teasers";
 import { FeaturesSection } from "../components/marketing/features-section";
 import { HashRedirect } from "../components/marketing/hash-redirect";
 import { Hero } from "../components/marketing/hero";
-import { MarketingNav } from "../components/marketing/marketing-nav";
+import { MarketingNavShell } from "../components/marketing/marketing-nav-shell";
 import { RevealObserver } from "../components/marketing/reveal-observer";
 import { SiteFooter } from "../components/marketing/site-footer";
 import { HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE } from "../lib/homepage-seo";
@@ -75,7 +75,7 @@ export default function HomePage() {
       <CosmicBackground />
       <RevealObserver />
       <HashRedirect />
-      <MarketingNav />
+      <MarketingNavShell />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <Hero />
         <FeaturesSection />

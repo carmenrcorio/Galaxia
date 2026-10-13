@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CosmicBackground } from "../../components/cosmic-background";
-import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { MarketingNavShell } from "../../components/marketing/marketing-nav-shell";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
 import { SectionPageIntro } from "../../components/marketing/section-page-intro";
 import { SiteFooter } from "../../components/marketing/site-footer";
@@ -54,7 +54,7 @@ export default function LearnPage() {
       <WebPageJsonLd path={LEARN_PATH} name={LEARN_TITLE} description={LEARN_DESCRIPTION} />
       <CosmicBackground />
       <RevealObserver />
-      <MarketingNav />
+      <MarketingNavShell />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title={LEARN_TITLE} lede={LEARN_LEDE} />
         <div className="container learn-hub">

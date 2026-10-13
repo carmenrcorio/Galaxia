@@ -8,7 +8,7 @@ import {
   ForWorkMoments,
   ForWorkWhatThisIsNot,
 } from "../../components/marketing/for-work-sections";
-import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { MarketingNavShell } from "../../components/marketing/marketing-nav-shell";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { MarketingAtfCta } from "../../components/marketing/marketing-atf-cta";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
@@ -60,7 +60,7 @@ export default function ForWorkPage() {
       <WebPageJsonLd path="/for-work" name={TITLE} description={DESCRIPTION} />
       <CosmicBackground />
       <RevealObserver />
-      <MarketingNav />
+      <MarketingNavShell />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <ForWorkHero />
         <MarketingAtfCta cta={FOR_WORK_ATF_CTA} />

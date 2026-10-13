@@ -179,9 +179,7 @@ describe("post template wiring", () => {
     expect(page.indexOf("article-title")).toBeLessThan(page.indexOf("article-byline"));
     expect(page.indexOf("article-byline")).toBeLessThan(page.indexOf("<ArticleHero"));
     expect(page).toContain("<ArticleHero");
-    expect(css).toMatch(
-      /\.article-hero img[\s\S]*aspect-ratio:\s*1200\s*\/\s*630/
-    );
+    expect(css).toMatch(/\.article-hero \{[\s\S]*aspect-ratio:\s*1200\s*\/\s*630/);
     expect(css).toContain(".article-hero--fallback");
   });
 

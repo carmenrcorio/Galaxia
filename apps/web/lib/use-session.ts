@@ -19,8 +19,14 @@ const INITIAL_SESSION: SessionState = {
  * Public pages use this lightweight hook when they need auth-aware chrome but
  * none of the profile, people, or chart data loaded by useViewer().
  */
-export function useSession(): SessionState {
-  const [session, setSession] = useState<SessionState>(INITIAL_SESSION);
+/**
+ * When `initialUserId` is passed (including `null`), the hook skips the
+ * anonymous loading frame — used with MarketingNavShell's server session read.
+ */
+export function useSession(initialUserId?: string | null): SessionState {
+  const [session, setSession] = useState<SessionState>(() =>
+    initialUserId !== undefined ? { userId: initialUserId, loading: false } : INITIAL_SESSION
+  );
 
   useEffect(() => {
     let cancelled = false;

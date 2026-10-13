@@ -24,7 +24,7 @@ describe("TimezoneSync is mounted everywhere TrialBanner sits", () => {
   for (const surface of ["apps/web/app/app/layout.tsx", "apps/web/app/account/page.tsx"]) {
     it(`${surface} renders both <TrialBanner /> and <TimezoneSync />`, () => {
       const src = read(surface);
-      expect(src).toContain("<TrialBanner />");
+      expect(src).toMatch(/<TrialBanner(\s|\/>)/);
       expect(src).toContain("<TimezoneSync />");
     });
   }

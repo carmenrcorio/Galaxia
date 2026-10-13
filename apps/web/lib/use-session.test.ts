@@ -54,6 +54,14 @@ describe("useSession", () => {
     expect(authMocks.from).not.toHaveBeenCalled();
   });
 
+  it("starts settled when the server passes an initial user id (no loading flash)", () => {
+    authMocks.getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+
+    const { result } = renderHook(() => useSession("user-1"));
+
+    expect(result.current).toEqual({ userId: "user-1", loading: false });
+  });
+
   it("settles to anonymous when the auth request fails", async () => {
     authMocks.getUser.mockRejectedValue(new Error("network unavailable"));
 

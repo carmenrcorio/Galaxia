@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CosmicBackground } from "../../components/cosmic-background";
 import { CloseSection } from "../../components/marketing/close-section";
-import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { MarketingNavShell } from "../../components/marketing/marketing-nav-shell";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
 import { MarketingAtfCta } from "../../components/marketing/marketing-atf-cta";
@@ -47,7 +47,7 @@ export default function MeetVelaPage() {
       <WebPageJsonLd path="/meet-vela" name={TITLE} description={DESCRIPTION} />
       <CosmicBackground />
       <RevealObserver />
-      <MarketingNav />
+      <MarketingNavShell />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
         <SectionPageIntro title="Meet Vela" lede={DESCRIPTION} />
         <MarketingAtfCta cta={MEET_VELA_ATF_CTA} />

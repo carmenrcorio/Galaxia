@@ -54,7 +54,7 @@ describe("MarketingNav auth-aware chrome", () => {
 
   it("renders the authenticated app nav when a valid session exists", () => {
     sessionMock.value = { userId: "user-1", loading: false };
-    render(<MarketingNav />);
+    render(<MarketingNav initialUserId="user-1" />);
 
     expect(screen.getByRole("link", { name: "Home" }).getAttribute("href")).toBe("/app");
     expect(screen.getByRole("link", { name: "Account" }).getAttribute("href")).toBe("/account");

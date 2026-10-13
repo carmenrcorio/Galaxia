@@ -51,6 +51,8 @@ export const metadata: Metadata = {
 const fraunces = Fraunces({
   subsets: ["latin"],
   style: ["normal", "italic"],
+  display: "swap",
+  adjustFontFallback: true,
   // Expose the optical-size axis (the reference loads Fraunces with opsz 9..144).
   // With it variable, the browser's default `font-optical-sizing: auto` uses the
   // delicate high-opsz display cut at large sizes and the sturdier text cut at
@@ -61,6 +63,8 @@ const fraunces = Fraunces({
 
 const inter = Inter({
   subsets: ["latin"],
+  display: "swap",
+  adjustFontFallback: true,
   variable: "--font-inter"
 });
 

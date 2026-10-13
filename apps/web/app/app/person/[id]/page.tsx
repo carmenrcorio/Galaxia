@@ -832,10 +832,11 @@ export default function PersonProfilePage() {
   }, [loading, person, chart, dailyNudge, velaPins.length, archivedThreads.length, userId, natalAspectReadings.length]);
 
   if (loading) return (
-    <main className="app-content">
+    <main className="app-content app-content--loading">
       <div className="skeleton skeleton-title" />
       <div className="glass-card async-frame">{[40,65,50,80,100,70].map((w,i) => <div key={i} className="skeleton skeleton-text" style={{ width: `${w}%` }} />)}</div>
       <div className="glass-card async-frame">{[80,100,70,90,65,75].map((w,i) => <div key={i} className="skeleton skeleton-text" style={{ width: `${w}%` }} />)}</div>
+      <div className="glass-card async-frame">{[55,90,70,85,60].map((w,i) => <div key={i} className="skeleton skeleton-text" style={{ width: `${w}%` }} />)}</div>
     </main>
   );
 

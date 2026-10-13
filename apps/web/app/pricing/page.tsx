@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CosmicBackground } from "../../components/cosmic-background-lazy";
 import { CloseSection } from "../../components/marketing/close-section";
-import { MarketingNav } from "../../components/marketing/marketing-nav";
+import { MarketingNavShell } from "../../components/marketing/marketing-nav-shell";
 import { PricingSection } from "../../components/marketing/pricing-section";
 import { RelatedLinks } from "../../components/marketing/related-links";
 import { RevealObserver } from "../../components/marketing/reveal-observer";
@@ -48,7 +48,7 @@ export default function PricingPage() {
       <WebPageJsonLd path="/pricing" name={TITLE} description={DESCRIPTION} />
       <CosmicBackground />
       <RevealObserver />
-      <MarketingNav />
+      <MarketingNavShell />
       <main className="marketing" style={{ position: "relative", zIndex: 2 }}>
                 <SectionPageIntro title="One Honest Plan" lede={DESCRIPTION} />
         <MarketingAtfCta cta={PRICING_ATF_CTA} />

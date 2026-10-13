@@ -5,7 +5,7 @@
  * first-load JS graph. SSR still emits the static aura / milkyway / grain /
  * vignette (next/dynamic defaults to ssr: true). prefers-reduced-motion is
  * unchanged: it lives inside CosmicBackground's effect (one static frame,
- * no twinkle/parallax). /app keeps a static import of cosmic-background.tsx.
+ * no twinkle/parallax). Authenticated /app/* and /blog use this wrapper too.
  */
 
 import dynamic from "next/dynamic";

@@ -112,24 +112,21 @@ describe("B2: NatalSignReveal is not on the homepage first-load graph", () => {
 });
 
 describe("B4: CosmicBackground is code-split on public LCP routes only", () => {
-  it("the five public LCP pages import the lazy wrapper, not the canvas module", () => {
+  it("high-traffic public and app shells import the lazy wrapper, not the canvas module", () => {
     const pages: Array<[string, string]> = [
       ["apps/web/app/page.tsx", "../components/cosmic-background-lazy"],
       ["apps/web/app/why-galaxia/page.tsx", "../../components/cosmic-background-lazy"],
       ["apps/web/app/pricing/page.tsx", "../../components/cosmic-background-lazy"],
       ["apps/web/components/quick-chart-shell.tsx", "./cosmic-background-lazy"],
+      ["apps/web/app/blog/page.tsx", "../../components/cosmic-background-lazy"],
+      ["apps/web/app/blog/[category]/page.tsx", "../../../components/cosmic-background-lazy"],
+      ["apps/web/app/app/layout.tsx", "../../components/cosmic-background-lazy"],
     ];
     for (const [file, spec] of pages) {
       const src = read(file);
       expect(src).toContain(`from "${spec}"`);
       expect(src).not.toMatch(/from ["'][^"']*cosmic-background["']/);
     }
-  });
-
-  it("signed-in /app layout keeps a static import of cosmic-background.tsx", () => {
-    const src = read("apps/web/app/app/layout.tsx");
-    expect(src).toContain('from "../../components/cosmic-background"');
-    expect(src).not.toContain("cosmic-background-lazy");
   });
 
   it("the lazy wrapper dynamic-imports CosmicBackground with default SSR", () => {

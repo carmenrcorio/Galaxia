@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { BlogTrackedLink } from "./blog-analytics";
-import { BLOG_ABOUT_TAG, formatPostDate, getCategory, type BlogPost } from "../../lib/blog";
+import { BLOG_ABOUT_TAG, formatPostDate, getCategory, type BlogPostListing } from "../../lib/blog";
 import {
   BLOG_ANALYTICS,
   BLOG_TIMELY_BADGE,
@@ -13,7 +13,7 @@ export function BlogPostCard({
   variant = "index",
   placement = "feed"
 }: {
-  post: BlogPost;
+  post: BlogPostListing;
   variant?: "index" | "related";
   placement?: "feed" | "start-here";
 }) {

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { BlogHeader } from "../../../components/blog/blog-header";
 import { BlogPostCard } from "../../../components/blog/blog-post-card";
 import { BlogZodiacTrail } from "../../../components/blog/blog-zodiac-trail";
-import { CosmicBackground } from "../../../components/cosmic-background";
+import { CosmicBackground } from "../../../components/cosmic-background-lazy";
 import { SiteFooter } from "../../../components/marketing/site-footer";
 import { WebPageJsonLd } from "../../../components/marketing/webpage-json-ld";
 import { buildCategoryMetadata, categoryListingDescription } from "../../../lib/blog-metadata";

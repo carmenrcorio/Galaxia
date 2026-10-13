@@ -42,6 +42,18 @@ export interface BlogCategory {
   emptyNote: string;
 }
 
+/** Index, category, Read next, and sitemap rows — no article body or figure payload. */
+export type BlogPostListing = Omit<
+  BlogPost,
+  | "body"
+  | "figureImageUrl"
+  | "figureImageAlt"
+  | "figureCaption"
+  | "figureLongDescription"
+  | "figureAfterHeading"
+  | "inlineImages"
+>;
+
 export interface BlogPost {
   id: string;
   slug: string;
@@ -112,6 +124,12 @@ const POST_FIELDS_BASE =
 const POST_FIELDS = `${POST_FIELDS_BASE}, is_timely, expires_at`;
 const POST_FIELDS_FULL = `${POST_FIELDS}, related_slugs, method_note, about_galaxia, hero_image_credit, inline_images`;
 
+/** Listing queries — never fetch full markdown bodies for /blog or Read next. */
+const POST_LIST_FIELDS_BASE =
+  "id, slug, title, dek, category, hero_image_url, hero_image_alt, status, read_time_minutes, byline, published_at, updated_at";
+const POST_LIST_FIELDS = `${POST_LIST_FIELDS_BASE}, is_timely, expires_at`;
+const POST_LIST_FIELDS_FULL = `${POST_LIST_FIELDS}, related_slugs, method_note, about_galaxia, hero_image_credit`;
+
 function timelyColumnsMissing(message: string): boolean {
   return /is_timely|expires_at/i.test(message);
 }
@@ -157,21 +175,36 @@ interface PostRow {
   inline_images?: unknown;
 }
 
-function toBlogPost(row: PostRow): BlogPost {
+interface PostListRow {
+  id: string;
+  slug: string;
+  title: string;
+  dek: string;
+  category: string;
+  hero_image_url: string | null;
+  hero_image_alt: string | null;
+  status: string;
+  read_time_minutes: number;
+  byline: string;
+  published_at: string | null;
+  updated_at: string;
+  is_timely?: boolean | null;
+  expires_at?: string | null;
+  related_slugs?: string[] | null;
+  method_note?: string | null;
+  about_galaxia?: boolean | null;
+  hero_image_credit?: string | null;
+}
+
+function toBlogPostListing(row: PostListRow): BlogPostListing {
   return {
     id: row.id,
     slug: row.slug,
     title: applyCurlyQuotes(row.title),
     dek: applyCurlyQuotes(row.dek),
     category: row.category === "debunked" ? "debunked" : "guides",
-    body: applyCurlyQuotes(row.body),
     heroImageUrl: row.hero_image_url,
     heroImageAlt: curl(row.hero_image_alt),
-    figureImageUrl: row.figure_image_url,
-    figureImageAlt: curl(row.figure_image_alt),
-    figureCaption: curl(row.figure_caption),
-    figureLongDescription: curl(row.figure_long_description),
-    figureAfterHeading: curl(row.figure_after_heading),
     status: row.status === "published" ? "published" : "draft",
     readTimeMinutes: row.read_time_minutes,
     byline: row.byline,
@@ -182,9 +215,41 @@ function toBlogPost(row: PostRow): BlogPost {
     relatedSlugs: Array.isArray(row.related_slugs) ? row.related_slugs : null,
     methodNote: curl(row.method_note ?? null),
     aboutGalaxia: row.about_galaxia === true,
-    heroImageCredit: curl(row.hero_image_credit ?? null),
+    heroImageCredit: curl(row.hero_image_credit ?? null)
+  };
+}
+
+function toBlogPost(row: PostRow): BlogPost {
+  return {
+    ...toBlogPostListing(row),
+    body: applyCurlyQuotes(row.body),
+    figureImageUrl: row.figure_image_url,
+    figureImageAlt: curl(row.figure_image_alt),
+    figureCaption: curl(row.figure_caption),
+    figureLongDescription: curl(row.figure_long_description),
+    figureAfterHeading: curl(row.figure_after_heading),
     inlineImages: parseInlineImages(row.inline_images)
   };
+}
+
+type ListingQuery = {
+  data: unknown;
+  error: { message: string } | null;
+};
+
+async function fetchPublishedListingRows(run: (fields: string) => Promise<ListingQuery>): Promise<PostListRow[]> {
+  let { data, error } = await run(POST_LIST_FIELDS_FULL);
+  if (error && phaseImageColumnsMissing(error.message)) {
+    ({ data, error } = await run(`${POST_LIST_FIELDS}, related_slugs, method_note, about_galaxia`));
+  }
+  if (error && phase2ColumnsMissing(error.message)) {
+    ({ data, error } = await run(POST_LIST_FIELDS));
+  }
+  if (error && timelyColumnsMissing(error.message)) {
+    ({ data, error } = await run(POST_LIST_FIELDS_BASE));
+  }
+  if (error) throw error;
+  return (data ?? []) as unknown as PostListRow[];
 }
 
 /**
@@ -213,47 +278,35 @@ function createPublicPostsClient() {
   });
 }
 
-export async function getPublishedPosts(): Promise<BlogPost[]> {
+export async function getPublishedPosts(): Promise<BlogPostListing[]> {
   const supabase = createPublicPostsClient();
   if (!supabase) return [];
-  const run = (fields: string) =>
-    supabase.from("posts").select(fields).eq("status", "published").order("published_at", { ascending: false });
-  let { data, error } = await run(POST_FIELDS_FULL);
-  if (error && phaseImageColumnsMissing(error.message)) {
-    ({ data, error } = await run(`${POST_FIELDS}, related_slugs, method_note, about_galaxia`));
+  try {
+    const rows = await fetchPublishedListingRows(async (fields) =>
+      supabase.from("posts").select(fields).eq("status", "published").order("published_at", { ascending: false })
+    );
+    return rows.map(toBlogPostListing);
+  } catch (error) {
+    throw new Error(`getPublishedPosts: ${error instanceof Error ? error.message : String(error)}`);
   }
-  if (error && phase2ColumnsMissing(error.message)) {
-    ({ data, error } = await run(POST_FIELDS));
-  }
-  if (error && timelyColumnsMissing(error.message)) {
-    ({ data, error } = await run(POST_FIELDS_BASE));
-  }
-  if (error) throw new Error(`getPublishedPosts: ${error.message}`);
-  return ((data ?? []) as unknown as PostRow[]).map(toBlogPost);
 }
 
-export async function getPublishedPostsByCategory(category: BlogCategorySlug): Promise<BlogPost[]> {
+export async function getPublishedPostsByCategory(category: BlogCategorySlug): Promise<BlogPostListing[]> {
   const supabase = createPublicPostsClient();
   if (!supabase) return [];
-  const run = (fields: string) =>
-    supabase
-      .from("posts")
-      .select(fields)
-      .eq("status", "published")
-      .eq("category", category)
-      .order("published_at", { ascending: false });
-  let { data, error } = await run(POST_FIELDS_FULL);
-  if (error && phaseImageColumnsMissing(error.message)) {
-    ({ data, error } = await run(`${POST_FIELDS}, related_slugs, method_note, about_galaxia`));
+  try {
+    const rows = await fetchPublishedListingRows(async (fields) =>
+      supabase
+        .from("posts")
+        .select(fields)
+        .eq("status", "published")
+        .eq("category", category)
+        .order("published_at", { ascending: false })
+    );
+    return rows.map(toBlogPostListing);
+  } catch (error) {
+    throw new Error(`getPublishedPostsByCategory: ${error instanceof Error ? error.message : String(error)}`);
   }
-  if (error && phase2ColumnsMissing(error.message)) {
-    ({ data, error } = await run(POST_FIELDS));
-  }
-  if (error && timelyColumnsMissing(error.message)) {
-    ({ data, error } = await run(POST_FIELDS_BASE));
-  }
-  if (error) throw new Error(`getPublishedPostsByCategory: ${error.message}`);
-  return ((data ?? []) as unknown as PostRow[]).map(toBlogPost);
 }
 
 export async function getPublishedPost(slug: string): Promise<BlogPost | null> {

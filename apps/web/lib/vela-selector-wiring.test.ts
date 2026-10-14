@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 const read = (path: string) => readFileSync(join(REPO_ROOT, path), "utf8");
-const WEB_VELA = "apps/web/app/app/vela/page.tsx";
+const WEB_VELA = "apps/web/app/app/vela/vela-chat-page.tsx";
 
 describe("Vela selection UI uses shared picker slots", () => {
   it("loads relation on people and maps through velaPeople / velaGroups", () => {

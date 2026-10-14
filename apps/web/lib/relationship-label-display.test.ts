@@ -10,7 +10,7 @@ function read(rel: string): string {
 
 const DISPLAY_SURFACES: Array<[string, string]> = [
   ["apps/web/app/app/settings/page.tsx", "formatRelationshipLabel(person.relation)"],
-  ["apps/web/app/app/person/[id]/page.tsx", "formatRelationshipLabel(person.relation)"],
+  ["apps/web/app/app/person/[id]/person-profile-page.tsx", "formatRelationshipLabel(person.relation)"],
   ["apps/web/app/app/page.tsx", "formatRelationshipLabel(hoverPerson.relation)"],
   ["apps/mobile/app/(app)/(tabs)/settings.tsx", "formatRelationshipLabel(person.relation)"],
   ["apps/mobile/app/(app)/profile/[personId].tsx", "formatRelationshipLabel(person.relation)"],

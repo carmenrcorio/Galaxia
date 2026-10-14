@@ -31,7 +31,7 @@ function read(relativePath: string): string {
 const NAME_SURFACES = [
   "apps/web/app/account/page.tsx",
   "apps/web/app/app/page.tsx",
-  "apps/web/app/app/vela/page.tsx",
+  "apps/web/app/app/vela/vela-chat-page.tsx",
   "apps/web/app/app/settings/page.tsx",
   "apps/web/app/api/cron/trial-emails/route.ts",
   "apps/web/app/api/cron/nudge-send/route.ts",

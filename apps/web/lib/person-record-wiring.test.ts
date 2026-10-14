@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 describe("source wiring: person Record search stays owner-only and keeps the compose box", () => {
   it("person page keeps the existing note input and mounts the searchable timeline", () => {
     const src = readFileSync(
-      resolve(__dirname, "../app/app/person/[id]/page.tsx"),
+      resolve(__dirname, "../app/app/person/[id]/person-profile-page.tsx"),
       "utf8"
     );
     expect(src).toContain('placeholder="Log a private moment, pattern, or thing to remember…"');

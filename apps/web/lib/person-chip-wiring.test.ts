@@ -37,9 +37,9 @@ describe("person chip color wiring", () => {
 
   it("chip call sites pass personId instead of inventing a local color", () => {
     const files = [
-      "app/app/person/[id]/page.tsx",
+      "app/app/person/[id]/person-profile-page.tsx",
       "app/app/compare/page.tsx",
-      "app/app/vela/page.tsx",
+      "app/app/vela/vela-chat-page.tsx",
       "app/app/groups/page.tsx",
       "app/app/page.tsx",
       "components/groups/group-selector.tsx",

@@ -13,7 +13,7 @@ function read(rel: string) {
 
 describe("HousesUnavailableCard wiring — no houses gap on year-only charts", () => {
   it("person page always mounts the shared card (no year-only null branch)", () => {
-    const src = read("../app/app/person/[id]/page.tsx");
+    const src = read("../app/app/person/[id]/person-profile-page.tsx");
     expect(src).toContain("HousesUnavailableCard");
     expect(src).toContain("hasHouses={hasHouses}");
     expect(src).toContain("precision={chart.precision}");

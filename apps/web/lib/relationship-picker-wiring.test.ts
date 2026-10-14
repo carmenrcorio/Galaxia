@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
-const page = readFileSync(join(REPO_ROOT, "apps/web/app/app/person/[id]/page.tsx"), "utf8");
+const page = readFileSync(join(REPO_ROOT, "apps/web/app/app/person/[id]/person-profile-page.tsx"), "utf8");
 const edit = readFileSync(join(REPO_ROOT, "apps/web/components/edit-person-panel.tsx"), "utf8");
 const picker = readFileSync(
   join(REPO_ROOT, "apps/web/components/relationship-edges.tsx"),

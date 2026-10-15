@@ -10,7 +10,12 @@ export async function createSupabaseServerClient() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+        } catch {
+          // Server Components and other read-only RSC contexts cannot mutate cookies.
+          // Session refresh is handled in middleware (see apps/web/middleware.ts).
+        }
       }
     }
   });

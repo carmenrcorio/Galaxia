@@ -98,6 +98,8 @@ export default function VelaPage() {
   const subjectSeededRef = useRef(false);
   const chatRef  = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // React state `sending` updates async — guard double Enter / double-click synchronously.
+  const sendInFlightRef = useRef(false);
 
   const velaPeople = useMemo(() => toVelaPeople(people), [people]);
   const velaGroups = useMemo(() => toVelaGroups(groups), [groups]);
@@ -310,7 +312,7 @@ export default function VelaPage() {
 
   async function sendMessage(prefill?: string) {
     const userText = (prefill ?? message).trim();
-    if (sending || !accessToken || !userText) return;
+    if (sendInFlightRef.current || !accessToken || !userText) return;
 
     // ── Safety block: only shared mode with a minor is refused ──────────────
     // Private ask-mode about a child is allowed (Vela coaches the parent).
@@ -326,26 +328,29 @@ export default function VelaPage() {
       setStatus("If anyone is in immediate danger, contact local emergency services now.");
     }
 
-    // Group threads: refresh the persisted cohort overlay via the Next.js route
-    // that runs @galaxia/astro cohortOverlay. The edge reads that row only —
-    // never client-built context, never a Deno reimplementation of the math.
-    if (scope === "group" && groupId) {
-      const cohortRes = await fetch("/api/groups/cohort", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ groupId })
-      });
-      if (!cohortRes.ok) {
-        const body = await cohortRes.json().catch(() => ({})) as { error?: string };
-        setStatus(body.error ?? "Could not refresh this group's cohort overlay.");
-        return;
-      }
-    }
-
-    setMessage(""); setSending(true); setStatus(null);
-    setLines(prev => [...prev, { role: "user", text: userText }]);
-
+    sendInFlightRef.current = true;
     try {
+      // Group threads: refresh the persisted cohort overlay via the Next.js route
+      // that runs @galaxia/astro cohortOverlay. The edge reads that row only —
+      // never client-built context, never a Deno reimplementation of the math.
+      if (scope === "group" && groupId) {
+        const cohortRes = await fetch("/api/groups/cohort", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ groupId })
+        });
+        if (!cohortRes.ok) {
+          const body = await cohortRes.json().catch(() => ({})) as { error?: string };
+          setStatus(body.error ?? "Could not refresh this group's cohort overlay.");
+          return;
+        }
+      }
+
+      setMessage("");
+      setSending(true);
+      setStatus(null);
+      setLines(prev => [...prev, { role: "user", text: userText }]);
+
       const res = await withTimeout(fetch(functionUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
@@ -366,13 +371,13 @@ export default function VelaPage() {
           ? "Vela isn't available right now. The AI provider may not be configured."
           : body.error ?? `Vela responded with an error (${res.status}).`;
         setLines(prev => [...prev, { role: "vela", text: msg }]);
-        setSending(false); return;
+        return;
       }
 
       if (!res.body) {
         const text = await res.text();
         setLines(prev => [...prev, { role: "vela", text: text || "Vela returned an empty response." }]);
-        setSending(false); return;
+        return;
       }
 
       setLines(prev => [...prev, { role: "vela", text: "" }]);
@@ -402,8 +407,16 @@ export default function VelaPage() {
         return next;
       });
     } catch (err) {
-      setLines(prev => [...prev, { role: "vela", text: isFetchTimeoutError(err) ? VELA_SEND_TIMEOUT : VELA_SEND_NETWORK }]);
-    } finally { setSending(false); }
+      setLines(prev => {
+        if (prev.some(l => l.role === "user" && l.text === userText)) {
+          return [...prev, { role: "vela", text: isFetchTimeoutError(err) ? VELA_SEND_TIMEOUT : VELA_SEND_NETWORK }];
+        }
+        return prev;
+      });
+    } finally {
+      sendInFlightRef.current = false;
+      setSending(false);
+    }
   }
 
   /**
@@ -441,6 +454,9 @@ export default function VelaPage() {
   // Person/pair header only — never fall through to people[0] for group focus.
   const scopeSubject = scope === "group" ? null : (selectedSubject ?? people[0] ?? null);
   const hasMessages  = lines.some(l => l.role === "user");
+  // Typing dots only while waiting for the stream — not alongside the streaming bubble.
+  const showTypingIndicator =
+    sending && lines.length > 0 && lines[lines.length - 1]?.role === "user";
   const askingAboutHeader = scope === "group"
     ? (selectedGroup?.name ?? null)
     : scopeSubject
@@ -669,13 +685,13 @@ export default function VelaPage() {
                   </div>
                 );
               })}
-              {sending ? <TypingIndicator /> : null}
+              {showTypingIndicator ? <TypingIndicator /> : null}
             </div>
 
             {!hasMessages ? (
               <div className="prompt-chips">
                 {SUGGESTED_PROMPTS.slice(0, 3).map(p => (
-                  <button key={p} className="prompt-chip" onClick={() => sendMessage(p)}>{p}</button>
+                  <button key={p} className="prompt-chip" disabled={sending} onClick={() => void sendMessage(p)}>{p}</button>
                 ))}
               </div>
             ) : null}

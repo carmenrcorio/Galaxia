@@ -956,14 +956,23 @@ Deno.serve(async (req) => {
               suggestions: suggestions.length > 0 ? suggestions : null
             });
             if (insertError) {
+              const errMsg = insertError.message ?? "";
+              const missingSuggestions =
+                errMsg.includes("suggestions") ||
+                (insertError as { code?: string }).code === "PGRST204";
               // If the suggestions column doesn't exist yet (migration not
               // applied), fall back to storing the raw reply — the client's
-              // parser still splits it on load.
-              await supabase.from("messages").insert({
-                thread_id: threadId,
-                sender:    "vela",
-                body:      trimmedReply
-              });
+              // parser still splits it on load. Any other insert error must
+              // not retry or the thread gets duplicate Vela rows on resume.
+              if (missingSuggestions) {
+                await supabase.from("messages").insert({
+                  thread_id: threadId,
+                  sender:    "vela",
+                  body:      trimmedReply
+                });
+              } else {
+                console.error("vela reply persist failed", insertError);
+              }
             }
           }
 

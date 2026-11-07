@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MarketingNavShell } from "../../components/marketing/marketing-nav-shell";
 import { SignupForm } from "../../components/signup-form";
 import { authReturnPath } from "../../lib/safe-next-path";
 
@@ -31,13 +32,16 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
   const initialEmail = resolved.email ?? "";
   const nextPath = authReturnPath(resolved, "/welcome");
   return (
-    <main className="container" style={{ paddingTop: 72, paddingBottom: 72, maxWidth: 820 }}>
-      <h1 className="auth-title">Create your Galaxia account</h1>
-      <p className="muted">
-        Sign up once and use your account on web today. When mobile links are live, this same
-        account carries over.
-      </p>
-      <SignupForm initialEmail={initialEmail} nextPath={nextPath} />
-    </main>
+    <div style={{ minHeight: "100vh" }}>
+      <MarketingNavShell />
+      <main className="container" style={{ paddingTop: 72, paddingBottom: 72, maxWidth: 820 }}>
+        <h1 className="auth-title">Create your Galaxia account</h1>
+        <p className="muted">
+          Sign up once and use your account on web today. When mobile links are live, this same
+          account carries over.
+        </p>
+        <SignupForm initialEmail={initialEmail} nextPath={nextPath} />
+      </main>
+    </div>
   );
 }

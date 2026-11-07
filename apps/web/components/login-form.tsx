@@ -110,9 +110,10 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           </button>
         </form>
       )}
-      {/* FOUNDER-REVIEW: "Check your email for a reset link." */}
-      {status === "reset-sent" ? <p className="success">Check your email for a reset link.</p> : null}
-      {error ? <p className="error">{error}</p> : null}
+      <div className="auth-form-feedback" aria-live="polite">
+        {status === "reset-sent" ? <p className="success">Check your email for a reset link.</p> : null}
+        {error ? <p className="error">{error}</p> : null}
+      </div>
       {/* FOUNDER-REVIEW: "No account? Start 14 days free" */}
       <p className="muted">
         No account?{" "}

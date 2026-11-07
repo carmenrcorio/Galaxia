@@ -18,6 +18,8 @@ against production:
 - https://galaxiamea.com/chart/compare
 - https://galaxiamea.com/why-galaxia
 - https://galaxiamea.com/pricing
+- https://galaxiamea.com/signup
+- https://galaxiamea.com/login
 
 Workflow: `.github/workflows/lighthouse-production.yml`.
 

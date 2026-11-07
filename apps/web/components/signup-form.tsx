@@ -16,7 +16,6 @@ import { loginWithNextHref } from "../lib/nav-links";
 import { PASSWORD_MIN_LENGTH, PASSWORD_RULE_HINT } from "../lib/password-rules";
 import { safeNextPath } from "../lib/safe-next-path";
 import { createSupabaseBrowserClient } from "../lib/supabase/client";
-import { backfillProfileTimezoneIfMissing } from "../lib/timezone";
 
 export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: string; nextPath?: string }) {
   const router = useRouter();
@@ -38,7 +37,13 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
   // every re-render — this is the "signup_started" half of the funnel,
   // paired with "signup_completed" below.
   useEffect(() => {
-    track("signup_started");
+    const run = () => track("signup_started");
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(run, { timeout: 3000 });
+      return () => cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(run, 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   const onSubmit = async (event: React.FormEvent) => {
@@ -99,7 +104,10 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
       // brand-new profile row always starts with timezone null (the
       // handle_new_user trigger doesn't set it), so there is no need to
       // query the row first here.
-      if (data.user) await backfillProfileTimezoneIfMissing(supabase, data.user.id, null);
+      if (data.user) {
+        const { backfillProfileTimezoneIfMissing } = await import("../lib/timezone");
+        await backfillProfileTimezoneIfMissing(supabase, data.user.id, null);
+      }
       router.push(destination as never);
       router.refresh();
       return;
@@ -180,8 +188,10 @@ export function SignupForm({ initialEmail = "", nextPath }: { initialEmail?: str
           <Link href="/privacy">Privacy Policy</Link>.
         </p>
       </form>
-      {status === "confirm" ? <p className="success">Check your email to confirm your account.</p> : null}
-      {error ? <p className="error">{error}</p> : null}
+      <div className="auth-form-feedback" aria-live="polite">
+        {status === "confirm" ? <p className="success">Check your email to confirm your account.</p> : null}
+        {error ? <p className="error">{error}</p> : null}
+      </div>
             <p className="muted">
         Already have an account?{" "}
         <Link

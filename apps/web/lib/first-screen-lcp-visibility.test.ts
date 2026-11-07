@@ -150,11 +150,12 @@ describe("prefers-reduced-motion still forces first-screen motion off and conten
     );
   });
 
-  it("CosmicBackground still draws one static frame and skips twinkle/parallax", () => {
+  it("CosmicBackground still paints before animating and skips twinkle/parallax when reduced", () => {
     const src = read("apps/web/components/cosmic-background.tsx");
     expect(src).toContain('window.matchMedia("(prefers-reduced-motion: reduce)")');
-    expect(src).toContain("if (!reduce) raf = requestAnimationFrame(drawStars)");
-    expect(src).toContain("const al = s.baseA + (reduce ? 0 : s.amp * Math.sin(s.a))");
-    expect(src).toContain("const tox = reduce ? 0 : targetX * layer.parallax");
+    expect(src).toContain("paintStarsFrame()");
+    expect(src).toContain("if (animating && !reduce) raf = requestAnimationFrame(drawStars)");
+    expect(src).toContain("reduce || !animating ? 0 : s.amp * Math.sin(s.a)");
+    expect(src).toContain("requestIdleCallback(kickAnimation");
   });
 });

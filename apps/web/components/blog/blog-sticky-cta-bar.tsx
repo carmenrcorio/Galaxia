@@ -55,12 +55,25 @@ export function BlogStickyCtaBar({ slug, cta }: { slug: string; cta: BlogIntroCt
     };
   }, [dismissed]);
 
-  if (dismissed || !visible) return null;
+  if (dismissed) return null;
 
-  const motionClass = prefersReducedMotion() ? "article-sticky-cta--static" : "article-sticky-cta--animate";
+  const show = visible;
+  const motionClass = prefersReducedMotion()
+    ? show
+      ? "article-sticky-cta--static"
+      : ""
+    : show
+      ? "article-sticky-cta--animate"
+      : "";
+  const stateClass = show ? "" : "article-sticky-cta--off";
 
   return (
-    <div className={`article-sticky-cta ${motionClass}`} role="region" aria-label="Quick next step">
+    <div
+      className={`article-sticky-cta ${stateClass} ${motionClass}`.trim()}
+      role="region"
+      aria-label="Quick next step"
+      aria-hidden={!show}
+    >
       <Link
         href={cta.href as never}
         className="btn-primary article-sticky-cta-link"

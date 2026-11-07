@@ -112,37 +112,40 @@ export function CosmicBackground() {
     }
 
     let emaFrameMs = 16.7, lastFrame = performance.now(), warmup = 0;
+    let animating = false;
+    let idleHandle: ReturnType<typeof setTimeout> | number | null = null;
+    let idleViaRequestIdleCallback = false;
 
-    function drawStars() {
+    function paintStarsFrame() {
       const now = performance.now();
-      const dt = now - lastFrame; lastFrame = now;
-      if (!reduce) {
+      const dt = now - lastFrame;
+      lastFrame = now;
+      if (animating && !reduce) {
         if (warmup > 10) {
           emaFrameMs = emaFrameMs * 0.9 + dt * 0.1;
-          // sustained <~34fps → shed the densest (far) layer once
           if (activeLayers === layers.length && emaFrameMs > 29) activeLayers = layers.length - 1;
-        } else { warmup++; }
+        } else {
+          warmup++;
+        }
       }
 
       sx!.clearRect(0, 0, W, H);
-      // ease the parallax offset toward the pointer/tilt target
       for (let li = 0; li < layers.length; li++) {
         const layer = layers[li];
-        const tox = reduce ? 0 : targetX * layer.parallax;
-        const toy = reduce ? 0 : targetY * layer.parallax;
+        const tox = reduce || !animating ? 0 : targetX * layer.parallax;
+        const toy = reduce || !animating ? 0 : targetY * layer.parallax;
         layer.ox += (tox - layer.ox) * 0.06;
         layer.oy += (toy - layer.oy) * 0.06;
       }
 
-      // farthest layer first so nearer, brighter stars paint on top
       for (let li = layers.length - activeLayers; li < layers.length; li++) {
         const layer = layers[li];
-        const px = layer.ox * DPR, py = layer.oy * DPR;
+        const px = layer.ox * DPR,
+          py = layer.oy * DPR;
         for (let i = 0; i < layer.stars.length; i++) {
           const s = layer.stars[i];
-          if (!reduce) s.a += s.tw;
-          const al = s.baseA + (reduce ? 0 : s.amp * Math.sin(s.a));
-          // scroll parallax (preserved from landing) + pointer/tilt parallax
+          if (animating && !reduce) s.a += s.tw;
+          const al = s.baseA + (reduce || !animating ? 0 : s.amp * Math.sin(s.a));
           let yy = s.y - scrollY * DPR * s.depth * 0.15 + py;
           yy = ((yy % H) + H) % H;
           let xx = s.x + px;
@@ -153,13 +156,23 @@ export function CosmicBackground() {
           sx!.fill();
         }
       }
-      if (!reduce) raf = requestAnimationFrame(drawStars);
+    }
+
+    function drawStars() {
+      paintStarsFrame();
+      if (animating && !reduce) raf = requestAnimationFrame(drawStars);
+    }
+
+    function startStarAnimation() {
+      if (reduce || animating) return;
+      animating = true;
+      raf = requestAnimationFrame(drawStars);
     }
 
     function onScroll() { scrollY = window.scrollY; }
     const onResize = () => {
       sizeStars();
-      if (reduce) drawStars();
+      paintStarsFrame();
     };
 
     /* desktop parallax — pointer position relative to viewport centre */
@@ -179,8 +192,20 @@ export function CosmicBackground() {
     };
 
     sizeStars();
-    drawStars();
-    if (reduce) drawStars();   // single static frame for reduced-motion
+    paintStarsFrame();
+
+    const kickAnimation = () => startStarAnimation();
+
+    if (!reduce) {
+      if (typeof requestIdleCallback === "function") {
+        idleViaRequestIdleCallback = true;
+        idleHandle = requestIdleCallback(kickAnimation, { timeout: 2500 });
+      } else {
+        idleHandle = window.setTimeout(kickAnimation, 400);
+      }
+      window.addEventListener("scroll", kickAnimation, { once: true, passive: true });
+      window.addEventListener("pointerdown", kickAnimation, { once: true, passive: true });
+    }
 
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
@@ -191,6 +216,15 @@ export function CosmicBackground() {
 
     return () => {
       cancelAnimationFrame(raf);
+      if (idleHandle != null) {
+        if (idleViaRequestIdleCallback && typeof cancelIdleCallback === "function") {
+          cancelIdleCallback(idleHandle as number);
+        } else if (!idleViaRequestIdleCallback) {
+          window.clearTimeout(idleHandle as ReturnType<typeof setTimeout>);
+        }
+      }
+      window.removeEventListener("scroll", kickAnimation);
+      window.removeEventListener("pointerdown", kickAnimation);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onPointer);

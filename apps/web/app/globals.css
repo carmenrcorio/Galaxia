@@ -372,6 +372,12 @@ textarea:focus-visible {
 .muted   { color: var(--mist); }
 .success { color: var(--teal); }
 .error   { color: var(--rose); }
+/* Reserved slot so auth error/confirm copy does not shift the form (mobile CLS). */
+.auth-form-feedback {
+  display: grid;
+  gap: 8px;
+  min-height: 2.75rem;
+}
 
 em { font-style: italic; color: var(--cream); }
 
@@ -3107,6 +3113,11 @@ a.blog-tab:hover { color: var(--cream); border-color: rgba(183,154,216,.45); }
   font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
+}
+.article-sticky-cta--off {
+  opacity: 0;
+  transform: translateY(100%);
+  visibility: hidden;
 }
 .article-sticky-cta--animate {
   animation: article-sticky-in 0.35s ease-out;

@@ -66,6 +66,8 @@ jobs:
             https://galaxiamea.com/chart/compare
             https://galaxiamea.com/why-galaxia
             https://galaxiamea.com/pricing
+            https://galaxiamea.com/signup
+            https://galaxiamea.com/login
           runs: "3"
           configPath: ${{ runner.temp }}/lighthouserc.json
           uploadArtifacts: true
@@ -85,6 +87,8 @@ jobs:
             "https://galaxiamea.com/chart/compare",
             "https://galaxiamea.com/why-galaxia",
             "https://galaxiamea.com/pricing",
+            "https://galaxiamea.com/signup",
+            "https://galaxiamea.com/login",
           ];
           const LCP_GOOD_MS = 2500;
           const CLS_GOOD = 0.1;
